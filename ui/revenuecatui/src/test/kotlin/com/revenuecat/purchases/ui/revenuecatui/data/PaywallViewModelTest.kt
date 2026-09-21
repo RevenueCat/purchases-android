@@ -3624,6 +3624,30 @@ class PaywallViewModelTest {
     }
 
     @Test
+    fun `a cancellation reported as an error by the app's purchase logic never reaches the error presenter`() =
+        runTest {
+            every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+            val customPurchaseCalled = MutableStateFlow(false)
+            val presenter = RecordingErrorPresenter()
+            val model = create(
+                customPurchaseLogic = TestAppPurchaseLogicWithCallbacks(
+                    customPurchaseCalled,
+                    null,
+                    PurchaseLogicResult.Error(PurchasesError(PurchasesErrorCode.PurchaseCancelledError)),
+                    null,
+                ),
+                errorPresenter = presenter,
+            )
+
+            model.purchaseSelectedPackage(activity)
+            customPurchaseCalled.first { it }
+
+            assertThat(presenter.errors).isEmpty()
+            assertThat(model.actionError.value).isNull()
+            assertThat(dismissInvoked).isFalse
+        }
+
+    @Test
     fun `a restore error is handed to the error presenter as a restore`() {
         val presenter = RecordingErrorPresenter()
         val model = create(errorPresenter = presenter)
