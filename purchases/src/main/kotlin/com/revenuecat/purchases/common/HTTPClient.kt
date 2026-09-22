@@ -10,7 +10,6 @@ import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.ForceServerErrorStrategy
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Store
-import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.APISourceFailover
@@ -22,11 +21,10 @@ import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
 import com.revenuecat.purchases.common.networking.MapConverter
 import com.revenuecat.purchases.common.networking.NullPointerReadingErrorStreamException
-import com.revenuecat.purchases.common.networking.RCContainer
-import com.revenuecat.purchases.common.networking.RCContainerFormatException
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.interfaces.StorefrontProvider
 import com.revenuecat.purchases.strings.NetworkStrings
@@ -551,10 +549,10 @@ internal class HTTPClient(
                 verifyResponse(path, connection, payloadText, nonce, postFieldsToSignHeader)
             }
         } else {
-            VerificationResult.NOT_REQUESTED
+            SignatureVerificationResult.NotRequested
         }
 
-        if (verificationResult == VerificationResult.FAILED &&
+        if (verificationResult.isFailed &&
             signingManager.signatureVerificationMode is SignatureVerificationMode.Enforced
         ) {
             throw SignatureVerificationException(path)
@@ -630,7 +628,7 @@ internal class HTTPClient(
                 NO_STATUS_CODE
             }
             val origin = callResult?.origin
-            val verificationResult = callResult?.verificationResult ?: VerificationResult.NOT_REQUESTED
+            val verificationResult = callResult?.verificationResult ?: SignatureVerificationResult.NotRequested
             val requestWasError = callSuccessful && RCHTTPStatusCodes.isSuccessful(responseCode)
             val connectionErrorReason = connectionException?.let { ConnectionErrorReason.fromIOException(it) }
             tracker.trackHttpRequestPerformed(
@@ -730,7 +728,7 @@ internal class HTTPClient(
         payload: String?,
         nonce: String?,
         postFieldsToSignHeader: String?,
-    ): VerificationResult {
+    ): SignatureVerificationResult {
         return signingManager.verifyResponse(
             urlPath = urlPath,
             signatureString = connection.getHeaderField(HTTPResult.SIGNATURE_HEADER_NAME),
@@ -742,36 +740,19 @@ internal class HTTPClient(
         )
     }
 
-    /**
-     * Verifies an RC Container Format response. The backend signs the leading config element's (element 0)
-     * **uncompressed** bytes — the config part / `main_body` — so we verify the signature over
-     * [RCContainer.config], which is the element already decoded by the container. Per-element compression is
-     * transparent to the signature (as it is to the element checksum), so a codec change never invalidates a
-     * signed config. The per-element container checksums are untrusted lookup hints, not a trust anchor: inline
-     * blob elements are not signed and are instead authenticated transitively by hashing against the `blob_ref`
-     * in the signed config. This endpoint is not ETag-cached and sends no post params, but the signature does
-     * cover the request [nonce].
-     */
     private fun verifyRCFormatResponse(
         urlPath: String,
         connection: URLConnection,
         payloadBytes: ByteArray,
         nonce: String?,
-    ): VerificationResult {
-        val bodyBytes = try {
-            RCContainer.parse(payloadBytes).config
-        } catch (e: RCContainerFormatException) {
-            errorLog(e) { NetworkStrings.VERIFICATION_ERROR.format(urlPath) }
-            return VerificationResult.FAILED
-        }
-        return signingManager.verifyResponse(
+    ): SignatureVerificationResult {
+        return signingManager.verifyRCFormatResponse(
             urlPath = urlPath,
             signatureString = connection.getHeaderField(HTTPResult.SIGNATURE_HEADER_NAME),
             nonce = nonce,
-            bodyBytes = bodyBytes,
+            containerBytes = payloadBytes,
             requestTime = getRequestTimeHeader(connection),
             eTag = getETagHeader(connection),
-            postFieldsToSignHeader = null,
         )
     }
 
@@ -784,7 +765,7 @@ internal class HTTPClient(
         urlPath: String,
         connection: URLConnection,
         nonce: String?,
-    ): VerificationResult {
+    ): SignatureVerificationResult {
         return signingManager.verifyResponse(
             urlPath = urlPath,
             signatureString = connection.getHeaderField(HTTPResult.SIGNATURE_HEADER_NAME),

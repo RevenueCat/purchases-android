@@ -5,7 +5,6 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.RewardVerificationPollStatus
 import com.revenuecat.purchases.VerifiedReward
-import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
@@ -15,6 +14,7 @@ import com.revenuecat.purchases.common.SyncDispatcher
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -263,7 +263,7 @@ class BackendGetRewardVerificationResultTest {
                 payload,
                 HTTPResult.Origin.BACKEND,
                 requestDate = null,
-                VerificationResult.NOT_REQUESTED,
+                SignatureVerificationResult.NotRequested,
                 isLoadShedderResponse = false,
                 isFallbackURL = false,
             )

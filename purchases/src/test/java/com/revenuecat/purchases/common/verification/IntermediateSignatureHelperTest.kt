@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.common.verification
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult.FailureReason
 import com.revenuecat.purchases.utils.Result
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -66,10 +66,7 @@ class IntermediateSignatureHelperTest {
 
         when (val result = helper.createIntermediateKeyVerifierIfVerified(validSignature)) {
             is Result.Success -> fail("Expected error")
-            is Result.Error -> {
-                assertThat(result.value.code).isEqualTo(PurchasesErrorCode.SignatureVerificationError)
-                assertThat(result.value.underlyingErrorMessage).startsWith("Signature verifier unavailable.")
-            }
+            is Result.Error -> assertThat(result.value).isEqualTo(FailureReason.UNKNOWN)
         }
     }
 
@@ -78,10 +75,7 @@ class IntermediateSignatureHelperTest {
         val incorrectSignature = validSignature.copy(intermediateKey = "incorrect".toByteArray())
         when (val result = intermediateSignatureHelper.createIntermediateKeyVerifierIfVerified(incorrectSignature)) {
             is Result.Success -> fail("Expected error")
-            is Result.Error -> {
-                assertThat(result.value.code).isEqualTo(PurchasesErrorCode.SignatureVerificationError)
-                assertThat(result.value.underlyingErrorMessage).startsWith("Error verifying intermediate key.")
-            }
+            is Result.Error -> assertThat(result.value).isEqualTo(FailureReason.INVALID_INTERMEDIATE_KEY_SIGNATURE)
         }
     }
 
@@ -90,10 +84,7 @@ class IntermediateSignatureHelperTest {
         val expiredIntermediateKeySignature = Signature.fromString("xoDYyUeHnIlSIAeOOzmvdNPOlbNSKK+xE0fE/ufS1fsKAAAAJMOXT1iHMIJlcZ0KNSvIHu+PE5DfETod7ix/ggbABphqbzt7t8p+ZwFpqc7K+1n6lzcsWAyKCWU7ofXoOLF8D0Cfn6wrs56pEGFLZxBvv9m46nIAJz8zmn+LmHo6kRellbweWMo8fbrb08mReRxdqB++3GyQWyHbvOS7yQW/od193UracSQNMH+4wXbcjCwG")
         when (val result = intermediateSignatureHelper.createIntermediateKeyVerifierIfVerified(expiredIntermediateKeySignature)) {
             is Result.Success -> fail("Expected error")
-            is Result.Error -> {
-                assertThat(result.value.code).isEqualTo(PurchasesErrorCode.SignatureVerificationError)
-                assertThat(result.value.underlyingErrorMessage).startsWith("Intermediate key expired")
-            }
+            is Result.Error -> assertThat(result.value).isEqualTo(FailureReason.INTERMEDIATE_KEY_EXPIRED)
         }
     }
 
