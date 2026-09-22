@@ -21,13 +21,10 @@ import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
 import com.revenuecat.purchases.common.networking.MapConverter
 import com.revenuecat.purchases.common.networking.NullPointerReadingErrorStreamException
-import com.revenuecat.purchases.common.networking.RCContainer
-import com.revenuecat.purchases.common.networking.RCContainerFormatException
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SignatureVerificationResult
-import com.revenuecat.purchases.common.verification.SignatureVerificationResult.FailureReason
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.interfaces.StorefrontProvider
 import com.revenuecat.purchases.strings.NetworkStrings
@@ -743,36 +740,19 @@ internal class HTTPClient(
         )
     }
 
-    /**
-     * Verifies an RC Container Format response. The backend signs the leading config element's (element 0)
-     * **uncompressed** bytes — the config part / `main_body` — so we verify the signature over
-     * [RCContainer.config], which is the element already decoded by the container. Per-element compression is
-     * transparent to the signature (as it is to the element checksum), so a codec change never invalidates a
-     * signed config. The per-element container checksums are untrusted lookup hints, not a trust anchor: inline
-     * blob elements are not signed and are instead authenticated transitively by hashing against the `blob_ref`
-     * in the signed config. This endpoint is not ETag-cached and sends no post params, but the signature does
-     * cover the request [nonce].
-     */
     private fun verifyRCFormatResponse(
         urlPath: String,
         connection: URLConnection,
         payloadBytes: ByteArray,
         nonce: String?,
     ): SignatureVerificationResult {
-        val bodyBytes = try {
-            RCContainer.parse(payloadBytes).config
-        } catch (e: RCContainerFormatException) {
-            errorLog(e) { NetworkStrings.VERIFICATION_ERROR.format(urlPath) }
-            return SignatureVerificationResult.Failed(FailureReason.INVALID_RESPONSE_PAYLOAD)
-        }
-        return signingManager.verifyResponse(
+        return signingManager.verifyRCFormatResponse(
             urlPath = urlPath,
             signatureString = connection.getHeaderField(HTTPResult.SIGNATURE_HEADER_NAME),
             nonce = nonce,
-            bodyBytes = bodyBytes,
+            containerBytes = payloadBytes,
             requestTime = getRequestTimeHeader(connection),
             eTag = getETagHeader(connection),
-            postFieldsToSignHeader = null,
         )
     }
 

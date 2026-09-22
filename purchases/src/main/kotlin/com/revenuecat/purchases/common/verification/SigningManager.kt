@@ -4,6 +4,8 @@ import android.util.Base64
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.networking.Endpoint
+import com.revenuecat.purchases.common.networking.RCContainer
+import com.revenuecat.purchases.common.networking.RCContainerFormatException
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.verification.SignatureVerificationResult.FailureReason
 import com.revenuecat.purchases.common.warnLog
@@ -118,9 +120,9 @@ internal class SigningManager(
 
     /**
      * Verifies a response signature. [bodyBytes] is the signed payload: the UTF-8 bytes of a textual
-     * (JSON) body, or the config element's checksum for RC Container Format responses.
+     * (JSON) body, or an empty array for a `204 No Content` response.
      */
-    @Suppress("LongParameterList", "ReturnCount", "CyclomaticComplexMethod", "LongMethod")
+    @Suppress("LongParameterList")
     fun verifyResponse(
         urlPath: String,
         signatureString: String?,
@@ -129,6 +131,59 @@ internal class SigningManager(
         requestTime: String?,
         eTag: String?,
         postFieldsToSignHeader: String?,
+    ): SignatureVerificationResult = verifySignedResponse(
+        urlPath = urlPath,
+        signatureString = signatureString,
+        nonce = nonce,
+        requestTime = requestTime,
+        eTag = eTag,
+        postFieldsToSignHeader = postFieldsToSignHeader,
+    ) { Result.Success(bodyBytes) }
+
+    /**
+     * Verifies an RC Container Format response. The backend signs the leading config element's (element 0)
+     * **uncompressed** bytes — the config part / `main_body` — so the signature is verified over
+     * [RCContainer.config], which is the element already decoded by the container. Per-element compression is
+     * transparent to the signature (as it is to the element checksum), so a codec change never invalidates a
+     * signed config. The per-element container checksums are untrusted lookup hints, not a trust anchor: inline
+     * blob elements are not signed and are instead authenticated transitively by hashing against the `blob_ref`
+     * in the signed config. These endpoints are not ETag-cached and send no post params, but the signature does
+     * cover the request [nonce]. The signature headers are checked before [containerBytes] is parsed, so a
+     * response that is missing them reports that rather than an invalid payload.
+     */
+    @Suppress("LongParameterList")
+    fun verifyRCFormatResponse(
+        urlPath: String,
+        signatureString: String?,
+        nonce: String?,
+        containerBytes: ByteArray,
+        requestTime: String?,
+        eTag: String?,
+    ): SignatureVerificationResult = verifySignedResponse(
+        urlPath = urlPath,
+        signatureString = signatureString,
+        nonce = nonce,
+        requestTime = requestTime,
+        eTag = eTag,
+        postFieldsToSignHeader = null,
+    ) {
+        try {
+            Result.Success(RCContainer.parse(containerBytes).config)
+        } catch (e: RCContainerFormatException) {
+            errorLog(e) { NetworkStrings.VERIFICATION_ERROR.format(urlPath) }
+            Result.Error(FailureReason.INVALID_RESPONSE_PAYLOAD)
+        }
+    }
+
+    @Suppress("LongParameterList", "ReturnCount", "CyclomaticComplexMethod", "LongMethod")
+    private fun verifySignedResponse(
+        urlPath: String,
+        signatureString: String?,
+        nonce: String?,
+        requestTime: String?,
+        eTag: String?,
+        postFieldsToSignHeader: String?,
+        signedPayload: () -> Result<ByteArray?, FailureReason>,
     ): SignatureVerificationResult {
         if (appConfig.forceSigningErrors) {
             warnLog { "Forcing signing error for request with path: $urlPath" }
@@ -145,6 +200,10 @@ internal class SigningManager(
         if (requestTime == null) {
             errorLog { NetworkStrings.VERIFICATION_MISSING_REQUEST_TIME.format(urlPath) }
             return SignatureVerificationResult.Failed(FailureReason.MISSING_REQUEST_TIME)
+        }
+        val bodyBytes = when (val payload = signedPayload()) {
+            is Result.Success -> payload.value
+            is Result.Error -> return SignatureVerificationResult.Failed(payload.value)
         }
         if (bodyBytes == null && eTag == null) {
             errorLog { NetworkStrings.VERIFICATION_MISSING_BODY_OR_ETAG.format(urlPath) }

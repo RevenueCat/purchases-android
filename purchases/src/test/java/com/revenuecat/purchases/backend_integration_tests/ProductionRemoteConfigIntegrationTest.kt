@@ -270,7 +270,7 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
         assertThat(error).isNull()
         assertThat(container).isNotNull
         assertThat(verification).isEqualTo(SignatureVerificationResult.Verified)
-        assertSigningPerformed()
+        assertRCFormatSigningPerformed()
     }
 
     @Test

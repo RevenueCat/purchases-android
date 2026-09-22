@@ -5,6 +5,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.crypto.tink.subtle.Ed25519Sign
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.networking.Endpoint
+import com.revenuecat.purchases.common.networking.RCContainerTestData
+import com.revenuecat.purchases.common.networking.RCContentEncoding
 import com.revenuecat.purchases.common.verification.SignatureVerificationResult.FailureReason
 import com.revenuecat.purchases.utils.Result
 import io.mockk.every
@@ -414,7 +416,114 @@ class SigningManagerTest {
 
     // endregion
 
+    // region verifyRCFormatResponse
+
+    @Test
+    fun `verifyRCFormatResponse verifies the signature over the config element bytes`() {
+        val signingManager = realInformationalSigningManager()
+        val salt = ByteArray(16).apply { SecureRandom().nextBytes(this) }
+        val configBytes = "{\"config\":true}".toByteArray()
+        val signature = createFakeSignatureForBytes(bodyBytes = configBytes, salt = salt)
+
+        val verified = callVerifyRCFormatResponse(
+            signingManager,
+            signature = signature,
+            containerBytes = RCContainerTestData.buildContainer(config = configBytes),
+        )
+        assertThat(verified).isEqualTo(SignatureVerificationResult.Verified)
+    }
+
+    @Test
+    fun `verifyRCFormatResponse verifies a GZIP-compressed config element over its decoded bytes`() {
+        val signingManager = realInformationalSigningManager()
+        val salt = ByteArray(16).apply { SecureRandom().nextBytes(this) }
+        val configBytes = "{\"config\":true}".toByteArray()
+        val signature = createFakeSignatureForBytes(bodyBytes = configBytes, salt = salt)
+
+        val verified = callVerifyRCFormatResponse(
+            signingManager,
+            signature = signature,
+            containerBytes = RCContainerTestData.buildContainer(
+                config = configBytes,
+                codecForIndex = { RCContentEncoding.GZIP.id },
+            ),
+        )
+        assertThat(verified).isEqualTo(SignatureVerificationResult.Verified)
+    }
+
+    @Test
+    fun `verifyRCFormatResponse fails when the config element checksum does not match`() {
+        val signingManager = realInformationalSigningManager()
+        val salt = ByteArray(16).apply { SecureRandom().nextBytes(this) }
+        val configBytes = "{\"config\":true}".toByteArray()
+        val signature = createFakeSignatureForBytes(bodyBytes = configBytes, salt = salt)
+
+        val result = callVerifyRCFormatResponse(
+            signingManager,
+            signature = signature,
+            containerBytes = RCContainerTestData.buildContainer(
+                config = configBytes,
+                checksumOverride = { _, _ -> ByteArray(24) { 0x7F } },
+            ),
+        )
+        assertThat(result).isEqualTo(SignatureVerificationResult.Failed(FailureReason.INVALID_RESPONSE_PAYLOAD))
+    }
+
+    @Test
+    fun `verifyRCFormatResponse fails when the response is not a valid RC Container`() {
+        val result = callVerifyRCFormatResponse(informationalSigningManager, containerBytes = byteArrayOf(1, 2, 3, 4))
+        assertThat(result).isEqualTo(SignatureVerificationResult.Failed(FailureReason.INVALID_RESPONSE_PAYLOAD))
+    }
+
+    @Test
+    fun `verifyRCFormatResponse reports a missing signature before parsing the payload`() {
+        val result = callVerifyRCFormatResponse(
+            informationalSigningManager,
+            signature = null,
+            containerBytes = byteArrayOf(1, 2, 3, 4),
+        )
+        assertThat(result).isEqualTo(SignatureVerificationResult.Failed(FailureReason.MISSING_SIGNATURE))
+    }
+
+    @Test
+    fun `verifyRCFormatResponse reports a missing request time before parsing the payload`() {
+        val result = callVerifyRCFormatResponse(
+            informationalSigningManager,
+            requestTime = null,
+            containerBytes = byteArrayOf(1, 2, 3, 4),
+        )
+        assertThat(result).isEqualTo(SignatureVerificationResult.Failed(FailureReason.MISSING_REQUEST_TIME))
+    }
+
+    @Test
+    fun `verifyRCFormatResponse returns NOT_REQUESTED for an invalid payload if verification mode disabled`() {
+        val result = callVerifyRCFormatResponse(disabledSigningManager, containerBytes = byteArrayOf(1, 2, 3, 4))
+        assertThat(result).isEqualTo(SignatureVerificationResult.NotRequested)
+    }
+
+    // endregion
+
     // region Helpers
+
+    private fun realInformationalSigningManager() = SigningManager(
+        SignatureVerificationMode.Informational(IntermediateSignatureHelper(realTestRootVerifier())),
+        appConfig,
+        apiKey,
+    )
+
+    private fun callVerifyRCFormatResponse(
+        signingManager: SigningManager,
+        containerBytes: ByteArray,
+        signature: String? = "test-signature",
+        requestTime: String? = "1677005916012",
+    ) = signingManager.verifyRCFormatResponse(
+        urlPath = "test-url-path",
+        signatureString = signature,
+        nonce = null,
+        containerBytes = containerBytes,
+        requestTime = requestTime,
+        eTag = null,
+    )
 
     private fun informationalModeWithRootVerifier(
         rootVerifierProvider: () -> SignatureVerifier,
