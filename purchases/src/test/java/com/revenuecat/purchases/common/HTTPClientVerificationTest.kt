@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
@@ -10,7 +11,9 @@ import com.revenuecat.purchases.common.verification.SignatureVerificationExcepti
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import com.revenuecat.purchases.common.verification.SignatureVerificationResult.FailureReason
+import io.mockk.Runs
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
 import okhttp3.mockwebserver.MockResponse
@@ -22,6 +25,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.util.Date
+import kotlin.time.Duration.Companion.hours
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -350,6 +354,56 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         assertThat(thrownCorrectException).isTrue
         verify(exactly = 0) {
             mockETagManager.getHTTPResultFromCacheOrBackend(any(), any(), any(), any(), any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `performRequest on enforced client keeps verification context in diagnostics`() {
+        every { mockSigningManager.signatureVerificationMode } returns mockk<SignatureVerificationMode.Enforced>()
+        val diagnosticsTracker = mockk<DiagnosticsTracker>()
+        every {
+            diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+        } just Runs
+        val deviceNow = Date(1676379370000L) // Tuesday, February 14, 2023 12:56:10 PM GMT
+        val requestDate = Date(deviceNow.time - 2.hours.inWholeMilliseconds)
+        client = createClient(
+            diagnosticsTracker = diagnosticsTracker,
+            dateProvider = object : DateProvider {
+                override val now: Date get() = deviceNow
+            },
+        )
+        val endpoint = Endpoint.GetCustomerInfo("test-user-id")
+        enqueue(
+            urlPath = endpoint.getPath(),
+            expectedResult = HTTPResult.createResult(),
+            requestDateHeader = requestDate,
+        )
+        mockSigningResult(SignatureVerificationResult.Failed(FailureReason.PAYLOAD_SIGNATURE_MISMATCH))
+
+        assertThatExceptionOfType(SignatureVerificationException::class.java).isThrownBy {
+            client.performRequest(
+                baseURL,
+                endpoint,
+                body = null,
+                postFieldsToSign = null,
+                requestHeaders = emptyMap()
+            )
+        }
+
+        verify(exactly = 1) {
+            diagnosticsTracker.trackHttpRequestPerformed(
+                server.hostName,
+                endpoint,
+                responseTime = any(),
+                wasSuccessful = false,
+                HTTPClient.NO_STATUS_CODE,
+                backendErrorCode = null,
+                resultOrigin = null,
+                SignatureVerificationResult.Failed(FailureReason.PAYLOAD_SIGNATURE_MISMATCH),
+                deviceClockOffset = 2.hours,
+                isRetry = false,
+                connectionErrorReason = null,
+            )
         }
     }
 
