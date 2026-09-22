@@ -81,28 +81,41 @@ internal object ConstrainedFillLayout {
             )
         }
 
-        val targetMainAxisSize = constraints.targetMainAxisSize(orientation)
         val placeables = arrayOfNulls<Placeable>(measurables.size)
         measureNonFillChildren(measurables, fillConstraints, placeables, constraints, config, spacingPx)
         val nonFillSize = placeables.filterNotNull().sumOf { it.mainAxisSize(orientation) }
 
-        val availableForFill = (targetMainAxisSize - nonFillSize - totalSpacing).coerceAtLeast(0)
-        val fillSizes = allocateConstrainedFillSpace(availableForFill, fillConstraints, this)
-        measurables.forEachIndexed { index, measurable ->
-            if (fillConstraints[index] != null) {
-                placeables[index] = measurable.measure(
-                    constraints.withExactMainAxisSize(fillSizes[index], orientation),
-                )
+        // Routing considers every possible override, but parent data describes only the children and sizes currently
+        // composed. If no Fill child remains (e.g. the limited-Fill candidate is hidden), preserve Row/Column's wrap
+        // behavior instead of expanding a Fit stack to the parent's maximum.
+        return if (fillConstraints.all { it == null }) {
+            layoutAndPlace(
+                placeables = placeables.requireNoNulls().asList(),
+                mainAxisSize = nonFillSize + totalSpacing,
+                constraints = constraints,
+                config = config,
+                spacing = spacingPx,
+            )
+        } else {
+            val targetMainAxisSize = constraints.targetMainAxisSize(orientation)
+            val availableForFill = (targetMainAxisSize - nonFillSize - totalSpacing).coerceAtLeast(0)
+            val fillSizes = allocateConstrainedFillSpace(availableForFill, fillConstraints, this)
+            measurables.forEachIndexed { index, measurable ->
+                if (fillConstraints[index] != null) {
+                    placeables[index] = measurable.measure(
+                        constraints.withExactMainAxisSize(fillSizes[index], orientation),
+                    )
+                }
             }
-        }
 
-        return layoutAndPlace(
-            placeables = placeables.requireNoNulls().asList(),
-            mainAxisSize = targetMainAxisSize,
-            constraints = constraints,
-            config = config,
-            spacing = spacingPx,
-        )
+            layoutAndPlace(
+                placeables = placeables.requireNoNulls().asList(),
+                mainAxisSize = targetMainAxisSize,
+                constraints = constraints,
+                config = config,
+                spacing = spacingPx,
+            )
+        }
     }
 
     /**

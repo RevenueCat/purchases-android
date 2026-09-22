@@ -1,10 +1,14 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.stack
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.assertHeightIsEqualTo
+import androidx.compose.ui.test.assertWidthIsEqualTo
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
@@ -22,6 +26,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorEquals
@@ -169,6 +174,50 @@ class StackFillMinMaxTest {
     )
 
     @Test
+    fun `hidden limited Fill child does not expand a Fit stack`() {
+        val styles = listOf(true, false).associateWith { horizontal ->
+            styleFactory.create(
+                stack(
+                    horizontal,
+                    child(Color.Yellow, fill(horizontal, max = 20u), override(PartialStackComponent(visible = false))),
+                    child(Color.Red, fixed(horizontal, 20u)),
+                    size = sizeWithMainAxis(horizontal, Fit()),
+                ),
+            ).getOrThrow().componentStyle as StackComponentStyle
+        }
+        composeTestRule.setContent {
+            Column {
+                styles.forEach { (horizontal, style) ->
+                    Box(
+                        modifier = Modifier.requiredSize(
+                            width = if (horizontal) 100.dp else 20.dp,
+                            height = if (horizontal) 20.dp else 100.dp,
+                        ),
+                    ) {
+                        StackComponentView(
+                            style = style,
+                            state = FakePaywallState(components = emptyList()),
+                            clickHandler = {},
+                            modifier = Modifier.testTag(tag(horizontal)),
+                        )
+                    }
+                }
+            }
+        }
+        composeTestRule.waitForIdle()
+
+        styles.keys.forEach { horizontal ->
+            with(composeTestRule.onNodeWithTag(tag(horizontal))) {
+                if (horizontal) {
+                    assertWidthIsEqualTo(20.dp)
+                } else {
+                    assertHeightIsEqualTo(20.dp)
+                }
+            }
+        }
+    }
+
+    @Test
     fun `scrolling stack shares its own fixed size when the scroll axis is unbounded`() = assertBothOrientations(
         stack = { h ->
             stack(
@@ -249,6 +298,7 @@ class StackFillMinMaxTest {
         distribution: FlexDistribution = FlexDistribution.START,
         spacing: Float? = null,
         overflow: Overflow? = null,
+        size: Size? = null,
     ) = StackComponent(
         components = children.toList(),
         dimension = if (horizontal) {
@@ -256,7 +306,7 @@ class StackFillMinMaxTest {
         } else {
             Dimension.Vertical(HorizontalAlignment.CENTER, distribution)
         },
-        size = if (horizontal) {
+        size = size ?: if (horizontal) {
             Size(width = Fixed(100u), height = Fixed(20u))
         } else {
             Size(width = Fixed(20u), height = Fixed(100u))
