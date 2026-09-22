@@ -35,6 +35,7 @@ import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
 import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
+import com.revenuecat.purchases.ui.revenuecatui.components.modifier.resolveComponentSizeParentData
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
 import com.revenuecat.purchases.ui.revenuecatui.components.previewTextComponentStyle
@@ -111,6 +112,7 @@ internal fun TextComponentView(
             Markdown(
                 text = text,
                 modifier = modifier
+                    .resolveComponentSizeParentData(textState.size)
                     .size(textState.size, horizontalAlignment = textState.horizontalAlignment)
                     .padding(textState.margin)
                     .applyIfNotNull(backgroundColorStyle) { background(it) }

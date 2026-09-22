@@ -52,6 +52,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
+import com.revenuecat.purchases.ui.revenuecatui.components.modifier.resolveComponentSizeParentData
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
@@ -175,6 +176,7 @@ internal fun CarouselComponentView(
 
     Column(
         modifier = modifier
+            .resolveComponentSizeParentData(carouselState.size)
             .size(carouselState.size)
             .padding(carouselState.margin)
             .applyIfNotNull(shadowStyle) { shadow(it, carouselState.shape) }

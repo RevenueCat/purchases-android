@@ -14,8 +14,11 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
+import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
+import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
@@ -156,6 +159,48 @@ class StackFillMinMaxTest {
         10 to Color.Red,
         30 to Color.Blue,
     )
+
+    @Test
+    fun `text size override replaces its base constrained Fill allocation`() {
+        val text = TextComponent(
+            text = LocalizationKey("dummy"),
+            color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+            backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+            size = Size(width = Fill(max = 60u), height = Fill()),
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = emptyList(),
+                    properties = PartialTextComponent(
+                        size = Size(width = Fixed(180u), height = Fill()),
+                    ),
+                ),
+            ),
+        )
+        val stack = StackComponent(
+            components = listOf(
+                text,
+                child(Color.Blue, Size(width = Fill(), height = Fill())),
+            ),
+            dimension = Dimension.Horizontal(VerticalAlignment.CENTER, FlexDistribution.START),
+            size = Size(width = Fixed(300u), height = Fixed(20u)),
+            backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Green.toArgb())),
+        )
+        val style = styleFactory.create(stack).getOrThrow().componentStyle as StackComponentStyle
+        composeTestRule.setContent {
+            StackComponentView(
+                style = style,
+                state = FakePaywallState(components = emptyList()),
+                clickHandler = {},
+                modifier = Modifier.testTag("stack"),
+            )
+        }
+        composeTestRule.waitForIdle()
+
+        fun px(dp: Int) = with(composeTestRule.density) { dp.dp.roundToPx() }
+        composeTestRule.onNodeWithTag("stack")
+            .assertPixelColorEquals(Color.Red, px(120), px(10), width = 1, height = 1)
+            .assertPixelColorEquals(Color.Blue, px(240), px(10), width = 1, height = 1)
+    }
 
     @Test
     fun `hidden child does not shift its siblings' constraints`() = assertBothOrientations(

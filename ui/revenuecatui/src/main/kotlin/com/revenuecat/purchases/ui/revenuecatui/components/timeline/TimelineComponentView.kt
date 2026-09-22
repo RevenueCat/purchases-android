@@ -40,6 +40,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.ui.revenuecatui.components.iconcomponent.IconComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.overlay
+import com.revenuecat.purchases.ui.revenuecatui.components.modifier.resolveComponentSizeParentData
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
 import com.revenuecat.purchases.ui.revenuecatui.components.previewIconComponentStyle
@@ -75,6 +76,7 @@ internal fun TimelineComponentView(
 
     ConstraintLayout(
         modifier = modifier
+            .resolveComponentSizeParentData(timelineState.size)
             .size(timelineState.size)
             .padding(timelineState.margin)
             .padding(timelineState.padding),
