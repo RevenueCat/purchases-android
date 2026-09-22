@@ -80,3 +80,4 @@
 ## Debug flags
 ## ──────────────────────────────────────────────
 #ENABLE_EXTRA_REQUEST_LOGGING=true
+#ENABLE_PAYWALL_MIN_MAX_SIZING=true
