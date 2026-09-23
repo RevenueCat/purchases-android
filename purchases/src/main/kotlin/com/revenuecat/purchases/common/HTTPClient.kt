@@ -412,7 +412,11 @@ internal class HTTPClient(
         val effectiveHeaders = iamAuthorizationHeaders(appUserID, endpoint)?.let { requestHeaders + it }
             ?: requestHeaders
         val jsonBody = body?.let { mapConverter.convertToJSON(it) }
-        val path = endpoint.getPath(useFallback = isFallbackURL)
+        // IAM login (when enabled) routes every request through the IAM-namespaced path instead of
+        // the legacy API-key one, mirroring the header override above -- see iamAuthorizationHeaders.
+        // Endpoints not yet migrated to an IAM path (iamPathTemplate == null) fall back to pathTemplate
+        // regardless, so this is safe to pass unconditionally once IAM login is enabled.
+        val path = endpoint.getPath(useFallback = isFallbackURL, useIAMPath = tokenManager?.enabled == true)
         val connection: HttpURLConnection
         val shouldSignResponse = signingManager.shouldVerifyEndpoint(endpoint)
         val shouldAddNonce = shouldSignResponse && endpoint.needsNonceToPerformSigning
