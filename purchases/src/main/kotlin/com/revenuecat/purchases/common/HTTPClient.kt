@@ -108,10 +108,22 @@ internal class HTTPClient(
 
         // Step 22's last-resort safety net: how long refreshTokenAndRetry() waits for a refresh this
         // request didn't itself perform (another concurrent request for the same appUserID is already
-        // refreshing) before giving up and returning the original 401 rather than hanging forever. Well
-        // above any realistic /auth/token round trip; only matters if TokenManager's callback somehow never
-        // arrives.
-        private const val WAIT_TIMEOUT_MS = 10_000L
+        // refreshing) before giving up and returning the original 401 rather than hanging forever. Only
+        // matters if TokenManager's callback somehow never arrives -- e.g. the refresh's own network call
+        // is still genuinely in flight when this timeout would otherwise fire.
+        //
+        // Must comfortably exceed the longest a single /auth/token attempt can actually take, or a
+        // concurrent 401 gives up on (and re-serves the stale 401 instead of the new tokens for) a refresh
+        // that was always going to succeed, just slowly. TokenRefresh doesn't support fallback base URLs
+        // (Endpoint.supportsFallbackBaseURLs), so it always gets HTTPTimeoutManager's legacy flat tier --
+        // DEFAULT_TIMEOUT_MS, 30 seconds -- rather than one of the shorter fallback-aware tiers other
+        // endpoints qualify for; this adds a further margin on top of that for scheduling/dispatch overhead
+        // around the raw connection timeout. It does not additionally cover every API-source-failover retry
+        // within that one attempt stacking up to the full MAX_API_SOURCE_ATTEMPTS -- that theoretical
+        // ceiling is far higher than is useful to wait on here, so this stays sized for one realistic
+        // attempt, same as the timeout tiers themselves are.
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+        internal const val WAIT_TIMEOUT_MS = HTTPTimeoutManager.DEFAULT_TIMEOUT_MS + 5_000L // 35 seconds
     }
 
     private val enableExtraRequestLogging = BuildConfig.ENABLE_EXTRA_REQUEST_LOGGING && appConfig.isDebugBuild
@@ -724,9 +736,16 @@ internal class HTTPClient(
      * whenever none of that is true (nothing would ever count the latch down). So this checks
      * [TokenManager.currentRefreshTokenSync] itself first, and only calls
      * [TokenManager.tokenRefreshRequestSync] -- and only then waits -- once it already knows a refresh
-     * token exists to attempt with. [WAIT_TIMEOUT_MS] is a last-resort safety net for the narrow window
-     * between that check and TokenManager's own (e.g. a concurrent logout deleting the token in between):
-     * if the callback still somehow never arrives, [CountDownLatch.await]'s timeout expires and this falls
+     * token exists to attempt with.
+     *
+     * Every caller waits out [WAIT_TIMEOUT_MS], not just a brief race window: the owning caller (the one
+     * [TokenManager.tokenRefreshRequestSync] handed a non-null request to) waits for its own
+     * [TokenRefreshOperation.refresh] call above to finish, and a folded-in caller (concurrent 401s for the
+     * same [appUserID], deduplicated onto the same in-flight refresh) waits for that same owner's call the
+     * same way -- so [WAIT_TIMEOUT_MS] has to comfortably outlast a real `/auth/token` round trip, not just
+     * cover the moment-of-registration race with a concurrent [TokenManager] mutation (e.g. a logout
+     * deleting the token in between); see [WAIT_TIMEOUT_MS]'s own doc for how it's sized. If the callback
+     * still somehow never arrives even after that, [CountDownLatch.await]'s timeout expires and this falls
      * back to [originalResult] rather than hanging the request forever.
      */
     @Suppress("LongParameterList")

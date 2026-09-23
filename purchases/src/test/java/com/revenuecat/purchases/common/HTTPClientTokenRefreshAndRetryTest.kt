@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.networking.TokenManager
 import com.revenuecat.purchases.common.networking.TokenRefreshOperation
@@ -162,6 +163,19 @@ internal class HTTPClientTokenRefreshAndRetryTest : BaseHTTPClientTest() {
         assertThat(customerInfoRequestCount.get()).isEqualTo(4) // 2 originals (401) + 2 retries (200)
         verify(exactly = 1) { TokenRefreshOperation.refresh(any(), any(), any(), any(), any()) }
         assertThat(runBlocking { tokenManager.currentAccessToken("user") }).isEqualTo("new-access-token")
+    }
+
+    // endregion
+
+    // region timeout sizing
+
+    @Test
+    fun `WAIT_TIMEOUT_MS comfortably exceeds a single auth-token attempt's worst-case timeout`() {
+        // TokenRefresh has no fallback base URLs, so it always gets HTTPTimeoutManager's legacy flat tier
+        // rather than one of the shorter fallback-aware ones -- a folded-in caller waiting on someone
+        // else's in-flight refresh (or the refresh's own owner) must be able to outlast that, or a
+        // still-in-flight, later-successful refresh gets treated as a timeout and the stale 401 re-served.
+        assertThat(HTTPClient.WAIT_TIMEOUT_MS).isGreaterThan(HTTPTimeoutManager.DEFAULT_TIMEOUT_MS)
     }
 
     // endregion
