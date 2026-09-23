@@ -27,8 +27,8 @@ internal fun PackageComponentView(
 
     if (!packageState.visible) return
 
-    val enabled = remember(state.selectedPackageInfo?.uniqueId, style.uniqueId) {
-        state.selectedPackageInfo?.uniqueId != style.uniqueId
+    val selected = remember(state.selectedPackageInfo?.uniqueId, style.uniqueId) {
+        state.selectedPackageInfo?.uniqueId == style.uniqueId
     }
 
     StackComponentView(
@@ -40,9 +40,10 @@ internal fun PackageComponentView(
         },
         componentInteractionTracker = componentInteractionTracker,
         modifier = modifier,
-        enabled = enabled,
+        selected = if (style.isSelectable) selected else null,
         onStackClick = if (style.isSelectable) {
-            {
+            click@{
+                if (selected) return@click
                 componentInteractionTracker.track(
                     paywallPackageRowSelection(
                         componentName = style.componentName,
