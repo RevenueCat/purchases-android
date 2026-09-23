@@ -63,6 +63,21 @@ internal class HTTPTimeoutManagerTest {
         reTieredTimeoutsEnabled = reTieredTimeoutsEnabled,
     )
 
+    @Test
+    fun `read timeout stays at thirty seconds after connection tier reduction`() {
+        assertThat(timeoutManager.getReadTimeout()).isEqualTo(30_000L)
+        timeoutManager.recordRequestResult(HOST_A, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
+        assertThat(timeout(host = HOST_A, fallbackAvailable = true))
+            .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS)
+        assertThat(timeoutManager.getReadTimeout()).isEqualTo(30_000L)
+    }
+
+    @Test
+    fun `read timeout uses the existing test divider only for tests`() {
+        every { appConfig.runningTests } returns true
+        assertThat(timeoutManager.getReadTimeout()).isEqualTo(3_000L)
+    }
+
     // region Base tiers
 
     @Test

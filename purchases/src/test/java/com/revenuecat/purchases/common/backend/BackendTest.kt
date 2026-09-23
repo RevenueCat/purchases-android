@@ -75,12 +75,14 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.io.IOException
+import java.net.SocketTimeoutException
 import java.net.URL
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 private const val API_KEY = "TEST_API_KEY"
 
@@ -1690,6 +1692,66 @@ class BackendTest {
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
+            mockClient.performRequest(
+                mockBaseURL,
+                Endpoint.GetOfferings(appUserID),
+                body = null,
+                postFieldsToSign = null,
+                any(),
+            )
+        }
+    }
+
+    @Test
+    fun `timed out offerings request releases coalesced callers and allows a later request`() {
+        val firstRequestStarted = CountDownLatch(1)
+        val releaseFirstRequest = CountDownLatch(1)
+        val requestCount = AtomicInteger(0)
+        every {
+            mockClient.performRequest(
+                mockBaseURL,
+                Endpoint.GetOfferings(appUserID),
+                body = null,
+                postFieldsToSign = null,
+                any(),
+            )
+        } answers {
+            if (requestCount.incrementAndGet() == 1) {
+                firstRequestStarted.countDown()
+                assertThat(releaseFirstRequest.await(defaultTimeout, TimeUnit.MILLISECONDS)).isTrue()
+                throw SocketTimeoutException("Read timed out")
+            }
+            HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS, noOfferingsResponse)
+        }
+
+        val coalescedErrors = CountDownLatch(2)
+        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _, _ ->
+            fail<Unit>("Should be error")
+        }, onError = { _, _ ->
+            coalescedErrors.countDown()
+        })
+        assertThat(firstRequestStarted.await(defaultTimeout, TimeUnit.MILLISECONDS)).isTrue()
+        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _, _ ->
+            fail<Unit>("Should be error")
+        }, onError = { _, _ ->
+            coalescedErrors.countDown()
+        })
+
+        releaseFirstRequest.countDown()
+
+        assertThat(coalescedErrors.await(defaultTimeout, TimeUnit.MILLISECONDS)).isTrue()
+        assertThat(requestCount).hasValue(1)
+
+        val laterSuccess = CountDownLatch(1)
+        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _, _ ->
+            laterSuccess.countDown()
+        }, onError = { _, _ ->
+            fail<Unit>("Should be success")
+        })
+
+        assertThat(laterSuccess.await(defaultTimeout, TimeUnit.MILLISECONDS)).isTrue()
+        assertThat(requestCount).hasValue(2)
+        verify(exactly = 2) {
             mockClient.performRequest(
                 mockBaseURL,
                 Endpoint.GetOfferings(appUserID),
