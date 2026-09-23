@@ -18,8 +18,11 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.LinkInteractionListener
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.TextStyle
@@ -65,8 +68,11 @@ private val parser = Parser.builder()
 /**
  * Tracks state during markdown AST traversal, specifically for handling
  * underline tags that span across multiple AST nodes.
+ *
+ * @param uriHandler Opens links. Screen readers activate a link through its listener rather than a tap, and without
+ * one it would open the URL directly, skipping this handler.
  */
-internal class MarkdownState {
+internal class MarkdownState(val uriHandler: UriHandler? = null) {
     private val underlineStartPositions = mutableListOf<Int>()
 
     val underlineDepth: Int
@@ -215,9 +221,10 @@ private fun MDHeading(
     }
 
     val padding = if (heading.parent is Document) 8.dp else 0.dp
+    val uriHandler = LocalUriHandler.current
     Box(modifier = modifier.padding(bottom = padding)) {
         val text = buildAnnotatedString {
-            appendMarkdownChildren(heading, color, allowLinks, baseFontWeight = fontWeight)
+            appendMarkdownChildren(heading, color, allowLinks, fontWeight, MarkdownState(uriHandler))
         }
         val resolvedTextStyle = resolveMarkdownTextStyle(
             style = overriddenStyle,
@@ -262,10 +269,11 @@ private fun MDParagraph(
                 textAlign = textAlign ?: TextAlign.Unspecified,
             ),
         )
-        val styledText = remember(paragraph, resolvedTextStyle, color, allowLinks, fontWeight) {
+        val uriHandler = LocalUriHandler.current
+        val styledText = remember(paragraph, resolvedTextStyle, color, allowLinks, fontWeight, uriHandler) {
             buildAnnotatedString {
                 pushStyle(resolvedTextStyle.toSpanStyle())
-                appendMarkdownChildren(paragraph as Node, color, allowLinks, baseFontWeight = fontWeight)
+                appendMarkdownChildren(paragraph as Node, color, allowLinks, fontWeight, MarkdownState(uriHandler))
                 pop()
             }
         }
@@ -312,10 +320,11 @@ private fun MDBulletList(
         allowLinks = allowLinks,
         textFillMaxWidth = textFillMaxWidth,
     ) {
+        val uriHandler = LocalUriHandler.current
         val text = buildAnnotatedString {
             pushStyle(resolvedTextStyle.toSpanStyle())
             append("$marker ")
-            appendMarkdownChildren(it, color, allowLinks, baseFontWeight = fontWeight)
+            appendMarkdownChildren(it, color, allowLinks, fontWeight, MarkdownState(uriHandler))
             pop()
         }
         MarkdownText(
@@ -362,10 +371,11 @@ private fun MDOrderedList(
         allowLinks = allowLinks,
         textFillMaxWidth = textFillMaxWidth,
     ) {
+        val uriHandler = LocalUriHandler.current
         val text = buildAnnotatedString {
             pushStyle(resolvedTextStyle.toSpanStyle())
             append("${number++}$delimiter ")
-            appendMarkdownChildren(it, color, allowLinks, baseFontWeight = fontWeight)
+            appendMarkdownChildren(it, color, allowLinks, fontWeight, MarkdownState(uriHandler))
             pop()
         }
         MarkdownText(
@@ -432,6 +442,7 @@ private fun MDListItems(
     }
 }
 
+@Suppress("ModifierReused")
 @Composable
 private fun MDBlockQuote(
     blockQuote: BlockQuote,
@@ -452,12 +463,13 @@ private fun MDBlockQuote(
             }
             .padding(start = 16.dp, top = 4.dp, bottom = 4.dp),
     ) {
+        val uriHandler = LocalUriHandler.current
         val text = buildAnnotatedString {
             pushStyle(
                 MaterialTheme.typography.bodyLarge.toSpanStyle()
                     .plus(SpanStyle(fontStyle = FontStyle.Italic)),
             )
-            appendMarkdownChildren(blockQuote, color, allowLinks, baseFontWeight)
+            appendMarkdownChildren(blockQuote, color, allowLinks, baseFontWeight, MarkdownState(uriHandler))
             pop()
         }
         Text(text, modifier)
@@ -583,8 +595,7 @@ private fun AnnotatedString.Builder.appendMarkdownChildren(
             }
             is Link -> {
                 if (allowLinks) {
-                    val underline = SpanStyle(color, textDecoration = TextDecoration.Underline)
-                    withLink(LinkAnnotation.Url(child.destination, TextLinkStyles(underline))) {
+                    withLink(child.toLinkAnnotation(color, state.uriHandler)) {
                         appendMarkdownChildren(child, color, allowLinks = true, baseFontWeight = baseFontWeight, state)
                     }
                 } else {
@@ -600,6 +611,12 @@ private fun AnnotatedString.Builder.appendMarkdownChildren(
         }
         child = child.next
     }
+}
+
+private fun Link.toLinkAnnotation(color: Color, uriHandler: UriHandler?): LinkAnnotation.Url {
+    val underline = SpanStyle(color, textDecoration = TextDecoration.Underline)
+    val listener = uriHandler?.let { handler -> LinkInteractionListener { handler.openUri(destination) } }
+    return LinkAnnotation.Url(destination, TextLinkStyles(underline), listener)
 }
 
 internal fun AnnotatedString.Builder.handleInlineHTML(tag: String, state: MarkdownState) {

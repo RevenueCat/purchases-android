@@ -117,7 +117,6 @@
     <ID>ModifierNotUsedAtRoot:UserScreen.kt$modifier = modifier .fillMaxWidth() .weight(1f, true) .padding(horizontal = 32.dp)</ID>
     <ID>ModifierNotUsedAtRoot:UserScreen.kt$modifier = modifier.padding(16.dp)</ID>
     <ID>ModifierNotUsedAtRoot:UserScreen.kt$modifier = modifier.padding(8.dp)</ID>
-    <ID>ModifierReused:Markdown.kt$Box( modifier = modifier .drawBehind { drawLine( color = color, strokeWidth = 2f, start = Offset(12.dp.value, 0f), end = Offset(12.dp.value, size.height), ) } .padding(start = 16.dp, top = 4.dp, bottom = 4.dp), ) { val text = buildAnnotatedString { pushStyle( MaterialTheme.typography.bodyLarge.toSpanStyle() .plus(SpanStyle(fontStyle = FontStyle.Italic)), ) appendMarkdownChildren(blockQuote, color, allowLinks, baseFontWeight) pop() } Text(text, modifier) }</ID>
     <ID>ModifierReused:Markdown.kt$Box(modifier = modifier.padding(start = 8.dp, bottom = padding)) { Text( text = fencedCodeBlock.literal, style = TextStyle(fontFamily = FontFamily.Monospace), modifier = modifier, ) }</ID>
     <ID>ModifierReused:Markdown.kt$Text( text = fencedCodeBlock.literal, style = TextStyle(fontFamily = FontFamily.Monospace), modifier = modifier, )</ID>
     <ID>ModifierReused:Markdown.kt$Text(text, modifier)</ID>
