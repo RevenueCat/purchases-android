@@ -41,7 +41,10 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.io.IOException
 import java.util.UUID
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -168,6 +171,7 @@ class DiagnosticsTrackerTest {
             null,
             HTTPResult.Origin.CACHE,
             SignatureVerificationResult.NotRequested,
+            deviceClockOffset = null,
             isRetry = false,
             connectionErrorReason = ConnectionErrorReason.NO_NETWORK,
         )
@@ -204,6 +208,7 @@ class DiagnosticsTrackerTest {
             1234,
             HTTPResult.Origin.BACKEND,
             SignatureVerificationResult.NotRequested,
+            deviceClockOffset = null,
             isRetry = false,
             connectionErrorReason = ConnectionErrorReason.NO_NETWORK,
         )
@@ -240,6 +245,7 @@ class DiagnosticsTrackerTest {
             1234,
             HTTPResult.Origin.BACKEND,
             SignatureVerificationResult.NotRequested,
+            deviceClockOffset = null,
             isRetry = true,
             connectionErrorReason = ConnectionErrorReason.NO_NETWORK,
         )
@@ -274,6 +280,7 @@ class DiagnosticsTrackerTest {
             null,
             HTTPResult.Origin.BACKEND,
             SignatureVerificationResult.Verified,
+            deviceClockOffset = null,
             isRetry = false,
             connectionErrorReason = null,
         )
@@ -296,6 +303,7 @@ class DiagnosticsTrackerTest {
             "response_code" to 200,
             "etag_hit" to false,
             "verification_result" to "FAILED",
+            "verification_failure_reason" to "MISSING_SIGNATURE",
             "is_retry" to false,
         )
         every { diagnosticsFileHelper.appendEvent(any()) } just Runs
@@ -308,6 +316,7 @@ class DiagnosticsTrackerTest {
             null,
             HTTPResult.Origin.BACKEND,
             SignatureVerificationResult.Failed(FailureReason.MISSING_SIGNATURE),
+            deviceClockOffset = null,
             isRetry = false,
             connectionErrorReason = null,
         )
@@ -316,6 +325,69 @@ class DiagnosticsTrackerTest {
                 event.name == DiagnosticsEntryName.HTTP_REQUEST_PERFORMED && event.properties == expectedProperties
             })
         }
+    }
+
+    @Test
+    fun `trackHttpRequestPerformed tracks the failure reason of a failed result`() {
+        val properties = trackHttpRequestPerformedProperties(
+            verificationResult = SignatureVerificationResult.Failed(FailureReason.INTERMEDIATE_KEY_EXPIRED),
+        )
+        Assertions.assertThat(properties["verification_result"]).isEqualTo("FAILED")
+        Assertions.assertThat(properties["verification_failure_reason"]).isEqualTo("INTERMEDIATE_KEY_EXPIRED")
+    }
+
+    @Test
+    fun `trackHttpRequestPerformed does not track a failure reason for a verified result`() {
+        val properties = trackHttpRequestPerformedProperties(verificationResult = SignatureVerificationResult.Verified)
+        Assertions.assertThat(properties).doesNotContainKey("verification_failure_reason")
+    }
+
+    @Test
+    fun `trackHttpRequestPerformed tracks positive device clock offset in whole minutes`() {
+        val properties = trackHttpRequestPerformedProperties(deviceClockOffset = 120.minutes)
+        Assertions.assertThat(properties["verification_device_clock_offset_minutes"]).isEqualTo(120L)
+    }
+
+    @Test
+    fun `trackHttpRequestPerformed tracks negative device clock offset in whole minutes`() {
+        val properties = trackHttpRequestPerformedProperties(deviceClockOffset = (-120).minutes)
+        Assertions.assertThat(properties["verification_device_clock_offset_minutes"]).isEqualTo(-120L)
+    }
+
+    @Test
+    fun `trackHttpRequestPerformed truncates sub-minute device clock offsets`() {
+        val properties = trackHttpRequestPerformedProperties(deviceClockOffset = 59.seconds)
+        Assertions.assertThat(properties["verification_device_clock_offset_minutes"]).isEqualTo(0L)
+    }
+
+    @Test
+    fun `trackHttpRequestPerformed does not track device clock offset without a request date`() {
+        val properties = trackHttpRequestPerformedProperties(deviceClockOffset = null)
+        Assertions.assertThat(properties).doesNotContainKey("verification_device_clock_offset_minutes")
+    }
+
+    private fun trackHttpRequestPerformedProperties(
+        verificationResult: SignatureVerificationResult = SignatureVerificationResult.Verified,
+        deviceClockOffset: Duration? = null,
+    ): Map<String, Any> {
+        val trackedEvents = mutableListOf<DiagnosticsEntry>()
+        every { diagnosticsFileHelper.appendEvent(capture(trackedEvents)) } just Runs
+        diagnosticsTracker.trackHttpRequestPerformed(
+            "test.host.com",
+            Endpoint.GetOfferings("test id"),
+            1234L.milliseconds,
+            true,
+            200,
+            null,
+            HTTPResult.Origin.BACKEND,
+            verificationResult,
+            deviceClockOffset,
+            isRetry = false,
+            connectionErrorReason = null,
+        )
+        Assertions.assertThat(trackedEvents).hasSize(1)
+        Assertions.assertThat(trackedEvents.single().name).isEqualTo(DiagnosticsEntryName.HTTP_REQUEST_PERFORMED)
+        return trackedEvents.single().properties
     }
 
     @Test
