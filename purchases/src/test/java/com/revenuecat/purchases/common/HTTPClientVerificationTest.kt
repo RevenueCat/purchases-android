@@ -327,6 +327,56 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
     }
 
     @Test
+    fun `performRequest passes a null request time to signing when the header is not numeric`() {
+        val endpoint = Endpoint.GetCustomerInfo("test-user-id")
+        val expectedResult = HTTPResult.createResult(
+            verificationResult = SignatureVerificationResult.Failed(FailureReason.MISSING_REQUEST_TIME),
+        )
+        every {
+            mockETagManager.getHTTPResultFromCacheOrBackend(
+                expectedResult.responseCode,
+                expectedResult.payloadText,
+                eTagHeader = any(),
+                urlString = server.url(endpoint.getPath()).toString(),
+                refreshETag = false,
+                requestDate = null,
+                verificationResult = expectedResult.verificationResult,
+                isLoadShedderResponse = false,
+                isFallbackURL = false,
+            )
+        } returns expectedResult
+        server.enqueue(
+            MockResponse()
+                .setBody(expectedResult.payloadText)
+                .setResponseCode(expectedResult.responseCode)
+                .setHeader(HTTPResult.SIGNATURE_HEADER_NAME, "test-signature")
+                .setHeader(HTTPResult.REQUEST_TIME_HEADER_NAME, "not-a-number"),
+        )
+        mockSigningResult(expectedResult.verificationResult)
+
+        val result = client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            requestHeaders = emptyMap()
+        )
+
+        assertThat(result.requestDate).isNull()
+        verify(exactly = 1) {
+            mockSigningManager.verifyResponse(
+                urlPath = any(),
+                signatureString = "test-signature",
+                nonce = any(),
+                bodyBytes = any(),
+                requestTime = null,
+                eTag = any(),
+                postFieldsToSignHeader = any(),
+            )
+        }
+    }
+
+    @Test
     fun `performRequest on enforced client throws verification error`() {
         every { mockSigningManager.signatureVerificationMode } returns mockk<SignatureVerificationMode.Enforced>()
         val endpoint = Endpoint.GetCustomerInfo("test-user-id")

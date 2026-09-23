@@ -798,15 +798,13 @@ internal class HTTPClient(
 
     private fun getETagHeader(connection: URLConnection) = connection.getHeaderField(HTTPResult.ETAG_HEADER_NAME)
     private fun getRequestTimeHeader(connection: URLConnection): String? {
-        return connection.getHeaderField(HTTPResult.REQUEST_TIME_HEADER_NAME)?.takeIf { it.isNotBlank() }
+        // A header that isn't epoch millis counts as missing for both signing and the request date, as on iOS.
+        // Throwing here would escape every catch on the request path and be rethrown on the main thread.
+        return connection.getHeaderField(HTTPResult.REQUEST_TIME_HEADER_NAME)?.takeIf { it.toLongOrNull() != null }
     }
 
     private fun getRequestDateHeader(connection: URLConnection): Date? {
-        // toLongOrNull: a non-numeric header degrades to no date. Throwing here would escape every catch on the
-        // request path (they cover IOException and friends) and be rethrown on the main thread by the Dispatcher.
-        return getRequestTimeHeader(connection)?.toLongOrNull()?.let {
-            Date(it)
-        }
+        return getRequestTimeHeader(connection)?.let { Date(it.toLong()) }
     }
 
     private fun getLoadShedderHeader(connection: URLConnection): Boolean {
