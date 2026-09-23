@@ -22,6 +22,7 @@ import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
 import com.revenuecat.purchases.common.networking.MapConverter
 import com.revenuecat.purchases.common.networking.NullPointerReadingErrorStreamException
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.networking.TokenManager
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SignatureVerificationResult
@@ -62,7 +63,7 @@ internal interface RequestResponseListener {
 }
 
 @OptIn(InternalRevenueCatAPI::class)
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "LargeClass")
 internal class HTTPClient(
     private val appConfig: AppConfig,
     private val eTagManager: ETagManager,
@@ -76,6 +77,10 @@ internal class HTTPClient(
     private val forceServerErrorStrategy: ForceServerErrorStrategy? = null,
     private val requestResponseListener: RequestResponseListener? = null,
     private val timeoutManager: HTTPTimeoutManager = HTTPTimeoutManager(appConfig, dateProvider),
+    // Injected so IAM-authenticated requests can override the API-key Bearer header below (step 20).
+    // Nullable, defaulting to null, so every existing construction site (production and test) keeps
+    // compiling unchanged; a null tokenManager behaves exactly like a disabled one (no override, ever).
+    private val tokenManager: TokenManager? = null,
 ) {
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal companion object {
@@ -169,6 +174,12 @@ internal class HTTPClient(
         refreshETag: Boolean = false,
         fallbackBaseURLs: List<URL> = emptyList(),
         fallbackURLIndex: Int = 0,
+        // The current app user id, used (when IAM login is enabled and a tokenManager is injected) to look
+        // up a bearer token to authenticate this request with instead of the API key -- see
+        // iamAuthorizationHeaders(). Null for endpoints with no natural per-user identity (diagnostics,
+        // events, project-scoped config) or callers that haven't been updated to pass one yet; either way
+        // this request just falls back to requestHeaders' own (API-key) Authorization header, unchanged.
+        appUserID: String? = null,
     ): HTTPResult {
         fun canUseFallback(): Boolean =
             endpoint.supportsFallbackBaseURLs && fallbackURLIndex in fallbackBaseURLs.indices
@@ -190,6 +201,7 @@ internal class HTTPClient(
                 refreshETag,
                 fallbackBaseURLs,
                 fallbackURLIndex + 1,
+                appUserID,
             )
         }
 
@@ -210,6 +222,7 @@ internal class HTTPClient(
                 postFieldsToSign = postFieldsToSign,
                 requestHeaders = requestHeaders,
                 refreshETag = refreshETag,
+                appUserID = appUserID,
             )
             if (outcome.canFailOverToNextSource) {
                 val nextSource = sourceToRetryOn(source, sourceAttempts, endpoint, outcome.connectionException)
@@ -249,6 +262,7 @@ internal class HTTPClient(
                                 refreshETag = true,
                                 fallbackBaseURLs,
                                 fallbackURLIndex,
+                                appUserID,
                             )
                         }
 
@@ -297,6 +311,7 @@ internal class HTTPClient(
         postFieldsToSign: List<Pair<String, String>>?,
         requestHeaders: Map<String, String>,
         refreshETag: Boolean,
+        appUserID: String?,
     ): AttemptOutcome {
         var callSuccessful = false
         val requestStartTime = dateProvider.now
@@ -316,6 +331,7 @@ internal class HTTPClient(
                 postFieldsToSign,
                 requestHeaders,
                 refreshETag,
+                appUserID,
                 onResponseReceived = { responseCode = it },
                 onVerificationFailed = { verificationResult, requestDate ->
                     failedVerificationResult = verificationResult
@@ -386,9 +402,15 @@ internal class HTTPClient(
         postFieldsToSign: List<Pair<String, String>>?,
         requestHeaders: Map<String, String>,
         refreshETag: Boolean,
+        appUserID: String?,
         onResponseReceived: (responseCode: Int) -> Unit,
         onVerificationFailed: (verificationResult: SignatureVerificationResult, requestDate: Date?) -> Unit,
     ): HTTPResult? {
+        // IAM login (when enabled, injected, and given a token to find) overrides the caller-supplied
+        // Authorization header for every non-auth endpoint; auth endpoints (isIAMEndpoint) and everything
+        // else fall back to requestHeaders' own API-key header, unchanged.
+        val effectiveHeaders = iamAuthorizationHeaders(appUserID, endpoint)?.let { requestHeaders + it }
+            ?: requestHeaders
         val jsonBody = body?.let { mapConverter.convertToJSON(it) }
         val path = endpoint.getPath(useFallback = isFallbackURL)
         val connection: HttpURLConnection
@@ -421,7 +443,7 @@ internal class HTTPClient(
                 signingManager.getPostParamsForSigningHeaderIfNeeded(endpoint, postFieldsToSign)
             }
             val headers = getHeaders(
-                requestHeaders,
+                effectiveHeaders,
                 fullURL,
                 refreshETag,
                 nonce,
@@ -525,7 +547,7 @@ internal class HTTPClient(
                         url = fullURL.toString(),
                         method = connection.requestMethod,
                         requestHeaders = getHeaders(
-                            requestHeaders,
+                            effectiveHeaders,
                             fullURL,
                             refreshETag,
                             nonce,
@@ -594,6 +616,29 @@ internal class HTTPClient(
                 isFallbackURL,
             )
         }
+    }
+
+    /**
+     * The `Authorization` header override IAM login supplies for [appUserID] on a request to [endpoint],
+     * or `null` when nothing should override [performCall]'s caller-supplied `requestHeaders` -- IAM login
+     * disabled or not yet wired up ([tokenManager] is `null`, or non-`null` but [TokenManager.enabled] is
+     * `false`), no [appUserID] to look a token up for (many call sites don't have one to pass yet -- see
+     * `HTTPClient.performRequest`'s own doc), [endpoint] is itself one of the auth endpoints (which always
+     * authenticate with the API key, never a bearer token from a previous session), or there's simply no
+     * token currently stored for [appUserID] (falls back to the API key rather than an empty header).
+     *
+     * Uses [TokenManager.authorizationHeadersSync] rather than the plain suspend
+     * [TokenManager.authorizationHeaders]: every caller of this function runs synchronously (a
+     * [com.revenuecat.purchases.common.Dispatcher.AsyncCall]'s `call()`, not a coroutine), and this runs on
+     * every single request, so the synchronous twin's mutex-guarded in-memory cache matters here more than
+     * anywhere else in this bridge -- see that method's own doc.
+     */
+    private fun iamAuthorizationHeaders(appUserID: String?, endpoint: Endpoint): Map<String, String>? {
+        val manager = tokenManager?.takeIf { it.enabled } ?: return null
+        return appUserID
+            ?.takeUnless { endpoint.isIAMEndpoint }
+            ?.let { manager.authorizationHeadersSync(it, endpoint.isIAMEndpoint) }
+            ?.takeIf { it.isNotEmpty() }
     }
 
     private fun toCurlRequest(httpRequest: HTTPRequest): String {
