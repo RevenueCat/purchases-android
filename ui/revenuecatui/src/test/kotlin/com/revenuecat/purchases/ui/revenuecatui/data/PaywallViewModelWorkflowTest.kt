@@ -75,6 +75,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -500,6 +501,22 @@ class PaywallViewModelWorkflowTest {
             // instead of it escaping to Dispatchers.Default and resuming after resetMain().
             backgroundDispatcher = testDispatcher,
         )
+    }
+
+    private fun TestScope.createInjectedWorkflowVm(traceId: String?): PaywallViewModelImpl {
+        val vm = PaywallViewModelImpl(
+            resourceProvider = MockResourceProvider(),
+            purchases = purchases,
+            options = PaywallOptions.Builder(dismissRequest = {})
+                .injectedWorkflow(workflow, testOfferings, uiConfig, traceId)
+                .build(),
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+            backgroundDispatcher = testDispatcher,
+        )
+        advanceUntilIdle()
+        return vm
     }
 
     private fun makeListener(): PaywallListener = mockk {
@@ -2122,6 +2139,31 @@ class PaywallViewModelWorkflowTest {
             .single { it.type == PaywallEventType.IMPRESSION }
         assertThat(impression.data.traceId).isNotNull()
         assertThat(impression.data.traceId).isEqualTo(startedTraceId)
+    }
+
+    @Test
+    fun `an injected workflow reports the trace id it was given`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createInjectedWorkflowVm(traceId = "checkpoint-trace")
+        vm.trackPaywallImpressionIfNeeded()
+
+        assertThat(captured.filterIsInstance<WorkflowEvent.StepStarted>().single().traceId)
+            .isEqualTo("checkpoint-trace")
+        val impression = captured.filterIsInstance<PaywallEvent>()
+            .single { it.type == PaywallEventType.IMPRESSION }
+        assertThat(impression.data.traceId).isEqualTo("checkpoint-trace")
+    }
+
+    @Test
+    fun `an injected workflow without a trace id still gets one`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        createInjectedWorkflowVm(traceId = null)
+
+        assertThat(captured.filterIsInstance<WorkflowEvent.StepStarted>().single().traceId).isNotBlank()
     }
 
     @Test

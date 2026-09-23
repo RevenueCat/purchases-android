@@ -30,4 +30,29 @@ class SignatureVerificationResultTest {
             assertThat(result.reason).isEqualTo(reason)
         }
     }
+
+    @Test
+    fun `failure reason is only exposed for failed results`() {
+        assertThat(SignatureVerificationResult.NotRequested.failureReason).isNull()
+        assertThat(SignatureVerificationResult.Verified.failureReason).isNull()
+        FailureReason.values().forEach { reason ->
+            assertThat(SignatureVerificationResult.Failed(reason).failureReason).isEqualTo(reason)
+        }
+    }
+
+    @Test
+    fun `failure reason names match the diagnostics wire values shared with iOS`() {
+        assertThat(FailureReason.values().map { it.name }).containsExactly(
+            "MISSING_SIGNATURE",
+            "MISSING_REQUEST_TIME",
+            "MISSING_SIGNED_PAYLOAD",
+            "INVALID_SIGNATURE_FORMAT",
+            "INVALID_INTERMEDIATE_KEY_SIGNATURE",
+            "INVALID_INTERMEDIATE_KEY",
+            "INVALID_RESPONSE_PAYLOAD",
+            "INTERMEDIATE_KEY_EXPIRED",
+            "PAYLOAD_SIGNATURE_MISMATCH",
+            "UNKNOWN",
+        )
+    }
 }

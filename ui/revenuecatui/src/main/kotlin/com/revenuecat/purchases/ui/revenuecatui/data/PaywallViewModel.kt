@@ -1145,7 +1145,8 @@ internal class PaywallViewModelImpl(
         workflowStepStateCache.clear()
         _workflowState.value = null
         if (isNewWorkflowImpression) {
-            workflowTraceId = UUID.randomUUID().toString()
+            workflowTraceId = options.injectedWorkflowTraceId.takeIf { workflow == options.injectedWorkflow }
+                ?: UUID.randomUUID().toString()
             // Fresh presentation: start the shared store empty; each step registers its declarations as it builds.
             // Rebuilds (navigation, color change) reuse the existing store so values persist across screens.
             currentWorkflowStateStore = PaywallStateStore(emptyMap())

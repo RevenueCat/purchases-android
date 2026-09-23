@@ -27,6 +27,9 @@ internal sealed class SignatureVerificationResult {
     val isFailed: Boolean
         get() = this is Failed
 
+    val failureReason: FailureReason?
+        get() = (this as? Failed)?.reason
+
     val result: VerificationResult
         get() = when (this) {
             NotRequested -> VerificationResult.NOT_REQUESTED

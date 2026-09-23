@@ -63,7 +63,13 @@ class CheckpointWorkflowPresenterTest {
         mockPurchases = mockk {
             every { currentActivity } answers { controller.get() }
             coEvery { internalResolveCp(any(), any()) } returns
-                CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk(), checkpointRuleId = null)
+                CheckpointResolution.MatchedWorkflow(
+                    mockk(),
+                    mockk(),
+                    mockk(),
+                    checkpointRuleId = null,
+                    traceId = "trace-id",
+                )
             every { getCustomerInfo(CacheFetchPolicy.CACHE_ONLY, any()) } answers {
                 secondArg<ReceiveCustomerInfoCallback>()
                     .onError(PurchasesError(PurchasesErrorCode.CustomerInfoError, "No cache."))
@@ -97,7 +103,13 @@ class CheckpointWorkflowPresenterTest {
 
     @Test
     fun `the workflow is presented against the offerings the checkpoint resolved to`() {
-        val resolution = CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk(), checkpointRuleId = null)
+        val resolution = CheckpointResolution.MatchedWorkflow(
+            mockk(),
+            mockk(),
+            mockk(),
+            checkpointRuleId = null,
+            traceId = "trace-id",
+        )
         coEvery { mockPurchases.internalResolveCp(any(), any()) } returns resolution
 
         launchCheckpoint()
