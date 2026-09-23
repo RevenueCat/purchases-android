@@ -58,6 +58,7 @@ internal data class CheckpointEvent(
     val workflowId: String? = null,
     val offeringId: String? = null,
     val checkpointRuleId: String? = null,
+    val traceId: String? = null,
     val id: UUID = UUID.randomUUID(),
     val timestamp: Date = Date(),
 ) : FeatureEvent
@@ -75,6 +76,7 @@ internal fun CheckpointResolution.toCheckpointEvent(identifier: String, timestam
             result = CheckpointHitResult.PRESENT_UI,
             workflowId = workflow.id,
             checkpointRuleId = checkpointRuleId,
+            traceId = traceId,
             timestamp = timestamp,
         )
         is CheckpointResolution.MatchedOffering -> CheckpointEvent(
@@ -83,6 +85,7 @@ internal fun CheckpointResolution.toCheckpointEvent(identifier: String, timestam
             result = CheckpointHitResult.RETURN_DATA,
             offeringId = offering.identifier,
             checkpointRuleId = checkpointRuleId,
+            traceId = UUID.randomUUID().toString(),
             timestamp = timestamp,
         )
         // A NoAction carries no rule id by construction: CONFIGURATION_UNAVAILABLE is about this SDK's state
@@ -91,6 +94,7 @@ internal fun CheckpointResolution.toCheckpointEvent(identifier: String, timestam
             identifier = identifier,
             checkpointType = CheckpointType.CUSTOM,
             result = reason.toCheckpointHitResult(),
+            traceId = UUID.randomUUID().toString(),
             timestamp = timestamp,
         )
     }

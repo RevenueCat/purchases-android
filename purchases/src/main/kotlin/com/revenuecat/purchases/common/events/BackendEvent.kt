@@ -241,6 +241,7 @@ internal sealed class BackendEvent : Event {
      * @property workflowID The workflow the checkpoint matched, when it matched one.
      * @property offeringID The offering the checkpoint resolved to, when it resolved to one.
      * @property checkpointRuleID The checkpoint rule that was served, when the checkpoint matched one.
+     * @property traceID Shared with the events of the workflow run the checkpoint started, if any.
      */
     @Serializable
     @SerialName("checkpoint")
@@ -263,6 +264,8 @@ internal sealed class BackendEvent : Event {
         val offeringID: String? = null,
         @SerialName("checkpoint_rule_id")
         val checkpointRuleID: String? = null,
+        @SerialName("trace_id")
+        val traceID: String? = null,
     ) : BackendEvent()
 
     /**

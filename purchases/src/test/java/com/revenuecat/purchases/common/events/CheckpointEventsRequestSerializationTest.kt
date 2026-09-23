@@ -36,7 +36,8 @@ class CheckpointEventsRequestSerializationTest {
                         "\"result\":\"present_ui\"," +
                         "\"workflow_id\":\"wf_123\"," +
                         "\"offering_id\":\"offering_id\"," +
-                        "\"checkpoint_rule_id\":\"rule_123\"" +
+                        "\"checkpoint_rule_id\":\"rule_123\"," +
+                        "\"trace_id\":\"trace_123\"" +
                     "}" +
                 "]" +
             "}",
@@ -82,7 +83,13 @@ class CheckpointEventsRequestSerializationTest {
     @Test
     fun `omits the outcome fields when they are absent`() {
         val requestString = JsonProvider.defaultJson.encodeToString(
-            requestWith(result = null, workflowID = null, offeringID = null, checkpointRuleID = null),
+            requestWith(
+                result = null,
+                workflowID = null,
+                offeringID = null,
+                checkpointRuleID = null,
+                traceID = null,
+            ),
         )
 
         assertThat(requestString).endsWith("\"timestamp\":1699270688995}]}")
@@ -96,11 +103,22 @@ class CheckpointEventsRequestSerializationTest {
         assertThat(JsonProvider.defaultJson.decodeFromString<EventsRequest>(requestString)).isEqualTo(request)
     }
 
+    @Test
+    fun `decodes an event stored without a trace id`() {
+        val storedWithoutTraceId = JsonProvider.defaultJson.encodeToString(requestWith(traceID = null))
+        assertThat(storedWithoutTraceId).doesNotContain("trace_id")
+
+        val decoded = JsonProvider.defaultJson.decodeFromString<EventsRequest>(storedWithoutTraceId)
+
+        assertThat((decoded.events.single() as BackendEvent.Checkpoint).traceID).isNull()
+    }
+
     private fun requestWith(
         result: CheckpointHitResult? = CheckpointHitResult.PRESENT_UI,
         workflowID: String? = "wf_123",
         offeringID: String? = "offering_id",
         checkpointRuleID: String? = "rule_123",
+        traceID: String? = "trace_123",
     ) = EventsRequest(
         listOf(
             BackendEvent.Checkpoint(
@@ -116,6 +134,7 @@ class CheckpointEventsRequestSerializationTest {
                 workflowID = workflowID,
                 offeringID = offeringID,
                 checkpointRuleID = checkpointRuleID,
+                traceID = traceID,
             ),
         ),
     )
