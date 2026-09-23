@@ -28,6 +28,9 @@ class E2ETestsApplication : Application() {
                         apiKey = BuildConfig.API_KEY,
                     )
                         .dangerousSettings(testStoreInReleaseBuildSettings)
+                        // Pins the app user id so experiment enrollment is deterministic across
+                        // runs. Null keeps the generated anonymous id.
+                        .appUserID(activity.intent?.getStringExtra(APP_USER_ID_EXTRA_KEY))
                         .build(),
                     initialForceServerErrorStrategy = activity.intent?.getStringExtra(FORCE_SERVER_ERROR_EXTRA_KEY),
                 )
@@ -45,6 +48,7 @@ class E2ETestsApplication : Application() {
 
     internal companion object {
         private const val APP_LOCALE_EXTRA_KEY = "app_locale"
+        private const val APP_USER_ID_EXTRA_KEY = "app_user_id"
         private const val FORCE_SERVER_ERROR_EXTRA_KEY = "force_server_error_strategy"
 
         // This app runs as a minified release build in the Maestro e2e CI jobs (to exercise

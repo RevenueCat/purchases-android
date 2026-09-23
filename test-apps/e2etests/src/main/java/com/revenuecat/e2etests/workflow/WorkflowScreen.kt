@@ -44,6 +44,7 @@ private sealed interface OfferingState {
 fun WorkflowScreen(
     modifier: Modifier = Modifier,
     usersCountOverride: Int? = null,
+    offeringId: String? = null,
 ) {
     var offeringState by remember { mutableStateOf<OfferingState>(OfferingState.Loading) }
     var showPaywall by remember { mutableStateOf(false) }
@@ -51,7 +52,7 @@ fun WorkflowScreen(
 
     LaunchedEffect(Unit) {
         customerInfo = loadCustomerInfo()
-        offeringState = loadWorkflowOffering()
+        offeringState = loadWorkflowOffering(offeringId ?: WORKFLOW_OFFERING_ID)
     }
 
     // Keep the entitlement surface live so it flips to "active" after a purchase.
@@ -143,9 +144,9 @@ private suspend fun loadCustomerInfo(): CustomerInfo? = try {
     null
 }
 
-private suspend fun loadWorkflowOffering(): OfferingState = try {
-    Purchases.sharedInstance.awaitOfferings().getOffering(WORKFLOW_OFFERING_ID)?.let(OfferingState::Loaded)
-        ?: OfferingState.Failed("Offering '$WORKFLOW_OFFERING_ID' not found")
+private suspend fun loadWorkflowOffering(offeringId: String): OfferingState = try {
+    Purchases.sharedInstance.awaitOfferings().getOffering(offeringId)?.let(OfferingState::Loaded)
+        ?: OfferingState.Failed("Offering '$offeringId' not found")
 } catch (e: PurchasesException) {
     OfferingState.Failed(e.message ?: "Failed to load offerings")
 }
