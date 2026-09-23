@@ -12,6 +12,7 @@ import androidx.compose.ui.node.RootForTest
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
@@ -72,10 +73,10 @@ internal class PackageComponentAccessibilityInstrumentedTests {
         assertThat(yearlyInfo.isEnabled).isTrue()
         assertThat(yearlyInfo.isCheckable).isTrue()
         assertThat(yearlyInfo.isChecked).isTrue()
-        assertThat(yearlyInfo.stateDescription?.toString()).isEqualTo("Selected")
+        assertThat(AccessibilityNodeInfoCompat.wrap(yearlyInfo).stateDescription?.toString()).isEqualTo("Selected")
         assertThat(monthlyInfo.isEnabled).isTrue()
         assertThat(monthlyInfo.isChecked).isFalse()
-        assertThat(monthlyInfo.stateDescription?.toString()).isEqualTo("Not selected")
+        assertThat(AccessibilityNodeInfoCompat.wrap(monthlyInfo).stateDescription?.toString()).isEqualTo("Not selected")
     }
 
     private fun RootForTest.nodeInfo(semanticsId: Int): AccessibilityNodeInfo = composeTestRule.runOnIdle {
