@@ -334,6 +334,19 @@ class TokenManagerTest {
         assertThat(manager.authorizationHeaders("user", isIAMEndpoint = true)).isEmpty()
     }
 
+    @Test
+    fun `authorizationHeaders is empty for the real auth endpoints' isIAMEndpoint flag`() = runTest {
+        val manager = manager()
+        manager.saveTokens("user", accessToken = "access-token-value", refreshToken = "refresh", idToken = "id")
+
+        val authEndpoints = listOf(Endpoint.TokenLogin, Endpoint.TokenRefresh, Endpoint.TokenLogout)
+        for (endpoint in authEndpoints) {
+            assertThat(manager.authorizationHeaders("user", isIAMEndpoint = endpoint.isIAMEndpoint))
+                .withFailMessage { "Endpoint $endpoint expected no Authorization header" }
+                .isEmpty()
+        }
+    }
+
     // endregion
 
     // region bulk operations

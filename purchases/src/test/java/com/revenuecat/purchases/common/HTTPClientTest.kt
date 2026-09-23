@@ -57,6 +57,7 @@ import java.net.URL
 import java.net.URLConnection
 import java.net.URLStreamHandler
 import java.util.Date
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
 import org.robolectric.annotation.Config as AnnotationConfig
 
@@ -1394,7 +1395,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     fun `performRequest tracks http request performed diagnostic event if request successful`() {
         val dateProvider = mockk<DateProvider>()
         val diagnosticsTracker = mockk<DiagnosticsTracker>()
-        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
 
         client = createClient(diagnosticsTracker = diagnosticsTracker, dateProvider = dateProvider)
 
@@ -1403,10 +1404,14 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val requestStartTime = 1676379370000L // Tuesday, February 14, 2023 12:56:10:000 PM GMT
         val requestEndTime = 1676379370123L // Tuesday, February 14, 2023 12:56:10:123 PM GMT
         val responseTime = (requestEndTime - requestStartTime).milliseconds
+        // Server clock is 2 hours behind the device clock at the end of the request.
+        val deviceClockOffset = 2.hours
+        val requestDate = Date(requestEndTime - deviceClockOffset.inWholeMilliseconds)
 
         enqueue(
             endpoint.getPath(),
-            expectedResult = HTTPResult.createResult()
+            expectedResult = HTTPResult.createResult(requestDate = requestDate),
+            requestDateHeader = requestDate,
         )
 
         every { dateProvider.now } returnsMany listOf(Date(requestStartTime), Date(requestEndTime))
@@ -1424,6 +1429,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 backendErrorCode = null,
                 HTTPResult.Origin.BACKEND,
                 SignatureVerificationResult.NotRequested,
+                deviceClockOffset,
                 isRetry = false,
                 connectionErrorReason = null,
             )
@@ -1434,7 +1440,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     fun `performRequest tracks http request performed diagnostic event if request fails`() {
         val dateProvider = mockk<DateProvider>()
         val diagnosticsTracker = mockk<DiagnosticsTracker>()
-        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
 
         client = createClient(diagnosticsTracker = diagnosticsTracker, dateProvider = dateProvider)
 
@@ -1465,6 +1471,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 backendErrorCode,
                 HTTPResult.Origin.BACKEND,
                 SignatureVerificationResult.NotRequested,
+                deviceClockOffset = null,
                 isRetry = false,
                 connectionErrorReason = null,
             )
@@ -1475,7 +1482,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     fun `performRequest tracks http request performed diagnostic event if request throws Exception`() {
         val dateProvider = mockk<DateProvider>()
         val diagnosticsTracker = mockk<DiagnosticsTracker>()
-        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
         every { dateProvider.now } returns Date(1676379370000) // Tuesday, February 14, 2023 12:56:10 PM GMT
         client = createClient(diagnosticsTracker = diagnosticsTracker, dateProvider = dateProvider)
 
@@ -1511,6 +1518,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                     backendErrorCode = null,
                     resultOrigin = null,
                     SignatureVerificationResult.NotRequested,
+                    deviceClockOffset = null,
                     isRetry = false,
                     connectionErrorReason = null,
                 )
@@ -1523,7 +1531,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     @Test
     fun `performRequest tracks connection error if response has no status code`() {
         val diagnosticsTracker = mockk<DiagnosticsTracker>()
-        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
         every { mockSigningManager.shouldVerifyEndpoint(any()) } returns true
         every { mockSigningManager.createRandomNonce() } returns "test-nonce"
         every {
@@ -1559,6 +1567,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 backendErrorCode = null,
                 resultOrigin = null,
                 SignatureVerificationResult.NotRequested,
+                deviceClockOffset = null,
                 isRetry = false,
                 connectionErrorReason = ConnectionErrorReason.OTHER,
             )
@@ -1568,7 +1577,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     @Test
     fun `if there's an error getting ETag, retry call passes track diagnostics parameter isRetry to true`() {
         val diagnosticsTracker = mockk<DiagnosticsTracker>()
-        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
         client = createClient(diagnosticsTracker = diagnosticsTracker)
 
         val response =
@@ -1632,6 +1641,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 null,
                 HTTPResult.Origin.BACKEND,
                 SignatureVerificationResult.NotRequested,
+                deviceClockOffset = null,
                 isRetry = true,
                 connectionErrorReason = null,
             )
@@ -1872,7 +1882,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     @Test
     fun `if performRequest uses a fallback host URL, then the correct track diagnostics calls happen`() {
         val diagnosticsTracker = mockk<DiagnosticsTracker>()
-        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
         client = createClient(diagnosticsTracker = diagnosticsTracker)
 
         // This test requires an endpoint that supports fallback host URLs
@@ -1915,6 +1925,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 null,
                 HTTPResult.Origin.BACKEND,
                 SignatureVerificationResult.NotRequested,
+                deviceClockOffset = null,
                 isRetry = false,
                 connectionErrorReason = null,
             )
@@ -1930,6 +1941,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 null,
                 HTTPResult.Origin.BACKEND,
                 SignatureVerificationResult.NotRequested,
+                deviceClockOffset = null,
                 isRetry = false,
                 connectionErrorReason = null,
             )

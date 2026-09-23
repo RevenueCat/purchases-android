@@ -183,7 +183,13 @@ class CheckpointsManagerTest {
 
     @Test
     fun `the workflow window's options carry the workflow and report its outcomes`() = runTest(dispatcher) {
-        val resolution = CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk(), checkpointRuleId = null)
+        val resolution = CheckpointResolution.MatchedWorkflow(
+            mockk(),
+            mockk(),
+            mockk(),
+            checkpointRuleId = null,
+            traceId = "trace-id",
+        )
         resolvesTo(resolution)
         val customerInfo = mockk<CustomerInfo>()
         val storeTransaction = mockk<StoreTransaction>()
@@ -194,6 +200,7 @@ class CheckpointsManagerTest {
 
         val options = manager.paywallOptions(currentCallId()) { dismissals += it }!!
         assertThat(options.injectedWorkflow).isSameAs(resolution.workflow)
+        assertThat(options.injectedWorkflowTraceId).isEqualTo(resolution.traceId)
         options.listener!!.onPurchaseCompleted(customerInfo, storeTransaction)
         options.dismissRequestWithExitOffering!!(null, PaywallResult.Error(error), PaywallDismissReason.NAVIGATED_BACK)
         assertThat(dismissals).containsExactly(true)
@@ -273,7 +280,13 @@ class CheckpointsManagerTest {
     @Test
     fun `offering checkpoint cannot present while a UI checkpoint is being presented`() = runTest(dispatcher) {
         coEvery { mockPurchases.internalResolveCp(any(), any()) } returnsMany listOf(
-            CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk(), checkpointRuleId = null),
+            CheckpointResolution.MatchedWorkflow(
+                mockk(),
+                mockk(),
+                mockk(),
+                checkpointRuleId = null,
+                traceId = "trace-id",
+            ),
             CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null),
         )
         val presentedCall = launch { runCheckpoint() }
@@ -824,7 +837,13 @@ class CheckpointsManagerTest {
         manager.paywallPresenter = PaywallPresenter { _, _ -> }
         coEvery { mockPurchases.internalResolveCp(any(), any()) } returnsMany listOf(
             CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null),
-            CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk(), checkpointRuleId = null),
+            CheckpointResolution.MatchedWorkflow(
+                mockk(),
+                mockk(),
+                mockk(),
+                checkpointRuleId = null,
+                traceId = "trace-id",
+            ),
         )
         val presenterCall = launch { runCheckpoint() }
 
@@ -973,7 +992,13 @@ class CheckpointsManagerTest {
     }
 
     private fun resolvesToWorkflow() {
-        resolvesTo(CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk(), checkpointRuleId = null))
+        resolvesTo(CheckpointResolution.MatchedWorkflow(
+            mockk(),
+            mockk(),
+            mockk(),
+            checkpointRuleId = null,
+            traceId = "trace-id",
+        ))
     }
 
     private fun currentCallId(): String = presentedCallIds.last()
