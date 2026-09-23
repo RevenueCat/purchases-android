@@ -30,12 +30,15 @@ public sealed class CheckpointResolution {
      *
      * [checkpointRuleId] identifies the rule that was served, for the hit event to attribute. It is null when
      * the rules topic did not carry an id for that rule.
+     *
+     * [traceId] is shared by the hit event and every event of the workflow run, so they can be joined.
      */
     public data class MatchedWorkflow(
         val workflow: PublishedWorkflow,
         val uiConfig: UiConfig,
         val offerings: Offerings,
         val checkpointRuleId: String?,
+        val traceId: String,
     ) : CheckpointResolution()
 
     /** Nothing should be served for this checkpoint; the user continues uninterrupted. */

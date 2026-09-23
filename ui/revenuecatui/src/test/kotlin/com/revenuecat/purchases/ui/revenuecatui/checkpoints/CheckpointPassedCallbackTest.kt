@@ -269,7 +269,13 @@ class CheckpointPassedCallbackTest {
     }
 
     private fun resolvesToWorkflow() {
-        resolvesTo(CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk(), checkpointRuleId = null))
+        resolvesTo(CheckpointResolution.MatchedWorkflow(
+            mockk(),
+            mockk(),
+            mockk(),
+            checkpointRuleId = null,
+            traceId = "trace-id",
+        ))
     }
 
     private fun cachedCustomerInfoHasActive(vararg identifiers: String) {
