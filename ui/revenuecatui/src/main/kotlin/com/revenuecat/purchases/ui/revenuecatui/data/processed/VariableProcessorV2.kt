@@ -124,6 +124,7 @@ internal object VariableProcessorV2 {
         countFrom: CountdownComponent.CountFrom = CountdownComponent.CountFrom.DAYS,
         customVariables: Map<String, CustomVariableValue> = emptyMap(),
         defaultCustomVariables: Map<String, CustomVariableValue> = emptyMap(),
+        spoken: Boolean = false,
     ): String = template.replaceVariablesWithValues { variable, functions ->
         getVariableValue(
             variableIdentifier = variable,
@@ -141,7 +142,65 @@ internal object VariableProcessorV2 {
             countFrom = countFrom,
             customVariables = customVariables,
             defaultCustomVariables = defaultCustomVariables,
+            spoken = spoken,
         )
+    }.let { rendered -> if (spoken) expandPeriodAbbreviations(rendered, localizedVariableKeys) else rendered }
+
+    /**
+     * Both sides come from the paywall's localizations, so expansion stays in its language. Long forms are
+     * included because `product.period_abbreviated` is spoken as the long form, and copy often types "/month".
+     */
+    private val spokenPeriodKeys = listOf(
+        VariableLocalizationKey.DAY_SHORT to VariableLocalizationKey.DAILY,
+        VariableLocalizationKey.WEEK_SHORT to VariableLocalizationKey.WEEKLY,
+        VariableLocalizationKey.MONTH_SHORT to VariableLocalizationKey.MONTHLY,
+        VariableLocalizationKey.YEAR_SHORT to VariableLocalizationKey.YEARLY,
+        VariableLocalizationKey.ANNUAL_SHORT to VariableLocalizationKey.ANNUALLY,
+        VariableLocalizationKey.DAY to VariableLocalizationKey.DAILY,
+        VariableLocalizationKey.WEEK to VariableLocalizationKey.WEEKLY,
+        VariableLocalizationKey.MONTH to VariableLocalizationKey.MONTHLY,
+        VariableLocalizationKey.YEAR to VariableLocalizationKey.YEARLY,
+        VariableLocalizationKey.ANNUAL to VariableLocalizationKey.ANNUALLY,
+    )
+
+    private val urlRegex = "[A-Za-z][A-Za-z0-9+.-]*://[^\\s)]+".toRegex()
+
+    /**
+     * Rewrites "$5.83/mo" as "$5.83 monthly". Paywall copy types the separator literally
+     * ("{{ product.price_per_month }}/mo"), which no variable substitution reaches.
+     */
+    fun expandPeriodAbbreviations(
+        text: String,
+        localizedVariableKeys: Map<VariableLocalizationKey, String>,
+    ): String {
+        val replacements = spokenPeriodKeys
+            .mapNotNull { (writtenKey, spokenKey) ->
+                val written = localizedVariableKeys[writtenKey]?.takeIf { it.isNotEmpty() }
+                val spokenWord = localizedVariableKeys[spokenKey]?.takeIf { it.isNotEmpty() }
+                if (written != null && spokenWord != null) written to spokenWord else null
+            }
+            // Longest first, so "/month" is taken by the long form and not left to "mo".
+            .sortedByDescending { (written, _) -> written.length }
+            .map { (written, spokenWord) ->
+                // Trailing guard so "/mo" does not match inside a spelled-out "/month".
+                Regex("/\\s*${Regex.escape(written)}(?!\\p{L})", RegexOption.IGNORE_CASE) to " $spokenWord"
+            }
+
+        // A URL path segment can read exactly like an abbreviation ("day" is `day_short` in English),
+        // and rewriting one breaks the link.
+        return text.transformOutsideUrls { segment ->
+            replacements.fold(segment) { partial, (regex, spokenWord) -> partial.replace(regex) { spokenWord } }
+        }
+    }
+
+    private fun String.transformOutsideUrls(transform: (String) -> String): String = buildString {
+        var consumed = 0
+        urlRegex.findAll(this@transformOutsideUrls).forEach { match ->
+            append(transform(this@transformOutsideUrls.substring(consumed, match.range.first)))
+            append(match.value)
+            consumed = match.range.last + 1
+        }
+        append(transform(this@transformOutsideUrls.substring(consumed)))
     }
 
     private fun String.replaceVariablesWithValues(
@@ -187,6 +246,7 @@ internal object VariableProcessorV2 {
         countFrom: CountdownComponent.CountFrom,
         customVariables: Map<String, CustomVariableValue>,
         defaultCustomVariables: Map<String, CustomVariableValue>,
+        spoken: Boolean,
     ): String {
         val functions = functionIdentifiers.mapNotNull { findFunction(it, variableConfig.functionCompatibilityMap) }
 
@@ -206,18 +266,22 @@ internal object VariableProcessorV2 {
         return if (variable == null) {
             ""
         } else {
-            val result = variable.getValue(
-                localizedVariableKeys = localizedVariableKeys,
-                variableDataProvider = variableDataProvider,
-                packageContext = packageContext,
-                rcPackage = rcPackage,
-                subscriptionOption = subscriptionOption,
-                currencyLocale = currencyLocale,
-                dateLocale = dateLocale,
-                date = date,
-                countdownTime = countdownTime,
-                countFrom = countFrom,
-            )?.let { processedVariable ->
+            val valueOf: (Variable) -> String? = {
+                it.getValue(
+                    localizedVariableKeys = localizedVariableKeys,
+                    variableDataProvider = variableDataProvider,
+                    packageContext = packageContext,
+                    rcPackage = rcPackage,
+                    subscriptionOption = subscriptionOption,
+                    currencyLocale = currencyLocale,
+                    dateLocale = dateLocale,
+                    date = date,
+                    countdownTime = countdownTime,
+                    countFrom = countFrom,
+                )
+            }
+            val value = if (spoken) variable.getSpokenValue(rcPackage, valueOf) else valueOf(variable)
+            val result = value?.let { processedVariable ->
                 functions.fold(processedVariable) { accumulator, function ->
                     accumulator.processFunction(function, currencyLocale)
                 }
@@ -376,6 +440,23 @@ internal object VariableProcessorV2 {
             "Paywall function '$functionIdentifier' is not supported and no backwards compatible " +
                 "replacement found.",
         )
+
+    /**
+     * Spoken counterparts of the abbreviated variables: "$1.24 monthly" rather than "$1.24/mo", and "month" rather
+     * than "mo".
+     */
+    private fun Variable.getSpokenValue(rcPackage: Package?, valueOf: (Variable) -> String?): String? = when (this) {
+        Variable.PRODUCT_PRICE_PER_PERIOD,
+        Variable.PRODUCT_PRICE_PER_PERIOD_ABBREVIATED,
+        -> valueOf(Variable.PRODUCT_PRICE)?.let { price ->
+            val periodly = valueOf(Variable.PRODUCT_PERIODLY)
+            if (rcPackage?.hasNoBillingPeriod != false || periodly.isNullOrEmpty()) price else "$price $periodly"
+        }
+        Variable.PRODUCT_PERIOD_ABBREVIATED -> valueOf(Variable.PRODUCT_PERIOD)
+        Variable.PRODUCT_OFFER_PERIOD_ABBREVIATED -> valueOf(Variable.PRODUCT_OFFER_PERIOD)
+        Variable.PRODUCT_SECONDARY_OFFER_PERIOD_ABBREVIATED -> valueOf(Variable.PRODUCT_SECONDARY_OFFER_PERIOD)
+        else -> valueOf(this)
+    }
 
     @Suppress("LongMethod", "CyclomaticComplexMethod", "LongParameterList", "NestedBlockDepth")
     private fun Variable.getValue(
