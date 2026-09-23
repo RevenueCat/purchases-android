@@ -5,15 +5,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -27,6 +29,7 @@ import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
+import com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
@@ -42,19 +45,16 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
+import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.validatePaywallComponentsDataOrNull
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 import com.revenuecat.purchases.ui.revenuecatui.helpers.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
-import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import org.assertj.core.api.Assertions.assertThat
-import androidx.compose.ui.semantics.SemanticsProperties
-import androidx.compose.ui.test.SemanticsMatcher
-import com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent
-import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -539,5 +539,105 @@ class PackageComponentViewTests {
         monthly.assertIsSelected().assertIsEnabled()
         assertThat(trackedInteractions).isEqualTo(1)
     }
+
+
+    @Test
+    fun `Should select before tracking, and still report the previous package as origin`(): Unit =
+        with(composeTestRule) {
+            // Arrange
+            val textColor = ColorScheme(ColorInfo.Hex(Color.Black.toArgb()))
+            val defaultLocaleIdentifier = LocaleId("en_US")
+            val textKey = LocalizationKey("key")
+            val localizations = nonEmptyMapOf(
+                defaultLocaleIdentifier to nonEmptyMapOf(
+                    textKey to LocalizationData.Text("Package"),
+                )
+            )
+            val componentYearly = PackageComponent(
+                packageId = packageYearly.identifier,
+                isSelectedByDefault = false,
+                stack = StackComponent(
+                    components = listOf(TextComponent(text = textKey, color = textColor)),
+                )
+            )
+            val componentMonthly = PackageComponent(
+                packageId = packageMonthly.identifier,
+                isSelectedByDefault = false,
+                stack = StackComponent(
+                    components = listOf(TextComponent(text = textKey, color = textColor)),
+                )
+            )
+            val data = PaywallComponentsData(
+                id = "paywall_id",
+                templateName = "template",
+                assetBaseURL = URL("https://assets.pawwalls.com"),
+                componentsConfig = ComponentsConfig(
+                    base = PaywallComponentsConfig(
+                        stack = StackComponent(components = listOf(componentYearly, componentMonthly)),
+                        background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                        stickyFooter = null,
+                    ),
+                ),
+                componentsLocalizations = localizations,
+                defaultLocaleIdentifier = defaultLocaleIdentifier,
+            )
+            val offering = Offering(
+                identifier = offeringId,
+                serverDescription = "description",
+                metadata = emptyMap(),
+                availablePackages = listOf(packageYearly, packageMonthly),
+                paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+            )
+            val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+            val state = offering.toComponentsPaywallState(validated)
+
+            val styleFactory = StyleFactory(localizations = localizations, offering = offering)
+            val styleYearly = styleFactory.create(componentYearly).getOrThrow().componentStyle as PackageComponentStyle
+            val styleMonthly =
+                styleFactory.create(componentMonthly).getOrThrow().componentStyle as PackageComponentStyle
+
+            val origins = mutableListOf<String?>()
+            val destinations = mutableListOf<String?>()
+            // What the selection already was by the time tracking ran. Tracking is what reaches the
+            // app's PaywallListener, and anything it does there happens on this same main thread
+            // message, so the selection has to be applied before it rather than after.
+            val selectedWhenTracked = mutableListOf<String?>()
+            val tracker = PaywallComponentInteractionTracker { interaction ->
+                origins.add(interaction.originPackageIdentifier)
+                destinations.add(interaction.destinationPackageIdentifier)
+                selectedWhenTracked.add(state.selectedPackageInfo?.rcPackage?.identifier)
+            }
+
+            // Act
+            setContent {
+                Column {
+                    PackageComponentView(
+                        style = styleYearly,
+                        state = state,
+                        clickHandler = { },
+                        componentInteractionTracker = tracker,
+                        modifier = Modifier.testTag("yearly"),
+                    )
+                    PackageComponentView(
+                        style = styleMonthly,
+                        state = state,
+                        clickHandler = { },
+                        componentInteractionTracker = tracker,
+                        modifier = Modifier.testTag("monthly"),
+                    )
+                }
+            }
+
+            onNodeWithTag("yearly").performClick()
+            onNodeWithTag("monthly").performClick()
+            waitForIdle()
+
+            // Assert
+            assertThat(selectedWhenTracked)
+                .containsExactly(packageYearly.identifier, packageMonthly.identifier)
+            assertThat(origins).containsExactly(null, packageYearly.identifier)
+            assertThat(destinations)
+                .containsExactly(packageYearly.identifier, packageMonthly.identifier)
+        }
 
 }
