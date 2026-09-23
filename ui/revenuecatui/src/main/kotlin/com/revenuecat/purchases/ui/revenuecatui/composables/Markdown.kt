@@ -602,6 +602,41 @@ private fun AnnotatedString.Builder.appendMarkdownChildren(
     }
 }
 
+/**
+ * The words a screen reader should speak for [markdown]: formatting, HTML tags and link targets removed, one line
+ * per block.
+ */
+internal fun markdownHasLinks(markdown: String): Boolean {
+    fun Node.hasLink(): Boolean {
+        var child = firstChild
+        while (child != null) {
+            if (child is Link || child.hasLink()) return true
+            child = child.next
+        }
+        return false
+    }
+    return parser.parse(markdown).hasLink()
+}
+
+internal fun markdownPlainText(markdown: String): String {
+    val blocks = mutableListOf<String>()
+    fun collect(node: Node) {
+        if (node is Paragraph || node is Heading) {
+            blocks += buildAnnotatedString {
+                appendMarkdownChildren(node, Color.Unspecified, allowLinks = false, baseFontWeight = null)
+            }.text
+        } else {
+            var child = node.firstChild
+            while (child != null) {
+                collect(child)
+                child = child.next
+            }
+        }
+    }
+    collect(parser.parse(markdown))
+    return blocks.joinToString("\n")
+}
+
 internal fun AnnotatedString.Builder.handleInlineHTML(tag: String, state: MarkdownState) {
     // Handle <u> and </u> tags for underline support
     when (tag) {
