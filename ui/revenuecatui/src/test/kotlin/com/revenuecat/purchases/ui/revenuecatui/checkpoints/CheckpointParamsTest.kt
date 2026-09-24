@@ -157,8 +157,8 @@ class CheckpointParamsTest {
             .setCustomVariables(
                 mapOf(
                     "my_property" to CustomVariableValue.String("kept"),
+                    "2fast" to CustomVariableValue.String("kept"),
                     "my.property" to CustomVariableValue.String("dropped"),
-                    "2fast" to CustomVariableValue.String("dropped"),
                     "has space" to CustomVariableValue.String("dropped"),
                     "my-property" to CustomVariableValue.String("dropped"),
                     "" to CustomVariableValue.String("dropped"),
@@ -166,7 +166,11 @@ class CheckpointParamsTest {
             )
             .build()
 
-        assertThat(params.customVariables)
-            .isEqualTo(mapOf("my_property" to CustomVariableValue.String("kept")))
+        assertThat(params.customVariables).isEqualTo(
+            mapOf(
+                "my_property" to CustomVariableValue.String("kept"),
+                "2fast" to CustomVariableValue.String("kept"),
+            ),
+        )
     }
 }
