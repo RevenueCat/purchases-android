@@ -409,8 +409,15 @@ jobs:
       - android/save_build_cache
       - run:
           name: Install awscli
+          # Signature check per https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html;
+          # the fingerprint pins the committed key to the one AWS publishes.
           command: |
+            gpg --batch --with-colons --show-keys scripts/awscli-public-key.asc \
+              | grep -q '^fpr:::::::::FB5DB77FD5C118B80511ADA8A6310ACC4672475C:$'
+            gpg --batch --import scripts/awscli-public-key.asc
             curl -sSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
+            curl -sSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip.sig" -o /tmp/awscliv2.sig
+            gpg --batch --verify /tmp/awscliv2.sig /tmp/awscliv2.zip
             unzip -q /tmp/awscliv2.zip -d /tmp
             sudo /tmp/aws/install
       - run:
