@@ -383,7 +383,6 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java
       - android/restore_gradle_cache
-      - install-awscli
       - run:
           name: Detekt
           command: ./gradlew detektAll
