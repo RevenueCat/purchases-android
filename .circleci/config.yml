@@ -25,7 +25,7 @@ aliases:
     executor:
       name: android/android_docker
       resource_class: xlarge
-      tag: 2025.04.1
+      tag: 2026.08.1
     environment:
       JVM_OPTS: -Xmx6g
       # org.gradle.caching=false: the Gradle build cache stays on for local/worktree builds
@@ -408,11 +408,11 @@ jobs:
       - android/save_gradle_cache
       - android/save_build_cache
       - run:
-          name: Install pip
-          command: sudo apt update && sudo apt install python3-pip
-      - run:
           name: Install awscli
-          command: sudo pip install awscli
+          command: |
+            curl -sSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
+            unzip -q /tmp/awscliv2.zip -d /tmp
+            sudo /tmp/aws/install
       - run:
           name: Deploy to S3
           command: aws s3 sync ~/project/docs/10.24.0-SNAPSHOT s3://purchases-docs/android/10.24.0-SNAPSHOT --delete
@@ -1315,7 +1315,7 @@ workflows:
           commit_paths: "purchases/src/main/kotlin/generated/com/revenuecat/purchases/PurchasesErrorCode.kt,purchases/api-defauts.txt,purchases/api-entitlement.txt"
           executor:
             name: android/android_docker
-            tag: 2025.04.1
+            tag: 2026.08.1
             resource_class: xlarge
           update_api_steps:
             - run:
