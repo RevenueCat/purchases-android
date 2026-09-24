@@ -30,7 +30,7 @@ aliases:
       JVM_OPTS: -Xmx6g
       # org.gradle.caching=false: the Gradle build cache stays on for local/worktree builds
       # (gradle.properties) but is forced off in CI. See PR description for why.
-      GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2 -Dorg.gradle.caching=false"
+      GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=4 -Dorg.gradle.caching=false"
 
   android-machine-emulator: &android-machine-emulator
     executor:
@@ -119,6 +119,24 @@ commands:
           path: examples/rcttester/build/outputs/bundle/release/rcttester-release.aab
       - android/save_gradle_cache
       - android/save_build_cache
+
+  restore-robolectric-cache:
+    description: "Restores the Robolectric android-all jars that unit tests download into ~/.m2 on first use."
+    steps:
+      - restore_cache:
+          name: Restore Robolectric jars
+          keys:
+            - robolectric-v1-{{ checksum "gradle/libs.versions.toml" }}
+            - robolectric-v1-
+
+  save-robolectric-cache:
+    steps:
+      - save_cache:
+          name: Save Robolectric jars
+          when: always
+          key: robolectric-v1-{{ checksum "gradle/libs.versions.toml" }}
+          paths:
+            - ~/.m2/repository/org/robolectric
 
   checkout-submodule:
     description: "Checks out a git submodule."
@@ -283,22 +301,21 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java
       - android/restore_gradle_cache
+      - restore-robolectric-cache
       - run:
           name: Run << parameters.flavor >> << parameters.build_type >> Tests
           command: |
             FLAVOR_CAPITALIZED=$(echo << parameters.flavor >> | sed 's/\b\(.\)/\u\1/')
             BUILD_TYPE_CAPITALIZED=$(echo << parameters.build_type >> | sed 's/\b\(.\)/\u\1/')
-            TASK="<< parameters.module_prefix >>test${FLAVOR_CAPITALIZED}${BUILD_TYPE_CAPITALIZED}UnitTest"
-            ./gradlew $TASK --parallel --no-daemon
+            TASKS="<< parameters.module_prefix >>test${FLAVOR_CAPITALIZED}${BUILD_TYPE_CAPITALIZED}UnitTest"
+            if [ "<< parameters.run_kover >>" = "true" ]; then
+              TASKS="$TASKS :purchases:koverXmlReportDefaultsRelease :purchases:koverHtmlReportDefaultsRelease"
+            fi
+            ./gradlew $TASKS --parallel --no-daemon
+      - save-robolectric-cache
       - when:
           condition: << parameters.run_kover >>
           steps:
-            - run:
-                name: Generate Kover HTML
-                command: ./gradlew purchases:koverHtmlReportDefaultsRelease
-            - run:
-                name: Generate Kover XML
-                command: ./gradlew purchases:koverXmlReportDefaultsRelease
             - codecov/upload:
                 file: purchases/build/reports/kover/reportDefaultsRelease.xml
       - run:
@@ -605,6 +622,7 @@ jobs:
           name: Build and run purchases integration tests
           command: |
             bundle exec fastlane android run_purchases_integration_tests backend_environment:'<< parameters.backend_environment >>' notify_slack:'<< parameters.notify_slack >>'
+      - android/save_gradle_cache
       - android/save_build_cache
       - store_test_results:
           path: purchases/build/outputs/androidTest-results
@@ -632,6 +650,7 @@ jobs:
           name: Build and run custom entitlement computation integration tests
           command: |
             bundle exec fastlane android run_custom_entitlement_computation_integration_tests
+      - android/save_gradle_cache
       - android/save_build_cache
       - store_test_results:
           path: purchases/build/outputs/androidTest-results
@@ -716,6 +735,7 @@ jobs:
             -PreleaseKeyAlias=$RELEASE_KEY_ALIAS \
             -PreleaseKeystorePassword=$RELEASE_KEYSTORE_PASSWORD \
             -PreleaseKeyPassword=$RELEASE_KEY_PASSWORD
+      - android/save_gradle_cache
       - android/save_build_cache
       - store_test_results:
           path: integration-tests/build/outputs/androidTest-results
@@ -732,17 +752,27 @@ jobs:
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/restore_gradle_cache
+      - restore-robolectric-cache
       - run:
           name: Run backend integration tests
           command: |
             bundle exec fastlane android run_backend_integration_tests
+      - save-robolectric-cache
       - android/save_build_cache
       - store_test_results:
           path: purchases/build/test-results
 
-  record-and-upload-paparazzi-revenuecatui-snapshots:
-    description: "Record new RevenueCatUI snapshots with Paparazzi and upload them to Emerge"
+  record-paparazzi-snapshots:
+    description: "Record a subset of the RevenueCat UI Paparazzi snapshots and hand them to the upload job"
     <<: *android-executor
+    parameters:
+      revenuecatui_tests:
+        type: string
+        description: "Comma-separated Gradle --tests patterns to record in ui:revenuecatui"
+      record_debugview:
+        type: boolean
+        default: false
+        description: "Whether this job also records the ui:debugview snapshots"
     steps:
       - checkout
       - revenuecat/setup-git-credentials
@@ -753,22 +783,66 @@ jobs:
           at: .
       - revenuecat/install-mise-tools:
           tools: java,ruby
-      - run:
-          name: Install Emerge CLI
-          # mise only shims binaries present at install time, so a gem executable
-          # needs a reshim to land on PATH.
-          command: |
-            gem install emerge
-            mise reshim
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/restore_gradle_cache
       - run:
-          name: Records new RevenueCat UI snapshots to become the new golden
-          command: bundle exec fastlane android record_paparazzi_screenshots gradle_module:ui:revenuecatui
+          name: Record RevenueCat UI snapshots
+          command: bundle exec fastlane android record_paparazzi_screenshots gradle_module:ui:revenuecatui tests:'<< parameters.revenuecatui_tests >>'
       - run:
-          name: Records new debug view snapshots to become the new golden
-          command: bundle exec fastlane android record_paparazzi_screenshots gradle_module:ui:debugview
+          # Each record job stages under its own name so the workspace layers never overlap.
+          name: Stage snapshots for the upload job
+          command: |
+            mkdir -p "paparazzi-snapshots/$CIRCLE_JOB"
+            cp -r ui/revenuecatui/src/test/snapshots/images "paparazzi-snapshots/$CIRCLE_JOB/revenuecatui"
+      - when:
+          condition: << parameters.record_debugview >>
+          steps:
+            - run:
+                name: Record debug view snapshots
+                command: bundle exec fastlane android record_paparazzi_screenshots gradle_module:ui:debugview
+            - run:
+                name: Stage debug view snapshots for the upload job
+                command: cp -r ui/debugview/src/test/snapshots/images "paparazzi-snapshots/$CIRCLE_JOB/debugview"
+      - persist_to_workspace:
+          root: .
+          paths:
+            - paparazzi-snapshots
+
+  record-and-upload-paparazzi-revenuecatui-snapshots:
+    description: "Merge the snapshots recorded by the record-paparazzi-* jobs and upload them to Emerge"
+    docker:
+      - image: cimg/ruby:3.2.0
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - restore_cache:
+          name: Restore Emerge CLI
+          keys:
+            - emerge-cli-v1-0.7.8
+      - run:
+          # The emerge gem pins xcodeproj to a line fastlane does not accept, so it lives outside the Gemfile.
+          name: Install Emerge CLI
+          command: |
+            export GEM_HOME="$HOME/emerge-cli"
+            [ -x "$GEM_HOME/bin/emerge" ] || gem install emerge -v 0.7.8 --no-document
+      - save_cache:
+          name: Save Emerge CLI
+          key: emerge-cli-v1-0.7.8
+          paths:
+            - ~/emerge-cli
+      - run:
+          name: Merge recorded snapshots
+          command: |
+            rm -rf ui/revenuecatui/src/test/snapshots/images ui/debugview/src/test/snapshots/images
+            mkdir -p ui/revenuecatui/src/test/snapshots/images ui/debugview/src/test/snapshots/images
+            for dir in paparazzi-snapshots/*/revenuecatui; do cp -r "$dir"/. ui/revenuecatui/src/test/snapshots/images/; done
+            for dir in paparazzi-snapshots/*/debugview; do cp -r "$dir"/. ui/debugview/src/test/snapshots/images/; done
+            echo "revenuecatui: $(find ui/revenuecatui/src/test/snapshots/images -name '*.png' | wc -l) snapshots"
+            echo "debugview: $(find ui/debugview/src/test/snapshots/images -name '*.png' | wc -l) snapshots"
+      - store_artifacts:
+          path: paparazzi-snapshots
       - run:
           name: Upload snapshots to Emerge
           command: |
@@ -790,7 +864,8 @@ jobs:
               PR_ARG="--pr-number $PR_NUM"
             fi
 
-            emerge upload snapshots \
+            export GEM_HOME="$HOME/emerge-cli"
+            "$GEM_HOME/bin/emerge" upload snapshots \
               --name "TestPurchasesUIAndroidCompatibility Paparazzi" \
               --id "com.revenuecat.testpurchasesuiandroidcompatibility.paparazzi" \
               --repo-name "RevenueCat/purchases-android" \
@@ -798,7 +873,6 @@ jobs:
               --client-library paparazzi \
               $PR_ARG \
               --project-root .
-      - android/save_build_cache
 
   record-and-push-paywall-template-screenshots:
     description: "Record new paywall template screenshots with Paparazzi and push them to the paywall-rendering-validation repository"
@@ -861,8 +935,15 @@ jobs:
           cache_prefix: ui-tests-v1
 
   run-maestro-tests:
-    description: "Run Maestro tests for E2E Tester app"
+    description: "Run Maestro tests for the E2E Tester app. One job per build type so each only assembles and tests one variant."
     <<: *android-machine-emulator
+    parameters:
+      build_type:
+        type: enum
+        enum: ["debug", "release"]
+      assemble_task:
+        type: enum
+        enum: ["assembleDebug", "assembleRelease"]
     steps:
       - checkout
       - attach_workspace:
@@ -876,28 +957,33 @@ jobs:
       - android/start_emulator:
           avd_name: test-e2e-tester
           # Test Store API key for the automated_sdk_tests RevenueCat project.
-          post_emulator_launch_assemble_command: ./gradlew test-apps:e2etests:assembleDebug test-apps:e2etests:assembleRelease -PMAESTRO_TEST_STORE_API_KEY=$MAESTRO_TEST_STORE_API_KEY
-      - android/restore_gradle_cache
+          post_emulator_launch_assemble_command: ./gradlew test-apps:e2etests:<< parameters.assemble_task >> -PMAESTRO_TEST_STORE_API_KEY=$MAESTRO_TEST_STORE_API_KEY
       - revenuecat/install-maestro
       - run:
-          # The minified release build exercises the SDK's consumer R8 rules end-to-end.
-          name: Run Maestro tests on minified release build
-          command: |
-            adb install -r test-apps/e2etests/build/outputs/apk/release/e2etests-release.apk
-            maestro test --exclude-tags debug-only --format junit --output maestro/report.xml maestro/e2e_tests/ maestro/workflows/
-      - run:
-          # Flows tagged debug-only force server errors through configureForE2ETests, which only
-          # exists in the SDK's debug variant, so they run against the debug build.
-          name: Run Maestro debug-only tests
-          command: |
-            adb install -r test-apps/e2etests/build/outputs/apk/debug/e2etests-debug.apk
-            maestro test --include-tags debug-only --format junit --output maestro/debug-report.xml maestro/workflows/
+          name: Install e2etests << parameters.build_type >> build
+          command: adb install -r test-apps/e2etests/build/outputs/apk/<< parameters.build_type >>/e2etests-<< parameters.build_type >>.apk
+      - when:
+          condition:
+            equal: [ release, << parameters.build_type >> ]
+          steps:
+            - run:
+                # The minified release build exercises the SDK's consumer R8 rules end-to-end.
+                name: Run Maestro tests on minified release build
+                command: maestro test --exclude-tags debug-only --format junit --output maestro/report.xml maestro/e2e_tests/ maestro/workflows/
+      - when:
+          condition:
+            equal: [ debug, << parameters.build_type >> ]
+          steps:
+            - run:
+                # Flows tagged debug-only force server errors through configureForE2ETests, which only
+                # exists in the SDK's debug variant, so they run against the debug build.
+                name: Run Maestro debug-only tests
+                command: maestro test --include-tags debug-only --format junit --output maestro/report.xml maestro/workflows/
+      - android/save_gradle_cache
       - store_artifacts:
           path: ~/.maestro/tests/
       - store_test_results:
           path: maestro/report.xml
-      - store_test_results:
-          path: maestro/debug-report.xml
 
   generate-baseline-profiles:
     description: "Generate baseline profiles using Gradle Managed Devices and open a PR"
@@ -1129,9 +1215,27 @@ workflows:
           requires:
             - prepare-tests
           <<: *non-main-branches
-      - record-and-upload-paparazzi-revenuecatui-snapshots:
+      - record-paparazzi-snapshots:
+          name: record-paparazzi-templates
+          revenuecatui_tests: "*TemplateSnapshotTest"
           requires:
             - prepare-tests
+      - record-paparazzi-snapshots:
+          name: record-paparazzi-preview-recorder
+          revenuecatui_tests: "*PaywallComponentsTemplatePreviewRecorder"
+          requires:
+            - prepare-tests
+      - record-paparazzi-snapshots:
+          name: record-paparazzi-rest
+          revenuecatui_tests: "*OverlappingFooterSnapshotTest,*WindowSizeConditionsSnapshotTest"
+          record_debugview: true
+          requires:
+            - prepare-tests
+      - record-and-upload-paparazzi-revenuecatui-snapshots:
+          requires:
+            - record-paparazzi-templates
+            - record-paparazzi-preview-recorder
+            - record-paparazzi-rest
       - run-revenuecatui-ui-tests:
           requires:
             - prepare-tests
@@ -1143,6 +1247,18 @@ workflows:
           requires:
             - prepare-tests
       - run-maestro-tests:
+          name: run-maestro-tests-release
+          build_type: release
+          assemble_task: assembleRelease
+          context:
+            - maestro
+          requires:
+            - prepare-tests
+          <<: *non-main-branches
+      - run-maestro-tests:
+          name: run-maestro-tests-debug
+          build_type: debug
+          assemble_task: assembleDebug
           context:
             - maestro
           requires:
@@ -1176,7 +1292,8 @@ workflows:
             - assemble-purchase-tester
             - assemble-paywall-tester-release
             - run-backend-integration-tests
-            - run-maestro-tests
+            - run-maestro-tests-release
+            - run-maestro-tests-debug
             - run-revenuecatui-ui-tests
             - run-integration-tests
             - run-purchases-integration-tests
