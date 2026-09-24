@@ -44,6 +44,15 @@ internal class GenerationGuardedCacheTest {
     }
 
     @Test
+    fun `store reports whether it applied`() {
+        val cache = GenerationGuardedCache<String>()
+
+        assertThat(cache.store(generation = 5, newValue = "high")).isTrue
+        assertThat(cache.store(generation = 2, newValue = "low")).isFalse
+        assertThat(cache.store(generation = 5, newValue = "same")).isTrue
+    }
+
+    @Test
     fun `a lower-generation store does not clobber a higher-generation value`() {
         val cache = GenerationGuardedCache<String>()
         cache.store(generation = 5, newValue = "high")

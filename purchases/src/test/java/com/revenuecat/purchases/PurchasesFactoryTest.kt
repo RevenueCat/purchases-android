@@ -226,6 +226,7 @@ class PurchasesFactoryTest {
         )
 
         assertThat(purchases.purchasesOrchestrator.audiencesConfigProvider).isNotNull()
+        assertThat(purchases.purchasesOrchestrator.sdkSettingsConfigProvider).isNotNull()
         purchases.close()
     }
 
@@ -296,6 +297,7 @@ class PurchasesFactoryTest {
         // The graph is constructed (non-null) but disabled: workflow reads refuse with ConfigurationError
         // before touching the network.
         assertThat(purchases.purchasesOrchestrator.audiencesConfigProvider).isNotNull()
+        assertThat(purchases.purchasesOrchestrator.sdkSettingsConfigProvider).isNotNull()
         assertThatExceptionOfType(PurchasesException::class.java)
             .isThrownBy { runBlocking { purchases.purchasesOrchestrator.getWorkflow("some-workflow") } }
             .matches { it.code == PurchasesErrorCode.ConfigurationError }
