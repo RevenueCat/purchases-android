@@ -108,9 +108,14 @@ internal object ConstrainedFillLayout {
                 }
             }
 
+            // Inside a scroll the max is infinite and the target falls back to the viewport (the min). Fill children
+            // still share that viewport, but the stack itself has to report its full content size or the scroll
+            // has no range and everything past the viewport is unreachable.
+            val measured = placeables.requireNoNulls().asList()
+            val contentSize = measured.sumOf { it.mainAxisSize(orientation) } + totalSpacing
             layoutAndPlace(
-                placeables = placeables.requireNoNulls().asList(),
-                mainAxisSize = targetMainAxisSize,
+                placeables = measured,
+                mainAxisSize = maxOf(targetMainAxisSize, contentSize),
                 constraints = constraints,
                 config = config,
                 spacing = spacingPx,
