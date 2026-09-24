@@ -317,11 +317,12 @@ jobs:
             FLAVOR_CAPITALIZED=$(echo << parameters.flavor >> | sed 's/\b\(.\)/\u\1/')
             BUILD_TYPE_CAPITALIZED=$(echo << parameters.build_type >> | sed 's/\b\(.\)/\u\1/')
             V="${FLAVOR_CAPITALIZED}${BUILD_TYPE_CAPITALIZED}"
-            ls -la --time-style=full-iso purchases/build/kotlin/compile${V}Kotlin/ purchases/build/kotlin/compile${V}Kotlin/cacheable 2>&1 | head -20
-            ls -la --time-style=full-iso purchases/src/main/kotlin/com/revenuecat/purchases/Purchases.kt .gradle/ 2>&1 | head
-            ./gradlew :purchases:compile${V}Kotlin :purchases:process${V}UnitTestResources :purchases:generate${V}BuildConfig --info --no-daemon 2>&1 \
-              | grep -E "not up-to-date because|is up-to-date|Skipping task|has changed|has been removed|has been added|Input property|Output property|Caching disabled|No history is available" \
-              | head -80
+            ./gradlew :purchases:compile${V}Kotlin :purchases:process${V}UnitTestResources --info --no-daemon > /tmp/gradle-info.log 2>&1 || true
+            grep -n -A6 -E "not up-to-date because|No history is available" /tmp/gradle-info.log | grep -vE "Caching disabled" | head -150 || true
+            echo "=== compile task lines"; grep -n -E "Task ':purchases:compile${V}Kotlin'" /tmp/gradle-info.log | head -20 || true
+            echo "=== process resources lines"; grep -n -E "Task ':purchases:process${V}UnitTestResources'" /tmp/gradle-info.log | head -20 || true
+      - store_artifacts:
+          path: /tmp/gradle-info.log
       - run:
           name: Run << parameters.flavor >> << parameters.build_type >> Tests
           command: |
