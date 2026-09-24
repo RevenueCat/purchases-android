@@ -3,7 +3,9 @@
 package com.revenuecat.purchases.ui.revenuecatui.data
 
 import android.app.Activity
+import android.os.Looper
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -72,6 +74,7 @@ import io.mockk.runs
 import io.mockk.verify
 import io.mockk.verifyOrder
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -92,7 +95,11 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Shadows.shadowOf
 import java.net.URL
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import kotlin.coroutines.CoroutineContext
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
@@ -1061,6 +1068,46 @@ class PaywallViewModelWorkflowTest {
             // It is the same single suspend path — the reads are invoked, they just resolve synchronously.
             coVerify(exactly = 1) { purchases.awaitGetWorkflow(workflow.id) }
         } finally {
+            Dispatchers.setMain(testDispatcher)
+        }
+    }
+
+    @Test
+    fun `warm cache pre-warm does not write step state inside the composition snapshot`() {
+        // Real Looper-backed Main, so viewModelScope behaves as on a device.
+        Dispatchers.resetMain()
+        val uncaught = mutableListOf<Throwable>()
+        val mainThread = Thread.currentThread()
+        val previousHandler = mainThread.uncaughtExceptionHandler
+        mainThread.uncaughtExceptionHandler = Thread.UncaughtExceptionHandler { _, e -> uncaught += e }
+        val backgroundDispatcher = FinishBeforeReturnDispatcher()
+        try {
+            coEvery { purchases.resolveWorkflow(offeringId) } returns WorkflowResolution.Found(workflow.id)
+            coEvery { purchases.awaitGetWorkflow(workflow.id) } returns fetchResult
+            coEvery { purchases.awaitGetUiConfig() } returns uiConfig
+
+            // Mirrors Recomposer.composing(): viewModel() constructs the VM inside a mutable snapshot.
+            val snapshot = Snapshot.takeMutableSnapshot()
+            val vm = snapshot.enter {
+                PaywallViewModelImpl(
+                    resourceProvider = MockResourceProvider(),
+                    purchases = purchases,
+                    options = PaywallOptions.Builder(dismissRequest = {}).build(),
+                    colorScheme = TestData.Constants.currentColorScheme,
+                    isDarkMode = false,
+                    shouldDisplayBlock = null,
+                    backgroundDispatcher = backgroundDispatcher,
+                )
+            }
+            snapshot.apply().check()
+            snapshot.dispose()
+            shadowOf(Looper.getMainLooper()).idle()
+
+            assertThat(uncaught).isEmpty()
+            assertThat(vm.workflowState.value?.stepStates?.keys).containsExactlyInAnyOrder("step-1", "step-2")
+        } finally {
+            mainThread.uncaughtExceptionHandler = previousHandler
+            backgroundDispatcher.close()
             Dispatchers.setMain(testDispatcher)
         }
     }
@@ -2744,4 +2791,16 @@ class PaywallViewModelWorkflowTest {
     }
 
     // endregion
+
+    /**
+     * Returns from dispatch() only after the block has run on another thread, so withContext's result is ready
+     * before its caller reaches the suspension point and it returns without suspending.
+     */
+    private class FinishBeforeReturnDispatcher : CoroutineDispatcher(), AutoCloseable {
+        private val executor = Executors.newSingleThreadExecutor()
+        override fun dispatch(context: CoroutineContext, block: Runnable) {
+            executor.submit(block).get(10, TimeUnit.SECONDS)
+        }
+        override fun close() = executor.shutdown()
+    }
 }
