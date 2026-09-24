@@ -19,6 +19,7 @@ import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
+import com.revenuecat.purchases.common.testBackendLanes
 import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.SyncDispatcher
@@ -59,8 +60,7 @@ class SubscriberAttributesPosterTests {
     )
     private var backend: Backend = Backend(
         mockAppConfig,
-        dispatcher,
-        dispatcher,
+        testBackendLanes(dispatcher, dispatcher),
         mockClient,
         backendHelper,
     )

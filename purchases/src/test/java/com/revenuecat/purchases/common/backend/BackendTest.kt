@@ -37,6 +37,7 @@ import com.revenuecat.purchases.common.networking.WebBillingProductsResponse
 import com.revenuecat.purchases.common.networking.WebBillingPurchaseOption
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.offlineentitlements.createProductEntitlementMapping
+import com.revenuecat.purchases.common.testBackendLanes
 import com.revenuecat.purchases.common.toMap
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.Period
@@ -126,8 +127,7 @@ class BackendTest {
     private val backendHelper = BackendHelper(API_KEY, dispatcher, mockAppConfig, mockClient)
     private var backend: Backend = Backend(
         mockAppConfig,
-        dispatcher,
-        dispatcher,
+        testBackendLanes(dispatcher, dispatcher),
         mockClient,
         backendHelper,
     )
@@ -145,15 +145,17 @@ class BackendTest {
     private var asyncBackendHelper: BackendHelper = BackendHelper(API_KEY, asyncDispatcher, mockAppConfig, mockClient)
     private var asyncBackend: Backend = Backend(
         mockAppConfig,
-        asyncDispatcher,
-        Dispatcher(
-            ThreadPoolExecutor(
-                1,
-                2,
-                0,
-                TimeUnit.MILLISECONDS,
-                LinkedBlockingQueue()
-            )
+        testBackendLanes(
+            asyncDispatcher,
+            Dispatcher(
+                ThreadPoolExecutor(
+                    1,
+                    2,
+                    0,
+                    TimeUnit.MILLISECONDS,
+                    LinkedBlockingQueue()
+                )
+            ),
         ),
         mockClient,
         asyncBackendHelper,
@@ -343,6 +345,20 @@ class BackendTest {
             onSuccess = { _, _, _ -> },
             onError = { _, _ -> }
         )
+    }
+
+    @Test
+    fun `close closes the default and remote config dispatchers but not the events dispatcher`() {
+        val defaultDispatcher = mockk<Dispatcher>(relaxed = true)
+        val eventsDispatcher = mockk<Dispatcher>(relaxed = true)
+        val remoteConfigDispatcher = mockk<Dispatcher>(relaxed = true)
+        val lanes = testBackendLanes(defaultDispatcher, eventsDispatcher, remoteConfigDispatcher)
+
+        Backend(mockAppConfig, lanes, mockClient, backendHelper).close()
+
+        verify(exactly = 1) { defaultDispatcher.close() }
+        verify(exactly = 1) { remoteConfigDispatcher.close() }
+        verify(exactly = 0) { eventsDispatcher.close() }
     }
 
     @Test

@@ -17,6 +17,7 @@ import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfiguration
+import com.revenuecat.purchases.common.testBackendLanes
 import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import io.mockk.CapturingSlot
 import io.mockk.every
@@ -72,16 +73,14 @@ class BackendGetRemoteConfigTest {
 
         backend = Backend(
             appConfig,
-            SyncDispatcher(),
-            SyncDispatcher(),
+            testBackendLanes(SyncDispatcher(), SyncDispatcher()),
             httpClient,
             backendHelper,
         )
 
         asyncBackend = Backend(
             appConfig,
-            asyncDispatcher1,
-            asyncDispatcher2,
+            testBackendLanes(asyncDispatcher1, asyncDispatcher2),
             httpClient,
             asyncBackendHelper,
         )
@@ -133,11 +132,9 @@ class BackendGetRemoteConfigTest {
         }
         val isolatedBackend = Backend(
             appConfig,
-            mainDispatcher,
-            SyncDispatcher(),
+            testBackendLanes(mainDispatcher, SyncDispatcher(), SyncDispatcher()),
             httpClient,
             BackendHelper("TEST_API_KEY", SyncDispatcher(), appConfig, httpClient),
-            SyncDispatcher(),
         )
 
         val config = "{\"hello\":\"world\"}".toByteArray()

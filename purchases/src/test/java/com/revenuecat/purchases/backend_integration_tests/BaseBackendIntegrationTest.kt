@@ -15,6 +15,7 @@ import com.revenuecat.purchases.common.RequestResponseListener
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.ETagPayloadStore
+import com.revenuecat.purchases.common.testBackendLanes
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
 import io.mockk.Runs
@@ -151,8 +152,7 @@ internal abstract class BaseBackendIntegrationTest {
         backendHelper = BackendHelper(apiKey(), dispatcher, appConfig, httpClient)
         backend = Backend(
             appConfig,
-            dispatcher,
-            diagnosticsDispatcher,
+            testBackendLanes(dispatcher, diagnosticsDispatcher),
             httpClient,
             backendHelper,
         )

@@ -346,6 +346,38 @@ class EndpointTest {
     }
 
     @Test
+    fun `remote config endpoints use the remote config lane`() {
+        assertThat(Endpoint.GetRemoteConfig("app").lane).isEqualTo(RequestLane.REMOTE_CONFIG)
+        assertThat(Endpoint.GetRemoteConfigFallback("app").lane).isEqualTo(RequestLane.REMOTE_CONFIG)
+    }
+
+    @Test
+    fun `diagnostics and events endpoints use the events lane`() {
+        assertThat(Endpoint.PostDiagnostics.lane).isEqualTo(RequestLane.EVENTS)
+        assertThat(Endpoint.PostEvents.lane).isEqualTo(RequestLane.EVENTS)
+    }
+
+    @Test
+    fun `every other endpoint uses the default lane`() {
+        val nonDefaultLaneEndpoints = setOf(
+            Endpoint.GetRemoteConfig("app"),
+            Endpoint.GetRemoteConfigFallback("app"),
+            Endpoint.PostDiagnostics,
+            Endpoint.PostEvents,
+        )
+        val endpoints = allEndpoints + listOf(
+            Endpoint.GetCustomerCenterConfig("test-user-id"),
+            Endpoint.PostCreateSupportTicket,
+            Endpoint.WebBillingGetProducts("test-user-id", setOf("product1")),
+        )
+        for (endpoint in endpoints - nonDefaultLaneEndpoints) {
+            assertThat(endpoint.lane)
+                .withFailMessage { "Endpoint $endpoint expected to use the default lane" }
+                .isEqualTo(RequestLane.DEFAULT)
+        }
+    }
+
+    @Test
     fun `getPath falls back to the non-IAM path when useIAMPath is requested but unmigrated`() {
         val endpoint = Endpoint.PostReceipt
         assertThat(endpoint.getPath(useIAMPath = true)).isEqualTo(endpoint.getPath())

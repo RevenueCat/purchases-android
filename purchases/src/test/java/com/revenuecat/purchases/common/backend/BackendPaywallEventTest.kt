@@ -14,6 +14,7 @@ import com.revenuecat.purchases.common.events.BackendStoredEvent
 import com.revenuecat.purchases.common.events.EventsRequest
 import com.revenuecat.purchases.common.events.toBackendEvent
 import com.revenuecat.purchases.common.events.toBackendStoredEvent
+import com.revenuecat.purchases.common.testBackendLanes
 import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.common.networking.Endpoint
@@ -158,16 +159,14 @@ class BackendPaywallEventTest {
 
         backend = Backend(
             appConfig,
-            SyncDispatcher(),
-            SyncDispatcher(),
+            testBackendLanes(SyncDispatcher(), SyncDispatcher()),
             httpClient,
             backendHelper,
         )
 
         asyncBackend = Backend(
             appConfig,
-            asyncDispatcher1,
-            asyncDispatcher2,
+            testBackendLanes(asyncDispatcher1, asyncDispatcher2),
             httpClient,
             asyncBackendHelper,
         )

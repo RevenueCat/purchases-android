@@ -27,6 +27,7 @@ import com.revenuecat.purchases.common.remoteconfig.DefaultRemoteConfigSourcePro
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSource
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfiguration
+import com.revenuecat.purchases.common.testBackendLanes
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.interfaces.StorefrontProvider
@@ -303,7 +304,7 @@ internal class BackendAPISourceFailoverIntegrationTest {
         )
         val dispatcher = SyncDispatcher()
         val backendHelper = BackendHelper(apiKey, dispatcher, appConfig, httpClient)
-        return Backend(appConfig, dispatcher, dispatcher, httpClient, backendHelper)
+        return Backend(appConfig, testBackendLanes(dispatcher, dispatcher), httpClient, backendHelper)
     }
 
     private fun createAppConfig(): AppConfig = AppConfig(

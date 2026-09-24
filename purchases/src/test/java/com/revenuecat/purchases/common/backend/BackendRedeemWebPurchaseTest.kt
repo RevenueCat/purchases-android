@@ -14,6 +14,7 @@ import com.revenuecat.purchases.common.createCustomerInfo
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.testBackendLanes
 import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
 import com.revenuecat.purchases.utils.Responses
@@ -60,16 +61,14 @@ class BackendRedeemWebPurchaseTest {
 
         backend = Backend(
             appConfig,
-            SyncDispatcher(),
-            SyncDispatcher(),
+            testBackendLanes(SyncDispatcher(), SyncDispatcher()),
             httpClient,
             backendHelper,
         )
 
         asyncBackend = Backend(
             appConfig,
-            asyncDispatcher1,
-            asyncDispatcher2,
+            testBackendLanes(asyncDispatcher1, asyncDispatcher2),
             httpClient,
             asyncBackendHelper,
         )
