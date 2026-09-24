@@ -841,6 +841,8 @@ jobs:
             for dir in paparazzi-snapshots/*/debugview; do cp -r "$dir"/. ui/debugview/src/test/snapshots/images/; done
             echo "revenuecatui: $(find ui/revenuecatui/src/test/snapshots/images -name '*.png' | wc -l) snapshots"
             echo "debugview: $(find ui/debugview/src/test/snapshots/images -name '*.png' | wc -l) snapshots"
+      - store_artifacts:
+          path: paparazzi-snapshots
       - run:
           name: Upload snapshots to Emerge
           command: |
