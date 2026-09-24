@@ -97,7 +97,10 @@ internal fun ButtonComponentView(
         return
     }
 
-    TransitionView(transition = style.transition) {
+    TransitionView(
+        transition = style.transition,
+        modifier = modifier.resolveComponentSizeParentData(stackState.size),
+    ) { outerModifier ->
         // Get a ButtonComponentState that calculates the stateful properties we should use.
         val buttonState = rememberButtonComponentState(
             style = style,
@@ -212,7 +215,7 @@ internal fun ButtonComponentView(
                     color = progressColorFor(style.stackComponentStyle.background),
                 )
             },
-            modifier = modifier.resolveComponentSizeParentData(stackState.size),
+            modifier = outerModifier,
             measurePolicy = { measurables, constraints ->
                 val stack = measurables[0].measure(constraints)
                 // Ensure that the progress indicator is not bigger than the stack.
