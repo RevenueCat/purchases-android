@@ -17,6 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.tooling.preview.Preview
@@ -33,6 +34,7 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
 import com.revenuecat.purchases.paywalls.events.PaywallComponentType
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.addMarginToFillLimits
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.resolveComponentSizeParentData
@@ -108,12 +110,13 @@ internal fun TextComponentView(
                 }
             }
         }
+        val size = textState.size.addMarginToFillLimits(textState.margin, LocalLayoutDirection.current)
         CompositionLocalProvider(LocalUriHandler provides trackingUriHandler) {
             Markdown(
                 text = text,
                 modifier = modifier
-                    .resolveComponentSizeParentData(textState.size)
-                    .size(textState.size, horizontalAlignment = textState.horizontalAlignment)
+                    .resolveComponentSizeParentData(size)
+                    .size(size, horizontalAlignment = textState.horizontalAlignment)
                     .padding(textState.margin)
                     .applyIfNotNull(backgroundColorStyle) { background(it) }
                     .padding(textState.padding),

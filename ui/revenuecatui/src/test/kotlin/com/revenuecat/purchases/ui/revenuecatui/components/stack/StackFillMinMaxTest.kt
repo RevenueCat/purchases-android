@@ -135,6 +135,44 @@ class StackFillMinMaxTest {
     )
 
     @Test
+    fun `text Fill min includes its margin like a stack does`() {
+        val text = TextComponent(
+            text = LocalizationKey("dummy"),
+            color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+            backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+            size = Size(width = Fill(min = 50u), height = Fill()),
+            margin = Padding(leading = 10.0, trailing = 10.0),
+        )
+        val stack = StackComponent(
+            components = listOf(
+                text,
+                child(Color.Blue, Size(width = Fill(), height = Fill())),
+            ),
+            dimension = Dimension.Horizontal(VerticalAlignment.CENTER, FlexDistribution.START),
+            size = Size(width = Fixed(100u), height = Fixed(20u)),
+            backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Green.toArgb())),
+        )
+        val style = styleFactory.create(stack).getOrThrow().componentStyle as StackComponentStyle
+        composeTestRule.setContent {
+            StackComponentView(
+                style = style,
+                state = FakePaywallState(components = emptyList()),
+                clickHandler = {},
+                modifier = Modifier.testTag("stack"),
+            )
+        }
+        composeTestRule.waitForIdle()
+
+        // Same expectations as the stack-child margin test: Red occupies 10..60 inside a 0..70 slot.
+        fun px(dp: Int) = with(composeTestRule.density) { dp.dp.roundToPx() }
+        composeTestRule.onNodeWithTag("stack")
+            .assertPixelColorEquals(Color.Green, px(5), px(10), width = 1, height = 1)
+            .assertPixelColorEquals(Color.Red, px(30), px(10), width = 1, height = 1)
+            .assertPixelColorEquals(Color.Green, px(65), px(10), width = 1, height = 1)
+            .assertPixelColorEquals(Color.Blue, px(75), px(10), width = 1, height = 1)
+    }
+
+    @Test
     fun `maximum applied through an override is honored`() = assertBothOrientations(
         stack = { h ->
             stack(
