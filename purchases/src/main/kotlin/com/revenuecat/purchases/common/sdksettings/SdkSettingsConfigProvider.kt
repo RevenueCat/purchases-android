@@ -1,12 +1,12 @@
 package com.revenuecat.purchases.common.sdksettings
 
+import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.remoteconfig.GenerationGuardedCache
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigCommitListener
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfiguration
 import com.revenuecat.purchases.common.remoteconfig.readConsistent
-import com.revenuecat.purchases.common.verboseLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -62,7 +62,7 @@ internal class SdkSettingsConfigProvider(
         val settings = topic[ITEM_DEFAULT].toSettings()
         val previous = cache.cached
         if (cache.store(generation, settings) && settings != previous) {
-            verboseLog { "Warmed SDK settings cache: $settings." }
+            debugLog { "SDK settings changed: $settings." }
             listener?.onSdkSettingsChanged(settings)
         }
     }
