@@ -302,4 +302,36 @@ internal sealed class Endpoint(
             ->
                 false
         }
+
+    /** The [RequestLane] whose dispatcher runs this endpoint's requests. */
+    val lane: RequestLane
+        get() = when (this) {
+            is GetCustomerInfo,
+            LogIn,
+            PostReceipt,
+            is GetOfferings,
+            is AliasUsers,
+            is PostAttributes,
+            is GetAmazonReceipt,
+            GetProductEntitlementMapping,
+            is GetCustomerCenterConfig,
+            PostCreateSupportTicket,
+            PostRedeemWebPurchase,
+            is GetVirtualCurrencies,
+            is GetRewardVerification,
+            is WebBillingGetProducts,
+            TokenLogin,
+            TokenRefresh,
+            TokenLogout,
+            ->
+                RequestLane.DEFAULT
+            is GetRemoteConfig,
+            is GetRemoteConfigFallback,
+            ->
+                RequestLane.REMOTE_CONFIG
+            PostDiagnostics,
+            PostEvents,
+            ->
+                RequestLane.EVENTS
+        }
 }

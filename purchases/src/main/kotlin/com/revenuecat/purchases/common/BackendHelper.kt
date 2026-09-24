@@ -10,7 +10,7 @@ import org.json.JSONObject
 @OptIn(InternalRevenueCatAPI::class)
 internal class BackendHelper(
     private val apiKey: String,
-    private val dispatcher: Dispatcher,
+    private val lanes: BackendLanes,
     private val appConfig: AppConfig,
     private val httpClient: HTTPClient,
 ) {
@@ -51,7 +51,7 @@ internal class BackendHelper(
                     onCompleted(error, result.responseCode, result.body)
                 }
             },
-            dispatcher,
+            lanes[endpoint],
             delay,
         )
     }

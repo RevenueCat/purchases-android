@@ -29,4 +29,6 @@ internal object NetworkStrings {
         " not be decoded. '%s'"
     const val VERIFICATION_ERROR = "Verification: Request to '%s' failed verification."
     const val VERIFICATION_SUCCESS = "Verification: Request to '%s' verified successfully."
+    const val MISSING_DEDICATED_LANE_DISPATCHER = "No dedicated dispatcher for '%s' request lane; " +
+        "requests will share the default lane instead."
 }

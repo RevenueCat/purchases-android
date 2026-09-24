@@ -14,6 +14,7 @@ import com.revenuecat.purchases.common.events.BackendStoredEvent
 import com.revenuecat.purchases.common.events.EventsRequest
 import com.revenuecat.purchases.common.events.toBackendEvent
 import com.revenuecat.purchases.common.events.toBackendStoredEvent
+import com.revenuecat.purchases.common.testBackendLanes
 import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.common.networking.Endpoint
@@ -149,25 +150,25 @@ class BackendPaywallEventTest {
         every { appConfig.fallbackBaseURLs } returns emptyList()
         httpClient = mockk()
         unmockkObject(JsonProvider)
-        val backendHelper = BackendHelper("TEST_API_KEY", SyncDispatcher(), appConfig, httpClient)
+        val lanes = testBackendLanes(SyncDispatcher(), SyncDispatcher())
+        val backendHelper = BackendHelper("TEST_API_KEY", lanes, appConfig, httpClient)
 
         val asyncDispatcher1 = createAsyncDispatcher()
         val asyncDispatcher2 = createAsyncDispatcher()
 
-        val asyncBackendHelper = BackendHelper("TEST_API_KEY", asyncDispatcher1, appConfig, httpClient)
+        val asyncLanes = testBackendLanes(asyncDispatcher1, asyncDispatcher2)
+        val asyncBackendHelper = BackendHelper("TEST_API_KEY", asyncLanes, appConfig, httpClient)
 
         backend = Backend(
             appConfig,
-            SyncDispatcher(),
-            SyncDispatcher(),
+            lanes,
             httpClient,
             backendHelper,
         )
 
         asyncBackend = Backend(
             appConfig,
-            asyncDispatcher1,
-            asyncDispatcher2,
+            asyncLanes,
             httpClient,
             asyncBackendHelper,
         )

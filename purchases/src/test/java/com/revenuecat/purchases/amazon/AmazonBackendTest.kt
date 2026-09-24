@@ -9,6 +9,7 @@ import com.revenuecat.purchases.common.BackendHelper
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.common.testBackendLanes
 import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import com.revenuecat.purchases.utils.SyncDispatcher
 import io.mockk.clearAllMocks
@@ -49,7 +50,7 @@ class AmazonBackendTest {
             every { fallbackBaseURLs } returns emptyList()
         }
         dispatcher = SyncDispatcher()
-        backendHelper = BackendHelper(API_KEY, dispatcher, mockAppConfig, mockClient)
+        backendHelper = BackendHelper(API_KEY, testBackendLanes(dispatcher, dispatcher), mockAppConfig, mockClient)
         receivedOnSuccess = null
         receivedError = null
         underTest = AmazonBackend(backendHelper)

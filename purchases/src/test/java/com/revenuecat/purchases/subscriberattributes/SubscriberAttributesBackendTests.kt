@@ -19,6 +19,7 @@ import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
+import com.revenuecat.purchases.common.testBackendLanes
 import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.SyncDispatcher
@@ -51,16 +52,16 @@ class SubscriberAttributesPosterTests {
     }
     private val appUserID = "jerry"
     private val dispatcher = SyncDispatcher()
+    private val lanes = testBackendLanes(dispatcher, dispatcher)
     private var backendHelper = BackendHelper(
         API_KEY,
-        dispatcher,
+        lanes,
         mockAppConfig,
         mockClient
     )
     private var backend: Backend = Backend(
         mockAppConfig,
-        dispatcher,
-        dispatcher,
+        lanes,
         mockClient,
         backendHelper,
     )
