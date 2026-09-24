@@ -268,8 +268,17 @@ jobs:
       - android/accept_licenses
       - android/restore_gradle_cache
       - run:
-          name: Assemble all variants (warms Gradle cache once)
-          command: ./gradlew testClasses --parallel --no-daemon
+          # Runs everything the downstream unit test tasks depend on, except the test tasks themselves,
+          # so those jobs find their compile tasks UP-TO-DATE after attaching the workspace.
+          name: Compile unit test classes for all tested variants
+          command: |
+            TEST_TASKS="testDefaultsDebugUnitTest testDefaultsReleaseUnitTest \
+              :purchases:testCustomEntitlementComputationDebugUnitTest \
+              :purchases:testCustomEntitlementComputationReleaseUnitTest \
+              :dokka-hide-internal:test :detekt-rules:test"
+            GRAPH=$(./gradlew $TEST_TASKS --dry-run --no-daemon | sed -n 's/^\(:[^ ]*\) SKIPPED$/\1/p' | grep -vE ':test[A-Za-z]*$')
+            echo "$GRAPH" | wc -l
+            ./gradlew $GRAPH --parallel --no-daemon
       - android/save_gradle_cache
       - persist_to_workspace:
           root: .
