@@ -255,7 +255,14 @@ jobs:
       - android/save_build_cache
 
   prepare-tests:
-    <<: *android-executor
+    # Bigger box than the other jobs: it compiles every tested variant once so ~25 downstream jobs can skip it.
+    executor:
+      name: android/android_docker
+      resource_class: 2xlarge
+      tag: 2025.04.1
+    environment:
+      JVM_OPTS: -Xmx6g
+      GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=8 -Dorg.gradle.caching=false"
     shell: /bin/bash --login -o pipefail
     steps:
       - checkout
@@ -279,7 +286,7 @@ jobs:
               :dokka-hide-internal:test :detekt-rules:test"
             GRAPH=$(./gradlew $TEST_TASKS --dry-run --no-daemon | sed -n 's/^\(:[^ ]*\) SKIPPED$/\1/p' | grep -vE ':test[A-Za-z]*$')
             echo "$GRAPH" | wc -l
-            ./gradlew $GRAPH --parallel --no-daemon
+            ./gradlew $GRAPH --parallel --no-daemon -Pkotlin.daemon.jvmargs=-Xmx8g
       - android/save_gradle_cache
       - persist_to_workspace:
           root: .
