@@ -86,7 +86,7 @@ commands:
 
   build-paywall-tester:
     steps:
-      - android/accept_licenses
+      - accept-android-licenses
       - android/restore_gradle_cache
       - android/restore_build_cache
       - run:
@@ -104,7 +104,7 @@ commands:
 
   build-rct-tester:
     steps:
-      - android/accept_licenses
+      - accept-android-licenses
       - android/restore_gradle_cache
       - android/restore_build_cache
       - run:
@@ -119,6 +119,18 @@ commands:
           path: examples/rcttester/build/outputs/bundle/release/rcttester-release.aab
       - android/save_gradle_cache
       - android/save_build_cache
+
+  accept-android-licenses:
+    description: >
+      android/accept_licenses without `sdkmanager --update`. The update only bumped
+      emulator, platform-tools and the platforms;android-36 revision, and its download
+      was flaky ("Error on ZipFile unknown archive"). The image already ships everything
+      the build needs; AGP downloads anything missing once licenses are accepted.
+    steps:
+      - run:
+          name: Accept Android Licenses
+          shell: /bin/bash -e
+          command: yes | sdkmanager --licenses
 
   checkout-submodule:
     description: "Checks out a git submodule."
@@ -144,7 +156,7 @@ jobs:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - android/accept_licenses
+      - accept-android-licenses
       - android-dependencies
       - android/restore_build_cache
       - run:
@@ -161,7 +173,7 @@ jobs:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - android/accept_licenses
+      - accept-android-licenses
       - android-dependencies
       - android/restore_build_cache
       - run:
@@ -178,7 +190,7 @@ jobs:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - android/accept_licenses
+      - accept-android-licenses
       - android-dependencies
       - android/restore_build_cache
       - run:
@@ -195,7 +207,7 @@ jobs:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - android/accept_licenses
+      - accept-android-licenses
       - android-dependencies
       - android/restore_build_cache
       - run:
@@ -210,7 +222,7 @@ jobs:
       - checkout
       - revenuecat/install-mise-tools:
           tools: java
-      - android/accept_licenses
+      - accept-android-licenses
       - android/restore_gradle_cache
       - android/restore_build_cache
       - run:
@@ -247,7 +259,7 @@ jobs:
           path: upstream/paywall-preview-resources
       - revenuecat/install-mise-tools:
           tools: java
-      - android/accept_licenses
+      - accept-android-licenses
       - android/restore_gradle_cache
       - run:
           name: Assemble all variants (warms Gradle cache once)
@@ -501,7 +513,7 @@ jobs:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - android/accept_licenses
+      - accept-android-licenses
       - android/restore_gradle_cache
       - android/restore_build_cache
       - run:
