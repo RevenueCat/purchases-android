@@ -4,6 +4,7 @@ internal object NetworkStrings {
     const val API_REQUEST_COMPLETED = "API request completed with status: %s %s %s"
     const val API_REQUEST_STARTED = "API request started: %s %s"
     const val HTTP_RESPONSE_PAYLOAD_NULL = "HTTP Response payload is null"
+    const val HTTP_RESPONSE_NO_STATUS_CODE = "HTTP Response has no valid status code"
     const val ETAG_RETRYING_CALL = "We were expecting to be able to return a cached response, but we can't find it. " +
         "Retrying call with a new ETag"
     const val RETRYING_CALL_WITH_FALLBACK_URL = "Retrying request %s using fallback URL %s"
@@ -24,6 +25,8 @@ internal object NetworkStrings {
     const val VERIFICATION_MISSING_BODY_OR_ETAG = "Verification: Request to '%s' requires a body or etag" +
         " but none provided."
     const val VERIFICATION_INVALID_SIZE = "Verification: Request to '%s' has signature with wrong size. '%s'"
+    const val VERIFICATION_INVALID_SIGNATURE_FORMAT = "Verification: Request to '%s' has a signature that could" +
+        " not be decoded. '%s'"
     const val VERIFICATION_ERROR = "Verification: Request to '%s' failed verification."
     const val VERIFICATION_SUCCESS = "Verification: Request to '%s' verified successfully."
 }

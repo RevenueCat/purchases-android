@@ -472,7 +472,11 @@ platform :android do
     end
 
     if options[:notify_slack]&.to_s == 'true'
-      slack_backend_integration_test_results(environment: backend_environment, success: success)
+      slack_backend_integration_test_results(
+        environment: backend_environment,
+        success: success,
+        notify_success_only_on_recovery: true
+      )
     end
     ping_heartbeat_monitor(url: ENV['HEARTBEAT_MONITOR_URL_BACKEND_INTEGRATION_TESTS'])
     if last_exception
@@ -579,6 +583,13 @@ platform :android do
   lane :build_admob_integration_sample do |options|
     gradle(
       task: ":examples:admob-sample:assembleDebug",
+    )
+  end
+
+  desc "Builds an AdMob Next-Gen Integration Sample APK"
+  lane :build_admob_next_gen_integration_sample do |options|
+    gradle(
+      task: ":examples:admob-next-gen-sample:assembleDebug",
     )
   end
 

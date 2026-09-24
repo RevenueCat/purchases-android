@@ -45,6 +45,7 @@ class CheckpointPassedCallbackTest {
     private lateinit var mockPurchases: Purchases
     private lateinit var mockActivity: Activity
     private lateinit var mockPresenter: CheckpointWorkflowPresenter
+    private var defaultPresenter: DefaultPaywallPresenter? = null
     private val presentedCallIds = mutableListOf<String>()
     private val results = mutableListOf<FlowResult?>()
 
@@ -59,14 +60,20 @@ class CheckpointPassedCallbackTest {
         results.clear()
         mockActivity = mockk(relaxed = true)
         mockPresenter = mockk(relaxed = true)
+        defaultPresenter = null
         mockPurchases = mockk {
             every { currentActivity } returns mockActivity
         }
         cachedCustomerInfoHasActive()
-        manager = CheckpointsManager { callId, _ ->
-            presentedCallIds += callId
-            mockPresenter
-        }
+        manager = CheckpointsManager(
+            presenterFactory = { callId, _ ->
+                presentedCallIds += callId
+                mockPresenter
+            },
+            defaultPresenterFactory = { purchases ->
+                DefaultPaywallPresenter(purchases) { _, _ -> mockPresenter }.also { defaultPresenter = it }
+            },
+        )
     }
 
     @After
@@ -108,14 +115,41 @@ class CheckpointPassedCallbackTest {
     fun `an offering checkpoint presents the fallback paywall and delivers what the user obtained`() =
         runTest(dispatcher) {
             resolvesTo(CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null))
+            every { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) } answers {
+                secondArg<ReceiveCustomerInfoCallback>().onReceived(customerInfoWithActive("pro"))
+            }
 
             checkpoint()
             assertThat(results).isEmpty()
 
-            finishPaywall(CheckpointFlowOutcome.Purchased(customerInfoWithActive("pro"), mockk()))
+            defaultPresenter!!.onPresentationFinished("")
 
             assertThat(results.obtained).containsExactly(setOf("pro"))
         }
+
+    @Test
+    fun `a workflow restore that unlocks nothing does not pass the checkpoint on back`() = runTest(dispatcher) {
+        cachedCustomerInfoHasActive("plus")
+        resolvesToWorkflow()
+
+        checkpoint()
+        workflowListener().onRestoreCompleted(customerInfoWithActive("plus"))
+        finishPaywall(outcome = null, navigatedBack = true)
+
+        assertThat(results).isEmpty()
+    }
+
+    @Test
+    fun `a workflow restore that unlocks an entitlement passes the checkpoint on back`() = runTest(dispatcher) {
+        cachedCustomerInfoHasActive("plus")
+        resolvesToWorkflow()
+
+        checkpoint()
+        workflowListener().onRestoreCompleted(customerInfoWithActive("plus", "pro"))
+        finishPaywall(outcome = null, navigatedBack = true)
+
+        assertThat(results.obtained).containsExactly(setOf("pro"))
+    }
 
     @Test
     fun `a dismissed paywall delivers an empty result`() = runTest(dispatcher) {
@@ -227,12 +261,21 @@ class CheckpointPassedCallbackTest {
         return { completion }
     }
 
+    // The paywall listener the workflow window would install, as the SDK's paywall reports through it.
+    private fun workflowListener() = manager.paywallOptions(presentedCallIds.last()) {}!!.listener!!
+
     private fun resolvesTo(resolution: CheckpointResolution) {
         coEvery { mockPurchases.internalResolveCp(any(), any()) } returns resolution
     }
 
     private fun resolvesToWorkflow() {
-        resolvesTo(CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk(), checkpointRuleId = null))
+        resolvesTo(CheckpointResolution.MatchedWorkflow(
+            mockk(),
+            mockk(),
+            mockk(),
+            checkpointRuleId = null,
+            traceId = "trace-id",
+        ))
     }
 
     private fun cachedCustomerInfoHasActive(vararg identifiers: String) {
@@ -253,8 +296,8 @@ class CheckpointPassedCallbackTest {
         return mockk { every { entitlements.active } returns active }
     }
 
-    // Mirrors what CheckpointWorkflowPresenter does: record the outcome for the presented call, then report the
-    // paywall as finished.
+    // Mirrors what CheckpointWorkflowPresenter does for a workflow: record the outcome for the presented call, then
+    // report the paywall as finished.
     private fun finishPaywall(outcome: CheckpointFlowOutcome?, navigatedBack: Boolean = false) {
         val callId = presentedCallIds.last()
         outcome?.let { manager.recordOutcome(callId, it) }

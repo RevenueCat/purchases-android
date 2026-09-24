@@ -3,11 +3,11 @@ package com.revenuecat.purchases.common.verification
 import android.util.Base64
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.crypto.tink.subtle.Ed25519Sign
-import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.networking.Endpoint
+import com.revenuecat.purchases.common.networking.RCContainerTestData
+import com.revenuecat.purchases.common.networking.RCContentEncoding
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult.FailureReason
 import com.revenuecat.purchases.utils.Result
 import io.mockk.every
 import io.mockk.mockk
@@ -158,37 +158,37 @@ class SigningManagerTest {
     fun `verifyResponse returns error if forceSigningErros is true`() {
         every { appConfig.forceSigningErrors } returns true
         val verificationResult = callVerifyResponse(informationalSigningManager, signature = null)
-        assertThat(verificationResult).isEqualTo(VerificationResult.FAILED)
+        assertThat(verificationResult).isEqualTo(SignatureVerificationResult.Failed(FailureReason.PAYLOAD_SIGNATURE_MISMATCH))
     }
 
     @Test
     fun `verifyResponse returns NOT_REQUESTED if verification mode disabled`() {
         val verificationResult = callVerifyResponse(disabledSigningManager)
-        assertThat(verificationResult).isEqualTo(VerificationResult.NOT_REQUESTED)
+        assertThat(verificationResult).isEqualTo(SignatureVerificationResult.NotRequested)
     }
 
     @Test
     fun `verifyResponse returns error if signature is null`() {
         val verificationResult = callVerifyResponse(informationalSigningManager, signature = null)
-        assertThat(verificationResult).isEqualTo(VerificationResult.FAILED)
+        assertThat(verificationResult).isEqualTo(SignatureVerificationResult.Failed(FailureReason.MISSING_SIGNATURE))
     }
 
     @Test
     fun `verifyResponse returns error if request time is null`() {
         val verificationResult = callVerifyResponse(informationalSigningManager, requestTime = null)
-        assertThat(verificationResult).isEqualTo(VerificationResult.FAILED)
+        assertThat(verificationResult).isEqualTo(SignatureVerificationResult.Failed(FailureReason.MISSING_REQUEST_TIME))
     }
 
     @Test
     fun `verifyResponse returns error if both body and etag are null`() {
         val verificationResult = callVerifyResponse(informationalSigningManager, body = null, eTag = null)
-        assertThat(verificationResult).isEqualTo(VerificationResult.FAILED)
+        assertThat(verificationResult).isEqualTo(SignatureVerificationResult.Failed(FailureReason.MISSING_SIGNED_PAYLOAD))
     }
 
     @Test
     fun `verifyResponse returns error if status code success and body is empty`() {
         val verificationResult = callVerifyResponse(informationalSigningManager, body = null)
-        assertThat(verificationResult).isEqualTo(VerificationResult.FAILED)
+        assertThat(verificationResult).isEqualTo(SignatureVerificationResult.Failed(FailureReason.MISSING_SIGNED_PAYLOAD))
     }
 
     @Test
@@ -198,16 +198,30 @@ class SigningManagerTest {
             body = null,
             eTag = null
         )
-        assertThat(verificationResult).isEqualTo(VerificationResult.FAILED)
+        assertThat(verificationResult).isEqualTo(SignatureVerificationResult.Failed(FailureReason.MISSING_SIGNED_PAYLOAD))
+    }
+
+    @Test
+    fun `verifyResponse returns invalid format error if signature has the wrong size`() {
+        val verificationResult = callVerifyResponse(informationalSigningManager, signature = "dGVzdA==")
+        assertThat(verificationResult)
+            .isEqualTo(SignatureVerificationResult.Failed(FailureReason.INVALID_SIGNATURE_FORMAT))
+    }
+
+    @Test
+    fun `verifyResponse returns invalid format error if signature is not base64`() {
+        val verificationResult = callVerifyResponse(informationalSigningManager, signature = "%%%not-base64")
+        assertThat(verificationResult)
+            .isEqualTo(SignatureVerificationResult.Failed(FailureReason.INVALID_SIGNATURE_FORMAT))
     }
 
     @Test
     fun `verifyResponse returns error if failed to verify intermediate key`() {
         every {
             intermediateSignatureHelper.createIntermediateKeyVerifierIfVerified(any())
-        } returns Result.Error(PurchasesError(PurchasesErrorCode.SignatureVerificationError))
+        } returns Result.Error(FailureReason.INVALID_INTERMEDIATE_KEY_SIGNATURE)
         val verificationResult = callVerifyResponse(informationalSigningManager)
-        assertThat(verificationResult).isEqualTo(VerificationResult.FAILED)
+        assertThat(verificationResult).isEqualTo(SignatureVerificationResult.Failed(FailureReason.INVALID_INTERMEDIATE_KEY_SIGNATURE))
     }
 
     @Test
@@ -218,21 +232,21 @@ class SigningManagerTest {
             body = null,
             eTag = "test-etag"
         )
-        assertThat(verificationResult).isEqualTo(VerificationResult.VERIFIED)
+        assertThat(verificationResult).isEqualTo(SignatureVerificationResult.Verified)
     }
 
     @Test
     fun `verifyResponse returns success if intermediate key verifier returns success for given parameters`() {
         every { intermediateKeyVerifier.verify(any(), any()) } returns true
         val verificationResult = callVerifyResponse(informationalSigningManager)
-        assertThat(verificationResult).isEqualTo(VerificationResult.VERIFIED)
+        assertThat(verificationResult).isEqualTo(SignatureVerificationResult.Verified)
     }
 
     @Test
     fun `verifyResponse returns error if intermediate key verifier returns error for given parameters`() {
         every { intermediateKeyVerifier.verify(any(), any()) } returns false
         val verificationResult = callVerifyResponse(informationalSigningManager)
-        assertThat(verificationResult).isEqualTo(VerificationResult.FAILED)
+        assertThat(verificationResult).isEqualTo(SignatureVerificationResult.Failed(FailureReason.PAYLOAD_SIGNATURE_MISMATCH))
     }
 
     @Test
@@ -244,7 +258,7 @@ class SigningManagerTest {
             apiKey,
         )
         val verificationResult = callVerifyResponse(signingManager)
-        assertThat(verificationResult).isEqualTo(VerificationResult.VERIFIED)
+        assertThat(verificationResult).isEqualTo(SignatureVerificationResult.Verified)
     }
 
     @Test
@@ -260,7 +274,7 @@ class SigningManagerTest {
             requestPath = "/v1/subscribers/\$RCAnonymousID%3A1af512a3b9c848899fe427f39dd69f2b",
             signature = "xoDYyUeHnIlSIAeOOzmvdNPOlbNSKK+xE0fE/ufS1fsAAMNQ1HiPDL34Vx0Uy74KPV5mztuk3DHBpucT/rSYVlkxIa3ModYmPfYZ20lnlbSB1UiP6oJHwAA2pXlS6AQ5eLSuAmm2UIYPrDGEEC8Lgj1sAn2fGMRMx2eaPNzDPBGTxxZROfjkI1wtsyJC0w0I7d8TkLeXjUTlWNafmc4GVMleE/tQZZGIoNrnar0HqICUnB8B",
         )
-        assertThat(verificationResult).isEqualTo(VerificationResult.VERIFIED)
+        assertThat(verificationResult).isEqualTo(SignatureVerificationResult.Verified)
     }
 
     @Test
@@ -276,7 +290,7 @@ class SigningManagerTest {
             signature = "xoDYyUeHnIlSIAeOOzmvdNPOlbNSKK+xE0fE/ufS1fsAAMNQ1HiPDL34Vx0Uy74KPV5mztuk3DHBpucT/rSYVlkxIa3ModYmPfYZ20lnlbSB1UiP6oJHwAA2pXlS6AQ5eLSuAp8tBA6mZLAMEFIzY6iOQ/+seoyIwJ3WX+Ucu6/V3h7cEFYZGfiS2WYiFfM1H3cre+7wzwQsAXe6nm8FidwZTsDrbr6krvO7X5IXUkInvsoE",
             eTag = "test-etag",
         )
-        assertThat(verificationResult).isEqualTo(VerificationResult.VERIFIED)
+        assertThat(verificationResult).isEqualTo(SignatureVerificationResult.Verified)
     }
 
     @Suppress("MaxLineLength")
@@ -290,23 +304,23 @@ class SigningManagerTest {
         )
         assertThat(
             callVerifyResponse(signingManager, requestTime = "1677005916011") // Wrong request time
-        ).isEqualTo(VerificationResult.FAILED)
+        ).isEqualTo(SignatureVerificationResult.Failed(FailureReason.PAYLOAD_SIGNATURE_MISMATCH))
         assertThat(
             callVerifyResponse(signingManager, signature = "2bm3QppRywK5ULyCRLS5JJy9sq+84IkMk0Ue4LsywEp87t0tDObpzPlu30l4Desq9X65UFuosqwCLMizruDHbKvPqQLce1hrIuZpgic+cQ8=") // Wrong signature
-        ).isEqualTo(VerificationResult.FAILED)
+        ).isEqualTo(SignatureVerificationResult.Failed(FailureReason.INVALID_SIGNATURE_FORMAT))
         assertThat(
             callVerifyResponse(signingManager, nonce = "MTIzNDU2Nzg5MGFj") // Wrong nonce
-        ).isEqualTo(VerificationResult.FAILED)
+        ).isEqualTo(SignatureVerificationResult.Failed(FailureReason.PAYLOAD_SIGNATURE_MISMATCH))
         assertThat(
             callVerifyResponse(signingManager, body = "{\"request_date\":\"2023-02-21T18:58:37Z\",\"request_date_ms\":1677005916011,\"subscriber\":{\"entitlements\":{},\"first_seen\":\"2023-02-21T18:58:35Z\",\"last_seen\":\"2023-02-21T18:58:35Z\",\"management_url\":null,\"non_subscriptions\":{},\"original_app_user_id\":\"login\",\"original_application_version\":null,\"original_purchase_date\":null,\"other_purchases\":{},\"subscriptions\":{}}}\n") // Wrong body
-        ).isEqualTo(VerificationResult.FAILED)
+        ).isEqualTo(SignatureVerificationResult.Failed(FailureReason.PAYLOAD_SIGNATURE_MISMATCH))
     }
 
     @Test
     fun `verifyResponse returns success for enforced mode if verifier returns success for given parameters`() {
         every { intermediateKeyVerifier.verify(any(), any()) } returns true
         val verificationResult = callVerifyResponse(enforcedSigningManager)
-        assertThat(verificationResult).isEqualTo(VerificationResult.VERIFIED)
+        assertThat(verificationResult).isEqualTo(SignatureVerificationResult.Verified)
     }
 
     @Test
@@ -323,7 +337,7 @@ class SigningManagerTest {
             signature = "xoDYyUeHnIlSIAeOOzmvdNPOlbNSKK+xE0fE/ufS1fsAAMNQ1HiPDL34Vx0Uy74KPV5mztuk3DHBpucT/rSYVlkxIa3ModYmPfYZ20lnlbSB1UiP6oJHwAA2pXlS6AQ5eLSuAr6y+BuXlXXhZybxIJRFiToh3gs+X7IVmtCZwtkNu0rM0CGZ6FbQFAutF+Y5dGM8Q4HUAdy8pb639Zv9Lf7eZZ/Td9XuWqd+TA98M2MfL6ED",
             postParamsHeader = postParamsHeader,
         )
-        assertThat(verificationResult).isEqualTo(VerificationResult.VERIFIED)
+        assertThat(verificationResult).isEqualTo(SignatureVerificationResult.Verified)
     }
 
     @Test
@@ -348,7 +362,7 @@ class SigningManagerTest {
             eTag = null,
             postFieldsToSignHeader = null,
         )
-        assertThat(verified).isEqualTo(VerificationResult.VERIFIED)
+        assertThat(verified).isEqualTo(SignatureVerificationResult.Verified)
     }
 
     @Test
@@ -373,7 +387,7 @@ class SigningManagerTest {
             eTag = null,
             postFieldsToSignHeader = null,
         )
-        assertThat(tampered).isEqualTo(VerificationResult.FAILED)
+        assertThat(tampered).isEqualTo(SignatureVerificationResult.Failed(FailureReason.PAYLOAD_SIGNATURE_MISMATCH))
     }
 
     @Test
@@ -385,8 +399,8 @@ class SigningManagerTest {
             apiKey,
         )
 
-        assertThat(callVerifyResponse(signingManager)).isEqualTo(VerificationResult.VERIFIED)
-        assertThat(callVerifyResponse(signingManager)).isEqualTo(VerificationResult.VERIFIED)
+        assertThat(callVerifyResponse(signingManager)).isEqualTo(SignatureVerificationResult.Verified)
+        assertThat(callVerifyResponse(signingManager)).isEqualTo(SignatureVerificationResult.Verified)
         assertThat(createdRootVerifiers).isEqualTo(1)
     }
 
@@ -397,12 +411,119 @@ class SigningManagerTest {
             appConfig,
             apiKey,
         )
-        assertThat(callVerifyResponse(signingManager)).isEqualTo(VerificationResult.NOT_REQUESTED)
+        assertThat(callVerifyResponse(signingManager)).isEqualTo(SignatureVerificationResult.NotRequested)
+    }
+
+    // endregion
+
+    // region verifyRCFormatResponse
+
+    @Test
+    fun `verifyRCFormatResponse verifies the signature over the config element bytes`() {
+        val signingManager = realInformationalSigningManager()
+        val salt = ByteArray(16).apply { SecureRandom().nextBytes(this) }
+        val configBytes = "{\"config\":true}".toByteArray()
+        val signature = createFakeSignatureForBytes(bodyBytes = configBytes, salt = salt)
+
+        val verified = callVerifyRCFormatResponse(
+            signingManager,
+            signature = signature,
+            containerBytes = RCContainerTestData.buildContainer(config = configBytes),
+        )
+        assertThat(verified).isEqualTo(SignatureVerificationResult.Verified)
+    }
+
+    @Test
+    fun `verifyRCFormatResponse verifies a GZIP-compressed config element over its decoded bytes`() {
+        val signingManager = realInformationalSigningManager()
+        val salt = ByteArray(16).apply { SecureRandom().nextBytes(this) }
+        val configBytes = "{\"config\":true}".toByteArray()
+        val signature = createFakeSignatureForBytes(bodyBytes = configBytes, salt = salt)
+
+        val verified = callVerifyRCFormatResponse(
+            signingManager,
+            signature = signature,
+            containerBytes = RCContainerTestData.buildContainer(
+                config = configBytes,
+                codecForIndex = { RCContentEncoding.GZIP.id },
+            ),
+        )
+        assertThat(verified).isEqualTo(SignatureVerificationResult.Verified)
+    }
+
+    @Test
+    fun `verifyRCFormatResponse fails when the config element checksum does not match`() {
+        val signingManager = realInformationalSigningManager()
+        val salt = ByteArray(16).apply { SecureRandom().nextBytes(this) }
+        val configBytes = "{\"config\":true}".toByteArray()
+        val signature = createFakeSignatureForBytes(bodyBytes = configBytes, salt = salt)
+
+        val result = callVerifyRCFormatResponse(
+            signingManager,
+            signature = signature,
+            containerBytes = RCContainerTestData.buildContainer(
+                config = configBytes,
+                checksumOverride = { _, _ -> ByteArray(24) { 0x7F } },
+            ),
+        )
+        assertThat(result).isEqualTo(SignatureVerificationResult.Failed(FailureReason.INVALID_RESPONSE_PAYLOAD))
+    }
+
+    @Test
+    fun `verifyRCFormatResponse fails when the response is not a valid RC Container`() {
+        val result = callVerifyRCFormatResponse(informationalSigningManager, containerBytes = byteArrayOf(1, 2, 3, 4))
+        assertThat(result).isEqualTo(SignatureVerificationResult.Failed(FailureReason.INVALID_RESPONSE_PAYLOAD))
+    }
+
+    @Test
+    fun `verifyRCFormatResponse reports a missing signature before parsing the payload`() {
+        val result = callVerifyRCFormatResponse(
+            informationalSigningManager,
+            signature = null,
+            containerBytes = byteArrayOf(1, 2, 3, 4),
+        )
+        assertThat(result).isEqualTo(SignatureVerificationResult.Failed(FailureReason.MISSING_SIGNATURE))
+    }
+
+    @Test
+    fun `verifyRCFormatResponse reports a missing request time before parsing the payload`() {
+        val result = callVerifyRCFormatResponse(
+            informationalSigningManager,
+            requestTime = null,
+            containerBytes = byteArrayOf(1, 2, 3, 4),
+        )
+        assertThat(result).isEqualTo(SignatureVerificationResult.Failed(FailureReason.MISSING_REQUEST_TIME))
+    }
+
+    @Test
+    fun `verifyRCFormatResponse returns NOT_REQUESTED for an invalid payload if verification mode disabled`() {
+        val result = callVerifyRCFormatResponse(disabledSigningManager, containerBytes = byteArrayOf(1, 2, 3, 4))
+        assertThat(result).isEqualTo(SignatureVerificationResult.NotRequested)
     }
 
     // endregion
 
     // region Helpers
+
+    private fun realInformationalSigningManager() = SigningManager(
+        SignatureVerificationMode.Informational(IntermediateSignatureHelper(realTestRootVerifier())),
+        appConfig,
+        apiKey,
+    )
+
+    private fun callVerifyRCFormatResponse(
+        signingManager: SigningManager,
+        containerBytes: ByteArray,
+        signature: String? = "test-signature",
+        requestTime: String? = "1677005916012",
+    ) = signingManager.verifyRCFormatResponse(
+        urlPath = "test-url-path",
+        signatureString = signature,
+        nonce = null,
+        containerBytes = containerBytes,
+        requestTime = requestTime,
+        eTag = null,
+    )
 
     private fun informationalModeWithRootVerifier(
         rootVerifierProvider: () -> SignatureVerifier,
