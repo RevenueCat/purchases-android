@@ -41,6 +41,7 @@ internal fun Project.configureAndroidLibrary() {
             unitTests.isIncludeAndroidResources = true
             unitTests.all {
                 it.maxHeapSize = "1024m"
+                it.maxParallelForks = (Runtime.getRuntime().availableProcessors() / 2).coerceAtLeast(1)
             }
         }
 

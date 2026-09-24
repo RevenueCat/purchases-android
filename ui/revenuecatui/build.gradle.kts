@@ -1,3 +1,4 @@
+import org.gradle.api.tasks.testing.Test
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
@@ -172,5 +173,14 @@ baselineProfile {
     mergeIntoMain = true
     filter {
         include("com.revenuecat.purchases.ui.revenuecatui.**")
+    }
+}
+
+// Paparazzi's record/verify tasks run the regular unit test task with extra system properties. Outside those
+// runs the snapshot tests render but produce nothing, so plain unit test runs skip them.
+val paparazziTaskRequested = gradle.startParameter.taskNames.any { it.contains("Paparazzi") }
+if (!paparazziTaskRequested) {
+    tasks.withType<Test>().configureEach {
+        filter.excludeTestsMatching("com.revenuecat.purchases.ui.revenuecatui.snapshottests.*")
     }
 }
