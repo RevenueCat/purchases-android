@@ -103,6 +103,10 @@ internal class OfflineCustomerInfoCalculator(
             VerificationResult.VERIFIED_ON_DEVICE,
             CustomerInfoOriginalSource.OFFLINE_ENTITLEMENTS,
             loadedFromCache = false,
+            unsyncedProductIdentifiers = purchasedProducts
+                .filterNot { it.isSynced }
+                .map { it.productIdentifier }
+                .toSet(),
         )
     }
 
