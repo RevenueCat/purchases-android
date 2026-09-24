@@ -56,22 +56,24 @@ class BackendGetRewardVerificationResultTest {
             every { fallbackBaseURLs } returns emptyList()
         }
         httpClient = mockk()
-        val backendHelper = BackendHelper("TEST_API_KEY", SyncDispatcher(), appConfig, httpClient)
+        val lanes = testBackendLanes(SyncDispatcher(), SyncDispatcher())
+        val backendHelper = BackendHelper("TEST_API_KEY", lanes, appConfig, httpClient)
 
         val asyncDispatcher1 = createAsyncDispatcher()
         val asyncDispatcher2 = createAsyncDispatcher()
-        val asyncBackendHelper = BackendHelper("TEST_API_KEY", asyncDispatcher1, appConfig, httpClient)
+        val asyncLanes = testBackendLanes(asyncDispatcher1, asyncDispatcher2)
+        val asyncBackendHelper = BackendHelper("TEST_API_KEY", asyncLanes, appConfig, httpClient)
 
         backend = Backend(
             appConfig,
-            testBackendLanes(SyncDispatcher(), SyncDispatcher()),
+            lanes,
             httpClient,
             backendHelper,
         )
 
         asyncBackend = Backend(
             appConfig,
-            testBackendLanes(asyncDispatcher1, asyncDispatcher2),
+            asyncLanes,
             httpClient,
             asyncBackendHelper,
         )

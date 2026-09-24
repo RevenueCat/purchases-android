@@ -303,8 +303,9 @@ internal class BackendAPISourceFailoverIntegrationTest {
             localeProvider = DefaultLocaleProvider(),
         )
         val dispatcher = SyncDispatcher()
-        val backendHelper = BackendHelper(apiKey, dispatcher, appConfig, httpClient)
-        return Backend(appConfig, testBackendLanes(dispatcher, dispatcher), httpClient, backendHelper)
+        val lanes = testBackendLanes(dispatcher, dispatcher)
+        val backendHelper = BackendHelper(apiKey, lanes, appConfig, httpClient)
+        return Backend(appConfig, lanes, httpClient, backendHelper)
     }
 
     private fun createAppConfig(): AppConfig = AppConfig(

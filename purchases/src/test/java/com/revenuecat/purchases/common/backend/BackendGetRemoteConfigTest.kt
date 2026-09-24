@@ -65,22 +65,24 @@ class BackendGetRemoteConfigTest {
             every { isDebugBuild } returns false
         }
         httpClient = mockk()
-        val backendHelper = BackendHelper("TEST_API_KEY", SyncDispatcher(), appConfig, httpClient)
+        val lanes = testBackendLanes(SyncDispatcher(), SyncDispatcher())
+        val backendHelper = BackendHelper("TEST_API_KEY", lanes, appConfig, httpClient)
 
         val asyncDispatcher1 = createAsyncDispatcher()
         val asyncDispatcher2 = createAsyncDispatcher()
-        val asyncBackendHelper = BackendHelper("TEST_API_KEY", asyncDispatcher1, appConfig, httpClient)
+        val asyncLanes = testBackendLanes(asyncDispatcher1, asyncDispatcher2)
+        val asyncBackendHelper = BackendHelper("TEST_API_KEY", asyncLanes, appConfig, httpClient)
 
         backend = Backend(
             appConfig,
-            testBackendLanes(SyncDispatcher(), SyncDispatcher()),
+            lanes,
             httpClient,
             backendHelper,
         )
 
         asyncBackend = Backend(
             appConfig,
-            testBackendLanes(asyncDispatcher1, asyncDispatcher2),
+            asyncLanes,
             httpClient,
             asyncBackendHelper,
         )
@@ -130,11 +132,12 @@ class BackendGetRemoteConfigTest {
                 mainDispatcherUsed = true
             }
         }
+        val isolatedLanes = testBackendLanes(mainDispatcher, SyncDispatcher(), SyncDispatcher())
         val isolatedBackend = Backend(
             appConfig,
-            testBackendLanes(mainDispatcher, SyncDispatcher(), SyncDispatcher()),
+            isolatedLanes,
             httpClient,
-            BackendHelper("TEST_API_KEY", SyncDispatcher(), appConfig, httpClient),
+            BackendHelper("TEST_API_KEY", isolatedLanes, appConfig, httpClient),
         )
 
         val config = "{\"hello\":\"world\"}".toByteArray()

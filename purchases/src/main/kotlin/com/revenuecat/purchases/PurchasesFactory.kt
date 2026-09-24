@@ -261,7 +261,6 @@ internal class PurchasesFactory(
                 forceServerErrorStrategy = forceServerErrorStrategy,
                 timeoutManager = timeoutManager,
             )
-            val backendHelper = BackendHelper(apiKey, backendDispatcher, appConfig, httpClient)
             val backendLanes = BackendLanes(
                 defaultDispatcher = backendDispatcher,
                 dedicatedDispatchers = mapOf(
@@ -269,6 +268,7 @@ internal class PurchasesFactory(
                     RequestLane.EVENTS to eventsDispatcher,
                 ),
             )
+            val backendHelper = BackendHelper(apiKey, backendLanes, appConfig, httpClient)
             val backend = Backend(appConfig, backendLanes, httpClient, backendHelper)
             val fileRepository = DefaultFileRepository(application)
             val paywallAssetWarming = PaywallAssetWarming(application)

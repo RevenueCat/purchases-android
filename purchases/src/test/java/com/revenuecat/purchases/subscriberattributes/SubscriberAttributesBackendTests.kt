@@ -52,15 +52,16 @@ class SubscriberAttributesPosterTests {
     }
     private val appUserID = "jerry"
     private val dispatcher = SyncDispatcher()
+    private val lanes = testBackendLanes(dispatcher, dispatcher)
     private var backendHelper = BackendHelper(
         API_KEY,
-        dispatcher,
+        lanes,
         mockAppConfig,
         mockClient
     )
     private var backend: Backend = Backend(
         mockAppConfig,
-        testBackendLanes(dispatcher, dispatcher),
+        lanes,
         mockClient,
         backendHelper,
     )

@@ -124,10 +124,11 @@ class BackendTest {
         every { store } returns Store.PLAY_STORE
     }
     private val dispatcher = spyk(SyncDispatcher())
-    private val backendHelper = BackendHelper(API_KEY, dispatcher, mockAppConfig, mockClient)
+    private val lanes = testBackendLanes(dispatcher, dispatcher)
+    private val backendHelper = BackendHelper(API_KEY, lanes, mockAppConfig, mockClient)
     private var backend: Backend = Backend(
         mockAppConfig,
-        testBackendLanes(dispatcher, dispatcher),
+        lanes,
         mockClient,
         backendHelper,
     )
@@ -142,21 +143,22 @@ class BackendTest {
             )
         )
     )
-    private var asyncBackendHelper: BackendHelper = BackendHelper(API_KEY, asyncDispatcher, mockAppConfig, mockClient)
+    private val asyncLanes = testBackendLanes(
+        asyncDispatcher,
+        Dispatcher(
+            ThreadPoolExecutor(
+                1,
+                2,
+                0,
+                TimeUnit.MILLISECONDS,
+                LinkedBlockingQueue()
+            )
+        ),
+    )
+    private var asyncBackendHelper: BackendHelper = BackendHelper(API_KEY, asyncLanes, mockAppConfig, mockClient)
     private var asyncBackend: Backend = Backend(
         mockAppConfig,
-        testBackendLanes(
-            asyncDispatcher,
-            Dispatcher(
-                ThreadPoolExecutor(
-                    1,
-                    2,
-                    0,
-                    TimeUnit.MILLISECONDS,
-                    LinkedBlockingQueue()
-                )
-            ),
-        ),
+        asyncLanes,
         mockClient,
         asyncBackendHelper,
     )
@@ -352,9 +354,9 @@ class BackendTest {
         val defaultDispatcher = mockk<Dispatcher>(relaxed = true)
         val eventsDispatcher = mockk<Dispatcher>(relaxed = true)
         val remoteConfigDispatcher = mockk<Dispatcher>(relaxed = true)
-        val lanes = testBackendLanes(defaultDispatcher, eventsDispatcher, remoteConfigDispatcher)
+        val closingLanes = testBackendLanes(defaultDispatcher, eventsDispatcher, remoteConfigDispatcher)
 
-        Backend(mockAppConfig, lanes, mockClient, backendHelper).close()
+        Backend(mockAppConfig, closingLanes, mockClient, backendHelper).close()
 
         verify(exactly = 1) { defaultDispatcher.close() }
         verify(exactly = 1) { remoteConfigDispatcher.close() }

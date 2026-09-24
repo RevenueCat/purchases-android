@@ -149,10 +149,11 @@ internal abstract class BaseBackendIntegrationTest {
             forceServerErrorStrategy = forceServerErrorStrategy,
             requestResponseListener = ResponseCodeRecordingListener(goldenFileRecorder, recordedResponseCodes),
         )
-        backendHelper = BackendHelper(apiKey(), dispatcher, appConfig, httpClient)
+        val lanes = testBackendLanes(dispatcher, diagnosticsDispatcher)
+        backendHelper = BackendHelper(apiKey(), lanes, appConfig, httpClient)
         backend = Backend(
             appConfig,
-            testBackendLanes(dispatcher, diagnosticsDispatcher),
+            lanes,
             httpClient,
             backendHelper,
         )
