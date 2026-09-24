@@ -24,6 +24,14 @@
       "matchManagers": ["gradle"],
       "enabled": true,
       "groupName": "google-mobile-ads-legacy-compatibility"
+    },
+    {
+      "description": "The shared preset only opts in the revenuecat orb; keep the Android orb current too",
+      "matchManagers": ["circleci"],
+      "matchDatasources": ["orb"],
+      "matchPackageNames": ["circleci/android"],
+      "enabled": true,
+      "groupName": "circleci-orb"
     }
   ]
 }
