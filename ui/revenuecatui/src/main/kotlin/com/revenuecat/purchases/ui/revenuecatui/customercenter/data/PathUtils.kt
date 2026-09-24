@@ -57,8 +57,8 @@ internal object PathUtils {
         return when (path.type) {
             CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE,
             CustomerCenterConfigData.HelpPath.PathType.CUSTOM_URL,
-            CustomerCenterConfigData.HelpPath.PathType.CUSTOM_ACTION,
             CustomerCenterConfigData.HelpPath.PathType.UNKNOWN,
+            CustomerCenterConfigData.HelpPath.PathType.CUSTOM_ACTION,
             -> true
             CustomerCenterConfigData.HelpPath.PathType.CANCEL,
             CustomerCenterConfigData.HelpPath.PathType.REFUND_REQUEST,
@@ -75,10 +75,10 @@ internal object PathUtils {
             CustomerCenterConfigData.HelpPath.PathType.CANCEL,
             CustomerCenterConfigData.HelpPath.PathType.REFUND_REQUEST,
             CustomerCenterConfigData.HelpPath.PathType.CHANGE_PLANS,
+            CustomerCenterConfigData.HelpPath.PathType.CUSTOM_ACTION,
+            CustomerCenterConfigData.HelpPath.PathType.CUSTOM_URL,
             -> true
             CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE,
-            CustomerCenterConfigData.HelpPath.PathType.CUSTOM_URL,
-            CustomerCenterConfigData.HelpPath.PathType.CUSTOM_ACTION,
             CustomerCenterConfigData.HelpPath.PathType.UNKNOWN,
             -> false
         }
