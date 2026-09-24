@@ -7,10 +7,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.assertWidthIsEqualTo
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
@@ -316,6 +318,41 @@ class StackFillMinMaxTest {
         75 to Color.Red,
         90 to Color.Blue,
     )
+
+    @Test
+    fun `scrolling stack grows past its own size when content overflows it`() {
+        // A limited Fill child routes the stack through ConstrainedFillLayout. The scroll lifts the max constraint, so
+        // Red (150dp) already exceeds the 100dp stack and Blue only gets its 30dp minimum. The stack must report the
+        // full 180dp of content, otherwise the scroll has no range and Blue is unreachable.
+        val stack = stack(
+            horizontal = false,
+            child(Color.Red, Size(width = Fill(), height = Fixed(150u))),
+            child(Color.Blue, fill(horizontal = false, min = 30u)),
+            overflow = Overflow.SCROLL,
+        )
+        val style = styleFactory.create(stack).getOrThrow().componentStyle as StackComponentStyle
+        composeTestRule.setContent {
+            StackComponentView(
+                style = style,
+                state = FakePaywallState(components = emptyList()),
+                clickHandler = {},
+                modifier = Modifier.testTag("stack"),
+            )
+        }
+        composeTestRule.waitForIdle()
+
+        fun px(dp: Int) = with(composeTestRule.density) { dp.dp.roundToPx() }
+        val node = composeTestRule.onNodeWithTag("stack")
+        node.assertHeightIsEqualTo(100.dp)
+        node.assertPixelColorEquals(Color.Red, px(10), px(90), width = 1, height = 1)
+
+        node.performSemanticsAction(SemanticsActions.ScrollBy) { scrollBy -> scrollBy(0f, px(80).toFloat()) }
+        composeTestRule.waitForIdle()
+
+        // Scrolled to the end, the last 100dp of the 180dp content are visible: Red until 70, Blue after.
+        node.assertPixelColorEquals(Color.Red, px(10), px(60), width = 1, height = 1)
+        node.assertPixelColorEquals(Color.Blue, px(10), px(90), width = 1, height = 1)
+    }
 
     @Test
     fun `cross-axis min and max are applied by the child itself`() {
