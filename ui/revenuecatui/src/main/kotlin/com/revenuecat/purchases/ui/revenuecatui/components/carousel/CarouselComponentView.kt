@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
@@ -49,9 +50,11 @@ import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.addMarginToFillLimits
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
+import com.revenuecat.purchases.ui.revenuecatui.components.modifier.resolveComponentSizeParentData
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
@@ -172,10 +175,12 @@ internal fun CarouselComponentView(
     val density = LocalDensity.current
     var pagerHeightPx by remember(carouselState.pages) { mutableIntStateOf(0) }
     val fillPageModifier = fillPageModifierOrEmpty(carouselState.size.height, pagerHeightPx, density)
+    val size = carouselState.size.addMarginToFillLimits(carouselState.margin, LocalLayoutDirection.current)
 
     Column(
         modifier = modifier
-            .size(carouselState.size)
+            .resolveComponentSizeParentData(size)
+            .size(size)
             .padding(carouselState.margin)
             .applyIfNotNull(shadowStyle) { shadow(it, carouselState.shape) }
             .applyIfNotNull(backgroundColorStyle) { background(it, carouselState.shape) }
