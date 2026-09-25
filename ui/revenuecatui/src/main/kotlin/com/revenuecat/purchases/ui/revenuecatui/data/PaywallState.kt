@@ -100,7 +100,7 @@ internal sealed interface PaywallState {
             }
         }
 
-        @Suppress("LongParameterList")
+        @Suppress("LongParameterList", "TooManyFunctions")
         @Stable
         class Components(
             val stack: ComponentStyle,
@@ -418,6 +418,49 @@ internal sealed interface PaywallState {
                 val tabsWithThisPackage = tabsByUniqueId[selectedPackageUniqueId]
                 val currentTabContainsThisPackage = tabsWithThisPackage?.contains(currentTabIndex) == true
                 if (currentTabContainsThisPackage) selectedPackageByTab[currentTabIndex] = selectedPackageUniqueId
+            }
+
+            /**
+             * Creates an isolated state for sheet content.
+             *
+             * Package selection in a sheet is temporary: the root selection is restored when the sheet closes. Keeping
+             * the temporary selection in the root state needlessly invalidates the paywall behind the sheet. This is
+             * particularly expensive when the root is rendered into a blurred layer, because every selection can cause
+             * the full layer to be redrawn and blurred again.
+             */
+            internal fun copyForSheet(): Components {
+                val sheetState = Components(
+                    stack = stack,
+                    header = header,
+                    stickyFooter = stickyFooter,
+                    background = background,
+                    mainStackHasHeroImage = mainStackHasHeroImage,
+                    showPricesWithDecimals = showPricesWithDecimals,
+                    variableConfig = variableConfig,
+                    variableDataProvider = variableDataProvider,
+                    offering = offering,
+                    locales = locales,
+                    storefrontCountryCode = storefrontCountryCode,
+                    dateProvider = dateProvider,
+                    packages = packages,
+                    customVariables = customVariables,
+                    defaultCustomVariables = defaultCustomVariables,
+                    initialLocaleList = LocaleList(localeId.value),
+                    initialSelectedTabIndex = selectedTabIndex,
+                    initialSheetState = sheet,
+                    purchases = purchases,
+                    workflowScreen = workflowScreen,
+                    stateStore = stateStore,
+                    viewModelActionInProgress = viewModelActionInProgress,
+                )
+
+                sheetState.localeId = localeId
+                sheetState.selectedPackageUniqueId = selectedPackageUniqueId
+                sheetState.selectedPackageByTab.clear()
+                sheetState.selectedPackageByTab.putAll(selectedPackageByTab)
+                sheetState.defaultPackageInfo = defaultPackageInfo
+                sheetState.paywallBoundsDp = paywallBoundsDp
+                return sheetState
             }
 
             fun resetToDefaultPackage() {

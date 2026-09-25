@@ -360,6 +360,42 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
     }
 
     @Test
+    fun `Sheet package selection does not change the root selection`() {
+        val rootState = paywallState(
+            packagesOutsideTabs = listOf(
+                packageInfo(TestData.Packages.monthly, isSelectedByDefault = true),
+                packageInfo(TestData.Packages.annual, isSelectedByDefault = false),
+            ),
+            packagesByTab = emptyMap(),
+            initialSelectedTabIndex = null,
+        )
+        val sheetState = rootState.copyForSheet()
+
+        sheetState.update(TestData.Packages.annual.identifier)
+
+        assertThat(sheetState.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+        assertThat(rootState.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
+    }
+
+    @Test
+    fun `Sheet state starts with the current root selection`() {
+        val rootState = paywallState(
+            packagesOutsideTabs = listOf(
+                packageInfo(TestData.Packages.monthly, isSelectedByDefault = true),
+                packageInfo(TestData.Packages.annual, isSelectedByDefault = false),
+            ),
+            packagesByTab = emptyMap(),
+            initialSelectedTabIndex = null,
+        )
+        rootState.update(TestData.Packages.annual.identifier)
+
+        val sheetState = rootState.copyForSheet()
+
+        assertThat(sheetState.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+        assertThat(rootState.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
+    @Test
     fun `Should keep a default inside a tab ahead of a package outside tabs`() {
         val state = paywallState(
             packagesOutsideTabs = listOf(packageInfo(TestData.Packages.monthly, isSelectedByDefault = false)),
