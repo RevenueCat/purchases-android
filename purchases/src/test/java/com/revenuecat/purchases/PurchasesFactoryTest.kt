@@ -304,33 +304,61 @@ class PurchasesFactoryTest {
         purchases.close()
     }
 
-    // region shouldInitializeDiagnostics
+    // region diagnostics
 
     @Test
-    fun `shouldInitializeDiagnostics returns true when diagnostics enabled and preview mode off`() {
-        assertThat(PurchasesFactory.shouldInitializeDiagnostics(diagnosticsEnabled = true, uiPreviewMode = false))
-            .isTrue
+    fun `creating purchases with diagnostics disabled still collects diagnostics until the remote setting decides`() {
+        val purchases = createPurchases { diagnosticsEnabled(false) }
+
+        val tracker = purchases.purchasesOrchestrator.diagnosticsTrackerIfEnabled
+        assertThat(tracker).isNotNull()
+        assertThat(purchases.purchasesOrchestrator.diagnosticsSynchronizer).isNotNull()
+        assertThat(tracker!!.isCollectionEnabled).isFalse()
+        tracker.applyRemoteCollectionSetting(remoteEnabled = null)
+        assertThat(tracker.isCollectionEnabled).isFalse()
+        purchases.close()
     }
 
     @Test
-    fun `shouldInitializeDiagnostics returns false when preview mode is on`() {
-        assertThat(PurchasesFactory.shouldInitializeDiagnostics(diagnosticsEnabled = true, uiPreviewMode = true))
-            .isFalse
+    fun `creating purchases with diagnostics enabled enables collection once the remote setting is absent`() {
+        val purchases = createPurchases { diagnosticsEnabled(true) }
+
+        val tracker = purchases.purchasesOrchestrator.diagnosticsTrackerIfEnabled!!
+        assertThat(tracker.isCollectionEnabled).isFalse()
+        tracker.applyRemoteCollectionSetting(remoteEnabled = null)
+        assertThat(tracker.isCollectionEnabled).isTrue()
+        purchases.close()
     }
 
+    @OptIn(InternalRevenueCatAPI::class)
     @Test
-    fun `shouldInitializeDiagnostics returns false when diagnostics disabled`() {
-        assertThat(PurchasesFactory.shouldInitializeDiagnostics(diagnosticsEnabled = false, uiPreviewMode = false))
-            .isFalse
-    }
+    fun `creating purchases in ui preview mode does not build diagnostics`() {
+        val purchases = createPurchases { dangerousSettings(DangerousSettings.forPreviewMode()) }
 
-    @Test
-    fun `shouldInitializeDiagnostics returns false when both diagnostics disabled and preview mode on`() {
-        assertThat(PurchasesFactory.shouldInitializeDiagnostics(diagnosticsEnabled = false, uiPreviewMode = true))
-            .isFalse
+        assertThat(purchases.purchasesOrchestrator.diagnosticsTrackerIfEnabled).isNull()
+        assertThat(purchases.purchasesOrchestrator.diagnosticsSynchronizer).isNull()
+        purchases.close()
     }
 
     // endregion
+
+    private fun createPurchases(configure: PurchasesConfiguration.Builder.() -> Unit): Purchases {
+        val application = spyk(ApplicationProvider.getApplicationContext<Application>())
+        every { application.applicationContext } returns application
+        every { application.checkCallingOrSelfPermission(Manifest.permission.INTERNET) } returns
+            PackageManager.PERMISSION_GRANTED
+        val configuration = PurchasesConfiguration.Builder(application, "fakeApiKey")
+            .appUserID("appUserID")
+            .store(Store.PLAY_STORE)
+            .apply(configure)
+            .build()
+        return purchasesFactory.createPurchases(
+            configuration = configuration,
+            platformInfo = PlatformInfo(flavor = "test", version = null),
+            proxyURL = null,
+            overrideBillingAbstract = mockk<BillingAbstract>(relaxed = true),
+        )
+    }
 
     private fun createConfiguration(
         testApiKey: String = "fakeApiKey",
