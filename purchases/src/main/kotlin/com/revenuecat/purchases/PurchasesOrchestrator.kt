@@ -148,8 +148,10 @@ internal class PurchasesOrchestrator(
     var appConfig: AppConfig,
     private val customerInfoHelper: CustomerInfoHelper,
     private val customerInfoUpdateHandler: CustomerInfoUpdateHandler,
-    private val diagnosticsSynchronizer: DiagnosticsSynchronizer?,
-    private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
+    @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal val diagnosticsSynchronizer: DiagnosticsSynchronizer?,
+    @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     val offlineEntitlementsManager: OfflineEntitlementsManager,
@@ -348,7 +350,7 @@ internal class PurchasesOrchestrator(
     }
 
     override fun onSdkSettingsChanged(settings: SdkSettings) {
-        // Consuming the settings (e.g. the diagnostics override) lands in a follow-up.
+        diagnosticsTrackerIfEnabled?.applyRemoteCollectionSetting(settings.diagnostics?.enabled)
     }
 
     /** @suppress */
@@ -389,6 +391,10 @@ internal class PurchasesOrchestrator(
                     RemoteConfigFetchContext.Foreground
                 },
             )
+            if (firstTimeInForeground) {
+                // After the refresh above so the resolution joins that request instead of priming its own.
+                sdkSettingsConfigProvider.ensureSettingsDelivered()
+            }
 
             if (shouldRefreshCustomerInfo(firstTimeInForeground)) {
                 log(LogIntent.DEBUG) { CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND }

@@ -27,6 +27,7 @@ internal fun interface SdkSettingsListener {
  * the manager's *current* [RemoteConfigManager.configGeneration]; otherwise [cachedSettings] is `null` and a
  * consumer keeps its build-time value, while [getSettings] falls through to the config layer.
  */
+@Suppress("TooManyFunctions")
 internal class SdkSettingsConfigProvider(
     private val manager: RemoteConfigManager,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
@@ -90,6 +91,20 @@ internal class SdkSettingsConfigProvider(
     /** Fire-and-forget [warm] on this provider's own scope; used for the cold-start init warm. */
     fun warmAsync(generation: Int) {
         scope.launch { warm(generation) }
+    }
+
+    /**
+     * Makes sure the listener hears a resolution even when no commit will deliver one: a `204`, a failed fetch
+     * or a disabled manager never re-warm, so a cold-disk session would otherwise never be told the settings.
+     * Resolves through [getSettings], which joins the refresh in flight and yields [SdkSettings.DEFAULT] when
+     * nothing commits, and delivers through the same change/generation guard as a warm, so a value already
+     * delivered is not repeated and a newer one is never overridden.
+     */
+    fun ensureSettingsDelivered() {
+        scope.launch {
+            val settings = getSettings()
+            listener?.let { deliverIfChanged(manager.configGeneration, settings, it) }
+        }
     }
 
     override fun onConfigCommitted(generation: Int) {

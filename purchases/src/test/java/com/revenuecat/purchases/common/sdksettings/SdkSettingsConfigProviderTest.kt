@@ -246,6 +246,57 @@ internal class SdkSettingsConfigProviderTest {
         coVerify(exactly = 2) { manager.topic(RemoteConfigTopic.SdkSettings) }
     }
 
+    @Test
+    fun `ensureSettingsDelivered delivers the defaults when nothing is committed`() = runTest {
+        val provider = SdkSettingsConfigProvider(manager, scope = this)
+        provider.listener = SdkSettingsListener { notified.add(it) }
+        coEvery { manager.hasCommittedConfig() } returns false
+
+        provider.ensureSettingsDelivered()
+        advanceUntilIdle()
+
+        assertThat(notified).containsExactly(SdkSettings.DEFAULT)
+        assertThat(provider.cachedSettings()).isNull()
+    }
+
+    @Test
+    fun `ensureSettingsDelivered delivers the committed settings`() = runTest {
+        val provider = SdkSettingsConfigProvider(manager, scope = this)
+        provider.listener = SdkSettingsListener { notified.add(it) }
+        coEvery { manager.topic(RemoteConfigTopic.SdkSettings) } returns topic("""{"diagnostics":{"enabled":true}}""")
+
+        provider.ensureSettingsDelivered()
+        advanceUntilIdle()
+
+        assertThat(notified).containsExactly(diagnosticsOn)
+    }
+
+    @Test
+    fun `ensureSettingsDelivered does not repeat settings a warm already delivered`() = runTest {
+        val provider = SdkSettingsConfigProvider(manager, scope = this)
+        provider.listener = SdkSettingsListener { notified.add(it) }
+        commitTopic("""{"diagnostics":{"enabled":true}}""")
+        provider.warm(generation = 0)
+
+        provider.ensureSettingsDelivered()
+        advanceUntilIdle()
+
+        assertThat(notified).containsExactly(diagnosticsOn)
+    }
+
+    @Test
+    fun `ensureSettingsDelivered delivers a change the next warm then reports`() = runTest {
+        val provider = SdkSettingsConfigProvider(manager, scope = this)
+        provider.listener = SdkSettingsListener { notified.add(it) }
+        provider.ensureSettingsDelivered()
+        advanceUntilIdle()
+        commitTopic("""{"diagnostics":{"enabled":false}}""")
+
+        provider.warm(generation = 1)
+
+        assertThat(notified).containsExactly(SdkSettings.DEFAULT, diagnosticsOff)
+    }
+
     private fun commitTopic(defaultItemJson: String) {
         coEvery { manager.committedTopicOrNull(RemoteConfigTopic.SdkSettings) } returns topic(defaultItemJson)
     }

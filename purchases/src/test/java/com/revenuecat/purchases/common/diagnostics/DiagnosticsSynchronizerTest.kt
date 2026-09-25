@@ -42,7 +42,9 @@ class DiagnosticsSynchronizerTest {
     @Before
     fun setup() {
         diagnosticsFileHelper = mockk()
-        diagnosticsTracker = mockk()
+        diagnosticsTracker = mockk {
+            every { isCollectionEnabled } returns true
+        }
         backend = mockk()
         dispatcher = SyncDispatcher()
 
@@ -68,6 +70,26 @@ class DiagnosticsSynchronizerTest {
 
         verify(exactly = 1) { diagnosticsFileHelper.readFileAsJson(any()) }
         verify(exactly = 0) { backend.postDiagnostics(any(), any(), any()) }
+    }
+
+    @Test
+    fun `syncDiagnosticsFileIfNeeded does not sync while diagnostics collection is not enabled`() {
+        every { diagnosticsTracker.isCollectionEnabled } returns false
+        mockBackendResponse(testDiagnosticsEntryJSONs)
+
+        diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
+
+        verify(exactly = 0) { diagnosticsFileHelper.readFileAsJson(any()) }
+        verify(exactly = 0) { backend.postDiagnostics(any(), any(), any()) }
+    }
+
+    @Test
+    fun `onCollectionEnabled syncs the diagnostics file`() {
+        mockBackendResponse(testDiagnosticsEntryJSONs)
+
+        diagnosticsSynchronizer.onCollectionEnabled()
+
+        verify(exactly = 1) { backend.postDiagnostics(testDiagnosticsEntryJSONs, any(), any()) }
     }
 
     @Test
