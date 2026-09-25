@@ -1,3 +1,8 @@
+## 10.23.2
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Skip obfuscatedAccountId when the device already owns the subscription being purchased (#4308) via Toni Rico (@tonidero)
+
 ## 10.23.1
 ## RevenueCatUI SDK
 ### 🐞 Bugfixes
