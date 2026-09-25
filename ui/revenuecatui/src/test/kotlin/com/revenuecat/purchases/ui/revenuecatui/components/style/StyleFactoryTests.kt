@@ -11,6 +11,7 @@ import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.FallbackHeaderComponent
 import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
+import com.revenuecat.purchases.paywalls.components.PurchaseContext
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialButtonComponent
@@ -98,6 +99,38 @@ class StyleFactoryTests {
             variableLocalizations = variableLocalizations,
             offering = offering
         )
+    }
+
+    @Test
+    fun `Independent context uses its own package flags and does not become the parent default`() {
+        val monthly = PackageComponent(
+            packageId = "\$rc_monthly",
+            isSelectedByDefault = true,
+            stack = StackComponent(components = emptyList()),
+        )
+        val scope = StackComponent(
+            components = listOf(
+                PackageComponent(
+                    packageId = "\$rc_annual",
+                    isSelectedByDefault = false,
+                    stack = StackComponent(components = emptyList()),
+                ),
+                monthly,
+            ),
+            purchaseContext = PurchaseContext(mode = "independent"),
+        )
+        val annual = PackageComponent(
+            packageId = "\$rc_annual",
+            isSelectedByDefault = true,
+            stack = StackComponent(components = emptyList()),
+        )
+        val result = styleFactory.create(StackComponent(components = listOf(annual, scope))).getOrThrow()
+        assertThat(result.availablePackages.packagesOutsideTabs.map { it.pkg.identifier }).containsExactly("\$rc_annual")
+        assertThat(result.availablePackages.allPackages.map { it.pkg.identifier }).containsExactly("\$rc_annual", "\$rc_annual", "\$rc_monthly")
+        val rootStyle = result.componentStyle as StackComponentStyle
+        val scopeStyle = rootStyle.children[1] as StackComponentStyle
+        assertThat(scopeStyle.purchaseContextPackages!!.packagesOutsideTabs.map { it.isSelectedByDefault })
+            .containsExactly(false, true)
     }
 
     @Test

@@ -39,6 +39,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
+import com.revenuecat.purchases.ui.revenuecatui.components.previewStackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
@@ -55,6 +56,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentS
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.variableLocalizationKeysForEnUs
 import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
@@ -132,6 +134,40 @@ class ButtonComponentViewTests {
         ),
         action = ButtonComponentStyle.Action.PurchasePackage(rcPackage = null),
     )
+
+    @Test
+    fun `purchase action carries the selection from the button context`() {
+        val root = FakePaywallState(TestData.Packages.annual, TestData.Packages.monthly)
+        root.update(selectedPackageUniqueId = TestData.Packages.annual.identifier)
+        val style = previewStackComponentStyle(children = emptyList()).copy(
+            purchaseContextPackages = PaywallState.Loaded.Components.AvailablePackages(
+                packagesOutsideTabs = listOf(
+                    PaywallState.Loaded.Components.AvailablePackages.Info(
+                        pkg = TestData.Packages.monthly,
+                        isSelectedByDefault = true,
+                    ),
+                ),
+                packagesByTab = emptyMap(),
+                hasDeclaredPackages = true,
+            ),
+        )
+        val state = requireNotNull(root.purchaseContextState(style))
+        var purchaseAction: PaywallAction.External.PurchasePackage? = null
+
+        composeTestRule.setContent {
+            ButtonComponentView(
+                style = purchaseButtonStyle,
+                state = state,
+                onClick = { purchaseAction = it as PaywallAction.External.PurchasePackage },
+            )
+        }
+
+        composeTestRule.onNodeWithText("Purchase").performClick()
+        composeTestRule.waitForIdle()
+        assertThat(purchaseAction?.rcPackage).isEqualTo(TestData.Packages.monthly)
+        assertThat(purchaseAction?.resolvedOffer).isEqualTo(state.selectedPackageInfo?.resolvedOffer)
+        assertThat(root.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
 
     @Test
     fun `a click cut short by the button leaving composition releases the paywall action`() {
