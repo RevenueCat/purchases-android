@@ -342,13 +342,13 @@ internal fun SimpleSheetState.show(
     onClick: suspend (PaywallAction) -> Unit,
 ) {
     val stack = sheet.stack as? StackComponentStyle
-    val scopeState = stack?.let { state.defaultScopeState(it) }?.also {
+    val scopeState = stack?.let { state.purchaseContextState(it) }?.also {
         it.paywallBoundsDp = state.paywallBoundsDp
         it.windowScreenCondition = state.windowScreenCondition
-        it.reconcileDefaultScopeSelection(initialize = true)
+        it.reconcilePurchaseContextSelection(initialize = true)
     }
     val sheetState = scopeState ?: state
-    val sheetStack = if (scopeState != null) stack.copy(defaultScopePackages = null) else sheet.stack
+    val sheetStack = if (scopeState != null) stack.copy(purchaseContextPackages = null) else sheet.stack
     show(
         backgroundBlur = sheet.backgroundBlur,
         content = {
@@ -356,7 +356,7 @@ internal fun SimpleSheetState.show(
                 scopeState.paywallBoundsDp = state.paywallBoundsDp
                 scopeState.headerHeightPx = state.headerHeightPx
                 scopeState.windowScreenCondition = state.windowScreenCondition
-                scopeState.reconcileDefaultScopeSelection()
+                scopeState.reconcilePurchaseContextSelection()
             }
             ComponentView(
                 style = sheetStack,
@@ -376,7 +376,7 @@ internal fun SimpleSheetState.show(
         contentKey = sheet.id,
         onDismiss = {
             val sheetSelected = sheetState.selectedPackageInfo
-            val resulting = if (stack?.defaultScopePackages != null) {
+            val resulting = if (stack?.purchaseContextPackages != null) {
                 state.selectedPackageInfo
             } else {
                 state.peekSelectedPackageInfoAfterSheetDismiss()
@@ -388,7 +388,7 @@ internal fun SimpleSheetState.show(
                     resultingRootPackage = resulting?.rcPackage,
                 ),
             )
-            if ((sheet.stack as? StackComponentStyle)?.defaultScopePackages == null) state.resetToDefaultPackage()
+            if ((sheet.stack as? StackComponentStyle)?.purchaseContextPackages == null) state.resetToDefaultPackage()
         },
     )
 }

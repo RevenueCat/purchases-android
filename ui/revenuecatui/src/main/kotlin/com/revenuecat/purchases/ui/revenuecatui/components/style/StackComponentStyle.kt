@@ -25,8 +25,8 @@ import java.util.Date
 internal data class StackComponentStyle(
     @get:JvmSynthetic
     val children: List<ComponentStyle>,
-    val defaultScopePackages: AvailablePackages? = null,
-    val defaultScopeTabIndex: Int? = null,
+    val purchaseContextPackages: AvailablePackages? = null,
+    val purchaseContextTabIndex: Int? = null,
     @get:JvmSynthetic
     val dimension: Dimension,
     @get:JvmSynthetic

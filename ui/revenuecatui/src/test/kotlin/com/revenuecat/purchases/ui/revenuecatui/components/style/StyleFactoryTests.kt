@@ -11,7 +11,7 @@ import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.FallbackHeaderComponent
 import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
-import com.revenuecat.purchases.paywalls.components.PackageSelection
+import com.revenuecat.purchases.paywalls.components.PurchaseContext
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialButtonComponent
@@ -102,7 +102,7 @@ class StyleFactoryTests {
     }
 
     @Test
-    fun `Scoped defaults use package flags and do not become the parent default`() {
+    fun `Independent context uses its own package flags and does not become the parent default`() {
         val monthly = PackageComponent(
             packageId = "\$rc_monthly",
             isSelectedByDefault = true,
@@ -117,7 +117,7 @@ class StyleFactoryTests {
                 ),
                 monthly,
             ),
-            packageSelection = PackageSelection(defaultScope = "container"),
+            purchaseContext = PurchaseContext(mode = "independent"),
         )
         val annual = PackageComponent(
             packageId = "\$rc_annual",
@@ -129,7 +129,7 @@ class StyleFactoryTests {
         assertThat(result.availablePackages.allPackages.map { it.pkg.identifier }).containsExactly("\$rc_annual", "\$rc_annual", "\$rc_monthly")
         val rootStyle = result.componentStyle as StackComponentStyle
         val scopeStyle = rootStyle.children[1] as StackComponentStyle
-        assertThat(scopeStyle.defaultScopePackages!!.packagesOutsideTabs.map { it.isSelectedByDefault })
+        assertThat(scopeStyle.purchaseContextPackages!!.packagesOutsideTabs.map { it.isSelectedByDefault })
             .containsExactly(false, true)
     }
 
