@@ -199,6 +199,7 @@ internal class IdentityManager(
             )
             return
         }
+        logIfAppUserIDMisusesAnonymousPrefix(newAppUserID)
         debugLog { IdentityStrings.SWITCHING_USER.format(newAppUserID) }
         resetAndSaveUserID(newAppUserID)
     }

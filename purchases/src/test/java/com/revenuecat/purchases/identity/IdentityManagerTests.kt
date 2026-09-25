@@ -765,6 +765,28 @@ class IdentityManagerTests {
 
         verify(exactly = 1) { mockDeviceCache.cacheAppUserID(newAppUserID) }
     }
+
+    @Test
+    fun `switching to an App User ID using the anonymous prefix logs an error and still switches`() {
+        mockIdentifiedUser("cesar")
+        val newAppUserID = "\$RCAnonymousID:my-user"
+
+        assertErrorLog("😿‼️ ${IdentityStrings.APP_USER_ID_HAS_ANONYMOUS_PREFIX.format(newAppUserID)}") {
+            identityManager.switchUser(newAppUserID)
+        }
+        verify(exactly = 1) { mockDeviceCache.cacheAppUserID(newAppUserID) }
+    }
+
+    @Test
+    fun `switching to a generated anonymous or regular App User ID does not log an error`() {
+        listOf(stubAnonymousID, "new").forEach { newAppUserID ->
+            mockIdentifiedUser("cesar")
+
+            val logs = captureLogs { identityManager.switchUser(newAppUserID) }
+
+            assertThat(logs).noneMatch { it.level == LogLevel.ERROR }
+        }
+    }
     // endregion
 
     // region preview mode
