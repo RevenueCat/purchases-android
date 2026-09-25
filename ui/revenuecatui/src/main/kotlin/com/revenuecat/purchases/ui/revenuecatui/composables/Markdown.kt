@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import org.commonmark.ext.gfm.strikethrough.Strikethrough
 import org.commonmark.ext.gfm.strikethrough.StrikethroughExtension
 import org.commonmark.node.BlockQuote
@@ -595,7 +596,7 @@ private fun AnnotatedString.Builder.appendMarkdownChildren(
             }
             is Link -> {
                 if (allowLinks) {
-                    withLink(child.toLinkAnnotation(color, state.uriHandler)) {
+                    withLink(linkAnnotation(child.destination, color, state.uriHandler)) {
                         appendMarkdownChildren(child, color, allowLinks = true, baseFontWeight = baseFontWeight, state)
                     }
                 } else {
@@ -613,10 +614,25 @@ private fun AnnotatedString.Builder.appendMarkdownChildren(
     }
 }
 
-private fun Link.toLinkAnnotation(color: Color, uriHandler: UriHandler?): LinkAnnotation.Url {
+internal fun linkAnnotation(destination: String, color: Color, uriHandler: UriHandler?): LinkAnnotation.Url {
     val underline = SpanStyle(color, textDecoration = TextDecoration.Underline)
-    val listener = uriHandler?.let { handler -> LinkInteractionListener { handler.openUri(destination) } }
+    val listener = uriHandler?.let { OpenUriListener(it, destination) }
     return LinkAnnotation.Url(destination, TextLinkStyles(underline), listener)
+}
+
+/**
+ * A data class so annotations built for the same link compare equal, which lets Compose skip laying the text out
+ * again on recomposition.
+ */
+private data class OpenUriListener(val uriHandler: UriHandler, val destination: String) : LinkInteractionListener {
+    override fun onClick(link: LinkAnnotation) {
+        // Compose ignores links no app can open when a link has no listener. Do the same.
+        try {
+            uriHandler.openUri(destination)
+        } catch (e: IllegalArgumentException) {
+            Logger.w("Couldn't open link $destination: ${e.message}")
+        }
+    }
 }
 
 internal fun AnnotatedString.Builder.handleInlineHTML(tag: String, state: MarkdownState) {
