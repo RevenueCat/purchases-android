@@ -1311,7 +1311,9 @@ internal class PaywallViewModelImpl(
         // Capture on the main thread: cancellation is cooperative and can't stop an in-flight
         // computeStateForStep, so a late prewarm must not write into a store swapped in by a newer session.
         val stateStore = currentWorkflowStateStore
-        preWarmJob = viewModelScope.launch {
+        // Dispatched to a later main-looper message: this can start inside composition (warm-cache init), and a
+        // withContext that returns without suspending would otherwise write step state inside its snapshot.
+        preWarmJob = viewModelScope.launch(Dispatchers.Main) {
             for ((stepId, step) in workflow.steps) {
                 if (stepId in workflowStepStateCache) continue
                 val computed = withContext(backgroundDispatcher) {

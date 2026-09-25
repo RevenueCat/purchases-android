@@ -25,7 +25,7 @@ aliases:
     executor:
       name: android/android_docker
       resource_class: xlarge
-      tag: 2025.04.1
+      tag: 2026.08.1
     environment:
       JVM_OPTS: -Xmx6g
       # org.gradle.caching=false: the Gradle build cache stays on for local/worktree builds
@@ -36,7 +36,7 @@ aliases:
     executor:
       name: android/android_machine
       resource_class: xlarge
-      tag: 2024.11.1
+      tag: 2026.05.1
     environment:
       GRADLE_OPTS: "-Dorg.gradle.caching=false"
 
@@ -86,7 +86,7 @@ commands:
 
   build-paywall-tester:
     steps:
-      - android/accept_licenses
+      - accept-android-licenses
       - android/restore_gradle_cache
       - android/restore_build_cache
       - run:
@@ -104,7 +104,7 @@ commands:
 
   build-rct-tester:
     steps:
-      - android/accept_licenses
+      - accept-android-licenses
       - android/restore_gradle_cache
       - android/restore_build_cache
       - run:
@@ -119,6 +119,35 @@ commands:
           path: examples/rcttester/build/outputs/bundle/release/rcttester-release.aab
       - android/save_gradle_cache
       - android/save_build_cache
+
+  accept-android-licenses:
+    description: >
+      android/accept_licenses without `sdkmanager --update`. The update only bumped
+      emulator, platform-tools and the platforms;android-36 revision, and its download
+      was flaky ("Error on ZipFile unknown archive"). The image already ships everything
+      the build needs; AGP downloads anything missing once licenses are accepted.
+    steps:
+      - run:
+          name: Accept Android Licenses
+          shell: /bin/bash -e
+          command: yes | sdkmanager --licenses
+
+  install-awscli:
+    steps:
+      - run:
+          name: Install awscli
+          # Signature check per https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html;
+          # the fingerprint pins the committed key to the one AWS publishes.
+          command: |
+            gpg --batch --with-colons --show-keys scripts/awscli-public-key.asc \
+              | grep -q '^fpr:::::::::FB5DB77FD5C118B80511ADA8A6310ACC4672475C:$'
+            gpg --batch --import scripts/awscli-public-key.asc
+            curl -sSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
+            curl -sSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip.sig" -o /tmp/awscliv2.sig
+            gpg --batch --verify /tmp/awscliv2.sig /tmp/awscliv2.zip
+            unzip -q /tmp/awscliv2.zip -d /tmp
+            sudo /tmp/aws/install
+            aws --version
 
   checkout-submodule:
     description: "Checks out a git submodule."
@@ -144,7 +173,7 @@ jobs:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - android/accept_licenses
+      - accept-android-licenses
       - android-dependencies
       - android/restore_build_cache
       - run:
@@ -161,7 +190,7 @@ jobs:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - android/accept_licenses
+      - accept-android-licenses
       - android-dependencies
       - android/restore_build_cache
       - run:
@@ -178,7 +207,7 @@ jobs:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - android/accept_licenses
+      - accept-android-licenses
       - android-dependencies
       - android/restore_build_cache
       - run:
@@ -195,7 +224,7 @@ jobs:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - android/accept_licenses
+      - accept-android-licenses
       - android-dependencies
       - android/restore_build_cache
       - run:
@@ -210,7 +239,7 @@ jobs:
       - checkout
       - revenuecat/install-mise-tools:
           tools: java
-      - android/accept_licenses
+      - accept-android-licenses
       - android/restore_gradle_cache
       - android/restore_build_cache
       - run:
@@ -247,7 +276,7 @@ jobs:
           path: upstream/paywall-preview-resources
       - revenuecat/install-mise-tools:
           tools: java
-      - android/accept_licenses
+      - accept-android-licenses
       - android/restore_gradle_cache
       - run:
           name: Assemble all variants (warms Gradle cache once)
@@ -289,6 +318,19 @@ jobs:
             FLAVOR_CAPITALIZED=$(echo << parameters.flavor >> | sed 's/\b\(.\)/\u\1/')
             BUILD_TYPE_CAPITALIZED=$(echo << parameters.build_type >> | sed 's/\b\(.\)/\u\1/')
             TASK="<< parameters.module_prefix >>test${FLAVOR_CAPITALIZED}${BUILD_TYPE_CAPITALIZED}UnitTest"
+            if ./gradlew $TASK --parallel --no-daemon; then
+              exit 0
+            fi
+            # A test JVM that dies with a HotSpot crash (e.g. a C2 JIT SIGSEGV) leaves an hs_err_pid*.log
+            # behind. Only that case is retried; a genuine test failure is reported as is.
+            CRASH_LOGS=$(find . -path ./build -prune -o \( -name 'hs_err_pid*.log' -o -name 'replay_pid*.log' \) -print)
+            if [ -z "$CRASH_LOGS" ]; then
+              exit 1
+            fi
+            echo "Test JVM crashed, retrying once. Crash logs from the first attempt:"
+            echo "$CRASH_LOGS"
+            mkdir -p build/crash-logs/attempt-1
+            echo "$CRASH_LOGS" | xargs -I{} mv {} build/crash-logs/attempt-1/
             ./gradlew $TASK --parallel --no-daemon
       - when:
           condition: << parameters.run_kover >>
@@ -311,6 +353,14 @@ jobs:
           path: build/test-results-collected
       - store_artifacts:
           path: build/reports
+      - run:
+          name: Collect JVM crash logs
+          when: always
+          command: |
+            mkdir -p build/crash-logs
+            find . -path ./build -prune -o \( -name 'hs_err_pid*.log' -o -name 'replay_pid*.log' \) -print0 | xargs -0 -I{} mv {} build/crash-logs/
+      - store_artifacts:
+          path: build/crash-logs
 
   test_dokka_hide_internal:
     <<: *android-executor
@@ -395,15 +445,10 @@ jobs:
           command: ./gradlew :dokkaGenerate
       - android/save_gradle_cache
       - android/save_build_cache
-      - run:
-          name: Install pip
-          command: sudo apt update && sudo apt install python3-pip
-      - run:
-          name: Install awscli
-          command: sudo pip install awscli
+      - install-awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/10.23.0-SNAPSHOT s3://purchases-docs/android/10.23.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/10.24.0-SNAPSHOT s3://purchases-docs/android/10.24.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -501,7 +546,7 @@ jobs:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - android/accept_licenses
+      - accept-android-licenses
       - android/restore_gradle_cache
       - android/restore_build_cache
       - run:
@@ -1303,7 +1348,7 @@ workflows:
           commit_paths: "purchases/src/main/kotlin/generated/com/revenuecat/purchases/PurchasesErrorCode.kt,purchases/api-defauts.txt,purchases/api-entitlement.txt"
           executor:
             name: android/android_docker
-            tag: 2025.04.1
+            tag: 2026.08.1
             resource_class: xlarge
           update_api_steps:
             - run:
