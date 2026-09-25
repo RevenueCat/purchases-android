@@ -389,6 +389,8 @@ internal class BillingWrapper(
                     }
                     buildParamsAndLaunch(false)
                 },
+                // Not a real error: this is the expected path when the device has no active purchase
+                // of this subscription (never bought, or expired), so the lookup doesn't find it.
                 onError = { buildParamsAndLaunch(true) },
             )
             else -> buildParamsAndLaunch(true)
