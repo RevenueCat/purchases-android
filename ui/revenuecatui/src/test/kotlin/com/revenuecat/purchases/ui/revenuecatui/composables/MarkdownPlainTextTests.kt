@@ -16,4 +16,17 @@ class MarkdownPlainTextTests {
 
         assertThat(markdownPlainText(markdown)).isEqualTo("Title\nParagraph\nItem\nQuote\nCode")
     }
+
+    @Test
+    fun `finds links`() {
+        assertThat(markdownHasLinks("See [terms](https://rev.cat/terms)")).isTrue()
+        assertThat(markdownHasLinks("- See [plans](myapp:plans/month)")).isTrue()
+        assertThat(markdownHasLinks("See <https://rev.cat/terms>")).isTrue()
+    }
+
+    @Test
+    fun `finds no links in plain copy`() {
+        assertThat(markdownHasLinks("$5.83/mo, billed yearly")).isFalse()
+        assertThat(markdownHasLinks("**[Best value]** at 5 < 6")).isFalse()
+    }
 }

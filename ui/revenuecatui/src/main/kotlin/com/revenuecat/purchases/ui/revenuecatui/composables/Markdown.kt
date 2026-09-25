@@ -603,6 +603,8 @@ private fun AnnotatedString.Builder.appendMarkdownChildren(
 }
 
 internal fun markdownHasLinks(markdown: String): Boolean {
+    // Every link needs a "[" (inline and reference links) or a "<" (autolinks), so most copy skips the parse.
+    if ('[' !in markdown && '<' !in markdown) return false
     fun Node.hasLink(): Boolean {
         var child = firstChild
         while (child != null) {

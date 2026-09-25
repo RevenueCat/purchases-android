@@ -62,6 +62,19 @@ class TextComponentViewSpokenTextTests {
             .assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.ContentDescription))
     }
 
+    /**
+     * The spoken copy can't be used to look for links: its expansion can rewrite a link target that has no scheme,
+     * like `myapp:plans/month`, into something that's no longer a link.
+     */
+    @Test
+    fun `text with a link whose target reads like a period keeps its displayed text`() {
+        val displayed = setTextContent("{{ product.price_per_period_abbreviated }}. See [plans](myapp:plans/month).")
+            .replace("[plans](myapp:plans/month)", "plans")
+
+        composeTestRule.onNodeWithText(displayed)
+            .assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.ContentDescription))
+    }
+
     @Test
     fun `text without abbreviations has no separate spoken text`() {
         val displayed = setTextContent("Unlock everything")
