@@ -81,10 +81,10 @@ class AdTrackerTest {
                 adUnitId = "ca-app-pub-123456",
                 impressionId = "impression-123",
             ),
-            captureMethod = AdCaptureMethod.ADAPTER,
+            captureMethod = AdCaptureMethod.ANDROID_ADMOB_LEGACY_ADAPTER,
         )
 
-        assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.ADAPTER)
+        assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.ANDROID_ADMOB_LEGACY_ADAPTER)
     }
 
     @Test
@@ -293,10 +293,10 @@ class AdTrackerTest {
                 impressionId = "impression-123",
                 rewardVerificationEnabled = true,
             ),
-            captureMethod = AdCaptureMethod.ADAPTER,
+            captureMethod = AdCaptureMethod.ANDROID_ADMOB_LEGACY_ADAPTER,
         )
 
-        assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.ADAPTER)
+        assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.ANDROID_ADMOB_LEGACY_ADAPTER)
     }
 
     @Test
@@ -342,10 +342,10 @@ class AdTrackerTest {
                 adUnitId = "ca-app-pub-123456",
                 impressionId = "impression-123",
             ),
-            captureMethod = AdCaptureMethod.ADAPTER,
+            captureMethod = AdCaptureMethod.ANDROID_ADMOB_LEGACY_ADAPTER,
         )
 
-        assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.ADAPTER)
+        assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.ANDROID_ADMOB_LEGACY_ADAPTER)
     }
 
     @Test
@@ -394,10 +394,10 @@ class AdTrackerTest {
                 impressionId = "impression-123",
                 reward = VerifiedReward.Entitlement(identifier = "premium", expiresAt = Date(0)),
             ),
-            captureMethod = AdCaptureMethod.ADAPTER,
+            captureMethod = AdCaptureMethod.ANDROID_ADMOB_LEGACY_ADAPTER,
         )
 
-        assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.ADAPTER)
+        assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.ANDROID_ADMOB_LEGACY_ADAPTER)
     }
 
     @Test
@@ -446,9 +446,9 @@ class AdTrackerTest {
                 impressionId = "impression-123",
                 failureReason = AdRewardFailureReason.BackendError("no_reward_rule"),
             ),
-            captureMethod = AdCaptureMethod.ADAPTER,
+            captureMethod = AdCaptureMethod.ANDROID_ADMOB_LEGACY_ADAPTER,
         )
 
-        assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.ADAPTER)
+        assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.ANDROID_ADMOB_LEGACY_ADAPTER)
     }
 }

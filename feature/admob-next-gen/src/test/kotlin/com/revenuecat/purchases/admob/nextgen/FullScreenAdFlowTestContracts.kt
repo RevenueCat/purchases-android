@@ -90,7 +90,7 @@ internal class FullScreenAdResponseFlowContract<AdT, CallbackT : AdEventCallback
         val loadedData = slot<AdLoadedData>()
 
         adapter.stubLoadFromResponse(trackingLoadCallback)
-        every { adTracker.trackAdLoaded(capture(loadedData), AdCaptureMethod.ADAPTER) } answers {
+        every { adTracker.trackAdLoaded(capture(loadedData), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER) } answers {
             order += "tracked"
         }
 
@@ -128,7 +128,9 @@ internal class FullScreenAdResponseFlowContract<AdT, CallbackT : AdEventCallback
         val failedData = slot<AdFailedToLoadData>()
 
         adapter.stubLoadFromResponse(trackingLoadCallback)
-        every { adTracker.trackAdFailedToLoad(capture(failedData), AdCaptureMethod.ADAPTER) } answers {
+        every {
+            adTracker.trackAdFailedToLoad(capture(failedData), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)
+        } answers {
             order += "tracked"
         }
 
@@ -152,7 +154,7 @@ internal fun AdTracker.assertLoadedData(
     impressionId: String,
 ) {
     verify(exactly = 1) {
-        trackAdLoaded(capture(loadedData), AdCaptureMethod.ADAPTER)
+        trackAdLoaded(capture(loadedData), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)
     }
     assertEquals(
         AdLoadedData(
@@ -172,7 +174,7 @@ internal fun AdTracker.assertFailedData(
     values: FullScreenAdTestValues,
 ) {
     verify(exactly = 1) {
-        trackAdFailedToLoad(capture(failedData), AdCaptureMethod.ADAPTER)
+        trackAdFailedToLoad(capture(failedData), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)
     }
     assertEquals(values.adFormat, failedData.captured.adFormat)
     assertEquals(values.adUnitId, failedData.captured.adUnitId)
@@ -184,7 +186,7 @@ internal fun AdTracker.assertSuspendingFailedData(
     values: FullScreenAdTestValues,
 ) {
     verify(exactly = 1) {
-        trackAdFailedToLoad(capture(failedData), AdCaptureMethod.ADAPTER)
+        trackAdFailedToLoad(capture(failedData), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)
     }
     assertEquals(
         AdFailedToLoadData(

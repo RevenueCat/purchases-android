@@ -89,7 +89,7 @@ class NativeAdFlowTest {
 
         val trackedLoads = mutableListOf<AdLoadedData>()
         verify(exactly = 3) {
-            adTracker.trackAdLoaded(capture(trackedLoads), AdCaptureMethod.ADAPTER)
+            adTracker.trackAdLoaded(capture(trackedLoads), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)
         }
         assertEquals(listOf(AdFormat.NATIVE, AdFormat.NATIVE, AdFormat.BANNER), trackedLoads.map { it.adFormat })
         assertEquals(listOf("feed", "feed", "feed"), trackedLoads.map { it.placement })
@@ -113,7 +113,7 @@ class NativeAdFlowTest {
         assertSame(error, delegate.loadErrors.single())
         val failedData = slot<AdFailedToLoadData>()
         verify(exactly = 1) {
-            adTracker.trackAdFailedToLoad(capture(failedData), AdCaptureMethod.ADAPTER)
+            adTracker.trackAdFailedToLoad(capture(failedData), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)
         }
         assertEquals(AdFormat.NATIVE, failedData.captured.adFormat)
         assertEquals("feed", failedData.captured.placement)
@@ -135,7 +135,7 @@ class NativeAdFlowTest {
 
         val failedData = slot<AdFailedToLoadData>()
         verify(exactly = 1) {
-            adTracker.trackAdFailedToLoad(capture(failedData), AdCaptureMethod.ADAPTER)
+            adTracker.trackAdFailedToLoad(capture(failedData), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)
         }
         assertEquals(AdFormat.BANNER, failedData.captured.adFormat)
         assertEquals("feed", failedData.captured.placement)
@@ -154,7 +154,7 @@ class NativeAdFlowTest {
 
         assertSame(sdkResult, result)
         assertTrue(nativeAd.adEventCallback is TrackingNativeAdEventCallback)
-        verify(exactly = 1) { adTracker.trackAdLoaded(any(), AdCaptureMethod.ADAPTER) }
+        verify(exactly = 1) { adTracker.trackAdLoaded(any(), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER) }
     }
 
     @Test
@@ -181,9 +181,11 @@ class NativeAdFlowTest {
         assertTrue(bannerAd.adEventCallback is TrackingBannerAdEventCallback)
         assertTrue(bannerAd.bannerAdRefreshCallback is TrackingBannerAdRefreshCallback)
         val trackedLoads = mutableListOf<AdLoadedData>()
-        verify(exactly = 2) { adTracker.trackAdLoaded(capture(trackedLoads), AdCaptureMethod.ADAPTER) }
+        verify(exactly = 2) {
+            adTracker.trackAdLoaded(capture(trackedLoads), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)
+        }
         assertEquals(listOf(AdFormat.NATIVE, AdFormat.BANNER), trackedLoads.map { it.adFormat })
-        verify(exactly = 1) { adTracker.trackAdFailedToLoad(any(), AdCaptureMethod.ADAPTER) }
+        verify(exactly = 1) { adTracker.trackAdFailedToLoad(any(), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER) }
     }
 
     @Test
@@ -201,7 +203,7 @@ class NativeAdFlowTest {
         assertSame(sdkResult, result)
         val failedData = slot<AdFailedToLoadData>()
         verify(exactly = 1) {
-            adTracker.trackAdFailedToLoad(capture(failedData), AdCaptureMethod.ADAPTER)
+            adTracker.trackAdFailedToLoad(capture(failedData), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)
         }
         assertEquals(AdFormat.BANNER, failedData.captured.adFormat)
     }
