@@ -5,7 +5,7 @@ lockfile = true
 compile = false
 
 [tools]
-java = ["liberica-21.0.6", "liberica-17.0.6"]
+java = ["liberica-21.0.12", "liberica-17.0.6"]
 ruby = "3.3.0"
 
 # :codegen needs a Java 17 toolchain while the rest of the build runs on 21.
