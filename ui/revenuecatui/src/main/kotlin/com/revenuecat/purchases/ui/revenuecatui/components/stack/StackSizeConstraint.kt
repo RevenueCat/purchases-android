@@ -81,7 +81,12 @@ private fun ComponentStyle.overrideSizes(): Sequence<Size> = when (this) {
     is PackageComponentStyle -> stackComponentStyle.overrideSizes()
     is StickyFooterComponentStyle -> stackComponentStyle.overrideSizes()
     is HeaderComponentStyle -> stackComponentStyle.overrideSizes()
-    is CountdownComponentStyle -> countdownStackComponentStyle.overrideSizes()
+    // The end and fallback stacks replace the countdown stack entirely, so their base sizes count too.
+    is CountdownComponentStyle -> listOfNotNull(
+        countdownStackComponentStyle,
+        endStackComponentStyle,
+        fallbackStackComponentStyle,
+    ).asSequence().flatMap { it.candidateSizes }
     is TabControlButtonComponentStyle -> stack.overrideSizes()
     is TabControlStyle.Buttons -> stack.overrideSizes()
     is TabControlStyle.Toggle -> stack.overrideSizes()
