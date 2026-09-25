@@ -63,8 +63,8 @@ public class StackComponent(
     @get:JvmSynthetic
     public val name: String? = null,
     @get:JvmSynthetic
-    @SerialName("package_selection")
-    public val packageSelection: PackageSelection? = null,
+    @SerialName("purchase_context")
+    public val purchaseContext: PurchaseContext? = null,
 ) : PaywallComponent {
 
     @Serializable(with = StackOverflowDeserializer::class)
@@ -123,8 +123,7 @@ internal object StackOverflowDeserializer : EnumDeserializerWithDefault<StackCom
 @Poko
 @Serializable
 @Immutable
-public class PackageSelection(
+public class PurchaseContext(
     @get:JvmSynthetic
-    @SerialName("default_scope")
-    public val defaultScope: String,
+    public val mode: String,
 )

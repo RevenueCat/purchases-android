@@ -297,7 +297,7 @@ internal class StyleFactory(
                 hasDeclaredPackages = hasDeclaredPackages,
             )
 
-        data class PackageDefaultScopeResult<T>(
+        data class PurchaseContextResult<T>(
             val value: T,
             val packages: AvailablePackages,
             val defaultTabIndex: Int?,
@@ -307,9 +307,9 @@ internal class StyleFactory(
          * Collects packages for a default-scoped stack without adding them to the parent's selectable packages.
          * Layout and interaction context stay shared; package and tab selection context is restored afterward.
          */
-        fun <T> withPackageDefaultScope(
+        fun <T> withPurchaseContext(
             block: StyleFactoryScope.() -> T,
-        ): PackageDefaultScopeResult<T> {
+        ): PurchaseContextResult<T> {
             val previousOutside = packagesOutsideTabs
             val previousTabs = packagesByTab
             val previousNested = nestedPackages
@@ -330,9 +330,9 @@ internal class StyleFactory(
             tabControlIndex = null
             try {
                 val result = block()
-                val defaultScopePackages = packages
-                previousNested.addAll(defaultScopePackages.allPackages)
-                return PackageDefaultScopeResult(result, defaultScopePackages, defaultTabIndex)
+                val purchaseContextPackages = packages
+                previousNested.addAll(purchaseContextPackages.allPackages)
+                return PurchaseContextResult(result, purchaseContextPackages, defaultTabIndex)
             } finally {
                 packagesOutsideTabs = previousOutside
                 packagesByTab = previousTabs
@@ -969,15 +969,15 @@ internal class StyleFactory(
     private fun StyleFactoryScope.createStackComponentStyle(
         component: StackComponent,
     ): Result<StackComponentStyle, NonEmptyList<PaywallValidationError>> {
-        val selection = component.packageSelection
-        if (selection?.defaultScope != "container") return createStackContentsStyle(component)
-        val scopedDefaults = withPackageDefaultScope {
+        val context = component.purchaseContext
+        if (context?.mode != "independent") return createStackContentsStyle(component)
+        val scopedDefaults = withPurchaseContext {
             createStackContentsStyle(component)
         }
         return scopedDefaults.value.map { style ->
             style.copy(
-                defaultScopePackages = scopedDefaults.packages,
-                defaultScopeTabIndex = scopedDefaults.defaultTabIndex,
+                purchaseContextPackages = scopedDefaults.packages,
+                purchaseContextTabIndex = scopedDefaults.defaultTabIndex,
             )
         }
     }

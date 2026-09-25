@@ -143,19 +143,16 @@ internal sealed interface PaywallState {
             val stateStore: PaywallStateStore = PaywallStateStore(emptyMap()),
             /** The view model's gate, so every step of a workflow reads the one flag. */
             private val viewModelActionInProgress: State<Boolean> = mutableStateOf(false),
-            private val sharedPackageSelection: PackageSelectionState? = null,
         ) : Loaded {
 
-            /** One selection shared by the root, tabs, sheets, and their purchase buttons. */
+            /** The selection owned by this purchase context. */
             class PackageSelectionState(initialPackage: SelectedPackageInfo?) {
                 var packageInfo by mutableStateOf(initialPackage)
                 var allowsWorkflowDefault by mutableStateOf(true)
             }
 
-            internal fun defaultScopeState(style: StackComponentStyle): Components? {
-                val defaultScopePackages = style.defaultScopePackages?.takeIf {
-                    it.hasDeclaredPackages || it.packagesOutsideTabs.isNotEmpty() || it.packagesByTab.isNotEmpty()
-                } ?: return null
+            internal fun purchaseContextState(style: StackComponentStyle): Components? {
+                val purchaseContextPackages = style.purchaseContextPackages ?: return null
                 return Components(
                     stack = style,
                     header = null,
@@ -168,29 +165,28 @@ internal sealed interface PaywallState {
                     locales = locales,
                     storefrontCountryCode = storefrontCountryCode,
                     dateProvider = dateProvider,
-                    packages = defaultScopePackages,
+                    packages = purchaseContextPackages,
                     customVariables = customVariables,
                     defaultCustomVariables = defaultCustomVariables,
                     initialLocaleList = LocaleList(locale),
-                    initialSelectedTabIndex = style.defaultScopeTabIndex,
+                    initialSelectedTabIndex = style.purchaseContextTabIndex,
                     initialSheetState = sheet,
                     purchases = purchases,
                     workflowScreen = workflowScreen,
                     stateStore = stateStore,
                     viewModelActionInProgress = viewModelActionInProgress,
-                    sharedPackageSelection = packageSelectionState,
                 ).also { child ->
-                    child.reconcileDefaultScopeSelection(initialize = true)
+                    child.packageSelectionState.allowsWorkflowDefault = false
+                    child.reconcilePurchaseContextSelection(initialize = true)
                 }
             }
 
-            internal fun reconcileDefaultScopeSelection(initialize: Boolean = false) {
+            internal fun reconcilePurchaseContextSelection(initialize: Boolean = false) {
                 val activePackages = packages.packagesOutsideTabs + packages.packagesByTab[selectedTabIndex].orEmpty()
                 val visible = activePackages.filter {
                     it.resolvesVisible(mergedCustomVariables, paywallBoundsDp, windowScreenCondition)
                 }
                 if (initialize || visible.none { it.uniqueId == selectedPackageUniqueId }) {
-                    // An empty selection in a declared package scope must also clear the shared CTA.
                     packageSelectionState.allowsWorkflowDefault = false
                     selectedPackageUniqueId = defaultUniqueIdForCurrentContext(paywallBoundsDp, windowScreenCondition)
                 }
@@ -361,8 +357,9 @@ internal sealed interface PaywallState {
                 // Last, so a default declared inside a tab still wins.
                 ?: visibleFallbackForHiddenDefaultOutsideTabs
 
-            private val packageSelectionState = sharedPackageSelection
-                ?: PackageSelectionState(packageInfoForUniqueId(initialSelectedPackageUniqueId))
+            private val packageSelectionState = PackageSelectionState(
+                packageInfoForUniqueId(initialSelectedPackageUniqueId),
+            )
 
             private var selectedPackageUniqueId: String?
                 get() = packageSelectionState.packageInfo?.uniqueId

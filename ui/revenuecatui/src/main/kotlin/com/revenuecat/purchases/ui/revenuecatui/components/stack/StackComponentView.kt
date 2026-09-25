@@ -141,19 +141,19 @@ internal fun StackComponentView(
     componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
     val scopeState = remember(style, state) {
-        state.defaultScopeState(style)?.also {
+        state.purchaseContextState(style)?.also {
             it.paywallBoundsDp = state.paywallBoundsDp
             it.windowScreenCondition = state.windowScreenCondition
-            it.reconcileDefaultScopeSelection(initialize = true)
+            it.reconcilePurchaseContextSelection(initialize = true)
         }
     }
     if (scopeState != null) {
         scopeState.paywallBoundsDp = state.paywallBoundsDp
         scopeState.headerHeightPx = state.headerHeightPx
         scopeState.windowScreenCondition = state.windowScreenCondition
-        scopeState.reconcileDefaultScopeSelection()
+        scopeState.reconcilePurchaseContextSelection()
         StackComponentView(
-            style = remember(style) { style.copy(defaultScopePackages = null) },
+            style = remember(style) { style.copy(purchaseContextPackages = null) },
             state = scopeState,
             clickHandler = { action ->
                 handleClick(action, scopeState, clickHandler, componentInteractionTracker)
