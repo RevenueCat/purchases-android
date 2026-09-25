@@ -3,6 +3,9 @@ package com.revenuecat.purchases.ui.revenuecatui.views
 import android.content.Context
 import android.util.AttributeSet
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
@@ -10,7 +13,10 @@ import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
 import com.revenuecat.purchases.customercenter.Resumable
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenter
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterNavigationListener
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterNavigationOptions
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterOptions
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterNavigator
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
 /**
@@ -95,9 +101,30 @@ public class CustomerCenterView : CompatComposeView {
             customerCenterListener?.onPromotionalOfferSucceeded(customerInfo, transaction)
         }
     }
-    private val customerCenterOptions = CustomerCenterOptions.Builder()
-        .setListener(internalListener)
-        .build()
+    private val navigator = CustomerCenterNavigator()
+    private var navigationListener: CustomerCenterNavigationListener? = null
+    private var lastNavigationUpdate: Pair<Boolean, String?>? = null
+    private val internalNavigationListener = CustomerCenterNavigationListener { canNavigateBack, title ->
+        lastNavigationUpdate = canNavigateBack to title
+        navigationListener?.onScreenChange(canNavigateBack, title)
+    }
+    private val customerCenterOptionsState = mutableStateOf(
+        CustomerCenterOptions.Builder()
+            .setListener(internalListener)
+            .setNavigationOptions(
+                CustomerCenterNavigationOptions(
+                    listener = internalNavigationListener,
+                    navigator = navigator,
+                ),
+            )
+            .build(),
+    )
+
+    private var customerCenterOptions: CustomerCenterOptions
+        get() = customerCenterOptionsState.value
+        set(value) {
+            customerCenterOptionsState.value = value
+        }
 
     /**
      * Sets a dismiss handler for when the customer center is closed.
@@ -112,6 +139,29 @@ public class CustomerCenterView : CompatComposeView {
      */
     public fun setCustomerCenterListener(customerCenterListener: CustomerCenterListener?) {
         this.customerCenterListener = customerCenterListener
+    }
+
+    /**
+     * Sets the [CustomerCenterNavigationOptions] that configure how the Customer Center navigation integrates
+     * with the app displaying it.
+     */
+    public fun setNavigationOptions(navigationOptions: CustomerCenterNavigationOptions) {
+        navigationListener = navigationOptions.listener
+        customerCenterOptions = CustomerCenterOptions(
+            listener = customerCenterOptions.listener,
+            navigationOptions = CustomerCenterNavigationOptions(
+                shouldShowTopBar = navigationOptions.shouldShowTopBar,
+                listener = internalNavigationListener,
+                navigator = navigator,
+            ),
+        )
+        lastNavigationUpdate?.let { (canNavigateBack, title) ->
+            navigationOptions.listener?.onScreenChange(canNavigateBack, title)
+        }
+    }
+
+    public fun navigateBack() {
+        navigator.navigateBack()
     }
 
     override fun onBackPressed() {
@@ -129,6 +179,7 @@ public class CustomerCenterView : CompatComposeView {
 
     @Composable
     override fun Content() {
+        val customerCenterOptions by remember { customerCenterOptionsState }
         RevenueCatTheme {
             CustomerCenter(options = customerCenterOptions) {
                 dismiss()
