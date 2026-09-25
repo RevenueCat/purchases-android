@@ -4,6 +4,7 @@ package com.revenuecat.purchases.common.localrules
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.CustomerInfoOriginalSource
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -87,6 +88,7 @@ class CustomerInfoDimensionProviderTest {
                 "is_in_grace_period" to bool(true),
                 "is_refunded" to bool(true),
                 "is_paused" to bool(true),
+                "is_synced" to bool(true),
             ),
         )
     }
@@ -106,6 +108,7 @@ class CustomerInfoDimensionProviderTest {
                 "purchased_at" to date("2023-03-03T00:00:00Z"),
                 "original_purchased_at" to date("2023-03-03T00:00:00Z"),
                 "is_sandbox" to bool(true),
+                "is_synced" to bool(true),
             ),
         )
     }
@@ -230,6 +233,26 @@ class CustomerInfoDimensionProviderTest {
         // Expired in 2023, but the store keeps serving it until 2100.
         assertThat(purchase["is_active"]).isEqualTo(bool(false))
         assertThat(purchase["is_in_grace_period"]).isEqualTo(bool(true))
+    }
+
+    @Test
+    fun `a purchase the backend has not been told about yet is reported as not synced`() = runTest {
+        // Computed offline from the store's own records, one of which was never posted from this device.
+        val offlineCustomerInfo = CustomerInfoFactory.buildCustomerInfo(
+            JSONObject(SUBSCRIBED_RESPONSE),
+            null,
+            VerificationResult.VERIFIED_ON_DEVICE,
+            CustomerInfoOriginalSource.OFFLINE_ENTITLEMENTS,
+            unsyncedProductIdentifiers = setOf("premium"),
+        )
+
+        val purchases = provider(offlineCustomerInfo).dimensions(date).purchases()
+
+        assertThat(purchases.map { it["product_identifier"] to it["is_synced"] }).containsExactly(
+            string("premium") to bool(false),
+            string("coins") to bool(true),
+            string("legacy") to bool(true),
+        )
     }
 
     @Test
@@ -366,6 +389,8 @@ class CustomerInfoDimensionProviderTest {
             // A one-time purchase omits `is_refunded`, and negation cannot match on an omitted variable, so a
             // predicate across both kinds spells out the default.
             """{"none": [{"var": "purchases"}, {"var": ["is_refunded", false]}]}""",
+            // Everything the backend sent is, by definition, known to it.
+            """{"all": [{"var": "purchases"}, {"var": "is_synced"}]}""",
         )
         val notMatching = listOf(
             """{"some": [{"var": "entitlements"},

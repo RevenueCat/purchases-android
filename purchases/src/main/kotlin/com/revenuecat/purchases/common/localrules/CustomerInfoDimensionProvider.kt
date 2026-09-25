@@ -73,18 +73,26 @@ internal class CustomerInfoDimensionProvider(
     private fun CustomerInfo.purchaseRecords(date: Date): List<Map<String, RulesDimensionValue>> {
         val subscriptions = subscriptionsByProductIdentifier.values
             .sortedBy { subscription -> subscription.productIdentifier }
-            .map { subscription -> subscription.record(date) }
+            .map { subscription -> subscription.record(date, isSynced(subscription.productIdentifier)) }
         // Already sorted by purchase date by `CustomerInfo`.
-        val transactions = nonSubscriptionTransactions.map { transaction -> transaction.record() }
+        val transactions = nonSubscriptionTransactions
+            .map { transaction -> transaction.record(isSynced(transaction.productIdentifier)) }
         return (subscriptions + transactions).sortedByDescending { record -> record.dateOrNull(KEY_PURCHASED_AT) }
     }
+
+    /**
+     * Only a customer info computed offline can hold a purchase the backend has not been told about: it is built
+     * from the store's own records, and the SDK knows which of those it has already posted from this device.
+     */
+    private fun CustomerInfo.isSynced(productIdentifier: String): Boolean =
+        productIdentifier !in unsyncedProductIdentifiers
 
     private fun CustomerInfo.entitlementRecords(): List<Map<String, RulesDimensionValue>> =
         entitlements.all.values
             .sortedBy { entitlement -> entitlement.identifier }
             .map { entitlement -> entitlement.record() }
 
-    private fun SubscriptionInfo.record(date: Date): Map<String, RulesDimensionValue> = buildMap {
+    private fun SubscriptionInfo.record(date: Date, isSynced: Boolean): Map<String, RulesDimensionValue> = buildMap {
         putString(KEY_KIND, KIND_SUBSCRIPTION)
         putString(KEY_PRODUCT_IDENTIFIER, productIdentifier)
         putString(KEY_PRODUCT_PLAN_IDENTIFIER, productPlanIdentifier)
@@ -116,9 +124,10 @@ internal class CustomerInfoDimensionProvider(
         putBool(KEY_IS_REFUNDED, refundedAt != null)
         // A resume date is only ever set while a Google subscription is paused, so having one *is* being paused.
         putBool(KEY_IS_PAUSED, autoResumeDate != null)
+        putBool(KEY_IS_SYNCED, isSynced)
     }
 
-    private fun Transaction.record(): Map<String, RulesDimensionValue> = buildMap {
+    private fun Transaction.record(isSynced: Boolean): Map<String, RulesDimensionValue> = buildMap {
         putString(KEY_KIND, KIND_NON_SUBSCRIPTION)
         putString(KEY_PRODUCT_IDENTIFIER, productIdentifier)
         // A one-time purchase has no base plan, so the two forms of the identifier are the same one.
@@ -131,6 +140,7 @@ internal class CustomerInfoDimensionProvider(
         putDate(KEY_PURCHASED_AT, purchaseDate)
         putDate(KEY_ORIGINAL_PURCHASED_AT, originalPurchaseDate)
         putBool(KEY_IS_SANDBOX, isSandbox)
+        putBool(KEY_IS_SYNCED, isSynced)
     }
 
     private fun EntitlementInfo.record(): Map<String, RulesDimensionValue> = buildMap {
@@ -172,6 +182,7 @@ internal class CustomerInfoDimensionProvider(
         const val KEY_IS_PAUSED = "is_paused"
         const val KEY_IS_REFUNDED = "is_refunded"
         const val KEY_IS_SANDBOX = "is_sandbox"
+        const val KEY_IS_SYNCED = "is_synced"
         const val KEY_KIND = "kind"
         const val KEY_LATEST_PURCHASED_AT = "latest_purchased_at"
         const val KEY_ORIGINAL_PURCHASED_AT = "original_purchased_at"

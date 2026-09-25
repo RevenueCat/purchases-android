@@ -48,6 +48,7 @@ class PurchasedProductsFetcherTest {
     @Before
     fun setUp() {
         deviceCache = mockk()
+        every { deviceCache.getActivePurchasesNotInCache(any()) } returns emptyList()
         billing = mockk()
         dateProvider = object : DateProvider {
             override val now: Date
@@ -502,15 +503,62 @@ class PurchasedProductsFetcherTest {
         )
     }
 
+    @Test
+    fun `a purchase whose token was never posted to the backend is not synced`() {
+        val productIdentifierToEntitlements = mapOf("monthly" to listOf("pro"), "yearly" to listOf("pro"))
+        mockEntitlementMapping(productIdentifierToEntitlements)
+        val postedPurchase = stubStoreTransactionFromGooglePurchase(
+            productIds = listOf("monthly"),
+            purchaseTime = testDate.time,
+            purchaseToken = "posted",
+        )
+        val unpostedPurchase = stubStoreTransactionFromGooglePurchase(
+            productIds = listOf("yearly"),
+            purchaseTime = testDate.time,
+            purchaseToken = "unposted",
+        )
+        mockActivePurchases(listOf(postedPurchase, unpostedPurchase))
+        every {
+            deviceCache.getActivePurchasesNotInCache(
+                mapOf("posted".sha1() to postedPurchase, "unposted".sha1() to unpostedPurchase),
+            )
+        } returns listOf(unpostedPurchase)
+        var receivedListOfPurchasedProducts: List<PurchasedProduct> = emptyList()
+
+        fetcher.queryActiveProducts(
+            appUserID = "appUserID",
+            onSuccess = {
+                receivedListOfPurchasedProducts = it
+            },
+            unexpectedOnError,
+        )
+
+        assertThat(receivedListOfPurchasedProducts.size).isEqualTo(2)
+        assertPurchasedProduct(
+            receivedListOfPurchasedProducts.single { it.productIdentifier == "monthly" },
+            postedPurchase,
+            productIdentifierToEntitlements,
+            isSynced = true,
+        )
+        assertPurchasedProduct(
+            receivedListOfPurchasedProducts.single { it.productIdentifier == "yearly" },
+            unpostedPurchase,
+            productIdentifierToEntitlements,
+            isSynced = false,
+        )
+    }
+
     // region helpers
     private fun assertPurchasedProduct(
         purchasedProduct: PurchasedProduct,
         purchaseRecord: StoreTransaction,
         productIdentifierToEntitlements: Map<String, List<String>>,
         purchasedProductIndex: Int = 0,
+        isSynced: Boolean = true,
     ) {
         assertThat(purchasedProduct.productIdentifier).isEqualTo(purchaseRecord.productIds[purchasedProductIndex])
         assertThat(purchasedProduct.storeTransaction).isEqualTo(purchaseRecord)
+        assertThat(purchasedProduct.isSynced).isEqualTo(isSynced)
         assertThat(purchasedProduct.entitlements.size).isEqualTo(productIdentifierToEntitlements[purchasedProduct.productIdentifier]?.size ?: 0)
         if (purchasedProduct.entitlements.isNotEmpty()) {
             assertThat(purchasedProduct.entitlements).containsAll(productIdentifierToEntitlements[purchasedProduct.productIdentifier])
