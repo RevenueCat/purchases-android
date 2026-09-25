@@ -182,7 +182,12 @@ internal class StackComponentState(
 
     @get:JvmSynthetic
     val scrollOrientation by derivedStateOf {
-        presentedPartial?.partial?.overflow?.toOrientation(dimension) ?: style.scrollOrientation
+        // An explicit Overflow.NONE in a partial must disable scrolling, not fall
+        // back to the base style — only an absent overflow inherits it.
+        when (val overflow = presentedPartial?.partial?.overflow) {
+            null -> style.scrollOrientation
+            else -> overflow.toOrientation(dimension)
+        }
     }
 
     @JvmSynthetic
