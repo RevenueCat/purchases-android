@@ -112,6 +112,9 @@ Variant names combine the flavor and build type, e.g. `defaultsDebug`, `customEn
 ## Code Style
 
 - **Imports over inline fully-qualified references**: Always add an `import` statement at the top of the file rather than using a fully-qualified name inline (e.g., write `import foo.Bar` and use `Bar`, not `foo.Bar` inline in the code).
+- **Test every new code path** — Every behavior change or feature addition must include unit tests for the new paths (including error/null/edge cases). Reviewers should not need to ask "where are the tests?"
+- **iOS naming parity** — When implementing a feature that also exists in `purchases-ios`, prefer matching type and property names unless Kotlin conventions require otherwise (e.g., `CheckpointHitContext` not `CheckpointHitInfo`). Check the iOS PR or codebase before inventing new names.
+- **KDoc only for non-obvious behavior** — Do not write KDoc that merely restates the function signature or parameter names. Only document preconditions, side effects, thread-safety contracts, or non-obvious semantics. If the code is self-explanatory, omit the KDoc entirely.
 
 ## Testing Framework
 
