@@ -58,6 +58,7 @@ import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopicStore
 import com.revenuecat.purchases.common.safeResume
 import com.revenuecat.purchases.common.safeResumeWithException
+import com.revenuecat.purchases.common.sdksettings.SdkSettingsConfigProvider
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
@@ -365,10 +366,12 @@ internal class PurchasesFactory(
             )
             val checkpointsConfigProvider = CheckpointsConfigProvider(remoteConfigManager)
             val audiencesConfigProvider = AudiencesConfigProvider(remoteConfigManager)
+            val sdkSettingsConfigProvider = SdkSettingsConfigProvider(remoteConfigManager)
             remoteConfigManager.registerListener(uiConfigProvider)
             remoteConfigManager.registerListener(workflowsConfigProvider)
             remoteConfigManager.registerListener(checkpointsConfigProvider)
             remoteConfigManager.registerListener(audiencesConfigProvider)
+            remoteConfigManager.registerListener(sdkSettingsConfigProvider)
             // Cold-start-with-warm-disk: preload the in-memory caches from whatever is already committed on
             // disk without triggering a network config sync. A subsequent network commit re-warms with a
             // higher generation and supersedes this (store-if-newer). A no-op when the manager is disabled:
@@ -591,9 +594,14 @@ internal class PurchasesFactory(
                 workflowsConfigProvider = workflowsConfigProvider,
                 checkpointsConfigProvider = checkpointsConfigProvider,
                 audiencesConfigProvider = audiencesConfigProvider,
+                sdkSettingsConfigProvider = sdkSettingsConfigProvider,
                 localRulesEvaluator = localRulesEvaluator,
                 tokenManager = tokenManager,
             )
+            // The orchestrator attaches itself as the settings listener in its init, so warm only once it exists:
+            // on a warm disk this is the session's only warm until the backend changes the config (a 204 doesn't
+            // re-commit), and a warm that lands before the listener is attached would never be delivered.
+            sdkSettingsConfigProvider.warmAsync(initialGeneration)
 
             return Purchases(purchasesOrchestrator)
         }
