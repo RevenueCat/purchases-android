@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui
 import androidx.compose.runtime.Immutable
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.common.CustomVariableKeyValidator
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayBlockForEntitlementIdentifier
 import dev.drewhamilton.poko.Poko
@@ -103,7 +104,7 @@ public class PaywallDialogOptions internal constructor(
          * @param variables A map of variable names to their [CustomVariableValue] values.
          */
         public fun setCustomVariables(variables: Map<String, CustomVariableValue>): Builder = apply {
-            this.customVariables = variables
+            this.customVariables = CustomVariableKeyValidator.validateAndFilter(variables)
         }
 
         public fun build(): PaywallDialogOptions {
