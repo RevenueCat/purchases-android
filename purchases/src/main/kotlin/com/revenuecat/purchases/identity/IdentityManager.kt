@@ -46,7 +46,8 @@ internal class IdentityManager(
     private val uiPreviewMode: Boolean = false,
 ) {
     companion object {
-        private val anonymousIdRegex = "^\\\$RCAnonymousID:([a-f0-9]{32})$".toRegex()
+        private const val ANONYMOUS_ID_PREFIX = "\$RCAnonymousID:"
+        private val anonymousIdRegex = "^${Regex.escape(ANONYMOUS_ID_PREFIX)}([a-f0-9]{32})$".toRegex()
         internal const val UI_PREVIEW_MODE_APP_USER_ID = "\$RC_PREVIEW_MODE_USER"
 
         fun isUserIDAnonymous(appUserID: String): Boolean {
@@ -81,6 +82,7 @@ internal class IdentityManager(
                 if (cachedAppUserID != null && appUserID != cachedAppUserID) {
                     log(LogIntent.WARNING) { IdentityStrings.CONFIGURED_APP_USER_ID_DIFFERS_FROM_CACHED }
                 }
+                logIfAppUserIDMisusesAnonymousPrefix(appUserID)
                 appUserID
             }
         }
@@ -153,6 +155,7 @@ internal class IdentityManager(
             return
         }
 
+        logIfAppUserIDMisusesAnonymousPrefix(newAppUserID)
         log(LogIntent.USER) { IdentityStrings.LOGGING_IN.format(currentAppUserID, newAppUserID) }
         val oldAppUserID = currentAppUserID
         subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
@@ -286,8 +289,14 @@ internal class IdentityManager(
             backend.verificationMode != SignatureVerificationMode.Disabled
     }
 
+    private fun logIfAppUserIDMisusesAnonymousPrefix(appUserID: String) {
+        if (appUserID.startsWith(ANONYMOUS_ID_PREFIX) && !isUserIDAnonymous(appUserID)) {
+            log(LogIntent.RC_ERROR) { IdentityStrings.APP_USER_ID_HAS_ANONYMOUS_PREFIX.format(appUserID) }
+        }
+    }
+
     private fun generateRandomID(): String {
-        return "\$RCAnonymousID:" + UUID.randomUUID().toString().toLowerCase(Locale.ROOT).replace("-", "")
+        return ANONYMOUS_ID_PREFIX + UUID.randomUUID().toString().toLowerCase(Locale.ROOT).replace("-", "")
             .also {
                 log(LogIntent.USER) { IdentityStrings.SETTING_NEW_ANON_ID }
             }

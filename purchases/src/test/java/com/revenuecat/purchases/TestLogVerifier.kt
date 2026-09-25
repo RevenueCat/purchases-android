@@ -14,7 +14,7 @@ object NoOpLogHandler : LogHandler {
 
 data class LogMessage(val level: LogLevel, val message: String, val throwable: Throwable? = null)
 
-fun assertLogs(expectedLogMessages: List<LogMessage>, block: () -> Unit) {
+fun captureLogs(block: () -> Unit): List<LogMessage> {
     val previousLogLevel = Config.logLevel
     Config.logLevel = LogLevel.VERBOSE
     val logs = mutableListOf<LogMessage>()
@@ -40,10 +40,17 @@ fun assertLogs(expectedLogMessages: List<LogMessage>, block: () -> Unit) {
             logs.add(LogMessage(LogLevel.ERROR, msg, throwable))
         }
     }
-    block()
-    assertThat(logs).containsAll(expectedLogMessages)
-    currentLogHandler = previousLogHandler
-    Config.logLevel = previousLogLevel
+    try {
+        block()
+    } finally {
+        currentLogHandler = previousLogHandler
+        Config.logLevel = previousLogLevel
+    }
+    return logs
+}
+
+fun assertLogs(expectedLogMessages: List<LogMessage>, block: () -> Unit) {
+    assertThat(captureLogs(block)).containsAll(expectedLogMessages)
 }
 
 fun assertLog(logMessage: LogMessage, block: () -> Unit) {

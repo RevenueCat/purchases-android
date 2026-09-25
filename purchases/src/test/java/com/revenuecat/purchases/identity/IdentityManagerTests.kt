@@ -4,11 +4,14 @@ import android.content.SharedPreferences.Editor
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
+import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.assertErrorLog
 import com.revenuecat.purchases.assertWarnLog
+import com.revenuecat.purchases.captureLogs
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Delay
@@ -151,6 +154,30 @@ class IdentityManagerTests {
     }
 
     @Test
+    fun `configure with an App User ID using the anonymous prefix logs an error`() {
+        val appUserID = "\$RCAnonymousID:my-user"
+        mockNoCachedAppUserID()
+        every { mockSubscriberAttributesCache.cleanUpSubscriberAttributeCache(appUserID, any()) } just Runs
+
+        assertErrorLog("😿‼️ ${IdentityStrings.APP_USER_ID_HAS_ANONYMOUS_PREFIX.format(appUserID)}") {
+            identityManager.configure(appUserID)
+        }
+        assertCorrectlyIdentified(appUserID)
+    }
+
+    @Test
+    fun `configure with a generated anonymous or regular App User ID does not log an error`() {
+        listOf(stubAnonymousID, "cesar").forEach { appUserID ->
+            mockNoCachedAppUserID()
+            every { mockSubscriberAttributesCache.cleanUpSubscriberAttributeCache(appUserID, any()) } just Runs
+
+            val logs = captureLogs { identityManager.configure(appUserID) }
+
+            assertThat(logs).noneMatch { it.level == LogLevel.ERROR }
+        }
+    }
+
+    @Test
     fun testConfigureWithAnonymousUserSavesTheIDInTheCache() {
         mockNoCachedAppUserID()
         identityManager.configure(null)
@@ -209,6 +236,34 @@ class IdentityManagerTests {
         assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.InvalidAppUserIdError)
         verify(exactly = 0) {
             mockBackend.logIn(any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `login with an App User ID using the anonymous prefix logs an error and still logs in`() {
+        val newAppUserID = "\$RCAnonymousID:my-user"
+        every { mockBackend.logIn(stubAnonymousID, newAppUserID, any(), any()) } just Runs
+        mockCachedAnonymousUser()
+        mockSubscriberAttributesManagerSynchronize(newAppUserID)
+
+        assertErrorLog("😿‼️ ${IdentityStrings.APP_USER_ID_HAS_ANONYMOUS_PREFIX.format(newAppUserID)}") {
+            identityManager.logIn(newAppUserID, { _, _ -> }, { })
+        }
+        verify(exactly = 1) {
+            mockBackend.logIn(stubAnonymousID, newAppUserID, any(), any())
+        }
+    }
+
+    @Test
+    fun `login with a generated anonymous or regular App User ID does not log an error`() {
+        listOf("\$RCAnonymousID:0123456789abcdef0123456789abcdef", "new").forEach { newAppUserID ->
+            every { mockBackend.logIn(stubAnonymousID, newAppUserID, any(), any()) } just Runs
+            mockCachedAnonymousUser()
+            mockSubscriberAttributesManagerSynchronize(newAppUserID)
+
+            val logs = captureLogs { identityManager.logIn(newAppUserID, { _, _ -> }, { }) }
+
+            assertThat(logs).noneMatch { it.level == LogLevel.ERROR }
         }
     }
 

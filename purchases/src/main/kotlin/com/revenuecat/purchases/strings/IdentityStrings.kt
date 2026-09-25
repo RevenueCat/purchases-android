@@ -12,6 +12,8 @@ internal object IdentityStrings {
             "Call logIn with the new App User ID to transfer purchases and attributes."
     const val EMPTY_APP_USER_ID_WILL_BECOME_ANONYMOUS = "Identifying with empty App User ID will be " +
         "treated as anonymous."
+    const val APP_USER_ID_HAS_ANONYMOUS_PREFIX = "The App User ID '%s' starts with the reserved " +
+        "'\$RCAnonymousID:' prefix and will be treated as anonymous."
     const val SETTING_NEW_ANON_ID = "Setting new anonymous App User ID - %s"
     const val LOG_OUT_CALLED_ON_ANONYMOUS_USER = "Called logOut but the current user is anonymous"
     const val LOG_OUT_SUCCESSFUL = "Logged out successfully"
