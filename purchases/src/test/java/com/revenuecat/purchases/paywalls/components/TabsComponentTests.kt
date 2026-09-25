@@ -127,48 +127,29 @@ internal class TabsComponentTests {
                     ),
                 ),
                 arrayOf(
-                    "tab_control_button with haptic_feedback_enabled = false",
+                    "tabs with haptic_feedback_enabled = false",
                     Args(
                         json = """
                         {
-                          "type": "tab_control_button",
-                          "tab_index": 0,
-                          "tab_id": "zero",
+                          "type": "tabs",
                           "haptic_feedback_enabled": false,
-                          "stack": {
-                            "type": "stack",
-                            "components": []
-                          }
+                          "control": {
+                            "type": "buttons",
+                            "stack": { "type": "stack", "components": [] }
+                          },
+                          "tabs": [
+                            {
+                              "id": "zero",
+                              "stack": { "type": "stack", "components": [] }
+                            }
+                          ]
                         }
                         """.trimIndent(),
-                        expected = TabControlButtonComponent(
-                            tabIndex = 0,
-                            tabId = "zero",
-                            stack = StackComponent(components = emptyList()),
-                            hapticFeedbackEnabled = false,
-                        )
-                    ),
-                ),
-                arrayOf(
-                    "tab_control_toggle with haptic_feedback_enabled = false",
-                    Args(
-                        json = """
-                        {
-                          "type": "tab_control_toggle",
-                          "default_value": true,
-                          "haptic_feedback_enabled": false,
-                          "thumb_color_on": { "light": { "type": "alias", "value": "primary" } },
-                          "thumb_color_off": { "light": { "type": "alias", "value": "secondary" } },
-                          "track_color_on": { "light": { "type": "alias", "value": "tertiary" } },
-                          "track_color_off": { "light": { "type": "alias", "value": "primary_alt" } }
-                        }
-                        """.trimIndent(),
-                        expected = TabControlToggleComponent(
-                            defaultValue = true,
-                            thumbColorOn = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
-                            thumbColorOff = ColorScheme(light = ColorInfo.Alias(ColorAlias("secondary"))),
-                            trackColorOn = ColorScheme(light = ColorInfo.Alias(ColorAlias("tertiary"))),
-                            trackColorOff = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary_alt"))),
+                        expected = TabsComponent(
+                            control = TabsComponent.TabControl.Buttons(stack = StackComponent(components = emptyList())),
+                            tabs = listOf(
+                                TabsComponent.Tab(id = "zero", stack = StackComponent(components = emptyList())),
+                            ),
                             hapticFeedbackEnabled = false,
                         )
                     ),

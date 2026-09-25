@@ -36,6 +36,7 @@ internal fun StyleFactory(
         metadata = emptyMap(),
         availablePackages = emptyList(),
     ),
+    packageSelectionHapticFeedbackEnabled: Boolean = true,
 ): StyleFactory =
     ActualStyleFactory(
         localizations = localizations,
@@ -43,6 +44,7 @@ internal fun StyleFactory(
         fontAliases = fontAliases,
         variableLocalizations = variableLocalizations,
         offering = offering,
+        packageSelectionHapticFeedbackEnabled = packageSelectionHapticFeedbackEnabled,
     )
 
 internal fun variableLocalizationKeysForEsMx(): NonEmptyMap<VariableLocalizationKey, String> =

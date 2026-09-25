@@ -236,29 +236,6 @@ internal class PackageComponentTests(@Suppress("UNUSED_PARAMETER") name: String,
                 ),
             ),
             arrayOf(
-                "haptic_feedback_enabled = false",
-                Args(
-                    json = """
-                        {
-                          "type": "package",
-                          "package_id": "${"$"}rc_weekly",
-                          "is_selected_by_default": true,
-                          "haptic_feedback_enabled": false,
-                          "stack": {
-                            "type": "stack",
-                            "components": []
-                          }
-                        }
-                        """.trimIndent(),
-                    expected = PackageComponent(
-                        packageId = "${"$"}rc_weekly",
-                        isSelectedByDefault = true,
-                        stack = StackComponent(components = emptyList()),
-                        hapticFeedbackEnabled = false,
-                    )
-                ),
-            ),
-            arrayOf(
                 "overrides with visible = false",
                 Args(
                     json = """

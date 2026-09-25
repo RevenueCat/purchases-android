@@ -51,6 +51,9 @@ public class PaywallComponentsData(
     @SerialName("automatically_scale_font_size")
     public val automaticallyScaleFontSize: Boolean = true,
     @get:JvmSynthetic
+    @SerialName("haptic_feedback_enabled")
+    public val hapticFeedbackEnabled: Boolean = true,
+    @get:JvmSynthetic
     @Serializable(with = StateDeclarationMapSerializer::class)
     @SerialName("state_declarations")
     public val stateDeclarations: Map<String, StateDeclaration>? = null,

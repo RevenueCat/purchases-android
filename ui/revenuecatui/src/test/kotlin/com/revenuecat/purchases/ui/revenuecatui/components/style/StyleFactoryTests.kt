@@ -1068,37 +1068,75 @@ class StyleFactoryTests {
     }
 
     @Test
-    fun `Should enable haptic feedback on selectable components unless explicitly disabled`() {
-        val color = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb()))
-        fun packageStyle(enabled: Boolean?) = styleFactory.create(
-            PackageComponent(
-                packageId = "\$rc_annual",
-                isSelectedByDefault = false,
-                stack = StackComponent(components = emptyList()),
-                hapticFeedbackEnabled = enabled,
-            )
-        ).getOrThrow().componentStyle as PackageComponentStyle
-        fun buttonStyle(enabled: Boolean?) = styleFactory.create(
-            TabControlButtonComponent(
-                tabIndex = 0,
-                tabId = "t0",
-                stack = StackComponent(components = emptyList()),
-                hapticFeedbackEnabled = enabled,
-            )
-        ).getOrThrow().componentStyle as TabControlButtonComponentStyle
-        fun toggleStyle(enabled: Boolean?) = styleFactory.create(
-            TabControlToggleComponent(
-                defaultValue = false,
-                thumbColorOn = color,
-                thumbColorOff = color,
-                trackColorOn = color,
-                trackColorOff = color,
-                hapticFeedbackEnabled = enabled,
-            )
-        ).getOrThrow().componentStyle as TabControlToggleComponentStyle
+    fun `Should take package haptic feedback from the paywall-level flag`() {
+        val packageComponent = PackageComponent(
+            packageId = "\$rc_annual",
+            isSelectedByDefault = false,
+            stack = StackComponent(components = emptyList()),
+        )
+        fun packageStyle(factory: StyleFactory) =
+            factory.create(packageComponent).getOrThrow().componentStyle as PackageComponentStyle
 
-        assertThat(packageStyle(null).hapticFeedbackEnabled).isTrue()
-        assertThat(packageStyle(false).hapticFeedbackEnabled).isFalse()
+        assertThat(packageStyle(styleFactory).hapticFeedbackEnabled).isTrue()
+        val disabledFactory = StyleFactory(
+            localizations = localizations,
+            colorAliases = colorAliases,
+            fontAliases = fontAliases,
+            variableLocalizations = variableLocalizations,
+            offering = offering,
+            packageSelectionHapticFeedbackEnabled = false,
+        )
+        assertThat(packageStyle(disabledFactory).hapticFeedbackEnabled).isFalse()
+    }
+
+    @Test
+    fun `Should take tab control haptic feedback from the enclosing tabs component`() {
+        val color = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb()))
+        val tabs = listOf(
+            TabsComponent.Tab(id = "0", stack = StackComponent(components = emptyList())),
+            TabsComponent.Tab(id = "1", stack = StackComponent(components = emptyList())),
+        )
+        fun buttonStyle(enabled: Boolean?): TabControlButtonComponentStyle {
+            val component = TabsComponent(
+                tabs = tabs,
+                control = TabsComponent.TabControl.Buttons(
+                    stack = StackComponent(
+                        components = listOf(
+                            TabControlButtonComponent(
+                                tabIndex = 0,
+                                tabId = "0",
+                                stack = StackComponent(components = emptyList()),
+                            ),
+                        ),
+                    ),
+                ),
+                hapticFeedbackEnabled = enabled,
+            )
+            val style = styleFactory.create(component).getOrThrow().componentStyle as TabsComponentStyle
+            return (style.control as TabControlStyle.Buttons).stack.children.first() as TabControlButtonComponentStyle
+        }
+        fun toggleStyle(enabled: Boolean?): TabControlToggleComponentStyle {
+            val component = TabsComponent(
+                tabs = tabs,
+                control = TabsComponent.TabControl.Toggle(
+                    stack = StackComponent(
+                        components = listOf(
+                            TabControlToggleComponent(
+                                defaultValue = false,
+                                thumbColorOn = color,
+                                thumbColorOff = color,
+                                trackColorOn = color,
+                                trackColorOff = color,
+                            ),
+                        ),
+                    ),
+                ),
+                hapticFeedbackEnabled = enabled,
+            )
+            val style = styleFactory.create(component).getOrThrow().componentStyle as TabsComponentStyle
+            return (style.control as TabControlStyle.Toggle).stack.children.first() as TabControlToggleComponentStyle
+        }
+
         assertThat(buttonStyle(null).hapticFeedbackEnabled).isTrue()
         assertThat(buttonStyle(false).hapticFeedbackEnabled).isFalse()
         assertThat(toggleStyle(null).hapticFeedbackEnabled).isTrue()

@@ -1,9 +1,12 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.pkg
 
+import android.view.HapticFeedbackConstants
+import android.view.View
 import androidx.compose.foundation.layout.Column
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertHasClickAction
@@ -43,6 +46,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.validatePaywallComponentsDataOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.StyleFactory
@@ -58,6 +62,8 @@ import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Shadows.shadowOf
+import org.robolectric.annotation.Config
 import java.net.URL
 
 @RunWith(AndroidJUnit4::class)
@@ -538,6 +544,113 @@ class PackageComponentViewTests {
         yearly.assertIsNotSelected().assertIsEnabled()
         monthly.assertIsSelected().assertIsEnabled()
         assertThat(trackedInteractions).isEqualTo(1)
+    }
+
+    @Test
+    fun `Selecting another package performs a segment tick`(): Unit = with(composeTestRule) {
+        val view = setTwoPackagesCapturingView()
+
+        onNodeWithTag("monthly").performClick()
+
+        assertThat(shadowOf(view).lastHapticFeedbackPerformed()).isEqualTo(HapticFeedbackConstants.SEGMENT_TICK)
+    }
+
+    @Test
+    fun `Tapping the selected package performs no haptic`(): Unit = with(composeTestRule) {
+        val view = setTwoPackagesCapturingView()
+
+        onNodeWithTag("yearly").performClick()
+
+        assertThat(shadowOf(view).lastHapticFeedbackPerformed()).isEqualTo(NO_HAPTIC)
+    }
+
+    @Test
+    fun `Selecting another package performs no haptic when the paywall disables it`(): Unit = with(composeTestRule) {
+        val view = setTwoPackagesCapturingView(hapticFeedbackEnabled = false)
+
+        onNodeWithTag("monthly").performClick()
+
+        assertThat(shadowOf(view).lastHapticFeedbackPerformed()).isEqualTo(NO_HAPTIC)
+    }
+
+    @Config(sdk = [33])
+    @Test
+    fun `Selecting another package performs no haptic below API 34`(): Unit = with(composeTestRule) {
+        val view = setTwoPackagesCapturingView()
+
+        onNodeWithTag("monthly").performClick()
+
+        assertThat(shadowOf(view).lastHapticFeedbackPerformed()).isEqualTo(NO_HAPTIC)
+    }
+
+    private fun setTwoPackagesCapturingView(hapticFeedbackEnabled: Boolean = true): View {
+        val defaultLocaleIdentifier = LocaleId("en_US")
+        val textKey = LocalizationKey("key")
+        val localizations = nonEmptyMapOf(
+            defaultLocaleIdentifier to nonEmptyMapOf(textKey to LocalizationData.Text("text")),
+        )
+        val text = TextComponent(text = textKey, color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())))
+        val componentYearly = PackageComponent(
+            packageId = packageYearly.identifier,
+            isSelectedByDefault = true,
+            stack = StackComponent(components = listOf(text)),
+        )
+        val componentMonthly = PackageComponent(
+            packageId = packageMonthly.identifier,
+            isSelectedByDefault = false,
+            stack = StackComponent(components = listOf(text)),
+        )
+        val data = PaywallComponentsData(
+            id = "paywall_id",
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(componentYearly, componentMonthly)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = defaultLocaleIdentifier,
+            hapticFeedbackEnabled = hapticFeedbackEnabled,
+        )
+        val offering = Offering(
+            identifier = offeringId,
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(packageYearly, packageMonthly),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        )
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(validated)
+        val (styleYearly, styleMonthly) = (validated.stack as StackComponentStyle).children
+            .filterIsInstance<PackageComponentStyle>()
+
+        lateinit var view: View
+        composeTestRule.setContent {
+            view = LocalView.current
+            Column {
+                PackageComponentView(
+                    style = styleYearly,
+                    state = state,
+                    clickHandler = { },
+                    modifier = Modifier.testTag("yearly"),
+                )
+                PackageComponentView(
+                    style = styleMonthly,
+                    state = state,
+                    clickHandler = { },
+                    modifier = Modifier.testTag("monthly"),
+                )
+            }
+        }
+        composeTestRule.waitForIdle()
+        return view
+    }
+
+    private companion object {
+        const val NO_HAPTIC = -1
     }
 
 }
