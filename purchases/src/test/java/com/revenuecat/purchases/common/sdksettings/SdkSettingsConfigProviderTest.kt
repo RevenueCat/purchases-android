@@ -10,6 +10,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
@@ -38,6 +39,7 @@ internal class SdkSettingsConfigProviderTest {
             override fun e(tag: String, msg: String, throwable: Throwable?) {}
         }
         every { manager.configGeneration } returns 0
+        coEvery { manager.hasCommittedConfig() } returns true
         coEvery { manager.committedTopicOrNull(RemoteConfigTopic.SdkSettings) } returns null
         coEvery { manager.topic(RemoteConfigTopic.SdkSettings) } returns null
         provider.listener = SdkSettingsListener { notified.add(it) }
@@ -59,11 +61,48 @@ internal class SdkSettingsConfigProviderTest {
     }
 
     @Test
-    fun `warm is a no-op when the topic is not committed`() = runTest {
+    fun `warm is a no-op when no config is committed`() = runTest {
+        coEvery { manager.hasCommittedConfig() } returns false
+
         provider.warm(generation = 0)
 
         assertThat(provider.cachedSettings()).isNull()
         assertThat(notified).isEmpty()
+        coVerify(exactly = 0) { manager.committedTopicOrNull(any()) }
+    }
+
+    @Test
+    fun `a committed config without the topic warms the default settings`() = runTest {
+        provider.warm(generation = 0)
+
+        assertThat(provider.cachedSettings()).isEqualTo(SdkSettings.DEFAULT)
+        assertThat(notified).containsExactly(SdkSettings.DEFAULT)
+    }
+
+    @Test
+    fun `a commit that drops the topic notifies the default settings`() = runTest {
+        commitTopic("""{"diagnostics":{"enabled":true}}""")
+        provider.warm(generation = 0)
+        coEvery { manager.committedTopicOrNull(RemoteConfigTopic.SdkSettings) } returns null
+
+        provider.warm(generation = 1)
+
+        assertThat(notified).containsExactly(diagnosticsOn, SdkSettings.DEFAULT)
+        every { manager.configGeneration } returns 1
+        assertThat(provider.cachedSettings()).isEqualTo(SdkSettings.DEFAULT)
+    }
+
+    @Test
+    fun `onConfigCommitted warms and notifies the listener`() = runTest {
+        val provider = SdkSettingsConfigProvider(manager, scope = this)
+        provider.listener = SdkSettingsListener { notified.add(it) }
+        commitTopic("""{"diagnostics":{"enabled":true}}""")
+
+        provider.onConfigCommitted(generation = 0)
+        advanceUntilIdle()
+
+        assertThat(provider.cachedSettings()).isEqualTo(diagnosticsOn)
+        assertThat(notified).containsExactly(diagnosticsOn)
     }
 
     @Test
@@ -90,6 +129,31 @@ internal class SdkSettingsConfigProviderTest {
     fun `a re-warm with the same settings does not notify again`() = runTest {
         commitTopic("""{"diagnostics":{"enabled":true}}""")
         provider.warm(generation = 0)
+
+        provider.warm(generation = 1)
+
+        assertThat(notified).containsExactly(diagnosticsOn)
+    }
+
+    @Test
+    fun `a re-warm after an invalidation with the same settings does not notify again`() = runTest {
+        commitTopic("""{"diagnostics":{"enabled":true}}""")
+        provider.warm(generation = 0)
+        provider.onConfigInvalidated(generation = 1)
+
+        provider.warm(generation = 2)
+
+        assertThat(notified).containsExactly(diagnosticsOn)
+        every { manager.configGeneration } returns 2
+        assertThat(provider.cachedSettings()).isEqualTo(diagnosticsOn)
+    }
+
+    @Test
+    fun `a listener attached after the first warm is notified on the next warm`() = runTest {
+        provider.listener = null
+        commitTopic("""{"diagnostics":{"enabled":true}}""")
+        provider.warm(generation = 0)
+        provider.listener = SdkSettingsListener { notified.add(it) }
 
         provider.warm(generation = 1)
 

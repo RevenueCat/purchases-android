@@ -3,7 +3,6 @@ package com.revenuecat.purchases.common.sdksettings
 import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.common.errorLog
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 
@@ -30,9 +29,6 @@ internal data class SdkSettings(
             val element = this[key] ?: return null
             return try {
                 JsonTools.json.decodeFromJsonElement<T>(element)
-            } catch (e: SerializationException) {
-                errorLog(e) { "Ignoring the '$key' SDK setting: it could not be parsed." }
-                null
             } catch (e: IllegalArgumentException) {
                 errorLog(e) { "Ignoring the '$key' SDK setting: it could not be parsed." }
                 null

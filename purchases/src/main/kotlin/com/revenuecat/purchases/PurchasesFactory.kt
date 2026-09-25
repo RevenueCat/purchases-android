@@ -381,7 +381,6 @@ internal class PurchasesFactory(
             workflowsConfigProvider.warmAsync(initialGeneration)
             checkpointsConfigProvider.warmAsync(initialGeneration)
             audiencesConfigProvider.warmAsync(initialGeneration)
-            sdkSettingsConfigProvider.warmAsync(initialGeneration)
 
             val identityManager = IdentityManager(
                 appConfig,
@@ -599,6 +598,10 @@ internal class PurchasesFactory(
                 localRulesEvaluator = localRulesEvaluator,
                 tokenManager = tokenManager,
             )
+            // The orchestrator attaches itself as the settings listener in its init, so warm only once it exists:
+            // on a warm disk this is the session's only warm until the backend changes the config (a 204 doesn't
+            // re-commit), and a warm that lands before the listener is attached would never be delivered.
+            sdkSettingsConfigProvider.warmAsync(initialGeneration)
 
             return Purchases(purchasesOrchestrator)
         }

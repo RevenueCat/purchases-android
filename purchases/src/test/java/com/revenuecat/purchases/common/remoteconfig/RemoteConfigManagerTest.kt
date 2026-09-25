@@ -1075,6 +1075,32 @@ class RemoteConfigManagerTest {
     }
 
     @Test
+    fun `hasCommittedConfig is true once a configuration is persisted, without triggering a sync`() = runTest {
+        every { diskCache.read() } returns persisted(manifest = "m", activeTopics = emptyList(), topics = emptyMap())
+        val manager = readManager(appUserIDProvider = { TEST_APP_USER_ID })
+
+        assertThat(manager.hasCommittedConfig()).isTrue()
+        verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `hasCommittedConfig is false without a sync when nothing is committed`() = runTest {
+        every { diskCache.read() } returns null
+        val manager = readManager(appUserIDProvider = { TEST_APP_USER_ID })
+
+        assertThat(manager.hasCommittedConfig()).isFalse()
+        verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `hasCommittedConfig is false on a disabled manager even when data is cached`() = runTest {
+        every { diskCache.read() } returns persisted(manifest = "m", activeTopics = emptyList(), topics = emptyMap())
+        val manager = readManager(enabled = false)
+
+        assertThat(manager.hasCommittedConfig()).isFalse()
+    }
+
+    @Test
     fun `topic returns null on a disabled manager even when data is cached`() = runTest {
         every { diskCache.read() } returns persisted(
             manifest = "m",

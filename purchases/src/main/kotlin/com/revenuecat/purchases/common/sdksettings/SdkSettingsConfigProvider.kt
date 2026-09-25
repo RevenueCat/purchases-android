@@ -13,7 +13,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
-/** Notified from the provider's IO scope whenever the warmed [SdkSettings] differ from the previous ones. */
+/** Notified from the provider's IO scope whenever the warmed [SdkSettings] differ from the ones last delivered. */
 internal fun interface SdkSettingsListener {
     fun onSdkSettingsChanged(settings: SdkSettings)
 }
@@ -34,6 +34,12 @@ internal class SdkSettingsConfigProvider(
 
     private val cache = GenerationGuardedCache<SdkSettings>()
 
+    // The (generation, settings) last handed to a listener. Kept apart from [cache] so an identity-change
+    // invalidation (which empties the cache) doesn't make the next warm re-deliver unchanged settings, and
+    // guarded by generation so a slow older warm can't record over a newer delivery.
+    private val deliveryLock = Any()
+    private var lastDelivered: Pair<Int, SdkSettings>? = null
+
     @Volatile
     var listener: SdkSettingsListener? = null
 
@@ -53,17 +59,31 @@ internal class SdkSettingsConfigProvider(
 
     /**
      * Best-effort populate of the in-memory cache from already-committed config, tagged with [generation]. No-op
-     * (no `/v1/config` sync) when the topic isn't committed yet, so a cold-disk init warm never triggers a
-     * network config fetch. A committed topic without a `default` item warms the defaults.
+     * (no `/v1/config` sync) while no config is committed yet, so a cold-disk init warm never triggers a network
+     * config fetch. Once a config is committed, a missing topic or `default` item warms the defaults, so a listener
+     * hears about the settings reverting when the backend stops serving them.
      */
     suspend fun warm(generation: Int) {
-        if (cache.isWarmAtOrAbove(generation)) return
-        val topic = manager.committedTopicOrNull(RemoteConfigTopic.SdkSettings) ?: return
-        val settings = topic[ITEM_DEFAULT].toSettings()
-        val previous = cache.cached
-        if (cache.store(generation, settings) && settings != previous) {
+        if (cache.isWarmAtOrAbove(generation) || !manager.hasCommittedConfig()) return
+        val settings = manager.committedTopicOrNull(RemoteConfigTopic.SdkSettings)?.get(ITEM_DEFAULT).toSettings()
+        if (cache.store(generation, settings)) {
+            listener?.let { deliverIfChanged(generation, settings, it) }
+        }
+    }
+
+    private fun deliverIfChanged(generation: Int, settings: SdkSettings, listener: SdkSettingsListener) {
+        val changed = synchronized(deliveryLock) {
+            val previous = lastDelivered
+            if (previous != null && generation < previous.first) {
+                false
+            } else {
+                lastDelivered = generation to settings
+                previous?.second != settings
+            }
+        }
+        if (changed) {
             debugLog { "SDK settings changed: $settings." }
-            listener?.onSdkSettingsChanged(settings)
+            listener.onSdkSettingsChanged(settings)
         }
     }
 
