@@ -127,6 +127,34 @@ internal class TabsComponentTests {
                     ),
                 ),
                 arrayOf(
+                    "tabs with haptic_feedback_enabled = false",
+                    Args(
+                        json = """
+                        {
+                          "type": "tabs",
+                          "haptic_feedback_enabled": false,
+                          "control": {
+                            "type": "buttons",
+                            "stack": { "type": "stack", "components": [] }
+                          },
+                          "tabs": [
+                            {
+                              "id": "zero",
+                              "stack": { "type": "stack", "components": [] }
+                            }
+                          ]
+                        }
+                        """.trimIndent(),
+                        expected = TabsComponent(
+                            control = TabsComponent.TabControl.Buttons(stack = StackComponent(components = emptyList())),
+                            tabs = listOf(
+                                TabsComponent.Tab(id = "zero", stack = StackComponent(components = emptyList())),
+                            ),
+                            hapticFeedbackEnabled = false,
+                        )
+                    ),
+                ),
+                arrayOf(
                     "tab_control",
                     Args(
                         json = """

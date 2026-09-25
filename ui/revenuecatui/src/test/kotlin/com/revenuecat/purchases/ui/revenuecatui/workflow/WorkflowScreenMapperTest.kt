@@ -98,6 +98,16 @@ class WorkflowScreenMapperTest {
     }
 
     @Test
+    fun `toPaywallComponentsData maps hapticFeedbackEnabled`() {
+        val data = WorkflowScreenMapper.toPaywallComponentsData(
+            screen = screen.copy(hapticFeedbackEnabled = false),
+            screenId = "screen_abc",
+        )
+
+        assertThat(data.hapticFeedbackEnabled).isFalse()
+    }
+
+    @Test
     fun `toPaywallComponents uses provided uiConfig`() {
         val screenId = "screen_abc"
         val uiConfig = UiConfig()

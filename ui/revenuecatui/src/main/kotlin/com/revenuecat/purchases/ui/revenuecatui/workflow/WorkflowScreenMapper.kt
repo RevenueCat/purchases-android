@@ -23,6 +23,7 @@ internal object WorkflowScreenMapper {
             exitOffers = screen.exitOffers,
             productChangeConfig = screen.productChangeConfig,
             automaticallyScaleFontSize = screen.automaticallyScaleFontSize,
+            hapticFeedbackEnabled = screen.hapticFeedbackEnabled,
             stateDeclarations = screen.stateDeclarations,
         )
 

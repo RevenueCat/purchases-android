@@ -95,7 +95,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.toNonEmptyListOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.zipOrAccumulate
 import java.util.Date
 
-@Suppress("TooManyFunctions", "LargeClass")
+@Suppress("TooManyFunctions", "LargeClass", "LongParameterList")
 @Immutable
 internal class StyleFactory(
     private val localizations: NonEmptyMap<LocaleId, LocalizationDictionary>,
@@ -109,6 +109,10 @@ internal class StyleFactory(
      * when the paywall component tree contains any unsupported condition type.
      */
     private val stripRules: Boolean = false,
+    /**
+     * Paywall-level `haptic_feedback_enabled`. Applies to package selection only; tabs carry their own flag.
+     */
+    private val packageSelectionHapticFeedbackEnabled: Boolean = true,
 ) {
 
     internal companion object {
@@ -139,6 +143,7 @@ internal class StyleFactory(
         var enclosingTabsOrderedTabIds: List<String> = emptyList(),
         var enclosingTabContextNamesById: Map<String, String> = emptyMap(),
         var enclosingTabsDefaultTabIndexForInteraction: Int = 0,
+        var enclosingTabsHapticFeedbackEnabled: Boolean = true,
         /**
          * If this is non-null, it means the branch currently being built is inside a countdown component.
          */
@@ -353,12 +358,15 @@ internal class StyleFactory(
             tabsComponentName: String?,
             tabs: List<TabsComponent.Tab>,
             defaultTabId: String?,
+            hapticFeedbackEnabled: Boolean,
             block: StyleFactoryScope.() -> T,
         ): T {
             val previousName = enclosingTabsComponentName
             val previousIds = enclosingTabsOrderedTabIds
             val previousContextNames = enclosingTabContextNamesById
             val previousDefaultForInteraction = enclosingTabsDefaultTabIndexForInteraction
+            val previousHapticFeedbackEnabled = enclosingTabsHapticFeedbackEnabled
+            enclosingTabsHapticFeedbackEnabled = hapticFeedbackEnabled
             enclosingTabsComponentName = tabsComponentName?.takeUnless { it.isBlank() }
             enclosingTabsOrderedTabIds = tabs.map { it.id }
             enclosingTabContextNamesById = tabs.mapNotNull { tab ->
@@ -376,6 +384,7 @@ internal class StyleFactory(
                 enclosingTabsOrderedTabIds = previousIds
                 enclosingTabContextNamesById = previousContextNames
                 enclosingTabsDefaultTabIndexForInteraction = previousDefaultForInteraction
+                enclosingTabsHapticFeedbackEnabled = previousHapticFeedbackEnabled
             }
         }
 
@@ -727,6 +736,7 @@ internal class StyleFactory(
                             visible = component.visible ?: DEFAULT_VISIBILITY,
                             overrides = presentedOverrides,
                             offerEligibility = packageOfferEligibility,
+                            hapticFeedbackEnabled = packageSelectionHapticFeedbackEnabled,
                         )
                     }
                 }
@@ -1259,6 +1269,7 @@ internal class StyleFactory(
                         tabIdsOrdered = enclosingTabsOrderedTabIds,
                         tabContextNamesById = enclosingTabContextNamesById,
                         tabsDefaultTabIndex = enclosingTabsDefaultTabIndexForInteraction,
+                        hapticFeedbackEnabled = enclosingTabsHapticFeedbackEnabled,
                     )
                 }
         }
@@ -1279,6 +1290,7 @@ internal class StyleFactory(
                 trackColorOn = trackColorOn,
                 trackColorOff = trackColorOff,
                 componentName = enclosingTabsComponentName ?: component.name,
+                hapticFeedbackEnabled = enclosingTabsHapticFeedbackEnabled,
             )
         }
 
@@ -1289,6 +1301,7 @@ internal class StyleFactory(
             tabsComponentName = component.name,
             tabs = component.tabs,
             defaultTabId = component.defaultTabId,
+            hapticFeedbackEnabled = component.hapticFeedbackEnabled ?: true,
         ) {
             createTabsComponentStyleTabControl(component.control).flatMap { control ->
                 // Find the index of the defaultTabId.

@@ -6,8 +6,10 @@ package com.revenuecat.purchases.ui.revenuecatui.components.pkg
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
+import com.revenuecat.purchases.ui.revenuecatui.components.performSelectionHapticFeedback
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -27,6 +29,7 @@ internal fun PackageComponentView(
 
     if (!packageState.visible) return
 
+    val view = LocalView.current
     val selected = remember(state.selectedPackageInfo?.uniqueId, style.uniqueId) {
         state.selectedPackageInfo?.uniqueId == style.uniqueId
     }
@@ -52,6 +55,7 @@ internal fun PackageComponentView(
                         defaultPackage = state.defaultPackageForPackageRowAnalytics(),
                     ),
                 )
+                if (style.hapticFeedbackEnabled) view.performSelectionHapticFeedback()
                 state.update(selectedPackageUniqueId = style.uniqueId)
             }
         } else {

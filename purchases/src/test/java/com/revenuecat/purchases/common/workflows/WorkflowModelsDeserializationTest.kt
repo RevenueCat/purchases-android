@@ -305,6 +305,29 @@ internal class WorkflowModelsDeserializationTest {
     }
 
     @Test
+    fun `WorkflowScreen reads haptic_feedback_enabled`() {
+        val json = """
+            {
+              "template_name": "components",
+              "asset_base_url": "https://assets.pawwalls.com",
+              "components_config": {
+                "base": {
+                  "stack": {"type": "stack", "components": []},
+                  "background": {"type": "color", "value": {"light": {"type": "hex", "value": "#ffffff"}}}
+                }
+              },
+              "components_localizations": {"en_US": {}},
+              "default_locale": "en_US",
+              "haptic_feedback_enabled": false
+            }
+        """.trimIndent()
+
+        val screen = JsonTools.json.decodeFromString(WorkflowScreen.serializer(), json)
+
+        assertThat(screen.hapticFeedbackEnabled).isFalse()
+    }
+
+    @Test
     fun `WorkflowScreen reads play_store_product_change_mode`() {
         val screen = JsonTools.json.decodeFromString(
             WorkflowScreen.serializer(),

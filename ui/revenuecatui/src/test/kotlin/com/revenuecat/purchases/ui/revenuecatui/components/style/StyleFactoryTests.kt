@@ -1068,6 +1068,82 @@ class StyleFactoryTests {
     }
 
     @Test
+    fun `Should take package haptic feedback from the paywall-level flag`() {
+        val packageComponent = PackageComponent(
+            packageId = "\$rc_annual",
+            isSelectedByDefault = false,
+            stack = StackComponent(components = emptyList()),
+        )
+        fun packageStyle(factory: StyleFactory) =
+            factory.create(packageComponent).getOrThrow().componentStyle as PackageComponentStyle
+
+        assertThat(packageStyle(styleFactory).hapticFeedbackEnabled).isTrue()
+        val disabledFactory = StyleFactory(
+            localizations = localizations,
+            colorAliases = colorAliases,
+            fontAliases = fontAliases,
+            variableLocalizations = variableLocalizations,
+            offering = offering,
+            packageSelectionHapticFeedbackEnabled = false,
+        )
+        assertThat(packageStyle(disabledFactory).hapticFeedbackEnabled).isFalse()
+    }
+
+    @Test
+    fun `Should take tab control haptic feedback from the enclosing tabs component`() {
+        val color = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb()))
+        val tabs = listOf(
+            TabsComponent.Tab(id = "0", stack = StackComponent(components = emptyList())),
+            TabsComponent.Tab(id = "1", stack = StackComponent(components = emptyList())),
+        )
+        fun buttonStyle(enabled: Boolean?): TabControlButtonComponentStyle {
+            val component = TabsComponent(
+                tabs = tabs,
+                control = TabsComponent.TabControl.Buttons(
+                    stack = StackComponent(
+                        components = listOf(
+                            TabControlButtonComponent(
+                                tabIndex = 0,
+                                tabId = "0",
+                                stack = StackComponent(components = emptyList()),
+                            ),
+                        ),
+                    ),
+                ),
+                hapticFeedbackEnabled = enabled,
+            )
+            val style = styleFactory.create(component).getOrThrow().componentStyle as TabsComponentStyle
+            return (style.control as TabControlStyle.Buttons).stack.children.first() as TabControlButtonComponentStyle
+        }
+        fun toggleStyle(enabled: Boolean?): TabControlToggleComponentStyle {
+            val component = TabsComponent(
+                tabs = tabs,
+                control = TabsComponent.TabControl.Toggle(
+                    stack = StackComponent(
+                        components = listOf(
+                            TabControlToggleComponent(
+                                defaultValue = false,
+                                thumbColorOn = color,
+                                thumbColorOff = color,
+                                trackColorOn = color,
+                                trackColorOff = color,
+                            ),
+                        ),
+                    ),
+                ),
+                hapticFeedbackEnabled = enabled,
+            )
+            val style = styleFactory.create(component).getOrThrow().componentStyle as TabsComponentStyle
+            return (style.control as TabControlStyle.Toggle).stack.children.first() as TabControlToggleComponentStyle
+        }
+
+        assertThat(buttonStyle(null).hapticFeedbackEnabled).isTrue()
+        assertThat(buttonStyle(false).hapticFeedbackEnabled).isFalse()
+        assertThat(toggleStyle(null).hapticFeedbackEnabled).isTrue()
+        assertThat(toggleStyle(false).hapticFeedbackEnabled).isFalse()
+    }
+
+    @Test
     fun `Should mark a PackageComponentStyle as selectable if it does not contain a purchase button`(){
         // Arrange
         val stackComponent = StackComponent(

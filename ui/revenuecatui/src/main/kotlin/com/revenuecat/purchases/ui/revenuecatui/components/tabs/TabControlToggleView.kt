@@ -11,6 +11,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
@@ -19,6 +20,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
 import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
+import com.revenuecat.purchases.ui.revenuecatui.components.performToggleHapticFeedback
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
@@ -38,6 +40,7 @@ internal fun TabControlToggleView(
     componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
     val checked by remember { derivedStateOf { state.selectedTabIndex > 0 } }
+    val view = LocalView.current
 
     Switch(
         checked = checked,
@@ -47,6 +50,7 @@ internal fun TabControlToggleView(
                 return@Switch
             }
             state.update(selectedTabIndex = newTabIndex)
+            if (style.hapticFeedbackEnabled) view.performToggleHapticFeedback(isOn = it)
             componentInteractionTracker.track(
                 PaywallComponentInteractionData(
                     componentType = PaywallComponentType.SWITCH,

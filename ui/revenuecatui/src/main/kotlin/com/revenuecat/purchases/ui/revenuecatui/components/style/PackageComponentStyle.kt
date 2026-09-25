@@ -34,6 +34,8 @@ internal data class PackageComponentStyle(
      */
     @get:JvmSynthetic
     override val offerEligibility: OfferEligibility? = null,
+    @get:JvmSynthetic
+    val hapticFeedbackEnabled: Boolean = true,
 ) : ComponentStyle, PackageContext {
     override val size: Size = stackComponentStyle.size
 

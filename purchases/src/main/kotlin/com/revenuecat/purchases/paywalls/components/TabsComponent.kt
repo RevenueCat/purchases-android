@@ -105,6 +105,9 @@ public class TabsComponent(
     @get:JvmSynthetic
     @SerialName("state_updates")
     public val stateUpdates: List<StateUpdate>? = null,
+    @get:JvmSynthetic
+    @SerialName("haptic_feedback_enabled")
+    public val hapticFeedbackEnabled: Boolean? = null,
 ) : PaywallComponent {
     @InternalRevenueCatAPI
     @Poko

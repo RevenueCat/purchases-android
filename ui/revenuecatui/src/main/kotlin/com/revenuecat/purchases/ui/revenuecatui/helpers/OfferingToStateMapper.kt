@@ -202,6 +202,7 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
         variableLocalizations = variableLocalizations,
         offering = this,
         stripRules = stripRules,
+        packageSelectionHapticFeedbackEnabled = componentsData.hapticFeedbackEnabled,
     )
 
     // Combine the main stack with the header, stickyFooter and the background, or accumulate the encountered errors.
