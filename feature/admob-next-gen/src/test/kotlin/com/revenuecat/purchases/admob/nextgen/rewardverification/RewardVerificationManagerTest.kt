@@ -127,7 +127,7 @@ internal class RewardVerificationManagerTest {
         // The id polled from the backend must match the token's client transaction id so correlation round-trips.
         assertEquals("client-transaction-id", polledClientTransactionId.captured)
         assertNull(polledTrackingMetadata.captured)
-        assertEquals(AdCaptureMethod.ADAPTER, polledCaptureMethod.captured)
+        assertEquals(AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER, polledCaptureMethod.captured)
     }
 
     @Test
@@ -186,7 +186,7 @@ internal class RewardVerificationManagerTest {
         assertFalse(completedResult!!.failed)
         assertEquals("client-transaction-id", polledClientTransactionId.captured)
         assertNull(polledTrackingMetadata.captured)
-        assertEquals(AdCaptureMethod.ADAPTER, polledCaptureMethod.captured)
+        assertEquals(AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER, polledCaptureMethod.captured)
     }
 
     @Test
@@ -203,7 +203,7 @@ internal class RewardVerificationManagerTest {
             mockPurchases.pollRewardVerification(
                 any(),
                 captureNullable(polledTrackingMetadata),
-                AdCaptureMethod.ADAPTER,
+                AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER,
                 any<suspend (String) -> Outcome>(),
             )
         } returns RewardVerificationResult.verified(VerifiedReward.VirtualCurrency(code = "gems", amount = 7))
@@ -296,7 +296,7 @@ internal class RewardVerificationManagerTest {
             mockPurchases.pollRewardVerification(
                 any(),
                 captureNullable(polledTrackingMetadata),
-                AdCaptureMethod.ADAPTER,
+                AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER,
                 any<suspend (String) -> Outcome>(),
             )
         } returns RewardVerificationResult.verified(VerifiedReward.VirtualCurrency(code = "coins", amount = 3))

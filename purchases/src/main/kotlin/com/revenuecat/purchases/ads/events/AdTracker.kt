@@ -17,7 +17,7 @@ import com.revenuecat.purchases.common.events.EventsManager
  *
  * Events tracked through the public `trackAd*` API are stamped with
  * [AdCaptureMethod.MANUAL]. RevenueCat ad-network adapters use the
- * [InternalRevenueCatAPI] overloads to stamp [AdCaptureMethod.ADAPTER] instead.
+ * [InternalRevenueCatAPI] overloads to stamp their adapter-specific capture method instead.
  */
 @OptIn(InternalRevenueCatAPI::class)
 @Suppress("TooManyFunctions")

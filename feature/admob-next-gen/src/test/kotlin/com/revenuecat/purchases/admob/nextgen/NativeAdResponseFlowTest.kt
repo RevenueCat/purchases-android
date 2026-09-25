@@ -71,7 +71,7 @@ class NativeAdResponseFlowTest {
         every {
             NativeAdLoader.loadFromAdResponse("opaque-response", capture(trackingLoadCallback))
         } just runs
-        every { adTracker.trackAdLoaded(capture(loadedData), AdCaptureMethod.ADAPTER) } answers {
+        every { adTracker.trackAdLoaded(capture(loadedData), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER) } answers {
             order += "track"
         }
         every { loadedAd.adEventCallback = any() } answers {
@@ -156,7 +156,7 @@ class NativeAdResponseFlowTest {
         assertSame(error, forwardedError)
         val failedData = slot<AdFailedToLoadData>()
         verify(exactly = 1) {
-            adTracker.trackAdFailedToLoad(capture(failedData), AdCaptureMethod.ADAPTER)
+            adTracker.trackAdFailedToLoad(capture(failedData), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)
         }
         assertEquals(AdFormat.NATIVE, failedData.captured.adFormat)
         assertEquals("feed", failedData.captured.placement)

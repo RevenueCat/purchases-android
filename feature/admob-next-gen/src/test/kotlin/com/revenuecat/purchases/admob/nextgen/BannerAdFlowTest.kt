@@ -72,7 +72,7 @@ class BannerAdFlowTest {
 
         val loadedData = slot<AdLoadedData>()
         verify(exactly = 1) {
-            adTracker.trackAdLoaded(capture(loadedData), AdCaptureMethod.ADAPTER)
+            adTracker.trackAdLoaded(capture(loadedData), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)
         }
         assertEquals(
             AdLoadedData(
@@ -167,7 +167,7 @@ class BannerAdFlowTest {
         assertSame(error, loadCallback.loadError)
         val failedData = slot<AdFailedToLoadData>()
         verify(exactly = 1) {
-            adTracker.trackAdFailedToLoad(capture(failedData), AdCaptureMethod.ADAPTER)
+            adTracker.trackAdFailedToLoad(capture(failedData), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)
         }
         assertEquals(AdFormat.BANNER, failedData.captured.adFormat)
         assertEquals("banner-unit", failedData.captured.adUnitId)

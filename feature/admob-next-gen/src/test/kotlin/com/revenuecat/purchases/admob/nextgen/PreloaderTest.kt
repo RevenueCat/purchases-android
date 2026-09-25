@@ -85,7 +85,9 @@ internal abstract class PreloaderTest {
 
         assertEquals(listOf(responseInfo), delegate.responses)
         val loadedData = slot<AdLoadedData>()
-        verify(exactly = 1) { adTracker.trackAdLoaded(capture(loadedData), AdCaptureMethod.ADAPTER) }
+        verify(exactly = 1) {
+            adTracker.trackAdLoaded(capture(loadedData), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)
+        }
         assertEquals(expectedFormat, loadedData.captured.adFormat)
         assertEquals(expectedAdUnitId, loadedData.captured.adUnitId)
         assertEquals(expectedPlacement, loadedData.captured.placement)
@@ -105,7 +107,9 @@ internal abstract class PreloaderTest {
 
         assertEquals(listOf(error), delegate.errors)
         val failedData = slot<AdFailedToLoadData>()
-        verify(exactly = 1) { adTracker.trackAdFailedToLoad(capture(failedData), AdCaptureMethod.ADAPTER) }
+        verify(exactly = 1) {
+            adTracker.trackAdFailedToLoad(capture(failedData), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)
+        }
         assertEquals(expectedFormat, failedData.captured.adFormat)
         assertEquals(expectedAdUnitId, failedData.captured.adUnitId)
         assertEquals(expectedPlacement, failedData.captured.placement)

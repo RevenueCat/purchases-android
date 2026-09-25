@@ -61,7 +61,7 @@ class TrackingAdEventCallbackTest {
 
         val trackedData = slot<AdOpenedData>()
         verify(exactly = 1) {
-            adTracker.trackAdOpened(capture(trackedData), AdCaptureMethod.ADAPTER)
+            adTracker.trackAdOpened(capture(trackedData), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)
         }
         assertEquals(
             AdOpenedData(
@@ -93,7 +93,7 @@ class TrackingAdEventCallbackTest {
 
         val trackedData = slot<AdRevenueData>()
         verify(exactly = 1) {
-            adTracker.trackAdRevenue(capture(trackedData), AdCaptureMethod.ADAPTER)
+            adTracker.trackAdRevenue(capture(trackedData), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)
         }
         assertEquals(
             AdRevenueData(
@@ -150,7 +150,7 @@ class TrackingAdEventCallbackTest {
         callback.onAppEvent("event", null)
 
         assertEquals(emptyList<String>(), seen)
-        verify(exactly = 1) { adTracker.trackAdOpened(any(), AdCaptureMethod.ADAPTER) }
+        verify(exactly = 1) { adTracker.trackAdOpened(any(), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER) }
     }
 
     /**
@@ -168,8 +168,8 @@ class TrackingAdEventCallbackTest {
         val displayedData = slot<AdDisplayedData>()
         val openedData = slot<AdOpenedData>()
         verify(exactly = 1) {
-            adTracker.trackAdDisplayed(capture(displayedData), AdCaptureMethod.ADAPTER)
-            adTracker.trackAdOpened(capture(openedData), AdCaptureMethod.ADAPTER)
+            adTracker.trackAdDisplayed(capture(displayedData), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)
+            adTracker.trackAdOpened(capture(openedData), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)
         }
         assertEquals("show-placement", displayedData.captured.placement)
         assertEquals("show-placement", openedData.captured.placement)
@@ -201,9 +201,9 @@ class TrackingAdEventCallbackTest {
         val openedData = slot<AdOpenedData>()
         val revenueData = slot<AdRevenueData>()
         verify(exactly = 1) {
-            adTracker.trackAdDisplayed(capture(displayedData), AdCaptureMethod.ADAPTER)
-            adTracker.trackAdOpened(capture(openedData), AdCaptureMethod.ADAPTER)
-            adTracker.trackAdRevenue(capture(revenueData), AdCaptureMethod.ADAPTER)
+            adTracker.trackAdDisplayed(capture(displayedData), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)
+            adTracker.trackAdOpened(capture(openedData), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)
+            adTracker.trackAdRevenue(capture(revenueData), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)
         }
         listOf(
             displayedData.captured.networkName to displayedData.captured.impressionId,

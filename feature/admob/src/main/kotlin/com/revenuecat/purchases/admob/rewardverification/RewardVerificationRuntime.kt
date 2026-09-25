@@ -33,7 +33,7 @@ internal class RewardVerificationRuntime(
             Purchases.sharedInstance.awaitPollRewardVerification(
                 clientTransactionId,
                 trackingMetadata,
-                AdCaptureMethod.ADAPTER,
+                AdCaptureMethod.ANDROID_ADMOB_LEGACY_ADAPTER,
             )
         },
 ) {
