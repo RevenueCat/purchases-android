@@ -1576,6 +1576,106 @@ class BillingWrapperTest {
     }
 
     @Test
+    fun `onBillingServiceDisconnected with pending service requests re-arms the reconnection ladder`() {
+        every { mockClient.isReady } returns false
+        every { mockClient.queryProductDetailsAsync(any(), any()) } just runs
+
+        val capturedDelays = mutableListOf<Long>()
+        val runnableSlot = slot<Runnable>()
+        every {
+            handler.postDelayed(capture(runnableSlot), capture(capturedDelays))
+        } returns true
+
+        // Queue a request while the client is not ready, mirroring work queued during a
+        // connection attempt.
+        wrapper.queryProductDetailsAsync(
+            productType = ProductType.SUBS,
+            productIds = setOf("product_a"),
+            onReceive = { },
+            onError = { fail("shouldn't be an error") }
+        )
+        val scheduledCallsBeforeDisconnect = capturedDelays.size
+
+        wrapper.onBillingServiceDisconnected()
+
+        // The disconnect must schedule a reconnection using the existing backoff ladder.
+        assertThat(capturedDelays.size).isEqualTo(scheduledCallsBeforeDisconnect + 1)
+        assertThat(capturedDelays.last()).isEqualTo(1000L) // RECONNECT_TIMER_START_MILLISECONDS
+
+        // Running the scheduled reconnection starts a new connection attempt.
+        runnableSlot.captured.run()
+        verify(exactly = 2) { mockClient.startConnection(any()) }
+
+        // Once the new connection succeeds, the queued request executes instead of hanging.
+        every { mockClient.isReady } returns true
+        every {
+            handler.postDelayed(capture(runnableSlot), any())
+        } answers {
+            runnableSlot.captured.run()
+            true
+        }
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+        verify(exactly = 1) { mockClient.queryProductDetailsAsync(any(), any()) }
+    }
+
+    @Test
+    fun `onBillingServiceDisconnected without pending service requests does not schedule a reconnection`() {
+        val capturedDelays = mutableListOf<Long>()
+        every {
+            handler.postDelayed(any(), capture(capturedDelays))
+        } returns true
+
+        wrapper.onBillingServiceDisconnected()
+
+        assertThat(capturedDelays).isEmpty()
+    }
+
+    @Test
+    fun `disconnect during an in-flight connection attempt eventually executes queued requests`() {
+        // Reproduces the wedge where the billing service dies while a connection attempt is in
+        // flight: the in-flight attempt never delivers onBillingSetupFinished, and a concurrent
+        // startConnection() only produces DEVELOPER_ERROR ("client is already in the process of
+        // connecting"), which must not be the end of the line for queued requests.
+        every { mockClient.isReady } returns false
+        every { mockClient.queryProductDetailsAsync(any(), any()) } just runs
+
+        val scheduledRunnables = mutableListOf<Runnable>()
+        every {
+            handler.postDelayed(capture(scheduledRunnables), any())
+        } returns true
+
+        wrapper.queryProductDetailsAsync(
+            productType = ProductType.SUBS,
+            productIds = setOf("product_a"),
+            onReceive = { },
+            onError = { fail("shouldn't be an error") }
+        )
+
+        // A second connection attempt while the first is in flight finishes with DEVELOPER_ERROR,
+        // which intentionally schedules nothing.
+        wrapper.onBillingSetupFinished(BillingClient.BillingResponseCode.DEVELOPER_ERROR.buildResult())
+        val scheduledBeforeDisconnect = scheduledRunnables.size
+
+        // The service then dies mid-connection: the in-flight attempt will never call back, so
+        // the disconnect is the only signal left and it must schedule a reconnection.
+        wrapper.onBillingServiceDisconnected()
+        assertThat(scheduledRunnables.size).isEqualTo(scheduledBeforeDisconnect + 1)
+
+        // The scheduled reconnection runs and the connection succeeds.
+        scheduledRunnables.last().run()
+        every { mockClient.isReady } returns true
+        every {
+            handler.postDelayed(capture(scheduledRunnables), any())
+        } answers {
+            scheduledRunnables.last().run()
+            true
+        }
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+
+        verify(exactly = 1) { mockClient.queryProductDetailsAsync(any(), any()) }
+    }
+
+    @Test
     fun `normalizing Google purchase returns correct product ID and null store user ID`() {
         val expectedProductID = "expectedProductID"
 
