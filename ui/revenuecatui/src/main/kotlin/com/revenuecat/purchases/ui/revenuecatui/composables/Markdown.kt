@@ -602,10 +602,6 @@ private fun AnnotatedString.Builder.appendMarkdownChildren(
     }
 }
 
-/**
- * The words a screen reader should speak for [markdown]: formatting, HTML tags and link targets removed, one line
- * per block.
- */
 internal fun markdownHasLinks(markdown: String): Boolean {
     fun Node.hasLink(): Boolean {
         var child = firstChild
@@ -618,6 +614,10 @@ internal fun markdownHasLinks(markdown: String): Boolean {
     return parser.parse(markdown).hasLink()
 }
 
+/**
+ * The words a screen reader should speak for [markdown]: formatting, HTML tags and link targets removed, one line
+ * per block.
+ */
 internal fun markdownPlainText(markdown: String): String {
     val blocks = mutableListOf<String>()
     fun collect(node: Node) {
@@ -625,6 +625,8 @@ internal fun markdownPlainText(markdown: String): String {
             blocks += buildAnnotatedString {
                 appendMarkdownChildren(node, Color.Unspecified, allowLinks = false, baseFontWeight = null)
             }.text
+        } else if (node is FencedCodeBlock) {
+            blocks += node.literal.trimEnd()
         } else {
             var child = node.firstChild
             while (child != null) {

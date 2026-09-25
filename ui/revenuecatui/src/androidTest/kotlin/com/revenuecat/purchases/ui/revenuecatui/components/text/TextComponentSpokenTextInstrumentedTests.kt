@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.node.RootForTest
+import androidx.compose.ui.semantics.SemanticsNode
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -68,7 +70,44 @@ internal class TextComponentSpokenTextInstrumentedTests {
 
         val info = root.nodeInfo(price.id)
 
-        assertThat(info.contentDescription?.toString()).isEqualTo("$1.00 monthly")
+        assertThat((info.contentDescription ?: info.text)?.toString()).isEqualTo("$1.00 monthly")
+    }
+
+    /**
+     * Package rows merge their texts into one node, which is where most prices live. TalkBack reads a node's content
+     * description instead of its text when it has one, so the row has to keep both the title and the spoken price.
+     */
+    @Test
+    fun platformAccessibilityReadsPricesAsWordsInsideAPackageRow(): Unit = with(composeTestRule) {
+        val state = paywallState(priceText = "{{ product.price_per_period_abbreviated }}", priceInsidePackage = true)
+        setContent {
+            LoadedPaywallComponents(state = state, clickHandler = { }, modifier = Modifier.fillMaxSize())
+        }
+        val row = onNode(hasClickAction(), useUnmergedTree = true).fetchSemanticsNode()
+        val root: RootForTest = requireNotNull(row.root)
+
+        val spoken = root.spokenText(row)
+
+        assertThat(spoken).contains("Monthly").contains("$1.00 monthly").doesNotContain("/mo")
+    }
+
+    /**
+     * Roughly what TalkBack reads for a focused node: its content description, or else its text followed by its
+     * children's.
+     */
+    private fun RootForTest.spokenText(node: SemanticsNode): String = composeTestRule.runOnIdle {
+        forceAccessibilityForTesting(true)
+        val provider = composeTestRule.activity.window.decorView.findAccessibilityNodeProvider()
+        fun SemanticsNode.spoken(): String {
+            val info = provider.createAccessibilityNodeInfo(id)
+            return info?.contentDescription?.toString()
+                ?: (listOfNotNull(info?.text?.toString()) + children.map { it.spoken() })
+                    .filter { it.isNotEmpty() }
+                    .joinToString(", ")
+        }
+        val spoken = node.spoken()
+        forceAccessibilityForTesting(false)
+        spoken
     }
 
     private fun RootForTest.nodeInfo(semanticsId: Int): AccessibilityNodeInfo = composeTestRule.runOnIdle {
@@ -90,7 +129,7 @@ internal class TextComponentSpokenTextInstrumentedTests {
                 }
             }
 
-    private fun paywallState(priceText: String): PaywallState.Loaded.Components {
+    private fun paywallState(priceText: String, priceInsidePackage: Boolean = false): PaywallState.Loaded.Components {
         val locale = LocaleId("en_US")
         val offeringId = "offering"
         val monthlyPackage = testPackage("monthly", PackageType.MONTHLY, offeringId, Period.create("P1M"))
@@ -103,10 +142,11 @@ internal class TextComponentSpokenTextInstrumentedTests {
             componentsConfig = ComponentsConfig(
                 base = PaywallComponentsConfig(
                     stack = StackComponent(
-                        components = listOf(
-                            TextComponent(text = priceKey, color = ColorScheme(ColorInfo.Hex(0xFF000000.toInt()))),
-                            packageComponent(monthlyPackage, monthlyKey, isSelectedByDefault = true),
-                        ),
+                        components = if (priceInsidePackage) {
+                            listOf(packageComponent(monthlyPackage, listOf(monthlyKey, priceKey)))
+                        } else {
+                            listOf(text(priceKey), packageComponent(monthlyPackage, listOf(monthlyKey)))
+                        },
                     ),
                     background = Background.Color(ColorScheme(light = ColorInfo.Hex(0xFFFFFFFF.toInt()))),
                 ),
@@ -141,14 +181,16 @@ internal class TextComponentSpokenTextInstrumentedTests {
         )
     }
 
-    private fun packageComponent(rcPackage: Package, textKey: LocalizationKey, isSelectedByDefault: Boolean) =
-        PackageComponent(
-            packageId = rcPackage.identifier,
-            isSelectedByDefault = isSelectedByDefault,
-            stack = StackComponent(
-                listOf(TextComponent(text = textKey, color = ColorScheme(ColorInfo.Hex(0xFF000000.toInt())))),
-            ),
-        )
+    private fun packageComponent(rcPackage: Package, textKeys: List<LocalizationKey>) = PackageComponent(
+        packageId = rcPackage.identifier,
+        isSelectedByDefault = true,
+        stack = StackComponent(textKeys.map { text(it) }),
+    )
+
+    private fun text(key: LocalizationKey) = TextComponent(
+        text = key,
+        color = ColorScheme(ColorInfo.Hex(0xFF000000.toInt())),
+    )
 
     private fun uiConfig(locale: LocaleId) = UiConfig(
         app = UiConfig.AppConfig(colors = emptyMap(), fonts = emptyMap()),
