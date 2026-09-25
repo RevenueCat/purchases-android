@@ -641,7 +641,6 @@ private fun MainStackComponent(
                     val hasFillWidthChild = stackState.children.any { it.size.width is Fill }
                     val mainAxisUnbounded = remember { mutableStateOf(false) }
                     HorizontalStack(
-                        size = stackState.size,
                         dimension = dimension,
                         spacing = stackState.spacing,
                         modifier = outerModifier
@@ -680,7 +679,6 @@ private fun MainStackComponent(
                     val hasFillHeightChild = stackState.children.any { it.size.height is Fill }
                     val mainAxisUnbounded = remember { mutableStateOf(false) }
                     VerticalStack(
-                        size = stackState.size,
                         dimension = dimension,
                         spacing = stackState.spacing,
                         modifier = outerModifier
@@ -1901,6 +1899,58 @@ private fun StackComponentView_Preview_Distribution_With_Spacing(
         ),
         state = previewEmptyState(),
         clickHandler = { },
+    )
+}
+
+@Preview(name = "Flex spacing - hidden middle child")
+@Composable
+private fun StackComponentView_Preview_FlexSpacing_HiddenChild() {
+    FlexSpacingVisibilityPreview(middleChildVisible = false)
+}
+
+@Preview(name = "Flex spacing - visible middle child")
+@Composable
+private fun StackComponentView_Preview_FlexSpacing_VisibleChild() {
+    FlexSpacingVisibilityPreview(middleChildVisible = true)
+}
+
+@Composable
+private fun FlexSpacingVisibilityPreview(middleChildVisible: Boolean) {
+    val children = listOf(
+        previewTextComponentStyle(
+            text = "First",
+            backgroundColor = ColorStyles(ColorStyle.Solid(Color.Yellow)),
+            size = Size(width = Fixed(120u), height = Fixed(32u)),
+        ),
+        previewTextComponentStyle(
+            text = "Conditional",
+            backgroundColor = ColorStyles(ColorStyle.Solid(Color.Green)),
+            visible = middleChildVisible,
+            size = Size(width = Fixed(120u), height = Fixed(32u)),
+        ),
+        previewTextComponentStyle(
+            text = "Last",
+            backgroundColor = ColorStyles(ColorStyle.Solid(Color.Blue)),
+            size = Size(width = Fixed(120u), height = Fixed(32u)),
+        ),
+    )
+
+    StackComponentView(
+        style = previewStackComponentStyle(
+            children = children,
+            dimension = Dimension.Vertical(
+                alignment = HorizontalAlignment.CENTER,
+                distribution = FlexDistribution.SPACE_EVENLY,
+            ),
+            size = Size(width = Fixed(200u), height = Fixed(240u)),
+            spacing = 16.dp,
+            padding = PaddingValues(all = 8.dp),
+            margin = PaddingValues(all = 8.dp),
+            background = BackgroundStyles.Color(ColorStyles(ColorStyle.Solid(Color.LightGray))),
+            border = null,
+        ),
+        state = previewEmptyState(),
+        clickHandler = {},
     )
 }
 
