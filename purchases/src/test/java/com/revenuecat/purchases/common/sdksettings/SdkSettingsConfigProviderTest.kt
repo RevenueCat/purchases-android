@@ -10,7 +10,9 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
@@ -42,6 +44,7 @@ internal class SdkSettingsConfigProviderTest {
         coEvery { manager.hasCommittedConfig() } returns true
         coEvery { manager.committedTopicOrNull(RemoteConfigTopic.SdkSettings) } returns null
         coEvery { manager.topic(RemoteConfigTopic.SdkSettings) } returns null
+        coEvery { manager.committedTopicAfterInFlightRefresh(RemoteConfigTopic.SdkSettings) } returns null
         provider.listener = SdkSettingsListener { notified.add(it) }
     }
 
@@ -260,15 +263,16 @@ internal class SdkSettingsConfigProviderTest {
     }
 
     @Test
-    fun `ensureSettingsDelivered delivers the committed settings`() = runTest {
+    fun `ensureSettingsDelivered delivers the settings committed once the in-flight refresh is done`() = runTest {
         val provider = SdkSettingsConfigProvider(manager, scope = this)
         provider.listener = SdkSettingsListener { notified.add(it) }
-        coEvery { manager.topic(RemoteConfigTopic.SdkSettings) } returns topic("""{"diagnostics":{"enabled":true}}""")
+        refreshSettles("""{"diagnostics":{"enabled":true}}""")
 
         provider.ensureSettingsDelivered()
         advanceUntilIdle()
 
         assertThat(notified).containsExactly(diagnosticsOn)
+        coVerify(exactly = 0) { manager.topic(any()) }
     }
 
     @Test
@@ -277,8 +281,58 @@ internal class SdkSettingsConfigProviderTest {
         provider.listener = SdkSettingsListener { notified.add(it) }
         commitTopic("""{"diagnostics":{"enabled":true}}""")
         provider.warm(generation = 0)
+        refreshSettles("""{"diagnostics":{"enabled":true}}""")
 
         provider.ensureSettingsDelivered()
+        advanceUntilIdle()
+
+        assertThat(notified).containsExactly(diagnosticsOn)
+    }
+
+    @Test
+    fun `preloadAsync caches the settings without notifying the listener`() = runTest {
+        val provider = SdkSettingsConfigProvider(manager, scope = this)
+        provider.listener = SdkSettingsListener { notified.add(it) }
+        commitTopic("""{"diagnostics":{"enabled":false}}""")
+
+        provider.preloadAsync(generation = 0)
+        advanceUntilIdle()
+
+        assertThat(provider.cachedSettings()).isEqualTo(diagnosticsOff)
+        assertThat(notified).isEmpty()
+    }
+
+    @Test
+    fun `ensureSettingsDelivered delivers the preloaded settings once the refresh confirms them`() = runTest {
+        val provider = SdkSettingsConfigProvider(manager, scope = this)
+        provider.listener = SdkSettingsListener { notified.add(it) }
+        commitTopic("""{"diagnostics":{"enabled":false}}""")
+        provider.preloadAsync(generation = 0)
+        advanceUntilIdle()
+        refreshSettles("""{"diagnostics":{"enabled":false}}""")
+
+        provider.ensureSettingsDelivered()
+        advanceUntilIdle()
+
+        assertThat(notified).containsExactly(diagnosticsOff)
+    }
+
+    @Test
+    fun `ensureSettingsDelivered loses to a warm that commits while it waits for the refresh`() = runTest {
+        val provider = SdkSettingsConfigProvider(manager, scope = this)
+        provider.listener = SdkSettingsListener { notified.add(it) }
+        val refreshInFlight = CompletableDeferred<Unit>()
+        coEvery { manager.committedTopicAfterInFlightRefresh(RemoteConfigTopic.SdkSettings) } coAnswers {
+            refreshInFlight.await()
+            null
+        }
+        provider.ensureSettingsDelivered()
+        runCurrent()
+
+        commitTopic("""{"diagnostics":{"enabled":true}}""")
+        every { manager.configGeneration } returns 1
+        provider.warm(generation = 1)
+        refreshInFlight.complete(Unit)
         advanceUntilIdle()
 
         assertThat(notified).containsExactly(diagnosticsOn)
@@ -299,6 +353,12 @@ internal class SdkSettingsConfigProviderTest {
 
     private fun commitTopic(defaultItemJson: String) {
         coEvery { manager.committedTopicOrNull(RemoteConfigTopic.SdkSettings) } returns topic(defaultItemJson)
+    }
+
+    private fun refreshSettles(defaultItemJson: String) {
+        coEvery {
+            manager.committedTopicAfterInFlightRefresh(RemoteConfigTopic.SdkSettings)
+        } returns topic(defaultItemJson)
     }
 
     private fun topic(defaultItemJson: String) = ConfigTopic(
