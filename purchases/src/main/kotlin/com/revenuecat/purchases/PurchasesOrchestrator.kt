@@ -148,10 +148,8 @@ internal class PurchasesOrchestrator(
     var appConfig: AppConfig,
     private val customerInfoHelper: CustomerInfoHelper,
     private val customerInfoUpdateHandler: CustomerInfoUpdateHandler,
-    @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    internal val diagnosticsSynchronizer: DiagnosticsSynchronizer?,
-    @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    internal val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
+    private val diagnosticsSynchronizer: DiagnosticsSynchronizer?,
+    private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     val offlineEntitlementsManager: OfflineEntitlementsManager,
