@@ -25,7 +25,7 @@ aliases:
     executor:
       name: android/android_docker
       resource_class: xlarge
-      tag: 2025.04.1
+      tag: 2026.08.1
     environment:
       JVM_OPTS: -Xmx6g
       # org.gradle.caching=false: the Gradle build cache stays on for local/worktree builds
@@ -36,7 +36,7 @@ aliases:
     executor:
       name: android/android_machine
       resource_class: xlarge
-      tag: 2024.11.1
+      tag: 2026.05.1
     environment:
       GRADLE_OPTS: "-Dorg.gradle.caching=false"
 
@@ -131,6 +131,23 @@ commands:
           name: Accept Android Licenses
           shell: /bin/bash -e
           command: yes | sdkmanager --licenses
+
+  install-awscli:
+    steps:
+      - run:
+          name: Install awscli
+          # Signature check per https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html;
+          # the fingerprint pins the committed key to the one AWS publishes.
+          command: |
+            gpg --batch --with-colons --show-keys scripts/awscli-public-key.asc \
+              | grep -q '^fpr:::::::::FB5DB77FD5C118B80511ADA8A6310ACC4672475C:$'
+            gpg --batch --import scripts/awscli-public-key.asc
+            curl -sSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
+            curl -sSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip.sig" -o /tmp/awscliv2.sig
+            gpg --batch --verify /tmp/awscliv2.sig /tmp/awscliv2.zip
+            unzip -q /tmp/awscliv2.zip -d /tmp
+            sudo /tmp/aws/install
+            aws --version
 
   checkout-submodule:
     description: "Checks out a git submodule."
@@ -428,12 +445,7 @@ jobs:
           command: ./gradlew :dokkaGenerate
       - android/save_gradle_cache
       - android/save_build_cache
-      - run:
-          name: Install pip
-          command: sudo apt update && sudo apt install python3-pip
-      - run:
-          name: Install awscli
-          command: sudo pip install awscli
+      - install-awscli
       - run:
           name: Deploy to S3
           command: aws s3 sync ~/project/docs/10.24.0-SNAPSHOT s3://purchases-docs/android/10.24.0-SNAPSHOT --delete
@@ -1336,7 +1348,7 @@ workflows:
           commit_paths: "purchases/src/main/kotlin/generated/com/revenuecat/purchases/PurchasesErrorCode.kt,purchases/api-defauts.txt,purchases/api-entitlement.txt"
           executor:
             name: android/android_docker
-            tag: 2025.04.1
+            tag: 2026.08.1
             resource_class: xlarge
           update_api_steps:
             - run:
