@@ -5,8 +5,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -31,16 +37,24 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
+import com.revenuecat.purchases.paywalls.components.properties.Badge
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
+import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.validatePaywallComponentsDataOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
+import org.assertj.core.api.Assertions.assertThat
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent
+import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -334,6 +348,196 @@ class PackageComponentViewTests {
             .assertIsDisplayed()
         onNodeWithText(expectedTextMonthly)
             .assertIsDisplayed()
+    }
+
+    @Test
+    fun `Should expose the selected state to accessibility services`() {
+        assertSelectedStateIsExposed(badge = null)
+    }
+
+    @Test
+    fun `Should expose the selected state to accessibility services with an overlaid badge`() {
+        assertSelectedStateIsExposed(badge = badge(Badge.Style.Overlay, TwoDimensionalAlignment.TOP_TRAILING))
+    }
+
+    @Test
+    fun `Should expose the selected state to accessibility services with a long edge-to-edge badge`() {
+        assertSelectedStateIsExposed(badge = badge(Badge.Style.EdgeToEdge, TwoDimensionalAlignment.TOP))
+    }
+
+    @Test
+    fun `Should expose the selected state to accessibility services with a short edge-to-edge badge`() {
+        assertSelectedStateIsExposed(badge = badge(Badge.Style.EdgeToEdge, TwoDimensionalAlignment.TOP_LEADING))
+    }
+
+    @Test
+    fun `Should expose the selected state to accessibility services with a nested badge`() {
+        assertSelectedStateIsExposed(badge = badge(Badge.Style.Nested, TwoDimensionalAlignment.TOP_TRAILING))
+    }
+
+    /**
+     * A package with a purchase button inside isn't selectable: the tap belongs to the button, and it purchases even
+     * when the package is already the selected one.
+     */
+    @Test
+    fun `purchase button inside the selected package still purchases it`(): Unit = with(composeTestRule) {
+        // Arrange
+        val defaultLocaleIdentifier = LocaleId("en_US")
+        val buyKey = LocalizationKey("buy")
+        val localizations = nonEmptyMapOf(
+            defaultLocaleIdentifier to nonEmptyMapOf(buyKey to LocalizationData.Text("Buy yearly")),
+        )
+        val component = PackageComponent(
+            packageId = packageYearly.identifier,
+            isSelectedByDefault = true,
+            stack = StackComponent(
+                components = listOf(
+                    PurchaseButtonComponent(
+                        stack = StackComponent(components = listOf(TextComponent(text = buyKey, color = textColor))),
+                    ),
+                ),
+            ),
+        )
+        val data = PaywallComponentsData(
+            id = "paywall_id",
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(component)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = defaultLocaleIdentifier,
+        )
+        val offering = Offering(
+            identifier = offeringId,
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(packageYearly),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        )
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(validated)
+        val style = StyleFactory(localizations = localizations, offering = offering)
+            .create(component).getOrThrow().componentStyle as PackageComponentStyle
+        val actions = mutableListOf<PaywallAction>()
+
+        // Act
+        setContent {
+            PackageComponentView(style = style, state = state, clickHandler = { actions += it })
+        }
+        onNodeWithText("Buy yearly").performClick()
+
+        // Assert
+        assertThat(style.isSelectable).isFalse()
+        onNode(hasClickAction() and hasText("Buy yearly"))
+            .assertIsEnabled()
+            .assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.Selected))
+        waitForIdle()
+        assertThat(actions).hasSize(1)
+        assertThat((actions.single() as PaywallAction.External.PurchasePackage).rcPackage).isEqualTo(packageYearly)
+    }
+
+    private val textColor = ColorScheme(ColorInfo.Hex(Color.Black.toArgb()))
+    private val badgeKey = LocalizationKey("badge")
+
+    private fun badge(style: Badge.Style, alignment: TwoDimensionalAlignment) = Badge(
+        stack = StackComponent(components = listOf(TextComponent(text = badgeKey, color = textColor))),
+        style = style,
+        alignment = alignment,
+    )
+
+    private fun assertSelectedStateIsExposed(badge: Badge?): Unit = with(composeTestRule) {
+        // Arrange
+        val defaultLocaleIdentifier = LocaleId("en_US")
+        val yearlyKey = LocalizationKey("yearly")
+        val monthlyKey = LocalizationKey("monthly")
+        val localizations = nonEmptyMapOf(
+            defaultLocaleIdentifier to nonEmptyMapOf(
+                yearlyKey to LocalizationData.Text("Yearly"),
+                monthlyKey to LocalizationData.Text("Monthly"),
+                badgeKey to LocalizationData.Text("Best value"),
+            )
+        )
+        val componentYearly = PackageComponent(
+            packageId = packageYearly.identifier,
+            isSelectedByDefault = true,
+            stack = StackComponent(
+                components = listOf(TextComponent(text = yearlyKey, color = textColor)),
+                badge = badge,
+            ),
+        )
+        val componentMonthly = PackageComponent(
+            packageId = packageMonthly.identifier,
+            isSelectedByDefault = false,
+            stack = StackComponent(components = listOf(TextComponent(text = monthlyKey, color = textColor))),
+        )
+        val data = PaywallComponentsData(
+            id = "paywall_id",
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(componentYearly, componentMonthly)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = defaultLocaleIdentifier,
+        )
+        val offering = Offering(
+            identifier = offeringId,
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(packageYearly, packageMonthly),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        )
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(validated)
+        val styleFactory = StyleFactory(localizations = localizations, offering = offering)
+        val styleYearly = styleFactory.create(componentYearly).getOrThrow().componentStyle as PackageComponentStyle
+        val styleMonthly = styleFactory.create(componentMonthly).getOrThrow().componentStyle as PackageComponentStyle
+        var trackedInteractions = 0
+        val tracker = PaywallComponentInteractionTracker { _ -> trackedInteractions++ }
+
+        // Act
+        setContent {
+            Column {
+                PackageComponentView(
+                    style = styleYearly,
+                    state = state,
+                    clickHandler = { },
+                    componentInteractionTracker = tracker,
+                )
+                PackageComponentView(
+                    style = styleMonthly,
+                    state = state,
+                    clickHandler = { },
+                    componentInteractionTracker = tracker,
+                )
+            }
+        }
+
+        // Assert
+        // The clickable node is the one TalkBack focuses, so that's where the state has to be.
+        val yearly = onNode(hasClickAction() and hasText("Yearly"))
+        val monthly = onNode(hasClickAction() and hasText("Monthly"))
+        yearly.assertIsSelected().assertIsEnabled()
+        monthly.assertIsNotSelected().assertIsEnabled()
+
+        // Tapping the already selected package changes nothing.
+        yearly.performClick()
+        yearly.assertIsSelected()
+        assertThat(trackedInteractions).isEqualTo(0)
+
+        monthly.performClick()
+        yearly.assertIsNotSelected().assertIsEnabled()
+        monthly.assertIsSelected().assertIsEnabled()
+        assertThat(trackedInteractions).isEqualTo(1)
     }
 
 }
