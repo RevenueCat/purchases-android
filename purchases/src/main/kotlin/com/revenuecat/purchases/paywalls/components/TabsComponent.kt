@@ -34,6 +34,9 @@ public class TabControlButtonComponent(
     public val stack: StackComponent,
     @get:JvmSynthetic
     public val name: String? = null,
+    @get:JvmSynthetic
+    @SerialName("haptic_feedback_enabled")
+    public val hapticFeedbackEnabled: Boolean? = null,
 ) : PaywallComponent
 
 @InternalRevenueCatAPI
@@ -59,6 +62,9 @@ public class TabControlToggleComponent(
     @get:JvmSynthetic
     @SerialName("track_color_off")
     public val trackColorOff: ColorScheme,
+    @get:JvmSynthetic
+    @SerialName("haptic_feedback_enabled")
+    public val hapticFeedbackEnabled: Boolean? = null,
 ) : PaywallComponent
 
 @InternalRevenueCatAPI

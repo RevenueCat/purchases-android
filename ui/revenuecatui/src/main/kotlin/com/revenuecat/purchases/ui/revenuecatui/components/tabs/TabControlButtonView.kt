@@ -5,7 +5,9 @@ package com.revenuecat.purchases.ui.revenuecatui.components.tabs
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.ui.revenuecatui.components.performSelectionHapticFeedback
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TabControlButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -19,6 +21,7 @@ internal fun TabControlButtonView(
     modifier: Modifier = Modifier,
     componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
+    val view = LocalView.current
     StackComponentView(
         style = style.stack,
         state = state,
@@ -65,6 +68,9 @@ internal fun TabControlButtonView(
                         defaultIndex = null,
                     ),
                 )
+            }
+            if (style.hapticFeedbackEnabled && state.selectedTabIndex != resolvedTabIndex) {
+                view.performSelectionHapticFeedback()
             }
             state.update(selectedTabIndex = resolvedTabIndex)
         },

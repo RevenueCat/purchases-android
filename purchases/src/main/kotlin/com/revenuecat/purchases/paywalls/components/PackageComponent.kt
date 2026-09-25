@@ -34,6 +34,9 @@ public class PackageComponent(
     public val visible: Boolean? = null,
     @get:JvmSynthetic
     public val overrides: List<ComponentOverride<PartialPackageComponent>> = emptyList(),
+    @get:JvmSynthetic
+    @SerialName("haptic_feedback_enabled")
+    public val hapticFeedbackEnabled: Boolean? = null,
 ) : PaywallComponent
 
 @InternalRevenueCatAPI

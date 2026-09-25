@@ -727,6 +727,7 @@ internal class StyleFactory(
                             visible = component.visible ?: DEFAULT_VISIBILITY,
                             overrides = presentedOverrides,
                             offerEligibility = packageOfferEligibility,
+                            hapticFeedbackEnabled = component.hapticFeedbackEnabled ?: true,
                         )
                     }
                 }
@@ -1259,6 +1260,7 @@ internal class StyleFactory(
                         tabIdsOrdered = enclosingTabsOrderedTabIds,
                         tabContextNamesById = enclosingTabContextNamesById,
                         tabsDefaultTabIndex = enclosingTabsDefaultTabIndexForInteraction,
+                        hapticFeedbackEnabled = component.hapticFeedbackEnabled ?: true,
                     )
                 }
         }
@@ -1279,6 +1281,7 @@ internal class StyleFactory(
                 trackColorOn = trackColorOn,
                 trackColorOff = trackColorOff,
                 componentName = enclosingTabsComponentName ?: component.name,
+                hapticFeedbackEnabled = component.hapticFeedbackEnabled ?: true,
             )
         }
 

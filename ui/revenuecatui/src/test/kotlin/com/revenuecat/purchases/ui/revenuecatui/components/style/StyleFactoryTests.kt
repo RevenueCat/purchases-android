@@ -1068,6 +1068,44 @@ class StyleFactoryTests {
     }
 
     @Test
+    fun `Should enable haptic feedback on selectable components unless explicitly disabled`() {
+        val color = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb()))
+        fun packageStyle(enabled: Boolean?) = styleFactory.create(
+            PackageComponent(
+                packageId = "\$rc_annual",
+                isSelectedByDefault = false,
+                stack = StackComponent(components = emptyList()),
+                hapticFeedbackEnabled = enabled,
+            )
+        ).getOrThrow().componentStyle as PackageComponentStyle
+        fun buttonStyle(enabled: Boolean?) = styleFactory.create(
+            TabControlButtonComponent(
+                tabIndex = 0,
+                tabId = "t0",
+                stack = StackComponent(components = emptyList()),
+                hapticFeedbackEnabled = enabled,
+            )
+        ).getOrThrow().componentStyle as TabControlButtonComponentStyle
+        fun toggleStyle(enabled: Boolean?) = styleFactory.create(
+            TabControlToggleComponent(
+                defaultValue = false,
+                thumbColorOn = color,
+                thumbColorOff = color,
+                trackColorOn = color,
+                trackColorOff = color,
+                hapticFeedbackEnabled = enabled,
+            )
+        ).getOrThrow().componentStyle as TabControlToggleComponentStyle
+
+        assertThat(packageStyle(null).hapticFeedbackEnabled).isTrue()
+        assertThat(packageStyle(false).hapticFeedbackEnabled).isFalse()
+        assertThat(buttonStyle(null).hapticFeedbackEnabled).isTrue()
+        assertThat(buttonStyle(false).hapticFeedbackEnabled).isFalse()
+        assertThat(toggleStyle(null).hapticFeedbackEnabled).isTrue()
+        assertThat(toggleStyle(false).hapticFeedbackEnabled).isFalse()
+    }
+
+    @Test
     fun `Should mark a PackageComponentStyle as selectable if it does not contain a purchase button`(){
         // Arrange
         val stackComponent = StackComponent(
