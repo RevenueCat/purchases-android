@@ -6,9 +6,11 @@
 package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.models.GoogleOneTimePurchaseOfferDetails
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
+import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreReplacementMode
@@ -115,6 +117,28 @@ class PurchaseParamsTest {
 
         val expectedPurchasingData = basePlanSubscriptionOption.purchasingData
         assertThat(purchasePackageParams.purchasingData).isEqualTo(expectedPurchasingData)
+    }
+
+    @Test
+    fun `Initializing with OneTimePurchaseOfferDetails sets proper presentedOfferingIdentifier and purchasingData`() {
+        val presentedOfferingContext = PresentedOfferingContext(STUB_OFFERING_IDENTIFIER)
+        val offerDetails = GoogleOneTimePurchaseOfferDetails(
+            productId = "product-id",
+            price = Price(formatted = "$4.99", amountMicros = 4990000, currencyCode = "USD"),
+            offerId = "offer-id",
+            offerToken = "mock-token",
+            offerTags = emptyList(),
+            productDetails = mockk(),
+            presentedOfferingContext = presentedOfferingContext
+        )
+
+        val purchaseParams = PurchaseParams.Builder(
+            mockk(),
+            offerDetails
+        ).build()
+
+        assertThat(purchaseParams.presentedOfferingContext?.offeringIdentifier).isEqualTo(STUB_OFFERING_IDENTIFIER)
+        assertThat(purchaseParams.purchasingData).isEqualTo(offerDetails.purchasingData)
     }
 
     @Test
