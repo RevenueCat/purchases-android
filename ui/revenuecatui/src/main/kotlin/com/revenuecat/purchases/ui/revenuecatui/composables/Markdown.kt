@@ -614,6 +614,45 @@ private fun AnnotatedString.Builder.appendMarkdownChildren(
     }
 }
 
+internal fun markdownHasLinks(markdown: String): Boolean {
+    // Every link needs a "[" (inline and reference links) or a "<" (autolinks), so most copy skips the parse.
+    if ('[' !in markdown && '<' !in markdown) return false
+    fun Node.hasLink(): Boolean {
+        var child = firstChild
+        while (child != null) {
+            if (child is Link || child.hasLink()) return true
+            child = child.next
+        }
+        return false
+    }
+    return parser.parse(markdown).hasLink()
+}
+
+/**
+ * The words a screen reader should speak for [markdown]: formatting, HTML tags and link targets removed, one line
+ * per block.
+ */
+internal fun markdownPlainText(markdown: String): String {
+    val blocks = mutableListOf<String>()
+    fun collect(node: Node) {
+        if (node is Paragraph || node is Heading) {
+            blocks += buildAnnotatedString {
+                appendMarkdownChildren(node, Color.Unspecified, allowLinks = false, baseFontWeight = null)
+            }.text
+        } else if (node is FencedCodeBlock) {
+            blocks += node.literal.trimEnd()
+        } else {
+            var child = node.firstChild
+            while (child != null) {
+                collect(child)
+                child = child.next
+            }
+        }
+    }
+    collect(parser.parse(markdown))
+    return blocks.joinToString("\n")
+}
+
 internal fun linkAnnotation(destination: String, color: Color, uriHandler: UriHandler?): LinkAnnotation.Url {
     val underline = SpanStyle(color, textDecoration = TextDecoration.Underline)
     val listener = uriHandler?.let { OpenUriListener(it, destination) }
