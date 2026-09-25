@@ -9,6 +9,9 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.PlatformInfo
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsFileHelper
+import com.revenuecat.purchases.common.sdksettings.DiagnosticsSettings
+import com.revenuecat.purchases.common.sdksettings.SdkSettings
 import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
@@ -22,6 +25,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.File
 
 @RunWith(AndroidJUnit4::class)
 class PurchasesFactoryTest {
@@ -35,6 +39,11 @@ class PurchasesFactoryTest {
     private val apiKeyValidatorMock = mockk<APIKeyValidator>()
 
     private lateinit var purchasesFactory: PurchasesFactory
+
+    private companion object {
+        const val FILE_DELETION_TIMEOUT_MS = 1_000L
+        const val FILE_DELETION_POLL_MS = 20L
+    }
 
     @Before
     fun setup() {
@@ -304,33 +313,99 @@ class PurchasesFactoryTest {
         purchases.close()
     }
 
-    // region shouldInitializeDiagnostics
+    // region diagnostics
+
+    // Diagnostics are always collected on disk; the only observable effect of the remote decision at this level
+    // is whether the diagnostics file survives it, so these seed an (empty) file and watch what happens to it.
 
     @Test
-    fun `shouldInitializeDiagnostics returns true when diagnostics enabled and preview mode off`() {
-        assertThat(PurchasesFactory.shouldInitializeDiagnostics(diagnosticsEnabled = true, uiPreviewMode = false))
-            .isTrue
+    fun `remote settings without a diagnostics value delete the file when the SDK flag is off`() {
+        val purchases = createPurchases { diagnosticsEnabled(false) }
+        val diagnosticsFile = createEmptyDiagnosticsFile()
+
+        purchases.purchasesOrchestrator.onSdkSettingsChanged(SdkSettings.DEFAULT)
+
+        assertThat(awaitDiagnosticsFileDeletion(diagnosticsFile)).isTrue()
+        purchases.close()
     }
 
     @Test
-    fun `shouldInitializeDiagnostics returns false when preview mode is on`() {
-        assertThat(PurchasesFactory.shouldInitializeDiagnostics(diagnosticsEnabled = true, uiPreviewMode = true))
-            .isFalse
+    fun `remote settings without a diagnostics value keep the file when the SDK flag is on`() {
+        val purchases = createPurchases { diagnosticsEnabled(true) }
+        val diagnosticsFile = createEmptyDiagnosticsFile()
+
+        purchases.purchasesOrchestrator.onSdkSettingsChanged(SdkSettings.DEFAULT)
+
+        assertThat(awaitDiagnosticsFileDeletion(diagnosticsFile)).isFalse()
+        purchases.close()
     }
 
     @Test
-    fun `shouldInitializeDiagnostics returns false when diagnostics disabled`() {
-        assertThat(PurchasesFactory.shouldInitializeDiagnostics(diagnosticsEnabled = false, uiPreviewMode = false))
-            .isFalse
+    fun `a remote disabled diagnostics setting deletes the file even when the SDK flag is on`() {
+        val purchases = createPurchases { diagnosticsEnabled(true) }
+        val diagnosticsFile = createEmptyDiagnosticsFile()
+
+        purchases.purchasesOrchestrator.onSdkSettingsChanged(
+            SdkSettings(diagnostics = DiagnosticsSettings(enabled = false)),
+        )
+
+        assertThat(awaitDiagnosticsFileDeletion(diagnosticsFile)).isTrue()
+        purchases.close()
     }
 
+    @OptIn(InternalRevenueCatAPI::class)
     @Test
-    fun `shouldInitializeDiagnostics returns false when both diagnostics disabled and preview mode on`() {
-        assertThat(PurchasesFactory.shouldInitializeDiagnostics(diagnosticsEnabled = false, uiPreviewMode = true))
-            .isFalse
+    fun `ui preview mode has no diagnostics to act on a remote disabled setting`() {
+        val purchases = createPurchases {
+            diagnosticsEnabled(true)
+            dangerousSettings(DangerousSettings.forPreviewMode())
+        }
+        val diagnosticsFile = createEmptyDiagnosticsFile()
+
+        purchases.purchasesOrchestrator.onSdkSettingsChanged(
+            SdkSettings(diagnostics = DiagnosticsSettings(enabled = false)),
+        )
+
+        assertThat(awaitDiagnosticsFileDeletion(diagnosticsFile)).isFalse()
+        purchases.close()
     }
 
     // endregion
+
+    private fun createEmptyDiagnosticsFile(): File {
+        val filesDir = ApplicationProvider.getApplicationContext<Application>().filesDir
+        return File(filesDir, DiagnosticsFileHelper.DIAGNOSTICS_FILE_PATH).apply {
+            parentFile?.mkdirs()
+            assertThat(createNewFile()).isTrue()
+        }
+    }
+
+    /** Waits for the delete, which runs on the SDK's events thread; false if the file is still there afterwards. */
+    private fun awaitDiagnosticsFileDeletion(file: File): Boolean {
+        val deadline = System.currentTimeMillis() + FILE_DELETION_TIMEOUT_MS
+        while (file.exists() && System.currentTimeMillis() < deadline) {
+            Thread.sleep(FILE_DELETION_POLL_MS)
+        }
+        return !file.exists()
+    }
+
+    private fun createPurchases(configure: PurchasesConfiguration.Builder.() -> Unit): Purchases {
+        val application = spyk(ApplicationProvider.getApplicationContext<Application>())
+        every { application.applicationContext } returns application
+        every { application.checkCallingOrSelfPermission(Manifest.permission.INTERNET) } returns
+            PackageManager.PERMISSION_GRANTED
+        val configuration = PurchasesConfiguration.Builder(application, "fakeApiKey")
+            .appUserID("appUserID")
+            .store(Store.PLAY_STORE)
+            .apply(configure)
+            .build()
+        return purchasesFactory.createPurchases(
+            configuration = configuration,
+            platformInfo = PlatformInfo(flavor = "test", version = null),
+            proxyURL = null,
+            overrideBillingAbstract = mockk<BillingAbstract>(relaxed = true),
+        )
+    }
 
     private fun createConfiguration(
         testApiKey: String = "fakeApiKey",

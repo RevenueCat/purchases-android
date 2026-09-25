@@ -348,7 +348,7 @@ internal class PurchasesOrchestrator(
     }
 
     override fun onSdkSettingsChanged(settings: SdkSettings) {
-        // Consuming the settings (e.g. the diagnostics override) lands in a follow-up.
+        diagnosticsTrackerIfEnabled?.applyRemoteCollectionSetting(settings.diagnostics?.enabled)
     }
 
     /** @suppress */
@@ -389,6 +389,10 @@ internal class PurchasesOrchestrator(
                     RemoteConfigFetchContext.Foreground
                 },
             )
+            if (firstTimeInForeground) {
+                // After the refresh above so the resolution joins that request instead of priming its own.
+                sdkSettingsConfigProvider.ensureSettingsDelivered()
+            }
 
             if (shouldRefreshCustomerInfo(firstTimeInForeground)) {
                 log(LogIntent.DEBUG) { CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND }

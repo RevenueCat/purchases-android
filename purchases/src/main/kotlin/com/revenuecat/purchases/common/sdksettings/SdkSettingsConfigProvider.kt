@@ -27,6 +27,7 @@ internal fun interface SdkSettingsListener {
  * the manager's *current* [RemoteConfigManager.configGeneration]; otherwise [cachedSettings] is `null` and a
  * consumer keeps its build-time value, while [getSettings] falls through to the config layer.
  */
+@Suppress("TooManyFunctions")
 internal class SdkSettingsConfigProvider(
     private val manager: RemoteConfigManager,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
@@ -58,17 +59,30 @@ internal class SdkSettingsConfigProvider(
     }
 
     /**
-     * Best-effort populate of the in-memory cache from already-committed config, tagged with [generation]. No-op
-     * (no `/v1/config` sync) while no config is committed yet, so a cold-disk init warm never triggers a network
-     * config fetch. Once a config is committed, a missing topic or `default` item warms the defaults, so a listener
-     * hears about the settings reverting when the backend stops serving them.
+     * Populates the in-memory cache from the just-committed config, tagged with [generation], and delivers it:
+     * called on every commit, so what it delivers is this session's fresh resolution. No-op while no config is
+     * committed yet. A missing topic or `default` item warms the defaults, so a listener hears about the settings
+     * reverting when the backend stops serving them.
      */
     suspend fun warm(generation: Int) {
-        if (cache.isWarmAtOrAbove(generation) || !manager.hasCommittedConfig()) return
+        val settings = store(generation) ?: return
+        listener?.let { deliverIfChanged(generation, settings, it) }
+    }
+
+    /**
+     * Cold-start preload of the in-memory cache from the config an earlier session committed, without delivering
+     * it: the disk copy is the fallback for a fetch that fails, not this session's resolution. That comes from the
+     * commit [warm] or, once the refresh has finished without committing, from [ensureSettingsDelivered].
+     */
+    fun preloadAsync(generation: Int) {
+        scope.launch { store(generation) }
+    }
+
+    /** Caches the committed settings at [generation] unless something newer is warm; the stored value, or null. */
+    private suspend fun store(generation: Int): SdkSettings? {
+        if (cache.isWarmAtOrAbove(generation) || !manager.hasCommittedConfig()) return null
         val settings = manager.committedTopicOrNull(RemoteConfigTopic.SdkSettings)?.get(ITEM_DEFAULT).toSettings()
-        if (cache.store(generation, settings)) {
-            listener?.let { deliverIfChanged(generation, settings, it) }
-        }
+        return settings.takeIf { cache.store(generation, it) }
     }
 
     private fun deliverIfChanged(generation: Int, settings: SdkSettings, listener: SdkSettingsListener) {
@@ -87,9 +101,20 @@ internal class SdkSettingsConfigProvider(
         }
     }
 
-    /** Fire-and-forget [warm] on this provider's own scope; used for the cold-start init warm. */
-    fun warmAsync(generation: Int) {
-        scope.launch { warm(generation) }
+    /**
+     * Delivers this session's resolution once the refresh in flight, if any, has finished: the committed settings
+     * (fresh if that refresh committed, otherwise what an earlier session left on disk), or [SdkSettings.DEFAULT]
+     * when nothing is committed (cold disk with a failed fetch, disabled manager). Never starts a sync. Goes
+     * through the same change/generation guard as a warm, tagged with the generation seen *before* the read, so a
+     * commit that lands meanwhile always wins and a value a warm already delivered is not repeated.
+     */
+    fun ensureSettingsDelivered() {
+        scope.launch {
+            val generation = manager.configGeneration
+            val settings = manager.committedTopicAfterInFlightRefresh(RemoteConfigTopic.SdkSettings)
+                ?.get(ITEM_DEFAULT).toSettings()
+            listener?.let { deliverIfChanged(generation, settings, it) }
+        }
     }
 
     override fun onConfigCommitted(generation: Int) {

@@ -14,6 +14,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
+import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.SyncDispatcher
@@ -1047,6 +1048,118 @@ class DiagnosticsTrackerTest {
 
     // endregion Purchase
 
+    // region collection decision
+
+    @Test
+    fun `events are collected on disk before a collection decision`() {
+        every { diagnosticsFileHelper.appendEvent(testDiagnosticsEntry) } just Runs
+
+        diagnosticsTracker.trackEvent(testDiagnosticsEntry)
+
+        Assertions.assertThat(diagnosticsTracker.isCollectionEnabled).isFalse
+        verify(exactly = 1) { diagnosticsFileHelper.appendEvent(testDiagnosticsEntry) }
+    }
+
+    @Test
+    fun `a remote disabled setting deletes the diagnostics file and drops later events`() {
+        every { diagnosticsFileHelper.deleteFile() } just Runs
+        diagnosticsTracker = createDiagnosticsTracker(enabledBySdkConfiguration = true)
+
+        diagnosticsTracker.applyRemoteCollectionSetting(remoteEnabled = false)
+        diagnosticsTracker.trackEvent(testDiagnosticsEntry)
+        diagnosticsTracker.trackEventInCurrentThread(testDiagnosticsEntry)
+
+        Assertions.assertThat(diagnosticsTracker.isCollectionEnabled).isFalse
+        verify(exactly = 1) { diagnosticsFileHelper.deleteFile() }
+        verify(exactly = 1) { sharedPreferencesEditor.remove(DiagnosticsHelper.CONSECUTIVE_FAILURES_COUNT_KEY) }
+        verify(exactly = 0) { diagnosticsFileHelper.appendEvent(any()) }
+    }
+
+    @Test
+    fun `a remote enabled setting keeps collecting and notifies the listener`() {
+        var collectionEnabledCount = 0
+        diagnosticsTracker = createDiagnosticsTracker(enabledBySdkConfiguration = false)
+        diagnosticsTracker.listener = object : DiagnosticsEventTrackerListener {
+            override fun onEventTracked() {}
+            override fun onCollectionEnabled() {
+                collectionEnabledCount++
+            }
+        }
+        every { diagnosticsFileHelper.appendEvent(testDiagnosticsEntry) } just Runs
+
+        diagnosticsTracker.applyRemoteCollectionSetting(remoteEnabled = true)
+        diagnosticsTracker.trackEvent(testDiagnosticsEntry)
+
+        Assertions.assertThat(diagnosticsTracker.isCollectionEnabled).isTrue
+        Assertions.assertThat(collectionEnabledCount).isEqualTo(1)
+        verify(exactly = 1) { diagnosticsFileHelper.appendEvent(testDiagnosticsEntry) }
+        verify(exactly = 0) { diagnosticsFileHelper.deleteFile() }
+    }
+
+    @Test
+    fun `without a remote setting the SDK configuration decides`() {
+        every { diagnosticsFileHelper.deleteFile() } just Runs
+        val enabledBySdk = createDiagnosticsTracker(enabledBySdkConfiguration = true)
+        val disabledBySdk = createDiagnosticsTracker(enabledBySdkConfiguration = false)
+
+        enabledBySdk.applyRemoteCollectionSetting(remoteEnabled = null)
+        disabledBySdk.applyRemoteCollectionSetting(remoteEnabled = null)
+
+        Assertions.assertThat(enabledBySdk.isCollectionEnabled).isTrue
+        Assertions.assertThat(disabledBySdk.isCollectionEnabled).isFalse
+        verify(exactly = 1) { diagnosticsFileHelper.deleteFile() }
+    }
+
+    @Test
+    fun `repeating the same decision does not delete the file again`() {
+        every { diagnosticsFileHelper.deleteFile() } just Runs
+
+        diagnosticsTracker.applyRemoteCollectionSetting(remoteEnabled = false)
+        diagnosticsTracker.applyRemoteCollectionSetting(remoteEnabled = false)
+
+        verify(exactly = 1) { diagnosticsFileHelper.deleteFile() }
+    }
+
+    @Test
+    fun `re-enabling after a disable resumes collection`() {
+        every { diagnosticsFileHelper.deleteFile() } just Runs
+        every { diagnosticsFileHelper.appendEvent(testDiagnosticsEntry) } just Runs
+
+        diagnosticsTracker.applyRemoteCollectionSetting(remoteEnabled = false)
+        diagnosticsTracker.applyRemoteCollectionSetting(remoteEnabled = true)
+        diagnosticsTracker.trackEvent(testDiagnosticsEntry)
+
+        verify(exactly = 1) { diagnosticsFileHelper.appendEvent(testDiagnosticsEntry) }
+    }
+
+    @Test
+    fun `an event queued before a disable is dropped when it runs after it, one tracked after is never queued`() {
+        val queue = ArrayDeque<Runnable>()
+        dispatcher = object : Dispatcher(mockk()) {
+            override fun enqueue(command: Runnable, delay: Delay) {
+                queue.addLast(command)
+            }
+        }
+        diagnosticsTracker = createDiagnosticsTracker()
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        every { diagnosticsFileHelper.deleteFile() } just Runs
+
+        diagnosticsTracker.trackEvent(testDiagnosticsEntry)
+        diagnosticsTracker.applyRemoteCollectionSetting(remoteEnabled = false)
+        diagnosticsTracker.trackEvent(testDiagnosticsEntry)
+        Assertions.assertThat(queue).hasSize(2)
+        while (queue.isNotEmpty()) queue.removeFirst().run()
+
+        // The queued append re-checks the state when it runs, so it is dropped rather than written to a file
+        // that is about to be deleted. Either way nothing tracked around the decision survives on disk.
+        verifySequence {
+            diagnosticsFileHelper.isDiagnosticsFileTooBig()
+            diagnosticsFileHelper.deleteFile()
+        }
+    }
+
+    // endregion collection decision
+
     private fun mockSharedPreferences() {
         sharedPreferences = mockk()
         sharedPreferencesEditor = mockk()
@@ -1076,12 +1189,16 @@ class DiagnosticsTrackerTest {
         )
     }
 
-    private fun createDiagnosticsTracker(store: Store = Store.PLAY_STORE): DiagnosticsTracker {
+    private fun createDiagnosticsTracker(
+        store: Store = Store.PLAY_STORE,
+        enabledBySdkConfiguration: Boolean = false,
+    ): DiagnosticsTracker {
         return DiagnosticsTracker(
             createAppConfig(store),
             diagnosticsFileHelper,
             DiagnosticsHelper(mockk(), diagnosticsFileHelper, lazy { sharedPreferences }),
-            dispatcher
+            dispatcher,
+            enabledBySdkConfiguration,
         )
     }
 }

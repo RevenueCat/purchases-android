@@ -34,66 +34,80 @@ internal class DiagnosticsSynchronizer(
 
     fun syncDiagnosticsFileIfNeeded() {
         enqueue {
-            try {
-                if (isSyncing.getAndSet(true)) {
-                    verboseLog { "Already syncing diagnostics file." }
-                    return@enqueue
-                }
-                val diagnosticsList = getEventsToSync()
-                val diagnosticsCount = diagnosticsList.size
-                if (diagnosticsCount == 0) {
-                    verboseLog { "No diagnostics to sync." }
-                    isSyncing.set(false)
-                    return@enqueue
-                }
-                backend.postDiagnostics(
-                    diagnosticsList = diagnosticsList,
-                    onSuccessHandler = {
-                        verboseLog { "Synced diagnostics file successfully." }
-                        diagnosticsHelper.clearConsecutiveNumberOfErrors()
-                        diagnosticsFileHelper.clear(diagnosticsCount)
-                        isSyncing.set(false)
-                    },
-                    onErrorHandler = { error, shouldRetry ->
-                        if (shouldRetry) {
-                            verboseLog {
-                                "Error syncing diagnostics file: $error. " +
-                                    "Will retry the next time the SDK is initialized"
-                            }
-                            if (diagnosticsHelper.increaseConsecutiveNumberOfErrors() >= MAX_NUMBER_POST_RETRIES) {
-                                verboseLog {
-                                    "Error syncing diagnostics file: $error. " +
-                                        "This was the final attempt ($MAX_NUMBER_POST_RETRIES). " +
-                                        "Deleting diagnostics file without posting."
-                                }
-                                diagnosticsHelper.resetDiagnosticsStatus()
-                                diagnosticsTracker.trackMaxDiagnosticsSyncRetriesReached()
-                            }
-                        } else {
-                            verboseLog {
-                                "Error syncing diagnostics file: $error. " +
-                                    "Deleting diagnostics file without retrying."
-                            }
-                            diagnosticsHelper.resetDiagnosticsStatus()
-                            diagnosticsTracker.trackClearingDiagnosticsAfterFailedSync()
-                        }
-                        isSyncing.set(false)
-                    },
-                )
-            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                verboseLog { "Error syncing diagnostics file: $e" }
-                try {
-                    diagnosticsHelper.resetDiagnosticsStatus()
-                } catch (e: IOException) {
-                    verboseLog { "Error deleting diagnostics file: $e" }
-                }
-                isSyncing.set(false)
+            // Nothing leaves the device until the collection decision is in; onCollectionEnabled re-runs this.
+            if (diagnosticsTracker.isCollectionEnabled) {
+                syncDiagnosticsFile()
+            } else {
+                verboseLog { "Diagnostics collection is not enabled. Skipping diagnostics sync." }
             }
         }
     }
 
     override fun onEventTracked() {
         syncDiagnosticsFileIfBigEnough()
+    }
+
+    override fun onCollectionEnabled() {
+        syncDiagnosticsFileIfNeeded()
+    }
+
+    @Suppress("ReturnCount")
+    private fun syncDiagnosticsFile() {
+        try {
+            if (isSyncing.getAndSet(true)) {
+                verboseLog { "Already syncing diagnostics file." }
+                return
+            }
+            val diagnosticsList = getEventsToSync()
+            val diagnosticsCount = diagnosticsList.size
+            if (diagnosticsCount == 0) {
+                verboseLog { "No diagnostics to sync." }
+                isSyncing.set(false)
+                return
+            }
+            backend.postDiagnostics(
+                diagnosticsList = diagnosticsList,
+                onSuccessHandler = {
+                    verboseLog { "Synced diagnostics file successfully." }
+                    diagnosticsHelper.clearConsecutiveNumberOfErrors()
+                    diagnosticsFileHelper.clear(diagnosticsCount)
+                    isSyncing.set(false)
+                },
+                onErrorHandler = { error, shouldRetry ->
+                    if (shouldRetry) {
+                        verboseLog {
+                            "Error syncing diagnostics file: $error. " +
+                                "Will retry the next time the SDK is initialized"
+                        }
+                        if (diagnosticsHelper.increaseConsecutiveNumberOfErrors() >= MAX_NUMBER_POST_RETRIES) {
+                            verboseLog {
+                                "Error syncing diagnostics file: $error. " +
+                                    "This was the final attempt ($MAX_NUMBER_POST_RETRIES). " +
+                                    "Deleting diagnostics file without posting."
+                            }
+                            diagnosticsHelper.resetDiagnosticsStatus()
+                            diagnosticsTracker.trackMaxDiagnosticsSyncRetriesReached()
+                        }
+                    } else {
+                        verboseLog {
+                            "Error syncing diagnostics file: $error. " +
+                                "Deleting diagnostics file without retrying."
+                        }
+                        diagnosticsHelper.resetDiagnosticsStatus()
+                        diagnosticsTracker.trackClearingDiagnosticsAfterFailedSync()
+                    }
+                    isSyncing.set(false)
+                },
+            )
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            verboseLog { "Error syncing diagnostics file: $e" }
+            try {
+                diagnosticsHelper.resetDiagnosticsStatus()
+            } catch (e: IOException) {
+                verboseLog { "Error deleting diagnostics file: $e" }
+            }
+            isSyncing.set(false)
+        }
     }
 
     private fun syncDiagnosticsFileIfBigEnough() {
