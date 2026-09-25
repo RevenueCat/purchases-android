@@ -143,6 +143,7 @@ internal sealed interface PaywallState {
             val stateStore: PaywallStateStore = PaywallStateStore(emptyMap()),
             /** The view model's gate, so every step of a workflow reads the one flag. */
             private val viewModelActionInProgress: State<Boolean> = mutableStateOf(false),
+            internal val isIndependentPurchaseContext: Boolean = false,
         ) : Loaded {
 
             /** The selection owned by this purchase context. */
@@ -175,6 +176,7 @@ internal sealed interface PaywallState {
                     workflowScreen = workflowScreen,
                     stateStore = stateStore,
                     viewModelActionInProgress = viewModelActionInProgress,
+                    isIndependentPurchaseContext = true,
                 ).also { child ->
                     child.packageSelectionState.allowsWorkflowDefault = false
                     child.reconcilePurchaseContextSelection(initialize = true)
