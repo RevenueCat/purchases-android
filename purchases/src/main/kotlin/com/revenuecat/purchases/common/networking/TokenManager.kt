@@ -17,6 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.runBlocking
 import java.security.GeneralSecurityException
 
 /**
@@ -31,8 +32,19 @@ import java.security.GeneralSecurityException
  * reports the value as absent, a write is a no-op -- most often caused by data left over from a previous
  * API key sharing the same on-disk file.
  *
- * Every public operation is `suspend`; callers integrate through coroutines, or a callback-based bridge
- * if they can't.
+ * Every read/write operation has two forms: a `suspend` one for coroutine callers, and a synchronous twin
+ * (its name suffixed `Sync`) for the SDK's own callback-based `Dispatcher.AsyncCall` call chains
+ * (`HTTPClient`, `TokenAPI`, `TokenLogoutOperation`), which can't themselves suspend. Both do the same
+ * underlying work -- the synchronous twins are thin wrappers around the suspend ones, bridged with a
+ * contained [runBlocking] -- but a synchronous twin first consults [cachedTokens], an in-memory mirror of
+ * every token slot this process has touched. A write (`saveTokens`, `deleteTokens`, `deleteAccessToken`)
+ * always keeps its slot(s) in [cachedTokens] current, since it's authoritative about what it just
+ * persisted; a plain read only ever *fills* a slot the first time it's asked for (see
+ * [cacheAccessTokenIfUnknown] and its siblings) and never overwrites one a write -- or an earlier read --
+ * has already populated, so a read that's slow to resolve can never clobber a newer value with a stale
+ * one once it finally does. So only the very first ever access for a given `appUserID` each process
+ * actually blocks on storage; every later one is served straight from the cache, whichever form asks for
+ * it.
  *
  * @param context application context used to construct the underlying storage.
  * @param apiKey the SDK's configured API key; derives the storage's encryption password.
@@ -67,13 +79,16 @@ internal class TokenManager(
     // region Read access
 
     /** The current access token stored for [appUserID], or `null` if none is stored. */
-    suspend fun currentAccessToken(appUserID: String): String? = readToken(accessTokenKey(appUserID))
+    suspend fun currentAccessToken(appUserID: String): String? =
+        readToken(accessTokenKey(appUserID)).also { cacheAccessTokenIfUnknown(appUserID, it) }
 
     /** The current refresh token stored for [appUserID], or `null` if none is stored. */
-    suspend fun currentRefreshToken(appUserID: String): String? = readToken(refreshTokenKey(appUserID))
+    suspend fun currentRefreshToken(appUserID: String): String? =
+        readToken(refreshTokenKey(appUserID)).also { cacheRefreshTokenIfUnknown(appUserID, it) }
 
     /** The current ID token stored for [appUserID], or `null` if none is stored. */
-    suspend fun currentIDToken(appUserID: String): String? = readToken(idTokenKey(appUserID))
+    suspend fun currentIDToken(appUserID: String): String? =
+        readToken(idTokenKey(appUserID)).also { cacheIDTokenIfUnknown(appUserID, it) }
 
     /**
      * Whether an access token is currently stored *and readable* for [appUserID]. Computed from
@@ -147,6 +162,7 @@ internal class TokenManager(
         writeToken(accessTokenKey(appUserID), accessToken)
         writeToken(refreshTokenKey(appUserID), refreshToken)
         writeToken(idTokenKey(appUserID), idToken)
+        setCachedTokens(appUserID, accessToken, refreshToken, idToken)
     }
 
     /** Clears all three token slots for [appUserID], e.g. for a full logout. */
@@ -154,6 +170,7 @@ internal class TokenManager(
         writeToken(accessTokenKey(appUserID), null)
         writeToken(refreshTokenKey(appUserID), null)
         writeToken(idTokenKey(appUserID), null)
+        setCachedTokens(appUserID, null, null, null)
     }
 
     /**
@@ -162,6 +179,7 @@ internal class TokenManager(
      */
     suspend fun deleteAccessToken(appUserID: String) {
         writeToken(accessTokenKey(appUserID), null)
+        setCachedAccessToken(appUserID, null)
     }
 
     // endregion
@@ -239,6 +257,77 @@ internal class TokenManager(
 
     // endregion
 
+    // region Synchronous access
+
+    /**
+     * The synchronous twin of [currentAccessToken] -- see this class's own doc for why one exists, and
+     * what backs it. `null` immediately when [enabled] is `false`, the same as the suspend version, without
+     * even consulting [cachedTokens].
+     */
+    fun currentAccessTokenSync(appUserID: String): String? {
+        if (!enabled) return null
+        return when (val cached = cachedAccessToken(appUserID)) {
+            is Cached.Known -> cached.value
+            Cached.Unknown -> runBlocking { currentAccessToken(appUserID) }
+        }
+    }
+
+    /** The synchronous twin of [currentRefreshToken] -- see [currentAccessTokenSync]. */
+    fun currentRefreshTokenSync(appUserID: String): String? {
+        if (!enabled) return null
+        return when (val cached = cachedRefreshToken(appUserID)) {
+            is Cached.Known -> cached.value
+            Cached.Unknown -> runBlocking { currentRefreshToken(appUserID) }
+        }
+    }
+
+    /** The synchronous twin of [saveTokens] -- see [currentAccessTokenSync]. */
+    fun saveTokensSync(appUserID: String, accessToken: String, refreshToken: String, idToken: String) {
+        runBlocking { saveTokens(appUserID, accessToken, refreshToken, idToken) }
+    }
+
+    /** The synchronous twin of [deleteTokens] -- see [currentAccessTokenSync]. */
+    fun deleteTokensSync(appUserID: String) {
+        runBlocking { deleteTokens(appUserID) }
+    }
+
+    /** The synchronous twin of [authorizationHeaders] -- see [currentAccessTokenSync]. */
+    fun authorizationHeadersSync(appUserID: String, isIAMEndpoint: Boolean): Map<String, String> {
+        val token = if (enabled && !isIAMEndpoint) currentAccessTokenSync(appUserID) else null
+        return token?.let { mapOf("Authorization" to "Bearer $it") } ?: emptyMap()
+    }
+
+    /** The synchronous twin of [tokenRefreshRequest] -- see [currentAccessTokenSync]. */
+    fun tokenRefreshRequestSync(
+        appUserID: String,
+        statusCode: Int,
+        alreadyRetriedRefresh: Boolean,
+        reportTokenUpdate: (TokenSet?) -> Unit,
+    ): TokenRefreshRequest? {
+        val refreshToken = if (statusCode == RCHTTPStatusCodes.UNAUTHORIZED && !alreadyRetriedRefresh) {
+            currentRefreshTokenSync(appUserID)
+        } else {
+            null
+        }
+        if (refreshToken == null) return null
+
+        return if (registerRefreshWaiter(appUserID, reportTokenUpdate)) {
+            TokenRefreshRequest(appUserID, refreshToken)
+        } else {
+            null
+        }
+    }
+
+    /** The synchronous twin of [handleTokenRefreshResponse] -- see [currentAccessTokenSync]. */
+    fun handleTokenRefreshResponseSync(appUserID: String, tokens: TokenSet?) {
+        if (tokens != null) {
+            saveTokensSync(appUserID, tokens.accessToken, tokens.refreshToken, tokens.idToken)
+        }
+        resolveRefreshWaiters(appUserID).forEach { it(tokens) }
+    }
+
+    // endregion
+
     /** Cancels this instance's [scope], including any in-flight storage construction. */
     fun close() {
         scope.cancel()
@@ -278,6 +367,96 @@ internal class TokenManager(
     @Synchronized
     private fun resolveRefreshWaiters(appUserID: String): List<(TokenSet?) -> Unit> =
         pendingRefreshes.remove(appUserID).orEmpty()
+
+    // A cache slot that's never been read from or written to this process (Unknown) reads as "go ask
+    // storage"; one that has (Known) is authoritative even when its value is null -- that's the only way
+    // to tell "no token" apart from "haven't checked yet" without going back to storage on every call.
+    private sealed class Cached {
+        object Unknown : Cached()
+        data class Known(val value: String?) : Cached()
+    }
+
+    private data class CachedTokens(
+        val accessToken: Cached = Cached.Unknown,
+        val refreshToken: Cached = Cached.Unknown,
+        val idToken: Cached = Cached.Unknown,
+    )
+
+    // In-memory mirror of every token slot this process has read from or written to storage, keyed by
+    // appUserID and guarded by this class's own monitor (the same lock @Synchronized already uses above) --
+    // what lets a synchronous caller read or write a token without a fresh bridge into a coroutine each
+    // time, as long as this appUserID's been touched at least once this process. A synchronous call for a
+    // slot this process hasn't touched yet (Cached.Unknown) does a one-time, contained [runBlocking] read to
+    // fill it, exactly the bridge every caller here used to do individually before this cache existed, just
+    // paid once instead of on every request. Two concurrent first-ever synchronous calls for the same,
+    // not-yet-cached appUserID can each independently read storage rather than one waiting on the other;
+    // that's a deliberately accepted, one-time-only redundant read, not a correctness issue -- both reads see
+    // the same on-disk value, and the lock still makes the final cache write itself race-free.
+    //
+    // A write (`saveTokens`/`deleteTokens`/`deleteAccessToken`) always overwrites its slot(s) here
+    // unconditionally, since it's authoritative about what it just persisted. A plain read, though, only
+    // ever fills a slot the first time (`cacheAccessTokenIfUnknown` and its siblings below) -- once a slot
+    // is Known, by a write or an earlier read, a later read's result is discarded rather than applied. That's
+    // what stops a read that's slow to resolve (e.g. one already in flight when a write for the same slot
+    // lands) from clobbering a newer value with a stale one once it finally does.
+    //
+    // This still leaves one gap this cache alone doesn't close: two overlapping *writes* for the same
+    // appUserID (e.g. an in-flight token refresh's `saveTokens` landing after a concurrent `deleteTokens`
+    // from a logout) aren't ordered against each other here at all -- whichever one's own write physically
+    // completes last simply wins, which isn't always the one that's semantically newest. Closing that fully
+    // would need a per-appUserID write-fencing mechanism (a generation/epoch check spanning the disk write
+    // too, not just this cache); tracked separately rather than folded into this fix.
+    private val cachedTokens = mutableMapOf<String, CachedTokens>()
+
+    @Synchronized
+    private fun cachedAccessToken(appUserID: String): Cached =
+        cachedTokens[appUserID]?.accessToken ?: Cached.Unknown
+
+    @Synchronized
+    private fun cachedRefreshToken(appUserID: String): Cached =
+        cachedTokens[appUserID]?.refreshToken ?: Cached.Unknown
+
+    @Synchronized
+    private fun setCachedAccessToken(appUserID: String, value: String?) {
+        val current = cachedTokens[appUserID] ?: CachedTokens()
+        cachedTokens[appUserID] = current.copy(accessToken = Cached.Known(value))
+    }
+
+    /** Fills the access-token slot for [appUserID] only if nothing has claimed it yet -- see [cachedTokens]. */
+    @Synchronized
+    private fun cacheAccessTokenIfUnknown(appUserID: String, value: String?) {
+        val current = cachedTokens[appUserID] ?: CachedTokens()
+        if (current.accessToken == Cached.Unknown) {
+            cachedTokens[appUserID] = current.copy(accessToken = Cached.Known(value))
+        }
+    }
+
+    /** Fills the refresh-token slot for [appUserID] only if nothing has claimed it yet -- see [cachedTokens]. */
+    @Synchronized
+    private fun cacheRefreshTokenIfUnknown(appUserID: String, value: String?) {
+        val current = cachedTokens[appUserID] ?: CachedTokens()
+        if (current.refreshToken == Cached.Unknown) {
+            cachedTokens[appUserID] = current.copy(refreshToken = Cached.Known(value))
+        }
+    }
+
+    /** Fills the ID-token slot for [appUserID] only if nothing has claimed it yet -- see [cachedTokens]. */
+    @Synchronized
+    private fun cacheIDTokenIfUnknown(appUserID: String, value: String?) {
+        val current = cachedTokens[appUserID] ?: CachedTokens()
+        if (current.idToken == Cached.Unknown) {
+            cachedTokens[appUserID] = current.copy(idToken = Cached.Known(value))
+        }
+    }
+
+    @Synchronized
+    private fun setCachedTokens(appUserID: String, accessToken: String?, refreshToken: String?, idToken: String?) {
+        cachedTokens[appUserID] = CachedTokens(
+            accessToken = Cached.Known(accessToken),
+            refreshToken = Cached.Known(refreshToken),
+            idToken = Cached.Known(idToken),
+        )
+    }
 
     private companion object {
         fun accessTokenKey(appUserID: String) = "RC-access-$appUserID"
