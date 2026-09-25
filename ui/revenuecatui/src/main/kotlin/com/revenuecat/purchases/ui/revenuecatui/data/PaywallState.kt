@@ -264,10 +264,12 @@ internal sealed interface PaywallState {
                 } else {
                     val deviceLanguageCode = locale.language.lowercase()
 
-                    // We pick the one with the same language as the device if available. If not, we just pick the
-                    // first. If the list is empty, we use the device locale with the storefront country.
+                    // We pick the one with the same language as the device if available. Otherwise, we synthesize a
+                    // locale from the device's language and the storefront country (e.g. "es" + "IL" -> "es_IL").
+                    // This keeps the device language's own digit/grouping/decimal conventions instead of picking an
+                    // arbitrary, unrelated locale that happens to share the storefront country (e.g. ar_IL), which
+                    // could render prices with unexpected digits (e.g. Arabic-Indic digits for an "es" paywall).
                     val javaLocale = availableStorefrontCountryLocalesByLanguage[deviceLanguageCode]
-                        ?: availableStorefrontCountryLocalesByLanguage.values.firstOrNull()
                         ?: Locale.Builder()
                             .setLocale(locale.toJavaLocale())
                             .setRegion(storefrontCountryCode.uppercase())
