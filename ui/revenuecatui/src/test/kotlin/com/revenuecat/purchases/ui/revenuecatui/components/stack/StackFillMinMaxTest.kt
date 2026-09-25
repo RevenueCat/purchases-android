@@ -15,8 +15,10 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
+import com.revenuecat.purchases.paywalls.components.PaywallComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
@@ -45,6 +47,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import org.robolectric.shadows.ShadowPixelCopy
+import java.util.Date
 
 /**
  * Fill children with a min/max share a 100dp main axis (cross axis 20dp). Each test renders the stack and samples
@@ -180,6 +183,24 @@ class StackFillMinMaxTest {
             stack(
                 h,
                 child(Color.Red, fill(h), override(PartialStackComponent(size = fill(h, max = 20u)))),
+                child(Color.Blue, fill(h)),
+            )
+        },
+        10 to Color.Red,
+        30 to Color.Blue,
+    )
+
+    @Test
+    fun `maximum on a countdown's end stack is honored`() = assertBothOrientations(
+        stack = { h ->
+            stack(
+                h,
+                CountdownComponent(
+                    // Already ended, so the end stack is what gets rendered.
+                    style = CountdownComponent.CountdownStyle(type = "fixed", date = Date(0)),
+                    countdownStack = child(Color.Red, fixed(h, 10u)),
+                    endStack = child(Color.Red, fill(h, max = 20u)),
+                ),
                 child(Color.Blue, fill(h)),
             )
         },
@@ -414,7 +435,7 @@ class StackFillMinMaxTest {
 
     private fun stack(
         horizontal: Boolean,
-        vararg children: StackComponent,
+        vararg children: PaywallComponent,
         distribution: FlexDistribution = FlexDistribution.START,
         spacing: Float? = null,
         overflow: Overflow? = null,
