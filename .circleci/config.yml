@@ -289,6 +289,19 @@ jobs:
             FLAVOR_CAPITALIZED=$(echo << parameters.flavor >> | sed 's/\b\(.\)/\u\1/')
             BUILD_TYPE_CAPITALIZED=$(echo << parameters.build_type >> | sed 's/\b\(.\)/\u\1/')
             TASK="<< parameters.module_prefix >>test${FLAVOR_CAPITALIZED}${BUILD_TYPE_CAPITALIZED}UnitTest"
+            if ./gradlew $TASK --parallel --no-daemon; then
+              exit 0
+            fi
+            # A test JVM that dies with a HotSpot crash (e.g. a C2 JIT SIGSEGV) leaves an hs_err_pid*.log
+            # behind. Only that case is retried; a genuine test failure is reported as is.
+            CRASH_LOGS=$(find . -path ./build -prune -o \( -name 'hs_err_pid*.log' -o -name 'replay_pid*.log' \) -print)
+            if [ -z "$CRASH_LOGS" ]; then
+              exit 1
+            fi
+            echo "Test JVM crashed, retrying once. Crash logs from the first attempt:"
+            echo "$CRASH_LOGS"
+            mkdir -p build/crash-logs/attempt-1
+            echo "$CRASH_LOGS" | xargs -I{} mv {} build/crash-logs/attempt-1/
             ./gradlew $TASK --parallel --no-daemon
       - when:
           condition: << parameters.run_kover >>
@@ -311,6 +324,14 @@ jobs:
           path: build/test-results-collected
       - store_artifacts:
           path: build/reports
+      - run:
+          name: Collect JVM crash logs
+          when: always
+          command: |
+            mkdir -p build/crash-logs
+            find . -path ./build -prune -o \( -name 'hs_err_pid*.log' -o -name 'replay_pid*.log' \) -print0 | xargs -0 -I{} mv {} build/crash-logs/
+      - store_artifacts:
+          path: build/crash-logs
 
   test_dokka_hide_internal:
     <<: *android-executor
