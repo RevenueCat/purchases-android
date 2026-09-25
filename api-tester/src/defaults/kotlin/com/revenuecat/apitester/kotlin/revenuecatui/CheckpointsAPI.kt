@@ -5,12 +5,15 @@ package com.revenuecat.apitester.kotlin.revenuecatui
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPassedCallback
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowResult
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.errorPresenter
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.paywallPresenter
 
 @Suppress("unused", "UNUSED_VARIABLE")
@@ -28,11 +31,13 @@ private class CheckpointsAPI {
         )
     }
 
-    fun checkParams(presenter: PaywallPresenter) {
+    fun checkParams(presenter: PaywallPresenter, errorPresenter: ErrorPresenter) {
         val fromBuilder: CheckpointParams = CheckpointParams.Builder()
             .setCustomVariables(mapOf("key" to CustomVariableValue.String("value")))
             .setPaywallPresenter(presenter)
             .setPaywallPresenter(null)
+            .setErrorPresenter(errorPresenter)
+            .setErrorPresenter(null)
             .build()
         val fromDsl: CheckpointParams = CheckpointParams {
             customVariables { "key" to "value" }
@@ -40,9 +45,14 @@ private class CheckpointsAPI {
             paywallPresenter { params: PaywallPresenter.Params, completion: PaywallPresenter.Completion ->
                 completion.complete(PaywallPresenter.Completion.Result.Closed)
             }
+            errorPresenter(errorPresenter)
+            errorPresenter { params: ErrorPresenter.Params, completion: ErrorPresenter.Completion ->
+                completion.complete(ErrorPresenter.Completion.Result.Retry)
+            }
         }
         val customVariables: Map<String, CustomVariableValue> = fromDsl.customVariables
         val paywallPresenter: PaywallPresenter? = fromDsl.paywallPresenter
+        val currentErrorPresenter: ErrorPresenter? = fromDsl.errorPresenter
     }
 
     fun checkPaywallPresenter(purchases: Purchases, presenter: PaywallPresenter) {
@@ -65,6 +75,32 @@ private class CheckpointsAPI {
             PaywallPresenter.Completion.Result.Continued -> {}
             PaywallPresenter.Completion.Result.Closed -> {}
             PaywallPresenter.Completion.Result.NavigatedBack -> {}
+            // The hierarchy is closed but not sealed, so consumers must handle cases added later.
+            else -> {}
+        }
+    }
+
+    fun checkErrorPresenter(purchases: Purchases, presenter: ErrorPresenter) {
+        purchases.errorPresenter = presenter
+        purchases.errorPresenter = null
+        val currentPresenter: ErrorPresenter? = purchases.errorPresenter
+        val lambdaPresenter = ErrorPresenter {
+                params: ErrorPresenter.Params, completion: ErrorPresenter.Completion ->
+            val error: PurchasesError = params.error
+            val checkpointIdentifier: String = params.checkpointIdentifier
+            val customVariables: Map<String, CustomVariableValue> = params.customVariables
+            val flowCanContinue: Boolean = params.flowCanContinue
+            completion.complete(ErrorPresenter.Completion.Result.Retry)
+            completion.complete(ErrorPresenter.Completion.Result.Continued)
+            completion.complete(ErrorPresenter.Completion.Result.NavigatedBack)
+        }
+    }
+
+    fun checkErrorCompletionResult(result: ErrorPresenter.Completion.Result) {
+        when (result) {
+            ErrorPresenter.Completion.Result.Retry -> {}
+            ErrorPresenter.Completion.Result.Continued -> {}
+            ErrorPresenter.Completion.Result.NavigatedBack -> {}
             // The hierarchy is closed but not sealed, so consumers must handle cases added later.
             else -> {}
         }

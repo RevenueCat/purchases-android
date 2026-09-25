@@ -70,8 +70,9 @@ class CheckpointPassedCallbackTest {
                 presentedCallIds += callId
                 mockPresenter
             },
-            defaultPresenterFactory = { purchases ->
-                DefaultPaywallPresenter(purchases) { _, _ -> mockPresenter }.also { defaultPresenter = it }
+            defaultPresenterFactory = { purchases, errorPresenter ->
+                DefaultPaywallPresenter(purchases, errorPresenter) { _, _ -> mockPresenter }
+                    .also { defaultPresenter = it }
             },
         )
     }

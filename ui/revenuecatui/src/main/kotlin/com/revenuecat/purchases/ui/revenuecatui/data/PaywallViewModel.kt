@@ -288,6 +288,26 @@ internal class PaywallViewModelImpl(
         val offeringsForExitOfferLookup: Offerings?,
     )
 
+    // Declared last: its collector reads the state above as soon as it is created.
+    private val errorReporter = PaywallErrorReporter(
+        presenter = { options.errorPresenter },
+        scope = viewModelScope,
+        state = _state,
+        host = object : PaywallErrorReporter.Host {
+            override fun showErrorDialog(error: PurchasesError) {
+                _actionError.value = error
+            }
+
+            override fun closePaywall(result: PaywallResult?, reason: PaywallDismissReason) =
+                this@PaywallViewModelImpl.closePaywall(result, reason)
+
+            override fun navigateBack(): Boolean = handleBackNavigation()
+
+            override val flowEnded: Boolean
+                get() = shouldReloadStateOnNextPresentation
+        },
+    )
+
     init {
         updateState()
         validateState()
@@ -611,7 +631,7 @@ internal class PaywallViewModelImpl(
                             // silently ignore
                         }
                         is PurchaseLogicResult.Error -> {
-                            result.errorDetails?.let { _actionError.value = it }
+                            result.errorDetails?.let { errorReporter.onActionError(it) }
                         }
                     }
                 }
@@ -651,7 +671,7 @@ internal class PaywallViewModelImpl(
         } catch (e: PurchasesException) {
             Logger.e("Error restoring purchases: $e")
             listener?.onRestoreError(e.error)
-            _actionError.value = e.error
+            errorReporter.onActionError(e.error)
         }
     }
 
@@ -762,7 +782,7 @@ internal class PaywallViewModelImpl(
                         is PurchaseLogicResult.Error -> {
                             result.errorDetails?.let {
                                 trackPaywallPurchaseError(packageToPurchase, it)
-                                _actionError.value = it
+                                errorReporter.onActionError(it)
                             }
                         }
                     }
@@ -817,7 +837,7 @@ internal class PaywallViewModelImpl(
             } else {
                 trackPaywallPurchaseError(packageToPurchase, e.error)
                 listener?.onPurchaseError(e.error)
-                _actionError.value = e.error
+                errorReporter.onActionError(e.error)
             }
         }
     }

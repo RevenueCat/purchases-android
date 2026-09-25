@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.revenuecat.checkpointtester.checkpoints.ErrorPresenters
 import com.revenuecat.checkpointtester.checkpoints.PaywallPresenters
 import com.revenuecat.checkpointtester.ui.Screen
 import com.revenuecat.checkpointtester.ui.theme.CheckpointTesterTheme
@@ -66,7 +67,8 @@ private val INLINE_USE_CASES = listOf(
         identifier = "offering_checkpoint",
         title = "Offering checkpoint",
         description = "A terminal offering workflow. Who presents the offering depends on the paywall " +
-            "presenter selected above: the SDK, the global presenter, or the one passed in this call.",
+            "presenter selected above: the SDK, the global presenter, or the one passed in this call. When the " +
+            "SDK presents it, a failed test purchase shows who presents errors in the same way.",
     ),
     InlineUseCase(
         identifier = "unknown_checkpoint",
@@ -89,11 +91,28 @@ fun UseCasesScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val presenterMode by PaywallPresenters.mode.collectAsState()
+    val errorPresenterMode by ErrorPresenters.mode.collectAsState()
 
     LazyColumn(modifier = modifier.fillMaxSize()) {
         item {
             SectionHeader(text = "Paywall presenter")
-            PresenterSelector(mode = presenterMode, onSelect = PaywallPresenters::select)
+            PresenterSelector(
+                modes = PaywallPresenters.Mode.entries,
+                mode = presenterMode,
+                label = { it.label },
+                description = presenterMode.description,
+                onSelect = PaywallPresenters::select,
+            )
+        }
+        item {
+            SectionHeader(text = "Error presenter")
+            PresenterSelector(
+                modes = ErrorPresenters.Mode.entries,
+                mode = errorPresenterMode,
+                label = { it.label },
+                description = errorPresenterMode.description,
+                onSelect = ErrorPresenters::select,
+            )
         }
         item {
             SectionHeader(text = "App-driven use cases")
@@ -130,11 +149,13 @@ fun UseCasesScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PresenterSelector(
-    mode: PaywallPresenters.Mode,
-    onSelect: (PaywallPresenters.Mode) -> Unit,
+private fun <T> PresenterSelector(
+    modes: List<T>,
+    mode: T,
+    label: (T) -> String,
+    description: String,
+    onSelect: (T) -> Unit,
 ) {
-    val modes = PaywallPresenters.Mode.entries
     Column(
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -146,12 +167,12 @@ private fun PresenterSelector(
                     onClick = { onSelect(candidate) },
                     shape = SegmentedButtonDefaults.itemShape(index = index, count = modes.size),
                 ) {
-                    Text(text = candidate.label)
+                    Text(text = label(candidate))
                 }
             }
         }
         Text(
-            text = mode.description,
+            text = description,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
