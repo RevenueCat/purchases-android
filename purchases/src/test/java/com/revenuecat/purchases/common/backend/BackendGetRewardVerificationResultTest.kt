@@ -14,6 +14,7 @@ import com.revenuecat.purchases.common.SyncDispatcher
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.testBackendLanes
 import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import io.mockk.every
 import io.mockk.mockk
@@ -55,24 +56,24 @@ class BackendGetRewardVerificationResultTest {
             every { fallbackBaseURLs } returns emptyList()
         }
         httpClient = mockk()
-        val backendHelper = BackendHelper("TEST_API_KEY", SyncDispatcher(), appConfig, httpClient)
+        val lanes = testBackendLanes(SyncDispatcher(), SyncDispatcher())
+        val backendHelper = BackendHelper("TEST_API_KEY", lanes, appConfig, httpClient)
 
         val asyncDispatcher1 = createAsyncDispatcher()
         val asyncDispatcher2 = createAsyncDispatcher()
-        val asyncBackendHelper = BackendHelper("TEST_API_KEY", asyncDispatcher1, appConfig, httpClient)
+        val asyncLanes = testBackendLanes(asyncDispatcher1, asyncDispatcher2)
+        val asyncBackendHelper = BackendHelper("TEST_API_KEY", asyncLanes, appConfig, httpClient)
 
         backend = Backend(
             appConfig,
-            SyncDispatcher(),
-            SyncDispatcher(),
+            lanes,
             httpClient,
             backendHelper,
         )
 
         asyncBackend = Backend(
             appConfig,
-            asyncDispatcher1,
-            asyncDispatcher2,
+            asyncLanes,
             httpClient,
             asyncBackendHelper,
         )

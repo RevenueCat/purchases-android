@@ -17,6 +17,7 @@ import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfiguration
+import com.revenuecat.purchases.common.testBackendLanes
 import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import io.mockk.CapturingSlot
 import io.mockk.every
@@ -64,24 +65,24 @@ class BackendGetRemoteConfigTest {
             every { isDebugBuild } returns false
         }
         httpClient = mockk()
-        val backendHelper = BackendHelper("TEST_API_KEY", SyncDispatcher(), appConfig, httpClient)
+        val lanes = testBackendLanes(SyncDispatcher(), SyncDispatcher())
+        val backendHelper = BackendHelper("TEST_API_KEY", lanes, appConfig, httpClient)
 
         val asyncDispatcher1 = createAsyncDispatcher()
         val asyncDispatcher2 = createAsyncDispatcher()
-        val asyncBackendHelper = BackendHelper("TEST_API_KEY", asyncDispatcher1, appConfig, httpClient)
+        val asyncLanes = testBackendLanes(asyncDispatcher1, asyncDispatcher2)
+        val asyncBackendHelper = BackendHelper("TEST_API_KEY", asyncLanes, appConfig, httpClient)
 
         backend = Backend(
             appConfig,
-            SyncDispatcher(),
-            SyncDispatcher(),
+            lanes,
             httpClient,
             backendHelper,
         )
 
         asyncBackend = Backend(
             appConfig,
-            asyncDispatcher1,
-            asyncDispatcher2,
+            asyncLanes,
             httpClient,
             asyncBackendHelper,
         )
@@ -131,13 +132,12 @@ class BackendGetRemoteConfigTest {
                 mainDispatcherUsed = true
             }
         }
+        val isolatedLanes = testBackendLanes(mainDispatcher, SyncDispatcher(), SyncDispatcher())
         val isolatedBackend = Backend(
             appConfig,
-            mainDispatcher,
-            SyncDispatcher(),
+            isolatedLanes,
             httpClient,
-            BackendHelper("TEST_API_KEY", SyncDispatcher(), appConfig, httpClient),
-            SyncDispatcher(),
+            BackendHelper("TEST_API_KEY", isolatedLanes, appConfig, httpClient),
         )
 
         val config = "{\"hello\":\"world\"}".toByteArray()

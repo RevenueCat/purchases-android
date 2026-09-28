@@ -24,6 +24,7 @@ import com.revenuecat.purchases.common.networking.PostReceiptResponse
 import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.networking.RCContainerFormatException
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.networking.RequestLane
 import com.revenuecat.purchases.common.networking.RewardVerificationResponse
 import com.revenuecat.purchases.common.networking.WebBillingProductsResponse
 import com.revenuecat.purchases.common.networking.buildPostReceiptResponse
@@ -149,11 +150,9 @@ internal enum class GetRemoteConfigErrorHandlingBehavior {
 @Suppress("TooManyFunctions")
 internal class Backend(
     private val appConfig: AppConfig,
-    private val dispatcher: Dispatcher,
-    private val eventsDispatcher: Dispatcher,
+    private val lanes: BackendLanes,
     private val httpClient: HTTPClient,
     private val backendHelper: BackendHelper,
-    private val remoteConfigDispatcher: Dispatcher = dispatcher,
 ) {
     companion object {
         private const val APP_USER_ID = "app_user_id"
@@ -229,8 +228,9 @@ internal class Backend(
         mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<RemoteConfigFallbackCallback>>()
 
     fun close() {
-        this.dispatcher.close()
-        this.remoteConfigDispatcher.close()
+        // The events lane's dispatcher is shared with EventsManager and diagnostics, so Backend doesn't own it.
+        lanes[RequestLane.DEFAULT].close()
+        lanes[RequestLane.REMOTE_CONFIG].close()
     }
 
     fun getCustomerInfo(
@@ -296,7 +296,7 @@ internal class Backend(
         }
         synchronized(this@Backend) {
             val delay = Delay.jitterOnlyIfInBackground(appInBackground)
-            callbacks.addBackgroundAwareCallback(call, dispatcher, cacheKey, onSuccess to onError, delay)
+            callbacks.addBackgroundAwareCallback(call, endpoint, cacheKey, onSuccess to onError, delay)
         }
     }
 
@@ -419,7 +419,7 @@ internal class Backend(
             }
         }
         synchronized(this@Backend) {
-            postReceiptCallbacks.addCallback(call, dispatcher, cacheKey, onSuccess to onError)
+            postReceiptCallbacks.addCallback(call, Endpoint.PostReceipt, cacheKey, onSuccess to onError, Delay.NONE)
         }
     }
 
@@ -479,7 +479,7 @@ internal class Backend(
         }
         synchronized(this@Backend) {
             val delay = Delay.jitterOnlyIfInBackground(appInBackground)
-            offeringsCallbacks.addBackgroundAwareCallback(call, dispatcher, cacheKey, onSuccess to onError, delay)
+            offeringsCallbacks.addBackgroundAwareCallback(call, endpoint, cacheKey, onSuccess to onError, delay)
         }
     }
 
@@ -543,7 +543,13 @@ internal class Backend(
             }
         }
         synchronized(this@Backend) {
-            identifyCallbacks.addCallback(call, dispatcher, cacheKey, onSuccessHandler to onErrorHandler)
+            identifyCallbacks.addCallback(
+                call,
+                Endpoint.LogIn,
+                cacheKey,
+                onSuccessHandler to onErrorHandler,
+                Delay.NONE,
+            )
         }
     }
 
@@ -557,6 +563,7 @@ internal class Backend(
             oldAppUserID,
             newAppUserID,
         )
+        val endpoint = Endpoint.AliasUsers(oldAppUserID)
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
                 val body = mapOf(
@@ -565,7 +572,7 @@ internal class Backend(
                 )
                 return httpClient.performRequest(
                     appConfig.baseURL,
-                    Endpoint.AliasUsers(oldAppUserID),
+                    endpoint,
                     body,
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
@@ -594,7 +601,7 @@ internal class Backend(
             }
         }
         synchronized(this@Backend) {
-            aliasCallbacks.addCallback(call, dispatcher, cacheKey, onSuccessHandler to onErrorHandler)
+            aliasCallbacks.addCallback(call, endpoint, cacheKey, onSuccessHandler to onErrorHandler, Delay.NONE)
         }
     }
 
@@ -644,7 +651,7 @@ internal class Backend(
         synchronized(this@Backend) {
             diagnosticsCallbacks.addCallback(
                 call,
-                eventsDispatcher,
+                Endpoint.PostDiagnostics,
                 cacheKey,
                 onSuccessHandler to onErrorHandler,
                 Delay.LONG,
@@ -705,7 +712,7 @@ internal class Backend(
         synchronized(this@Backend) {
             paywallEventsCallbacks.addCallback(
                 call,
-                eventsDispatcher,
+                Endpoint.PostEvents,
                 paywallEventRequest.cacheKey,
                 onSuccessHandler to onErrorHandler,
                 delay,
@@ -758,7 +765,7 @@ internal class Backend(
         synchronized(this@Backend) {
             productEntitlementCallbacks.addCallback(
                 call,
-                dispatcher,
+                endpoint,
                 path,
                 onSuccessHandler to onErrorHandler,
                 Delay.LONG,
@@ -817,7 +824,7 @@ internal class Backend(
         synchronized(this@Backend) {
             customerCenterCallbacks.addCallback(
                 call,
-                dispatcher,
+                endpoint,
                 path,
                 onSuccessHandler to onErrorHandler,
                 Delay.NONE,
@@ -881,7 +888,7 @@ internal class Backend(
         synchronized(this@Backend) {
             createSupportTicketCallbacks.addCallback(
                 call,
-                dispatcher,
+                endpoint,
                 path,
                 onSuccessHandler to onErrorHandler,
                 Delay.NONE,
@@ -956,7 +963,7 @@ internal class Backend(
         synchronized(this@Backend) {
             redeemWebPurchaseCallbacks.addCallback(
                 call,
-                dispatcher,
+                endpoint,
                 path,
                 onResultHandler,
                 Delay.NONE,
@@ -1022,7 +1029,7 @@ internal class Backend(
             val delay = Delay.jitterOnlyIfInBackground(appInBackground)
             virtualCurrenciesCallbacks.addBackgroundAwareCallback(
                 call,
-                dispatcher,
+                endpoint,
                 cacheKey,
                 onSuccess to onError,
                 delay,
@@ -1082,7 +1089,7 @@ internal class Backend(
         synchronized(this@Backend) {
             webBillingProductsCallbacks.addCallback(
                 call,
-                dispatcher,
+                endpoint,
                 path,
                 onSuccess to onError,
                 Delay.NONE,
@@ -1156,7 +1163,7 @@ internal class Backend(
         synchronized(this@Backend) {
             rewardVerificationResultCallbacks.addBackgroundAwareCallback(
                 call,
-                dispatcher,
+                endpoint,
                 cacheKey,
                 onSuccess to onError,
                 Delay.NONE,
@@ -1273,7 +1280,7 @@ internal class Backend(
             val delay = Delay.jitterOnlyIfInBackground(appInBackground)
             remoteConfigCallbacks.addBackgroundAwareCallback(
                 call,
-                remoteConfigDispatcher,
+                endpoint,
                 cacheKey,
                 onSuccess to onError,
                 delay,
@@ -1344,7 +1351,7 @@ internal class Backend(
             val delay = Delay.jitterOnlyIfInBackground(appInBackground)
             remoteConfigFallbackCallbacks.addBackgroundAwareCallback(
                 call,
-                remoteConfigDispatcher,
+                endpoint,
                 cacheKey,
                 onSuccess to onError,
                 delay,
@@ -1370,10 +1377,10 @@ internal class Backend(
     @Synchronized
     private fun <S, E> MutableMap<BackgroundAwareCallbackCacheKey, MutableList<Pair<S, E>>>.addBackgroundAwareCallback(
         call: Dispatcher.AsyncCall,
-        dispatcher: Dispatcher,
+        endpoint: Endpoint,
         cacheKey: BackgroundAwareCallbackCacheKey,
         functions: Pair<S, E>,
-        delay: Delay = Delay.NONE,
+        delay: Delay,
     ) {
         val foregroundCacheKey = cacheKey.copy(appInBackground = false)
         val foregroundCallAlreadyInPlace = containsKey(foregroundCacheKey)
@@ -1383,7 +1390,7 @@ internal class Backend(
         } else {
             cacheKey
         }
-        addCallback(call, dispatcher, cacheKeyToUse, functions, delay)
+        addCallback(call, endpoint, cacheKeyToUse, functions, delay)
         // In case we have a request with a jittered delay queued, and we perform the same request without
         // jittered delay, we want to call the callback using the unjittered request
         val backgroundedCacheKey = cacheKey.copy(appInBackground = true)
@@ -1402,14 +1409,14 @@ internal class Backend(
 
     private fun <K, F> MutableMap<K, MutableList<F>>.addCallback(
         call: Dispatcher.AsyncCall,
-        dispatcher: Dispatcher,
+        endpoint: Endpoint,
         cacheKey: K,
         functions: F,
-        delay: Delay = Delay.NONE,
+        delay: Delay,
     ) {
         if (!containsKey(cacheKey)) {
             this[cacheKey] = mutableListOf(functions)
-            backendHelper.enqueue(call, dispatcher, delay)
+            backendHelper.enqueue(call, lanes[endpoint], delay)
         } else {
             debugLog { String.format(NetworkStrings.SAME_CALL_ALREADY_IN_PROGRESS, cacheKey) }
             this[cacheKey]!!.add(functions)

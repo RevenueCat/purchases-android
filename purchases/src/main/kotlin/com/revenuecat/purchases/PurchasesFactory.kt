@@ -9,6 +9,7 @@ import androidx.core.os.UserManagerCompat
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
+import com.revenuecat.purchases.common.BackendLanes
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DefaultLocaleProvider
 import com.revenuecat.purchases.common.Dispatcher
@@ -42,6 +43,7 @@ import com.revenuecat.purchases.common.networking.APISourceFailover
 import com.revenuecat.purchases.common.networking.DeviceConnectivityChecker
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
+import com.revenuecat.purchases.common.networking.RequestLane
 import com.revenuecat.purchases.common.networking.SourceHealthChecker
 import com.revenuecat.purchases.common.networking.TokenManager
 import com.revenuecat.purchases.common.offerings.OfferingsCache
@@ -259,15 +261,15 @@ internal class PurchasesFactory(
                 forceServerErrorStrategy = forceServerErrorStrategy,
                 timeoutManager = timeoutManager,
             )
-            val backendHelper = BackendHelper(apiKey, backendDispatcher, appConfig, httpClient)
-            val backend = Backend(
-                appConfig,
-                backendDispatcher,
-                eventsDispatcher,
-                httpClient,
-                backendHelper,
-                remoteConfigDispatcher,
+            val backendLanes = BackendLanes(
+                defaultDispatcher = backendDispatcher,
+                dedicatedDispatchers = mapOf(
+                    RequestLane.REMOTE_CONFIG to remoteConfigDispatcher,
+                    RequestLane.EVENTS to eventsDispatcher,
+                ),
             )
+            val backendHelper = BackendHelper(apiKey, backendLanes, appConfig, httpClient)
+            val backend = Backend(appConfig, backendLanes, httpClient, backendHelper)
             val fileRepository = DefaultFileRepository(application)
             val paywallAssetWarming = PaywallAssetWarming(application)
 
