@@ -3,5 +3,5 @@
 # Ensure this file is checked in to source control!
 
 gem 'fastlane-plugin-versioning_android'
-gem "fastlane-plugin-revenuecat_internal", git: "https://github.com/RevenueCat/fastlane-plugin-revenuecat_internal", branch: "main"
+gem "fastlane-plugin-revenuecat_internal", git: "https://github.com/RevenueCat/fastlane-plugin-revenuecat_internal", branch: "rickvdl/sentry-ci-metadata"
 gem 'fastlane-plugin-sentry'
