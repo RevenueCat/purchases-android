@@ -1,240 +1,87 @@
-# AdMob Manual Integration Sample
+# LevelPlay Manual Integration Sample
 
-This sample app demonstrates how to manually integrate Google AdMob with RevenueCat's ad event tracking **without** the `purchases-android-admob` adapter library. You call the AdMob SDK directly and call RevenueCat's `AdTracker` methods yourself in the right callbacks.
+This app demonstrates manual ad-event tracking with Unity LevelPlay and RevenueCat. It intentionally uses a mediator for which RevenueCat does not provide an Android adapter, so the sample cannot be mistaken for the recommended AdMob integration. AdMob users should use the automatic adapter shown in `examples/admob-sample`.
 
-This is the right approach if you are not using the adapter (e.g. you are using a different ad network, or you prefer explicit control over when events fire).
+The sample covers the LevelPlay formats that have public demo credentials:
 
-If you are using AdMob and want less boilerplate, see the `admob-sample` which uses the adapter library instead.
+- Banner
+- Interstitial
+- Rewarded
+- An explicit load-failure example
 
-## Overview
+Native, app-open, and rewarded-interstitial ads are out of scope because Unity's public LevelPlay demo configuration does not provide ad units for them.
 
-### Ad Events Tracked
+## Event mapping
 
-For each ad format you are responsible for calling the right `AdTracker` method at the right time:
+Each LevelPlay callback is mapped to the equivalent RevenueCat `AdTracker` call:
 
-1. **Ad Loaded** (`trackAdLoaded`) - in the AdMob load callback (`onAdLoaded`)
-2. **Ad Displayed** (`trackAdDisplayed`) - in `FullScreenContentCallback.onAdShowedFullScreenContent`, or immediately after attaching a banner/native ad to the view hierarchy
-3. **Ad Opened** (`trackAdOpened`) - in `FullScreenContentCallback.onAdClicked`
-4. **Ad Revenue** (`trackAdRevenue`) - in `OnPaidEventListener.onPaidEvent`
-5. **Ad Failed to Load** (`trackAdFailedToLoad`) - in the AdMob load callback (`onAdFailedToLoad`)
+| LevelPlay callback | RevenueCat call |
+| --- | --- |
+| `onAdLoaded` | `trackAdLoaded` |
+| `onAdDisplayed` | `trackAdDisplayed` and `trackAdRevenue` |
+| `onAdClicked` | `trackAdOpened` |
+| `onAdLoadFailed` | `trackAdFailedToLoad` |
 
-### The Impression ID
+`LevelPlayAdInfo.auctionId` is reused as the RevenueCat impression ID so events for the same impression can be correlated. LevelPlay reports impression revenue in USD as a decimal value; the sample converts it to micros before calling `trackAdRevenue`.
 
-RevenueCat uses an `impressionId` to correlate all events for a single ad impression. The AdMob SDK provides this via `responseInfo.responseId`. Capture it when the ad loads and reuse the same value for all subsequent events (displayed, opened, revenue) for that impression.
+LevelPlay revenue precision maps as follows:
 
-### Example: Interstitial Ad
+| LevelPlay | RevenueCat |
+| --- | --- |
+| `BID` | `EXACT` |
+| `RATE` | `PUBLISHER_DEFINED` |
+| `CPM` | `ESTIMATED` |
+| Anything else | `UNKNOWN` |
 
-```kotlin
-InterstitialAd.load(context, adUnitId, AdRequest.Builder().build(),
-    object : InterstitialAdLoadCallback() {
-        override fun onAdLoaded(ad: InterstitialAd) {
-            val responseInfo = ad.responseInfo
-            val adTracker = Purchases.sharedInstance.adTracker
+## Setup
 
-            adTracker.trackAdLoaded(AdLoadedData(
-                networkName = responseInfo.mediationAdapterClassName,
-                mediatorName = AdMediatorName.AD_MOB,
-                adFormat = AdFormat.INTERSTITIAL,
-                placement = "home_interstitial",
-                adUnitId = adUnitId,
-                impressionId = responseInfo.responseId.orEmpty(),
-            ))
+### RevenueCat
 
-            ad.onPaidEventListener = { adValue ->
-                adTracker.trackAdRevenue(AdRevenueData(
-                    networkName = responseInfo.mediationAdapterClassName,
-                    mediatorName = AdMediatorName.AD_MOB,
-                    adFormat = AdFormat.INTERSTITIAL,
-                    placement = "home_interstitial",
-                    adUnitId = adUnitId,
-                    impressionId = responseInfo.responseId.orEmpty(),
-                    revenueMicros = adValue.valueMicros,
-                    currency = adValue.currencyCode,
-                    precision = adValue.precisionType.toAdRevenuePrecision(),
-                ))
-            }
+Add a RevenueCat public SDK key to the repository's `local.properties`:
 
-            ad.fullScreenContentCallback = object : FullScreenContentCallback() {
-                override fun onAdShowedFullScreenContent() {
-                    adTracker.trackAdDisplayed(AdDisplayedData(
-                        networkName = responseInfo.mediationAdapterClassName,
-                        mediatorName = AdMediatorName.AD_MOB,
-                        adFormat = AdFormat.INTERSTITIAL,
-                        placement = "home_interstitial",
-                        adUnitId = adUnitId,
-                        impressionId = responseInfo.responseId.orEmpty(),
-                    ))
-                }
-                override fun onAdClicked() {
-                    adTracker.trackAdOpened(AdOpenedData(
-                        networkName = responseInfo.mediationAdapterClassName,
-                        mediatorName = AdMediatorName.AD_MOB,
-                        adFormat = AdFormat.INTERSTITIAL,
-                        placement = "home_interstitial",
-                        adUnitId = adUnitId,
-                        impressionId = responseInfo.responseId.orEmpty(),
-                    ))
-                }
-            }
-        }
-
-        override fun onAdFailedToLoad(error: LoadAdError) {
-            Purchases.sharedInstance.adTracker.trackAdFailedToLoad(AdFailedToLoadData(
-                mediatorName = AdMediatorName.AD_MOB,
-                adFormat = AdFormat.INTERSTITIAL,
-                placement = "home_interstitial",
-                adUnitId = adUnitId,
-                mediatorErrorCode = error.code,
-            ))
-        }
-    }
-)
+```properties
+REVENUECAT_API_KEY=your_api_key_here
 ```
 
-### How It Works
+The RevenueCat Test Store can be used for local testing. Keep the key in `local.properties`, which is
+gitignored; do not add it to source files.
 
-```
-┌─────────────┐
-│   AdMob SDK │
-│  (Load Ads) │
-└──────┬──────┘
-       │
-       │ Ad callbacks (onAdLoaded, FullScreenContentCallback,
-       │               OnPaidEventListener, onAdFailedToLoad)
-       ▼
-┌──────────────────┐
-│   Your App Code  │
-│                  │
-│  Calls manually: │
-│  trackAdLoaded   │
-│  trackAdDisplayed│
-│  trackAdOpened   │
-│  trackAdRevenue  │
-│  trackAdFailed...|
-└──────┬───────────┘
-       │
-       │ RevenueCat events
-       ▼
-┌────────────────────────┐
-│  RevenueCat Dashboard  │
-│  (Analytics)           │
-└────────────────────────┘
+### LevelPlay
+
+By default, the app uses the app key and ad unit IDs from Unity's [official LevelPlay demo app](https://github.com/ironsource-mobile/Mediation-Demo-Apps). These public values initialize the SDK but do not guarantee inventory: LevelPlay can return error 509 (`Mediation No fill`) with an empty waterfall.
+
+For reliable testing:
+
+1. Create an app in the LevelPlay dashboard.
+2. Create banner, interstitial, and rewarded ad units.
+3. Ensure the mediation configuration has an active `ironSource Ads` bidding instance for all three
+   formats and that the ad units are included in an active mediation group.
+4. In **LevelPlay > Settings > Test devices**, add the device's advertising ID.
+5. For that device, select `ironSource Ads` and all three ad units, then select **Test ads**. This is a
+   temporary assignment; enable it again after it expires.
+6. Override the public demo values in `local.properties`:
+
+```properties
+LEVELPLAY_APP_KEY=your_app_key
+LEVELPLAY_BANNER_AD_UNIT_ID=your_banner_ad_unit_id
+LEVELPLAY_INTERSTITIAL_AD_UNIT_ID=your_interstitial_ad_unit_id
+LEVELPLAY_REWARDED_AD_UNIT_ID=your_rewarded_ad_unit_id
 ```
 
-### Ad Formats Demonstrated
+Then build or run the `vanilla-ad-tracker-sample` app from Android Studio.
 
-- **Banner Ads** - Always visible, auto-loaded
-- **Interstitial Ads** - Full-screen ads triggered by user action
-- **App Open Ads** - Full-screen ads designed for app launch/resume scenarios
-- **Rewarded Ads** - Full-screen ads that reward users after viewing
-- **Rewarded Interstitial Ads** - Interstitial ads that reward users
-- **Native Ads** - Custom-styled ads with text and images integrated into the app's UI
-- **Native Video Ads** - Custom-styled ads with video content integrated into the app's UI
+LevelPlay's separate Integration Test Suite can verify that a mediated network serves test ads, but it must run without interacting with the regular LevelPlay ad APIs first. It therefore does not exercise the RevenueCat callbacks demonstrated by this sample.
 
-### Key Files
+If every format returns `Mediation No fill`, confirm the test-device assignment is still active and the
+device is online. On an emulator, also check that it is not configured to use an unreachable HTTP proxy.
 
-- `ui/HomeScreen.kt` - Navigation state machine and `AdFormat` enum
-- `ui/AdFormatListScreen.kt` - Card menu with one item per ad format
-- `ui/AdFormatDetailScreen.kt` - Detail screen with Load/Show buttons per format
-- `ui/ads/` - Per-format composables with manual `AdTracker` calls
-- `ui/ads/AdRevenuePrecisionMapping.kt` - Maps AdMob `PrecisionType` to `AdRevenuePrecision`
-- `MainApplication.kt` - RevenueCat and AdMob SDK initialization
-- `data/Constants.kt` - Ad unit IDs and configuration
+## Key files
 
----
+- `MainApplication.kt` initializes RevenueCat and LevelPlay.
+- `data/Constants.kt` contains the public demo configuration.
+- `ui/ads/` contains the manual event mappings for each supported format.
+- `ui/ads/AdRevenuePrecisionMapping.kt` converts LevelPlay revenue precision.
 
-## Setup & Run
+## Verify events
 
-### 1. Prerequisites
-
-1. **Get a RevenueCat API Key**
-   - Sign up for a free account at [revenuecat.com](https://www.revenuecat.com)
-   - Get your project API key from the [RevenueCat Dashboard](https://app.revenuecat.com/)
-
-2. **AdMob Setup** (Optional for testing)
-   - This sample uses **Google's official test ad unit IDs** (see below)
-   - No AdMob account needed to run the sample as-is
-   - For production use, create an [AdMob account](https://admob.google.com/) and replace with your own ad unit IDs
-
-### 2. Configure the App
-
-1. **Open the project in Android Studio**
-
-2. **Update your RevenueCat API key**
-
-   Add your key to `local.properties` (this file is gitignored):
-   ```properties
-   REVENUECAT_API_KEY=your_api_key_here
-   ```
-
-3. **Sync Gradle** and wait for dependencies to download
-
-### 3. Run the App
-
-1. Connect an Android device or start an emulator (API 26+)
-2. Click **Run** in Android Studio
-3. The app will install and launch
-
-### 4. Verify Ad Events
-
-Interact with the ads in the app, then background the app. The RevenueCat SDK flushes events when the app goes to the background, and they will be visible shortly after in the [RevenueCat Dashboard](https://app.revenuecat.com/).
-
----
-
-## AdMob Test Ad Unit IDs
-
-This sample uses **Google's official test ad unit IDs**:
-
-| Ad Format | Ad Unit ID | Status |
-|-----------|------------|--------|
-| **Banner** | `ca-app-pub-3940256099942544/9214589741` | Working |
-| **Interstitial** | `ca-app-pub-3940256099942544/1033173712` | Working |
-| **App Open** | `ca-app-pub-3940256099942544/9257395921` | Working |
-| **Rewarded** | `ca-app-pub-3940256099942544/5224354917` | Working |
-| **Rewarded Interstitial** | `ca-app-pub-3940256099942544/5354046379` | Working |
-| **Native** | `ca-app-pub-3940256099942544/2247696110` | Unreliable |
-| **Native Video** | `ca-app-pub-3940256099942544/1044960115` | Unreliable |
-| **Error Testing** | `"invalid-ad-unit-id"` | Working |
-
-These are official Google test IDs — they always serve test ads with no risk of affecting production metrics.
-
-### Native Ads and Test Ad Unit IDs
-
-Google's test ad unit IDs for native ads often fail to load or behave inconsistently. To test native ads reliably:
-
-1. Create ad units in your [AdMob account](https://admob.google.com)
-2. Update the AdMob app ID in `AndroidManifest.xml` with your production app ID
-3. Replace the ad unit IDs in `Constants.kt`
-4. Configure your test device in AdMob settings (emulators are automatically test devices)
-
-### Error Testing
-
-AdMob does not provide an official "error trigger" test ad unit ID. This sample uses an invalid ID (`"invalid-ad-unit-id"`) to simulate load failures and demonstrate error tracking.
-
----
-
-## Troubleshooting
-
-### "Missing RevenueCat API key" or SDK initialization fails
-
-Make sure you've added your RevenueCat API key to `local.properties`. Get your key from the [RevenueCat Dashboard](https://app.revenuecat.com/).
-
-### Ads not loading
-
-1. **No internet connection** - Ensure device/emulator has internet access
-2. **AdMob SDK still initializing** - Wait a few seconds after app launch
-3. **Test device not configured** - Emulators are automatically test devices; real devices may take 15 minutes to 24 hours to be recognized
-
-### "Invalid request" error on real device
-
-Real devices might not be registered as test devices yet. Either wait up to 24 hours for AdMob to recognize your device, or add it as a test device in AdMob settings.
-
-### Not seeing revenue events
-
-AdMob test ads may not always trigger `OnPaidEventListener` events. Revenue tracking works reliably in production with real ads.
-
----
-
-## License
-
-This sample app is part of the RevenueCat SDK and follows the same license terms.
+Load and display an ad, then background the app so RevenueCat can flush pending events. The events should appear shortly afterward in the RevenueCat dashboard. Use the error-testing screen to verify `trackAdFailedToLoad` without waiting for a real inventory failure.

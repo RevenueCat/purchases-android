@@ -76,6 +76,11 @@ profileinstaller = "1.4.1"
 leakcanary = "2.14"
 kotlinpoet = "1.18.1"
 json = "20240303"
+levelPlay = "9.5.0"
+levelPlayAdsIdentifier = "18.0.1"
+levelPlayAppSet = "16.0.2"
+levelPlayUnityAdsAdapter = "5.5.0"
+unityAds = "4.16.6"
 
 [libraries]
 android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
@@ -189,6 +194,11 @@ leakcanary-android = { module = "com.squareup.leakcanary:leakcanary-android", ve
 leakcanary-android-instrumentation = { module = "com.squareup.leakcanary:leakcanary-android-instrumentation", version.ref = "leakcanary" }
 kotlinpoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinpoet" }
 json = { module = "org.json:json", version.ref = "json" }
+levelplay = { module = "com.unity3d.ads-mediation:mediation-sdk", version.ref = "levelPlay" }
+levelplay-ads-identifier = { module = "com.google.android.gms:play-services-ads-identifier", version.ref = "levelPlayAdsIdentifier" }
+levelplay-app-set = { module = "com.google.android.gms:play-services-appset", version.ref = "levelPlayAppSet" }
+levelplay-unity-ads-adapter = { module = "com.unity3d.ads-mediation:unityads-adapter", version.ref = "levelPlayUnityAdsAdapter" }
+unity-ads = { module = "com.unity3d.ads:unity-ads", version.ref = "unityAds" }
 androidx-material3-adaptive-navigation-suite = { group = "androidx.compose.material3", name = "material3-adaptive-navigation-suite" }
 
 [plugins]
