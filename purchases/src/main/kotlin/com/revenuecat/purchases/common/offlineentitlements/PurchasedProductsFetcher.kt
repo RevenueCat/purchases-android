@@ -39,10 +39,11 @@ internal class PurchasedProductsFetcher(
         billing.queryPurchases(
             appUserID,
             onSuccess = { activePurchasesByHashedToken ->
+                val unsyncedPurchases = deviceCache.getActivePurchasesNotInCache(activePurchasesByHashedToken)
                 val activePurchases = activePurchasesByHashedToken.values
                     .filter { it.purchaseState != PurchaseState.PENDING }
                 val purchasedProducts = activePurchases.flatMap {
-                    createPurchasedProducts(it, productEntitlementMapping)
+                    createPurchasedProducts(it, productEntitlementMapping, isSynced = it !in unsyncedPurchases)
                 }
                 onSuccess(purchasedProducts)
             },
@@ -53,6 +54,7 @@ internal class PurchasedProductsFetcher(
     private fun createPurchasedProducts(
         transaction: StoreTransaction,
         productEntitlementMapping: ProductEntitlementMapping,
+        isSynced: Boolean,
     ): List<PurchasedProduct> {
         val expirationDate = getExpirationDate(transaction)
 
@@ -65,6 +67,7 @@ internal class PurchasedProductsFetcher(
                     transaction,
                     mapping?.entitlements ?: emptyList(),
                     expirationDate,
+                    isSynced,
                 )
             }
     }

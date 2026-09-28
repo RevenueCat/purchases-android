@@ -45,12 +45,14 @@ internal object CustomerInfoFactory {
     }
 
     @Throws(JSONException::class)
+    @Suppress("LongParameterList")
     fun buildCustomerInfo(
         body: JSONObject,
         overrideRequestDate: Date?,
         verificationResult: VerificationResult,
         originalSource: CustomerInfoOriginalSource = CustomerInfoOriginalSource.MAIN,
         loadedFromCache: Boolean = false,
+        unsyncedProductIdentifiers: Set<String> = emptySet(),
     ): CustomerInfo {
         val subscriber = body.getJSONObject(CustomerInfoResponseJsonKeys.SUBSCRIBER)
 
@@ -108,6 +110,7 @@ internal object CustomerInfoFactory {
             originalPurchaseDate = originalPurchaseDate,
             originalSource = originalSource,
             loadedFromCache = loadedFromCache,
+            unsyncedProductIdentifiers = unsyncedProductIdentifiers,
         )
     }
 
