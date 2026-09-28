@@ -32,6 +32,9 @@ files_to_update_on_latest_stable_releases = {
 repo_name = 'purchases-android'
 changelog_latest_path = './CHANGELOG.latest.md'
 changelog_path = './CHANGELOG.md'
+sentry_org_slug = 'revenuecat'
+sentry_project_slug = 'purchases-android'
+sdk_size_analysis_apk_output_dir = File.expand_path('../test-apps/sdksizetesting/app/build/outputs/apk/release', __dir__)
 
 default_platform(:android)
 
@@ -50,6 +53,62 @@ def run_plugin_action_in_current_directory(&block)
 end
 
 platform :android do
+  # Metadata shared by every Sentry build and snapshot upload. Keep these values
+  # independent of the uploaded app ID so all Sentry capabilities compare the
+  # same CI revision against the same GitHub pull request.
+  # TODO: Extract this to fastlane-plugin-revenuecat_internal and migrate iOS
+  # after the Android Sentry migration has validated the shared behavior.
+  private_lane :sentry_vcs_metadata do
+    metadata = {
+      org_slug: sentry_org_slug,
+      project_slug: sentry_project_slug,
+      vcs_provider: 'github',
+      head_repo_name: "RevenueCat/#{repo_name}",
+      base_repo_name: "RevenueCat/#{repo_name}",
+      force_git_metadata: true
+    }
+
+    head_sha = ENV['CIRCLE_SHA1'].to_s.strip
+    head_sha = sh('git rev-parse HEAD').strip if head_sha.empty?
+    metadata[:head_sha] = head_sha
+
+    head_ref = ENV['CIRCLE_BRANCH'].to_s.strip
+    head_ref = sh('git rev-parse --abbrev-ref HEAD').strip if head_ref.empty?
+    metadata[:head_ref] = head_ref unless head_ref == 'HEAD'
+
+    pr_number = sentry_pr_number
+    if pr_number
+      github_token = ENV['DANGER_GITHUB_API_TOKEN'].to_s.strip
+      UI.user_error!('DANGER_GITHUB_API_TOKEN is required for Sentry PR uploads') if github_token.empty?
+
+      response = github_api(
+        server_url: 'https://api.github.com',
+        api_token: github_token,
+        http_method: 'GET',
+        path: "/repos/RevenueCat/#{repo_name}/pulls/#{pr_number}"
+      )
+      pull_request = response[:json] || {}
+      base_sha = pull_request.dig('base', 'sha')
+      UI.user_error!("Could not determine the base SHA for PR ##{pr_number}") if base_sha.to_s.empty?
+
+      metadata[:pr_number] = pr_number
+      metadata[:base_sha] = base_sha
+      metadata[:base_ref] = pull_request.dig('base', 'ref')
+    end
+
+    metadata.compact
+  end
+
+  private_lane :sentry_pr_number do
+    pr_url = ENV['CIRCLE_PULL_REQUEST'].to_s
+    return pr_url.split('/').last if pr_url.include?('/')
+
+    branch_name = ENV['CIRCLE_BRANCH'].to_s.strip
+    branch_name = sh('git rev-parse --abbrev-ref HEAD').strip if branch_name.empty?
+    match = branch_name.match(%r{^gh-readonly-queue/[^/]+/pr-(\d+)-[0-9a-f]+$})
+    match && match[1]
+  end
+
   desc "Fetch integration test secrets from 1Password and write them to local.properties"
   desc "Requires the 1Password CLI (op) to be installed and signed in"
   lane :setup_local_properties do
@@ -192,18 +251,34 @@ platform :android do
     gradle(task: ":test-apps:testpurchasesuiandroidcompatibility:emergeUploadSnapshotBundleDebug")
   end
 
-  desc "Emerge size tests"
-  lane :emerge_sdk_size_tests do
-     gradle_properties = {
-       "signing.keyId" => ENV['GPG_SIGNING_KEY_ID_NEW'],
-       "signing.password" => ENV['GPG_SIGNING_KEY_PW_NEW'],
-       "signing.secretKeyRingFile" => "/home/circleci/.gnupg/secring.gpg",
-       "RELEASE_SIGNING_ENABLED" => true
-     }
-     gradle(task: "publishToMavenLocal", properties: gradle_properties)
-     Dir.chdir("../test-apps/sdksizetesting/app") do
-         gradle(task: "emergeUploadReleaseApk")
-     end
+  desc "Build SDK size app and upload it to Emerge and Sentry"
+  lane :sdk_size_tests do
+    gradle_properties = {
+      "signing.keyId" => ENV['GPG_SIGNING_KEY_ID_NEW'],
+      "signing.password" => ENV['GPG_SIGNING_KEY_PW_NEW'],
+      "signing.secretKeyRingFile" => "/home/circleci/.gnupg/secring.gpg",
+      "RELEASE_SIGNING_ENABLED" => true
+    }
+    gradle(task: "publishToMavenLocal", properties: gradle_properties)
+    Dir.chdir("../test-apps/sdksizetesting/app") do
+      # Keep Emerge enabled during the migration. This task produces the APK
+      # that Sentry uploads below, so both services analyze the same file.
+      gradle(task: "emergeUploadReleaseApk")
+    end
+
+    release_apks = Dir.glob(File.join(sdk_size_analysis_apk_output_dir, '*.apk')).sort
+    unless release_apks.one?
+      UI.user_error!(
+        "Expected one SDK size-analysis APK in '#{sdk_size_analysis_apk_output_dir}', found #{release_apks.count}",
+      )
+    end
+
+    sentry_upload_build(
+      sentry_vcs_metadata.merge(
+        apk_path: release_apks.first,
+        build_configuration: 'Release'
+      )
+    )
   end
 
   desc "Replaces version numbers, updates changelog and creates PR"
