@@ -124,8 +124,8 @@ class WorkflowNavigatorTest {
         assertThat(navigator.currentStep).isEqualTo(step3)
     }
 
-    @Test
-    fun `triggerAction on a branch exit navigates to the route it picks`() {
+    // The route names a different step than the fallback, so a test can tell the two apart.
+    private fun branchExitWorkflow(): PublishedWorkflow {
         val branchStep = WorkflowStep(
             id = "step-1",
             type = "screen",
@@ -147,13 +147,28 @@ class WorkflowNavigatorTest {
                 ),
             ),
         )
-        val branchWorkflow = workflow.copy(steps = mapOf("step-1" to branchStep, "step-2" to step2))
+        return workflow.copy(steps = mapOf("step-1" to branchStep, "step-2" to step2))
+    }
 
-        val navigator = WorkflowNavigator(branchWorkflow)
+    @Test
+    fun `triggerAction on a branch exit navigates to the route it picks`() {
+        val navigator = WorkflowNavigator(branchExitWorkflow())
         val result = navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)
 
         assertThat(result).isEqualTo(step2)
         assertThat(navigator.currentStep?.id).isEqualTo("step-2")
+    }
+
+    // PaywallViewModel gates on the peek before navigating, so a peek that ignores branches
+    // dead-taps the UI even when triggerAction is correct.
+    @Test
+    fun `peekTriggerStep on a branch exit returns the step it picks`() {
+        val navigator = WorkflowNavigator(branchExitWorkflow())
+
+        val result = navigator.peekTriggerStep("btn-next", WorkflowTriggerType.ON_PRESS)
+
+        assertThat(result).isEqualTo(step2)
+        assertThat(navigator.currentStep?.id).isEqualTo("step-1")
     }
 
     @Test

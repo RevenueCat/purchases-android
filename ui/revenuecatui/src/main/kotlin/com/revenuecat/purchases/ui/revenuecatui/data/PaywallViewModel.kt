@@ -28,7 +28,6 @@ import com.revenuecat.purchases.common.workflows.WorkflowResolution
 import com.revenuecat.purchases.common.workflows.WorkflowScreen
 import com.revenuecat.purchases.common.workflows.WorkflowScreenType
 import com.revenuecat.purchases.common.workflows.WorkflowStep
-import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.common.workflows.events.WorkflowEvent
 import com.revenuecat.purchases.models.SubscriptionOption
@@ -1471,9 +1470,10 @@ internal class PaywallViewModelImpl(
         }
     }
 
+    // A branch exit navigates too, so it counts here the same way the navigator treats it.
     private fun isTerminalStep(workflow: PublishedWorkflow, stepId: String): Boolean {
         val step = workflow.steps[stepId] ?: return false
-        return step.triggerActions.values.none { it is WorkflowTriggerAction.Step }
+        return step.triggerActions.values.none { it.destinationStepId != null }
     }
 
     private val currentWorkflowStep: WorkflowStep?
