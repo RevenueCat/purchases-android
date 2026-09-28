@@ -121,7 +121,7 @@ internal class CheckpointWorkflowResolverImpl(
             errorLog(e) { "UI config could not be fetched for checkpoint '$identifier'." }
             null
         } ?: return configurationUnavailable("UI config is unavailable for checkpoint '$identifier'.")
-        return resolveRule(identifier, workflowManager, rule, uiConfig)
+        return resolveRule(identifier, workflowManager, rule, uiConfig, customVariables)
             .takeIf { checkpointsConfigProvider.isCurrent(rulesResolution) }
     }
 
@@ -156,6 +156,7 @@ internal class CheckpointWorkflowResolverImpl(
         workflowManager: WorkflowManager,
         rule: CheckpointRule,
         uiConfig: UiConfig,
+        customVariables: Map<String, RulesDimensionValue>,
     ): CheckpointResolution {
         val workflow = try {
             workflowManager.getWorkflowBody(rule.workflowId)
@@ -173,7 +174,7 @@ internal class CheckpointWorkflowResolverImpl(
         } else if (workflow.steps.values.any { it.isOfferingStep }) {
             unservableRule(rule, "a UI workflow cannot contain offering steps")
         } else {
-            resolveUiRule(checkpointIdentifier, rule, workflow, uiConfig)
+            resolveUiRule(checkpointIdentifier, rule, workflow, uiConfig, customVariables)
         }
     }
 
@@ -199,6 +200,7 @@ internal class CheckpointWorkflowResolverImpl(
         rule: CheckpointRule,
         workflow: PublishedWorkflow,
         uiConfig: UiConfig,
+        customVariables: Map<String, RulesDimensionValue>,
     ): CheckpointResolution {
         val offerings = loadOfferings(checkpointIdentifier)
             ?: return unservableRule(rule, "the offerings its steps present could not be fetched")
@@ -210,7 +212,7 @@ internal class CheckpointWorkflowResolverImpl(
             offerings,
             checkpointRuleId = rule.id,
             traceId = UUID.randomUUID().toString(),
-            resolvedBranchSteps = branchResolver.resolveAll(workflow),
+            resolvedBranchSteps = branchResolver.resolveAll(workflow, customVariables),
         )
     }
 

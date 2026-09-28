@@ -7,6 +7,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.audiences.Audience
 import com.revenuecat.purchases.common.audiences.AudiencesConfigProvider
 import com.revenuecat.purchases.common.localrules.LocalRulesEvaluator
+import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -101,6 +102,20 @@ class BranchResolverTest {
         }
 
         assertThat(resolver.resolveAll(workflow)).isEmpty()
+    }
+
+    @Test
+    fun `branch audiences can read the caller's custom variables`() = runTest {
+        configureAudiences(
+            Audience(id = "aud_a", rules = """{"==": [{"var": "custom.tier"}, "gold"]}"""),
+        )
+
+        val resolved = resolver.resolve(
+            branch(listOf("aud_a" to "step_a"), "step_fallback"),
+            customVariables = mapOf("tier" to RulesDimensionValue.StringValue("gold")),
+        )
+
+        assertThat(resolved).isEqualTo("step_a")
     }
 
     @Test

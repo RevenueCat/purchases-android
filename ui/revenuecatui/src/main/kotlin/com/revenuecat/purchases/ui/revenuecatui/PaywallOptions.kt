@@ -102,6 +102,7 @@ public class PaywallOptions internal constructor(
         result = hashMultiplier * result + injectedWorkflowUiConfig.hashCode()
         result = hashMultiplier * result + injectedWorkflowOfferings.hashCode()
         result = hashMultiplier * result + injectedWorkflowTraceId.hashCode()
+        result = hashMultiplier * result + injectedWorkflowResolvedBranchSteps.hashCode()
         return result
     }
 
@@ -122,6 +123,7 @@ public class PaywallOptions internal constructor(
             this.injectedWorkflowUiConfig != other.injectedWorkflowUiConfig -> false
             this.injectedWorkflowOfferings != other.injectedWorkflowOfferings -> false
             this.injectedWorkflowTraceId != other.injectedWorkflowTraceId -> false
+            this.injectedWorkflowResolvedBranchSteps != other.injectedWorkflowResolvedBranchSteps -> false
             else -> this.dismissRequest == other.dismissRequest
         }
     }
@@ -140,6 +142,8 @@ public class PaywallOptions internal constructor(
         injectedWorkflowUiConfig: UiConfig = this.injectedWorkflowUiConfig,
         injectedWorkflowOfferings: Offerings? = this.injectedWorkflowOfferings,
         injectedWorkflowTraceId: String? = this.injectedWorkflowTraceId,
+        injectedWorkflowResolvedBranchSteps: Map<WorkflowTriggerAction.Branch, String> =
+            this.injectedWorkflowResolvedBranchSteps,
     ): PaywallOptions = PaywallOptions(
         offeringSelection = offeringSelection,
         shouldDisplayDismissButton = shouldDisplayDismissButton,
@@ -154,6 +158,7 @@ public class PaywallOptions internal constructor(
         injectedWorkflowUiConfig = injectedWorkflowUiConfig,
         injectedWorkflowOfferings = injectedWorkflowOfferings,
         injectedWorkflowTraceId = injectedWorkflowTraceId,
+        injectedWorkflowResolvedBranchSteps = injectedWorkflowResolvedBranchSteps,
     )
 
     @Suppress("TooManyFunctions")

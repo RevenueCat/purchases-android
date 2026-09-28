@@ -3,9 +3,11 @@
 package com.revenuecat.purchases.common.workflows
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.common.CustomVariableKeyValidator
 import com.revenuecat.purchases.common.audiences.AudiencesConfigProvider
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.localrules.LocalRulesEvaluator
+import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 
 /**
  * Decides where a `branch` trigger action sends someone.
@@ -14,7 +16,10 @@ import com.revenuecat.purchases.common.localrules.LocalRulesEvaluator
  */
 internal interface BranchResolver {
 
-    suspend fun resolve(branch: WorkflowTriggerAction.Branch): String
+    suspend fun resolve(
+        branch: WorkflowTriggerAction.Branch,
+        customVariables: Map<String, RulesDimensionValue> = emptyMap(),
+    ): String
 
     /**
      * Resolves every branch in [workflow] up front, so navigation stays synchronous and a config commit
@@ -22,19 +27,25 @@ internal interface BranchResolver {
      *
      * A workflow never opens on a branch, so this runs before the first step renders and nothing waits on it.
      */
-    suspend fun resolveAll(workflow: PublishedWorkflow): Map<WorkflowTriggerAction.Branch, String> {
+    suspend fun resolveAll(
+        workflow: PublishedWorkflow,
+        customVariables: Map<String, RulesDimensionValue> = emptyMap(),
+    ): Map<WorkflowTriggerAction.Branch, String> {
         val branches = workflow.steps.values
             .flatMap { step -> step.triggerActions.values }
             .filterIsInstance<WorkflowTriggerAction.Branch>()
             .toSet()
 
-        return branches.associateWith { branch -> resolve(branch) }
+        return branches.associateWith { branch -> resolve(branch, customVariables) }
     }
 }
 
 /** Used when remote config is off, so there is nothing to evaluate audiences against. */
 internal object DisabledBranchResolver : BranchResolver {
-    override suspend fun resolve(branch: WorkflowTriggerAction.Branch): String = branch.fallbackStepId
+    override suspend fun resolve(
+        branch: WorkflowTriggerAction.Branch,
+        customVariables: Map<String, RulesDimensionValue>,
+    ): String = branch.fallbackStepId
 }
 
 /**
@@ -47,7 +58,10 @@ internal class BranchResolverImpl(
 ) : BranchResolver {
 
     @Suppress("ReturnCount")
-    override suspend fun resolve(branch: WorkflowTriggerAction.Branch): String {
+    override suspend fun resolve(
+        branch: WorkflowTriggerAction.Branch,
+        customVariables: Map<String, RulesDimensionValue>,
+    ): String {
         if (branch.branches.isEmpty()) return branch.fallbackStepId
 
         // One snapshot for the whole walk, so a config swap midway cannot mix two generations.
@@ -60,6 +74,7 @@ internal class BranchResolverImpl(
         val unreadable = mutableListOf<String>()
         val matched = localRulesEvaluator.match(
             rules = branch.branches,
+            customVariables = CustomVariableKeyValidator.validateAndFilter(customVariables),
             logPrefix = "[Workflow branch] ",
         ) { route ->
             val audience = audiences[route.audienceId]
