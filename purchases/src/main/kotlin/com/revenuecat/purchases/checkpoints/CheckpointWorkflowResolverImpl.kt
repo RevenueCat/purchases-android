@@ -20,8 +20,6 @@ import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.warnLog
-import com.revenuecat.purchases.common.workflows.BranchResolver
-import com.revenuecat.purchases.common.workflows.BranchResolverImpl
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.common.workflows.WorkflowStep
@@ -55,10 +53,6 @@ internal class CheckpointWorkflowResolverImpl(
     private val localRulesEvaluator: LocalRulesEvaluator,
     private val getOfferings: suspend () -> Offerings,
 ) : CheckpointWorkflowResolver {
-
-    private val branchResolver: BranchResolver by lazy {
-        BranchResolverImpl(audiencesConfigProvider, localRulesEvaluator)
-    }
 
     override suspend fun resolve(
         identifier: String,
@@ -121,7 +115,7 @@ internal class CheckpointWorkflowResolverImpl(
             errorLog(e) { "UI config could not be fetched for checkpoint '$identifier'." }
             null
         } ?: return configurationUnavailable("UI config is unavailable for checkpoint '$identifier'.")
-        return resolveRule(identifier, workflowManager, rule, uiConfig, customVariables)
+        return resolveRule(identifier, workflowManager, rule, uiConfig)
             .takeIf { checkpointsConfigProvider.isCurrent(rulesResolution) }
     }
 
@@ -156,7 +150,6 @@ internal class CheckpointWorkflowResolverImpl(
         workflowManager: WorkflowManager,
         rule: CheckpointRule,
         uiConfig: UiConfig,
-        customVariables: Map<String, RulesDimensionValue>,
     ): CheckpointResolution {
         val workflow = try {
             workflowManager.getWorkflowBody(rule.workflowId)
@@ -174,7 +167,7 @@ internal class CheckpointWorkflowResolverImpl(
         } else if (workflow.steps.values.any { it.isOfferingStep }) {
             unservableRule(rule, "a UI workflow cannot contain offering steps")
         } else {
-            resolveUiRule(checkpointIdentifier, rule, workflow, uiConfig, customVariables)
+            resolveUiRule(checkpointIdentifier, rule, workflow, uiConfig)
         }
     }
 
@@ -200,7 +193,6 @@ internal class CheckpointWorkflowResolverImpl(
         rule: CheckpointRule,
         workflow: PublishedWorkflow,
         uiConfig: UiConfig,
-        customVariables: Map<String, RulesDimensionValue>,
     ): CheckpointResolution {
         val offerings = loadOfferings(checkpointIdentifier)
             ?: return unservableRule(rule, "the offerings its steps present could not be fetched")
@@ -212,7 +204,6 @@ internal class CheckpointWorkflowResolverImpl(
             offerings,
             checkpointRuleId = rule.id,
             traceId = UUID.randomUUID().toString(),
-            resolvedBranchSteps = branchResolver.resolveAll(workflow, customVariables),
         )
     }
 

@@ -26,10 +26,10 @@ import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
+import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.common.workflows.WorkflowStep
 import com.revenuecat.purchases.common.workflows.WorkflowTrigger
-import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import io.mockk.Runs
 import io.mockk.coEvery
@@ -194,25 +194,6 @@ class CheckpointWorkflowResolverImplTest {
         assertThat(resolution.workflow).isEqualTo(workflow)
         assertThat(resolution.offerings).isEqualTo(mockOfferings)
         verify(exactly = 1) { mockWorkflowManager.prewarmWorkflowAssets(workflow, mockUiConfig) }
-    }
-
-    // The checkpoint path presents the workflow without ever calling the resolver again, so a branch
-    // it does not resolve here silently takes its fallback for the whole run.
-    @Test
-    fun `a matched workflow carries its branches already resolved`() = runTest {
-        val branch = WorkflowTriggerAction.Branch(
-            branches = listOf(WorkflowTriggerAction.Branch.Route(audienceId = "aud_wf1234", stepId = "routed")),
-            fallbackStepId = "fallback",
-        )
-        val workflow = workflow(
-            "wf1234",
-            screenStep("first", offeringIdentifier = null).copy(triggerActions = mapOf("action" to branch)),
-        )
-        coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns workflow
-
-        val resolution = resolve() as CheckpointResolution.MatchedWorkflow
-
-        assertThat(resolution.resolvedBranchSteps).isEqualTo(mapOf(branch to "routed"))
     }
 
     @Test

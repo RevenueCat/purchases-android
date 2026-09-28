@@ -166,7 +166,8 @@ class WorkflowNavigatorTest {
         val workflow = branchExitWorkflow()
         val branch = workflow.steps.getValue("step-1").triggerActions
             .getValue("action-next") as WorkflowTriggerAction.Branch
-        val navigator = WorkflowNavigator(workflow, mapOf(branch to "step-3"))
+        val navigator = WorkflowNavigator(workflow)
+        navigator.recordResolvedBranches(mapOf(branch to "step-3"))
 
         val result = navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)
 

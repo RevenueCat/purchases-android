@@ -86,22 +86,29 @@ class BranchResolverTest {
     }
 
     @Test
-    fun `resolveAll covers every branch in the workflow`() = runTest {
-        configureAudiences(alwaysMatching("aud_a"), neverMatching("aud_b"))
+    fun `resolveBranches covers every branch on the step`() = runTest {
+        configureAudiences(alwaysMatching("aud_a"))
 
-        val resolved = resolver.resolveAll(workflowWithTwoBranches())
+        val resolved = resolver.resolveBranches(workflowWithTwoBranches().steps.getValue("step_1"))
 
-        assertThat(resolved).hasSize(2)
-        assertThat(resolved.values.toSet()).isEqualTo(setOf("step_a", "step_fallback_2"))
+        assertThat(resolved.values.toSet()).isEqualTo(setOf("step_a"))
+    }
+
+    // Only the step being entered is resolved, so a later step's branch is not evaluated yet.
+    @Test
+    fun `resolveBranches ignores other steps branches`() = runTest {
+        configureAudiences(alwaysMatching("aud_a"), alwaysMatching("aud_b"))
+
+        val resolved = resolver.resolveBranches(workflowWithTwoBranches().steps.getValue("step_2"))
+
+        assertThat(resolved.values.toSet()).isEqualTo(setOf("step_b"))
     }
 
     @Test
-    fun `resolveAll returns an empty map for a workflow with no branches`() = runTest {
-        val workflow = workflowWithTwoBranches().let { wf ->
-            wf.copy(steps = wf.steps.mapValues { (_, step) -> step.copy(triggerActions = emptyMap()) })
-        }
+    fun `resolveBranches returns an empty map for a step with no branches`() = runTest {
+        val step = workflowWithTwoBranches().steps.getValue("step_1").copy(triggerActions = emptyMap())
 
-        assertThat(resolver.resolveAll(workflow)).isEmpty()
+        assertThat(resolver.resolveBranches(step)).isEmpty()
     }
 
     @Test

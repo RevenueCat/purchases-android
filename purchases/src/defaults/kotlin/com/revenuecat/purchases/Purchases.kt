@@ -34,6 +34,7 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowResolution
+import com.revenuecat.purchases.common.workflows.WorkflowStep
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.DeepLinkParser
@@ -478,8 +479,9 @@ public class Purchases internal constructor(
     @InternalRevenueCatAPI
     @JvmSynthetic
     public suspend fun resolveBranches(
-        workflow: PublishedWorkflow,
-    ): Map<WorkflowTriggerAction.Branch, String> = purchasesOrchestrator.resolveBranches(workflow)
+        step: WorkflowStep,
+        customVariables: Map<String, RulesDimensionValue> = emptyMap(),
+    ): Map<WorkflowTriggerAction.Branch, String> = purchasesOrchestrator.resolveBranches(step, customVariables)
 
     @InternalRevenueCatAPI
     @JvmSynthetic

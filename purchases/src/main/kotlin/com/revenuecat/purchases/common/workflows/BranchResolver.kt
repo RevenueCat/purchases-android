@@ -22,17 +22,14 @@ internal interface BranchResolver {
     ): String
 
     /**
-     * Resolves every branch in [workflow] up front, so navigation stays synchronous and a config commit
-     * midway cannot route two taps differently.
-     *
-     * A workflow never opens on a branch, so this runs before the first step renders and nothing waits on it.
+     * Resolves the branches [step] can exit through, when that step becomes current. Navigation stays
+     * synchronous: until this lands, a branch takes its fallback.
      */
-    suspend fun resolveAll(
-        workflow: PublishedWorkflow,
+    suspend fun resolveBranches(
+        step: WorkflowStep,
         customVariables: Map<String, RulesDimensionValue> = emptyMap(),
     ): Map<WorkflowTriggerAction.Branch, String> {
-        val branches = workflow.steps.values
-            .flatMap { step -> step.triggerActions.values }
+        val branches = step.triggerActions.values
             .filterIsInstance<WorkflowTriggerAction.Branch>()
             .toSet()
 

@@ -22,8 +22,10 @@ import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.awaitRestore
 import com.revenuecat.purchases.awaitSyncPurchases
 import com.revenuecat.purchases.common.events.FeatureEvent
+import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowResolution
+import com.revenuecat.purchases.common.workflows.WorkflowStep
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
@@ -84,7 +86,10 @@ internal interface PurchasesType {
 
     suspend fun awaitWorkflowBlobRef(workflowId: String): String?
 
-    suspend fun resolveBranches(workflow: PublishedWorkflow): Map<WorkflowTriggerAction.Branch, String>
+    suspend fun resolveBranches(
+        step: WorkflowStep,
+        customVariables: Map<String, RulesDimensionValue>,
+    ): Map<WorkflowTriggerAction.Branch, String>
 }
 
 @Suppress("TooManyFunctions")
@@ -174,8 +179,9 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
 
     @OptIn(InternalRevenueCatAPI::class)
     override suspend fun resolveBranches(
-        workflow: PublishedWorkflow,
-    ): Map<WorkflowTriggerAction.Branch, String> = purchases.resolveBranches(workflow)
+        step: WorkflowStep,
+        customVariables: Map<String, RulesDimensionValue>,
+    ): Map<WorkflowTriggerAction.Branch, String> = purchases.resolveBranches(step, customVariables)
 
     @OptIn(InternalRevenueCatAPI::class)
     override suspend fun awaitWorkflowBlobRef(workflowId: String): String? =

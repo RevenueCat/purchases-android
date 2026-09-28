@@ -10,8 +10,10 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.common.events.FeatureEvent
+import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowResolution
+import com.revenuecat.purchases.common.workflows.WorkflowStep
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
@@ -71,7 +73,8 @@ internal class MockPurchasesType(
     }
 
     override suspend fun resolveBranches(
-        workflow: PublishedWorkflow,
+        step: WorkflowStep,
+        customVariables: Map<String, RulesDimensionValue>,
     ): Map<WorkflowTriggerAction.Branch, String> = emptyMap()
 
     override suspend fun awaitGetUiConfig(): UiConfig {

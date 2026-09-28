@@ -5,10 +5,14 @@ import com.revenuecat.purchases.common.workflows.WorkflowStep
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
-internal class WorkflowNavigator(
-    private val workflow: PublishedWorkflow,
-    private val resolvedBranchSteps: Map<WorkflowTriggerAction.Branch, String> = emptyMap(),
-) {
+internal class WorkflowNavigator(private val workflow: PublishedWorkflow) {
+
+    /** Filled in as each step becomes current. A branch not in here yet takes its fallback. */
+    private val resolvedBranchSteps = mutableMapOf<WorkflowTriggerAction.Branch, String>()
+
+    fun recordResolvedBranches(resolved: Map<WorkflowTriggerAction.Branch, String>) {
+        resolvedBranchSteps.putAll(resolved)
+    }
 
     private var currentStepId: String = workflow.initialStepId
 

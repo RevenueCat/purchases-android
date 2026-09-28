@@ -49,6 +49,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams
 import com.revenuecat.purchases.ui.revenuecatui.ProductChange
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.asRulesDimensionValue
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
@@ -895,7 +896,6 @@ internal class PaywallViewModelImpl(
             options.injectedWorkflowUiConfig,
             offerings,
             offeringSelection.offering?.presentedOfferingContext,
-            resolvedBranchSteps = options.injectedWorkflowResolvedBranchSteps,
         )
         return true
     }
@@ -982,7 +982,6 @@ internal class PaywallViewModelImpl(
             offeringsDeferred.await(),
             offering.presentedOfferingContext,
             workflowBlobRefDeferred.await(),
-            purchases.resolveBranches(workflow),
         )
         WorkflowOutcome.Presented
     }
@@ -1065,7 +1064,6 @@ internal class PaywallViewModelImpl(
         offerings: Offerings,
         presentedOfferingContext: PresentedOfferingContext?,
         workflowBlobRef: String? = null,
-        resolvedBranchSteps: Map<WorkflowTriggerAction.Branch, String> = emptyMap(),
     ) {
         val initialStep = workflow.steps[workflow.initialStepId]
         if (initialStep == null) {
@@ -1085,7 +1083,7 @@ internal class PaywallViewModelImpl(
         currentWorkflowUiConfig = uiConfig
         currentWorkflowOfferings = offerings
         currentWorkflowPresentedOfferingContext = presentedOfferingContext
-        workflowNavigator = WorkflowNavigator(workflow, resolvedBranchSteps)
+        workflowNavigator = WorkflowNavigator(workflow)
         val dismissExitOffer = workflow.dismissExitOffer
         updateExitOfferData(
             dismissExitOffer?.let {
@@ -1180,6 +1178,23 @@ internal class PaywallViewModelImpl(
         preWarmWorkflowStepCache(workflow, uiConfig, offerings, presentedOfferingContext)
     }
 
+    /**
+     * Resolves a step's branches when it becomes current. Nothing waits on it: until it lands a branch takes
+     * its fallback, and the initial step cannot carry one.
+     */
+    private fun resolveBranchesFor(step: WorkflowStep) {
+        val navigator = workflowNavigator ?: return
+        if (step.triggerActions.values.none { it is WorkflowTriggerAction.Branch }) return
+        viewModelScope.launch {
+            navigator.recordResolvedBranches(
+                purchases.resolveBranches(
+                    step,
+                    options.customVariables.mapValues { (_, value) -> value.asRulesDimensionValue },
+                ),
+            )
+        }
+    }
+
     private fun buildStateFromStep(
         step: WorkflowStep,
         workflow: PublishedWorkflow,
@@ -1190,6 +1205,7 @@ internal class PaywallViewModelImpl(
         navigationDirection: NavigationDirection? = null,
         shouldApplyState: Boolean = true,
     ) {
+        resolveBranchesFor(step)
         val cached = workflowStepStateCache[step.id]
         val newState = cached
             ?: computeStateForStep(
