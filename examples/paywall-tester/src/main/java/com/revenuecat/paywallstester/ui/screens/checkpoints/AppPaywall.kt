@@ -34,8 +34,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter
 import kotlinx.coroutines.launch
 
@@ -44,7 +44,7 @@ import kotlinx.coroutines.launch
  * Reports how the user left it (purchased, closed through the X, continued without buying, or backed out through
  * system back); the SDK works out what the user obtained.
  */
-@OptIn(InternalRevenueCatAPI::class)
+@OptIn(InviteOnlyCheckpointsAPI::class)
 @Composable
 internal fun AppPaywall(
     request: AppPaywallPresenter.Request,
@@ -133,7 +133,7 @@ private fun CloseButton(enabled: Boolean, onClick: () -> Unit, modifier: Modifie
     }
 }
 
-@OptIn(InternalRevenueCatAPI::class)
+@OptIn(InviteOnlyCheckpointsAPI::class)
 @Composable
 private fun AppPaywallHeader(params: PaywallPresenter.Params) {
     Column(

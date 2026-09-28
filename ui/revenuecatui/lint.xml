@@ -2,9 +2,9 @@
 <lint>
     <issue id="UnsafeOptInUsageError">
         <!--
-        Opt-in to InternalRevenueCatAPI for the entire module. This avoids having to explicitly opt in at every call
-        site separately. Compilation is handled by ui/revenuecatui/build.gradle.kts.
+        Opt-in to InternalRevenueCatAPI and InviteOnlyCheckpointsAPI for the entire module. This avoids having to
+        explicitly opt in at every call site separately. Compilation is handled by ui/revenuecatui/build.gradle.kts.
         -->
-        <option name="opt-in" value="com.revenuecat.purchases.InternalRevenueCatAPI" />
+        <option name="opt-in" value="com.revenuecat.purchases.InternalRevenueCatAPI,com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI" />
     </issue>
 </lint>

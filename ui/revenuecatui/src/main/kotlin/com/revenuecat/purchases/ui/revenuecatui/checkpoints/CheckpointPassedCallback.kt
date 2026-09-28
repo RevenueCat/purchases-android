@@ -1,11 +1,11 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
-import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 
 /**
  * Receives the outcome of a [com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint] call.
  */
-@InternalRevenueCatAPI
+@InviteOnlyCheckpointsAPI
 public fun interface CheckpointPassedCallback {
 
     /**

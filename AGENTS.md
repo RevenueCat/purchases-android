@@ -108,6 +108,7 @@ Variant names combine the flavor and build type, e.g. `defaultsDebug`, `customEn
 - **`@InternalRevenueCatAPI`** - APIs that are public only to be accessible by other modules or hybrid SDKs, not intended for external developer use
 - **`@ExperimentalPreviewRevenueCatPurchasesAPI`** - Public APIs for developers that may change before being made stable
 - **`@ExperimentalPreviewRevenueCatUIPurchasesAPI`** - Same as above but for the `:ui:revenuecatui` module
+- **`@InviteOnlyCheckpointsAPI`** - Checkpoints APIs in `:ui:revenuecatui` available to invited developers only; tracked by Metalava but hidden from Dokka
 
 ## Code Style
 

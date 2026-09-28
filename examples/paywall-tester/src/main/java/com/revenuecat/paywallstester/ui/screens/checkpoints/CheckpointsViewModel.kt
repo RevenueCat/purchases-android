@@ -1,4 +1,4 @@
-@file:OptIn(InternalRevenueCatAPI::class)
+@file:OptIn(InviteOnlyCheckpointsAPI::class)
 
 package com.revenuecat.paywallstester.ui.screens.checkpoints
 
@@ -9,8 +9,8 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.revenuecat.paywallstester.data.RecentCheckpointsStore
 import com.revenuecat.paywallstester.ui.screens.checkpoints.CheckpointsViewModel.CheckpointResultUi
 import com.revenuecat.paywallstester.ui.screens.checkpoints.CheckpointsViewModel.UiState
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowResult
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter
