@@ -30,7 +30,7 @@ class BackendStoredEventAdTest {
             placement = "banner_home",
             adUnitId = "ca-app-pub-123456",
             impressionId = "impression-123",
-            captureMethod = AdCaptureMethod.ADAPTER,
+            captureMethod = AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER,
         )
 
         val storedEvent = displayedEvent.toBackendStoredEvent(appUserID, appSessionID)
@@ -49,7 +49,7 @@ class BackendStoredEventAdTest {
         assertThat(adStoredEvent.event.impressionId).isEqualTo("impression-123")
         assertThat(adStoredEvent.event.appUserID).isEqualTo(appUserID)
         assertThat(adStoredEvent.event.appSessionID).isEqualTo(appSessionID)
-        assertThat(adStoredEvent.event.captureMethod).isEqualTo("adapter")
+        assertThat(adStoredEvent.event.captureMethod).isEqualTo("android_admob_next_gen_adapter")
         assertThat(adStoredEvent.event.revenueMicros).isNull()
         assertThat(adStoredEvent.event.currency).isNull()
         assertThat(adStoredEvent.event.precision).isNull()
@@ -125,7 +125,7 @@ class BackendStoredEventAdTest {
             placement = "rewarded_video",
             adUnitId = "ad-unit-999",
             impressionId = "impression-789",
-            captureMethod = AdCaptureMethod.ADAPTER,
+            captureMethod = AdCaptureMethod.ANDROID_ADMOB_LEGACY_ADAPTER,
             revenueMicros = 1500000,
             currency = "USD",
             precision = AdRevenuePrecision.EXACT
@@ -147,7 +147,7 @@ class BackendStoredEventAdTest {
         assertThat(adStoredEvent.event.impressionId).isEqualTo("impression-789")
         assertThat(adStoredEvent.event.appUserID).isEqualTo(appUserID)
         assertThat(adStoredEvent.event.appSessionID).isEqualTo(appSessionID)
-        assertThat(adStoredEvent.event.captureMethod).isEqualTo("adapter")
+        assertThat(adStoredEvent.event.captureMethod).isEqualTo("android_admob_legacy_adapter")
         assertThat(adStoredEvent.event.revenueMicros).isEqualTo(1500000)
         assertThat(adStoredEvent.event.currency).isEqualTo("USD")
         assertThat(adStoredEvent.event.precision).isEqualTo("exact")
@@ -247,7 +247,7 @@ class BackendStoredEventAdTest {
             placement = "rewarded_video",
             adUnitId = "ad-unit-999",
             impressionId = "impression-789",
-            captureMethod = AdCaptureMethod.ADAPTER,
+            captureMethod = AdCaptureMethod.ANDROID_ADMOB_LEGACY_ADAPTER,
         )
 
         val storedEvent = revenueEvent.toBackendStoredEvent(appUserID, appSessionID)
@@ -266,7 +266,7 @@ class BackendStoredEventAdTest {
         assertThat(adStoredEvent.event.impressionId).isEqualTo("impression-789")
         assertThat(adStoredEvent.event.appUserID).isEqualTo(appUserID)
         assertThat(adStoredEvent.event.appSessionID).isEqualTo(appSessionID)
-        assertThat(adStoredEvent.event.captureMethod).isEqualTo("adapter")
+        assertThat(adStoredEvent.event.captureMethod).isEqualTo("android_admob_legacy_adapter")
     }
 
     @Test
@@ -278,7 +278,7 @@ class BackendStoredEventAdTest {
             adFormat = AdFormat.BANNER,
             placement = "rewarded_video",
             adUnitId = "ad-unit-999",
-            captureMethod = AdCaptureMethod.ADAPTER,
+            captureMethod = AdCaptureMethod.ANDROID_ADMOB_LEGACY_ADAPTER,
             mediatorErrorCode = 123,
         )
 
@@ -299,7 +299,7 @@ class BackendStoredEventAdTest {
         assertThat(adStoredEvent.event.impressionId).isNull()
         assertThat(adStoredEvent.event.appUserID).isEqualTo(appUserID)
         assertThat(adStoredEvent.event.appSessionID).isEqualTo(appSessionID)
-        assertThat(adStoredEvent.event.captureMethod).isEqualTo("adapter")
+        assertThat(adStoredEvent.event.captureMethod).isEqualTo("android_admob_legacy_adapter")
     }
 
     @Test

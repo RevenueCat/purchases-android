@@ -23,7 +23,7 @@ class AdapterTrackingTest {
 
         adTracker.trackFromAdapter(data)
 
-        verify(exactly = 1) { adTracker.trackAdLoaded(data, AdCaptureMethod.ADAPTER) }
+        verify(exactly = 1) { adTracker.trackAdLoaded(data, AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER) }
     }
 
     @Test
@@ -32,7 +32,7 @@ class AdapterTrackingTest {
 
         adTracker.trackFromAdapter(data)
 
-        verify(exactly = 1) { adTracker.trackAdFailedToLoad(data, AdCaptureMethod.ADAPTER) }
+        verify(exactly = 1) { adTracker.trackAdFailedToLoad(data, AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER) }
     }
 
     @Test
@@ -41,7 +41,7 @@ class AdapterTrackingTest {
 
         adTracker.trackFromAdapter(data)
 
-        verify(exactly = 1) { adTracker.trackAdDisplayed(data, AdCaptureMethod.ADAPTER) }
+        verify(exactly = 1) { adTracker.trackAdDisplayed(data, AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER) }
     }
 
     @Test
@@ -50,7 +50,7 @@ class AdapterTrackingTest {
 
         adTracker.trackFromAdapter(data)
 
-        verify(exactly = 1) { adTracker.trackAdOpened(data, AdCaptureMethod.ADAPTER) }
+        verify(exactly = 1) { adTracker.trackAdOpened(data, AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER) }
     }
 
     @Test
@@ -59,6 +59,6 @@ class AdapterTrackingTest {
 
         adTracker.trackFromAdapter(data)
 
-        verify(exactly = 1) { adTracker.trackAdRevenue(data, AdCaptureMethod.ADAPTER) }
+        verify(exactly = 1) { adTracker.trackAdRevenue(data, AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER) }
     }
 }

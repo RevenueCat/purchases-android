@@ -91,10 +91,14 @@ internal class BannerAdPreloaderTest : PreloaderTest() {
         assertTrue(eventDelegate.impressionCalled)
         assertSame(refreshError, refreshDelegate.refreshError)
         val displayedData = slot<AdDisplayedData>()
-        verify(exactly = 1) { adTracker.trackAdDisplayed(capture(displayedData), AdCaptureMethod.ADAPTER) }
+        verify(exactly = 1) {
+            adTracker.trackAdDisplayed(capture(displayedData), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)
+        }
         assertEquals("banner-poll-placement", displayedData.captured.placement)
         val failedData = slot<AdFailedToLoadData>()
-        verify(exactly = 1) { adTracker.trackAdFailedToLoad(capture(failedData), AdCaptureMethod.ADAPTER) }
+        verify(exactly = 1) {
+            adTracker.trackAdFailedToLoad(capture(failedData), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)
+        }
         assertEquals("banner-poll-placement", failedData.captured.placement)
     }
 

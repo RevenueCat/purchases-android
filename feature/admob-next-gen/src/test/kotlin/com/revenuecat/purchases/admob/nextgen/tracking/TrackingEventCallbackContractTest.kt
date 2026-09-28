@@ -93,15 +93,15 @@ class TrackingEventCallbackContractTest {
                     ExpectedAdEvent.DISPLAYED -> {
                         val tracked = slot<AdDisplayedData>()
                         verify(exactly = 1) {
-                            tracker.trackAdDisplayed(capture(tracked), AdCaptureMethod.ADAPTER)
+                            tracker.trackAdDisplayed(capture(tracked), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)
                         }
                         assertEquals(label, fixture.adFormat, tracked.captured.adFormat)
                     }
                     ExpectedAdEvent.OPENED -> verify(exactly = 1) {
-                        tracker.trackAdOpened(any(), AdCaptureMethod.ADAPTER)
+                        tracker.trackAdOpened(any(), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)
                     }
                     ExpectedAdEvent.REVENUE -> verify(exactly = 1) {
-                        tracker.trackAdRevenue(any(), AdCaptureMethod.ADAPTER)
+                        tracker.trackAdRevenue(any(), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)
                     }
                 }
 
