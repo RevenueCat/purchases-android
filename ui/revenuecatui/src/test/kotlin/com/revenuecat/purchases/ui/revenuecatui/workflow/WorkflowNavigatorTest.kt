@@ -147,7 +147,9 @@ class WorkflowNavigatorTest {
                 ),
             ),
         )
-        return workflow.copy(steps = mapOf("step-1" to branchStep, "step-2" to step2))
+        return workflow.copy(
+            steps = mapOf("step-1" to branchStep, "step-2" to step2, "step-3" to step2.copy(id = "step-3")),
+        )
     }
 
     @Test
@@ -157,6 +159,19 @@ class WorkflowNavigatorTest {
 
         assertThat(result).isEqualTo(step2)
         assertThat(navigator.currentStep?.id).isEqualTo("step-2")
+    }
+
+    @Test
+    fun `a resolved branch navigates to its route instead of the fallback`() {
+        val workflow = branchExitWorkflow()
+        val branch = workflow.steps.getValue("step-1").triggerActions
+            .getValue("action-next") as WorkflowTriggerAction.Branch
+        val navigator = WorkflowNavigator(workflow, mapOf(branch to "step-3"))
+
+        val result = navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)
+
+        assertThat(result?.id).isEqualTo("step-3")
+        assertThat(navigator.currentStep?.id).isEqualTo("step-3")
     }
 
     // PaywallViewModel gates on the peek before navigating, so a peek that ignores branches

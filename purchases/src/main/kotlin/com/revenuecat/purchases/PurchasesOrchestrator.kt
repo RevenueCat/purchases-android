@@ -66,9 +66,12 @@ import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeK
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.warnLog
+import com.revenuecat.purchases.common.workflows.BranchResolver
+import com.revenuecat.purchases.common.workflows.BranchResolverImpl
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.common.workflows.WorkflowResolution
+import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.common.workflows.WorkflowsConfigProvider
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.WebPurchaseRedemptionHelper
@@ -202,6 +205,11 @@ internal class PurchasesOrchestrator(
         audiencesConfigProvider = audiencesConfigProvider,
         localRulesEvaluator = localRulesEvaluator,
         getOfferings = { Purchases.sharedInstance.awaitOfferings() },
+    ),
+    @OptIn(InternalRevenueCatAPI::class)
+    private val branchResolver: BranchResolver = BranchResolverImpl(
+        audiencesConfigProvider = audiencesConfigProvider,
+        localRulesEvaluator = localRulesEvaluator,
     ),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
@@ -700,6 +708,10 @@ internal class PurchasesOrchestrator(
 
     suspend fun resolveWorkflow(offeringId: String): WorkflowResolution =
         workflowManager.resolveWorkflow(offeringId)
+
+    @OptIn(InternalRevenueCatAPI::class)
+    suspend fun resolveBranches(workflow: PublishedWorkflow): Map<WorkflowTriggerAction.Branch, String> =
+        branchResolver.resolveAll(workflow)
 
     suspend fun workflowBlobRef(workflowId: String): String? =
         workflowManager.workflowBlobRef(workflowId)

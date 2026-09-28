@@ -11,6 +11,7 @@ import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
+import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.common.workflows.WorkflowResolution
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
@@ -65,6 +66,10 @@ internal class MockPurchasesType(
     override suspend fun awaitGetWorkflow(workflowId: String): PublishedWorkflow {
         throw NotImplementedError("Mock implementation")
     }
+
+    override suspend fun resolveBranches(
+        workflow: PublishedWorkflow,
+    ): Map<WorkflowTriggerAction.Branch, String> = emptyMap()
 
     override suspend fun awaitGetUiConfig(): UiConfig {
         throw NotImplementedError("Mock implementation")
