@@ -11,6 +11,8 @@
 #
 
 require "cgi"
+require "fileutils"
+require "tmpdir"
 
 # Uncomment the line if you want fastlane to automatically update itself
 # update_fastlane
@@ -35,6 +37,7 @@ changelog_path = './CHANGELOG.md'
 sentry_org_slug = 'revenuecat'
 sentry_project_slug = 'purchases-android'
 sdk_size_analysis_apk_output_dir = File.expand_path('../test-apps/sdksizetesting/app/build/outputs/apk/release', __dir__)
+paparazzi_snapshots_app_id = 'com.revenuecat.testpurchasesuiandroidcompatibility.paparazzi'
 
 default_platform(:android)
 
@@ -903,6 +906,38 @@ DESC
     # Copy the output to the output_dir
     if options[:output_dir] && options[:output_dir].length > 0
       sh("cp -r #{paparazzi_output_dir}/ #{options[:output_dir]}")
+    end
+  end
+
+  desc "Upload recorded RevenueCatUI and DebugView Paparazzi snapshots to Sentry"
+  lane :upload_paparazzi_snapshots_to_sentry do
+    snapshot_sources = {
+      'revenuecatui' => '../ui/revenuecatui/src/test/snapshots/images',
+      'debugview' => '../ui/debugview/src/test/snapshots/images',
+    }
+
+    Dir.mktmpdir('sentry-paparazzi-snapshots-') do |snapshot_root|
+      snapshot_sources.each do |module_name, source_dir|
+        pngs = Dir.glob(File.join(source_dir, '**', '*.png')).sort
+        UI.user_error!("No Paparazzi snapshots found in '#{source_dir}'") if pngs.empty?
+
+        target_dir = File.join(snapshot_root, module_name)
+        FileUtils.mkdir_p(target_dir)
+        pngs.each do |png|
+          relative_path = png.delete_prefix("#{source_dir}/")
+          target_path = File.join(target_dir, relative_path)
+          FileUtils.mkdir_p(File.dirname(target_path))
+          FileUtils.cp(png, target_path)
+        end
+        UI.message("Prepared #{pngs.count} #{module_name} snapshots for Sentry")
+      end
+
+      sentry_upload_snapshots(
+        sentry_vcs_metadata.merge(
+          path: snapshot_root,
+          app_id: paparazzi_snapshots_app_id,
+        )
+      )
     end
   end
 
