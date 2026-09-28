@@ -315,17 +315,13 @@ abstract class BaseOfflineEntitlementsWithInitialRequestsAndNoInitialPurchasesTe
                         .isEqualTo(RulesDimensionValue.BoolValue(false))
 
                     forceServerErrorsStrategy = ForceServerErrorStrategy.doNotFail
-                    mockActivePurchases(initialActivePurchases)
 
-                    Purchases.sharedInstance.onAppForegrounded()
-                    assertAcknowledgePurchaseDidHappen()
-
-                    Purchases.sharedInstance.getCustomerInfoWith(
-                        fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
+                    Purchases.sharedInstance.restorePurchasesWith(
                         onError = {
                             fail("Expected success but got error: $it")
                         },
                         onSuccess = { onlineCustomerInfo ->
+                            assertAcknowledgePurchaseDidHappen()
                             assertThat(onlineCustomerInfo.originalSource).isEqualTo(expectedCustomerInfoOriginalSource)
                             assertThat(onlineCustomerInfo.loadedFromCache).isFalse
                             assertThat(onlineCustomerInfo.unsyncedProductIdentifiers).isEmpty()
