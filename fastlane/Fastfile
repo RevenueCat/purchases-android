@@ -101,12 +101,17 @@ platform :android do
 
   private_lane :sentry_pr_number do
     pr_url = ENV['CIRCLE_PULL_REQUEST'].to_s
-    return pr_url.split('/').last if pr_url.include?('/')
-
     branch_name = ENV['CIRCLE_BRANCH'].to_s.strip
     branch_name = sh('git rev-parse --abbrev-ref HEAD').strip if branch_name.empty?
-    match = branch_name.match(%r{^gh-readonly-queue/[^/]+/pr-(\d+)-[0-9a-f]+$})
-    match && match[1]
+    pr_number = nil
+
+    if pr_url.include?('/')
+      pr_number = pr_url.split('/').last
+    elsif (match = branch_name.match(%r{^gh-readonly-queue/[^/]+/pr-(\d+)-[0-9a-f]+$}))
+      pr_number = match[1]
+    end
+
+    pr_number
   end
 
   desc "Fetch integration test secrets from 1Password and write them to local.properties"
