@@ -72,6 +72,7 @@ import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorSt
 import com.revenuecat.purchases.ui.revenuecatui.workflow.NavigationDirection
 import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowNavigator
 import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowScreenMapper
+import com.revenuecat.purchases.ui.revenuecatui.workflow.nextStepId
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -1473,7 +1474,7 @@ internal class PaywallViewModelImpl(
     // A branch exit navigates too, so it counts here the same way the navigator treats it.
     private fun isTerminalStep(workflow: PublishedWorkflow, stepId: String): Boolean {
         val step = workflow.steps[stepId] ?: return false
-        return step.triggerActions.values.none { it.destinationStepId != null }
+        return step.triggerActions.values.none { it.nextStepId != null }
     }
 
     private val currentWorkflowStep: WorkflowStep?

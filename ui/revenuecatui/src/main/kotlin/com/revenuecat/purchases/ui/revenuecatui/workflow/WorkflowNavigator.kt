@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.workflow
 
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowStep
+import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 internal class WorkflowNavigator(private val workflow: PublishedWorkflow) {
@@ -18,7 +19,7 @@ internal class WorkflowNavigator(private val workflow: PublishedWorkflow) {
         val step = currentStep ?: return null
         val trigger = step.triggers.firstOrNull { it.componentId == componentId && it.type == triggerType }
             ?: return null
-        val stepId = step.triggerActions[trigger.actionId]?.destinationStepId ?: return null
+        val stepId = step.triggerActions[trigger.actionId]?.nextStepId ?: return null
         return workflow.steps[stepId]
     }
 
@@ -36,7 +37,7 @@ internal class WorkflowNavigator(private val workflow: PublishedWorkflow) {
             Logger.w("No trigger action found for actionId '${trigger.actionId}' in step '${step.id}'")
             return null
         }
-        val stepId = action.destinationStepId ?: run {
+        val stepId = action.nextStepId ?: run {
             Logger.w("Workflow trigger action '${trigger.actionId}' leads nowhere — ignoring")
             return null
         }
@@ -59,3 +60,13 @@ internal class WorkflowNavigator(private val workflow: PublishedWorkflow) {
     val canNavigateBack: Boolean
         get() = backStack.isNotEmpty()
 }
+
+/**
+ * A branch takes its fallback until the audiences that pick a different route can be evaluated.
+ */
+internal val WorkflowTriggerAction.nextStepId: String?
+    get() = when (this) {
+        is WorkflowTriggerAction.Step -> stepId
+        is WorkflowTriggerAction.Branch -> fallbackStepId
+        WorkflowTriggerAction.Unknown -> null
+    }
