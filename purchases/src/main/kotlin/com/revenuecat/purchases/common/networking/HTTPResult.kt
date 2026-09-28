@@ -1,8 +1,8 @@
 package com.revenuecat.purchases.common.networking
 
-import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.isSuccessful
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.Date
@@ -12,7 +12,7 @@ internal data class HTTPResult(
     val payload: Payload,
     val origin: Origin,
     val requestDate: Date?,
-    val verificationResult: VerificationResult,
+    val verificationResult: SignatureVerificationResult,
     val isLoadShedderResponse: Boolean,
     val isFallbackURL: Boolean,
 ) {
@@ -25,7 +25,7 @@ internal data class HTTPResult(
         payload: String,
         origin: Origin,
         requestDate: Date?,
-        verificationResult: VerificationResult,
+        verificationResult: SignatureVerificationResult,
         isLoadShedderResponse: Boolean,
         isFallbackURL: Boolean,
     ) : this(

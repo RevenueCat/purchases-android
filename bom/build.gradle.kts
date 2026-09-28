@@ -26,6 +26,7 @@ dependencies {
         api(project(":feature:amazon"))
         api(project(":feature:galaxy"))
         api(project(":feature:admob"))
+        api(project(":feature:admob-next-gen"))
         api(project(":codegen"))
     }
 }

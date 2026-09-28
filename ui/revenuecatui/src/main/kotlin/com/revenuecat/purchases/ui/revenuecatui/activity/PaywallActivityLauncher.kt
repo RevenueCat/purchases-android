@@ -10,6 +10,7 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.PresentedOfferingContext
+import com.revenuecat.purchases.common.CustomVariableKeyValidator
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
@@ -96,7 +97,7 @@ public class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultH
                 fontProvider = fontProvider,
                 shouldDisplayDismissButton = shouldDisplayDismissButton,
                 edgeToEdge = edgeToEdge,
-                customVariables = customVariables,
+                customVariables = CustomVariableKeyValidator.validateAndFilter(customVariables),
             ),
         )
     }

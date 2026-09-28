@@ -38,7 +38,7 @@ internal object CustomerInfoFactory {
         return buildCustomerInfo(
             httpResult.body,
             httpResult.requestDate,
-            httpResult.verificationResult,
+            httpResult.verificationResult.result,
             originalSource,
             loadedFromCache = false,
         )

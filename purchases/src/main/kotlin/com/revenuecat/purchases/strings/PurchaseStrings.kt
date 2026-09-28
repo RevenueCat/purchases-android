@@ -21,6 +21,8 @@ public object PurchaseStrings {
     public const val FOUND_EXISTING_PURCHASE: String = "Found existing purchase for SKU: %s"
     public const val NO_EXISTING_PURCHASE: String = "Couldn't find existing purchase for SKU: %s"
     public const val ERROR_FINDING_PURCHASE: String = "Error finding existing purchase for SKU: %s"
+    public const val NOT_SETTING_OBFUSCATED_ACCOUNT_ID_ALREADY_OWNED: String = "Found active purchase for %s. " +
+        "Not setting obfuscatedAccountId so Google Play can apply the subscription's default replacement mode."
     public const val OFFERING: String = " - offering: "
     public const val PRODUCT_CHANGE_STARTED: String = "Product change started: %s"
     public const val PURCHASE_FINISH_TRANSACTION_FALSE: String = "finishTransactions is set to false " +

@@ -33,9 +33,7 @@ internal class SubscriberAttributesPoster(
             },
             { error, responseCode, body ->
                 error?.let {
-                    val internalServerError = RCHTTPStatusCodes.isServerError(responseCode)
-                    val notFoundError = responseCode == RCHTTPStatusCodes.NOT_FOUND
-                    val successfullySynced = !(internalServerError || notFoundError)
+                    val successfullySynced = RCHTTPStatusCodes.isSynced(responseCode)
                     var attributeErrors: List<SubscriberAttributeError> = emptyList()
                     if (error.code == PurchasesErrorCode.InvalidSubscriberAttributesError) {
                         attributeErrors = body.getAttributeErrors()

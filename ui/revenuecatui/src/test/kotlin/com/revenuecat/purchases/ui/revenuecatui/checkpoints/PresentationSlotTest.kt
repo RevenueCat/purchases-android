@@ -48,7 +48,8 @@ class PresentationSlotTest {
 
     private fun pendingCall(callId: String) = PresentationSlot.PendingCall(
         callId = callId,
-        content = CheckpointFlowContent.OfferingFlow(mockk()),
+        workflow = null,
+        activeEntitlementsBefore = null,
         customVariables = emptyMap(),
         flowFinished = CompletableDeferred(),
     )

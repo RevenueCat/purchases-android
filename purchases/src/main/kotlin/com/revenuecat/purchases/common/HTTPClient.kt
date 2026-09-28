@@ -10,7 +10,6 @@ import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.ForceServerErrorStrategy
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Store
-import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.APISourceFailover
@@ -22,11 +21,10 @@ import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
 import com.revenuecat.purchases.common.networking.MapConverter
 import com.revenuecat.purchases.common.networking.NullPointerReadingErrorStreamException
-import com.revenuecat.purchases.common.networking.RCContainer
-import com.revenuecat.purchases.common.networking.RCContainerFormatException
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.interfaces.StorefrontProvider
 import com.revenuecat.purchases.strings.NetworkStrings
@@ -306,6 +304,8 @@ internal class HTTPClient(
         var requestResult: HTTPTimeoutManager.RequestResult = HTTPTimeoutManager.RequestResult.OTHER_RESULT
         var exceptionHit: IOException? = null
         var responseCode: Int? = null
+        var failedVerificationResult: SignatureVerificationResult? = null
+        var failedVerificationRequestDate: Date? = null
 
         try {
             callResult = performCall(
@@ -317,6 +317,10 @@ internal class HTTPClient(
                 requestHeaders,
                 refreshETag,
                 onResponseReceived = { responseCode = it },
+                onVerificationFailed = { verificationResult, requestDate ->
+                    failedVerificationResult = verificationResult
+                    failedVerificationRequestDate = requestDate
+                },
             )
             callSuccessful = true
         } catch (e: IOException) {
@@ -343,6 +347,8 @@ internal class HTTPClient(
                 requestStartTime,
                 callSuccessful,
                 callResult,
+                failedVerificationResult,
+                failedVerificationRequestDate,
                 isRetry = refreshETag,
                 connectionException = exceptionHit,
             )
@@ -381,6 +387,7 @@ internal class HTTPClient(
         requestHeaders: Map<String, String>,
         refreshETag: Boolean,
         onResponseReceived: (responseCode: Int) -> Unit,
+        onVerificationFailed: (verificationResult: SignatureVerificationResult, requestDate: Date?) -> Unit,
     ): HTTPResult? {
         val jsonBody = body?.let { mapConverter.convertToJSON(it) }
         val path = endpoint.getPath(useFallback = isFallbackURL)
@@ -471,6 +478,12 @@ internal class HTTPClient(
             connection.disconnect()
         }
 
+        // HttpURLConnection reports -1 when the status line can't be parsed, so the response isn't valid HTTP.
+        // Treat it like any other connection failure instead of inspecting (or verifying) its contents.
+        if (responseCode == NO_STATUS_CODE) {
+            throw IOException(NetworkStrings.HTTP_RESPONSE_NO_STATUS_CODE)
+        }
+
         debugLog { NetworkStrings.API_REQUEST_COMPLETED.format(connection.requestMethod, path, responseCode) }
         // The response arrived in full. Everything below only inspects it, so failures from here on say
         // nothing about how responsive the host is.
@@ -545,13 +558,15 @@ internal class HTTPClient(
                 verifyResponse(path, connection, payloadText, nonce, postFieldsToSignHeader)
             }
         } else {
-            VerificationResult.NOT_REQUESTED
+            SignatureVerificationResult.NotRequested
         }
 
-        if (verificationResult == VerificationResult.FAILED &&
-            signingManager.signatureVerificationMode is SignatureVerificationMode.Enforced
-        ) {
-            throw SignatureVerificationException(path)
+        if (verificationResult.isFailed) {
+            // Enforced mode throws below, before any HTTPResult exists, so diagnostics need this context now.
+            onVerificationFailed(verificationResult, getRequestDateHeader(connection))
+            if (signingManager.signatureVerificationMode is SignatureVerificationMode.Enforced) {
+                throw SignatureVerificationException(path)
+            }
         }
 
         val isLoadShedderResponse = getLoadShedderHeader(connection)
@@ -611,11 +626,14 @@ internal class HTTPClient(
         requestStartTime: Date,
         callSuccessful: Boolean,
         callResult: HTTPResult?,
+        failedVerificationResult: SignatureVerificationResult?,
+        failedVerificationRequestDate: Date?,
         isRetry: Boolean,
         connectionException: IOException?,
     ) {
         diagnosticsTrackerIfEnabled?.let { tracker ->
-            val responseTime = Duration.between(requestStartTime, dateProvider.now)
+            val now = dateProvider.now
+            val responseTime = Duration.between(requestStartTime, now)
             val responseCode = if (callSuccessful) {
                 // When the result given by ETagManager is null, is because we are asking to refresh the etag
                 // since we could not find the response in the cache.
@@ -624,7 +642,11 @@ internal class HTTPClient(
                 NO_STATUS_CODE
             }
             val origin = callResult?.origin
-            val verificationResult = callResult?.verificationResult ?: VerificationResult.NOT_REQUESTED
+            val verificationResult = callResult?.verificationResult
+                ?: failedVerificationResult
+                ?: SignatureVerificationResult.NotRequested
+            val requestDate = callResult?.requestDate ?: failedVerificationRequestDate
+            val deviceClockOffset = requestDate?.let { Duration.between(it, now) }
             val requestWasError = callSuccessful && RCHTTPStatusCodes.isSuccessful(responseCode)
             val connectionErrorReason = connectionException?.let { ConnectionErrorReason.fromIOException(it) }
             tracker.trackHttpRequestPerformed(
@@ -636,6 +658,7 @@ internal class HTTPClient(
                 callResult?.backendErrorCode,
                 origin,
                 verificationResult,
+                deviceClockOffset,
                 isRetry,
                 connectionErrorReason,
             )
@@ -702,6 +725,9 @@ internal class HTTPClient(
     private fun getConnection(request: HTTPRequest, timeoutMs: Long): HttpURLConnection {
         return (request.fullURL.openConnection() as HttpURLConnection).apply {
             connectTimeout = timeoutMs.toInt()
+            // Responses are cached by ETagManager. An HttpResponseCache installed by the app
+            // would otherwise splice stale cached bodies into our 304s and break signature verification.
+            useCaches = false
             // We leave the read timeout to the default (readTimeout = 0), which means infinite.
             request.headers.forEach { (key, value) ->
                 addRequestProperty(key, value)
@@ -721,7 +747,7 @@ internal class HTTPClient(
         payload: String?,
         nonce: String?,
         postFieldsToSignHeader: String?,
-    ): VerificationResult {
+    ): SignatureVerificationResult {
         return signingManager.verifyResponse(
             urlPath = urlPath,
             signatureString = connection.getHeaderField(HTTPResult.SIGNATURE_HEADER_NAME),
@@ -733,36 +759,19 @@ internal class HTTPClient(
         )
     }
 
-    /**
-     * Verifies an RC Container Format response. The backend signs the leading config element's (element 0)
-     * **uncompressed** bytes — the config part / `main_body` — so we verify the signature over
-     * [RCContainer.config], which is the element already decoded by the container. Per-element compression is
-     * transparent to the signature (as it is to the element checksum), so a codec change never invalidates a
-     * signed config. The per-element container checksums are untrusted lookup hints, not a trust anchor: inline
-     * blob elements are not signed and are instead authenticated transitively by hashing against the `blob_ref`
-     * in the signed config. This endpoint is not ETag-cached and sends no post params, but the signature does
-     * cover the request [nonce].
-     */
     private fun verifyRCFormatResponse(
         urlPath: String,
         connection: URLConnection,
         payloadBytes: ByteArray,
         nonce: String?,
-    ): VerificationResult {
-        val bodyBytes = try {
-            RCContainer.parse(payloadBytes).config
-        } catch (e: RCContainerFormatException) {
-            errorLog(e) { NetworkStrings.VERIFICATION_ERROR.format(urlPath) }
-            return VerificationResult.FAILED
-        }
-        return signingManager.verifyResponse(
+    ): SignatureVerificationResult {
+        return signingManager.verifyRCFormatResponse(
             urlPath = urlPath,
             signatureString = connection.getHeaderField(HTTPResult.SIGNATURE_HEADER_NAME),
             nonce = nonce,
-            bodyBytes = bodyBytes,
+            containerBytes = payloadBytes,
             requestTime = getRequestTimeHeader(connection),
             eTag = getETagHeader(connection),
-            postFieldsToSignHeader = null,
         )
     }
 
@@ -775,7 +784,7 @@ internal class HTTPClient(
         urlPath: String,
         connection: URLConnection,
         nonce: String?,
-    ): VerificationResult {
+    ): SignatureVerificationResult {
         return signingManager.verifyResponse(
             urlPath = urlPath,
             signatureString = connection.getHeaderField(HTTPResult.SIGNATURE_HEADER_NAME),
@@ -789,15 +798,13 @@ internal class HTTPClient(
 
     private fun getETagHeader(connection: URLConnection) = connection.getHeaderField(HTTPResult.ETAG_HEADER_NAME)
     private fun getRequestTimeHeader(connection: URLConnection): String? {
-        return connection.getHeaderField(HTTPResult.REQUEST_TIME_HEADER_NAME)?.takeIf { it.isNotBlank() }
+        // A header that isn't epoch millis counts as missing for both signing and the request date, as on iOS.
+        // Throwing here would escape every catch on the request path and be rethrown on the main thread.
+        return connection.getHeaderField(HTTPResult.REQUEST_TIME_HEADER_NAME)?.takeIf { it.toLongOrNull() != null }
     }
 
     private fun getRequestDateHeader(connection: URLConnection): Date? {
-        // toLongOrNull: a non-numeric header degrades to no date. Throwing here would escape every catch on the
-        // request path (they cover IOException and friends) and be rethrown on the main thread by the Dispatcher.
-        return getRequestTimeHeader(connection)?.toLongOrNull()?.let {
-            Date(it)
-        }
+        return getRequestTimeHeader(connection)?.let { Date(it.toLong()) }
     }
 
     private fun getLoadShedderHeader(connection: URLConnection): Boolean {

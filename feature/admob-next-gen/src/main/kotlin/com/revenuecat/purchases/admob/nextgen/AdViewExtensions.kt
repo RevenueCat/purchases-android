@@ -1,0 +1,173 @@
+
+package com.revenuecat.purchases.admob.nextgen
+
+import com.google.android.libraries.ads.mobile.sdk.banner.AdView
+import com.google.android.libraries.ads.mobile.sdk.banner.BannerAd
+import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdEventCallback
+import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdRefreshCallback
+import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdRequest
+import com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback
+import com.google.android.libraries.ads.mobile.sdk.common.AdLoadResult
+import com.revenuecat.purchases.admob.nextgen.tracking.TrackingAdLoadCallback
+import com.revenuecat.purchases.admob.nextgen.tracking.trackAndConfigureAdLoadResult
+import com.revenuecat.purchases.ads.events.types.AdFormat
+import kotlin.jvm.JvmSynthetic
+
+/**
+ * Loads a banner ad into this [AdView] and automatically tracks RevenueCat ad events.
+ *
+ * The loaded [BannerAd] has tracking callbacks installed before it is forwarded to [loadCallback]. Pass app
+ * callbacks here instead of assigning them directly to the loaded ad, as direct assignment would replace
+ * RevenueCat's tracking callbacks. To change them later, use [BannerAd.setTrackingAdEventCallback] and
+ * [BannerAd.setTrackingBannerAdRefreshCallback].
+ */
+@JvmSynthetic
+@Suppress("LongParameterList")
+public fun AdView.loadAndTrackAd(
+    adRequest: BannerAdRequest,
+    placement: String? = null,
+    loadCallback: AdLoadCallback<BannerAd>? = null,
+    adEventCallback: BannerAdEventCallback? = null,
+    bannerAdRefreshCallback: BannerAdRefreshCallback? = null,
+) {
+    loadAndTrackBannerAdInternal(
+        adRequest = adRequest,
+        placement = placement,
+        loadCallback = loadCallback,
+        adEventCallback = adEventCallback,
+        bannerAdRefreshCallback = bannerAdRefreshCallback,
+    )
+}
+
+/**
+ * Loads a banner into this [AdView] from a server-to-server response and tracks RevenueCat ad events.
+ *
+ * [adUnitId] is required because neither the opaque response nor a failed load reliably provides it. The loaded ad
+ * has tracking callbacks installed before it is forwarded to [loadCallback].
+ * [loadCallback] is required to distinguish this callback-based overload from its suspending counterpart.
+ */
+@JvmSynthetic
+@Suppress("LongParameterList")
+public fun AdView.loadAndTrackAdFromResponse(
+    adResponse: String,
+    adUnitId: String,
+    placement: String? = null,
+    loadCallback: AdLoadCallback<BannerAd>,
+    adEventCallback: BannerAdEventCallback? = null,
+    bannerAdRefreshCallback: BannerAdRefreshCallback? = null,
+) {
+    loadAndTrackBannerAdFromResponseInternal(
+        adResponse = adResponse,
+        adUnitId = adUnitId,
+        placement = placement,
+        loadCallback = loadCallback,
+        adEventCallback = adEventCallback,
+        bannerAdRefreshCallback = bannerAdRefreshCallback,
+    )
+}
+
+/**
+ * Loads a banner into this [AdView] from a server-to-server response using Google Mobile Ads' suspending API and
+ * tracks RevenueCat ad events.
+ *
+ * The original [AdLoadResult] is returned unchanged. A successfully loaded ad has tracking callbacks installed
+ * before this function returns. [adUnitId] is required because neither the opaque response nor a failed load
+ * reliably provides it.
+ */
+@JvmSynthetic
+@Suppress("LongParameterList")
+public suspend fun AdView.loadAndTrackAdFromResponse(
+    adResponse: String,
+    adUnitId: String,
+    placement: String? = null,
+    adEventCallback: BannerAdEventCallback? = null,
+    bannerAdRefreshCallback: BannerAdRefreshCallback? = null,
+): AdLoadResult<BannerAd> = loadAndTrackBannerAdFromResponseInternal(
+    adResponse = adResponse,
+    adUnitId = adUnitId,
+    placement = placement,
+    adEventCallback = adEventCallback,
+    bannerAdRefreshCallback = bannerAdRefreshCallback,
+)
+
+internal fun AdView.loadAndTrackBannerAdInternal(
+    adRequest: BannerAdRequest,
+    placement: String?,
+    loadCallback: AdLoadCallback<BannerAd>?,
+    adEventCallback: BannerAdEventCallback?,
+    bannerAdRefreshCallback: BannerAdRefreshCallback?,
+) {
+    val adUnitId = adRequest.adUnitId
+    loadAd(
+        adRequest,
+        trackingLoadCallback(
+            adUnitId = adUnitId,
+            placement = placement,
+            loadCallback = loadCallback,
+            adEventCallback = adEventCallback,
+            bannerAdRefreshCallback = bannerAdRefreshCallback,
+        ),
+    )
+}
+
+@Suppress("LongParameterList")
+internal fun AdView.loadAndTrackBannerAdFromResponseInternal(
+    adResponse: String,
+    adUnitId: String,
+    placement: String?,
+    loadCallback: AdLoadCallback<BannerAd>,
+    adEventCallback: BannerAdEventCallback?,
+    bannerAdRefreshCallback: BannerAdRefreshCallback?,
+) {
+    loadFromAdResponse(
+        adResponse,
+        trackingLoadCallback(
+            adUnitId = adUnitId,
+            placement = placement,
+            loadCallback = loadCallback,
+            adEventCallback = adEventCallback,
+            bannerAdRefreshCallback = bannerAdRefreshCallback,
+        ),
+    )
+}
+
+internal suspend fun AdView.loadAndTrackBannerAdFromResponseInternal(
+    adResponse: String,
+    adUnitId: String,
+    placement: String?,
+    adEventCallback: BannerAdEventCallback?,
+    bannerAdRefreshCallback: BannerAdRefreshCallback?,
+): AdLoadResult<BannerAd> = loadFromAdResponse(adResponse).trackAndConfigureAdLoadResult(
+    adFormat = AdFormat.BANNER,
+    placement = placement,
+    adUnitId = adUnitId,
+    configureAd = { ad ->
+        ad.installTrackingCallbacks(
+            adEventCallback = adEventCallback,
+            bannerAdRefreshCallback = bannerAdRefreshCallback,
+            placement = placement,
+            adUnitId = adUnitId,
+        )
+    },
+)
+
+private fun trackingLoadCallback(
+    adUnitId: String,
+    placement: String?,
+    loadCallback: AdLoadCallback<BannerAd>?,
+    adEventCallback: BannerAdEventCallback?,
+    bannerAdRefreshCallback: BannerAdRefreshCallback?,
+): TrackingAdLoadCallback<BannerAd> = TrackingAdLoadCallback(
+    delegate = loadCallback,
+    adFormat = AdFormat.BANNER,
+    placement = placement,
+    adUnitId = adUnitId,
+    configureAd = { ad ->
+        ad.installTrackingCallbacks(
+            adEventCallback = adEventCallback,
+            bannerAdRefreshCallback = bannerAdRefreshCallback,
+            placement = placement,
+            adUnitId = adUnitId,
+        )
+    },
+)

@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.networking
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.assertErrorLog
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -26,6 +27,9 @@ class EndpointTest {
         Endpoint.AliasUsers("test-user-id"),
         Endpoint.GetRemoteConfig("app"),
         Endpoint.GetRemoteConfigFallback("app"),
+        Endpoint.TokenLogin,
+        Endpoint.TokenRefresh,
+        Endpoint.TokenLogout,
     )
 
     @Test
@@ -235,6 +239,9 @@ class EndpointTest {
             Endpoint.PostEvents,
             Endpoint.WebBillingGetProducts("test-user-id", setOf("product1", "product2")),
             Endpoint.AliasUsers("test-user-id"),
+            Endpoint.TokenLogin,
+            Endpoint.TokenRefresh,
+            Endpoint.TokenLogout,
         )
         for (endpoint in expectedNotSupportsValidationEndpoints) {
             assertThat(endpoint.supportsSignatureVerification)
@@ -284,6 +291,9 @@ class EndpointTest {
             Endpoint.WebBillingGetProducts("test-user-id", setOf("product1", "product2")),
             Endpoint.AliasUsers("test-user-id"),
             Endpoint.GetRemoteConfigFallback("app"),
+            Endpoint.TokenLogin,
+            Endpoint.TokenRefresh,
+            Endpoint.TokenLogout,
         )
         for (endpoint in expectedEndpoints) {
             assertThat(endpoint.needsNonceToPerformSigning)
@@ -310,6 +320,9 @@ class EndpointTest {
             Endpoint.GetVirtualCurrencies("test-user-id"),
             Endpoint.GetRewardVerification("test-user-id", "client-transaction-id"),
             Endpoint.WebBillingGetProducts("test-user-id", setOf("product1", "product2")),
+            Endpoint.TokenLogin,
+            Endpoint.TokenRefresh,
+            Endpoint.TokenLogout,
         )
         for (endpoint in mainApiEndpoints) {
             assertThat(endpoint.usesAPISources)
@@ -329,6 +342,151 @@ class EndpointTest {
             assertThat(endpoint.usesAPISources)
                 .withFailMessage { "Endpoint $endpoint expected to not use API sources" }
                 .isFalse
+        }
+    }
+
+    @Test
+    fun `getPath falls back to the non-IAM path when useIAMPath is requested but unmigrated`() {
+        val endpoint = Endpoint.PostReceipt
+        assertThat(endpoint.getPath(useIAMPath = true)).isEqualTo(endpoint.getPath())
+    }
+
+    @Test
+    fun `useFallback behavior is unaffected by useIAMPath`() {
+        val endpoint = Endpoint.GetOfferings("test-user-id")
+        val plainFallback = endpoint.getPath(useFallback = true)
+        val fallbackWithIAM = endpoint.getPath(useFallback = true, useIAMPath = true)
+        assertThat(fallbackWithIAM).isEqualTo(plainFallback)
+    }
+
+    @Test
+    fun `useFallback takes priority over useIAMPath when both are requested`() {
+        val endpoint = Endpoint.GetOfferings("test-user-id")
+        assertThat(endpoint.getPath(useFallback = true, useIAMPath = true)).isEqualTo("/v1/offerings")
+    }
+
+    @Test
+    fun `iamPathTemplate and isIAMEndpoint default to unmigrated values`() {
+        val endpoint = Endpoint.PostReceipt
+        assertThat(endpoint.iamPathTemplate).isNull()
+        assertThat(endpoint.isIAMEndpoint).isFalse
+    }
+
+    @Test
+    fun `GetCustomerInfo has an IAM path`() {
+        val endpoint = Endpoint.GetCustomerInfo("test-user-id")
+        assertThat(endpoint.getPath()).isEqualTo("/v1/subscribers/test-user-id")
+        assertThat(endpoint.getPath(useIAMPath = true)).isEqualTo("/v1/customer")
+    }
+
+    @Test
+    fun `GetOfferings has an IAM path`() {
+        val endpoint = Endpoint.GetOfferings("test-user-id")
+        assertThat(endpoint.getPath()).isEqualTo("/v1/subscribers/test-user-id/offerings")
+        assertThat(endpoint.getPath(useIAMPath = true)).isEqualTo("/v1/customer/offerings")
+    }
+
+    @Test
+    fun `GetVirtualCurrencies has an IAM path`() {
+        val endpoint = Endpoint.GetVirtualCurrencies("test-user-id")
+        assertThat(endpoint.getPath()).isEqualTo("/v1/subscribers/test-user-id/virtual_currencies")
+        assertThat(endpoint.getPath(useIAMPath = true)).isEqualTo("/v1/customer/virtual_currencies")
+    }
+
+    @Test
+    fun `PostAttributes has an IAM path`() {
+        val endpoint = Endpoint.PostAttributes("test-user-id")
+        assertThat(endpoint.getPath()).isEqualTo("/v1/subscribers/test-user-id/attributes")
+        assertThat(endpoint.getPath(useIAMPath = true)).isEqualTo("/v1/customer/attributes")
+    }
+
+    @Test
+    fun `LogIn has no IAM path, logs an error, and falls back when useIAMPath is requested`() {
+        assertErrorLog("LogIn has no IAM-path equivalent; falling back to the API-key path.") {
+            assertThat(Endpoint.LogIn.getPath(useIAMPath = true)).isEqualTo("/v1/subscribers/identify")
+        }
+    }
+
+    @Test
+    fun `GetProductEntitlementMapping has an unchanged IAM path`() {
+        val endpoint = Endpoint.GetProductEntitlementMapping
+        assertThat(endpoint.getPath()).isEqualTo("/v1/product_entitlement_mapping")
+        assertThat(endpoint.getPath(useIAMPath = true)).isEqualTo("/v1/product_entitlement_mapping")
+    }
+
+    @Test
+    fun `GetCustomerCenterConfig has an IAM path that drops the app user id`() {
+        val endpoint = Endpoint.GetCustomerCenterConfig("test-user-id")
+        assertThat(endpoint.getPath()).isEqualTo("/v1/customercenter/test-user-id")
+        assertThat(endpoint.getPath(useIAMPath = true)).isEqualTo("/v1/customer/customercenter")
+    }
+
+    @Test
+    fun `PostCreateSupportTicket has an IAM path`() {
+        val endpoint = Endpoint.PostCreateSupportTicket
+        assertThat(endpoint.getPath()).isEqualTo("/v1/customercenter/support/create-ticket")
+        assertThat(endpoint.getPath(useIAMPath = true))
+            .isEqualTo("/v1/customer/customercenter/support/create-ticket")
+    }
+
+    @Test
+    fun `GetRewardVerification has an IAM path that drops the app user id`() {
+        val endpoint = Endpoint.GetRewardVerification("test-user-id", "client-transaction-id")
+        assertThat(endpoint.getPath())
+            .isEqualTo("/v1/subscribers/test-user-id/ads/reward_verifications/client-transaction-id")
+        assertThat(endpoint.getPath(useIAMPath = true))
+            .isEqualTo("/v1/customer/ads/reward_verifications/client-transaction-id")
+    }
+
+    @Test
+    fun `WebBillingGetProducts has an IAM path that drops the app user id`() {
+        val endpoint = Endpoint.WebBillingGetProducts("test-user-id", setOf("product1"))
+        assertThat(endpoint.getPath()).isEqualTo("/rcbilling/v1/subscribers/test-user-id/products?id=product1")
+        assertThat(endpoint.getPath(useIAMPath = true)).isEqualTo("/rcbilling/v1/customer/products?id=product1")
+    }
+
+    @Test
+    fun `endpoints not yet migrated to IAM paths are unaffected by useIAMPath`() {
+        val unmigratedEndpoints = listOf(
+            Endpoint.PostReceipt,
+            Endpoint.AliasUsers("test-user-id"),
+            Endpoint.PostDiagnostics,
+            Endpoint.PostEvents,
+            Endpoint.GetAmazonReceipt("test-user-id", "test-receipt-id"),
+            Endpoint.GetRemoteConfig("app"),
+            Endpoint.GetRemoteConfigFallback("app"),
+            Endpoint.PostRedeemWebPurchase,
+        )
+        for (endpoint in unmigratedEndpoints) {
+            assertThat(endpoint.getPath(useIAMPath = true))
+                .withFailMessage { "Endpoint $endpoint expected useIAMPath to be a no-op" }
+                .isEqualTo(endpoint.getPath())
+        }
+    }
+
+    @Test
+    fun `TokenLogin, TokenRefresh and TokenLogout have the expected auth paths`() {
+        assertThat(Endpoint.TokenLogin.getPath()).isEqualTo("/auth/login")
+        assertThat(Endpoint.TokenRefresh.getPath()).isEqualTo("/auth/token")
+        assertThat(Endpoint.TokenLogout.getPath()).isEqualTo("/auth/revoke")
+    }
+
+    @Test
+    fun `TokenLogin, TokenRefresh and TokenLogout are IAM endpoints`() {
+        assertThat(Endpoint.TokenLogin.isIAMEndpoint).isTrue
+        assertThat(Endpoint.TokenRefresh.isIAMEndpoint).isTrue
+        assertThat(Endpoint.TokenLogout.isIAMEndpoint).isTrue
+    }
+
+    @Test
+    fun `no other endpoint is an IAM endpoint`() {
+        val authEndpoints = setOf(Endpoint.TokenLogin, Endpoint.TokenRefresh, Endpoint.TokenLogout)
+        for (endpoint in allEndpoints) {
+            if (endpoint !in authEndpoints) {
+                assertThat(endpoint.isIAMEndpoint)
+                    .withFailMessage { "Endpoint $endpoint expected to not be an IAM endpoint" }
+                    .isFalse
+            }
         }
     }
 }

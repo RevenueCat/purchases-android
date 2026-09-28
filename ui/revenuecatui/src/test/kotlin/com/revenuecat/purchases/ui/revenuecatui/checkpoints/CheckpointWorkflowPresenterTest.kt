@@ -8,11 +8,13 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.EditText
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
+import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -61,15 +63,27 @@ class CheckpointWorkflowPresenterTest {
         mockPurchases = mockk {
             every { currentActivity } answers { controller.get() }
             coEvery { internalResolveCp(any(), any()) } returns
-                CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk(), checkpointRuleId = null)
-        }
-        manager = CheckpointsManager { callId, manager ->
-            presentedCallIds += callId
-            CheckpointWorkflowPresenter(callId, manager) { activity, options ->
-                lastOptions = options
-                contentFactory(activity).also { contentViews += it }
+                CheckpointResolution.MatchedWorkflow(
+                    mockk(),
+                    mockk(),
+                    mockk(),
+                    checkpointRuleId = null,
+                    traceId = "trace-id",
+                )
+            every { getCustomerInfo(CacheFetchPolicy.CACHE_ONLY, any()) } answers {
+                secondArg<ReceiveCustomerInfoCallback>()
+                    .onError(PurchasesError(PurchasesErrorCode.CustomerInfoError, "No cache."))
             }
         }
+        manager = CheckpointsManager(
+            presenterFactory = { callId, manager ->
+                presentedCallIds += callId
+                CheckpointWorkflowPresenter(callId, manager) { activity, options ->
+                    lastOptions = options
+                    contentFactory(activity).also { contentViews += it }
+                }
+            },
+        )
     }
 
     @After
@@ -89,7 +103,13 @@ class CheckpointWorkflowPresenterTest {
 
     @Test
     fun `the workflow is presented against the offerings the checkpoint resolved to`() {
-        val resolution = CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk(), checkpointRuleId = null)
+        val resolution = CheckpointResolution.MatchedWorkflow(
+            mockk(),
+            mockk(),
+            mockk(),
+            checkpointRuleId = null,
+            traceId = "trace-id",
+        )
         coEvery { mockPurchases.internalResolveCp(any(), any()) } returns resolution
 
         launchCheckpoint()

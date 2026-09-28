@@ -65,6 +65,7 @@ public class PaywallOptions internal constructor(
     internal val injectedWorkflow: PublishedWorkflow? = null,
     internal val injectedWorkflowUiConfig: UiConfig = emptyUiConfig(),
     internal val injectedWorkflowOfferings: Offerings? = null,
+    internal val injectedWorkflowTraceId: String? = null,
 ) {
     public companion object {
         private const val hashMultiplier = 31
@@ -83,6 +84,7 @@ public class PaywallOptions internal constructor(
         injectedWorkflow = builder.injectedWorkflow,
         injectedWorkflowUiConfig = builder.injectedWorkflowUiConfig,
         injectedWorkflowOfferings = builder.injectedWorkflowOfferings,
+        injectedWorkflowTraceId = builder.injectedWorkflowTraceId,
     )
 
     // Only key fields that affect the paywall's identity and rendering logic are used in hashCode.
@@ -96,9 +98,11 @@ public class PaywallOptions internal constructor(
         result = hashMultiplier * result + injectedWorkflow.hashCode()
         result = hashMultiplier * result + injectedWorkflowUiConfig.hashCode()
         result = hashMultiplier * result + injectedWorkflowOfferings.hashCode()
+        result = hashMultiplier * result + injectedWorkflowTraceId.hashCode()
         return result
     }
 
+    @Suppress("CyclomaticComplexMethod")
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is PaywallOptions) return false
@@ -114,6 +118,7 @@ public class PaywallOptions internal constructor(
             this.injectedWorkflow != other.injectedWorkflow -> false
             this.injectedWorkflowUiConfig != other.injectedWorkflowUiConfig -> false
             this.injectedWorkflowOfferings != other.injectedWorkflowOfferings -> false
+            this.injectedWorkflowTraceId != other.injectedWorkflowTraceId -> false
             else -> this.dismissRequest == other.dismissRequest
         }
     }
@@ -131,6 +136,7 @@ public class PaywallOptions internal constructor(
         injectedWorkflow: PublishedWorkflow? = this.injectedWorkflow,
         injectedWorkflowUiConfig: UiConfig = this.injectedWorkflowUiConfig,
         injectedWorkflowOfferings: Offerings? = this.injectedWorkflowOfferings,
+        injectedWorkflowTraceId: String? = this.injectedWorkflowTraceId,
     ): PaywallOptions = PaywallOptions(
         offeringSelection = offeringSelection,
         shouldDisplayDismissButton = shouldDisplayDismissButton,
@@ -144,6 +150,7 @@ public class PaywallOptions internal constructor(
         injectedWorkflow = injectedWorkflow,
         injectedWorkflowUiConfig = injectedWorkflowUiConfig,
         injectedWorkflowOfferings = injectedWorkflowOfferings,
+        injectedWorkflowTraceId = injectedWorkflowTraceId,
     )
 
     @Suppress("TooManyFunctions")
@@ -161,6 +168,7 @@ public class PaywallOptions internal constructor(
         internal var injectedWorkflow: PublishedWorkflow? = null
         internal var injectedWorkflowUiConfig: UiConfig = emptyUiConfig()
         internal var injectedWorkflowOfferings: Offerings? = null
+        internal var injectedWorkflowTraceId: String? = null
 
         public fun setOffering(offering: Offering?): Builder = apply {
             this.offeringSelection = offering?.let { OfferingSelection.OfferingType(it) }
@@ -251,16 +259,18 @@ public class PaywallOptions internal constructor(
         /**
          * Injects a pre-built workflow whose steps resolve their offering from [offerings] as they are reached, the
          * way a fetched workflow does. Leaves the offering selection alone, so no presented offering context is
-         * stamped on the steps' offerings.
+         * stamped on the steps' offerings. A [traceId] replaces the one the workflow run would otherwise create.
          */
         internal fun injectedWorkflow(
             workflow: PublishedWorkflow,
             offerings: Offerings,
             uiConfig: UiConfig,
+            traceId: String? = null,
         ): Builder = apply {
             this.injectedWorkflow = workflow
             this.injectedWorkflowOfferings = offerings
             this.injectedWorkflowUiConfig = uiConfig
+            this.injectedWorkflowTraceId = traceId
         }
 
         public fun build(): PaywallOptions {

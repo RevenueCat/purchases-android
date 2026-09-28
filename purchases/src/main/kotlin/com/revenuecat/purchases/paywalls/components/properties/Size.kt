@@ -3,10 +3,12 @@ package com.revenuecat.purchases.paywalls.components.properties
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.utils.serializers.SealedDeserializerWithDefault
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encoding.Decoder
 
 @InternalRevenueCatAPI
 @Poko
@@ -64,4 +66,14 @@ internal object SizeConstraintDeserializer : SealedDeserializerWithDefault<SizeC
         "fixed" to { SizeConstraint.Fixed.serializer() },
     ),
     defaultValue = { SizeConstraint.Fit() },
-)
+) {
+    override fun deserialize(decoder: Decoder): SizeConstraint {
+        val constraint = super.deserialize(decoder)
+        if (BuildConfig.ENABLE_PAYWALL_MIN_MAX_SIZING) return constraint
+        return when (constraint) {
+            is SizeConstraint.Fit -> SizeConstraint.Fit(default = constraint.default)
+            is SizeConstraint.Fill -> SizeConstraint.Fill()
+            is SizeConstraint.Fixed -> constraint
+        }
+    }
+}

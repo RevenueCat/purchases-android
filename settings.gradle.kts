@@ -41,6 +41,7 @@ dependencyResolutionManagement {
                 includeGroupByRegex("com\\.google\\.gms(\\..*|)")
                 includeGroupByRegex("com\\.google\\.prefab")
                 includeGroupByRegex("com\\.google\\.testing\\.platform")
+                includeGroupByRegex("org\\.chromium\\.net")
             }
             mavenContent {
                 releasesOnly()
@@ -55,6 +56,7 @@ dependencyResolutionManagement {
 include(":feature:amazon")
 include(":feature:galaxy")
 include(":feature:admob")
+include(":feature:admob-next-gen")
 include(":integration-tests")
 include(":purchases")
 include(":examples:purchase-tester")
@@ -68,6 +70,7 @@ include(":test-apps:testpurchasesandroidcompatibility")
 include(":test-apps:testpurchasesuiandroidcompatibility")
 include(":examples:web-purchase-redemption-sample")
 include(":examples:admob-sample")
+include(":examples:admob-next-gen-sample")
 include(":examples:vanilla-ad-tracker-sample")
 include(":detekt-rules")
 include(":dokka-hide-internal")

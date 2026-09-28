@@ -8,8 +8,8 @@ import dev.drewhamilton.poko.Poko
 /**
  * Presents the offering a checkpoint resolves to with app-owned UI. Set per call through
  * [CheckpointParams.paywallPresenter], which takes precedence, or for every call through
- * [com.revenuecat.purchases.ui.revenuecatui.checkpoints.paywallPresenter]. When none is set, the offering's
- * configured paywall is presented instead, falling back to the default paywall.
+ * [com.revenuecat.purchases.ui.revenuecatui.checkpoints.paywallPresenter]. When none is set, the SDK presents the
+ * offering's configured paywall, falling back to the default paywall, through a presenter of its own.
  */
 @InternalRevenueCatAPI
 public fun interface PaywallPresenter {

@@ -367,6 +367,8 @@ internal class PurchasesFactory(
             val audiencesConfigProvider = AudiencesConfigProvider(remoteConfigManager)
             remoteConfigManager.registerListener(uiConfigProvider)
             remoteConfigManager.registerListener(workflowsConfigProvider)
+            remoteConfigManager.registerListener(checkpointsConfigProvider)
+            remoteConfigManager.registerListener(audiencesConfigProvider)
             // Cold-start-with-warm-disk: preload the in-memory caches from whatever is already committed on
             // disk without triggering a network config sync. A subsequent network commit re-warms with a
             // higher generation and supersedes this (store-if-newer). A no-op when the manager is disabled:
@@ -374,6 +376,8 @@ internal class PurchasesFactory(
             val initialGeneration = remoteConfigManager.configGeneration
             uiConfigProvider.warmAsync(initialGeneration)
             workflowsConfigProvider.warmAsync(initialGeneration)
+            checkpointsConfigProvider.warmAsync(initialGeneration)
+            audiencesConfigProvider.warmAsync(initialGeneration)
 
             val identityManager = IdentityManager(
                 appConfig,

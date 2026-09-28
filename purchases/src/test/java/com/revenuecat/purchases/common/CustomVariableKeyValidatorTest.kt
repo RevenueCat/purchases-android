@@ -11,16 +11,32 @@ import org.robolectric.annotation.Config
 class CustomVariableKeyValidatorTest {
 
     @Test
-    fun `keys of letters, digits and underscores starting with a letter are valid`() {
-        // isLetter is Unicode-aware, and a non-ASCII key is still addressable as `custom.<key>`.
-        val validKeys = listOf("validKey", "valid_key_name", "key123", "player_score_2024", "a", "kéy")
+    fun `keys of letters, digits and underscores are valid`() {
+        // Validation walks Unicode code points, so non-ASCII letters and digits, supplementary-plane letters
+        // and Other_Alphabetic marks are all addressable as `custom.<key>`.
+        val validKeys = listOf(
+            "validKey",
+            "valid_key_name",
+            "key123",
+            "player_score_2024",
+            "a",
+            "123key",
+            "1alid",
+            "_key",
+            "kéy",
+            "π_3",
+            "\u0661valid",
+            "\uD835\uDC9C",
+            "\u0915\u093E",
+            "a".repeat(1024),
+        )
 
         assertThat(validKeys).allMatch { key -> CustomVariableKeyValidator.isValidKey(key) }
     }
 
     @Test
     fun `keys that cannot be addressed are invalid`() {
-        val invalidKeys = listOf("", "123key", "_key", "key-name", "key name", "key.name", "key!")
+        val invalidKeys = listOf("", "key-name", "key name", "key.name", "key!", "key\uD83D\uDE42", "e\u0301")
 
         assertThat(invalidKeys).noneMatch { key -> CustomVariableKeyValidator.isValidKey(key) }
     }
@@ -30,7 +46,7 @@ class CustomVariableKeyValidatorTest {
         val filtered = CustomVariableKeyValidator.validateAndFilter(
             mapOf(
                 "valid_key" to "kept",
-                "123invalid" to "dropped",
+                "also.invalid" to "dropped",
                 "also-invalid" to "dropped",
                 "" to "dropped",
             ),

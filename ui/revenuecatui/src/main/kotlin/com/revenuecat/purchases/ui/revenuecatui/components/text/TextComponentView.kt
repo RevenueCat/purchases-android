@@ -19,6 +19,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -45,6 +47,8 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.forCurrent
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.Markdown
+import com.revenuecat.purchases.ui.revenuecatui.composables.markdownHasLinks
+import com.revenuecat.purchases.ui.revenuecatui.composables.markdownPlainText
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessor
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessorV2
@@ -68,6 +72,11 @@ internal fun TextComponentView(
     val text = rememberProcessedText(
         state = state,
         textState = textState,
+    )
+    val spokenText = rememberSpokenText(
+        state = state,
+        textState = textState,
+        displayedText = text,
     )
 
     val colorStyle = textState.color.forCurrentTheme
@@ -111,6 +120,7 @@ internal fun TextComponentView(
             Markdown(
                 text = text,
                 modifier = modifier
+                    .applyIfNotNull(spokenText) { clearAndSetSemantics { contentDescription = it } }
                     .size(textState.size, horizontalAlignment = textState.horizontalAlignment)
                     .padding(textState.margin)
                     .applyIfNotNull(backgroundColorStyle) { background(it) }
@@ -134,8 +144,9 @@ internal fun TextComponentView(
 private fun rememberProcessedText(
     state: PaywallState.Loaded.Components,
     textState: TextComponentState,
+    spoken: Boolean = false,
 ): String {
-    val processedText by remember(state, textState) {
+    val processedText by remember(state, textState, spoken) {
         derivedStateOf {
             val dateLocale = state.locale.toJavaLocale()
             val currencyLocale = state.currencyLocale.toJavaLocale()
@@ -167,11 +178,30 @@ private fun rememberProcessedText(
                 countFrom = textState.countFrom,
                 customVariables = state.customVariables,
                 defaultCustomVariables = state.defaultCustomVariables,
+                spoken = spoken,
             )
         }
     }
 
     return processedText
+}
+
+/**
+ * What a screen reader should speak instead of [displayedText], e.g. "$1.99 monthly" for "$1.99/mo". Null when it
+ * would read the same as the screen, or when the text has links, which replacing its semantics would make
+ * unreachable.
+ */
+@Composable
+private fun rememberSpokenText(
+    state: PaywallState.Loaded.Components,
+    textState: TextComponentState,
+    displayedText: String,
+): String? {
+    val spokenMarkdown = rememberProcessedText(state = state, textState = textState, spoken = true)
+    return remember(spokenMarkdown, displayedText) {
+        val readsTheSame = spokenMarkdown == displayedText
+        if (readsTheSame || markdownHasLinks(displayedText)) null else markdownPlainText(spokenMarkdown)
+    }
 }
 
 private fun discountPercentage(pricePerMonthMicros: Long?, mostExpensiveMicros: Long?): Double? {

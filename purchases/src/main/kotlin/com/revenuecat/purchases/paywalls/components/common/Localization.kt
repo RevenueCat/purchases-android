@@ -17,6 +17,8 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonPrimitive
 
 /**
  * @property value The language tag of this locale, with an underscore separating the language from the region.
@@ -64,14 +66,17 @@ private object LocalizationDataSerializer : KSerializer<LocalizationData> {
         error("Serialization is not implemented as it is not (yet) needed.")
     }
 
-    @Suppress("SwallowedException")
-    override fun deserialize(decoder: Decoder): LocalizationData =
-        // We have no `type` descriptor field, so we resort to trial and error.
-        try {
-            decoder.decodeSerializableValue(LocalizationData.Text.serializer())
-        } catch (e: SerializationException) {
-            decoder.decodeSerializableValue(LocalizationData.Image.serializer())
+    override fun deserialize(decoder: Decoder): LocalizationData {
+        // We have no `type` descriptor field, so we look at the shape of the element instead.
+        val jsonDecoder = decoder as? JsonDecoder
+            ?: throw SerializationException("LocalizationData can only be deserialized from JSON.")
+        val element = jsonDecoder.decodeJsonElement()
+        return if (element is JsonPrimitive && element.isString) {
+            LocalizationData.Text(element.content)
+        } else {
+            jsonDecoder.json.decodeFromJsonElement(LocalizationData.Image.serializer(), element)
         }
+    }
 }
 
 /**
