@@ -22,19 +22,17 @@ internal interface BranchResolver {
     ): String
 
     /**
-     * Resolves the branches [step] can exit through, when that step becomes current. Navigation stays
-     * synchronous: until this lands, a branch takes its fallback.
+     * Resolves the branches [step] can exit through, keyed by action id, every time that step becomes
+     * current. Navigation stays synchronous: until this lands, a branch takes its fallback.
      */
     suspend fun resolveBranches(
         step: WorkflowStep,
         customVariables: Map<String, RulesDimensionValue> = emptyMap(),
-    ): Map<WorkflowTriggerAction.Branch, String> {
-        val branches = step.triggerActions.values
-            .filterIsInstance<WorkflowTriggerAction.Branch>()
-            .toSet()
-
-        return branches.associateWith { branch -> resolve(branch, customVariables) }
-    }
+    ): Map<String, String> = step.triggerActions
+        .mapNotNull { (actionId, action) ->
+            (action as? WorkflowTriggerAction.Branch)?.let { actionId to resolve(it, customVariables) }
+        }
+        .toMap()
 }
 
 /** Used when remote config is off, so there is nothing to evaluate audiences against. */

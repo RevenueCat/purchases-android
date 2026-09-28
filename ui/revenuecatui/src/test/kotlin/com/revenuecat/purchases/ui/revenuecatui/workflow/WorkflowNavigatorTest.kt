@@ -163,16 +163,25 @@ class WorkflowNavigatorTest {
 
     @Test
     fun `a resolved branch navigates to its route instead of the fallback`() {
-        val workflow = branchExitWorkflow()
-        val branch = workflow.steps.getValue("step-1").triggerActions
-            .getValue("action-next") as WorkflowTriggerAction.Branch
-        val navigator = WorkflowNavigator(workflow)
-        navigator.recordResolvedBranches(mapOf(branch to "step-3"))
+        val navigator = WorkflowNavigator(branchExitWorkflow())
+        navigator.recordResolvedBranches(mapOf("action-next" to "step-3"), forStepId = "step-1")
 
         val result = navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)
 
         assertThat(result?.id).isEqualTo("step-3")
         assertThat(navigator.currentStep?.id).isEqualTo("step-3")
+    }
+
+    @Test
+    fun `returning to a step drops its previous branch resolution`() {
+        val navigator = WorkflowNavigator(branchExitWorkflow())
+        navigator.recordResolvedBranches(mapOf("action-next" to "step-3"), forStepId = "step-1")
+
+        navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        navigator.navigateBack()
+
+        // Back on step-1 with nothing resolved yet, so the fallback stands until the new pass lands.
+        assertThat(navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)?.id).isEqualTo("step-2")
     }
 
     // PaywallViewModel gates on the peek before navigating, so a peek that ignores branches

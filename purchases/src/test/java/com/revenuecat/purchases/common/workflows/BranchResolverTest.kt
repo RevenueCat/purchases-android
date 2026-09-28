@@ -91,7 +91,7 @@ class BranchResolverTest {
 
         val resolved = resolver.resolveBranches(workflowWithTwoBranches().steps.getValue("step_1"))
 
-        assertThat(resolved.values.toSet()).isEqualTo(setOf("step_a"))
+        assertThat(resolved).isEqualTo(mapOf("action-next" to "step_a"))
     }
 
     // Only the step being entered is resolved, so a later step's branch is not evaluated yet.
@@ -101,7 +101,7 @@ class BranchResolverTest {
 
         val resolved = resolver.resolveBranches(workflowWithTwoBranches().steps.getValue("step_2"))
 
-        assertThat(resolved.values.toSet()).isEqualTo(setOf("step_b"))
+        assertThat(resolved).isEqualTo(mapOf("action-next" to "step_b"))
     }
 
     @Test

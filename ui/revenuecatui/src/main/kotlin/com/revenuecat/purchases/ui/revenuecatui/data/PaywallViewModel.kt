@@ -1186,12 +1186,11 @@ internal class PaywallViewModelImpl(
         val navigator = workflowNavigator ?: return
         if (step.triggerActions.values.none { it is WorkflowTriggerAction.Branch }) return
         viewModelScope.launch {
-            navigator.recordResolvedBranches(
-                purchases.resolveBranches(
-                    step,
-                    options.customVariables.mapValues { (_, value) -> value.asRulesDimensionValue },
-                ),
+            val resolved = purchases.resolveBranches(
+                step,
+                options.customVariables.mapValues { (_, value) -> value.asRulesDimensionValue },
             )
+            navigator.recordResolvedBranches(resolved, step.id)
         }
     }
 
