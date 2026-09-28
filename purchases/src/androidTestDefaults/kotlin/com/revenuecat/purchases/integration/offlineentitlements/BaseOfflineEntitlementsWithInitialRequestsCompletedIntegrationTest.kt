@@ -330,8 +330,10 @@ abstract class BaseOfflineEntitlementsWithInitialRequestsAndNoInitialPurchasesTe
                             assertThat(onlineCustomerInfo.loadedFromCache).isFalse
                             assertThat(onlineCustomerInfo.unsyncedProductIdentifiers).isEmpty()
                             if (entitlementsToVerify.isNotEmpty()) {
-                                assertThat(localRulesPurchases(onlineCustomerInfo)[productId]?.get(KEY_IS_SYNCED))
-                                    .isEqualTo(RulesDimensionValue.BoolValue(true))
+                                val onlinePurchases = localRulesPurchases(onlineCustomerInfo).values
+                                assertThat(onlinePurchases).isNotEmpty
+                                assertThat(onlinePurchases.map { it[KEY_IS_SYNCED] })
+                                    .containsOnly(RulesDimensionValue.BoolValue(true))
                             }
                             latch.countDown()
                         },
