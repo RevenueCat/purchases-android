@@ -5,11 +5,18 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalInspectionMode
 import app.cash.paparazzi.DeviceConfig
 import app.cash.paparazzi.Paparazzi
+import app.cash.paparazzi.Snapshot
 import com.android.resources.NightMode
 import com.android.resources.ScreenOrientation
+import com.revenuecat.snapshots.SentrySnapshotHandler
+import com.revenuecat.snapshots.SentrySnapshotMetadata
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonObject
 import org.junit.Rule
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
+import java.util.Locale
 
 data class TestConfig(
     val name: String,
@@ -32,11 +39,14 @@ data class TestConfig(
  * `bundle exec fastlane update_snapshots_repo`
  */
 @RunWith(Parameterized::class)
-abstract class BasePaparazziTest(testConfig: TestConfig) {
+abstract class BasePaparazziTest(private val testConfig: TestConfig) {
 
     @get:Rule
     val paparazzi = Paparazzi(
         deviceConfig = testConfig.deviceConfig,
+        snapshotHandler = SentrySnapshotHandler(
+            metadataProvider = { snapshot -> snapshot.toSentryMetadata(testConfig) },
+        ),
     )
 
     companion object {
@@ -73,4 +83,54 @@ abstract class BasePaparazziTest(testConfig: TestConfig) {
             }
         }
     }
+}
+
+private fun Snapshot.toSentryMetadata(testConfig: TestConfig): SentrySnapshotMetadata {
+    val methodName = testName.methodName.substringBefore('[')
+    val variant = testName.methodName
+        .substringAfter('[', missingDelimiterValue = "")
+        .removeSuffix("]")
+        .takeIf(String::isNotBlank)
+    val snapshotName = name?.takeIf(String::isNotBlank)
+    val displayName = listOfNotNull(methodName, variant, snapshotName).joinToString(" – ")
+    val device = testConfig.deviceConfig
+    val theme = if (device.nightMode == NightMode.NIGHT) "dark" else "light"
+    val locale = device.locale.orEmpty().ifBlank { "en" }
+
+    return SentrySnapshotMetadata(
+        displayName = displayName,
+        group = "revenuecatui/${testName.className}",
+        tags = mapOf(
+            "module" to "revenuecatui",
+            "test_class" to testName.className,
+            "device" to testConfig.name,
+            "theme" to theme,
+            "orientation" to device.orientation.name.lowercase(Locale.US),
+            "locale" to locale,
+        ),
+        canvasTheme = if (device.nightMode == NightMode.NIGHT) {
+            SentrySnapshotMetadata.CanvasTheme.DARK
+        } else {
+            SentrySnapshotMetadata.CanvasTheme.LIGHT
+        },
+        context = buildJsonObject {
+            put("test_name", "${testName.packageName}.${testName.className}#$methodName")
+            putJsonObject("paparazzi") {
+                put("package_name", testName.packageName)
+                put("class_name", testName.className)
+                put("method_name", methodName)
+                variant?.let { put("variant", it) }
+                snapshotName?.let { put("snapshot_name", it) }
+            }
+            putJsonObject("device") {
+                put("name", testConfig.name)
+                put("screen_width", device.screenWidth)
+                put("screen_height", device.screenHeight)
+                put("density", device.density.toString())
+                put("font_scale", device.fontScale)
+                put("locale", locale)
+                put("orientation", device.orientation.name.lowercase(Locale.US))
+            }
+        },
+    )
 }

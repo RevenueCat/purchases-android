@@ -35,6 +35,7 @@ dependencies {
     debugImplementation(libs.androidx.test.compose.manifest)
 
     testImplementation(libs.androidx.appcompat)
+    testImplementation(project(":test-support:snapshots"))
     testImplementation(libs.androidx.lifecycle.runtime.ktx)
     testImplementation(libs.androidx.test.espresso.core)
     testImplementation(libs.androidx.test.runner)

@@ -128,6 +128,7 @@ dependencies {
     debugImplementation(libs.androidx.test.compose.manifest)
 
     testImplementation(libs.bundles.test)
+    testImplementation(project(":test-support:snapshots"))
     testImplementation(libs.coil.test)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.androidx.test.compose)

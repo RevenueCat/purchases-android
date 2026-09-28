@@ -49,6 +49,9 @@ examples/paywall-tester/src/main/generated/baselineProfiles/
 build/
 .cursor/*
 !.cursor/environment.json
+
+# Generated alongside Paparazzi images for Sentry uploads.
+**/src/test/snapshots/images/*.json
 !.cursor/Dockerfile
 
 # Local configuration file (sdk path, etc)
