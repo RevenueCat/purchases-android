@@ -1,8 +1,8 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import dev.drewhamilton.poko.Poko
 
 /**
@@ -11,7 +11,7 @@ import dev.drewhamilton.poko.Poko
  * [com.revenuecat.purchases.ui.revenuecatui.checkpoints.paywallPresenter]. When none is set, the SDK presents the
  * offering's configured paywall, falling back to the default paywall, through a presenter of its own.
  */
-@InternalRevenueCatAPI
+@InviteOnlyCheckpointsAPI
 public fun interface PaywallPresenter {
 
     /**
@@ -23,7 +23,7 @@ public fun interface PaywallPresenter {
     public fun present(params: Params, completion: Completion)
 
     /** What a [PaywallPresenter] is asked to present. */
-    @InternalRevenueCatAPI
+    @InviteOnlyCheckpointsAPI
     @Poko
     public class Params internal constructor(
         /** The offering the checkpoint resolved to. */
@@ -43,14 +43,14 @@ public fun interface PaywallPresenter {
      * through the SDK or through the app's own billing client are both picked up; an app that disabled automatic
      * purchase syncing must call [com.revenuecat.purchases.Purchases.syncPurchases] before reporting.
      */
-    @InternalRevenueCatAPI
+    @InviteOnlyCheckpointsAPI
     public fun interface Completion {
 
         /** Reports how the app's UI ended. */
         public fun complete(result: Result)
 
         /** The way the user left the app's UI. */
-        @InternalRevenueCatAPI
+        @InviteOnlyCheckpointsAPI
         public abstract class Result internal constructor() {
 
             /**

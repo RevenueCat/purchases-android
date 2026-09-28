@@ -122,6 +122,8 @@ dependencies {
 
     compileOnly(libs.emerge.snapshots.runtime)
 
+    dokkaPlugin(project(":dokka-hide-internal"))
+
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.androidx.test.compose.manifest)
 
@@ -156,15 +158,23 @@ dokka {
                 localDirectory.set(file("src/main/kotlin"))
                 remoteUrl("https://github.com/revenuecat/purchases-android/blob/main/ui/revenuecatui/src/main/kotlin")
             }
+
+            // Every public symbol in this package is @InviteOnlyCheckpointsAPI, which our dokka-hide-internal plugin
+            // hides. Dokka would still generate an empty page for the package; this avoids that.
+            perPackageOption {
+                matchingRegex.set("com\\.revenuecat\\.purchases\\.ui\\.revenuecatui\\.checkpoints")
+                suppress.set(true)
+            }
         }
     }
 }
 
-// Opt-in to InternalRevenueCatAPI for the entire module. This avoids having to explicitly opt in at every call site
-// separately. Lint is handled by ui/revenuecatui/lint.xml.
+// Opt-in to InternalRevenueCatAPI and InviteOnlyCheckpointsAPI for the entire module. This avoids having to
+// explicitly opt in at every call site separately. Lint is handled by ui/revenuecatui/lint.xml.
 tasks.withType<KotlinCompilationTask<*>>().configureEach {
     compilerOptions {
         freeCompilerArgs.add("-opt-in=com.revenuecat.purchases.InternalRevenueCatAPI")
+        freeCompilerArgs.add("-opt-in=com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI")
     }
 }
 

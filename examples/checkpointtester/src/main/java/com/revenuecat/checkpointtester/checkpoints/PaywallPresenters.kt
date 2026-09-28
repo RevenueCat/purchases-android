@@ -1,7 +1,7 @@
 package com.revenuecat.checkpointtester.checkpoints
 
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.paywallPresenter
@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
  * An app-owned paywall presenter: presenting parks the request in a StateFlow, the app root renders a paywall over
  * everything while one is set, and the paywall reports back through [Request.finish].
  */
-@OptIn(InternalRevenueCatAPI::class)
+@OptIn(InviteOnlyCheckpointsAPI::class)
 class ParkedPaywallPresenter : PaywallPresenter {
 
     inner class Request(
@@ -39,7 +39,7 @@ class ParkedPaywallPresenter : PaywallPresenter {
  * offering a checkpoint resolves to. Every checkpoint call in the tester builds its params through [params] so the
  * selection applies wherever a flow is presented.
  */
-@OptIn(InternalRevenueCatAPI::class)
+@OptIn(InviteOnlyCheckpointsAPI::class)
 object PaywallPresenters {
 
     enum class Mode(val label: String, val description: String) {

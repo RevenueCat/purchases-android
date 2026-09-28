@@ -3,7 +3,7 @@ package com.revenuecat.apitester.java.revenuecatui;
 import androidx.annotation.OptIn;
 
 import com.revenuecat.purchases.EntitlementInfo;
-import com.revenuecat.purchases.InternalRevenueCatAPI;
+import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI;
 import com.revenuecat.purchases.Offering;
 import com.revenuecat.purchases.Purchases;
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue;
@@ -21,7 +21,7 @@ import java.util.Set;
 @SuppressWarnings({"unused"})
 final class CheckpointsAPI {
 
-    @OptIn(markerClass = InternalRevenueCatAPI.class)
+    @OptIn(markerClass = InviteOnlyCheckpointsAPI.class)
     static void check(Purchases purchases, CheckpointParams params) {
         CheckpointPassedCallback callback = (FlowResult result) -> {
             if (result != null) {
@@ -32,7 +32,7 @@ final class CheckpointsAPI {
         CheckpointsExtensionsKt.checkpoint(purchases, "checkpoint_identifier", params, callback);
     }
 
-    @OptIn(markerClass = InternalRevenueCatAPI.class)
+    @OptIn(markerClass = InviteOnlyCheckpointsAPI.class)
     static void checkParams(PaywallPresenter presenter) {
         CheckpointParams params = new CheckpointParams.Builder()
                 .setCustomVariables(Collections.singletonMap("key", new CustomVariableValue.String("value")))
@@ -43,12 +43,12 @@ final class CheckpointsAPI {
         PaywallPresenter paywallPresenter = params.getPaywallPresenter();
     }
 
-    @OptIn(markerClass = InternalRevenueCatAPI.class)
+    @OptIn(markerClass = InviteOnlyCheckpointsAPI.class)
     static void checkObtainedEntitlement(ObtainedEntitlement obtainedEntitlement) {
         EntitlementInfo entitlementInfo = obtainedEntitlement.getEntitlementInfo();
     }
 
-    @OptIn(markerClass = InternalRevenueCatAPI.class)
+    @OptIn(markerClass = InviteOnlyCheckpointsAPI.class)
     static void checkPaywallPresenter(Purchases purchases) {
         PaywallPresenter presenter = (PaywallPresenter.Params params, PaywallPresenter.Completion completion) -> {
             Offering offering = params.getOffering();

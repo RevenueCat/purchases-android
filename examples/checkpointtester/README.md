@@ -24,7 +24,7 @@ against the same store project. Note that installing one uninstalls the other.
 ./gradlew :examples:checkpointtester:installDebug
 ```
 
-Checkpoints are `@InternalRevenueCatAPI`, so every call site here needs `@OptIn(InternalRevenueCatAPI::class)`.
+Checkpoints are `@InviteOnlyCheckpointsAPI`, so every call site here needs `@OptIn(InviteOnlyCheckpointsAPI::class)`.
 
 ## Which experience gets presented
 

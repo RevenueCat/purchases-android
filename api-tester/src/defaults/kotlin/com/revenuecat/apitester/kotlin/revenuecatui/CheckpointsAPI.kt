@@ -1,11 +1,11 @@
-@file:OptIn(InternalRevenueCatAPI::class)
+@file:OptIn(InviteOnlyCheckpointsAPI::class)
 
 package com.revenuecat.apitester.kotlin.revenuecatui
 
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPassedCallback
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowResult
