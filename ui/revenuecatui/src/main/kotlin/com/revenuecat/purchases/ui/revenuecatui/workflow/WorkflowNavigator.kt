@@ -7,6 +7,14 @@ import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 internal class WorkflowNavigator(private val workflow: PublishedWorkflow) {
 
+    /** Keyed by action id. Empty until this visit's resolve lands. */
+    private var currentStepBranches = emptyMap<String, String>()
+
+    fun recordResolvedBranches(resolved: Map<String, String>, forStepId: String) {
+        if (forStepId != currentStepId) return
+        currentStepBranches = resolved
+    }
+
     private var currentStepId: String = workflow.initialStepId
 
     private val backStack = ArrayDeque<String>()
@@ -19,9 +27,8 @@ internal class WorkflowNavigator(private val workflow: PublishedWorkflow) {
         val step = currentStep ?: return null
         val trigger = step.triggers.firstOrNull { it.componentId == componentId && it.type == triggerType }
             ?: return null
-        val action = step.triggerActions[trigger.actionId] ?: return null
-        if (action !is WorkflowTriggerAction.Step) return null
-        return workflow.steps[action.stepId]
+        val stepId = nextStepId(step.triggerActions[trigger.actionId], trigger.actionId) ?: return null
+        return workflow.steps[stepId]
     }
 
     val peekBackStep: WorkflowStep?
@@ -38,16 +45,16 @@ internal class WorkflowNavigator(private val workflow: PublishedWorkflow) {
             Logger.w("No trigger action found for actionId '${trigger.actionId}' in step '${step.id}'")
             return null
         }
-        if (action !is WorkflowTriggerAction.Step) {
-            Logger.w("Unknown workflow trigger action type for actionId '${trigger.actionId}' — ignoring")
+        val stepId = nextStepId(action, trigger.actionId) ?: run {
+            Logger.w("Workflow trigger action '${trigger.actionId}' leads nowhere, ignoring")
             return null
         }
-        val stepId = action.stepId
         val nextStep = workflow.steps[stepId] ?: run {
             Logger.w("Step '$stepId' not found in workflow '${workflow.id}'")
             return null
         }
         backStack.addLast(currentStepId)
+        currentStepBranches = emptyMap()
         currentStepId = stepId
         return nextStep
     }
@@ -55,10 +62,21 @@ internal class WorkflowNavigator(private val workflow: PublishedWorkflow) {
     fun navigateBack(): WorkflowStep? {
         if (backStack.isEmpty()) return null
         val prevStepId = backStack.removeLast()
+        currentStepBranches = emptyMap()
         currentStepId = prevStepId
         return workflow.steps[prevStepId]
     }
 
     val canNavigateBack: Boolean
         get() = backStack.isNotEmpty()
+
+    /**
+     * A branch falls back when nothing matched, and when the route names a step the workflow has lost.
+     */
+    private fun nextStepId(action: WorkflowTriggerAction?, actionId: String): String? = when (action) {
+        is WorkflowTriggerAction.Step -> action.stepId
+        is WorkflowTriggerAction.Branch ->
+            currentStepBranches[actionId]?.takeIf { workflow.steps.containsKey(it) } ?: action.fallbackStepId
+        WorkflowTriggerAction.Unknown, null -> null
+    }
 }
