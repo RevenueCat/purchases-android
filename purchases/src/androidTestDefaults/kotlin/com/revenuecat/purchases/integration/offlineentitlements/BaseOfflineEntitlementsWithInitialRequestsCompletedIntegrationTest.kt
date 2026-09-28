@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.integration.offlineentitlements
 
 import com.revenuecat.purchases.CacheFetchPolicy
+import com.revenuecat.purchases.Constants
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.CustomerInfoOriginalSource
 import com.revenuecat.purchases.ForceServerErrorStrategy
@@ -9,6 +10,8 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.common.localrules.CustomerInfoDimensionProvider.Companion.KEY_IS_SYNCED
+import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.configureSdk
 import com.revenuecat.purchases.factories.StoreProductFactory
@@ -281,6 +284,56 @@ abstract class BaseOfflineEntitlementsWithInitialRequestsAndNoInitialPurchasesTe
                     assertAcknowledgePurchaseDidHappen()
 
                     latch.countDown()
+                },
+            )
+        }
+    }
+
+    @Test
+    fun localRulesReportSyncedAndUnsyncedPurchases() {
+        val storeProduct = StoreProductFactory.createGoogleStoreProduct()
+        val productId = Constants.productIdToPurchase
+
+        ensureBlockFinishes { latch ->
+            forceServerErrorsStrategy = ForceServerErrorStrategy.failAll
+
+            mockPurchaseResult()
+            mockBillingAbstract.mockQueryProductDetails(queryProductDetailsSubsReturn = listOf(storeProduct))
+            Purchases.sharedInstance.purchaseWith(
+                PurchaseParams.Builder(activity, storeProduct).build(),
+                onError = { error, _ ->
+                    fail("Expected success but got error: $error")
+                },
+                onSuccess = { _, offlineCustomerInfo ->
+                    assertCustomerInfoHasExpectedPurchaseData(offlineCustomerInfo)
+                    assertAcknowledgePurchaseDidNotHappen()
+                    assertThat(offlineCustomerInfo.originalSource)
+                        .isEqualTo(CustomerInfoOriginalSource.OFFLINE_ENTITLEMENTS)
+                    assertThat(offlineCustomerInfo.loadedFromCache).isFalse
+                    assertThat(offlineCustomerInfo.unsyncedProductIdentifiers).containsExactly(productId)
+                    assertThat(localRulesPurchases(offlineCustomerInfo)[productId]?.get(KEY_IS_SYNCED))
+                        .isEqualTo(RulesDimensionValue.BoolValue(false))
+
+                    forceServerErrorsStrategy = ForceServerErrorStrategy.doNotFail
+                    mockActivePurchases(initialActivePurchases)
+
+                    Purchases.sharedInstance.onAppForegrounded()
+                    assertAcknowledgePurchaseDidHappen()
+
+                    Purchases.sharedInstance.getCustomerInfoWith(
+                        fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
+                        onError = {
+                            fail("Expected success but got error: $it")
+                        },
+                        onSuccess = { onlineCustomerInfo ->
+                            assertThat(onlineCustomerInfo.originalSource).isEqualTo(expectedCustomerInfoOriginalSource)
+                            assertThat(onlineCustomerInfo.loadedFromCache).isFalse
+                            assertThat(onlineCustomerInfo.unsyncedProductIdentifiers).isEmpty()
+                            assertThat(localRulesPurchases(onlineCustomerInfo)[productId]?.get(KEY_IS_SYNCED))
+                                .isEqualTo(RulesDimensionValue.BoolValue(true))
+                            latch.countDown()
+                        },
+                    )
                 },
             )
         }
