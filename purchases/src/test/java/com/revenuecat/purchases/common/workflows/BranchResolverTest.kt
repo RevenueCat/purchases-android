@@ -95,6 +95,15 @@ class BranchResolverTest {
     }
 
     @Test
+    fun `resolveAll returns an empty map for a workflow with no branches`() = runTest {
+        val workflow = workflowWithTwoBranches().let { wf ->
+            wf.copy(steps = wf.steps.mapValues { (_, step) -> step.copy(triggerActions = emptyMap()) })
+        }
+
+        assertThat(resolver.resolveAll(workflow)).isEmpty()
+    }
+
+    @Test
     fun `the disabled resolver always takes the fallback`() = runTest {
         val resolved = DisabledBranchResolver.resolve(branch(listOf("aud_a" to "step_a"), "step_fallback"))
 

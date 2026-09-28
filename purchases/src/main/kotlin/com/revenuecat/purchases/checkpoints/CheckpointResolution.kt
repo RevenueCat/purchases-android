@@ -5,6 +5,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
+import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 
 /**
  * What a checkpoint resolves to. Exposed to the RevenueCat UI module, which owns the checkpoints API and
@@ -39,6 +40,8 @@ public sealed class CheckpointResolution {
         val offerings: Offerings,
         val checkpointRuleId: String?,
         val traceId: String,
+        /** Every branch in the workflow, resolved when the checkpoint picked it. */
+        val resolvedBranchSteps: Map<WorkflowTriggerAction.Branch, String> = emptyMap(),
     ) : CheckpointResolution()
 
     /** Nothing should be served for this checkpoint; the user continues uninterrupted. */

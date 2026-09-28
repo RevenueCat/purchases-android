@@ -196,6 +196,25 @@ class CheckpointWorkflowResolverImplTest {
         verify(exactly = 1) { mockWorkflowManager.prewarmWorkflowAssets(workflow, mockUiConfig) }
     }
 
+    // The checkpoint path presents the workflow without ever calling the resolver again, so a branch
+    // it does not resolve here silently takes its fallback for the whole run.
+    @Test
+    fun `a matched workflow carries its branches already resolved`() = runTest {
+        val branch = WorkflowTriggerAction.Branch(
+            branches = listOf(WorkflowTriggerAction.Branch.Route(audienceId = "aud_wf1234", stepId = "routed")),
+            fallbackStepId = "fallback",
+        )
+        val workflow = workflow(
+            "wf1234",
+            screenStep("first", offeringIdentifier = null).copy(triggerActions = mapOf("action" to branch)),
+        )
+        coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns workflow
+
+        val resolution = resolve() as CheckpointResolution.MatchedWorkflow
+
+        assertThat(resolution.resolvedBranchSteps).isEqualTo(mapOf(branch to "routed"))
+    }
+
     @Test
     fun `a matched workflow reports the rule that was served`() = runTest {
         assertThat(matchedWorkflow(resolve()).checkpointRuleId).isEqualTo("rule_wf1234")

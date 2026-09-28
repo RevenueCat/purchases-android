@@ -895,6 +895,7 @@ internal class PaywallViewModelImpl(
             options.injectedWorkflowUiConfig,
             offerings,
             offeringSelection.offering?.presentedOfferingContext,
+            resolvedBranchSteps = options.injectedWorkflowResolvedBranchSteps,
         )
         return true
     }

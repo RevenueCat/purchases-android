@@ -20,6 +20,8 @@ import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.warnLog
+import com.revenuecat.purchases.common.workflows.BranchResolver
+import com.revenuecat.purchases.common.workflows.BranchResolverImpl
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.common.workflows.WorkflowStep
@@ -53,6 +55,10 @@ internal class CheckpointWorkflowResolverImpl(
     private val localRulesEvaluator: LocalRulesEvaluator,
     private val getOfferings: suspend () -> Offerings,
 ) : CheckpointWorkflowResolver {
+
+    private val branchResolver: BranchResolver by lazy {
+        BranchResolverImpl(audiencesConfigProvider, localRulesEvaluator)
+    }
 
     override suspend fun resolve(
         identifier: String,
@@ -204,6 +210,7 @@ internal class CheckpointWorkflowResolverImpl(
             offerings,
             checkpointRuleId = rule.id,
             traceId = UUID.randomUUID().toString(),
+            resolvedBranchSteps = branchResolver.resolveAll(workflow),
         )
     }
 

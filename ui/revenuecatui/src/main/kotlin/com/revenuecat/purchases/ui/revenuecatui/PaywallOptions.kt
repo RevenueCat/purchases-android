@@ -10,6 +10,7 @@ import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.common.CustomVariableKeyValidator
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
+import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 import dev.drewhamilton.poko.Poko
@@ -66,6 +67,7 @@ public class PaywallOptions internal constructor(
     internal val injectedWorkflowUiConfig: UiConfig = emptyUiConfig(),
     internal val injectedWorkflowOfferings: Offerings? = null,
     internal val injectedWorkflowTraceId: String? = null,
+    internal val injectedWorkflowResolvedBranchSteps: Map<WorkflowTriggerAction.Branch, String> = emptyMap(),
 ) {
     public companion object {
         private const val hashMultiplier = 31
@@ -85,6 +87,7 @@ public class PaywallOptions internal constructor(
         injectedWorkflowUiConfig = builder.injectedWorkflowUiConfig,
         injectedWorkflowOfferings = builder.injectedWorkflowOfferings,
         injectedWorkflowTraceId = builder.injectedWorkflowTraceId,
+        injectedWorkflowResolvedBranchSteps = builder.injectedWorkflowResolvedBranchSteps,
     )
 
     // Only key fields that affect the paywall's identity and rendering logic are used in hashCode.
@@ -169,6 +172,8 @@ public class PaywallOptions internal constructor(
         internal var injectedWorkflowUiConfig: UiConfig = emptyUiConfig()
         internal var injectedWorkflowOfferings: Offerings? = null
         internal var injectedWorkflowTraceId: String? = null
+        internal var injectedWorkflowResolvedBranchSteps: Map<WorkflowTriggerAction.Branch, String> =
+            emptyMap()
 
         public fun setOffering(offering: Offering?): Builder = apply {
             this.offeringSelection = offering?.let { OfferingSelection.OfferingType(it) }
@@ -266,11 +271,13 @@ public class PaywallOptions internal constructor(
             offerings: Offerings,
             uiConfig: UiConfig,
             traceId: String? = null,
+            resolvedBranchSteps: Map<WorkflowTriggerAction.Branch, String> = emptyMap(),
         ): Builder = apply {
             this.injectedWorkflow = workflow
             this.injectedWorkflowOfferings = offerings
             this.injectedWorkflowUiConfig = uiConfig
             this.injectedWorkflowTraceId = traceId
+            this.injectedWorkflowResolvedBranchSteps = resolvedBranchSteps
         }
 
         public fun build(): PaywallOptions {
