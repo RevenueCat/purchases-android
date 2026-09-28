@@ -1,6 +1,6 @@
 # LevelPlay Manual Integration Sample
 
-This app demonstrates manual ad-event tracking with Unity LevelPlay and RevenueCat. It intentionally uses a mediator for which RevenueCat does not provide an Android adapter, so the sample cannot be mistaken for the recommended AdMob integration. AdMob users should use the automatic adapter shown in `examples/admob-sample`.
+This app demonstrates manual ad-event tracking with Unity LevelPlay and RevenueCat.
 
 The sample covers the LevelPlay formats that have public demo credentials:
 
