@@ -49,13 +49,13 @@ Setup development environment
 
 Emerge snapshot tests
 
-### android emerge_sdk_size_tests
+### android sdk_size_tests
 
 ```sh
-[bundle exec] fastlane android emerge_sdk_size_tests
+[bundle exec] fastlane android sdk_size_tests
 ```
 
-Emerge size tests
+Build SDK size app and upload it to Emerge and Sentry
 
 ### android bump
 
@@ -161,14 +161,6 @@ Publish RCT tester to the specified track on Google Play
 
 Run backend integration tests
 
-### android update_golden_requests_backend_integration_tests
-
-```sh
-[bundle exec] fastlane android update_golden_requests_backend_integration_tests
-```
-
-Run backend integration tests and create PR if golden files change
-
 ### android run_purchases_integration_tests
 
 ```sh
@@ -235,6 +227,14 @@ Builds a Magic Weather Compose APK
 
 Builds an AdMob Integration Sample APK
 
+### android build_admob_next_gen_integration_sample
+
+```sh
+[bundle exec] fastlane android build_admob_next_gen_integration_sample
+```
+
+Builds an AdMob Next-Gen Integration Sample APK
+
 ### android build_magic_weather
 
 ```sh
@@ -294,6 +294,14 @@ Records Paywall template screenshots and pushes them to the repository at target
 ```
 
 Records Paparazzi screenshots for a given gradle_module
+
+### android generate_baseline_profiles
+
+```sh
+[bundle exec] fastlane android generate_baseline_profiles
+```
+
+Generate baseline profiles using Gradle Managed Devices and create a PR with the updated profiles
 
 ----
 
