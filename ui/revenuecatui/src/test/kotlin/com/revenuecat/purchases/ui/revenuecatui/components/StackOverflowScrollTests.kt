@@ -1,10 +1,13 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.UiConfig
@@ -79,13 +82,93 @@ internal class StackOverflowScrollTests {
         assertThat(verticallyScrollableNodeCount()).isZero()
     }
 
+    @Test
+    fun `window size rule switches root scroll off and back on as the paywall resizes`() {
+        val width = mutableStateOf(150.dp)
+        val state = paywallState(
+            rootStack(
+                overflow = null,
+                overrides = listOf(
+                    matchingWindowOverride(
+                        PartialStackComponent(overflow = StackComponent.Overflow.NONE),
+                        minWidth = 200.0,
+                    ),
+                ),
+            ),
+        )
+        composeTestRule.setContent {
+            LoadedPaywallComponents(
+                state = state,
+                clickHandler = { },
+                modifier = Modifier.size(width.value, 400.dp),
+            )
+        }
+
+        assertThat(verticallyScrollableNodeCount()).isEqualTo(1)
+        composeTestRule.runOnIdle { width.value = 300.dp }
+        assertThat(verticallyScrollableNodeCount()).isZero()
+        composeTestRule.runOnIdle { width.value = 150.dp }
+        assertThat(verticallyScrollableNodeCount()).isEqualTo(1)
+    }
+
+    @Test
+    fun `window size rule can enable root scroll from an explicit default`() {
+        val width = mutableStateOf(150.dp)
+        val state = paywallState(
+            rootStack(
+                overflow = StackComponent.Overflow.NONE,
+                overrides = listOf(
+                    matchingWindowOverride(
+                        PartialStackComponent(overflow = StackComponent.Overflow.SCROLL),
+                        minWidth = 200.0,
+                    ),
+                ),
+            ),
+        )
+        composeTestRule.setContent {
+            LoadedPaywallComponents(
+                state = state,
+                clickHandler = { },
+                modifier = Modifier.size(width.value, 400.dp),
+            )
+        }
+
+        assertThat(verticallyScrollableNodeCount()).isZero()
+        composeTestRule.runOnIdle { width.value = 300.dp }
+        assertThat(verticallyScrollableNodeCount()).isEqualTo(1)
+    }
+
+    @Test
+    fun `root can opt out while a bounded child scrolls`() {
+        val child = StackComponent(
+            components = listOf(
+                StackComponent(
+                    components = emptyList(),
+                    size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fixed(4000u)),
+                ),
+            ),
+            dimension = Dimension.Vertical(HorizontalAlignment.CENTER, FlexDistribution.START),
+            size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fixed(200u)),
+            overflow = StackComponent.Overflow.SCROLL,
+        )
+        setPaywallContent(
+            rootStack(
+                overflow = StackComponent.Overflow.NONE,
+                children = listOf(child),
+            ),
+        )
+
+        assertThat(verticallyScrollableNodeCount()).isEqualTo(1)
+    }
+
     private fun matchingWindowOverride(
         properties: PartialStackComponent,
+        minWidth: Double = 100.0,
     ): ComponentOverride<PartialStackComponent> = ComponentOverride(
         conditions = listOf(
             ComponentOverride.Condition.WindowWidthRule(
                 operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
-                value = 100.0,
+                value = minWidth,
             ),
         ),
         properties = properties,
@@ -109,8 +192,9 @@ internal class StackOverflowScrollTests {
     private fun rootStack(
         overflow: StackComponent.Overflow?,
         overrides: List<ComponentOverride<PartialStackComponent>> = emptyList(),
+        children: List<StackComponent>? = null,
     ): StackComponent = StackComponent(
-        components = listOf(
+        components = children ?: listOf(
             // Taller than the test window, so there is always something to scroll to.
             StackComponent(
                 components = emptyList(),

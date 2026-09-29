@@ -240,7 +240,7 @@ private fun WorkflowStepContent(
     }
     val tracker = if (isCurrent) componentInteractionTracker else PaywallComponentInteractionTracker { _ -> }
     val background = rememberBackgroundStyle(stepState.background)
-    val shouldWrapMainContentInVerticalScroll = shouldWrapMainContentInVerticalScroll(stepState.stack)
+    val shouldWrapMainContentInVerticalScroll = shouldWrapMainContentInVerticalScroll(stepState.stack, stepState)
     val mainScrollState = rememberScrollState()
     val layoutDirection = LocalLayoutDirection.current
 
