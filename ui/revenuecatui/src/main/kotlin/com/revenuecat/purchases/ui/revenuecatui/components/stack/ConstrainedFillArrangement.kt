@@ -36,7 +36,7 @@ internal fun MeasureScope.arrangeConstrainedFillItems(
     }
 }
 
-private fun flexibleSpacePositions(
+internal fun flexibleSpacePositions(
     totalSize: Int,
     sizes: IntArray,
     spacing: Int,
