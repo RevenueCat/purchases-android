@@ -404,7 +404,8 @@ internal class HTTPClient(
         val effectiveHeaders = iamAuthorizationHeaders(appUserID, endpoint)?.let { requestHeaders + it }
             ?: requestHeaders
         val jsonBody = body?.let { mapConverter.convertToJSON(it) }
-        val path = endpoint.getPath(useFallback = isFallbackURL)
+        // Routes to the IAM-namespaced path when enabled; endpoints without one fall back to pathTemplate.
+        val path = endpoint.getPath(useFallback = isFallbackURL, useIAMPath = tokenManager?.enabled == true)
         val connection: HttpURLConnection
         val shouldSignResponse = signingManager.shouldVerifyEndpoint(endpoint)
         val shouldAddNonce = shouldSignResponse && endpoint.needsNonceToPerformSigning
