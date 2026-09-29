@@ -52,7 +52,7 @@ internal class WorkflowTriggerActionDeserializationTests(
                 """{"type":"branch","branches":[{"audience_id":"aud_a","step_id":"step_a"},""" +
                     """{"audience_id":"aud_b","step_id":"step_b"}],"fallback_step_id":"step_default"}""",
                 WorkflowTriggerAction.Branch(
-                    branches = listOf(
+                    routes = listOf(
                         WorkflowTriggerAction.Branch.Route(audienceId = "aud_a", stepId = "step_a"),
                         WorkflowTriggerAction.Branch.Route(audienceId = "aud_b", stepId = "step_b"),
                     ),
@@ -61,7 +61,7 @@ internal class WorkflowTriggerActionDeserializationTests(
             ),
             arrayOf(
                 """{"type":"branch","branches":[],"fallback_step_id":"step_default"}""",
-                WorkflowTriggerAction.Branch(branches = emptyList(), fallbackStepId = "step_default"),
+                WorkflowTriggerAction.Branch(routes = emptyList(), fallbackStepId = "step_default"),
             ),
             arrayOf(
                 """{"type":"branch","fallback_step_id":"step_default"}""",

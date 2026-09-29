@@ -140,7 +140,7 @@ class WorkflowNavigatorTest {
             ),
             triggerActions = mapOf(
                 "action-next" to WorkflowTriggerAction.Branch(
-                    branches = listOf(
+                    routes = listOf(
                         WorkflowTriggerAction.Branch.Route(audienceId = "aud-a", stepId = "step-3"),
                     ),
                     fallbackStepId = "step-2",

@@ -121,7 +121,7 @@ class BranchResolverTest {
 
     private fun branch(routes: List<Pair<String, String>>, fallbackStepId: String) =
         WorkflowTriggerAction.Branch(
-            branches = routes.map { (audienceId, stepId) ->
+            routes = routes.map { (audienceId, stepId) ->
                 WorkflowTriggerAction.Branch.Route(audienceId = audienceId, stepId = stepId)
             },
             fallbackStepId = fallbackStepId,

@@ -12,8 +12,10 @@ import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
+import com.revenuecat.purchases.common.workflows.WorkflowActionID
 import com.revenuecat.purchases.common.workflows.WorkflowResolution
 import com.revenuecat.purchases.common.workflows.WorkflowStep
+import com.revenuecat.purchases.common.workflows.WorkflowStepID
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.StoreProduct
@@ -74,7 +76,7 @@ internal class MockPurchasesType(
     override suspend fun resolveBranches(
         step: WorkflowStep,
         customVariables: Map<String, RulesDimensionValue>,
-    ): Map<String, String> = emptyMap()
+    ): Map<WorkflowActionID, WorkflowStepID> = emptyMap()
 
     override suspend fun awaitGetUiConfig(): UiConfig {
         throw NotImplementedError("Mock implementation for previews only")

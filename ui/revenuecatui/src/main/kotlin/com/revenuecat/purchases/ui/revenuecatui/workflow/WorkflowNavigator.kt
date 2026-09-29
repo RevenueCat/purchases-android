@@ -1,16 +1,17 @@
 package com.revenuecat.purchases.ui.revenuecatui.workflow
 
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
+import com.revenuecat.purchases.common.workflows.WorkflowActionID
 import com.revenuecat.purchases.common.workflows.WorkflowStep
+import com.revenuecat.purchases.common.workflows.WorkflowStepID
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 internal class WorkflowNavigator(private val workflow: PublishedWorkflow) {
 
-    /** Keyed by action id. Empty until this visit's resolve lands. */
-    private var currentStepBranches = emptyMap<String, String>()
+    private var currentStepBranches = emptyMap<WorkflowActionID, WorkflowStepID>()
 
-    fun recordResolvedBranches(resolved: Map<String, String>, forStepId: String) {
+    fun recordResolvedBranches(resolved: Map<WorkflowActionID, WorkflowStepID>, forStepId: String) {
         if (forStepId != currentStepId) return
         currentStepBranches = resolved
     }
@@ -70,9 +71,7 @@ internal class WorkflowNavigator(private val workflow: PublishedWorkflow) {
     val canNavigateBack: Boolean
         get() = backStack.isNotEmpty()
 
-    /**
-     * A branch falls back when nothing matched, and when the route names a step the workflow has lost.
-     */
+    /** If the branch has not been resolved, pick the fallback. */
     private fun nextStepId(action: WorkflowTriggerAction?, actionId: String): String? = when (action) {
         is WorkflowTriggerAction.Step -> action.stepId
         is WorkflowTriggerAction.Branch ->

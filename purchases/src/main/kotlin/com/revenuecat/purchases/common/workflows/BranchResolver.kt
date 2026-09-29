@@ -9,6 +9,14 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.localrules.LocalRulesEvaluator
 import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 
+/** Identifies a trigger action within a step. */
+@InternalRevenueCatAPI
+public typealias WorkflowActionID = String
+
+/** Identifies a step within a workflow. */
+@InternalRevenueCatAPI
+public typealias WorkflowStepID = String
+
 /**
  * Decides where a `branch` trigger action sends someone.
  *
@@ -19,13 +27,12 @@ internal interface BranchResolver {
     suspend fun resolve(
         branch: WorkflowTriggerAction.Branch,
         customVariables: Map<String, RulesDimensionValue> = emptyMap(),
-    ): String
+    ): WorkflowStepID
 
-    /** The branches [step] can exit through, keyed by action id. */
     suspend fun resolveBranches(
         step: WorkflowStep,
         customVariables: Map<String, RulesDimensionValue> = emptyMap(),
-    ): Map<String, String> = step.triggerActions
+    ): Map<WorkflowActionID, WorkflowStepID> = step.triggerActions
         .mapNotNull { (actionId, action) ->
             (action as? WorkflowTriggerAction.Branch)?.let { actionId to resolve(it, customVariables) }
         }
@@ -37,7 +44,7 @@ internal object DisabledBranchResolver : BranchResolver {
     override suspend fun resolve(
         branch: WorkflowTriggerAction.Branch,
         customVariables: Map<String, RulesDimensionValue>,
-    ): String = branch.fallbackStepId
+    ): WorkflowStepID = branch.fallbackStepId
 }
 
 /** Resolves audiences in order and returns the first match. */
@@ -50,8 +57,8 @@ internal class BranchResolverImpl(
     override suspend fun resolve(
         branch: WorkflowTriggerAction.Branch,
         customVariables: Map<String, RulesDimensionValue>,
-    ): String {
-        if (branch.branches.isEmpty()) return branch.fallbackStepId
+    ): WorkflowStepID {
+        if (branch.routes.isEmpty()) return branch.fallbackStepId
 
         // One snapshot for the whole walk, so a config swap midway cannot mix two generations.
         val audiences = audiencesConfigProvider.getAudiences()
@@ -62,7 +69,7 @@ internal class BranchResolverImpl(
 
         val unreadable = mutableListOf<String>()
         val matched = localRulesEvaluator.match(
-            rules = branch.branches,
+            rules = branch.routes,
             customVariables = CustomVariableKeyValidator.validateAndFilter(customVariables),
             logPrefix = "[Workflow branch] ",
         ) { route ->
