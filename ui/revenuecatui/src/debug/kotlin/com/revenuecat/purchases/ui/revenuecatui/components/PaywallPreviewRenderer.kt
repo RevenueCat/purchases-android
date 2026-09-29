@@ -2,7 +2,6 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -14,11 +13,8 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
-import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ProvidePreviewImageLoader
-import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
-import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import java.util.Date
@@ -156,29 +152,12 @@ internal fun PaywallPreviewFromJSON(
         return
     }
 
-    when (val result = fixture.offering.validatePaywallComponentsDataOrNullForPreviews()) {
-        is Result.Success -> {
-            val state = fixture.offering.toComponentsPaywallState(
-                validationResult = result.value,
-                storefrontCountryCode = "US",
-                dateProvider = { Date(MILLIS_2025_01_25) },
-                purchases = MockPurchasesType(),
-            )
-            ProvidePreviewImageLoader(previewImageLoader()) {
-                LoadedPaywallComponents(
-                    state = state,
-                    clickHandler = { },
-                    modifier = modifier.fillMaxSize(),
-                )
-            }
-        }
-        is Result.Error -> {
-            Column {
-                Text("Encountered validation errors:")
-                result.value.forEach { error -> Text(error.toString()) }
-            }
-        }
-        null -> Text("Offering has no paywall components")
+    ProvidePreviewImageLoader(previewImageLoader()) {
+        PaywallComponentsPreviewContent(
+            offering = fixture.offering,
+            modifier = modifier.fillMaxSize(),
+            dateProvider = { Date(MILLIS_2025_01_25) },
+        )
     }
 }
 
