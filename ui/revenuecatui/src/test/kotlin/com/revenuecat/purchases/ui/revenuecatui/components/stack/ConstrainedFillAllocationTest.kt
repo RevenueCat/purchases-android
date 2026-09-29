@@ -52,6 +52,17 @@ class ConstrainedFillAllocationTest {
     }
 
     @Test
+    fun `fill minimum wins over a smaller maximum`() {
+        val allocations = allocateConstrainedFillSpace(
+            availableSpace = 100,
+            constraints = listOf(Fill(min = 80u, max = 20u), Fill()),
+            density = Density(1f),
+        )
+
+        assertThat(allocations).containsExactly(80, 20)
+    }
+
+    @Test
     fun `space remaining after minimum is balanced between maximum constrained siblings`() {
         val allocations = allocateConstrainedFillSpace(
             availableSpace = 100,
