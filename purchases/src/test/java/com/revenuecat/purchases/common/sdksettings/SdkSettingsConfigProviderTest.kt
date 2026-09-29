@@ -84,11 +84,11 @@ internal class SdkSettingsConfigProviderTest {
         commitTopic("""{"diagnostics":{"enabled":true}}""")
         provider.warm(generation = 0)
         coEvery { manager.committedTopicOrNull(RemoteConfigTopic.SdkSettings) } returns null
+        every { manager.configGeneration } returns 1
 
         provider.warm(generation = 1)
 
         assertThat(notified).containsExactly(diagnosticsOn, SdkSettings.DEFAULT)
-        every { manager.configGeneration } returns 1
         assertThat(provider.cachedSettings()).isEqualTo(SdkSettings.DEFAULT)
     }
 
@@ -129,6 +129,7 @@ internal class SdkSettingsConfigProviderTest {
     fun `a re-warm with the same settings does not notify again`() = runTest {
         commitTopic("""{"diagnostics":{"enabled":true}}""")
         provider.warm(generation = 0)
+        every { manager.configGeneration } returns 1
 
         provider.warm(generation = 1)
 
@@ -140,11 +141,11 @@ internal class SdkSettingsConfigProviderTest {
         commitTopic("""{"diagnostics":{"enabled":true}}""")
         provider.warm(generation = 0)
         provider.onConfigInvalidated(generation = 1)
+        every { manager.configGeneration } returns 2
 
         provider.warm(generation = 2)
 
         assertThat(notified).containsExactly(diagnosticsOn)
-        every { manager.configGeneration } returns 2
         assertThat(provider.cachedSettings()).isEqualTo(diagnosticsOn)
     }
 
@@ -154,6 +155,7 @@ internal class SdkSettingsConfigProviderTest {
         commitTopic("""{"diagnostics":{"enabled":true}}""")
         provider.warm(generation = 0)
         provider.listener = SdkSettingsListener { notified.add(it) }
+        every { manager.configGeneration } returns 1
 
         provider.warm(generation = 1)
 
@@ -165,11 +167,11 @@ internal class SdkSettingsConfigProviderTest {
         commitTopic("""{"diagnostics":{"enabled":true}}""")
         provider.warm(generation = 0)
         commitTopic("""{"diagnostics":{"enabled":false}}""")
+        every { manager.configGeneration } returns 1
 
         provider.warm(generation = 1)
 
         assertThat(notified).containsExactly(diagnosticsOn, diagnosticsOff)
-        every { manager.configGeneration } returns 1
         assertThat(provider.cachedSettings()).isEqualTo(diagnosticsOff)
     }
 
@@ -181,6 +183,19 @@ internal class SdkSettingsConfigProviderTest {
         every { manager.configGeneration } returns 1
 
         assertThat(provider.cachedSettings()).isNull()
+    }
+
+    @Test
+    fun `a warm superseded during its read neither stores nor notifies`() = runTest {
+        commitTopic("""{"diagnostics":{"enabled":true}}""")
+        every { manager.configGeneration } returns 1
+
+        provider.warm(generation = 0)
+
+        assertThat(notified).isEmpty()
+        provider.warm(generation = 1)
+        assertThat(provider.cachedSettings()).isEqualTo(diagnosticsOn)
+        assertThat(notified).containsExactly(diagnosticsOn)
     }
 
     @Test

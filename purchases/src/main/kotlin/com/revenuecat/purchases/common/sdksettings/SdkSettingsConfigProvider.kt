@@ -61,11 +61,14 @@ internal class SdkSettingsConfigProvider(
      * Best-effort populate of the in-memory cache from already-committed config, tagged with [generation]. No-op
      * (no `/v1/config` sync) while no config is committed yet, so a cold-disk init warm never triggers a network
      * config fetch. Once a config is committed, a missing topic or `default` item warms the defaults, so a listener
-     * hears about the settings reverting when the backend stops serving them.
+     * hears about the settings reverting when the backend stops serving them. A warm superseded by a newer commit
+     * during its read gives up: that commit re-warms on its own.
      */
     suspend fun warm(generation: Int) {
         if (cache.isWarmAtOrAbove(generation) || !manager.hasCommittedConfig()) return
         val settings = manager.committedTopicOrNull(RemoteConfigTopic.SdkSettings)?.get(ITEM_DEFAULT).toSettings()
+        // Superseded during the read: storing would notify the listener with settings the cache never serves.
+        if (manager.configGeneration != generation) return
         if (cache.store(generation, settings)) {
             listener?.let { deliverIfChanged(generation, settings, it) }
         }
