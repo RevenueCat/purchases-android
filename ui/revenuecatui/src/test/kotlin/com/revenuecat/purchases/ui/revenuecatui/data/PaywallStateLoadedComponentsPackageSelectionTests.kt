@@ -518,6 +518,31 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
     }
 
     @Test
+    fun `Sheet reset keeps a hidden tab selection when nothing is visible`() {
+        val hiddenDefault = packageInfo(
+            TestData.Packages.monthly,
+            isSelectedByDefault = true,
+            visibilityOverrides = listOf(hiddenWhenWiderThanOverride(width = 700.0)),
+        )
+        val hiddenOther = packageInfo(
+            TestData.Packages.annual,
+            isSelectedByDefault = false,
+            visibilityOverrides = listOf(hiddenWhenWiderThanOverride(width = 700.0)),
+        )
+        val state = paywallState(
+            packagesOutsideTabs = emptyList(),
+            packagesByTab = mapOf(0 to listOf(hiddenDefault, hiddenOther)),
+            initialSelectedTabIndex = 0,
+        )
+        state.paywallBoundsDp = DpSize(800.dp, 600.dp)
+
+        assertThat(state.peekDefaultPackageUniqueIdAfterSheetDismiss()).isEqualTo(hiddenDefault.uniqueId)
+        state.resetToDefaultPackage()
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
+    }
+
+    @Test
     fun `Reconcile keeps a selected package that is visible only under the medium size class`() {
         val mediumOnly = packageInfo(
             TestData.Packages.monthly,
