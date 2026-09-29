@@ -786,7 +786,7 @@ jobs:
           path: purchases/build/test-results
 
   record-and-upload-paparazzi-revenuecatui-snapshots:
-    description: "Record new RevenueCatUI snapshots with Paparazzi and upload them to Emerge"
+    description: "Record RevenueCatUI snapshots with Paparazzi and upload them to Emerge and Sentry"
     <<: *android-executor
     steps:
       - checkout
@@ -843,6 +843,9 @@ jobs:
               --client-library paparazzi \
               $PR_ARG \
               --project-root .
+      - run:
+          name: Upload snapshots to Sentry
+          command: bundle exec fastlane android upload_paparazzi_snapshots_to_sentry
       - android/save_build_cache
 
   record-and-push-paywall-template-screenshots:
@@ -1175,6 +1178,9 @@ workflows:
             - prepare-tests
           <<: *non-main-branches
       - record-and-upload-paparazzi-revenuecatui-snapshots:
+          context:
+            - slack-secrets
+            - sentry
           requires:
             - prepare-tests
       - run-revenuecatui-ui-tests:
