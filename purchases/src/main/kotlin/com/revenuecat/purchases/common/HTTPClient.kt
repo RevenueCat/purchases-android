@@ -22,6 +22,7 @@ import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
 import com.revenuecat.purchases.common.networking.MapConverter
 import com.revenuecat.purchases.common.networking.NullPointerReadingErrorStreamException
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.networking.TokenManager
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SignatureVerificationResult
@@ -62,7 +63,7 @@ internal interface RequestResponseListener {
 }
 
 @OptIn(InternalRevenueCatAPI::class)
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "LargeClass")
 internal class HTTPClient(
     private val appConfig: AppConfig,
     private val eTagManager: ETagManager,
@@ -76,6 +77,8 @@ internal class HTTPClient(
     private val forceServerErrorStrategy: ForceServerErrorStrategy? = null,
     private val requestResponseListener: RequestResponseListener? = null,
     private val timeoutManager: HTTPTimeoutManager = HTTPTimeoutManager(appConfig, dateProvider),
+    // Injected so IAM-authenticated requests can override the API-key Bearer header. Null behaves like disabled.
+    private val tokenManager: TokenManager? = null,
 ) {
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal companion object {
@@ -169,6 +172,8 @@ internal class HTTPClient(
         refreshETag: Boolean = false,
         fallbackBaseURLs: List<URL> = emptyList(),
         fallbackURLIndex: Int = 0,
+        // Used to look up a bearer token via iamAuthorizationHeaders(); null falls back to the API-key header.
+        appUserID: String? = null,
     ): HTTPResult {
         fun canUseFallback(): Boolean =
             endpoint.supportsFallbackBaseURLs && fallbackURLIndex in fallbackBaseURLs.indices
@@ -190,6 +195,7 @@ internal class HTTPClient(
                 refreshETag,
                 fallbackBaseURLs,
                 fallbackURLIndex + 1,
+                appUserID,
             )
         }
 
@@ -210,6 +216,7 @@ internal class HTTPClient(
                 postFieldsToSign = postFieldsToSign,
                 requestHeaders = requestHeaders,
                 refreshETag = refreshETag,
+                appUserID = appUserID,
             )
             if (outcome.canFailOverToNextSource) {
                 val nextSource = sourceToRetryOn(source, sourceAttempts, endpoint, outcome.connectionException)
@@ -249,6 +256,7 @@ internal class HTTPClient(
                                 refreshETag = true,
                                 fallbackBaseURLs,
                                 fallbackURLIndex,
+                                appUserID,
                             )
                         }
 
@@ -297,6 +305,7 @@ internal class HTTPClient(
         postFieldsToSign: List<Pair<String, String>>?,
         requestHeaders: Map<String, String>,
         refreshETag: Boolean,
+        appUserID: String?,
     ): AttemptOutcome {
         var callSuccessful = false
         val requestStartTime = dateProvider.now
@@ -316,6 +325,7 @@ internal class HTTPClient(
                 postFieldsToSign,
                 requestHeaders,
                 refreshETag,
+                appUserID,
                 onResponseReceived = { responseCode = it },
                 onVerificationFailed = { verificationResult, requestDate ->
                     failedVerificationResult = verificationResult
@@ -386,9 +396,13 @@ internal class HTTPClient(
         postFieldsToSign: List<Pair<String, String>>?,
         requestHeaders: Map<String, String>,
         refreshETag: Boolean,
+        appUserID: String?,
         onResponseReceived: (responseCode: Int) -> Unit,
         onVerificationFailed: (verificationResult: SignatureVerificationResult, requestDate: Date?) -> Unit,
     ): HTTPResult? {
+        // Overrides requestHeaders' API-key Authorization header for non-auth endpoints, when available.
+        val effectiveHeaders = iamAuthorizationHeaders(appUserID, endpoint)?.let { requestHeaders + it }
+            ?: requestHeaders
         val jsonBody = body?.let { mapConverter.convertToJSON(it) }
         val path = endpoint.getPath(useFallback = isFallbackURL)
         val connection: HttpURLConnection
@@ -421,7 +435,7 @@ internal class HTTPClient(
                 signingManager.getPostParamsForSigningHeaderIfNeeded(endpoint, postFieldsToSign)
             }
             val headers = getHeaders(
-                requestHeaders,
+                effectiveHeaders,
                 fullURL,
                 refreshETag,
                 nonce,
@@ -525,7 +539,7 @@ internal class HTTPClient(
                         url = fullURL.toString(),
                         method = connection.requestMethod,
                         requestHeaders = getHeaders(
-                            requestHeaders,
+                            effectiveHeaders,
                             fullURL,
                             refreshETag,
                             nonce,
@@ -594,6 +608,21 @@ internal class HTTPClient(
                 isFallbackURL,
             )
         }
+    }
+
+    /**
+     * The `Authorization` header override for [appUserID] on [endpoint], or `null` if IAM login is
+     * disabled, [endpoint] is an auth endpoint, or there's no cached token.
+     *
+     * Uses [TokenManager.authorizationHeadersFromCache] (cache-only), since this runs inside a synchronous
+     * [com.revenuecat.purchases.common.Dispatcher.AsyncCall] with no way to wait on storage.
+     */
+    private fun iamAuthorizationHeaders(appUserID: String?, endpoint: Endpoint): Map<String, String>? {
+        val manager = tokenManager?.takeIf { it.enabled } ?: return null
+        return appUserID
+            ?.takeUnless { endpoint.isIAMEndpoint }
+            ?.let { manager.authorizationHeadersFromCache(it, endpoint.isIAMEndpoint) }
+            ?.takeIf { it.isNotEmpty() }
     }
 
     private fun toCurlRequest(httpRequest: HTTPRequest): String {
