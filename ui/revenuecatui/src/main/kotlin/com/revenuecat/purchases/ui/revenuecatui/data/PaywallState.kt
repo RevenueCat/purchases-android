@@ -488,8 +488,19 @@ internal sealed interface PaywallState {
                 windowDpSize: DpSize?,
                 screenCondition: ScreenCondition,
             ): String? {
-                val tabPackages = packages.packagesByTab[selectedTabIndex]
-                val outside = packages.packagesOutsideTabs
+                // A candidate must remain visible once selected. Otherwise a `selected` rule can
+                // hide the replacement immediately after reconciliation chooses it.
+                val visibleWhenSelected: (AvailablePackages.Info) -> Boolean = { info ->
+                    info.resolvesVisible(
+                        customVariables = mergedCustomVariables,
+                        windowDpSize = windowDpSize,
+                        screenCondition = screenCondition,
+                        selectedPackageId = info.pkg.identifier,
+                        viewState = ComponentViewState.SELECTED,
+                    )
+                }
+                val tabPackages = packages.packagesByTab[selectedTabIndex]?.filter(visibleWhenSelected)
+                val outside = packages.packagesOutsideTabs.filter(visibleWhenSelected)
                 return tabPackages?.authoredDefaultIfVisible(mergedCustomVariables, windowDpSize, screenCondition)
                     ?.uniqueId
                     ?: outside.authoredDefaultIfVisible(mergedCustomVariables, windowDpSize, screenCondition)?.uniqueId
@@ -499,7 +510,6 @@ internal sealed interface PaywallState {
 
             fun resetToDefaultPackage() {
                 selectedPackageUniqueId = peekDefaultPackageUniqueIdAfterSheetDismiss()
-                // Remembered ids in the peek chain aren't visibility-checked, so reconcile still runs.
                 reconcileSelectionForWindowSize(paywallBoundsDp)
             }
 
@@ -522,7 +532,9 @@ internal sealed interface PaywallState {
                     ?: uniqueIdIfVisibleAtBounds(initialSelectedPackageOutsideTabs, windowDpSize, screenCondition)
                     ?: uniqueIdIfVisibleAtBounds(selectedPackageByTab[selectedTabIndex], windowDpSize, screenCondition)
                     ?: tabPackages?.firstVisible(mergedCustomVariables, windowDpSize, screenCondition)?.uniqueId
-                    ?: packages.packagesOutsideTabs.firstVisible(mergedCustomVariables, windowDpSize, screenCondition)
+                    ?: packages.packagesOutsideTabs
+                        .takeIf { infos -> infos.any { it.isSelectedByDefault } }
+                        ?.firstVisible(mergedCustomVariables, windowDpSize, screenCondition)
                         ?.uniqueId
                     ?: visibleFallbackForHiddenDefaultOutsideTabs
             }
@@ -536,7 +548,13 @@ internal sealed interface PaywallState {
                 val copies = (packages.packagesOutsideTabs + packages.packagesByTab[selectedTabIndex].orEmpty())
                     .filter { it.uniqueId == uid }
                 copies.isEmpty() || copies.any {
-                    it.resolvesVisible(mergedCustomVariables, windowDpSize, screenCondition)
+                    it.resolvesVisible(
+                        customVariables = mergedCustomVariables,
+                        windowDpSize = windowDpSize,
+                        screenCondition = screenCondition,
+                        selectedPackageId = it.pkg.identifier,
+                        viewState = ComponentViewState.SELECTED,
+                    )
                 }
             }
 

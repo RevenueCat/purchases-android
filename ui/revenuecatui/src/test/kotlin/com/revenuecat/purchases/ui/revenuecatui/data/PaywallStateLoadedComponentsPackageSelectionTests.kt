@@ -360,6 +360,12 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
         )
 
         assertThat(state.selectedPackageInfo).isNull()
+
+        state.update(selectedPackageUniqueId = TestData.Packages.annual.identifier)
+        state.resetToDefaultPackage()
+
+        assertThat(state.peekDefaultPackageUniqueIdAfterSheetDismiss()).isNull()
+        assertThat(state.selectedPackageInfo).isNull()
     }
 
     @Test
@@ -551,6 +557,53 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
         state.update(selectedPackageUniqueId = selectedOnly.uniqueId)
 
         state.reconcileSelectionForWindowSize(DpSize(400.dp, 800.dp))
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
+    }
+
+    @Test
+    fun `Reconcile skips a replacement that would hide when selected`() {
+        val hiddenCurrent = packageInfo(
+            TestData.Packages.monthly,
+            isSelectedByDefault = false,
+            visibilityOverrides = listOf(hiddenWhenWiderThanOverride(width = 700.0)),
+        )
+        val hiddenWhenSelected = packageInfo(
+            TestData.Packages.weekly,
+            isSelectedByDefault = true,
+            visibilityOverrides = listOf(hiddenWhenOverride(ComponentOverride.Condition.Selected)),
+        )
+        val visibleOther = packageInfo(TestData.Packages.annual, isSelectedByDefault = false)
+        val state = paywallState(
+            packagesOutsideTabs = listOf(hiddenCurrent, hiddenWhenSelected, visibleOther),
+            packagesByTab = emptyMap(),
+            initialSelectedTabIndex = null,
+        )
+        state.update(selectedPackageUniqueId = hiddenCurrent.uniqueId)
+
+        state.reconcileSelectionForWindowSize(DpSize(800.dp, 600.dp))
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
+    @Test
+    fun `Sheet reset keeps a remembered tab package visible only while selected`() {
+        val selectedOnly = packageInfo(
+            TestData.Packages.monthly,
+            isSelectedByDefault = false,
+            visible = false,
+            visibilityOverrides = listOf(visibleWhenOverride(ComponentOverride.Condition.Selected)),
+        )
+        val other = packageInfo(TestData.Packages.annual, isSelectedByDefault = false)
+        val state = paywallState(
+            packagesOutsideTabs = emptyList(),
+            packagesByTab = mapOf(0 to listOf(selectedOnly, other)),
+            initialSelectedTabIndex = 0,
+        )
+        state.paywallBoundsDp = DpSize(400.dp, 800.dp)
+        state.update(selectedPackageUniqueId = selectedOnly.uniqueId)
+
+        state.resetToDefaultPackage()
 
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
     }
