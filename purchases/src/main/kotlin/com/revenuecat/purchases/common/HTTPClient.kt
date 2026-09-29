@@ -23,6 +23,7 @@ import com.revenuecat.purchases.common.networking.MapConverter
 import com.revenuecat.purchases.common.networking.NullPointerReadingErrorStreamException
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.networking.TokenManager
+import com.revenuecat.purchases.common.networking.TokenRefreshOperation
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SignatureVerificationResult
@@ -42,6 +43,9 @@ import java.net.SocketTimeoutException
 import java.net.URL
 import java.net.URLConnection
 import java.util.Date
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.time.Duration
 
 /**
@@ -99,6 +103,9 @@ internal class HTTPClient(
         // Defensive cap on API source attempts within one request, in case the source list is re-armed
         // (topic rebuild or interval restart) while a request is walking it.
         const val MAX_API_SOURCE_ATTEMPTS = 5
+
+        // Last-resort timeout for refreshTokenAndRetry() waiting on a refresh it didn't itself perform.
+        private const val WAIT_TIMEOUT_MS = 10_000L
     }
 
     private val enableExtraRequestLogging = BuildConfig.ENABLE_EXTRA_REQUEST_LOGGING && appConfig.isDebugBuild
@@ -174,6 +181,8 @@ internal class HTTPClient(
         fallbackURLIndex: Int = 0,
         // Used to look up a bearer token via iamAuthorizationHeaders(); null falls back to the API-key header.
         appUserID: String? = null,
+        // Whether this request already went through one refresh-and-retry cycle; prevents a second one.
+        retriedAfterTokenRefresh: Boolean = false,
     ): HTTPResult {
         fun canUseFallback(): Boolean =
             endpoint.supportsFallbackBaseURLs && fallbackURLIndex in fallbackBaseURLs.indices
@@ -196,6 +205,7 @@ internal class HTTPClient(
                 fallbackBaseURLs,
                 fallbackURLIndex + 1,
                 appUserID,
+                retriedAfterTokenRefresh,
             )
         }
 
@@ -257,12 +267,27 @@ internal class HTTPClient(
                                 fallbackBaseURLs,
                                 fallbackURLIndex,
                                 appUserID,
+                                retriedAfterTokenRefresh,
                             )
                         }
 
                         RCHTTPStatusCodes.isServerError(result.responseCode) && canUseFallback() ->
                             // Handle server errors with fallback URLs
                             performRequestToFallbackURL()
+
+                        shouldAttemptTokenRefresh(result, endpoint, appUserID, retriedAfterTokenRefresh) ->
+                            refreshTokenAndRetry(
+                                originalResult = result,
+                                appUserID = requireNotNull(appUserID),
+                                baseURL = baseURL,
+                                endpoint = endpoint,
+                                body = body,
+                                postFieldsToSign = postFieldsToSign,
+                                requestHeaders = requestHeaders,
+                                refreshETag = refreshETag,
+                                fallbackBaseURLs = fallbackBaseURLs,
+                                fallbackURLIndex = fallbackURLIndex,
+                            )
 
                         else -> result
                     }
@@ -624,6 +649,109 @@ internal class HTTPClient(
             ?.takeUnless { endpoint.isIAMEndpoint }
             ?.let { manager.authorizationHeadersFromCache(it, endpoint.isIAMEndpoint) }
             ?.takeIf { it.isNotEmpty() }
+    }
+
+    /**
+     * Whether [result] is a candidate for a refresh-and-retry: IAM login enabled, an [appUserID], a
+     * non-auth [endpoint], not already retried, and a 401. Doesn't check whether a refresh token actually
+     * exists -- that's [refreshTokenAndRetry]'s own check.
+     */
+    private fun shouldAttemptTokenRefresh(
+        result: HTTPResult,
+        endpoint: Endpoint,
+        appUserID: String?,
+        retriedAfterTokenRefresh: Boolean,
+    ): Boolean {
+        val manager = tokenManager
+        return manager != null &&
+            manager.enabled &&
+            appUserID != null &&
+            !endpoint.isIAMEndpoint &&
+            !retriedAfterTokenRefresh &&
+            result.responseCode == RCHTTPStatusCodes.UNAUTHORIZED
+    }
+
+    /**
+     * Attempts one token refresh for [appUserID] and, on success, replays the original request once
+     * (marked [retriedAfterTokenRefresh][performRequest] so it can't loop). Falls back to [originalResult]
+     * otherwise.
+     *
+     * [TokenManager.tokenRefreshRequestFromCache] already dedupes concurrent refreshes for the same
+     * [appUserID]; this function just bridges the wait for the real network round trip into this
+     * synchronous call stack with a plain [CountDownLatch].
+     *
+     * The [TokenManager] lookups here are cache-only, same trade-off as [iamAuthorizationHeaders]. The
+     * [CountDownLatch] below waits on the real network call ([TokenRefreshOperation.refresh]) instead.
+     *
+     * [TokenManager.tokenRefreshRequestFromCache] only completes the latch when a refresh is actually
+     * warranted; this checks [TokenManager.currentRefreshTokenFromCache] first, and only then waits, once
+     * it knows a refresh token is cached to attempt with. [WAIT_TIMEOUT_MS] is a last-resort safety net: if
+     * the callback still never arrives, this falls back to [originalResult] rather than hanging forever.
+     *
+     * [TokenManager.handleTokenRefreshResponseSync] is fire-and-forget: the retry only needs the refreshed
+     * [TokenManager.TokenSet] already in hand, not confirmation that the storage write behind it finished.
+     */
+    @Suppress("LongParameterList")
+    private fun refreshTokenAndRetry(
+        originalResult: HTTPResult,
+        appUserID: String,
+        baseURL: URL,
+        endpoint: Endpoint,
+        body: Map<String, Any?>?,
+        postFieldsToSign: List<Pair<String, String>>?,
+        requestHeaders: Map<String, String>,
+        refreshETag: Boolean,
+        fallbackBaseURLs: List<URL>,
+        fallbackURLIndex: Int,
+    ): HTTPResult {
+        val manager = tokenManager ?: return originalResult
+        val refreshedTokens = if (manager.currentRefreshTokenFromCache(appUserID) == null) {
+            null
+        } else {
+            val resultHolder = AtomicReference<TokenManager.TokenSet?>()
+            val latch = CountDownLatch(1)
+            val request = manager.tokenRefreshRequestFromCache(
+                appUserID,
+                originalResult.responseCode,
+                alreadyRetriedRefresh = false,
+            ) { tokens ->
+                resultHolder.set(tokens)
+                latch.countDown()
+            }
+            if (request != null) {
+                val tokens = TokenRefreshOperation.refresh(
+                    baseURL,
+                    this@HTTPClient,
+                    requestHeaders,
+                    request,
+                    fallbackBaseURLs,
+                )
+                manager.handleTokenRefreshResponseSync(appUserID, tokens)
+            }
+            val arrivedInTime = try {
+                latch.await(WAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            } catch (@Suppress("TooGenericExceptionCaught") e: InterruptedException) {
+                warnLog { "Interrupted waiting for token refresh: ${e.message}" }
+                false
+            }
+            if (arrivedInTime) resultHolder.get() else null
+        }
+        return if (refreshedTokens != null) {
+            performRequest(
+                baseURL,
+                endpoint,
+                body,
+                postFieldsToSign,
+                requestHeaders,
+                refreshETag,
+                fallbackBaseURLs,
+                fallbackURLIndex,
+                appUserID,
+                retriedAfterTokenRefresh = true,
+            )
+        } else {
+            originalResult
+        }
     }
 
     private fun toCurlRequest(httpRequest: HTTPRequest): String {
