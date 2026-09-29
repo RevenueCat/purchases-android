@@ -523,10 +523,9 @@ internal sealed interface PaywallState {
                 val screenCondition = windowScreenCondition
                 // A default authored outside the tabs outranks a tab package that was never authored as
                 // one, so the tab's own default is consulted first and its first visible package last.
-                // Remembered ids are skipped when hidden at the measured bounds, so this peek and the
-                // reconcile after [resetToDefaultPackage] land on the same package. The init-time
-                // fallback is the true last resort, kept even when hidden (matching reconcile's
-                // stay-put behavior when nothing is visible).
+                // Remembered ids are skipped when hidden at the measured bounds. If nothing renders,
+                // keep the current selection, matching reconcile's stay-put behavior. The init-time
+                // fallback remains the last resort when there is no current selection to keep.
                 return tabPackages?.authoredDefaultIfVisible(mergedCustomVariables, windowDpSize, screenCondition)
                     ?.uniqueId
                     ?: uniqueIdIfVisibleAtBounds(initialSelectedPackageOutsideTabs, windowDpSize, screenCondition)
@@ -536,7 +535,30 @@ internal sealed interface PaywallState {
                         .takeIf { infos -> infos.any { it.isSelectedByDefault } }
                         ?.firstVisible(mergedCustomVariables, windowDpSize, screenCondition)
                         ?.uniqueId
+                    ?: selectedPackageUniqueId.takeIf {
+                        windowDpSize != null && !anyPackageRendersVisible(windowDpSize, screenCondition)
+                    }
                     ?: visibleFallbackForHiddenDefaultOutsideTabs
+            }
+
+            private fun anyPackageRendersVisible(
+                windowDpSize: DpSize,
+                screenCondition: ScreenCondition,
+            ): Boolean {
+                val selectedId = selectedPackageInfo?.rcPackage?.identifier
+                return (packages.packagesOutsideTabs + packages.packagesByTab[selectedTabIndex].orEmpty()).any { info ->
+                    info.resolvesVisible(
+                        customVariables = mergedCustomVariables,
+                        windowDpSize = windowDpSize,
+                        screenCondition = screenCondition,
+                        selectedPackageId = selectedId,
+                        viewState = if (info.uniqueId == selectedPackageUniqueId) {
+                            ComponentViewState.SELECTED
+                        } else {
+                            ComponentViewState.DEFAULT
+                        },
+                    )
+                }
             }
 
             /** [uniqueId] when any of its copies renders at the measured bounds; null when all are hidden. */
