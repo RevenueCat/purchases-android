@@ -6,10 +6,14 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
+import com.revenuecat.purchases.paywalls.components.properties.ThemeVideoUrls
+import com.revenuecat.purchases.paywalls.components.properties.VideoUrls
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
+import java.net.URL
 
 internal class WorkflowModelsDeserializationTest {
 
@@ -357,13 +361,68 @@ internal class WorkflowModelsDeserializationTest {
         assertThat(screen.zeroDecimalPlaceCountries).isEmpty()
     }
 
+    @Test
+    fun `WorkflowScreen reads components_video_localizations`() {
+        val screen = JsonTools.json.decodeFromString(
+            WorkflowScreen.serializer(),
+            workflowScreenJson(
+                componentsVideoLocalizations = """
+                    {
+                      "es_ES": {
+                        "video_lid": {
+                          "light": {"url": "https://video.pawwalls.com/es.mp4", "width": 1080, "height": 1920}
+                        }
+                      }
+                    }
+                """.trimIndent(),
+            ),
+        )
+
+        assertThat(screen.componentsVideoLocalizations).isEqualTo(
+            mapOf(
+                LocaleId("es_ES") to mapOf(
+                    LocalizationKey("video_lid") to ThemeVideoUrls(
+                        light = VideoUrls(
+                            width = 1080u,
+                            height = 1920u,
+                            url = URL("https://video.pawwalls.com/es.mp4"),
+                        ),
+                        dark = null,
+                    ),
+                ),
+            ),
+        )
+    }
+
+    @Test
+    fun `WorkflowScreen defaults components_video_localizations to empty when absent`() {
+        val screen = JsonTools.json.decodeFromString(
+            WorkflowScreen.serializer(),
+            workflowScreenJson(),
+        )
+
+        assertThat(screen.componentsVideoLocalizations).isEmpty()
+    }
+
+    @Test
+    fun `WorkflowScreen defaults components_video_localizations to empty when null`() {
+        val screen = JsonTools.json.decodeFromString(
+            WorkflowScreen.serializer(),
+            workflowScreenJson(componentsVideoLocalizations = "null"),
+        )
+
+        assertThat(screen.componentsVideoLocalizations).isEmpty()
+    }
+
     private fun workflowScreenJson(
         productChangeConfig: String? = null,
         zeroDecimalPlaceCountries: String? = null,
+        componentsVideoLocalizations: String? = null,
     ): String {
         val optionalFields = listOfNotNull(
             productChangeConfig?.let { "\"play_store_product_change_mode\": $it" },
             zeroDecimalPlaceCountries?.let { "\"zero_decimal_place_countries\": $it" },
+            componentsVideoLocalizations?.let { "\"components_video_localizations\": $it" },
         ).joinToString(",\n")
 
         return """

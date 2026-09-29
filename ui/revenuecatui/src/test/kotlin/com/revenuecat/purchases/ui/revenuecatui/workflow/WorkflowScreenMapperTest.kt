@@ -18,6 +18,8 @@ import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
 import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.ThemeVideoUrls
+import com.revenuecat.purchases.paywalls.components.properties.VideoUrls
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import kotlinx.serialization.json.JsonPrimitive
 import org.assertj.core.api.Assertions.assertThat
@@ -49,6 +51,15 @@ class WorkflowScreenMapperTest {
         ),
     )
 
+    private val videoLocalizations = mapOf(
+        defaultLocaleId to mapOf(
+            LocalizationKey("video_key") to ThemeVideoUrls(
+                light = VideoUrls(width = 100u, height = 100u, url = URL("https://video.test/en.mp4")),
+                dark = null,
+            ),
+        ),
+    )
+
     private val zeroDecimalPlaceCountries = listOf("TW", "MX")
 
     private val productChangeConfig = ProductChangeConfig(
@@ -68,6 +79,7 @@ class WorkflowScreenMapperTest {
         zeroDecimalPlaceCountries = zeroDecimalPlaceCountries,
         productChangeConfig = productChangeConfig,
         stateDeclarations = stateDeclarations,
+        componentsVideoLocalizations = videoLocalizations,
     )
 
     @Test
@@ -85,6 +97,7 @@ class WorkflowScreenMapperTest {
         assertThat(data.zeroDecimalPlaceCountries).isEqualTo(zeroDecimalPlaceCountries)
         assertThat(data.productChangeConfig).isEqualTo(productChangeConfig)
         assertThat(data.stateDeclarations).isEqualTo(stateDeclarations)
+        assertThat(data.componentsVideoLocalizations).isEqualTo(videoLocalizations)
     }
 
     @Test

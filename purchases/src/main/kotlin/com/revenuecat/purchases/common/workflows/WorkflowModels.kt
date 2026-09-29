@@ -8,10 +8,12 @@ import com.revenuecat.purchases.paywalls.components.common.ExitOffers
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
+import com.revenuecat.purchases.paywalls.components.common.LocalizedVideoMapSerializer
 import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
 import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfigSerializer
 import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
 import com.revenuecat.purchases.paywalls.components.common.StateDeclarationMapSerializer
+import com.revenuecat.purchases.paywalls.components.properties.ThemeVideoUrls
 import com.revenuecat.purchases.utils.serializers.DefaultLocaleIdSerializer
 import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
 import com.revenuecat.purchases.utils.serializers.GoogleListSerializer
@@ -199,6 +201,9 @@ public data class WorkflowScreen(
     @SerialName("automatically_scale_font_size") val automaticallyScaleFontSize: Boolean = true,
     @Serializable(with = StateDeclarationMapSerializer::class)
     @SerialName("state_declarations") val stateDeclarations: Map<String, StateDeclaration>? = null,
+    @Serializable(with = LocalizedVideoMapSerializer::class)
+    @SerialName("components_video_localizations")
+    val componentsVideoLocalizations: Map<LocaleId, Map<LocalizationKey, ThemeVideoUrls>> = emptyMap(),
 )
 
 /**
