@@ -124,15 +124,9 @@ internal fun TextComponentView(
             Markdown(
                 text = text,
                 modifier = modifier
-<<<<<<< HEAD
                     .resolveComponentSizeParentData(size)
-                    .size(size, horizontalAlignment = textState.horizontalAlignment)
-||||||| 8d0a1775e
-                    .size(textState.size, horizontalAlignment = textState.horizontalAlignment)
-=======
                     .applyIfNotNull(spokenText) { clearAndSetSemantics { contentDescription = it } }
-                    .size(textState.size, horizontalAlignment = textState.horizontalAlignment)
->>>>>>> 33e392a69034cee770b2ef259371c11dd6d44c71
+                    .size(size, horizontalAlignment = textState.horizontalAlignment)
                     .padding(textState.margin)
                     .applyIfNotNull(backgroundColorStyle) { background(it) }
                     .padding(textState.padding),
