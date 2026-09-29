@@ -83,6 +83,7 @@ public class CustomerInfo internal constructor(
     private val jsonObject: JSONObject,
     internal val originalSource: CustomerInfoOriginalSource = CustomerInfoOriginalSource.DEFAULT,
     internal val loadedFromCache: Boolean = false,
+    internal val unsyncedProductIdentifiers: Set<String> = emptySet(),
 ) : Parcelable, RawDataContainer<JSONObject> {
 
     public constructor(

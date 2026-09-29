@@ -30,6 +30,9 @@ package com.revenuecat.purchases.ui.revenuecatui {
   @kotlin.RequiresOptIn(level=kotlin.RequiresOptIn.Level.ERROR) @kotlin.annotation.Retention(kotlin.annotation.AnnotationRetention.BINARY) @kotlin.annotation.Target(allowedTargets={kotlin.annotation.AnnotationTarget.CLASS, kotlin.annotation.AnnotationTarget.FUNCTION, kotlin.annotation.AnnotationTarget.PROPERTY}) public @interface ExperimentalPreviewRevenueCatUIPurchasesAPI {
   }
 
+  @kotlin.RequiresOptIn(level=kotlin.RequiresOptIn.Level.ERROR, message="The Checkpoints API is available by invitation only and may change without a deprecation cycle. Reach out to RevenueCat to get access.") @kotlin.annotation.Retention(kotlin.annotation.AnnotationRetention.BINARY) @kotlin.annotation.Target(allowedTargets={kotlin.annotation.AnnotationTarget.CLASS, kotlin.annotation.AnnotationTarget.FUNCTION, kotlin.annotation.AnnotationTarget.PROPERTY}) public @interface InviteOnlyCheckpointsAPI {
+  }
+
   public final class PaywallDialogKt {
     method @KotlinOnly @androidx.compose.runtime.Composable public static void PaywallDialog(com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions paywallDialogOptions);
   }
@@ -369,6 +372,107 @@ package com.revenuecat.purchases.ui.revenuecatui.activity {
   }
 
   public interface PaywallResultHandler extends androidx.activity.result.ActivityResultCallback<com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult> {
+  }
+
+}
+
+package com.revenuecat.purchases.ui.revenuecatui.checkpoints {
+
+  @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI public final class CheckpointParams {
+    method @InaccessibleFromKotlin public java.util.Map<java.lang.String,com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue> getCustomVariables();
+    method @InaccessibleFromKotlin public com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter? getPaywallPresenter();
+    property public java.util.Map<java.lang.String,com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue> customVariables;
+    property public com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter? paywallPresenter;
+  }
+
+  @com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParamsDsl public static final class CheckpointParams.Builder {
+    ctor public CheckpointParams.Builder();
+    method public com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams build();
+    method @KotlinOnly @kotlin.jvm.JvmSynthetic public com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams.Builder customVariables(kotlin.jvm.functions.Function1<com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams.CustomVariablesBuilder,kotlin.Unit> block);
+    method @KotlinOnly @kotlin.jvm.JvmSynthetic public com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams.Builder paywallPresenter(com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter paywallPresenter);
+    method public com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams.Builder setCustomVariables(java.util.Map<java.lang.String,? extends com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue> customVariables);
+    method public com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams.Builder setPaywallPresenter(com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter? paywallPresenter);
+  }
+
+  @com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParamsDsl public static final class CheckpointParams.CustomVariablesBuilder {
+    ctor public CheckpointParams.CustomVariablesBuilder();
+    method public com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams.CustomVariablesBuilder add(String key, boolean value);
+    method public com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams.CustomVariablesBuilder add(String key, com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue value);
+    method public com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams.CustomVariablesBuilder add(String key, double value);
+    method public com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams.CustomVariablesBuilder add(String key, float value);
+    method public com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams.CustomVariablesBuilder add(String key, int value);
+    method public com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams.CustomVariablesBuilder add(String key, String value);
+    method public com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams.CustomVariablesBuilder add(String key, long value);
+    method public java.util.Map<java.lang.String,com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue> build();
+    method @KotlinOnly @kotlin.jvm.JvmSynthetic public infix void to(String, boolean value);
+    method @KotlinOnly @kotlin.jvm.JvmSynthetic public infix void to(String, com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue value);
+    method @KotlinOnly @kotlin.jvm.JvmSynthetic public infix void to(String, double value);
+    method @KotlinOnly @kotlin.jvm.JvmSynthetic public infix void to(String, float value);
+    method @KotlinOnly @kotlin.jvm.JvmSynthetic public infix void to(String, int value);
+    method @KotlinOnly @Deprecated @kotlin.jvm.JvmSynthetic public infix void to(String, Object? value);
+    method @KotlinOnly @kotlin.jvm.JvmSynthetic public infix void to(String, String value);
+    method @KotlinOnly @kotlin.jvm.JvmSynthetic public infix void to(String, long value);
+  }
+
+  @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI @kotlin.DslMarker public @interface CheckpointParamsDsl {
+  }
+
+  public final class CheckpointParamsKt {
+    method @KotlinOnly @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI @kotlin.jvm.JvmSynthetic public static com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams CheckpointParams(kotlin.jvm.functions.Function1<com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams.Builder,kotlin.Unit> block);
+  }
+
+  @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI public fun interface CheckpointPassedCallback {
+    method public void onCheckpointPassed(com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowResult? result);
+  }
+
+  public final class CheckpointsExtensionsKt {
+    method @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI public static void checkpoint(com.revenuecat.purchases.Purchases, String checkpointIdentifier, com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams? params, com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPassedCallback callback);
+    method @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI public static void checkpoint(com.revenuecat.purchases.Purchases, String checkpointIdentifier, com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPassedCallback callback);
+    method @InaccessibleFromKotlin public static com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter? getPaywallPresenter(com.revenuecat.purchases.Purchases);
+    method @InaccessibleFromKotlin public static void setPaywallPresenter(com.revenuecat.purchases.Purchases, com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter?);
+    property @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI public static com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter? com.revenuecat.purchases.Purchases.paywallPresenter;
+  }
+
+  @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI @dev.drewhamilton.poko.Poko public final class FlowResult {
+    method @InaccessibleFromKotlin public java.util.Set<com.revenuecat.purchases.ui.revenuecatui.checkpoints.ObtainedEntitlement> getObtainedEntitlements();
+    property public java.util.Set<com.revenuecat.purchases.ui.revenuecatui.checkpoints.ObtainedEntitlement> obtainedEntitlements;
+  }
+
+  @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI @dev.drewhamilton.poko.Poko public final class ObtainedEntitlement {
+    method @InaccessibleFromKotlin public com.revenuecat.purchases.EntitlementInfo getEntitlementInfo();
+    property public com.revenuecat.purchases.EntitlementInfo entitlementInfo;
+  }
+
+  @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI public fun interface PaywallPresenter {
+    method public void present(com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter.Params params, com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter.Completion completion);
+  }
+
+  @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI public static fun interface PaywallPresenter.Completion {
+    method public void complete(com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter.Completion.Result result);
+  }
+
+  @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI public abstract static class PaywallPresenter.Completion.Result {
+  }
+
+  public static final class PaywallPresenter.Completion.Result.Closed extends com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter.Completion.Result {
+    field public static final com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter.Completion.Result.Closed INSTANCE;
+  }
+
+  public static final class PaywallPresenter.Completion.Result.Continued extends com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter.Completion.Result {
+    field public static final com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter.Completion.Result.Continued INSTANCE;
+  }
+
+  public static final class PaywallPresenter.Completion.Result.NavigatedBack extends com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter.Completion.Result {
+    field public static final com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter.Completion.Result.NavigatedBack INSTANCE;
+  }
+
+  @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI @dev.drewhamilton.poko.Poko public static final class PaywallPresenter.Params {
+    method @InaccessibleFromKotlin public String getCheckpointIdentifier();
+    method @InaccessibleFromKotlin public java.util.Map<java.lang.String,com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue> getCustomVariables();
+    method @InaccessibleFromKotlin public com.revenuecat.purchases.Offering getOffering();
+    property public String checkpointIdentifier;
+    property public java.util.Map<java.lang.String,com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue> customVariables;
+    property public com.revenuecat.purchases.Offering offering;
   }
 
 }

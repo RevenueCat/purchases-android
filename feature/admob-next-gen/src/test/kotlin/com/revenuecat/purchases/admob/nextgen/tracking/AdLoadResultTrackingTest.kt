@@ -62,7 +62,7 @@ class AdLoadResultTrackingTest {
 
         val trackedData = slot<AdLoadedData>()
         verify(exactly = 1) {
-            adTracker.trackAdLoaded(capture(trackedData), AdCaptureMethod.ADAPTER)
+            adTracker.trackAdLoaded(capture(trackedData), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)
         }
         assertEquals(
             AdLoadedData(
@@ -95,7 +95,7 @@ class AdLoadResultTrackingTest {
 
         val trackedData = slot<AdFailedToLoadData>()
         verify(exactly = 1) {
-            adTracker.trackAdFailedToLoad(capture(trackedData), AdCaptureMethod.ADAPTER)
+            adTracker.trackAdFailedToLoad(capture(trackedData), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)
         }
         assertEquals(
             AdFailedToLoadData(

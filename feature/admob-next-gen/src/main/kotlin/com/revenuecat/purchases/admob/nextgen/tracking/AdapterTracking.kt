@@ -13,20 +13,20 @@ import com.revenuecat.purchases.ads.events.types.AdRevenueData
 
 /**
  * Adapter-internal wrappers around the public [AdTracker] `trackAd*` API that stamp
- * [AdCaptureMethod.ADAPTER], so events auto-captured by the AdMob adapter are
- * distinguishable from developer-invoked (`manual`) events.
+ * [AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER], so events auto-captured by the Next-Gen
+ * AdMob adapter are distinguishable from developer-invoked (`manual`) events.
  */
 internal fun AdTracker.trackFromAdapter(data: AdLoadedData) =
-    trackAdLoaded(data, AdCaptureMethod.ADAPTER)
+    trackAdLoaded(data, AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)
 
 internal fun AdTracker.trackFromAdapter(data: AdDisplayedData) =
-    trackAdDisplayed(data, AdCaptureMethod.ADAPTER)
+    trackAdDisplayed(data, AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)
 
 internal fun AdTracker.trackFromAdapter(data: AdOpenedData) =
-    trackAdOpened(data, AdCaptureMethod.ADAPTER)
+    trackAdOpened(data, AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)
 
 internal fun AdTracker.trackFromAdapter(data: AdRevenueData) =
-    trackAdRevenue(data, AdCaptureMethod.ADAPTER)
+    trackAdRevenue(data, AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)
 
 internal fun AdTracker.trackFromAdapter(data: AdFailedToLoadData) =
-    trackAdFailedToLoad(data, AdCaptureMethod.ADAPTER)
+    trackAdFailedToLoad(data, AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)

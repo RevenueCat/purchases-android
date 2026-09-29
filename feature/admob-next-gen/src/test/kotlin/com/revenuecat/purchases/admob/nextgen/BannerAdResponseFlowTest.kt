@@ -59,7 +59,7 @@ class BannerAdResponseFlowTest {
         }
 
         every { adView.loadFromAdResponse("opaque-response", capture(trackingLoadCallback)) } just runs
-        every { adTracker.trackAdLoaded(capture(loadedData), AdCaptureMethod.ADAPTER) } answers {
+        every { adTracker.trackAdLoaded(capture(loadedData), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER) } answers {
             order += "tracked"
         }
         every { bannerAd.adEventCallback = capture(installedEventCallback) } answers {
@@ -105,7 +105,9 @@ class BannerAdResponseFlowTest {
         }
 
         every { adView.loadFromAdResponse("opaque-response", capture(trackingLoadCallback)) } just runs
-        every { adTracker.trackAdFailedToLoad(capture(failedData), AdCaptureMethod.ADAPTER) } answers {
+        every {
+            adTracker.trackAdFailedToLoad(capture(failedData), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)
+        } answers {
             order += "tracked"
         }
 
@@ -150,7 +152,7 @@ class BannerAdResponseFlowTest {
             assertSame(sdkResult, result)
             val loadedData = slot<AdLoadedData>()
             verify(exactly = 1) {
-                adTracker.trackAdLoaded(capture(loadedData), AdCaptureMethod.ADAPTER)
+                adTracker.trackAdLoaded(capture(loadedData), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)
             }
             assertLoadedData(loadedData.captured)
             assertTrue(installedEventCallback.captured is TrackingBannerAdEventCallback)
@@ -176,7 +178,7 @@ class BannerAdResponseFlowTest {
         assertSame(sdkResult, result)
         val failedData = slot<AdFailedToLoadData>()
         verify(exactly = 1) {
-            adTracker.trackAdFailedToLoad(capture(failedData), AdCaptureMethod.ADAPTER)
+            adTracker.trackAdFailedToLoad(capture(failedData), AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER)
         }
         assertFailedData(failedData.captured)
     }

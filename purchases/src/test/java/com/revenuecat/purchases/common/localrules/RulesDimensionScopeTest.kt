@@ -122,6 +122,7 @@ class RulesDimensionScopeTest {
                   "is_paused": true,
                   "is_refunded": true,
                   "is_sandbox": true,
+                  "is_synced": true,
                   "kind": "subscription",
                   "original_purchased_at": 1609459200000,
                   "ownership_type": "PURCHASED",
@@ -142,6 +143,7 @@ class RulesDimensionScopeTest {
                 {
                   "display_name": "100 Coins",
                   "is_sandbox": false,
+                  "is_synced": true,
                   "kind": "non_subscription",
                   "original_purchased_at": 1677801600000,
                   "price_amount_micros": 1990000,

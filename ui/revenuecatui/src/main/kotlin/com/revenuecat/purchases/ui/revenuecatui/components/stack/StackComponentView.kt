@@ -43,6 +43,8 @@ import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
@@ -125,7 +127,9 @@ import androidx.compose.ui.geometry.Size as ComposeSize
  * @param enabled When `false`, the underlying `Modifier.clickable` is gated off — clicks and the
  *   ripple are suppressed, and the node is announced as disabled to accessibility services. Only
  *   meaningful when [onStackClick] is non-null. Use for transient disabled states such as
- *   "purchase in progress" or "already-selected package".
+ *   "purchase in progress".
+ * @param selected When non-null, exposes the stack's selected state to accessibility services.
+ *   Only meaningful when [onStackClick] is non-null.
  */
 @Suppress("LongMethod", "LongParameterList")
 @Composable
@@ -136,6 +140,7 @@ internal fun StackComponentView(
     modifier: Modifier = Modifier,
     onStackClick: (() -> Unit)? = null,
     enabled: Boolean = true,
+    selected: Boolean? = null,
     interactionSource: MutableInteractionSource? = null,
     contentAlpha: (() -> Float)? = null,
     componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
@@ -166,6 +171,7 @@ internal fun StackComponentView(
                     resolvedModifier,
                     onStackClick = onStackClick,
                     enabled = enabled,
+                    selected = selected,
                     interactionSource = interactionSource,
                 )
             }
@@ -185,6 +191,7 @@ internal fun StackComponentView(
                         resolvedModifier,
                         onStackClick = onStackClick,
                         enabled = enabled,
+                        selected = selected,
                         interactionSource = interactionSource,
                     )
 
@@ -200,6 +207,7 @@ internal fun StackComponentView(
                         resolvedModifier,
                         onStackClick = onStackClick,
                         enabled = enabled,
+                        selected = selected,
                         interactionSource = interactionSource,
                     )
                 }
@@ -215,6 +223,7 @@ internal fun StackComponentView(
                     modifier = resolvedModifier,
                     onStackClick = onStackClick,
                     enabled = enabled,
+                    selected = selected,
                     interactionSource = interactionSource,
                     nestedBadge = badge,
                 )
@@ -229,6 +238,7 @@ internal fun StackComponentView(
             modifier = resolvedModifier,
             onStackClick = onStackClick,
             enabled = enabled,
+            selected = selected,
             interactionSource = interactionSource,
         )
     }
@@ -247,6 +257,7 @@ private fun StackWithOverlaidBadge(
     modifier: Modifier = Modifier,
     onStackClick: (() -> Unit)? = null,
     enabled: Boolean = true,
+    selected: Boolean? = null,
     interactionSource: MutableInteractionSource? = null,
 ) {
     Box(modifier = modifier) {
@@ -258,6 +269,7 @@ private fun StackWithOverlaidBadge(
             contentAlpha = contentAlpha,
             onStackClick = onStackClick,
             enabled = enabled,
+            selected = selected,
             interactionSource = interactionSource,
         )
         val mainStackBorderWidthPx = with(LocalDensity.current) {
@@ -290,6 +302,7 @@ private fun StackWithLongEdgeToEdgeBadge(
     modifier: Modifier = Modifier,
     onStackClick: (() -> Unit)? = null,
     enabled: Boolean = true,
+    selected: Boolean? = null,
     interactionSource: MutableInteractionSource? = null,
 ) {
     val shadowStyle = stackState.shadow?.let { rememberShadowStyle(shadow = it) }
@@ -310,6 +323,7 @@ private fun StackWithLongEdgeToEdgeBadge(
                 shouldApplyShadow = false,
                 onStackClick = onStackClick,
                 enabled = enabled,
+                selected = selected,
                 interactionSource = interactionSource,
             )
         }.first()
@@ -463,6 +477,7 @@ private fun StackWithShortEdgeToEdgeBadge(
     modifier: Modifier = Modifier,
     onStackClick: (() -> Unit)? = null,
     enabled: Boolean = true,
+    selected: Boolean? = null,
     interactionSource: MutableInteractionSource? = null,
 ) {
     val adjustedCornerRadiuses: CornerRadiuses = when (val badgeRectangleCorners = badgeStack.shape.cornerRadiuses) {
@@ -543,6 +558,7 @@ private fun StackWithShortEdgeToEdgeBadge(
         modifier = modifier,
         onStackClick = onStackClick,
         enabled = enabled,
+        selected = selected,
         interactionSource = interactionSource,
     ) {
         StackComponentView(
@@ -595,6 +611,7 @@ private fun MainStackComponent(
     modifier: Modifier = Modifier,
     onStackClick: (() -> Unit)? = null,
     enabled: Boolean = true,
+    selected: Boolean? = null,
     interactionSource: MutableInteractionSource? = null,
     nestedBadge: BadgeStyle? = null,
     shouldApplyShadow: Boolean = true,
@@ -782,7 +799,7 @@ private fun MainStackComponent(
             indication = LocalIndication.current,
             enabled = enabled,
             onClick = onStackClick,
-        )
+        ).applyIfNotNull(selected) { semantics { this.selected = it } }
     } else {
         Modifier
     }
@@ -831,7 +848,7 @@ private fun MainStackComponent(
                     indication = null,
                     enabled = enabled,
                     onClick = onStackClick,
-                ),
+                ).applyIfNotNull(selected) { semantics { this.selected = it } },
             ) {
                 stack(
                     Modifier,

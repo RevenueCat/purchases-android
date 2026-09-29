@@ -77,7 +77,9 @@ class PaidEventTrackingTest {
         listener.onPaidEvent(adValue)
 
         val slot = slot<AdRevenueData>()
-        verify(exactly = 1) { mockAdTracker.trackAdRevenue(capture(slot), AdCaptureMethod.ADAPTER) }
+        verify(exactly = 1) {
+            mockAdTracker.trackAdRevenue(capture(slot), AdCaptureMethod.ANDROID_ADMOB_LEGACY_ADAPTER)
+        }
         assertEquals(
             AdRevenueData(
                 networkName = "com.google.ads.mediation.admob.AdMobAdapter",
@@ -133,7 +135,7 @@ class PaidEventTrackingTest {
 
         listener.onPaidEvent(adValue)
 
-        verify(exactly = 1) { mockAdTracker.trackAdRevenue(any(), AdCaptureMethod.ADAPTER) }
+        verify(exactly = 1) { mockAdTracker.trackAdRevenue(any(), AdCaptureMethod.ANDROID_ADMOB_LEGACY_ADAPTER) }
     }
 
     @Test
@@ -158,7 +160,7 @@ class PaidEventTrackingTest {
         listener.onPaidEvent(adValue)
 
         val slot = slot<AdRevenueData>()
-        verify { mockAdTracker.trackAdRevenue(capture(slot), AdCaptureMethod.ADAPTER) }
+        verify { mockAdTracker.trackAdRevenue(capture(slot), AdCaptureMethod.ANDROID_ADMOB_LEGACY_ADAPTER) }
         assertEquals("", slot.captured.impressionId)
         assertEquals(null, slot.captured.networkName)
         assertEquals(null, slot.captured.placement)
@@ -189,7 +191,9 @@ class PaidEventTrackingTest {
         captured!!.onPaidEvent(adValue)
 
         val slot = slot<AdRevenueData>()
-        verify(exactly = 1) { mockAdTracker.trackAdRevenue(capture(slot), AdCaptureMethod.ADAPTER) }
+        verify(exactly = 1) {
+            mockAdTracker.trackAdRevenue(capture(slot), AdCaptureMethod.ANDROID_ADMOB_LEGACY_ADAPTER)
+        }
         assertEquals(
             AdRevenueData(
                 networkName = "TestNetwork",
@@ -256,7 +260,7 @@ class PaidEventTrackingTest {
         captured!!.onPaidEvent(adValue)
 
         val slot = slot<AdRevenueData>()
-        verify { mockAdTracker.trackAdRevenue(capture(slot), AdCaptureMethod.ADAPTER) }
+        verify { mockAdTracker.trackAdRevenue(capture(slot), AdCaptureMethod.ANDROID_ADMOB_LEGACY_ADAPTER) }
         assertEquals("show_time", slot.captured.placement)
     }
 

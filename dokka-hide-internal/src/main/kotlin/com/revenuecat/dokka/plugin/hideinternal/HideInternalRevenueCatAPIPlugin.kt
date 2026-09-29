@@ -32,9 +32,18 @@ class HideInternalRevenueCatAPITransformer(
                 ?.flatMap { it.directAnnotations.values.flatten() }
                 ?: emptyList()
 
-        return annotations.any { isInternalAnnotation(it) }
+        return annotations.any { isHiddenAnnotation(it) }
     }
 
-    private fun isInternalAnnotation(annotation: Annotations.Annotation): Boolean =
-        annotation.dri.packageName == "com.revenuecat.purchases" && annotation.dri.classNames == "InternalRevenueCatAPI"
+    private fun isHiddenAnnotation(annotation: Annotations.Annotation): Boolean =
+        hiddenAnnotations.any { (packageName, className) ->
+            annotation.dri.packageName == packageName && annotation.dri.classNames == className
+        }
+
+    private companion object {
+        val hiddenAnnotations = listOf(
+            "com.revenuecat.purchases" to "InternalRevenueCatAPI",
+            "com.revenuecat.purchases.ui.revenuecatui" to "InviteOnlyCheckpointsAPI",
+        )
+    }
 }

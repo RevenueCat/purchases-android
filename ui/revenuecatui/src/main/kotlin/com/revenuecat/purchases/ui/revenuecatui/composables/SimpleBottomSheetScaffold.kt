@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -52,6 +53,8 @@ internal fun SimpleBottomSheetScaffold(
             show = sheetState.backgroundBlur,
             radius = 10.dp,
             onClick = { sheetState.hide() },
+            // Keep screen readers inside the sheet. It can be dismissed with the back gesture.
+            modifier = Modifier.conditional(sheetState.visible) { clearAndSetSemantics { } },
         ) { content() }
 
         AnimatedVisibility(

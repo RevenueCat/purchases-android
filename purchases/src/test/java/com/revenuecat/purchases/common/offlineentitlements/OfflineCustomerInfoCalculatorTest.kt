@@ -181,7 +181,8 @@ class OfflineCustomerInfoCalculatorTest {
                 purchaseTime = twoHoursAgo.time,
             ),
             listOf(entitlementID),
-            expiresDate = oneHourAgo
+            expiresDate = oneHourAgo,
+            isSynced = true,
         )
 
         val notBwProductPurchaseDate = oneHourAgo.add(1.seconds)
@@ -193,7 +194,8 @@ class OfflineCustomerInfoCalculatorTest {
                 purchaseTime = notBwProductPurchaseDate.time,
             ),
             listOf(secondEntitlementID),
-            expiresDate = oneDayFromNow
+            expiresDate = oneDayFromNow,
+            isSynced = true,
         )
 
         every {
@@ -548,7 +550,8 @@ class OfflineCustomerInfoCalculatorTest {
                 null,
                 storeTransaction,
                 listOf("pro"),
-                null
+                null,
+                isSynced = true,
             )
         )
 
@@ -606,7 +609,8 @@ class OfflineCustomerInfoCalculatorTest {
                 null,
                 storeTransaction,
                 listOf("pro"),
-                null
+                null,
+                isSynced = true,
             )
         )
 
@@ -758,6 +762,7 @@ class OfflineCustomerInfoCalculatorTest {
                 storeTransaction,
                 baseEntitlements,
                 baseExpiration,
+                isSynced = true,
             ),
             PurchasedProduct(
                 "addon_product",
@@ -765,6 +770,7 @@ class OfflineCustomerInfoCalculatorTest {
                 storeTransaction,
                 addOnEntitlements,
                 addOnExpiration,
+                isSynced = true,
             ),
         )
     }
@@ -792,7 +798,8 @@ class OfflineCustomerInfoCalculatorTest {
                 mapping.basePlanId,
                 storeTransaction,
                 mapping.entitlements,
-                expiresDate
+                expiresDate,
+                isSynced = true,
             )
         }
 
@@ -825,6 +832,33 @@ class OfflineCustomerInfoCalculatorTest {
         assertThat(receivedCustomerInfo).isNotNull
         assertThat(receivedCustomerInfo?.originalSource).isEqualTo(CustomerInfoOriginalSource.OFFLINE_ENTITLEMENTS)
         assertThat(receivedCustomerInfo?.loadedFromCache).isFalse
+    }
+
+    @Test
+    fun `remembers which products were never posted to the backend`() {
+        val products = listOf("posted" to true, "unposted" to false).map { (productIdentifier, isSynced) ->
+            PurchasedProduct(
+                productIdentifier,
+                "p1m",
+                stubStoreTransactionFromGooglePurchase(
+                    productIds = listOf(productIdentifier),
+                    purchaseTime = oneHourAgo.time,
+                    purchaseToken = productIdentifier,
+                ),
+                listOf("pro_1"),
+                oneDayFromNow,
+                isSynced = isSynced,
+            )
+        }
+        mockPurchasedProducts(products)
+
+        var receivedCustomerInfo: CustomerInfo? = null
+        offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
+            appUserID = appUserID,
+            onSuccess = { receivedCustomerInfo = it },
+            onError = { fail("Should've succeeded") }
+        )
+        assertThat(receivedCustomerInfo?.unsyncedProductIdentifiers).containsExactly("unposted")
     }
     // endregion
 }

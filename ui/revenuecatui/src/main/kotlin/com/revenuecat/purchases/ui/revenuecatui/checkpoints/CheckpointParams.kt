@@ -4,13 +4,14 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.CustomVariableKeyValidator
 import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 
 /**
  * Marks the receivers of the [CheckpointParams] DSL, so an inner block cannot implicitly call methods of an
  * outer one.
  */
 @DslMarker
-@InternalRevenueCatAPI
+@InviteOnlyCheckpointsAPI
 public annotation class CheckpointParamsDsl
 
 /**
@@ -35,14 +36,14 @@ public annotation class CheckpointParamsDsl
  * }
  * ```
  */
-@InternalRevenueCatAPI
+@InviteOnlyCheckpointsAPI
 public class CheckpointParams private constructor(
     customVariables: Map<String, CustomVariableValue>,
     public val paywallPresenter: PaywallPresenter?,
 ) {
 
     /**
-     * Keys must start with a letter and contain only letters, numbers and underscores, since anything else cannot
+     * Keys must not be empty and contain only letters, numbers and underscores, since anything else cannot
      * be addressed as `custom.<key>`. Invalid entries are dropped here, once, with a warning: everything
      * downstream — targeting rules and the presented paywall alike — validates what it is given, and a map that is
      * already clean gives them nothing to report.
@@ -178,7 +179,7 @@ public class CheckpointParams private constructor(
  * DSL entry point: `CheckpointParams { customVariables { "goal" to "lose_weight" } }`.
  */
 @JvmSynthetic
-@InternalRevenueCatAPI
+@InviteOnlyCheckpointsAPI
 @Suppress("FunctionName")
 public fun CheckpointParams(block: CheckpointParams.Builder.() -> Unit): CheckpointParams =
     CheckpointParams.Builder().apply(block).build()

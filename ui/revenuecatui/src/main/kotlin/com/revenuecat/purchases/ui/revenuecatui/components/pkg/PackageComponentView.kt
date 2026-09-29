@@ -27,8 +27,8 @@ internal fun PackageComponentView(
 
     if (!packageState.visible) return
 
-    val enabled = remember(state.selectedPackageInfo?.uniqueId, style.uniqueId) {
-        state.selectedPackageInfo?.uniqueId != style.uniqueId
+    val selected = remember(state.selectedPackageInfo?.uniqueId, style.uniqueId) {
+        state.selectedPackageInfo?.uniqueId == style.uniqueId
     }
 
     StackComponentView(
@@ -40,18 +40,22 @@ internal fun PackageComponentView(
         },
         componentInteractionTracker = componentInteractionTracker,
         modifier = modifier,
-        enabled = enabled,
+        selected = if (style.isSelectable) selected else null,
         onStackClick = if (style.isSelectable) {
-            {
-                componentInteractionTracker.track(
-                    paywallPackageRowSelection(
-                        componentName = style.componentName,
-                        destination = style.rcPackage,
-                        origin = state.selectedPackageInfo?.rcPackage,
-                        defaultPackage = state.defaultPackageForPackageRowAnalytics(),
-                    ),
+            click@{
+                if (selected) return@click
+                // Built before the update, because `origin` is the package that was selected until
+                // now, but tracked after it. Tracking reaches the app's PaywallListener, which runs
+                // on this same main thread message, so selecting first lets the frame be scheduled
+                // before the app's callback rather than after it.
+                val selection = paywallPackageRowSelection(
+                    componentName = style.componentName,
+                    destination = style.rcPackage,
+                    origin = state.selectedPackageInfo?.rcPackage,
+                    defaultPackage = state.defaultPackageForPackageRowAnalytics(),
                 )
                 state.update(selectedPackageUniqueId = style.uniqueId)
+                componentInteractionTracker.track(selection)
             }
         } else {
             null

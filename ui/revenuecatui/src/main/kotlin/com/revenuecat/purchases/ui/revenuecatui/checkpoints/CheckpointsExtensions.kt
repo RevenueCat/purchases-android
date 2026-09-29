@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 
 /**
  * Registers that [checkpointIdentifier] was hit. Depending on the configured targeting rules, this may present a
@@ -30,7 +30,7 @@ import com.revenuecat.purchases.Purchases
  * @param params Optional per-call parameters, like custom properties usable in targeting rules.
  * @param callback Receives the [FlowResult], or null, once the user goes through the checkpoint.
  */
-@InternalRevenueCatAPI
+@InviteOnlyCheckpointsAPI
 public fun Purchases.checkpoint(
     checkpointIdentifier: String,
     params: CheckpointParams?,
@@ -42,7 +42,7 @@ public fun Purchases.checkpoint(
 /**
  * [checkpoint] without per-call parameters.
  */
-@InternalRevenueCatAPI
+@InviteOnlyCheckpointsAPI
 public fun Purchases.checkpoint(
     checkpointIdentifier: String,
     callback: CheckpointPassedCallback,
@@ -56,7 +56,7 @@ public fun Purchases.checkpoint(
  * instead, falling back to the default paywall. Held by this [Purchases] instance, so it is cleared when the SDK
  * is reconfigured.
  */
-@InternalRevenueCatAPI
+@InviteOnlyCheckpointsAPI
 public var Purchases.paywallPresenter: PaywallPresenter?
     get() = checkpointsManager.paywallPresenter
     set(value) {

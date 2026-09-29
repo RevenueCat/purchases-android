@@ -131,7 +131,7 @@ public class PaywallActivityLaunchOptions private constructor(
          * These values will replace `{{ custom.key }}` or `{{ $custom.key }}` placeholders
          * in the paywall configuration.
          *
-         * Invalid keys (those not starting with a letter or containing invalid characters)
+         * Invalid keys (empty or containing characters other than letters, numbers and underscores)
          * will be filtered out and logged as warnings.
          */
         public fun setCustomVariables(customVariables: Map<String, CustomVariableValue>): Builder = apply {
@@ -319,7 +319,7 @@ public class PaywallActivityLaunchIfNeededOptions private constructor(
          * These values will replace `{{ custom.key }}` or `{{ $custom.key }}` placeholders
          * in the paywall configuration.
          *
-         * Invalid keys (those not starting with a letter or containing invalid characters)
+         * Invalid keys (empty or containing characters other than letters, numbers and underscores)
          * will be filtered out and logged as warnings.
          */
         public fun setCustomVariables(customVariables: Map<String, CustomVariableValue>): Builder = apply {
