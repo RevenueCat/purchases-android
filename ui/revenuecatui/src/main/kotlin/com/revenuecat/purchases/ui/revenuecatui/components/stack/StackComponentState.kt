@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowWidthSizeClass
+import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ConditionContext
@@ -183,6 +184,15 @@ internal class StackComponentState(
         when (val overflow = presentedPartial?.partial?.overflow) {
             null -> style.scrollOrientation
             else -> overflow.toOrientation(dimension)
+        }
+    }
+
+    @get:JvmSynthetic
+    val scrollExplicitlyDisabled by derivedStateOf {
+        when (presentedPartial?.partial?.overflow) {
+            null -> style.scrollExplicitlyDisabled
+            StackComponent.Overflow.NONE -> true
+            StackComponent.Overflow.SCROLL -> false
         }
     }
 
