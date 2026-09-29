@@ -17,8 +17,8 @@ public fun interface PaywallPresenter {
     /**
      * Called on the main thread when a checkpoint resolves to an offering. Present [params]'s offering the way
      * [Params.presentationMode] asks and report through [completion] how the presentation ended; the checkpoint
-     * stays unresolved until then. The SDK works out what the user obtained by itself, so the app only reports how the user left
-     * its UI.
+     * stays unresolved until then. The SDK works out what the user obtained by itself, so the app only reports how
+     * the user left its UI.
      */
     public fun present(params: Params, completion: Completion)
 

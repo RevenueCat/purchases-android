@@ -132,6 +132,7 @@ internal fun AppPaywall(
 }
 
 @OptIn(InviteOnlyCheckpointsAPI::class)
+@Suppress("LongParameterList")
 @Composable
 private fun AppPaywallContent(
     request: AppPaywallPresenter.Request,

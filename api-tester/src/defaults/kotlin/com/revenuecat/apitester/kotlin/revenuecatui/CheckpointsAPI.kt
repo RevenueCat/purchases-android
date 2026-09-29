@@ -8,8 +8,8 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPresentationMode
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPassedCallback
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPresentationMode
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowResult
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter

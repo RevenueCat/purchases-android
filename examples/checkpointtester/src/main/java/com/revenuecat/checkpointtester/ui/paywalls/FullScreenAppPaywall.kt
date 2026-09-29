@@ -107,6 +107,7 @@ private class PaywallUiState(
 )
 
 @OptIn(InviteOnlyCheckpointsAPI::class)
+@Suppress("LongParameterList")
 @Composable
 private fun PaywallBody(
     request: ParkedPaywallPresenter.Request,

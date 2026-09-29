@@ -27,10 +27,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.checkpointtester.checkpoints.ErrorPresenters
 import com.revenuecat.checkpointtester.checkpoints.PaywallPresenters
-import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPresentationMode
 import com.revenuecat.checkpointtester.ui.Screen
 import com.revenuecat.checkpointtester.ui.theme.CheckpointTesterTheme
+import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPresentationMode
 
 private data class NavigatedUseCase(
     val screen: Screen,

@@ -114,6 +114,7 @@ private class SheetUiState(
 )
 
 @OptIn(InviteOnlyCheckpointsAPI::class)
+@Suppress("LongParameterList")
 @Composable
 private fun SheetContent(
     request: ParkedPaywallPresenter.Request,
