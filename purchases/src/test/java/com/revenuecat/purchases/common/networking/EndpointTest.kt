@@ -127,6 +127,37 @@ class EndpointTest {
     }
 
     @Test
+    fun `GetRewardVerification includes encoded ad unit id query parameter`() {
+        val endpoint = Endpoint.GetRewardVerification(
+            userId = "test user-id",
+            clientTransactionId = "client transaction id",
+            adUnitId = "ca-app-pub-123/456 a&b=c+d?é",
+        )
+        val expectedQuery = "?ad_unit_id=ca-app-pub-123%2F456%20a%26b%3Dc%2Bd%3F%C3%A9"
+        assertThat(endpoint.getPath()).isEqualTo(
+            "/v1/subscribers/test%20user-id/ads/reward_verifications/client%20transaction%20id$expectedQuery",
+        )
+        assertThat(endpoint.getPath(useIAMPath = true)).isEqualTo(
+            "/v1/customer/ads/reward_verifications/client%20transaction%20id$expectedQuery",
+        )
+    }
+
+    @Test
+    fun `GetRewardVerification omits ad unit id query parameter when null or blank`() {
+        for (adUnitId in listOf(null, "", "  ")) {
+            val endpoint = Endpoint.GetRewardVerification(
+                userId = "test user-id",
+                clientTransactionId = "client transaction id",
+                adUnitId = adUnitId,
+            )
+            assertThat(endpoint.getPath())
+                .isEqualTo("/v1/subscribers/test%20user-id/ads/reward_verifications/client%20transaction%20id")
+            assertThat(endpoint.getPath(useIAMPath = true))
+                .isEqualTo("/v1/customer/ads/reward_verifications/client%20transaction%20id")
+        }
+    }
+
+    @Test
     fun `GetRewardVerification has correct name`() {
         val endpoint = Endpoint.GetRewardVerification(
             userId = "test user-id",

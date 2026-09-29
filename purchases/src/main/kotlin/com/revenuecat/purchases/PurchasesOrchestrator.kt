@@ -1144,10 +1144,12 @@ internal class PurchasesOrchestrator(
     fun getRewardVerificationResult(
         clientTransactionId: String,
         callback: GetRewardVerificationResultCallback,
+        adUnitId: String? = null,
     ) {
         backend.getRewardVerificationResult(
             appUserID = identityManager.currentAppUserID,
             clientTransactionId = clientTransactionId,
+            adUnitId = adUnitId,
             onSuccess = { callback.onReceived(it) },
             onError = { callback.onError(it) },
         )

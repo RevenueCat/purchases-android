@@ -2162,6 +2162,29 @@ internal class PurchasesTest : BasePurchasesTest() {
 
     @OptIn(InternalRevenueCatAPI::class)
     @Test
+    fun `awaitPollRewardVerification forwards the tracking metadata ad unit id to the backend`() = runTest {
+        every { mockAdEventsManager.track(any()) } returns Unit
+        every {
+            mockBackend.getRewardVerificationResult(
+                appUserID = appUserId,
+                clientTransactionId = "ct_1",
+                adUnitId = "ad-unit-999",
+                onSuccess = captureLambda(),
+                onError = any(),
+            )
+        } answers {
+            lambda<(RewardVerificationPollStatus) -> Unit>().captured.invoke(
+                RewardVerificationPollStatus.Verified(VerifiedReward.NoReward),
+            )
+        }
+
+        val result = purchases.awaitPollRewardVerification("ct_1", testTrackingMetadata)
+
+        assertThat(result.verifiedReward).isEqualTo(PollReward.NoReward)
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
     fun `reward verification poll launcher delivers the result to the callback`() {
         val launcher = RewardVerificationPollLauncher(
             scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined),
@@ -2441,6 +2464,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockBackend.getRewardVerificationResult(
                 appUserID = appUserId,
                 clientTransactionId = "ct_1",
+                adUnitId = null,
                 onSuccess = captureLambda(),
                 onError = any(),
             )
@@ -2451,6 +2475,26 @@ internal class PurchasesTest : BasePurchasesTest() {
         val result = purchases.awaitGetRewardVerificationResult(clientTransactionId = "ct_1")
 
         assertThat(result).isEqualTo(expectedResult)
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `awaitGetRewardVerificationResult forwards ad unit id to backend`() = runTest {
+        every {
+            mockBackend.getRewardVerificationResult(
+                appUserID = appUserId,
+                clientTransactionId = "ct_1",
+                adUnitId = "ad_unit_1",
+                onSuccess = captureLambda(),
+                onError = any(),
+            )
+        } answers {
+            lambda<(RewardVerificationPollStatus) -> Unit>().captured.invoke(RewardVerificationPollStatus.PENDING)
+        }
+
+        val result = purchases.awaitGetRewardVerificationResult(clientTransactionId = "ct_1", adUnitId = "ad_unit_1")
+
+        assertThat(result).isEqualTo(RewardVerificationPollStatus.PENDING)
     }
 
     @OptIn(InternalRevenueCatAPI::class)

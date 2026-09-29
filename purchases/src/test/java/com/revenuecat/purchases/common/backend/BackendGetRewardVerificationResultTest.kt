@@ -107,6 +107,29 @@ class BackendGetRewardVerificationResultTest {
     }
 
     @Test
+    fun `getRewardVerificationResult passes ad unit id to endpoint`() {
+        mockHttpResult(payload = """{"status":"pending"}""")
+
+        backend.getRewardVerificationResult(
+            appUserID = appUserId,
+            clientTransactionId = clientTransactionId,
+            adUnitId = "ad_unit_1",
+            onSuccess = {},
+            onError = { error -> fail("Expected success. Got error: $error") },
+        )
+
+        verify(exactly = 1) {
+            httpClient.performRequest(
+                mockBaseURL,
+                Endpoint.GetRewardVerification(appUserId, clientTransactionId, "ad_unit_1"),
+                body = null,
+                postFieldsToSign = null,
+                requestHeaders = any(),
+            )
+        }
+    }
+
+    @Test
     fun `getRewardVerificationResult maps unknown statuses`() {
         mockHttpResult(payload = """{"status":"new_status"}""")
 

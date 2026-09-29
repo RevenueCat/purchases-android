@@ -1032,10 +1032,12 @@ public class Purchases internal constructor(
     internal fun getRewardVerificationResult(
         clientTransactionId: String,
         callback: GetRewardVerificationResultCallback,
+        adUnitId: String? = null,
     ) {
         purchasesOrchestrator.getRewardVerificationResult(
             clientTransactionId = clientTransactionId,
             callback = callback,
+            adUnitId = adUnitId,
         )
     }
 

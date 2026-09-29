@@ -1093,12 +1093,14 @@ internal class Backend(
     fun getRewardVerificationResult(
         appUserID: String,
         clientTransactionId: String,
+        adUnitId: String? = null,
         onSuccess: (RewardVerificationPollStatus) -> Unit,
         onError: (RewardVerificationError) -> Unit,
     ) {
         val endpoint = Endpoint.GetRewardVerification(
             userId = appUserID,
             clientTransactionId = clientTransactionId,
+            adUnitId = adUnitId,
         )
         val path = endpoint.getPath()
         val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path), appInBackground = false)
