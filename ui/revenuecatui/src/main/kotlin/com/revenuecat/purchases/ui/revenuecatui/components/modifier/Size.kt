@@ -44,13 +44,21 @@ internal fun Modifier.size(
 ): Modifier {
     val widthModifier = when (val width = size.width) {
         is Fit -> Modifier.wrapContentWidth(align = horizontalAlignment ?: Alignment.CenterHorizontally)
-        is Fill -> Modifier.widthIn(min = width.minDp, max = width.maxDp).fillMaxWidth()
+        is Fill -> if (width.min != null || width.max != null) {
+            Modifier.widthIn(min = width.minDp, max = width.maxDp).fillMaxWidth()
+        } else {
+            Modifier.fillMaxWidth()
+        }
         is Fixed -> Modifier.width(width.value.toInt().dp)
     }
 
     val heightModifier = when (val height = size.height) {
         is Fit -> Modifier.wrapContentHeight(align = verticalAlignment ?: Alignment.CenterVertically)
-        is Fill -> Modifier.heightIn(min = height.minDp, max = height.maxDp).fillMaxHeight()
+        is Fill -> if (height.min != null || height.max != null) {
+            Modifier.heightIn(min = height.minDp, max = height.maxDp).fillMaxHeight()
+        } else {
+            Modifier.fillMaxHeight()
+        }
         is Fixed -> Modifier.height(height.value.toInt().dp)
     }
 

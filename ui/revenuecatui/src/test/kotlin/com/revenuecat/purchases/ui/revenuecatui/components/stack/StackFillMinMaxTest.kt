@@ -15,10 +15,12 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.PaywallComponent
+import com.revenuecat.purchases.paywalls.components.PaywallTransition
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
@@ -403,6 +405,25 @@ class StackFillMinMaxTest {
             .assertPixelColorEquals(Color.Blue, px(75), px(2), width = 1, height = 1)
             .assertPixelColorEquals(Color.Blue, px(75), px(18), width = 1, height = 1)
     }
+
+    @Test
+    fun `transitioned Fill button shares space with Fill sibling`() = assertBothOrientations(
+        stack = { horizontal ->
+            stack(
+                horizontal,
+                ButtonComponent(
+                    action = ButtonComponent.Action.NavigateBack,
+                    stack = child(Color.Red, fill(horizontal)),
+                    transition = PaywallTransition(
+                        displacementStrategy = PaywallTransition.DisplacementStrategy.GREEDY,
+                    ),
+                ),
+                child(Color.Blue, fill(horizontal)),
+            )
+        },
+        25 to Color.Red,
+        75 to Color.Blue,
+    )
 
     private fun twoCappedChildren(horizontal: Boolean, distribution: FlexDistribution) = stack(
         horizontal,
