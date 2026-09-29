@@ -42,13 +42,14 @@ internal class GenerationGuardedCache<T : Any> {
     /** True while [generation] is still the newest acted-on generation (nothing newer stored/invalidated). */
     fun isCurrent(generation: Int): Boolean = synchronized(lock) { generation >= lastGeneration }
 
-    fun store(generation: Int, newValue: T) {
-        synchronized(lock) {
-            if (generation >= lastGeneration) {
-                lastGeneration = generation
-                value = newValue
-            }
+    /** Stores [newValue] unless a newer generation was already acted on; returns whether it applied. */
+    fun store(generation: Int, newValue: T): Boolean = synchronized(lock) {
+        val applies = generation >= lastGeneration
+        if (applies) {
+            lastGeneration = generation
+            value = newValue
         }
+        applies
     }
 
     fun invalidate(generation: Int) {

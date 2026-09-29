@@ -61,6 +61,9 @@ import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
+import com.revenuecat.purchases.common.sdksettings.SdkSettings
+import com.revenuecat.purchases.common.sdksettings.SdkSettingsConfigProvider
+import com.revenuecat.purchases.common.sdksettings.SdkSettingsListener
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
@@ -187,6 +190,8 @@ internal class PurchasesOrchestrator(
     @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal val audiencesConfigProvider: AudiencesConfigProvider,
     @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal val sdkSettingsConfigProvider: SdkSettingsConfigProvider,
+    @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal val tokenManager: TokenManager,
     val adTracker: AdTracker = AdTracker(adEventsManager),
     private val currentActivityTracker: CurrentActivityTracker = CurrentActivityTracker(),
@@ -203,7 +208,7 @@ internal class PurchasesOrchestrator(
         localRulesEvaluator = localRulesEvaluator,
         getOfferings = { Purchases.sharedInstance.awaitOfferings() },
     ),
-) : LifecycleDelegate, CustomActivityLifecycleHandler {
+) : LifecycleDelegate, CustomActivityLifecycleHandler, SdkSettingsListener {
 
     internal var state: PurchasesState
         get() = purchasesStateCache.purchasesState
@@ -309,6 +314,7 @@ internal class PurchasesOrchestrator(
         localeProvider.setPreferredLocaleOverride(_preferredUILocaleOverride)
 
         identityManager.configure(backingFieldAppUserID)
+        sdkSettingsConfigProvider.listener = this
 
         billing.stateListener = object : BillingAbstract.StateListener {
             override fun onConnected() {
@@ -339,6 +345,10 @@ internal class PurchasesOrchestrator(
         if (!appConfig.dangerousSettings.autoSyncPurchases) {
             log(LogIntent.WARNING) { ConfigureStrings.AUTO_SYNC_PURCHASES_DISABLED }
         }
+    }
+
+    override fun onSdkSettingsChanged(settings: SdkSettings) {
+        // Consuming the settings (e.g. the diagnostics override) lands in a follow-up.
     }
 
     /** @suppress */
@@ -967,6 +977,7 @@ internal class PurchasesOrchestrator(
         this.workflowsConfigProvider.close()
         this.checkpointsConfigProvider.close()
         this.audiencesConfigProvider.close()
+        this.sdkSettingsConfigProvider.close()
         this.tokenManager.close()
 
         billing.close()
