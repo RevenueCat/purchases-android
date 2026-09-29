@@ -37,19 +37,22 @@ import com.revenuecat.checkpointtester.checkpoints.ParkedPaywallPresenter
 import com.revenuecat.checkpointtester.checkpoints.PaywallCheckout
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPresentationMode
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter
 import kotlinx.coroutines.launch
 
 /**
- * The paywall behind the global presenter: full screen, the packages as selectable cards, a purchase button,
- * restore, continue without buying, and a close button. A cancelled purchase keeps it open; any other checkout
- * error shows inline. Reports how the user left it (purchased, closed through the X, continued without buying, or
- * backed out through system back); the SDK works out what the user obtained.
+ * The app's full-screen paywall, drawn when a presenter is asked for [CheckpointPresentationMode.FULL_SCREEN]:
+ * the packages as selectable cards, a purchase button, restore, continue without buying, and a close button. A
+ * cancelled purchase keeps it open; any other checkout error shows inline. Reports how the user left it (purchased,
+ * closed through the X, continued without buying, or backed out through system back); the SDK works out what the
+ * user obtained. [presenterLabel] names the presenter that was asked, for the description.
  */
 @OptIn(InviteOnlyCheckpointsAPI::class)
 @Composable
-fun GlobalPaywall(
+fun FullScreenAppPaywall(
     request: ParkedPaywallPresenter.Request,
+    presenterLabel: String,
     modifier: Modifier = Modifier,
 ) {
     val activity = LocalContext.current as? Activity
@@ -86,6 +89,7 @@ fun GlobalPaywall(
             }
             PaywallBody(
                 request = request,
+                presenterLabel = presenterLabel,
                 state = PaywallUiState(selected, busy, message, canPurchase = activity != null),
                 onSelect = { selected = it },
                 onPurchase = { pkg -> activity?.let { checkout { PaywallCheckout.purchase(it, pkg) } } },
@@ -106,6 +110,7 @@ private class PaywallUiState(
 @Composable
 private fun PaywallBody(
     request: ParkedPaywallPresenter.Request,
+    presenterLabel: String,
     state: PaywallUiState,
     onSelect: (Package) -> Unit,
     onPurchase: (Package) -> Unit,
@@ -118,10 +123,11 @@ private fun PaywallBody(
         verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("Global presenter", style = MaterialTheme.typography.headlineMedium)
+        Text("App paywall, full screen", style = MaterialTheme.typography.headlineMedium)
         Text(
-            text = "Presented by Purchases.paywallPresenter for offering " +
-                "\"${request.params.offering.identifier}\" (checkpoint \"${request.params.checkpointIdentifier}\").",
+            text = "Presented by $presenterLabel for offering " +
+                "\"${request.params.offering.identifier}\" (checkpoint \"${request.params.checkpointIdentifier}\") " +
+                "in mode ${request.params.presentationMode}.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,

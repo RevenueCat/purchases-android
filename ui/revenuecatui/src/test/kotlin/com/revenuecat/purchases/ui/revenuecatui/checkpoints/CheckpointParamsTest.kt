@@ -104,6 +104,42 @@ class CheckpointParamsTest {
     }
 
     @Test
+    fun `params default to letting the SDK choose the presentation`() {
+        assertThat(CheckpointParams {}.presentationMode).isEqualTo(CheckpointPresentationMode.DEFAULT)
+        assertThat(CheckpointParams.Builder().build().presentationMode)
+            .isEqualTo(CheckpointPresentationMode.DEFAULT)
+    }
+
+    @Test
+    fun `the presentation mode is set through the builder and the DSL alike`() {
+        assertThat(CheckpointParams { presentationMode(CheckpointPresentationMode.SHEET) }.presentationMode)
+            .isEqualTo(CheckpointPresentationMode.SHEET)
+        assertThat(
+            CheckpointParams.Builder().setPresentationMode(CheckpointPresentationMode.SHEET).build().presentationMode,
+        ).isEqualTo(CheckpointPresentationMode.SHEET)
+    }
+
+    @Test
+    fun `params are equal only when their presentation modes are`() {
+        val sheet = CheckpointParams { presentationMode(CheckpointPresentationMode.SHEET) }
+
+        assertThat(sheet).isEqualTo(CheckpointParams { presentationMode(CheckpointPresentationMode.SHEET) })
+        assertThat(sheet.hashCode())
+            .isEqualTo(CheckpointParams { presentationMode(CheckpointPresentationMode.SHEET) }.hashCode())
+        assertThat(sheet).isNotEqualTo(CheckpointParams {})
+        assertThat(sheet.toString()).contains("presentationMode=SHEET")
+    }
+
+    @Test
+    fun `presentation modes are values`() {
+        assertThat(CheckpointPresentationMode.SHEET).isEqualTo(CheckpointPresentationMode.SHEET)
+        assertThat(CheckpointPresentationMode.SHEET).isNotEqualTo(CheckpointPresentationMode.FULL_SCREEN)
+        assertThat(CheckpointPresentationMode.DEFAULT).isNotEqualTo(CheckpointPresentationMode.SHEET)
+        assertThat(CheckpointPresentationMode.SHEET.hashCode()).isEqualTo(CheckpointPresentationMode.SHEET.hashCode())
+        assertThat(CheckpointPresentationMode.FULL_SCREEN.toString()).isEqualTo("FULL_SCREEN")
+    }
+
+    @Test
     fun `each infix overload maps to its custom variable variant`() {
         val params = CheckpointParams {
             customVariables {

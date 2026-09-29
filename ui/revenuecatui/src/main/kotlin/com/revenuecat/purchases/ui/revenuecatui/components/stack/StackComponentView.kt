@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.onConsumedWindowInsetsChanged
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
@@ -31,8 +32,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -717,14 +720,20 @@ private fun MainStackComponent(
                 is Dimension.ZLayer -> {
                     // Pre-compute the top safe-drawing inset in px for use as a fallback
                     // when no header height is available. Captured at composition time so
-                    // the Modifier.layout closure can branch at layout time.
+                    // the Modifier.layout closure can branch at layout time. Unlike
+                    // windowInsetsPadding, a direct read does not see what an ancestor
+                    // already consumed (e.g. a sheet sitting below the status bar), so that
+                    // part is subtracted.
+                    val density = LocalDensity.current
+                    var consumedTopInsetPx by remember { mutableIntStateOf(0) }
                     val topInsetPx = if (stackState.applyTopWindowInsets && !stackState.ignoreHeaderHeight) {
-                        safeDrawingInsets.getTop(LocalDensity.current)
+                        (safeDrawingInsets.getTop(density) - consumedTopInsetPx).coerceAtLeast(0)
                     } else {
                         0
                     }
                     Box(
                         modifier = outerModifier
+                            .onConsumedWindowInsetsChanged { consumedTopInsetPx = it.getTop(density) }
                             .size(
                                 size = stackState.size,
                                 horizontalAlignment = dimension.alignment.toHorizontalAlignmentOrNull(),

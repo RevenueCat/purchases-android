@@ -1,3 +1,5 @@
+@file:OptIn(InviteOnlyCheckpointsAPI::class)
+
 package com.revenuecat.paywallstester.ui.screens.checkpoints
 
 import androidx.compose.foundation.clickable
@@ -24,6 +26,9 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -41,6 +46,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.paywallstester.ui.screens.checkpoints.CheckpointsViewModel.CheckpointResultUi
 import com.revenuecat.paywallstester.ui.screens.checkpoints.CheckpointsViewModel.UiState
+import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPresentationMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -63,6 +70,7 @@ fun CheckpointsScreen(
             onHit = viewModel::hit,
             onTogglePresentWithAppPaywall = viewModel::setPresentWithAppPaywall,
             onTogglePresentErrorsWithApp = viewModel::setPresentErrorsWithApp,
+            onSelectPresentationMode = viewModel::setPresentationMode,
             dismissRequest = dismissRequest,
         )
         paywallRequest?.let { AppPaywall(request = it) }
@@ -77,6 +85,7 @@ private fun CheckpointsScaffold(
     onHit: (String) -> Unit,
     onTogglePresentWithAppPaywall: (Boolean) -> Unit,
     onTogglePresentErrorsWithApp: (Boolean) -> Unit,
+    onSelectPresentationMode: (CheckpointPresentationMode) -> Unit,
     dismissRequest: () -> Unit,
 ) {
     Scaffold(
@@ -112,6 +121,10 @@ private fun CheckpointsScaffold(
                     "On: this app shows its own dialog through ErrorPresenter, for SDK-presented flows.",
                 checked = state.presentErrorsWithApp,
                 onToggle = onTogglePresentErrorsWithApp,
+            )
+            PresentationModeSection(
+                presentationMode = state.presentationMode,
+                onSelect = onSelectPresentationMode,
             )
             ResultCard(
                 waitingFor = state.waitingFor,
@@ -159,6 +172,41 @@ private fun PresenterSection(
         supportingContent = { Text(text = description) },
         trailingContent = { Switch(checked = checked, onCheckedChange = onToggle) },
     )
+}
+
+private val PRESENTATION_MODE_LABELS = mapOf(
+    CheckpointPresentationMode.DEFAULT to "Default",
+    CheckpointPresentationMode.FULL_SCREEN to "Full screen",
+    CheckpointPresentationMode.SHEET to "Sheet",
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PresentationModeSection(
+    presentationMode: CheckpointPresentationMode,
+    onSelect: (CheckpointPresentationMode) -> Unit,
+) {
+    val modes = PRESENTATION_MODE_LABELS.keys.toList()
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(text = "How RevenueCat presents its flows", style = MaterialTheme.typography.titleMedium)
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            modes.forEachIndexed { index, mode ->
+                SegmentedButton(
+                    selected = mode == presentationMode,
+                    onClick = { onSelect(mode) },
+                    shape = SegmentedButtonDefaults.itemShape(index = index, count = modes.size),
+                ) {
+                    Text(text = PRESENTATION_MODE_LABELS.getValue(mode))
+                }
+            }
+        }
+        Text(
+            text = "Applies to workflows and to offerings RevenueCat presents itself, and the app's own paywall " +
+                "above follows it too. Default lets the SDK choose (currently a sheet).",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }
 
 @Composable
@@ -273,6 +321,7 @@ private fun CheckpointsScreenPreview() {
             override fun hit(identifier: String) {}
             override fun setPresentWithAppPaywall(enabled: Boolean) {}
             override fun setPresentErrorsWithApp(enabled: Boolean) {}
+            override fun setPresentationMode(mode: CheckpointPresentationMode) {}
         },
     )
 }

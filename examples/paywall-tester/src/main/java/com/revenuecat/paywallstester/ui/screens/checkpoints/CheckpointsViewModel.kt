@@ -12,6 +12,7 @@ import com.revenuecat.paywallstester.ui.screens.checkpoints.CheckpointsViewModel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPresentationMode
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowResult
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint
@@ -34,6 +35,7 @@ interface CheckpointsViewModel {
         val lastResult: CheckpointResultUi? = null,
         val presentWithAppPaywall: Boolean = false,
         val presentErrorsWithApp: Boolean = false,
+        val presentationMode: CheckpointPresentationMode = CheckpointPresentationMode.DEFAULT,
     )
 
     val state: StateFlow<UiState>
@@ -47,6 +49,8 @@ interface CheckpointsViewModel {
     fun setPresentWithAppPaywall(enabled: Boolean)
 
     fun setPresentErrorsWithApp(enabled: Boolean)
+
+    fun setPresentationMode(mode: CheckpointPresentationMode)
 }
 
 internal class CheckpointsViewModelImpl(
@@ -88,6 +92,7 @@ internal class CheckpointsViewModelImpl(
             customVariables { "source" to "paywall-tester" }
             if (_state.value.presentWithAppPaywall) paywallPresenter(appPaywallPresenter)
             if (_state.value.presentErrorsWithApp) errorPresenter(appErrorPresenter)
+            presentationMode(_state.value.presentationMode)
         }
         Purchases.sharedInstance.checkpoint(checkpointIdentifier, params) { result ->
             _state.update { it.copy(waitingFor = null, lastResult = result.toUi()) }
@@ -100,6 +105,10 @@ internal class CheckpointsViewModelImpl(
 
     override fun setPresentErrorsWithApp(enabled: Boolean) {
         _state.update { it.copy(presentErrorsWithApp = enabled) }
+    }
+
+    override fun setPresentationMode(mode: CheckpointPresentationMode) {
+        _state.update { it.copy(presentationMode = mode) }
     }
 
     private fun onAppPaywallFinished(result: PaywallPresenter.Completion.Result) {

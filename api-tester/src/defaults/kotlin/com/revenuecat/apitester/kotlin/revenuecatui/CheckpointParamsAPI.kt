@@ -5,12 +5,14 @@ package com.revenuecat.apitester.kotlin.revenuecatui
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPresentationMode
 
 @Suppress("unused", "UNUSED_VARIABLE", "LongMethod")
 private class CheckpointParamsAPI {
 
     fun check(params: CheckpointParams) {
         val customVariables: Map<String, CustomVariableValue> = params.customVariables
+        val presentationMode: CheckpointPresentationMode = params.presentationMode
 
         val empty: CheckpointParams = CheckpointParams.Builder().build()
         val emptyDsl: CheckpointParams = CheckpointParams {}
@@ -38,5 +40,20 @@ private class CheckpointParamsAPI {
             .add("value", CustomVariableValue.Boolean(true))
             .build()
         val fromAdded: CheckpointParams = CheckpointParams.Builder().setCustomVariables(added).build()
+        val sheetFromBuilder: CheckpointParams = CheckpointParams.Builder()
+            .setPresentationMode(CheckpointPresentationMode.SHEET)
+            .build()
+        val fullScreenFromDsl: CheckpointParams = CheckpointParams {
+            presentationMode(CheckpointPresentationMode.FULL_SCREEN)
+        }
+    }
+
+    fun checkPresentationMode(mode: CheckpointPresentationMode) {
+        val default: CheckpointPresentationMode = CheckpointPresentationMode.DEFAULT
+        val fullScreen: CheckpointPresentationMode = CheckpointPresentationMode.FULL_SCREEN
+        val sheet: CheckpointPresentationMode = CheckpointPresentationMode.SHEET
+        val same: Boolean = mode == default
+        val hash: Int = mode.hashCode()
+        val text: String = mode.toString()
     }
 }
