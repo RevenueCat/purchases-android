@@ -8,10 +8,6 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.identity.IdentitySource
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONArray
@@ -19,12 +15,14 @@ import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 
 /**
- * Tests for [TokenManager]'s storage plumbing, construction, identity introspection, authorization
- * headers, and the token refresh state machine (IAM phase 3, steps 7-10). These go through the real
- * `derivePassword -> EncryptedItemStorage.create` chain -- a real [Application] context, a real API key,
- * no test doubles for storage -- since this step's whole purpose is to own that chain correctly.
+ * Tests for [TokenManager]: storage plumbing, construction, identity introspection, authorization headers,
+ * the refresh state machine, and callback-based/cache-only access. Uses the real
+ * `derivePassword -> EncryptedItemStorage.createBlocking` chain, no test doubles for storage.
  */
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -36,7 +34,7 @@ class TokenManagerTest {
 
     @Test
     fun `construction is skipped entirely when disabled`() = runTest {
-        val manager = TokenManager(context, "test_api_key", enabled = false, scope = testScope())
+        val manager = TokenManager(context, "test_api_key", enabled = false)
 
         assertThat(manager.currentAccessToken("user")).isNull()
         assertThat(manager.currentRefreshToken("user")).isNull()
@@ -46,7 +44,7 @@ class TokenManagerTest {
 
     @Test
     fun `save-delete calls are no-ops when disabled, not crashes`() = runTest {
-        val manager = TokenManager(context, "test_api_key", enabled = false, scope = testScope())
+        val manager = TokenManager(context, "test_api_key", enabled = false)
 
         manager.saveTokens("user", "access", "refresh", "id")
         manager.deleteTokens("user")
@@ -56,13 +54,10 @@ class TokenManagerTest {
     }
 
     @Test
-    fun `close on a disabled instance does not throw`() = runTest {
-        val scope = testScope()
-        val manager = TokenManager(context, "test_api_key", enabled = false, scope = scope)
+    fun `close on a disabled instance does not throw`() {
+        val manager = TokenManager(context, "test_api_key", enabled = false)
 
         manager.close()
-
-        assertThat(scope.isActive).isFalse()
     }
 
     // endregion
@@ -71,7 +66,7 @@ class TokenManagerTest {
 
     @Test
     fun `a blank API key leaves storage permanently unavailable`() = runTest {
-        val manager = TokenManager(context, "   ", enabled = true, scope = testScope())
+        val manager = TokenManager(context, "   ", enabled = true)
 
         assertThat(manager.currentAccessToken("user")).isNull()
         manager.saveTokens("user", "access", "refresh", "id")
@@ -142,7 +137,7 @@ class TokenManagerTest {
         val first = manager(apiKey = "api_key_one")
         first.saveTokens("user", accessToken = "from-first-instance", refreshToken = "refresh", idToken = "id")
 
-        // Same on-disk file, different derived key -- e.g. reconfiguring from a sandbox to a production key.
+        // Same file, different derived key -- e.g. sandbox to production.
         val second = manager(apiKey = "api_key_two")
 
         assertThat(second.currentAccessToken("user")).isNull()
@@ -256,9 +251,7 @@ class TokenManagerTest {
 
     @Test
     fun `an unrecognized, non-anonymous source alongside anonymous is not reported as anonymous`() = runTest {
-        // The regression this guards against: dropping an unrecognized amr entry before the anonymous check
-        // ran would make this look anonymous once "some_future_provider" -- a real, non-anonymous linked
-        // identity this SDK version just doesn't have a name for yet -- had been filtered out.
+        // Guards against dropping an unrecognized amr entry before the anonymous check runs.
         val manager = manager()
         manager.saveTokens(
             "user",
@@ -303,9 +296,8 @@ class TokenManagerTest {
 
     @Test
     fun `authorizationHeaders is empty when disabled, even with a token present`() = runTest {
-        // A disabled instance never has readable storage to begin with, so this also locks in that
-        // authorizationHeaders checks `enabled` directly rather than only ever seeing "no token".
-        val manager = TokenManager(context, "test_api_key", enabled = false, scope = testScope())
+        // Locks in that authorizationHeaders checks `enabled` directly, not just "no token".
+        val manager = TokenManager(context, "test_api_key", enabled = false)
 
         assertThat(manager.authorizationHeaders("user", isIAMEndpoint = false)).isEmpty()
     }
@@ -405,8 +397,7 @@ class TokenManagerTest {
 
     @Test
     fun `deleteAccessToken never touches the network`() = runTest {
-        // No Backend/HTTPClient/Dispatcher is wired into TokenManager, so a call that tried to reach the
-        // network would fail to compile -- no mock needed to catch it.
+        // No Backend/HTTPClient/Dispatcher wired in, so a network call here would fail to compile.
         val manager = manager()
         manager.saveTokens("user", accessToken = "access", refreshToken = "refresh", idToken = "id")
 
@@ -503,8 +494,7 @@ class TokenManagerTest {
                 secondResult = it
             }
 
-            // Only the first caller gets a request to actually perform; the second is folded into it rather
-            // than starting a redundant refresh of its own.
+            // Only the first caller gets a real request; the second is folded into it.
             assertThat(firstRequest).isNotNull()
             assertThat(secondRequest).isNull()
 
@@ -568,8 +558,7 @@ class TokenManagerTest {
         // A failed refresh never touches storage.
         assertThat(manager.currentAccessToken("user")).isEqualTo("access")
 
-        // The in-flight state was cleared by the failure, so a fresh request is eligible to trigger a new
-        // refresh rather than being folded into the (already-resolved) previous one.
+        // In-flight state was cleared by the failure, so this starts a fresh refresh.
         val secondRequest = manager.tokenRefreshRequest(
             "user",
             statusCode = RCHTTPStatusCodes.UNAUTHORIZED,
@@ -581,32 +570,506 @@ class TokenManagerTest {
 
     // endregion
 
-    // region close
+    // region callback-based access
+    //
+    // Plain callbacks, not suspend functions, so runTest won't await them. Calls whose result matters go
+    // through waitForCallback/waitForCompletion instead.
 
     @Test
-    fun `close cancels the scope`() = runTest {
-        val scope = testScope()
-        // Never awaited, so storage construction may still be in flight when close() runs.
-        val manager = TokenManager(context, "test_api_key", enabled = true, scope = scope)
+    fun `Sync getters return null when nothing stored, with no prior suspend call for that user`() {
+        val manager = manager()
 
-        manager.close()
+        val access = waitForCallback<String?> { onResult -> manager.currentAccessTokenSync("user", onResult) }
+        val refresh = waitForCallback<String?> { onResult -> manager.currentRefreshTokenSync("user", onResult) }
 
-        assertThat(scope.isActive).isFalse()
+        assertThat(access).isNull()
+        assertThat(refresh).isNull()
+    }
+
+    @Test
+    fun `a value saved via the suspend API is visible via the Sync getters, with no prior Sync call`() = runTest {
+        val manager = manager()
+        manager.saveTokens("user", accessToken = "access-token-value", refreshToken = "refresh", idToken = "id")
+
+        val access = waitForCallback<String?> { onResult -> manager.currentAccessTokenSync("user", onResult) }
+        val refresh = waitForCallback<String?> { onResult -> manager.currentRefreshTokenSync("user", onResult) }
+
+        assertThat(access).isEqualTo("access-token-value")
+        assertThat(refresh).isEqualTo("refresh")
+    }
+
+    @Test
+    fun `saveTokensSync persists all three slots, visible via the suspend getters too`() = runTest {
+        val manager = manager()
+
+        waitForCompletion { onDone ->
+            manager.saveTokensSync(
+                "user",
+                accessToken = "access",
+                refreshToken = "refresh",
+                idToken = "id",
+                callback = onDone,
+            )
+        }
+
+        val accessFromSync = waitForCallback<String?> { onResult -> manager.currentAccessTokenSync("user", onResult) }
+        assertThat(accessFromSync).isEqualTo("access")
+        assertThat(manager.currentAccessToken("user")).isEqualTo("access")
+        assertThat(manager.currentRefreshToken("user")).isEqualTo("refresh")
+        assertThat(manager.currentIDToken("user")).isEqualTo("id")
+    }
+
+    @Test
+    fun `deleteTokensSync clears all three slots, visible via both surfaces`() = runTest {
+        val manager = manager()
+        waitForCompletion { onDone ->
+            manager.saveTokensSync(
+                "user",
+                accessToken = "access",
+                refreshToken = "refresh",
+                idToken = "id",
+                callback = onDone,
+            )
+        }
+
+        waitForCompletion { onDone -> manager.deleteTokensSync("user", callback = onDone) }
+
+        val accessFromSync = waitForCallback<String?> { onResult -> manager.currentAccessTokenSync("user", onResult) }
+        val refreshFromSync = waitForCallback<String?> { onResult -> manager.currentRefreshTokenSync("user", onResult) }
+        assertThat(accessFromSync).isNull()
+        assertThat(refreshFromSync).isNull()
+        assertThat(manager.currentAccessToken("user")).isNull()
+        assertThat(manager.currentRefreshToken("user")).isNull()
+        assertThat(manager.currentIDToken("user")).isNull()
+    }
+
+    @Test
+    fun `Sync getters are null for a disabled instance, even right after saveTokensSync`() {
+        val manager = TokenManager(context, "test_api_key", enabled = false)
+
+        waitForCompletion { onDone ->
+            manager.saveTokensSync(
+                "user",
+                accessToken = "access",
+                refreshToken = "refresh",
+                idToken = "id",
+                callback = onDone,
+            )
+        }
+
+        val access = waitForCallback<String?> { onResult -> manager.currentAccessTokenSync("user", onResult) }
+        val refresh = waitForCallback<String?> { onResult -> manager.currentRefreshTokenSync("user", onResult) }
+        assertThat(access).isNull()
+        assertThat(refresh).isNull()
+    }
+
+    @Test
+    fun `deleteTokensSync on a disabled instance does not throw`() {
+        val manager = TokenManager(context, "test_api_key", enabled = false)
+
+        waitForCompletion { onDone -> manager.deleteTokensSync("user", callback = onDone) }
+
+        val access = waitForCallback<String?> { onResult -> manager.currentAccessTokenSync("user", onResult) }
+        assertThat(access).isNull()
+    }
+
+    @Test
+    fun `Sync getters are isolated between users, same as the suspend ones`() = runTest {
+        val manager = manager()
+        waitForCompletion { onDone ->
+            manager.saveTokensSync(
+                "user-a",
+                accessToken = "a-access",
+                refreshToken = "a-refresh",
+                idToken = "a-id",
+                callback = onDone,
+            )
+        }
+        waitForCompletion { onDone ->
+            manager.saveTokensSync(
+                "user-b",
+                accessToken = "b-access",
+                refreshToken = "b-refresh",
+                idToken = "b-id",
+                callback = onDone,
+            )
+        }
+
+        val accessA = waitForCallback<String?> { onResult -> manager.currentAccessTokenSync("user-a", onResult) }
+        val accessB = waitForCallback<String?> { onResult -> manager.currentAccessTokenSync("user-b", onResult) }
+
+        assertThat(accessA).isEqualTo("a-access")
+        assertThat(accessB).isEqualTo("b-access")
+    }
+
+    @Test
+    fun `authorizationHeadersSync is empty when disabled, even with a token present`() {
+        val manager = TokenManager(context, "test_api_key", enabled = false)
+
+        val headers = waitForCallback<Map<String, String>> { onResult ->
+            manager.authorizationHeadersSync("user", isIAMEndpoint = false, callback = onResult)
+        }
+
+        assertThat(headers).isEmpty()
+    }
+
+    @Test
+    fun `authorizationHeadersSync carries a Bearer header for the stored access token`() = runTest {
+        val manager = manager()
+        waitForCompletion { onDone ->
+            manager.saveTokensSync(
+                "user",
+                accessToken = "access-token-value",
+                refreshToken = "refresh",
+                idToken = "id",
+                callback = onDone,
+            )
+        }
+
+        val headers = waitForCallback<Map<String, String>> { onResult ->
+            manager.authorizationHeadersSync("user", isIAMEndpoint = false, callback = onResult)
+        }
+
+        assertThat(headers).isEqualTo(mapOf("Authorization" to "Bearer access-token-value"))
+    }
+
+    @Test
+    fun `authorizationHeadersSync is empty for an IAM auth endpoint, even with a token present`() = runTest {
+        val manager = manager()
+        waitForCompletion { onDone ->
+            manager.saveTokensSync(
+                "user",
+                accessToken = "access-token-value",
+                refreshToken = "refresh",
+                idToken = "id",
+                callback = onDone,
+            )
+        }
+
+        val headers = waitForCallback<Map<String, String>> { onResult ->
+            manager.authorizationHeadersSync("user", isIAMEndpoint = true, callback = onResult)
+        }
+
+        assertThat(headers).isEmpty()
+    }
+
+    @Test
+    fun `tokenRefreshRequestSync is a no-op when there is no stored refresh token`() {
+        val manager = manager()
+        var called = false
+
+        val request = waitForCallback<TokenManager.TokenRefreshRequest?> { onResult ->
+            manager.tokenRefreshRequestSync(
+                "user",
+                statusCode = RCHTTPStatusCodes.UNAUTHORIZED,
+                alreadyRetriedRefresh = false,
+                reportTokenUpdate = { called = true },
+                callback = onResult,
+            )
+        }
+
+        assertThat(request).isNull()
+        assertThat(called).isFalse()
+    }
+
+    @Test
+    fun `the first Sync caller for a user gets a TokenRefreshRequest to actually perform`() = runTest {
+        val manager = manager()
+        waitForCompletion { onDone ->
+            manager.saveTokensSync(
+                "user",
+                accessToken = "access",
+                refreshToken = "refresh-token",
+                idToken = "id",
+                callback = onDone,
+            )
+        }
+
+        val request = waitForCallback<TokenManager.TokenRefreshRequest?> { onResult ->
+            manager.tokenRefreshRequestSync(
+                "user",
+                statusCode = RCHTTPStatusCodes.UNAUTHORIZED,
+                alreadyRetriedRefresh = false,
+                reportTokenUpdate = {},
+                callback = onResult,
+            )
+        }
+
+        assertThat(request).isEqualTo(TokenManager.TokenRefreshRequest("user", "refresh-token"))
+    }
+
+    @Test
+    fun `a concurrent Sync caller for the same user is folded into the in-flight refresh, and both are notified`() =
+        runTest {
+            val manager = manager()
+            waitForCompletion { onDone ->
+                manager.saveTokensSync(
+                    "user",
+                    accessToken = "access",
+                    refreshToken = "refresh-token",
+                    idToken = "id",
+                    callback = onDone,
+                )
+            }
+            var firstResult: TokenManager.TokenSet? = null
+            var secondResult: TokenManager.TokenSet? = null
+
+            val firstRequest = waitForCallback<TokenManager.TokenRefreshRequest?> { onResult ->
+                manager.tokenRefreshRequestSync(
+                    "user",
+                    statusCode = RCHTTPStatusCodes.UNAUTHORIZED,
+                    alreadyRetriedRefresh = false,
+                    reportTokenUpdate = { firstResult = it },
+                    callback = onResult,
+                )
+            }
+            val secondRequest = waitForCallback<TokenManager.TokenRefreshRequest?> { onResult ->
+                manager.tokenRefreshRequestSync(
+                    "user",
+                    statusCode = RCHTTPStatusCodes.UNAUTHORIZED,
+                    alreadyRetriedRefresh = false,
+                    reportTokenUpdate = { secondResult = it },
+                    callback = onResult,
+                )
+            }
+
+            assertThat(firstRequest).isNotNull()
+            assertThat(secondRequest).isNull()
+
+            val refreshedTokens = TokenManager.TokenSet(
+                accessToken = "new-access",
+                refreshToken = "new-refresh",
+                idToken = "new-id",
+            )
+            waitForCompletion { onDone -> manager.handleTokenRefreshResponseSync("user", refreshedTokens, onDone) }
+
+            assertThat(firstResult).isEqualTo(refreshedTokens)
+            assertThat(secondResult).isEqualTo(refreshedTokens)
+        }
+
+    @Test
+    fun `handleTokenRefreshResponseSync saves all three tokens and notifies reportTokenUpdate`() = runTest {
+        val manager = manager()
+        waitForCompletion { onDone ->
+            manager.saveTokensSync(
+                "user",
+                accessToken = "old-access",
+                refreshToken = "old-refresh",
+                idToken = "old-id",
+                callback = onDone,
+            )
+        }
+        var notified: TokenManager.TokenSet? = null
+
+        waitForCallback<TokenManager.TokenRefreshRequest?> { onResult ->
+            manager.tokenRefreshRequestSync(
+                "user",
+                statusCode = RCHTTPStatusCodes.UNAUTHORIZED,
+                alreadyRetriedRefresh = false,
+                reportTokenUpdate = { notified = it },
+                callback = onResult,
+            )
+        }
+
+        val refreshedTokens = TokenManager.TokenSet(
+            accessToken = "new-access",
+            refreshToken = "new-refresh",
+            idToken = "new-id",
+        )
+        waitForCompletion { onDone -> manager.handleTokenRefreshResponseSync("user", refreshedTokens, onDone) }
+
+        assertThat(notified).isEqualTo(refreshedTokens)
+        val accessFromSync = waitForCallback<String?> { onResult -> manager.currentAccessTokenSync("user", onResult) }
+        assertThat(accessFromSync).isEqualTo("new-access")
+        assertThat(manager.currentAccessToken("user")).isEqualTo("new-access")
+    }
+
+    @Test
+    fun `a failed Sync refresh notifies null and never touches storage`() = runTest {
+        val manager = manager()
+        waitForCompletion { onDone ->
+            manager.saveTokensSync(
+                "user",
+                accessToken = "access",
+                refreshToken = "refresh-token",
+                idToken = "id",
+                callback = onDone,
+            )
+        }
+        var notifiedWith: TokenManager.TokenSet? = TokenManager.TokenSet("x", "y", "z")
+
+        waitForCallback<TokenManager.TokenRefreshRequest?> { onResult ->
+            manager.tokenRefreshRequestSync(
+                "user",
+                statusCode = RCHTTPStatusCodes.UNAUTHORIZED,
+                alreadyRetriedRefresh = false,
+                reportTokenUpdate = { notifiedWith = it },
+                callback = onResult,
+            )
+        }
+
+        waitForCompletion { onDone -> manager.handleTokenRefreshResponseSync("user", null, onDone) }
+
+        assertThat(notifiedWith).isNull()
+        val accessFromSync = waitForCallback<String?> { onResult -> manager.currentAccessTokenSync("user", onResult) }
+        assertThat(accessFromSync).isEqualTo("access")
     }
 
     // endregion
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private fun testScope(): CoroutineScope = CoroutineScope(UnconfinedTestDispatcher())
+    // region cache-only access
+    //
+    // These read cachedTokens directly and return immediately, so no waitForCallback is needed.
+
+    @Test
+    fun `currentAccessTokenFromCache is null when nothing has resolved that slot yet`() {
+        val manager = manager()
+
+        assertThat(manager.currentAccessTokenFromCache("user")).isNull()
+        assertThat(manager.currentRefreshTokenFromCache("user")).isNull()
+    }
+
+    @Test
+    fun `currentAccessTokenFromCache sees a value saved via any of the other surfaces`() = runTest {
+        val manager = manager()
+        manager.saveTokens("user", accessToken = "access-token-value", refreshToken = "refresh", idToken = "id")
+
+        assertThat(manager.currentAccessTokenFromCache("user")).isEqualTo("access-token-value")
+        assertThat(manager.currentRefreshTokenFromCache("user")).isEqualTo("refresh")
+    }
+
+    @Test
+    fun `currentAccessTokenFromCache is null when disabled`() {
+        val manager = TokenManager(context, "test_api_key", enabled = false)
+
+        assertThat(manager.currentAccessTokenFromCache("user")).isNull()
+    }
+
+    @Test
+    fun `authorizationHeadersFromCache carries a Bearer header once the access token is cached`() = runTest {
+        val manager = manager()
+        manager.saveTokens("user", accessToken = "access-token-value", refreshToken = "refresh", idToken = "id")
+
+        assertThat(manager.authorizationHeadersFromCache("user", isIAMEndpoint = false))
+            .isEqualTo(mapOf("Authorization" to "Bearer access-token-value"))
+    }
+
+    @Test
+    fun `authorizationHeadersFromCache is empty for an IAM auth endpoint, even with a token cached`() = runTest {
+        val manager = manager()
+        manager.saveTokens("user", accessToken = "access-token-value", refreshToken = "refresh", idToken = "id")
+
+        assertThat(manager.authorizationHeadersFromCache("user", isIAMEndpoint = true)).isEmpty()
+    }
+
+    @Test
+    fun `authorizationHeadersFromCache is empty for a slot nothing has resolved yet`() {
+        val manager = manager()
+
+        assertThat(manager.authorizationHeadersFromCache("user", isIAMEndpoint = false)).isEmpty()
+    }
+
+    @Test
+    fun `tokenRefreshRequestFromCache is a no-op when the refresh token isn't cached yet`() {
+        val manager = manager()
+        var called = false
+
+        val request = manager.tokenRefreshRequestFromCache(
+            "user",
+            statusCode = RCHTTPStatusCodes.UNAUTHORIZED,
+            alreadyRetriedRefresh = false,
+        ) { called = true }
+
+        assertThat(request).isNull()
+        assertThat(called).isFalse()
+    }
+
+    @Test
+    fun `tokenRefreshRequestFromCache returns a request once the refresh token is cached`() = runTest {
+        val manager = manager()
+        manager.saveTokens("user", accessToken = "access", refreshToken = "refresh-token", idToken = "id")
+
+        val request = manager.tokenRefreshRequestFromCache(
+            "user",
+            statusCode = RCHTTPStatusCodes.UNAUTHORIZED,
+            alreadyRetriedRefresh = false,
+        ) {}
+
+        assertThat(request).isEqualTo(TokenManager.TokenRefreshRequest("user", "refresh-token"))
+    }
+
+    @Test
+    fun `construction pre-warms the cache with everything already on disk, for every appUserID`() = runTest {
+        val first = manager(apiKey = "prewarm_api_key")
+        first.saveTokens("user-a", accessToken = "a-access", refreshToken = "a-refresh", idToken = "a-id")
+        first.saveTokens("user-b", accessToken = "b-access", refreshToken = "b-refresh", idToken = "b-id")
+
+        val second = manager(apiKey = "prewarm_api_key")
+        // Waits for construction (and preWarmCache) to resolve, without reading user-a/user-b directly --
+        // that would populate their cache slots itself and defeat the point of this test.
+        waitForCallback<String?> { onResult -> second.currentAccessTokenSync("__warmup__", onResult) }
+
+        assertThat(second.currentAccessTokenFromCache("user-a")).isEqualTo("a-access")
+        assertThat(second.currentRefreshTokenFromCache("user-a")).isEqualTo("a-refresh")
+        assertThat(second.currentAccessTokenFromCache("user-b")).isEqualTo("b-access")
+        assertThat(second.currentRefreshTokenFromCache("user-b")).isEqualTo("b-refresh")
+    }
+
+    @Test
+    fun `construction pre-warms nothing for an appUserID with nothing stored on disk`() {
+        val manager = manager(apiKey = "prewarm_empty_api_key")
+
+        waitForCallback<String?> { onResult -> manager.currentAccessTokenSync("__warmup__", onResult) }
+
+        assertThat(manager.currentAccessTokenFromCache("never-logged-in-user")).isNull()
+        assertThat(manager.authorizationHeadersFromCache("never-logged-in-user", isIAMEndpoint = false)).isEmpty()
+    }
+
+    // endregion
+
+    // region close
+
+    @Test
+    fun `close does not throw, even with construction still in flight`() {
+        // Never awaited, so storage construction may still be in flight when close() runs.
+        val manager = TokenManager(context, "test_api_key", enabled = true)
+
+        manager.close()
+        manager.close() // idempotent
+    }
+
+    // endregion
 
     private fun manager(apiKey: String = "test_api_key"): TokenManager =
-        TokenManager(context, apiKey, enabled = true, scope = testScope())
+        TokenManager(context, apiKey, enabled = true)
 
     /**
-     * A syntactically-valid (but unsigned and unverified) JWT with the given [amr] claim -- or no `amr`
-     * claim at all when [amr] is `null` -- suitable for exercising identity-introspection methods, which
-     * only ever read that one claim out of a stored ID token.
+     * Blocks until [register]'s callback fires (possibly later, on [TokenManager]'s construction thread)
+     * and returns its value. `runTest` doesn't await plain callbacks the way it does suspend functions.
      */
+    private fun <T> waitForCallback(register: ((T) -> Unit) -> Unit): T {
+        val latch = CountDownLatch(1)
+        val resultHolder = AtomicReference<T>()
+        register { value ->
+            resultHolder.set(value)
+            latch.countDown()
+        }
+        assertThat(latch.await(5, TimeUnit.SECONDS))
+            .withFailMessage { "Callback never fired within 5 seconds" }
+            .isTrue()
+        return resultHolder.get()
+    }
+
+    /** [waitForCallback] for a no-argument completion callback (`() -> Unit`). */
+    private fun waitForCompletion(register: (() -> Unit) -> Unit) {
+        val latch = CountDownLatch(1)
+        register { latch.countDown() }
+        assertThat(latch.await(5, TimeUnit.SECONDS))
+            .withFailMessage { "Completion callback never fired within 5 seconds" }
+            .isTrue()
+    }
+
+    /** An unsigned, syntactically-valid JWT with the given [amr] claim (or none, if `null`). */
     private fun fakeIDToken(amr: List<String>?): String {
         val payload = JSONObject().apply {
             if (amr != null) put("amr", JSONArray(amr))

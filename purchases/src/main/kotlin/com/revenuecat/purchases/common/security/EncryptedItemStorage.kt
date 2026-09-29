@@ -19,34 +19,14 @@ import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 
 /**
- * A [SecureItemStorage] implementation that derives an AES-256-GCM encryption key from a
- * password using PBKDF2, then stores ciphertexts as JSON files on the device's internal storage.
+ * A [SecureItemStorage] implementation that derives an AES-256-GCM key from a password via
+ * PBKDF2, and stores ciphertexts as JSON files under a `RevenueCat` subfolder.
  *
- * ## Key derivation
- *
- * The symmetric key is derived once at initialization via `PBKDF2WithHmacSHA256` using the
- * supplied [password] and an optional salt. Because the key is derived deterministically,
- * it survives backup/restore — as long as the same password is provided, the data is readable
- * on any device, in contrast to Android Keystore-backed approaches where keys are
- * hardware-bound and cannot be restored.
- *
- * ## Backup behaviour
- *
- * The [SecureItemAttributes.includedInBackup] attribute controls which partition an item is
- * written to, both nested under a `RevenueCat` subfolder so this SDK's files are grouped
- * together rather than sitting loose at the root of the app's storage:
- *
- * - `true` (the default): the item is stored under [Context.getFilesDir]`/RevenueCat`, which
- *   participates in Android Auto Backup.
- * - `false`: the item is stored under [Context.getNoBackupFilesDir]`/RevenueCat`, which is
- *   explicitly excluded from Auto Backup by the OS — no additional XML configuration required.
- *
- * ## AEAD associated data
- *
- * Each item's identifier is used as AEAD associated data during encryption and decryption.
- * This means a ciphertext stored under one identifier cannot be silently decrypted as a
- * different identifier, even with the same key.
- *
+ * The key is derived deterministically from [password] + salt, so it survives backup/restore,
+ * unlike Android Keystore-backed keys. [SecureItemAttributes.includedInBackup] picks the
+ * partition: `true` uses [Context.getFilesDir] (Auto Backup eligible), `false` uses
+ * [Context.getNoBackupFilesDir] (excluded). Each item's identifier is used as AEAD associated
+ * data, so a ciphertext can't be silently decrypted under a different identifier.
  */
 internal class EncryptedItemStorage private constructor(
     private val backup: Partition,
@@ -62,8 +42,7 @@ internal class EncryptedItemStorage private constructor(
     companion object {
         private const val PBKDF2_ALGORITHM = "PBKDF2WithHmacSHA256"
 
-        // 100 000 iterations meets current NIST SP 800-132 guidance. This runs once at
-        // initialization, not on every read/write, so the one-time cost is acceptable.
+        // Meets NIST SP 800-132 guidance; runs once at init, so the cost is acceptable.
         private const val PBKDF2_ITERATIONS = 100_000
         private const val KEY_LENGTH_BITS = 256
         private const val KEY_ALGORITHM = "AES"
@@ -73,10 +52,32 @@ internal class EncryptedItemStorage private constructor(
         private const val DEFAULT_SALT = "revenuecat"
         private const val DEFAULT_STORAGE_NAME = "rc_secure"
 
-        // All of this SDK's files on disk are grouped under this subfolder, rather than sitting
-        // loose at the root of the app's storage directories, mirroring the convention already used
-        // by ETagPayloadStore/RemoteConfigDiskCache/RemoteConfigBlobStore.
+        // Groups this SDK's files, mirroring ETagPayloadStore/RemoteConfigDiskCache/RemoteConfigBlobStore.
         private const val VENDOR_DIRECTORY = "RevenueCat"
+
+        // Shared key derivation for create()/createBlocking() -- CPU-bound.
+        @Throws(GeneralSecurityException::class)
+        private fun deriveKey(password: CharArray, salt: String): SecretKey {
+            val saltBytes = salt.toByteArray(Charsets.UTF_8)
+            val spec = PBEKeySpec(password, saltBytes, PBKDF2_ITERATIONS, KEY_LENGTH_BITS)
+            val keyBytes = SecretKeyFactory.getInstance(PBKDF2_ALGORITHM)
+                .generateSecret(spec)
+                .encoded
+            return SecretKeySpec(keyBytes, KEY_ALGORITHM)
+        }
+
+        // Shared partition file load for create()/createBlocking().
+        private fun loadPartitions(context: Context): Pair<Partition, Partition> {
+            val backupFile = File(
+                File(context.filesDir, VENDOR_DIRECTORY),
+                "${DEFAULT_STORAGE_NAME}_backup.json",
+            )
+            val noBackupFile = File(
+                File(context.noBackupFilesDir, VENDOR_DIRECTORY),
+                "${DEFAULT_STORAGE_NAME}_no_backup.json",
+            )
+            return Partition(backupFile, loadStore(backupFile)) to Partition(noBackupFile, loadStore(noBackupFile))
+        }
 
         /**
          * Create an [EncryptedItemStorage] backed by PBKDF2-derived AES-256-GCM.
@@ -100,34 +101,29 @@ internal class EncryptedItemStorage private constructor(
             computationDispatcher: CoroutineDispatcher = Dispatchers.Default,
             ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
         ): EncryptedItemStorage {
-            val key = withContext(computationDispatcher) {
-                val saltBytes = salt.toByteArray(Charsets.UTF_8)
-                val spec = PBEKeySpec(password, saltBytes, PBKDF2_ITERATIONS, KEY_LENGTH_BITS)
-                val keyBytes = SecretKeyFactory.getInstance(PBKDF2_ALGORITHM)
-                    .generateSecret(spec)
-                    .encoded
-                SecretKeySpec(keyBytes, KEY_ALGORITHM)
-            }
-
-            val backupFile = File(
-                File(context.filesDir, VENDOR_DIRECTORY),
-                "${DEFAULT_STORAGE_NAME}_backup.json",
-            )
-            val noBackupFile = File(
-                File(context.noBackupFilesDir, VENDOR_DIRECTORY),
-                "${DEFAULT_STORAGE_NAME}_no_backup.json",
-            )
-
-            val (backup, noBackup) = withContext(ioDispatcher) {
-                Partition(backupFile, loadStore(backupFile)) to Partition(noBackupFile, loadStore(noBackupFile))
-            }
-
+            val key = withContext(computationDispatcher) { deriveKey(password, salt) }
+            val (backup, noBackup) = withContext(ioDispatcher) { loadPartitions(context) }
             return EncryptedItemStorage(backup, noBackup, key, computationDispatcher, ioDispatcher)
         }
 
-        // Loads a JSON store file into a mutable map. Returns an empty map if the file does not
-        // exist or cannot be parsed. Exposed internally so the test secondary constructor can
-        // reuse it without duplicating the parsing logic.
+        /**
+         * Synchronous twin of [create], for a caller already on its own background thread (only
+         * [TokenManager]) that has no need for [create]'s dispatcher hops.
+         *
+         * @throws GeneralSecurityException if key derivation fails
+         */
+        @Throws(GeneralSecurityException::class)
+        fun createBlocking(
+            context: Context,
+            password: CharArray,
+            salt: String = DEFAULT_SALT,
+        ): EncryptedItemStorage {
+            val key = deriveKey(password, salt)
+            val (backup, noBackup) = loadPartitions(context)
+            return EncryptedItemStorage(backup, noBackup, key)
+        }
+
+        // Loads file into a map, or empty if missing/unparseable. internal for the test constructor.
         internal fun loadStore(file: File): MutableMap<String, String> {
             if (!file.exists()) return mutableMapOf()
             return try {
@@ -140,8 +136,7 @@ internal class EncryptedItemStorage private constructor(
         }
     }
 
-    // Secondary constructor for tests: loads both partitions synchronously from their files.
-    // Only used within the module; production code always goes through create().
+    // Test-only constructor: loads both partitions synchronously from their files.
     internal constructor(
         backupFile: File,
         noBackupFile: File,
@@ -167,8 +162,7 @@ internal class EncryptedItemStorage private constructor(
     }
 
     override fun readItem(identifier: String): ByteArray? {
-        // Grab the encoded ciphertext under the lock, then decrypt outside it so we don't
-        // hold the monitor during a potentially slow crypto operation.
+        // Grab ciphertext under the lock, decrypt outside it (avoid holding the monitor during crypto).
         val encoded = synchronized(this) {
             backup.contents[identifier] ?: noBackup.contents[identifier]
         } ?: return null
@@ -189,8 +183,7 @@ internal class EncryptedItemStorage private constructor(
         val target = if (attributes.includedInBackup) backup else noBackup
         val other = if (attributes.includedInBackup) noBackup else backup
         synchronized(this) {
-            // Write the new disk state first — any I/O failure leaves memory unchanged so the
-            // two are never left inconsistent. Memory is updated only after all writes succeed.
+            // Write disk first -- an I/O failure then leaves memory unchanged.
             val evictingFromOther = other.contents.containsKey(identifier)
             if (evictingFromOther) saveContents(other.file, other.contents - identifier)
             saveContents(target.file, target.contents + (identifier to encoded))
@@ -236,8 +229,7 @@ internal class EncryptedItemStorage private constructor(
 
     // region File I/O
 
-    // Writes [contents] to [file] atomically. Any I/O failure is wrapped as a
-    // [SecureStorageException] so callers never need to handle raw IOException alongside it.
+    // Writes [contents] to [file] atomically; wraps I/O failure as [SecureStorageException].
     @Throws(SecureStorageException::class)
     private fun saveContents(file: File, contents: Map<String, String>) {
         val json = JSONObject()
