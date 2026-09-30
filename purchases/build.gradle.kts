@@ -54,7 +54,7 @@ android {
         buildConfigField(
             type = "boolean",
             name = "ENABLE_PAYWALL_MIN_MAX_SIZING",
-            value = resolveProperty("ENABLE_PAYWALL_MIN_MAX_SIZING", "false"),
+            value = resolveProperty("ENABLE_PAYWALL_MIN_MAX_SIZING", "true"),
         )
 
         packagingOptions.resources.excludes.addAll(
