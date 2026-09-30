@@ -112,8 +112,7 @@ internal class WebViewContextSnapshotTest {
                     ]
                 },
                 "selected_package": null,
-                "inputs": {
-                },
+                "inputs": {},
                 "workflow": {
                     "workflow_id": "wf_123",
                     "step_id": "step_paywall",
