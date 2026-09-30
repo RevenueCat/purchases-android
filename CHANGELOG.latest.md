@@ -1,9 +1,8 @@
-## RevenueCatUI SDK
-### Paywallsv2
-#### 🐞 Bugfixes
-* Fix price formatting when paywall language lacks a storefront locale (#4268) via Josh Holtz (@joshdholtz)
+## RevenueCat SDK
+### ✨ New Features
+* Track rewarded ad prompt shown and accepted events (#4352) via Drago Crnjac (@popcorn)
 
 ### 🔄 Other Changes
-* Add the sdk_settings remote config topic (#4302) via Toni Rico (@tonidero)
-* Mark the developer-facing checkpoints API @InviteOnlyCheckpointsAPI (#4338) via Toni Rico (@tonidero)
-* [SDK-4500] Add `is_synced` to `customer_info` purchase records (#4304) via Toni Rico (@tonidero)
+* Resolve the diagnostics collection decision at configure when remote config is disabled (#4353) via Toni Rico (@tonidero)
+* Chore(Paywalls): Support min/max on Fill sizes only (#4280) via Jacob Rakidzich (@JZDesign)
+* Drive diagnostics collection from the sdk_settings remote config (#4322) via Toni Rico (@tonidero)
