@@ -15,6 +15,8 @@ import com.revenuecat.purchases.ads.events.types.AdRewardFailedToVerifyData
 import com.revenuecat.purchases.ads.events.types.AdRewardFailureReason
 import com.revenuecat.purchases.ads.events.types.AdRewardGrantedData
 import com.revenuecat.purchases.ads.events.types.AdRewardVerifiedData
+import com.revenuecat.purchases.ads.events.types.RewardedAdPromptAcceptedData
+import com.revenuecat.purchases.ads.events.types.RewardedAdPromptShownData
 import com.revenuecat.purchases.common.events.EventsManager
 import io.mockk.Runs
 import io.mockk.every
@@ -450,5 +452,55 @@ class AdTrackerTest {
         )
 
         assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.ANDROID_ADMOB_LEGACY_ADAPTER)
+    }
+
+    @Test
+    fun `trackRewardedAdPromptShown tracks prompt shown event`() {
+        val eventSlot = slot<AdEvent.RewardedAdPromptShown>()
+        every { eventsManager.track(capture(eventSlot)) } just Runs
+
+        adTracker.trackRewardedAdPromptShown(
+            data = RewardedAdPromptShownData(
+                mediatorName = AdMediatorName.AD_MOB,
+                placement = "home_rewarded",
+                adUnitId = "ca-app-pub-789012",
+            ),
+        )
+
+        verify(exactly = 1) { eventsManager.track(any<AdEvent.RewardedAdPromptShown>()) }
+
+        assertThat(eventSlot.captured.type).isEqualTo(AdEventType.REWARDED_AD_PROMPT_SHOWN)
+        assertThat(eventSlot.captured.mediatorName).isEqualTo(AdMediatorName.AD_MOB)
+        assertThat(eventSlot.captured.placement).isEqualTo("home_rewarded")
+        assertThat(eventSlot.captured.adUnitId).isEqualTo("ca-app-pub-789012")
+        assertThat(eventSlot.captured.adFormat).isEqualTo(AdFormat.REWARDED)
+        assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.MANUAL)
+        assertThat(eventSlot.captured.networkName).isNull()
+        assertThat(eventSlot.captured.impressionId).isNull()
+    }
+
+    @Test
+    fun `trackRewardedAdPromptAccepted tracks prompt accepted event`() {
+        val eventSlot = slot<AdEvent.RewardedAdPromptAccepted>()
+        every { eventsManager.track(capture(eventSlot)) } just Runs
+
+        adTracker.trackRewardedAdPromptAccepted(
+            data = RewardedAdPromptAcceptedData(
+                mediatorName = AdMediatorName.AD_MOB,
+                placement = "home_rewarded",
+                adUnitId = "ca-app-pub-789012",
+            ),
+        )
+
+        verify(exactly = 1) { eventsManager.track(any<AdEvent.RewardedAdPromptAccepted>()) }
+
+        assertThat(eventSlot.captured.type).isEqualTo(AdEventType.REWARDED_AD_PROMPT_ACCEPTED)
+        assertThat(eventSlot.captured.mediatorName).isEqualTo(AdMediatorName.AD_MOB)
+        assertThat(eventSlot.captured.placement).isEqualTo("home_rewarded")
+        assertThat(eventSlot.captured.adUnitId).isEqualTo("ca-app-pub-789012")
+        assertThat(eventSlot.captured.adFormat).isEqualTo(AdFormat.REWARDED)
+        assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.MANUAL)
+        assertThat(eventSlot.captured.networkName).isNull()
+        assertThat(eventSlot.captured.impressionId).isNull()
     }
 }

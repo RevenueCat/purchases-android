@@ -11,6 +11,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,6 +33,8 @@ import com.revenuecat.purchases.ads.events.types.AdLoadedData
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
 import com.revenuecat.purchases.ads.events.types.AdOpenedData
 import com.revenuecat.purchases.ads.events.types.AdRevenueData
+import com.revenuecat.purchases.ads.events.types.RewardedAdPromptAcceptedData
+import com.revenuecat.purchases.ads.events.types.RewardedAdPromptShownData
 import com.revenuecat.sample.vanilla.data.Constants
 
 @Suppress("MultipleEmitters")
@@ -41,8 +44,19 @@ internal fun RewardedAdContent(activity: Activity) {
     var status by remember { mutableStateOf("Not Loaded") }
     var rewardedAd by remember { mutableStateOf<RewardedAd?>(null) }
 
+    LaunchedEffect(Unit) {
+        Purchases.sharedInstance.adTracker.trackRewardedAdPromptShown(
+            RewardedAdPromptShownData(
+                mediatorName = AdMediatorName.AD_MOB,
+                placement = "home_rewarded",
+                adUnitId = Constants.AdMob.REWARDED_AD_UNIT_ID,
+            ),
+        )
+    }
+
     Text(
-        text = "Full-screen ad that rewards users. Tracks: Loaded, Displayed, Opened (on click), Revenue.",
+        text = "Full-screen ad that rewards users. " +
+            "Tracks: Prompt Shown, Prompt Accepted, Loaded, Displayed, Opened (on click), Revenue.",
         style = MaterialTheme.typography.bodySmall,
     )
 
@@ -159,6 +173,13 @@ internal fun RewardedAdContent(activity: Activity) {
 
         Button(
             onClick = {
+                Purchases.sharedInstance.adTracker.trackRewardedAdPromptAccepted(
+                    RewardedAdPromptAcceptedData(
+                        mediatorName = AdMediatorName.AD_MOB,
+                        placement = "home_rewarded",
+                        adUnitId = Constants.AdMob.REWARDED_AD_UNIT_ID,
+                    ),
+                )
                 rewardedAd?.show(activity) { reward ->
                     Toast.makeText(context, "Earned reward: ${reward.amount} ${reward.type}", Toast.LENGTH_SHORT).show()
                 }
