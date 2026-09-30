@@ -23,6 +23,8 @@ internal enum class AdEventType(val value: String) {
     REWARD_VERIFIED("rc_ads_ad_reward_sdk_verified"),
     REWARD_GRANTED("rc_ads_ad_reward_sdk_granted"),
     REWARD_FAILED_TO_VERIFY("rc_ads_ad_reward_sdk_failed_to_verify"),
+    REWARDED_AD_PROMPT_SHOWN("rc_ads_rewarded_ad_prompt_shown"),
+    REWARDED_AD_PROMPT_ACCEPTED("rc_ads_rewarded_ad_prompt_accepted"),
 }
 
 internal sealed interface AdEvent : FeatureEvent {
@@ -171,4 +173,34 @@ internal sealed interface AdEvent : FeatureEvent {
         override val captureMethod: AdCaptureMethod,
         val failureReason: AdRewardFailureReason,
     ) : AdEvent
+
+    class RewardedAdPromptShown(
+        override val id: String = UUID.randomUUID().toString(),
+        override val eventVersion: Int = BackendEvent.AD_EVENT_SCHEMA_VERSION,
+        override val type: AdEventType = AdEventType.REWARDED_AD_PROMPT_SHOWN,
+        override val timestamp: Long = System.currentTimeMillis(),
+        override val mediatorName: AdMediatorName,
+        override val adFormat: AdFormat,
+        override val placement: String?,
+        override val adUnitId: String,
+        override val captureMethod: AdCaptureMethod,
+    ) : AdEvent {
+        override val networkName: String? = null
+        override val impressionId: String? = null
+    }
+
+    class RewardedAdPromptAccepted(
+        override val id: String = UUID.randomUUID().toString(),
+        override val eventVersion: Int = BackendEvent.AD_EVENT_SCHEMA_VERSION,
+        override val type: AdEventType = AdEventType.REWARDED_AD_PROMPT_ACCEPTED,
+        override val timestamp: Long = System.currentTimeMillis(),
+        override val mediatorName: AdMediatorName,
+        override val adFormat: AdFormat,
+        override val placement: String?,
+        override val adUnitId: String,
+        override val captureMethod: AdCaptureMethod,
+    ) : AdEvent {
+        override val networkName: String? = null
+        override val impressionId: String? = null
+    }
 }

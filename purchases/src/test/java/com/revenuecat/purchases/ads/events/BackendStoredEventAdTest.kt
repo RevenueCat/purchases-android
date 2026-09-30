@@ -452,4 +452,66 @@ class BackendStoredEventAdTest {
         assertThat(adStoredEvent.event.rewardFailureReason).isEqualTo("no_reward_rule")
         assertThat(adStoredEvent.event.rewardType).isNull()
     }
+
+    @Test
+    fun `AdEvent RewardedAdPromptShown converts to BackendStoredEvent Ad correctly`() {
+        val event = AdEvent.RewardedAdPromptShown(
+            id = "event-id-shown",
+            timestamp = 1111111111L,
+            mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.REWARDED,
+            placement = "home_rewarded",
+            adUnitId = "ad-unit-999",
+            captureMethod = AdCaptureMethod.MANUAL,
+        )
+
+        val storedEvent = event.toBackendStoredEvent(appUserID, appSessionID)
+
+        assertThat(storedEvent).isInstanceOf(BackendStoredEvent.Ad::class.java)
+        val adStoredEvent = storedEvent as BackendStoredEvent.Ad
+        assertThat(adStoredEvent.event.id).isEqualTo("event-id-shown")
+        assertThat(adStoredEvent.event.version).isEqualTo(BackendEvent.AD_EVENT_SCHEMA_VERSION)
+        assertThat(adStoredEvent.event.type).isEqualTo("rc_ads_rewarded_ad_prompt_shown")
+        assertThat(adStoredEvent.event.timestamp).isEqualTo(1111111111L)
+        assertThat(adStoredEvent.event.mediatorName).isEqualTo("AdMob")
+        assertThat(adStoredEvent.event.adFormat).isEqualTo("rewarded")
+        assertThat(adStoredEvent.event.placement).isEqualTo("home_rewarded")
+        assertThat(adStoredEvent.event.adUnitId).isEqualTo("ad-unit-999")
+        assertThat(adStoredEvent.event.captureMethod).isEqualTo("manual")
+        assertThat(adStoredEvent.event.networkName).isNull()
+        assertThat(adStoredEvent.event.impressionId).isNull()
+        assertThat(adStoredEvent.event.appUserID).isEqualTo(appUserID)
+        assertThat(adStoredEvent.event.appSessionID).isEqualTo(appSessionID)
+    }
+
+    @Test
+    fun `AdEvent RewardedAdPromptAccepted converts to BackendStoredEvent Ad correctly`() {
+        val event = AdEvent.RewardedAdPromptAccepted(
+            id = "event-id-accepted",
+            timestamp = 1111111111L,
+            mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.REWARDED,
+            placement = "home_rewarded",
+            adUnitId = "ad-unit-999",
+            captureMethod = AdCaptureMethod.MANUAL,
+        )
+
+        val storedEvent = event.toBackendStoredEvent(appUserID, appSessionID)
+
+        assertThat(storedEvent).isInstanceOf(BackendStoredEvent.Ad::class.java)
+        val adStoredEvent = storedEvent as BackendStoredEvent.Ad
+        assertThat(adStoredEvent.event.id).isEqualTo("event-id-accepted")
+        assertThat(adStoredEvent.event.version).isEqualTo(BackendEvent.AD_EVENT_SCHEMA_VERSION)
+        assertThat(adStoredEvent.event.type).isEqualTo("rc_ads_rewarded_ad_prompt_accepted")
+        assertThat(adStoredEvent.event.timestamp).isEqualTo(1111111111L)
+        assertThat(adStoredEvent.event.mediatorName).isEqualTo("AdMob")
+        assertThat(adStoredEvent.event.adFormat).isEqualTo("rewarded")
+        assertThat(adStoredEvent.event.placement).isEqualTo("home_rewarded")
+        assertThat(adStoredEvent.event.adUnitId).isEqualTo("ad-unit-999")
+        assertThat(adStoredEvent.event.captureMethod).isEqualTo("manual")
+        assertThat(adStoredEvent.event.networkName).isNull()
+        assertThat(adStoredEvent.event.impressionId).isNull()
+        assertThat(adStoredEvent.event.appUserID).isEqualTo(appUserID)
+        assertThat(adStoredEvent.event.appSessionID).isEqualTo(appSessionID)
+    }
 }
