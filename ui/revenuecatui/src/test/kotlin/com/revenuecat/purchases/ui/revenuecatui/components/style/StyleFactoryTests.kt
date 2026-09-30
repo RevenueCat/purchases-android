@@ -11,6 +11,7 @@ import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.FallbackHeaderComponent
 import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
+import com.revenuecat.purchases.paywalls.components.PurchaseContext
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialButtonComponent
@@ -98,6 +99,81 @@ class StyleFactoryTests {
             variableLocalizations = variableLocalizations,
             offering = offering
         )
+    }
+
+    @Test
+    fun `Independent context uses its own package flags and does not become the parent default`() {
+        val monthly = PackageComponent(
+            packageId = "\$rc_monthly",
+            isSelectedByDefault = true,
+            stack = StackComponent(components = emptyList()),
+        )
+        val scope = StackComponent(
+            components = listOf(
+                PackageComponent(
+                    packageId = "\$rc_annual",
+                    isSelectedByDefault = false,
+                    stack = StackComponent(components = emptyList()),
+                ),
+                monthly,
+            ),
+            purchaseContext = PurchaseContext(mode = "independent"),
+        )
+        val annual = PackageComponent(
+            packageId = "\$rc_annual",
+            isSelectedByDefault = true,
+            stack = StackComponent(components = emptyList()),
+        )
+        val result = styleFactory.create(StackComponent(components = listOf(annual, scope))).getOrThrow()
+        assertThat(result.availablePackages.packagesOutsideTabs.map { it.pkg.identifier }).containsExactly("\$rc_annual")
+        assertThat(result.availablePackages.allPackages.map { it.pkg.identifier }).containsExactly("\$rc_annual", "\$rc_annual", "\$rc_monthly")
+        val rootStyle = result.componentStyle as StackComponentStyle
+        val scopeStyle = rootStyle.children[1] as StackComponentStyle
+        assertThat(scopeStyle.purchaseContextPackages!!.packagesOutsideTabs.map { it.isSelectedByDefault })
+            .containsExactly(false, true)
+    }
+
+    @Test
+    fun `independent context records the owning tab for text price variables`() {
+        val text = TextComponent(
+            text = LOCALIZATION_KEY_TEXT_1,
+            color = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+        )
+        val tabs = TabsComponent(
+            tabs = listOf(
+                TabsComponent.Tab(
+                    id = "0",
+                    stack = StackComponent(components = listOf(StackComponent(components = listOf(text)))),
+                ),
+                TabsComponent.Tab(
+                    id = "1",
+                    stack = StackComponent(
+                        components = listOf(PurchaseButtonComponent(stack = StackComponent(components = listOf(text)))),
+                    ),
+                ),
+            ),
+            control = TabsComponent.TabControl.Buttons(
+                stack = StackComponent(
+                    components = listOf(
+                        TabControlButtonComponent(tabIndex = 0, tabId = "0", stack = StackComponent(emptyList())),
+                        TabControlButtonComponent(tabIndex = 1, tabId = "1", stack = StackComponent(emptyList())),
+                    ),
+                ),
+            ),
+        )
+        val context = StackComponent(
+            components = listOf(text, tabs),
+            purchaseContext = PurchaseContext(mode = "independent"),
+        )
+
+        val style = styleFactory.create(context).getOrThrow().componentStyle as StackComponentStyle
+        val outsideText = style.children[0] as TextComponentStyle
+        val tabsStyle = style.children[1] as TabsComponentStyle
+        assertThat(outsideText.variableContextTabIndex).isNull()
+        val nestedStack = tabsStyle.tabs[0].stack.children[0] as StackComponentStyle
+        assertThat((nestedStack.children[0] as TextComponentStyle).variableContextTabIndex).isEqualTo(0)
+        val button = tabsStyle.tabs[1].stack.children[0] as ButtonComponentStyle
+        assertThat((button.stackComponentStyle.children[0] as TextComponentStyle).variableContextTabIndex).isEqualTo(1)
     }
 
     @Test

@@ -40,6 +40,98 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
     private val localeId = LocaleId("en_US")
 
     @Test
+    fun `sheet default and package taps stay in the sheet context and reopen applies default`() {
+        val parent = paywallState(
+            listOf(packageInfo(TestData.Packages.annual, true)), emptyMap(), null,
+        )
+        val style = previewStackComponentStyle(children = emptyList()).copy(
+            purchaseContextPackages = PaywallState.Loaded.Components.AvailablePackages(
+                packagesOutsideTabs = listOf(
+                    packageInfo(TestData.Packages.monthly, true),
+                    packageInfo(TestData.Packages.weekly, false),
+                ),
+                packagesByTab = emptyMap(),
+                hasDeclaredPackages = true,
+            ),
+        )
+        val child = requireNotNull(parent.purchaseContextState(style))
+        assertThat(child.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
+        assertThat(parent.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+        child.update(TestData.Packages.weekly.identifier)
+        assertThat(child.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.weekly)
+        assertThat(parent.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+
+        // The root purchase button keeps its original selection.
+        parent.update(TestData.Packages.annual.identifier)
+        assertThat(child.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.weekly)
+        val reopened = requireNotNull(parent.purchaseContextState(style))
+        assertThat(reopened.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
+        assertThat(parent.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
+    @Test
+    fun `empty and unavailable contexts do not inherit the parent selection`() {
+        val parent = paywallState(listOf(packageInfo(TestData.Packages.annual, true)), emptyMap(), null)
+        val style = previewStackComponentStyle(children = emptyList()).copy(
+            purchaseContextPackages = PaywallState.Loaded.Components.AvailablePackages(emptyList(), emptyMap()),
+        )
+        assertThat(parent.purchaseContextState(style)?.selectedPackageInfo).isNull()
+        val unavailable = style.copy(purchaseContextPackages = style.purchaseContextPackages!!.copy(hasDeclaredPackages = true))
+        assertThat(parent.purchaseContextState(unavailable)).isNotNull()
+        assertThat(parent.purchaseContextState(unavailable)?.selectedPackageInfo).isNull()
+    }
+
+    @Test
+    fun `hidden scoped packages never fall back to the parent selection`() {
+        val parent = paywallState(listOf(packageInfo(TestData.Packages.annual, true)), emptyMap(), null)
+        val style = previewStackComponentStyle(children = emptyList()).copy(
+            purchaseContextPackages = PaywallState.Loaded.Components.AvailablePackages(
+                packagesOutsideTabs = listOf(packageInfo(TestData.Packages.monthly, true, visible = false)),
+                packagesByTab = emptyMap(),
+                hasDeclaredPackages = true,
+            ),
+        )
+        val scope = requireNotNull(parent.purchaseContextState(style))
+        scope.reconcilePurchaseContextSelection(initialize = true)
+        assertThat(scope.selectedPackageInfo).isNull()
+        assertThat(parent.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
+    @Test
+    fun `independent context price variables use only their owning package scope`() {
+        val outside = packageInfo(TestData.Packages.annual, true)
+        val firstTab = packageInfo(TestData.Packages.monthly, true)
+        val secondTab = packageInfo(TestData.Packages.weekly, true)
+        val available = PaywallState.Loaded.Components.AvailablePackages(
+            packagesOutsideTabs = listOf(outside),
+            packagesByTab = mapOf(0 to listOf(firstTab), 1 to listOf(secondTab), 2 to emptyList()),
+            nestedPackages = listOf(firstTab),
+        )
+        val parent = paywallState(listOf(outside), emptyMap(), null)
+        val style = previewStackComponentStyle(children = emptyList()).copy(purchaseContextPackages = available)
+        val scope = requireNotNull(parent.purchaseContextState(style))
+
+        assertThat(scope.mostExpensivePricePerMonthMicrosForVariable(null))
+            .isEqualTo(TestData.Packages.annual.product.pricePerMonth()?.amountMicros)
+        assertThat(scope.mostExpensivePricePerMonthMicrosForVariable(0))
+            .isEqualTo(TestData.Packages.monthly.product.pricePerMonth()?.amountMicros)
+        assertThat(scope.mostExpensivePricePerMonthMicrosForVariable(1))
+            .isEqualTo(TestData.Packages.weekly.product.pricePerMonth()?.amountMicros)
+        assertThat(scope.mostExpensivePricePerMonthMicrosForVariable(2))
+            .isEqualTo(TestData.Packages.annual.product.pricePerMonth()?.amountMicros)
+
+        scope.update(selectedTabIndex = 1)
+        assertThat(scope.mostExpensivePricePerMonthMicrosForVariable(null))
+            .isEqualTo(TestData.Packages.annual.product.pricePerMonth()?.amountMicros)
+
+        val legacy = paywallState(listOf(outside), mapOf(0 to listOf(firstTab)), 0)
+        assertThat(legacy.mostExpensivePricePerMonthMicrosForVariable(null))
+            .isEqualTo(legacy.mostExpensivePricePerMonthMicros)
+        assertThat(legacy.mostExpensivePricePerMonthMicrosForVariable(0))
+            .isEqualTo(legacy.mostExpensivePricePerMonthMicros)
+    }
+
+    @Test
     fun `Should select default package from tab 0 when initialSelectedTabIndex is null`() {
         // Arrange: packages only in tabs, no initialSelectedTabIndex
         val defaultPackage = TestData.Packages.monthly

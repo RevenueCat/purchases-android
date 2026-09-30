@@ -62,6 +62,9 @@ public class StackComponent(
     public val overrides: List<ComponentOverride<PartialStackComponent>> = emptyList(),
     @get:JvmSynthetic
     public val name: String? = null,
+    @get:JvmSynthetic
+    @SerialName("purchase_context")
+    public val purchaseContext: PurchaseContext? = null,
 ) : PaywallComponent {
 
     @Serializable(with = StackOverflowDeserializer::class)
@@ -114,4 +117,13 @@ public class PartialStackComponent(
 internal object StackOverflowDeserializer : EnumDeserializerWithDefault<StackComponent.Overflow>(
     serialName = "com.revenuecat.purchases.paywalls.components.StackComponent.Overflow",
     defaultValue = StackComponent.Overflow.NONE,
+)
+
+@InternalRevenueCatAPI
+@Poko
+@Serializable
+@Immutable
+public class PurchaseContext(
+    @get:JvmSynthetic
+    public val mode: String,
 )
