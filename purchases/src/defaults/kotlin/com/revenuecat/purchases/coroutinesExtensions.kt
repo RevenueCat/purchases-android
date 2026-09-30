@@ -288,18 +288,12 @@ public suspend fun Purchases.awaitCustomerCenterConfigData(): CustomerCenterConf
  * HTTP 5xx failures (retryable) from deterministic ones.
  */
 @JvmSynthetic
+@JvmOverloads
 @Throws(RewardVerificationException::class)
 @InternalRevenueCatAPI
 public suspend fun Purchases.awaitGetRewardVerificationResult(
     clientTransactionId: String,
-): RewardVerificationPollStatus = awaitGetRewardVerificationResult(clientTransactionId, adUnitId = null)
-
-@JvmSynthetic
-@Throws(RewardVerificationException::class)
-@InternalRevenueCatAPI
-public suspend fun Purchases.awaitGetRewardVerificationResult(
-    clientTransactionId: String,
-    adUnitId: String?,
+    adUnitId: String? = null,
 ): RewardVerificationPollStatus {
     return suspendCancellableCoroutine { continuation ->
         getRewardVerificationResult(
