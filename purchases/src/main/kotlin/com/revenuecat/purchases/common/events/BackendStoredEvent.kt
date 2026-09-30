@@ -579,7 +579,8 @@ internal fun WorkflowEvent.toBackendStoredEvent(
             isLastStep = isLastStep,
             experimentId = experiment?.experimentId,
             experimentVariant = experiment?.experimentVariant,
-            workflowBlobRef = experiment?.workflowBlobRef,
+            workflowBlobRef = workflowBlobRef,
+            fallbackOriginalStepId = fallbackOriginalStepId,
         )
         is WorkflowEvent.StepCompleted -> BackendEvent.Workflows.Properties(
             workflowId = workflowId,
@@ -590,7 +591,8 @@ internal fun WorkflowEvent.toBackendStoredEvent(
             isLastStep = isLastStep,
             experimentId = experiment?.experimentId,
             experimentVariant = experiment?.experimentVariant,
-            workflowBlobRef = experiment?.workflowBlobRef,
+            workflowBlobRef = workflowBlobRef,
+            fallbackOriginalStepId = fallbackOriginalStepId,
         )
         is WorkflowEvent.Close -> BackendEvent.Workflows.Properties(
             workflowId = workflowId,
@@ -600,7 +602,8 @@ internal fun WorkflowEvent.toBackendStoredEvent(
             isLastStep = isLastStep,
             experimentId = experiment?.experimentId,
             experimentVariant = experiment?.experimentVariant,
-            workflowBlobRef = experiment?.workflowBlobRef,
+            workflowBlobRef = workflowBlobRef,
+            fallbackOriginalStepId = fallbackOriginalStepId,
         )
     }
     return BackendStoredEvent.Workflows(

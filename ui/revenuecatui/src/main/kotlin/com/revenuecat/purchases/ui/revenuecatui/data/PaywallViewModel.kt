@@ -1438,6 +1438,8 @@ internal class PaywallViewModelImpl(
                 entryReason = entryReason.value,
                 isFirstStep = step.id == workflow.initialStepId,
                 isLastStep = isTerminalStep(workflow, step.id),
+                workflowBlobRef = currentWorkflowBlobRef,
+                fallbackOriginalStepId = step.fallbackOriginalStepId,
                 experiment = experimentData(step),
             ),
         )
@@ -1454,6 +1456,8 @@ internal class PaywallViewModelImpl(
                 toStepId = toStepId,
                 isFirstStep = step.id == workflow.initialStepId,
                 isLastStep = isTerminalStep(workflow, step.id),
+                workflowBlobRef = currentWorkflowBlobRef,
+                fallbackOriginalStepId = step.fallbackOriginalStepId,
                 experiment = experimentData(step),
             ),
         )
@@ -1462,15 +1466,10 @@ internal class PaywallViewModelImpl(
     private fun experimentData(step: WorkflowStep): WorkflowEvent.ExperimentData? {
         val experimentId = step.experimentId
         val experimentVariant = step.experimentVariant
-        val workflowBlobRef = currentWorkflowBlobRef
-        return if (experimentId == null || experimentVariant == null || workflowBlobRef == null) {
+        return if (experimentId == null || experimentVariant == null || currentWorkflowBlobRef == null) {
             null
         } else {
-            WorkflowEvent.ExperimentData(
-                experimentId = experimentId,
-                experimentVariant = experimentVariant,
-                workflowBlobRef = workflowBlobRef,
-            )
+            WorkflowEvent.ExperimentData(experimentId = experimentId, experimentVariant = experimentVariant)
         }
     }
 
@@ -1523,6 +1522,8 @@ internal class PaywallViewModelImpl(
                 traceId = workflowTraceId,
                 isFirstStep = step.id == workflow.initialStepId,
                 isLastStep = isTerminalStep(workflow, step.id),
+                workflowBlobRef = currentWorkflowBlobRef,
+                fallbackOriginalStepId = step.fallbackOriginalStepId,
                 experiment = experimentData(step),
             ),
         )
