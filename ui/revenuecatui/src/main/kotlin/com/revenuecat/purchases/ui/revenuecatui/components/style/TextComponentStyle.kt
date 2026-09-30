@@ -87,4 +87,7 @@ internal class TextComponentStyle(
     val overrides: List<PresentedOverride<LocalizedTextPartial>>,
     @get:JvmSynthetic
     val componentName: String? = null,
+    /** The containing Tab, distinct from [tabIndex] which identifies a tab-control element. */
+    @get:JvmSynthetic
+    val variableContextTabIndex: Int? = null,
 ) : ComponentStyle, PackageContext

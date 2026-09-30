@@ -411,6 +411,13 @@ internal sealed interface PaywallState {
                     .mostExpensivePricePerMonthMicros()
             }
 
+            internal fun mostExpensivePricePerMonthMicrosForVariable(tabIndex: Int?): Long? {
+                if (!isIndependentPurchaseContext) return mostExpensivePricePerMonthMicros
+                val tabPackages = tabIndex?.let { packages.packagesByTab[it] }.orEmpty()
+                val ownedPackages = tabPackages.ifEmpty { packages.packagesOutsideTabs }
+                return ownedPackages.mostExpensivePricePerMonthMicros()
+            }
+
             val currentDate: Date
                 get() = dateProvider()
 

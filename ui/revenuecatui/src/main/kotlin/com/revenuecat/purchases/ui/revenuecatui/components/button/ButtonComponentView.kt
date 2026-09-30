@@ -152,8 +152,6 @@ internal fun ButtonComponentView(
                     enabled = !anyActionInProgress,
                     onStackClick = onStackClick@{
                         val paywallAction = buttonState.action ?: return@onStackClick
-                        myActionInProgress = true
-                        state.update(clickScopedActionInProgress = true)
                         val actionForClick = if (style.action.isPurchaseRelated()) {
                             val currentPackage = packageForPurchaseButtonInteraction(style.action, state)
                             val componentUrl = resolvedWebCheckoutInteractionUrl(
@@ -162,6 +160,7 @@ internal fun ButtonComponentView(
                             )
                             // Carry the package or URL resolved in this button's context through to the action handler.
                             val resolvedAction = actionForPurchaseClick(paywallAction, state, componentUrl)
+                                ?: return@onStackClick
                             componentInteractionTracker.track(
                                 paywallPurchaseButtonAction(
                                     componentName = style.componentName,
@@ -187,6 +186,8 @@ internal fun ButtonComponentView(
                             }
                             paywallAction
                         }
+                        myActionInProgress = true
+                        state.update(clickScopedActionInProgress = true)
                         coroutineScope.launch {
                             // `state` outlives this composition-scoped coroutine, so skipping the reset
                             // on cancellation leaves every button on the paywall disabled.
@@ -331,13 +332,12 @@ private fun actionForPurchaseClick(
     action: PaywallAction,
     state: PaywallState.Loaded.Components,
     componentUrl: String?,
-): PaywallAction = when (action) {
+): PaywallAction? = when (action) {
     is PaywallAction.External.PurchasePackage -> {
         if (state.isIndependentPurchaseContext && action.rcPackage == null) {
-            action.copy(
-                rcPackage = state.selectedPackageInfo?.rcPackage,
-                resolvedOffer = state.selectedPackageInfo?.resolvedOffer,
-            )
+            state.selectedPackageInfo?.let { selected ->
+                action.copy(rcPackage = selected.rcPackage, resolvedOffer = selected.resolvedOffer)
+            }
         } else {
             action
         }

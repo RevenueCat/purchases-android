@@ -1081,6 +1081,7 @@ internal class StyleFactory(
             variableLocalizations = variableLocalizations,
             overrides = presentedOverrides,
             componentName = component.name,
+            variableContextTabIndex = tabIndex,
         )
     }
 

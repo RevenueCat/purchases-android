@@ -98,6 +98,40 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
     }
 
     @Test
+    fun `independent context price variables use only their owning package scope`() {
+        val outside = packageInfo(TestData.Packages.annual, true)
+        val firstTab = packageInfo(TestData.Packages.monthly, true)
+        val secondTab = packageInfo(TestData.Packages.weekly, true)
+        val available = PaywallState.Loaded.Components.AvailablePackages(
+            packagesOutsideTabs = listOf(outside),
+            packagesByTab = mapOf(0 to listOf(firstTab), 1 to listOf(secondTab), 2 to emptyList()),
+            nestedPackages = listOf(firstTab),
+        )
+        val parent = paywallState(listOf(outside), emptyMap(), null)
+        val style = previewStackComponentStyle(children = emptyList()).copy(purchaseContextPackages = available)
+        val scope = requireNotNull(parent.purchaseContextState(style))
+
+        assertThat(scope.mostExpensivePricePerMonthMicrosForVariable(null))
+            .isEqualTo(TestData.Packages.annual.product.pricePerMonth()?.amountMicros)
+        assertThat(scope.mostExpensivePricePerMonthMicrosForVariable(0))
+            .isEqualTo(TestData.Packages.monthly.product.pricePerMonth()?.amountMicros)
+        assertThat(scope.mostExpensivePricePerMonthMicrosForVariable(1))
+            .isEqualTo(TestData.Packages.weekly.product.pricePerMonth()?.amountMicros)
+        assertThat(scope.mostExpensivePricePerMonthMicrosForVariable(2))
+            .isEqualTo(TestData.Packages.annual.product.pricePerMonth()?.amountMicros)
+
+        scope.update(selectedTabIndex = 1)
+        assertThat(scope.mostExpensivePricePerMonthMicrosForVariable(null))
+            .isEqualTo(TestData.Packages.annual.product.pricePerMonth()?.amountMicros)
+
+        val legacy = paywallState(listOf(outside), mapOf(0 to listOf(firstTab)), 0)
+        assertThat(legacy.mostExpensivePricePerMonthMicrosForVariable(null))
+            .isEqualTo(legacy.mostExpensivePricePerMonthMicros)
+        assertThat(legacy.mostExpensivePricePerMonthMicrosForVariable(0))
+            .isEqualTo(legacy.mostExpensivePricePerMonthMicros)
+    }
+
+    @Test
     fun `Should select default package from tab 0 when initialSelectedTabIndex is null`() {
         // Arrange: packages only in tabs, no initialSelectedTabIndex
         val defaultPackage = TestData.Packages.monthly

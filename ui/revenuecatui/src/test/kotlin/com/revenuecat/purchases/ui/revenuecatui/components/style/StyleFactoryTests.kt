@@ -134,6 +134,49 @@ class StyleFactoryTests {
     }
 
     @Test
+    fun `independent context records the owning tab for text price variables`() {
+        val text = TextComponent(
+            text = LOCALIZATION_KEY_TEXT_1,
+            color = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+        )
+        val tabs = TabsComponent(
+            tabs = listOf(
+                TabsComponent.Tab(
+                    id = "0",
+                    stack = StackComponent(components = listOf(StackComponent(components = listOf(text)))),
+                ),
+                TabsComponent.Tab(
+                    id = "1",
+                    stack = StackComponent(
+                        components = listOf(PurchaseButtonComponent(stack = StackComponent(components = listOf(text)))),
+                    ),
+                ),
+            ),
+            control = TabsComponent.TabControl.Buttons(
+                stack = StackComponent(
+                    components = listOf(
+                        TabControlButtonComponent(tabIndex = 0, tabId = "0", stack = StackComponent(emptyList())),
+                        TabControlButtonComponent(tabIndex = 1, tabId = "1", stack = StackComponent(emptyList())),
+                    ),
+                ),
+            ),
+        )
+        val context = StackComponent(
+            components = listOf(text, tabs),
+            purchaseContext = PurchaseContext(mode = "independent"),
+        )
+
+        val style = styleFactory.create(context).getOrThrow().componentStyle as StackComponentStyle
+        val outsideText = style.children[0] as TextComponentStyle
+        val tabsStyle = style.children[1] as TabsComponentStyle
+        assertThat(outsideText.variableContextTabIndex).isNull()
+        val nestedStack = tabsStyle.tabs[0].stack.children[0] as StackComponentStyle
+        assertThat((nestedStack.children[0] as TextComponentStyle).variableContextTabIndex).isEqualTo(0)
+        val button = tabsStyle.tabs[1].stack.children[0] as ButtonComponentStyle
+        assertThat((button.stackComponentStyle.children[0] as TextComponentStyle).variableContextTabIndex).isEqualTo(1)
+    }
+
+    @Test
     fun `Should create a single TextComponentStyle for a single TextComponent`() {
         // Arrange
         val expectedColor = Color.Red

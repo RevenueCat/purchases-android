@@ -72,11 +72,13 @@ internal fun TextComponentView(
     val text = rememberProcessedText(
         state = state,
         textState = textState,
+        variableContextTabIndex = style.variableContextTabIndex,
     )
     val spokenText = rememberSpokenText(
         state = state,
         textState = textState,
         displayedText = text,
+        variableContextTabIndex = style.variableContextTabIndex,
     )
 
     val colorStyle = textState.color.forCurrentTheme
@@ -144,9 +146,10 @@ internal fun TextComponentView(
 private fun rememberProcessedText(
     state: PaywallState.Loaded.Components,
     textState: TextComponentState,
+    variableContextTabIndex: Int?,
     spoken: Boolean = false,
 ): String {
-    val processedText by remember(state, textState, spoken) {
+    val processedText by remember(state, textState, variableContextTabIndex, spoken) {
         derivedStateOf {
             val dateLocale = state.locale.toJavaLocale()
             val currencyLocale = state.currencyLocale.toJavaLocale()
@@ -155,7 +158,7 @@ private fun rememberProcessedText(
             val variableContext = packageToUse?.let { pkg ->
                 val discount = discountPercentage(
                     pricePerMonthMicros = pkg.product.pricePerMonth()?.amountMicros,
-                    mostExpensiveMicros = state.mostExpensivePricePerMonthMicros,
+                    mostExpensiveMicros = state.mostExpensivePricePerMonthMicrosForVariable(variableContextTabIndex),
                 )
                 VariableProcessor.PackageContext(
                     discountRelativeToMostExpensivePerMonth = discount,
@@ -196,8 +199,14 @@ private fun rememberSpokenText(
     state: PaywallState.Loaded.Components,
     textState: TextComponentState,
     displayedText: String,
+    variableContextTabIndex: Int?,
 ): String? {
-    val spokenMarkdown = rememberProcessedText(state = state, textState = textState, spoken = true)
+    val spokenMarkdown = rememberProcessedText(
+        state = state,
+        textState = textState,
+        variableContextTabIndex = variableContextTabIndex,
+        spoken = true,
+    )
     return remember(spokenMarkdown, displayedText) {
         val readsTheSame = spokenMarkdown == displayedText
         if (readsTheSame || markdownHasLinks(displayedText)) null else markdownPlainText(spokenMarkdown)

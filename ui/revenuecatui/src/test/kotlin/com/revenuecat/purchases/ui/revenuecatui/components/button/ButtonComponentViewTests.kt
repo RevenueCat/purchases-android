@@ -170,6 +170,35 @@ class ButtonComponentViewTests {
     }
 
     @Test
+    fun `purchase action with no scoped selection does not buy the root package`() {
+        val root = FakePaywallState(TestData.Packages.annual, TestData.Packages.monthly)
+        root.update(selectedPackageUniqueId = TestData.Packages.annual.identifier)
+        val style = previewStackComponentStyle(children = emptyList()).copy(
+            purchaseContextPackages = PaywallState.Loaded.Components.AvailablePackages(
+                packagesOutsideTabs = emptyList(),
+                packagesByTab = emptyMap(),
+                hasDeclaredPackages = true,
+            ),
+        )
+        val state = requireNotNull(root.purchaseContextState(style))
+        var clicks = 0
+
+        composeTestRule.setContent {
+            ButtonComponentView(
+                style = purchaseButtonStyle,
+                state = state,
+                onClick = { clicks++ },
+            )
+        }
+
+        composeTestRule.onNodeWithText("Purchase").performClick()
+        composeTestRule.waitForIdle()
+        assertThat(clicks).isZero()
+        assertThat(state.actionInProgress).isFalse()
+        assertThat(root.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
+    @Test
     fun `a click cut short by the button leaving composition releases the paywall action`() {
         val state = FakePaywallState(TestData.Packages.annual)
         val clickStarted = CompletableDeferred<Unit>()
