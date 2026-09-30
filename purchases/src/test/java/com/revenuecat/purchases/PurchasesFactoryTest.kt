@@ -353,6 +353,26 @@ class PurchasesFactoryTest {
         purchases.close()
     }
 
+    @Test
+    fun `the diagnostics file survives configure until the remote decision when remote config is enabled`() {
+        val diagnosticsFile = createEmptyDiagnosticsFile()
+        val purchases = createPurchases { diagnosticsEnabled(false) }
+
+        assertThat(awaitDiagnosticsFileDeletion(diagnosticsFile)).isFalse()
+        purchases.close()
+    }
+
+    @Test
+    fun `custom entitlement computation deletes the diagnostics file at configure without a remote decision`() {
+        val diagnosticsFile = createEmptyDiagnosticsFile()
+        val purchases = createPurchases {
+            dangerousSettings(DangerousSettings(customEntitlementComputation = true))
+        }
+
+        assertThat(awaitDiagnosticsFileDeletion(diagnosticsFile)).isTrue()
+        purchases.close()
+    }
+
     @OptIn(InternalRevenueCatAPI::class)
     @Test
     fun `ui preview mode has no diagnostics to act on a remote disabled setting`() {
