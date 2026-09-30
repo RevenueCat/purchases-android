@@ -88,6 +88,7 @@ class BackendGetRewardVerificationResultTest {
         backend.getRewardVerificationResult(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
+            adUnitId = null,
             onSuccess = { receivedResult = it },
             onError = { error -> fail("Expected success. Got error: $error") },
         )
@@ -98,7 +99,7 @@ class BackendGetRewardVerificationResultTest {
         verify(exactly = 1) {
             httpClient.performRequest(
                 mockBaseURL,
-                Endpoint.GetRewardVerification(appUserId, clientTransactionId),
+                Endpoint.GetRewardVerification(appUserId, clientTransactionId, null),
                 body = null,
                 postFieldsToSign = null,
                 requestHeaders = any(),
@@ -137,6 +138,7 @@ class BackendGetRewardVerificationResultTest {
         backend.getRewardVerificationResult(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
+            adUnitId = null,
             onSuccess = { receivedResult = it },
             onError = { error -> fail("Expected success. Got error: $error") },
         )
@@ -152,6 +154,7 @@ class BackendGetRewardVerificationResultTest {
         backend.getRewardVerificationResult(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
+            adUnitId = null,
             onSuccess = { receivedResult = it },
             onError = { error -> fail("Expected success. Got error: $error") },
         )
@@ -169,6 +172,7 @@ class BackendGetRewardVerificationResultTest {
         backend.getRewardVerificationResult(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
+            adUnitId = null,
             onSuccess = { receivedResult = it },
             onError = { error -> fail("Expected success. Got error: $error") },
         )
@@ -188,6 +192,7 @@ class BackendGetRewardVerificationResultTest {
         backend.getRewardVerificationResult(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
+            adUnitId = null,
             onSuccess = { receivedResult = it },
             onError = { error -> fail("Expected success. Got error: $error") },
         )
@@ -204,6 +209,7 @@ class BackendGetRewardVerificationResultTest {
         backend.getRewardVerificationResult(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
+            adUnitId = null,
             onSuccess = { fail("Expected error. Got success") },
             onError = { error -> obtainedError = error.error },
         )
@@ -223,6 +229,7 @@ class BackendGetRewardVerificationResultTest {
         backend.getRewardVerificationResult(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
+            adUnitId = null,
             onSuccess = { fail("Expected error. Got success") },
             onError = { error ->
                 obtainedError = error.error
@@ -241,12 +248,14 @@ class BackendGetRewardVerificationResultTest {
         asyncBackend.getRewardVerificationResult(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
+            adUnitId = null,
             onSuccess = { lock.countDown() },
             onError = { error -> fail("Expected success. Got error: $error") },
         )
         asyncBackend.getRewardVerificationResult(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
+            adUnitId = null,
             onSuccess = { lock.countDown() },
             onError = { error -> fail("Expected success. Got error: $error") },
         )
@@ -255,7 +264,7 @@ class BackendGetRewardVerificationResultTest {
         verify(exactly = 1) {
             httpClient.performRequest(
                 mockBaseURL,
-                Endpoint.GetRewardVerification(appUserId, clientTransactionId),
+                Endpoint.GetRewardVerification(appUserId, clientTransactionId, null),
                 body = null,
                 postFieldsToSign = null,
                 requestHeaders = any(),

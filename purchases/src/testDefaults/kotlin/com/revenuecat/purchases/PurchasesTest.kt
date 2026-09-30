@@ -2070,6 +2070,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockBackend.getRewardVerificationResult(
                 appUserID = appUserId,
                 clientTransactionId = "ct_1",
+                adUnitId = null,
                 onSuccess = captureLambda(),
                 onError = any(),
             )
@@ -2080,6 +2081,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         var receivedResult: RewardVerificationPollStatus? = null
         purchases.getRewardVerificationResult(
             clientTransactionId = "ct_1",
+            adUnitId = null,
             callback = object : GetRewardVerificationResultCallback {
                 override fun onReceived(result: RewardVerificationPollStatus) {
                     receivedResult = result
@@ -2413,6 +2415,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockBackend.getRewardVerificationResult(
                 appUserID = appUserId,
                 clientTransactionId = "ct_1",
+                adUnitId = null,
                 onSuccess = captureLambda(),
                 onError = any(),
             )
@@ -2430,6 +2433,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockBackend.getRewardVerificationResult(
                 appUserID = appUserId,
                 clientTransactionId = "ct_1",
+                adUnitId = null,
                 onSuccess = any(),
                 onError = captureLambda(),
             )
@@ -2442,6 +2446,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         var receivedError: PurchasesError? = null
         purchases.getRewardVerificationResult(
             clientTransactionId = "ct_1",
+            adUnitId = null,
             callback = object : GetRewardVerificationResultCallback {
                 override fun onReceived(result: RewardVerificationPollStatus) {
                     fail("should be error")
@@ -2505,6 +2510,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockBackend.getRewardVerificationResult(
                 appUserID = appUserId,
                 clientTransactionId = "ct_1",
+                adUnitId = null,
                 onSuccess = any(),
                 onError = captureLambda(),
             )

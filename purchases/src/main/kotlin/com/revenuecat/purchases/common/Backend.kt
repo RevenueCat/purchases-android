@@ -1093,7 +1093,7 @@ internal class Backend(
     fun getRewardVerificationResult(
         appUserID: String,
         clientTransactionId: String,
-        adUnitId: String? = null,
+        adUnitId: String?,
         onSuccess: (RewardVerificationPollStatus) -> Unit,
         onError: (RewardVerificationError) -> Unit,
     ) {

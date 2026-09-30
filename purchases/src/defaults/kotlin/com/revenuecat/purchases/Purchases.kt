@@ -1031,13 +1031,13 @@ public class Purchases internal constructor(
     @OptIn(InternalRevenueCatAPI::class)
     internal fun getRewardVerificationResult(
         clientTransactionId: String,
+        adUnitId: String?,
         callback: GetRewardVerificationResultCallback,
-        adUnitId: String? = null,
     ) {
         purchasesOrchestrator.getRewardVerificationResult(
             clientTransactionId = clientTransactionId,
-            callback = callback,
             adUnitId = adUnitId,
+            callback = callback,
         )
     }
 

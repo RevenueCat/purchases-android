@@ -160,7 +160,7 @@ internal sealed class Endpoint(
     data class GetRewardVerification(
         val userId: String,
         val clientTransactionId: String,
-        val adUnitId: String? = null,
+        val adUnitId: String?,
     ) : Endpoint(
         pathTemplate = "/v1/subscribers/%s/ads/reward_verifications/%s",
         name = "get_reward_verification",
