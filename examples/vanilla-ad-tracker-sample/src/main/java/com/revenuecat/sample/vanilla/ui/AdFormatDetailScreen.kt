@@ -19,14 +19,10 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.revenuecat.sample.vanilla.ui.ads.AppOpenAdContent
 import com.revenuecat.sample.vanilla.ui.ads.BannerAdContent
 import com.revenuecat.sample.vanilla.ui.ads.ErrorTestingContent
 import com.revenuecat.sample.vanilla.ui.ads.InterstitialAdContent
-import com.revenuecat.sample.vanilla.ui.ads.NativeAdContent
-import com.revenuecat.sample.vanilla.ui.ads.NativeVideoAdContent
 import com.revenuecat.sample.vanilla.ui.ads.RewardedAdContent
-import com.revenuecat.sample.vanilla.ui.ads.RewardedInterstitialAdContent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,11 +59,7 @@ internal fun AdFormatDetailScreen(
             when (format) {
                 AdFormat.BANNER -> BannerAdContent()
                 AdFormat.INTERSTITIAL -> InterstitialAdContent(activity)
-                AdFormat.APP_OPEN -> AppOpenAdContent(activity)
                 AdFormat.REWARDED -> RewardedAdContent(activity)
-                AdFormat.REWARDED_INTERSTITIAL -> RewardedInterstitialAdContent(activity)
-                AdFormat.NATIVE -> NativeAdContent()
-                AdFormat.NATIVE_VIDEO -> NativeVideoAdContent()
                 AdFormat.ERROR_TESTING -> ErrorTestingContent()
             }
         }

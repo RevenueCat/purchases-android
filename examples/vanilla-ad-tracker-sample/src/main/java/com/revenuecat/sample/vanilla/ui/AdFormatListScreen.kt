@@ -38,7 +38,7 @@ internal fun AdFormatListScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "AdMob + RevenueCat (Manual)",
+                        text = "LevelPlay + RevenueCat (Manual)",
                         fontWeight = FontWeight.Bold,
                     )
                 },
