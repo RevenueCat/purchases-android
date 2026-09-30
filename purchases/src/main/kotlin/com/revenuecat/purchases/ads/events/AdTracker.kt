@@ -10,9 +10,9 @@ import com.revenuecat.purchases.ads.events.types.AdRevenueData
 import com.revenuecat.purchases.ads.events.types.AdRewardEarnedUnverifiedData
 import com.revenuecat.purchases.ads.events.types.AdRewardFailedToVerifyData
 import com.revenuecat.purchases.ads.events.types.AdRewardGrantedData
+import com.revenuecat.purchases.ads.events.types.AdRewardPromptAcceptedData
+import com.revenuecat.purchases.ads.events.types.AdRewardPromptShownData
 import com.revenuecat.purchases.ads.events.types.AdRewardVerifiedData
-import com.revenuecat.purchases.ads.events.types.RewardedAdPromptAcceptedData
-import com.revenuecat.purchases.ads.events.types.RewardedAdPromptShownData
 import com.revenuecat.purchases.common.events.EventsManager
 
 /**
@@ -253,7 +253,7 @@ public class AdTracker internal constructor(
      *
      * @param data The rewarded ad prompt shown event data.
      */
-    public fun trackRewardedAdPromptShown(data: RewardedAdPromptShownData) {
+    public fun trackRewardedAdPromptShown(data: AdRewardPromptShownData) {
         eventsManager.track(
             event = AdEvent.RewardedAdPromptShown(
                 mediatorName = data.mediatorName,
@@ -270,7 +270,7 @@ public class AdTracker internal constructor(
      *
      * @param data The rewarded ad prompt accepted event data.
      */
-    public fun trackRewardedAdPromptAccepted(data: RewardedAdPromptAcceptedData) {
+    public fun trackRewardedAdPromptAccepted(data: AdRewardPromptAcceptedData) {
         eventsManager.track(
             event = AdEvent.RewardedAdPromptAccepted(
                 mediatorName = data.mediatorName,

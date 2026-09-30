@@ -10,7 +10,7 @@ import dev.drewhamilton.poko.Poko
  * @property adUnitId The ad unit ID of the rewarded ad.
  */
 @Poko
-public class RewardedAdPromptShownData(
+public class AdRewardPromptShownData(
     public val mediatorName: AdMediatorName,
     public val placement: String?,
     public val adUnitId: String,

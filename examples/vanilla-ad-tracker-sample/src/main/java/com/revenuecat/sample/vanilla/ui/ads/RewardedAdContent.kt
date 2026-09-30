@@ -33,8 +33,8 @@ import com.revenuecat.purchases.ads.events.types.AdLoadedData
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
 import com.revenuecat.purchases.ads.events.types.AdOpenedData
 import com.revenuecat.purchases.ads.events.types.AdRevenueData
-import com.revenuecat.purchases.ads.events.types.RewardedAdPromptAcceptedData
-import com.revenuecat.purchases.ads.events.types.RewardedAdPromptShownData
+import com.revenuecat.purchases.ads.events.types.AdRewardPromptAcceptedData
+import com.revenuecat.purchases.ads.events.types.AdRewardPromptShownData
 import com.revenuecat.sample.vanilla.data.Constants
 
 @Suppress("MultipleEmitters")
@@ -46,7 +46,7 @@ internal fun RewardedAdContent(activity: Activity) {
 
     LaunchedEffect(Unit) {
         Purchases.sharedInstance.adTracker.trackRewardedAdPromptShown(
-            RewardedAdPromptShownData(
+            AdRewardPromptShownData(
                 mediatorName = AdMediatorName.AD_MOB,
                 placement = "home_rewarded",
                 adUnitId = Constants.AdMob.REWARDED_AD_UNIT_ID,
@@ -174,7 +174,7 @@ internal fun RewardedAdContent(activity: Activity) {
         Button(
             onClick = {
                 Purchases.sharedInstance.adTracker.trackRewardedAdPromptAccepted(
-                    RewardedAdPromptAcceptedData(
+                    AdRewardPromptAcceptedData(
                         mediatorName = AdMediatorName.AD_MOB,
                         placement = "home_rewarded",
                         adUnitId = Constants.AdMob.REWARDED_AD_UNIT_ID,

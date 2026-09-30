@@ -14,9 +14,9 @@ import com.revenuecat.purchases.ads.events.types.AdRewardEarnedUnverifiedData
 import com.revenuecat.purchases.ads.events.types.AdRewardFailedToVerifyData
 import com.revenuecat.purchases.ads.events.types.AdRewardFailureReason
 import com.revenuecat.purchases.ads.events.types.AdRewardGrantedData
+import com.revenuecat.purchases.ads.events.types.AdRewardPromptAcceptedData
+import com.revenuecat.purchases.ads.events.types.AdRewardPromptShownData
 import com.revenuecat.purchases.ads.events.types.AdRewardVerifiedData
-import com.revenuecat.purchases.ads.events.types.RewardedAdPromptAcceptedData
-import com.revenuecat.purchases.ads.events.types.RewardedAdPromptShownData
 import com.revenuecat.purchases.common.events.EventsManager
 import io.mockk.Runs
 import io.mockk.every
@@ -24,10 +24,10 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import java.util.Date
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
-import java.util.Date
 
 @OptIn(InternalRevenueCatAPI::class)
 class AdTrackerTest {
@@ -460,7 +460,7 @@ class AdTrackerTest {
         every { eventsManager.track(capture(eventSlot)) } just Runs
 
         adTracker.trackRewardedAdPromptShown(
-            data = RewardedAdPromptShownData(
+            data = AdRewardPromptShownData(
                 mediatorName = AdMediatorName.AD_MOB,
                 placement = "home_rewarded",
                 adUnitId = "ca-app-pub-789012",
@@ -485,7 +485,7 @@ class AdTrackerTest {
         every { eventsManager.track(capture(eventSlot)) } just Runs
 
         adTracker.trackRewardedAdPromptAccepted(
-            data = RewardedAdPromptAcceptedData(
+            data = AdRewardPromptAcceptedData(
                 mediatorName = AdMediatorName.AD_MOB,
                 placement = "home_rewarded",
                 adUnitId = "ca-app-pub-789012",
