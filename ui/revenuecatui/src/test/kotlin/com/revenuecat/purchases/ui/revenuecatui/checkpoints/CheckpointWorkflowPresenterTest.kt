@@ -91,6 +91,11 @@ class CheckpointWorkflowPresenterTest {
 
     @After
     fun tearDown() {
+        // A sheet dismissal writes snapshot state outside any composition. Compose's global snapshot manager
+        // reacts by posting to the main looper through AndroidUiDispatcher; if the test ends with that message
+        // still queued, Robolectric drops it and the dispatcher stays marked as scheduled, wedging every Compose
+        // test that runs afterwards in this JVM.
+        shadowOf(Looper.getMainLooper()).idle()
         Dispatchers.resetMain()
     }
 
