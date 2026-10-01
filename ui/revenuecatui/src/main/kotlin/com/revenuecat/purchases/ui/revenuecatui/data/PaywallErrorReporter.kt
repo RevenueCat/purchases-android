@@ -21,7 +21,8 @@ import kotlinx.coroutines.launch
  * Error states are taken from [state] rather than from where they are set, once each, so a window re-presented
  * after a configuration change, which collects the same state again, does not ask the presenter twice. The
  * presenter is called on [scope]'s thread and its report is brought back to it. A report only counts for the
- * presentation it was asked in: one that arrives after the paywall was dismissed and presented again is ignored.
+ * presentation it was asked in: one that arrives after the paywall was dismissed and presented again is ignored,
+ * and so is one for an error that a newer error has since replaced.
  */
 internal class PaywallErrorReporter(
     private val presenter: () -> PaywallErrorPresenter?,
@@ -46,6 +47,8 @@ internal class PaywallErrorReporter(
         /** Changes every time a presentation ends, so a report can be tied to the presentation that asked for it. */
         val presentationGeneration: Int
     }
+
+    private var current: FirstReportCompletion? = null
 
     init {
         scope.launch { state.filterIsInstance<PaywallState.Error>().collect { onErrorState(it) } }
@@ -119,6 +122,10 @@ internal class PaywallErrorReporter(
                 if (host.presentationGeneration == generation) onResult(result)
             }
         }
+        // Like the SDK's own presenter, a new error replaces the one before it: whatever the app still shows for
+        // the earlier one can no longer act on the flow.
+        current?.discard()
+        current = completion
         try {
             presenter.present(error, flowCanContinue, completion)
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {

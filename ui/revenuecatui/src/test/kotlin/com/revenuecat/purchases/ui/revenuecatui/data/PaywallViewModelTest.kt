@@ -3876,6 +3876,21 @@ class PaywallViewModelTest {
     }
 
     @Test
+    fun `an error presenter report for an error that a newer error replaced is ignored`() {
+        val presenter = RecordingErrorPresenter()
+        var dismissals = 0
+        val model = create(errorPresenter = presenter, dismissRequest = { dismissals++ })
+        failPurchase(model)
+        failPurchase(model)
+
+        presenter.complete(ErrorPresenter.Completion.Result.Continue, index = 0)
+        assertThat(dismissals).isEqualTo(0)
+
+        presenter.complete(ErrorPresenter.Completion.Result.Continue, index = 1)
+        assertThat(dismissals).isEqualTo(1)
+    }
+
+    @Test
     fun `a cancellation reported as an error by the app's purchase logic is tracked but not shown`() = runTest {
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
         val customPurchaseCalled = MutableStateFlow(false)
@@ -3908,7 +3923,8 @@ class PaywallViewModelTest {
             completions += completion
         }
 
-        fun complete(result: ErrorPresenter.Completion.Result) = completions.single().complete(result)
+        fun complete(result: ErrorPresenter.Completion.Result, index: Int = completions.lastIndex) =
+            completions[index].complete(result)
     }
 
     private fun failPurchase(
