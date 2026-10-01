@@ -866,6 +866,7 @@ internal class PaywallViewModelImpl(
                 updateExitOfferData(ExitOfferData.Unavailable())
                 _state.value = PaywallState.Error(
                     "Error ${e.code.code}: ${e.code.description}",
+                    e.error,
                 )
             }
         }

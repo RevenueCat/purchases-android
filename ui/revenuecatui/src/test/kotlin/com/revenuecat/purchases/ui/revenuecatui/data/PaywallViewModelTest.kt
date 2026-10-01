@@ -3763,8 +3763,8 @@ class PaywallViewModelTest {
 
         val model = create(errorPresenter = presenter)
 
-        val state = model.state.value as PaywallState.Error
-        assertThat(presenter.errors.single().underlyingErrorMessage).isEqualTo(state.errorMessage)
+        assertThat(model.state.value).isInstanceOf(PaywallState.Error::class.java)
+        assertThat(presenter.errors.single().code).isEqualTo(PurchasesErrorCode.NetworkError)
         assertThat(presenter.flowCanContinue).containsExactly(false)
         assertThat(dismissInvoked).isFalse
     }
@@ -3774,16 +3774,15 @@ class PaywallViewModelTest {
         coEvery { purchases.awaitOfferings() } throws PurchasesException(PurchasesError(PurchasesErrorCode.NetworkError))
         val presenter = RecordingErrorPresenter()
         val dismissals = mutableListOf<Pair<PaywallResult?, PaywallDismissReason>>()
-        val model = create(
+        create(
             errorPresenter = presenter,
             dismissRequestWithExitOffering = { _, result, reason -> dismissals += result to reason },
         )
-        val state = model.state.value as PaywallState.Error
 
         presenter.complete(ErrorPresenter.Completion.Result.Retry)
 
         val (result, reason) = dismissals.single()
-        assertThat((result as PaywallResult.Error).error.underlyingErrorMessage).isEqualTo(state.errorMessage)
+        assertThat((result as PaywallResult.Error).error.code).isEqualTo(PurchasesErrorCode.NetworkError)
         assertThat(reason).isEqualTo(PaywallDismissReason.CLOSE)
     }
 

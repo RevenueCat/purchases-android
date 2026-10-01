@@ -38,9 +38,10 @@ public fun interface ErrorPresenter {
         public val customVariables: Map<String, CustomVariableValue>,
         /**
          * Whether the flow can go on after this error. True when a purchase or restore started from the flow
-         * failed: the paywall stays on screen for another try. False when the flow itself could not be presented
-         * or kept on screen (e.g. it has nothing to sell): there is nothing to go back to, so
-         * [Completion.Result.Retry] ends the flow like [Completion.Result.Continue].
+         * failed: the paywall stays on screen for another try. False when the paywall on screen has nothing it can
+         * show (its content failed to load, it has nothing to sell, or a workflow step is invalid): there is
+         * nothing to go back to, so [Completion.Result.Retry] ends the flow like [Completion.Result.Continue]. A
+         * flow that could not be presented at all never reaches the presenter.
          */
         public val flowCanContinue: Boolean,
     )
