@@ -3841,6 +3841,63 @@ class PaywallViewModelTest {
         assertThat(reason).isEqualTo(PaywallDismissReason.CLOSE)
     }
 
+    @Test
+    fun `a report made before the error presenter throws is dropped and the dialog takes over`() {
+        var dismissals = 0
+        val model = create(
+            errorPresenter = { _, _, completion ->
+                completion.complete(ErrorPresenter.Completion.Result.Continue)
+                error("Simulated.")
+            },
+            dismissRequest = { dismissals++ },
+        )
+        val expectedError = PurchasesError(PurchasesErrorCode.ProductNotAvailableForPurchaseError)
+
+        failPurchase(model, expectedError)
+
+        assertThat(dismissals).isEqualTo(0)
+        assertThat(model.actionError.value).isEqualTo(expectedError)
+    }
+
+    @Test
+    fun `an error presenter report from a previous presentation is ignored`() {
+        val presenter = RecordingErrorPresenter()
+        var dismissals = 0
+        val model = create(errorPresenter = presenter, dismissRequest = { dismissals++ })
+        failPurchase(model)
+        model.closePaywall()
+        model.onPaywallPresented()
+        assertThat(dismissals).isEqualTo(1)
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded::class.java)
+
+        presenter.complete(ErrorPresenter.Completion.Result.Continue)
+
+        assertThat(dismissals).isEqualTo(1)
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded::class.java)
+    }
+
+    @Test
+    fun `a cancellation reported as an error by the app's purchase logic is tracked but not shown`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+        val customPurchaseCalled = MutableStateFlow(false)
+        val model = create(
+            customPurchaseLogic = TestAppPurchaseLogicWithCallbacks(
+                customPurchaseCalled,
+                null,
+                PurchaseLogicResult.Error(PurchasesError(PurchasesErrorCode.PurchaseCancelledError)),
+                null,
+            ),
+        )
+        model.trackPaywallImpressionIfNeeded()
+
+        model.purchaseSelectedPackage(activity)
+        customPurchaseCalled.first { it }
+
+        assertThat(model.actionError.value).isNull()
+        assertThat(dismissInvoked).isFalse
+        verifyEventTracked(PaywallEventType.PURCHASE_ERROR, 1)
+    }
+
     private class RecordingErrorPresenter : PaywallErrorPresenter {
         val errors = mutableListOf<PurchasesError>()
         val flowCanContinue = mutableListOf<Boolean>()

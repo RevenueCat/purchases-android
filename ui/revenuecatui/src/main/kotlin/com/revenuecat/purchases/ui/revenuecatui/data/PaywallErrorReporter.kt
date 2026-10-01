@@ -11,16 +11,17 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.launch
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Hands a paywall's errors to the app's [PaywallErrorPresenter] when its options carry one, and turns the
  * presenter's first report into what the paywall does next through [Host]. Without a presenter, a purchase or
- * restore error shows the SDK's dialog and an error state is left to the paywall to render.
+ * restore error shows the SDK's dialog and an error state is left to the paywall to render. A purchase the user
+ * cancelled is not shown either way.
  *
  * Error states are taken from [state] rather than from where they are set, once each, so a window re-presented
  * after a configuration change, which collects the same state again, does not ask the presenter twice. The
- * presenter is called on [scope]'s thread and its report is brought back to it.
+ * presenter is called on [scope]'s thread and its report is brought back to it. A report only counts for the
+ * presentation it was asked in: one that arrives after the paywall was dismissed and presented again is ignored.
  */
 internal class PaywallErrorReporter(
     private val presenter: () -> PaywallErrorPresenter?,
@@ -41,6 +42,9 @@ internal class PaywallErrorReporter(
 
         /** True once the flow has ended some other way (e.g. the user closed the paywall meanwhile). */
         val flowEnded: Boolean
+
+        /** Changes every time a presentation ends, so a report can be tied to the presentation that asked for it. */
+        val presentationGeneration: Int
     }
 
     init {
@@ -49,14 +53,14 @@ internal class PaywallErrorReporter(
 
     // The paywall stays as it is, interactive, and the app's first report decides whether the flow goes on.
     fun onActionError(error: PurchasesError) {
+        // The user's own decision, not something to show. Store purchases never report one here, but an app's
+        // purchase logic may return it as an error.
+        if (error.code == PurchasesErrorCode.PurchaseCancelledError) return
         val presenter = presenter()
         if (presenter == null) {
             host.showErrorDialog(error)
             return
         }
-        // The user's own decision, not something to present. Store purchases never report one here, but an
-        // app's purchase logic may return it as an error.
-        if (error.code == PurchasesErrorCode.PurchaseCancelledError) return
         present(presenter, error, flowCanContinue = true, onFailure = { host.showErrorDialog(error) }) {
             when {
                 it == ErrorPresenter.Completion.Result.Retry -> Unit
@@ -98,8 +102,9 @@ internal class PaywallErrorReporter(
     }
 
     /**
-     * Hands [error] to the app's [presenter] and runs [onResult] with its first report, on [scope]'s thread. A
-     * presenter that throws is logged and [onFailure] takes over; anything it reports afterwards is ignored.
+     * Hands [error] to the app's [presenter] and runs [onResult] with its first report, on [scope]'s thread. The
+     * report is held until the presenter has returned: a presenter that throws is logged and [onFailure] takes
+     * over alone, whatever it reported before throwing or reports afterwards.
      */
     private fun present(
         presenter: PaywallErrorPresenter,
@@ -108,28 +113,56 @@ internal class PaywallErrorReporter(
         onFailure: () -> Unit,
         onResult: (ErrorPresenter.Completion.Result) -> Unit,
     ) {
-        val completion = FirstReportCompletion { result -> scope.launch { onResult(result) } }
+        val generation = host.presentationGeneration
+        val completion = FirstReportCompletion { result ->
+            scope.launch {
+                if (host.presentationGeneration == generation) onResult(result)
+            }
+        }
         try {
             presenter.present(error, flowCanContinue, completion)
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             Logger.e("Error presenter failed: $e")
             completion.discard()
             onFailure()
+            return
         }
+        completion.release()
     }
 
+    // Delivers the first report once, and only after release(); a report made before then waits for it, and
+    // discard() drops it. Reports can come from any thread, the delivery runs outside the lock.
     private class FirstReportCompletion(
         private val onFirst: (ErrorPresenter.Completion.Result) -> Unit,
     ) : ErrorPresenter.Completion {
 
-        private val reported = AtomicBoolean(false)
+        private val lock = Any()
+        private var reported = false
+        private var released = false
+        private var pending: ErrorPresenter.Completion.Result? = null
 
         override fun complete(result: ErrorPresenter.Completion.Result) {
-            if (reported.compareAndSet(false, true)) onFirst(result)
+            val deliverNow = synchronized(lock) {
+                if (reported) return
+                reported = true
+                if (released) true else false.also { pending = result }
+            }
+            if (deliverNow) onFirst(result)
+        }
+
+        fun release() {
+            val held = synchronized(lock) {
+                released = true
+                pending.also { pending = null }
+            }
+            held?.let(onFirst)
         }
 
         fun discard() {
-            reported.set(true)
+            synchronized(lock) {
+                reported = true
+                pending = null
+            }
         }
     }
 }

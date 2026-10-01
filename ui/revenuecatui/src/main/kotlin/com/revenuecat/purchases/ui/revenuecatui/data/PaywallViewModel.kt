@@ -273,6 +273,7 @@ internal class PaywallViewModelImpl(
     private var exitOfferData: ExitOfferData = ExitOfferData.Loading()
     private var updateStateJob: Job? = null
     private var shouldReloadStateOnNextPresentation = false
+    private var presentationGeneration = 0
 
     private data class PaywallPresentationFingerprint(
         val paywallIdentifier: String?,
@@ -305,6 +306,9 @@ internal class PaywallViewModelImpl(
 
             override val flowEnded: Boolean
                 get() = shouldReloadStateOnNextPresentation
+
+            override val presentationGeneration: Int
+                get() = this@PaywallViewModelImpl.presentationGeneration
         },
     )
 
@@ -442,6 +446,7 @@ internal class PaywallViewModelImpl(
         // the paywall enters composition again. Keep the last generic state rendered until then: activity and
         // navigation dismissals can leave InternalPaywall composed while their exit animation finishes.
         shouldReloadStateOnNextPresentation = true
+        presentationGeneration++
     }
 
     private fun updateExitOfferData(data: ExitOfferData) {
