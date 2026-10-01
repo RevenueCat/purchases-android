@@ -241,12 +241,4 @@ private class SheetNestedScrollConnection(
         } else {
             Velocity.Zero
         }
-
-    override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity =
-        if (state.hiddenFraction > 0f) {
-            settle(available.y)
-            available
-        } else {
-            Velocity.Zero
-        }
 }

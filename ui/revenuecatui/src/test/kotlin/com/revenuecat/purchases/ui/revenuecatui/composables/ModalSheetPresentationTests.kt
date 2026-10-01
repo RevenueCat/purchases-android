@@ -1,10 +1,16 @@
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
@@ -29,6 +35,7 @@ class ModalSheetPresentationTests {
     val composeTestRule = createComposeRule()
 
     private val contentText = "Sheet content"
+    private val scrollableTag = "scrollable"
 
     @Test
     fun `the sheet slides in and settles below its top margin`(): Unit = with(composeTestRule) {
@@ -48,7 +55,7 @@ class ModalSheetPresentationTests {
     fun `tapping the scrim requests a dismissal`(): Unit = with(composeTestRule) {
         val state = ModalSheetState()
         var dismissRequests = 0
-        setSheet(state) { dismissRequests++ }
+        setSheet(state, onDismissRequest = { dismissRequests++ })
         mainClock.advanceTimeBy(ANIMATION_SLACK_MILLIS)
         waitForIdle()
 
@@ -62,7 +69,7 @@ class ModalSheetPresentationTests {
     fun `tapping the sheet does not request a dismissal`(): Unit = with(composeTestRule) {
         val state = ModalSheetState()
         var dismissRequests = 0
-        setSheet(state) { dismissRequests++ }
+        setSheet(state, onDismissRequest = { dismissRequests++ })
         mainClock.advanceTimeBy(ANIMATION_SLACK_MILLIS)
         waitForIdle()
 
@@ -75,11 +82,32 @@ class ModalSheetPresentationTests {
     fun `swiping the sheet down requests a dismissal once it is off screen`(): Unit = with(composeTestRule) {
         val state = ModalSheetState()
         var dismissRequests = 0
-        setSheet(state) { dismissRequests++ }
+        setSheet(state, onDismissRequest = { dismissRequests++ })
         mainClock.advanceTimeBy(ANIMATION_SLACK_MILLIS)
         waitForIdle()
 
         onNodeWithText(contentText).performTouchInput { swipeDown() }
+        mainClock.advanceTimeBy(ANIMATION_SLACK_MILLIS)
+        waitForIdle()
+
+        assertThat(dismissRequests).isEqualTo(1)
+        assertThat(state.hiddenFraction).isEqualTo(1f)
+    }
+
+    @Test
+    fun `swiping scrollable content at its top down requests a dismissal once`(): Unit = with(composeTestRule) {
+        val state = ModalSheetState()
+        var dismissRequests = 0
+        setSheet(state, onDismissRequest = { dismissRequests++ }) {
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).testTag(scrollableTag)) {
+                Text(contentText)
+                Box(Modifier.height(4000.dp))
+            }
+        }
+        mainClock.advanceTimeBy(ANIMATION_SLACK_MILLIS)
+        waitForIdle()
+
+        onNodeWithTag(scrollableTag).performTouchInput { swipeDown() }
         mainClock.advanceTimeBy(ANIMATION_SLACK_MILLIS)
         waitForIdle()
 
@@ -118,12 +146,14 @@ class ModalSheetPresentationTests {
         assertThat(hidden).isTrue
     }
 
-    private fun setSheet(state: ModalSheetState, onDismissRequest: () -> Unit = {}) = with(composeTestRule) {
+    private fun setSheet(
+        state: ModalSheetState,
+        onDismissRequest: () -> Unit = {},
+        content: @Composable () -> Unit = { Box(Modifier.fillMaxSize()) { Text(contentText) } },
+    ) = with(composeTestRule) {
         mainClock.autoAdvance = false
         setContent {
-            ModalSheetPresentation(state = state, onDismissRequest = onDismissRequest) {
-                Box(Modifier.fillMaxSize()) { Text(contentText) }
-            }
+            ModalSheetPresentation(state = state, onDismissRequest = onDismissRequest, content = content)
         }
         onRoot().assertExists()
     }

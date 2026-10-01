@@ -30,12 +30,12 @@ import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.IntState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -718,22 +718,16 @@ private fun MainStackComponent(
                 }
 
                 is Dimension.ZLayer -> {
-                    // Pre-compute the top safe-drawing inset in px for use as a fallback
-                    // when no header height is available. Captured at composition time so
-                    // the Modifier.layout closure can branch at layout time. Unlike
-                    // windowInsetsPadding, a direct read does not see what an ancestor
-                    // already consumed (e.g. a sheet sitting below the status bar), so that
-                    // part is subtracted.
+                    // Unlike windowInsetsPadding, a direct inset read does not see what an
+                    // ancestor already consumed (e.g. a sheet sitting below the status bar), so
+                    // that part is tracked here. The callback fires on attach, before the first
+                    // measure, and the value is only read inside the layout block: the first
+                    // frame is already right, and inset changes remeasure rather than recompose.
                     val density = LocalDensity.current
-                    var consumedTopInsetPx by remember { mutableIntStateOf(0) }
-                    val topInsetPx = if (stackState.applyTopWindowInsets && !stackState.ignoreHeaderHeight) {
-                        (safeDrawingInsets.getTop(density) - consumedTopInsetPx).coerceAtLeast(0)
-                    } else {
-                        0
-                    }
+                    val consumedTopInsetPx = remember { mutableIntStateOf(0) }
                     Box(
                         modifier = outerModifier
-                            .onConsumedWindowInsetsChanged { consumedTopInsetPx = it.getTop(density) }
+                            .onConsumedWindowInsetsChanged { consumedTopInsetPx.intValue = it.getTop(density) }
                             .size(
                                 size = stackState.size,
                                 horizontalAlignment = dimension.alignment.toHorizontalAlignmentOrNull(),
@@ -757,8 +751,8 @@ private fun MainStackComponent(
                                     .conditional(applyTopInsets && !stackState.ignoreHeaderHeight) {
                                         // Read header height at layout time. If set (hero case),
                                         // it already includes status bar padding. Otherwise fall
-                                        // back to the safe-drawing top inset.
-                                        headerOrInsetsTopPadding(state, topInsetPx)
+                                        // back to the unconsumed safe-drawing top inset.
+                                        headerOrInsetsTopPadding(state, safeDrawingInsets, consumedTopInsetPx)
                                     }
                                     .conditional(applyTopInsets && stackState.ignoreHeaderHeight) {
                                         windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
@@ -2175,13 +2169,16 @@ private fun previewBadge(
 
 /**
  * Adds top padding read at layout time: uses [state]'s header height in pixels if set (hero case
- * where the header already accounts for the status bar), otherwise falls back to [fallbackInsetPx]
- * (the safe-drawing top inset, pre-computed at composition time).
+ * where the header already accounts for the status bar), otherwise falls back to the top of [insets]
+ * minus [consumedTopInsetPx], what an ancestor already consumed. Both inset reads happen in the
+ * layout block, so they are observed there and a change remeasures without recomposing.
  */
 private fun Modifier.headerOrInsetsTopPadding(
     state: PaywallState.Loaded.Components,
-    fallbackInsetPx: Int,
+    insets: WindowInsets,
+    consumedTopInsetPx: IntState,
 ): Modifier = this.layout { measurable, constraints ->
+    val fallbackInsetPx = (insets.getTop(this) - consumedTopInsetPx.intValue).coerceAtLeast(0)
     val topPad = if (state.headerHeightPx > 0) state.headerHeightPx else fallbackInsetPx
     val placeable = measurable.measure(constraints.offset(vertical = -topPad))
     layout(placeable.width, placeable.height + topPad) {
