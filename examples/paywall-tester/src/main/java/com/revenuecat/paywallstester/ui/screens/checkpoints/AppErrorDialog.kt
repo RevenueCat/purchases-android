@@ -9,7 +9,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
-import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter.Completion.Result
 
 /**
@@ -18,7 +18,7 @@ import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter.Compl
  * (outside tap or system back) does what the SDK's own dialog does: retry when the flow can go on, continue
  * otherwise.
  */
-@OptIn(InternalRevenueCatAPI::class)
+@OptIn(InviteOnlyCheckpointsAPI::class)
 @Composable
 internal fun AppErrorDialog(request: AppErrorPresenter.Request) {
     val params = request.params

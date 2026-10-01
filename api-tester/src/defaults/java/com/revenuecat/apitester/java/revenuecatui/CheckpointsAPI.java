@@ -68,7 +68,7 @@ final class CheckpointsAPI {
         PaywallPresenter current = CheckpointsExtensionsKt.getPaywallPresenter(purchases);
     }
 
-    @OptIn(markerClass = InternalRevenueCatAPI.class)
+    @OptIn(markerClass = InviteOnlyCheckpointsAPI.class)
     static void checkErrorPresenter(Purchases purchases) {
         ErrorPresenter presenter = (ErrorPresenter.Params params, ErrorPresenter.Completion completion) -> {
             PurchasesError error = params.getError();

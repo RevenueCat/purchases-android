@@ -68,7 +68,7 @@ public var Purchases.paywallPresenter: PaywallPresenter?
  * its own through [CheckpointParams.errorPresenter]. When neither is set, the SDK presents its own error dialog
  * through a presenter of its own. Held by this [Purchases] instance, so it is cleared when the SDK is reconfigured.
  */
-@InternalRevenueCatAPI
+@InviteOnlyCheckpointsAPI
 public var Purchases.errorPresenter: ErrorPresenter?
     get() = checkpointsManager.errorPresenter
     set(value) {

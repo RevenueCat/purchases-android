@@ -1,6 +1,6 @@
 package com.revenuecat.paywallstester.ui.screens.checkpoints
 
-import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
  * Parks each error the SDK asks this app to present in [request] so the screen can draw its own dialog; the dialog
  * reports how the flow goes on through [Request.finish].
  */
-@OptIn(InternalRevenueCatAPI::class)
+@OptIn(InviteOnlyCheckpointsAPI::class)
 class AppErrorPresenter : ErrorPresenter {
 
     inner class Request(

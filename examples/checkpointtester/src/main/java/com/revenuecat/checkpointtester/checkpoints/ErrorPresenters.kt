@@ -1,7 +1,7 @@
 package com.revenuecat.checkpointtester.checkpoints
 
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.errorPresenter
@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
  * An app-owned error presenter: presenting parks the request in a StateFlow, the app root renders a dialog over
  * everything while one is set, and the dialog reports how the flow goes on through [Request.finish].
  */
-@OptIn(InternalRevenueCatAPI::class)
+@OptIn(InviteOnlyCheckpointsAPI::class)
 class ParkedErrorPresenter : ErrorPresenter {
 
     inner class Request(
@@ -38,7 +38,7 @@ class ParkedErrorPresenter : ErrorPresenter {
  * The tester's error presenters and the [Mode] selected on the main screen, which decides who presents the errors
  * of the flows the SDK presents. [PaywallPresenters.params] applies the selection to every checkpoint call.
  */
-@OptIn(InternalRevenueCatAPI::class)
+@OptIn(InviteOnlyCheckpointsAPI::class)
 object ErrorPresenters {
 
     enum class Mode(val label: String, val description: String) {

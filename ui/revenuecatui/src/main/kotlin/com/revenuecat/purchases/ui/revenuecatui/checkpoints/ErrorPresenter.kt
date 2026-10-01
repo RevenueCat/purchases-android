@@ -1,8 +1,8 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.PaywallErrorPresenter
 import dev.drewhamilton.poko.Poko
 
@@ -16,7 +16,7 @@ import dev.drewhamilton.poko.Poko
  * [PaywallPresenter] is set. An app presenting its own paywall owns that paywall's errors. A checkpoint that could
  * not present anything is not an error of a flow either: it is logged and its callback receives null.
  */
-@InternalRevenueCatAPI
+@InviteOnlyCheckpointsAPI
 public fun interface ErrorPresenter {
 
     /**
@@ -27,7 +27,7 @@ public fun interface ErrorPresenter {
     public fun present(params: Params, completion: Completion)
 
     /** What an [ErrorPresenter] is asked to present. */
-    @InternalRevenueCatAPI
+    @InviteOnlyCheckpointsAPI
     @Poko
     public class Params internal constructor(
         /** The error that occurred. */
@@ -49,14 +49,14 @@ public fun interface ErrorPresenter {
      * How an [ErrorPresenter] reports the way the flow should go on. Only the first report counts; later reports,
      * including reports for a flow that has since ended, are ignored.
      */
-    @InternalRevenueCatAPI
+    @InviteOnlyCheckpointsAPI
     public fun interface Completion {
 
         /** Reports how the flow should go on. */
         public fun complete(result: Result)
 
         /** How the flow goes on after the app's error UI. */
-        @InternalRevenueCatAPI
+        @InviteOnlyCheckpointsAPI
         public abstract class Result internal constructor() {
 
             /**
