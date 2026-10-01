@@ -22,6 +22,7 @@ import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
 import com.revenuecat.purchases.common.networking.MapConverter
 import com.revenuecat.purchases.common.networking.NullPointerReadingErrorStreamException
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.networking.TokenAuthenticator
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SignatureVerificationResult
@@ -62,7 +63,7 @@ internal interface RequestResponseListener {
 }
 
 @OptIn(InternalRevenueCatAPI::class)
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "LargeClass")
 internal class HTTPClient(
     private val appConfig: AppConfig,
     private val eTagManager: ETagManager,
@@ -76,6 +77,7 @@ internal class HTTPClient(
     private val forceServerErrorStrategy: ForceServerErrorStrategy? = null,
     private val requestResponseListener: RequestResponseListener? = null,
     private val timeoutManager: HTTPTimeoutManager = HTTPTimeoutManager(appConfig, dateProvider),
+    private val tokenAuthenticator: TokenAuthenticator? = null,
 ) {
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal companion object {
@@ -154,6 +156,7 @@ internal class HTTPClient(
      * @param endpoint Endpoint being used for the request
      * @param body The body of the request, for GET must be null
      * @param requestHeaders Map of headers, basic headers are added automatically
+     * @param retriedAfterTokenRefresh whether this request is already the retry after an IAM token refresh
      * @return Result containing the HTTP response code and the parsed JSON body
      * @throws JSONException Thrown for any JSON errors, not thrown for returned HTTP error codes
      * @throws IOException Thrown for any unexpected errors, not thrown for returned HTTP error codes
@@ -169,6 +172,7 @@ internal class HTTPClient(
         refreshETag: Boolean = false,
         fallbackBaseURLs: List<URL> = emptyList(),
         fallbackURLIndex: Int = 0,
+        retriedAfterTokenRefresh: Boolean = false,
     ): HTTPResult {
         fun canUseFallback(): Boolean =
             endpoint.supportsFallbackBaseURLs && fallbackURLIndex in fallbackBaseURLs.indices
@@ -190,6 +194,7 @@ internal class HTTPClient(
                 refreshETag,
                 fallbackBaseURLs,
                 fallbackURLIndex + 1,
+                retriedAfterTokenRefresh,
             )
         }
 
@@ -249,12 +254,34 @@ internal class HTTPClient(
                                 refreshETag = true,
                                 fallbackBaseURLs,
                                 fallbackURLIndex,
+                                retriedAfterTokenRefresh,
                             )
                         }
 
                         RCHTTPStatusCodes.isServerError(result.responseCode) && canUseFallback() ->
                             // Handle server errors with fallback URLs
                             performRequestToFallbackURL()
+
+                        // Refreshes the IAM tokens as a side effect. /auth/token authenticates with the API key.
+                        tokenAuthenticator?.refreshTokensIfNeeded(
+                            endpoint,
+                            result.responseCode,
+                            retriedAfterTokenRefresh,
+                        ) { refreshBody ->
+                            val apiKeyHeaders = requestHeaders.filterKeys { it == "Authorization" }
+                            performRequest(appConfig.baseURL, Endpoint.TokenRefresh, refreshBody, null, apiKeyHeaders)
+                        } == true ->
+                            performRequest(
+                                baseURL,
+                                endpoint,
+                                body,
+                                postFieldsToSign,
+                                requestHeaders,
+                                refreshETag,
+                                fallbackBaseURLs,
+                                fallbackURLIndex,
+                                retriedAfterTokenRefresh = true,
+                            )
 
                         else -> result
                     }
@@ -390,7 +417,9 @@ internal class HTTPClient(
         onVerificationFailed: (verificationResult: SignatureVerificationResult, requestDate: Date?) -> Unit,
     ): HTTPResult? {
         val jsonBody = body?.let { mapConverter.convertToJSON(it) }
-        val path = endpoint.getPath(useFallback = isFallbackURL)
+        val path = endpoint.getPath(useFallback = isFallbackURL, useIAMPath = tokenAuthenticator?.usesIAMPaths == true)
+        // Computed per attempt, so a retry after a token refresh sends the new access token.
+        val authorizedHeaders = requestHeaders + tokenAuthenticator?.authorizationHeaders(endpoint).orEmpty()
         val connection: HttpURLConnection
         val shouldSignResponse = signingManager.shouldVerifyEndpoint(endpoint)
         val shouldAddNonce = shouldSignResponse && endpoint.needsNonceToPerformSigning
@@ -421,7 +450,7 @@ internal class HTTPClient(
                 signingManager.getPostParamsForSigningHeaderIfNeeded(endpoint, postFieldsToSign)
             }
             val headers = getHeaders(
-                requestHeaders,
+                authorizedHeaders,
                 fullURL,
                 refreshETag,
                 nonce,
@@ -525,7 +554,7 @@ internal class HTTPClient(
                         url = fullURL.toString(),
                         method = connection.requestMethod,
                         requestHeaders = getHeaders(
-                            requestHeaders,
+                            authorizedHeaders,
                             fullURL,
                             refreshETag,
                             nonce,
