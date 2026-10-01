@@ -139,6 +139,7 @@ class SubscriberAttributesPurchasesTests {
             checkpointsConfigProvider = mockk(relaxed = true),
             audiencesConfigProvider = mockk(relaxed = true),
             sdkSettingsConfigProvider = mockk(relaxed = true),
+            subscriberDimensionsConfigProvider = mockk(relaxed = true),
             tokenManager = mockk(relaxed = true),
         )
 
