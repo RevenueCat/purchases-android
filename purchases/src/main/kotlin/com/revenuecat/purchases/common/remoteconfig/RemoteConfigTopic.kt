@@ -15,4 +15,5 @@ internal enum class RemoteConfigTopic(val wireName: String) {
     CheckpointRules("checkpoint_rules"),
     Audiences("audiences"),
     SdkSettings("sdk_settings"),
+    SubscriberDimensions("subscriber_dimensions"),
 }
