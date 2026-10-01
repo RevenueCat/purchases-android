@@ -219,7 +219,6 @@ platform :android do
 
     sentry_upload_build(
       sentry_ci_metadata(
-        repo_name: repo_name,
         org_slug: sentry_org_slug,
         project_slug: sentry_project_slug
       ).merge(
