@@ -1,3 +1,5 @@
+@file:Suppress("RedundantInternalApiAnnotation")
+
 package com.revenuecat.purchases.customercenter.events
 
 import androidx.annotation.VisibleForTesting

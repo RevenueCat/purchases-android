@@ -1,3 +1,5 @@
+@file:Suppress("RedundantInternalApiAnnotation")
+
 package com.revenuecat.purchases.paywalls.components
 
 import androidx.compose.runtime.Immutable

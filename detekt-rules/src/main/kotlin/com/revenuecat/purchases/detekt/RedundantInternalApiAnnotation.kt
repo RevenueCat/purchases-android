@@ -24,15 +24,15 @@ class RedundantInternalApiAnnotation(config: Config) : Rule(config) {
 
     private val targetAnnotation: String = valueOrDefault("annotationName", "InternalRevenueCatAPI")
 
+    @Suppress("ReturnCount")
     override fun visitAnnotationEntry(annotationEntry: KtAnnotationEntry) {
         super.visitAnnotationEntry(annotationEntry)
         val shortName = annotationEntry.shortName?.asString() ?: return
         if (shortName != targetAnnotation) return
 
-        val enclosingClasses = annotationEntry.parents.filterIsInstance<KtClassOrObject>()
         val annotatedElement = annotationEntry.parent?.parent ?: return
 
-        for (enclosing in enclosingClasses) {
+        for (enclosing in annotationEntry.parents.filterIsInstance<KtClassOrObject>()) {
             if (enclosing === annotatedElement) continue
             if (hasAnnotation(enclosing, targetAnnotation)) {
                 report(
