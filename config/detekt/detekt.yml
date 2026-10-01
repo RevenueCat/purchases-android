@@ -49,3 +49,9 @@ revenuecat:
     active: true
     excludes: [ '**/examples/**' ]
     ignoreAnnotated: [ 'InternalRevenueCatAPI' ]
+  ForbiddenRunBlocking:
+    active: true
+    excludes: [ '**/test/**', '**/androidTest/**', '**/testDefaults/**', '**/testCustomEntitlementComputation/**', '**/examples/**', '**/debug/**' ]
+  RedundantInternalApiAnnotation:
+    active: true
+    excludes: [ '**/examples/**' ]
