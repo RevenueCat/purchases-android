@@ -451,12 +451,12 @@ package com.revenuecat.purchases.ui.revenuecatui.checkpoints {
   @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI public abstract static class ErrorPresenter.Completion.Result {
   }
 
-  public static final class ErrorPresenter.Completion.Result.Continued extends com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter.Completion.Result {
-    field public static final com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter.Completion.Result.Continued INSTANCE;
+  public static final class ErrorPresenter.Completion.Result.Continue extends com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter.Completion.Result {
+    field public static final com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter.Completion.Result.Continue INSTANCE;
   }
 
-  public static final class ErrorPresenter.Completion.Result.NavigatedBack extends com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter.Completion.Result {
-    field public static final com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter.Completion.Result.NavigatedBack INSTANCE;
+  public static final class ErrorPresenter.Completion.Result.NavigateBack extends com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter.Completion.Result {
+    field public static final com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter.Completion.Result.NavigateBack INSTANCE;
   }
 
   public static final class ErrorPresenter.Completion.Result.Retry extends com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter.Completion.Result {

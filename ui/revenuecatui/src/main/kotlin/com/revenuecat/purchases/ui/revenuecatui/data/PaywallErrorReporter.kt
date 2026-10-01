@@ -61,7 +61,7 @@ internal class PaywallErrorReporter(
             when {
                 it == ErrorPresenter.Completion.Result.Retry -> Unit
                 // System back: a previous step when the flow has one, leaving the flow otherwise.
-                it == ErrorPresenter.Completion.Result.NavigatedBack && !host.flowEnded && host.navigateBack() -> Unit
+                it == ErrorPresenter.Completion.Result.NavigateBack && !host.flowEnded && host.navigateBack() -> Unit
                 else -> leaveFlow(it, paywallResult = null)
             }
         }
@@ -86,11 +86,11 @@ internal class PaywallErrorReporter(
     // not sealed, and passing the checkpoint is the safest reading of a report this code does not know.
     private fun leaveFlow(result: ErrorPresenter.Completion.Result, paywallResult: PaywallResult?) {
         if (host.flowEnded) return
-        val navigatedBack = result == ErrorPresenter.Completion.Result.NavigatedBack
+        val navigatedBack = result == ErrorPresenter.Completion.Result.NavigateBack
         val known = navigatedBack ||
             result == ErrorPresenter.Completion.Result.Retry ||
-            result == ErrorPresenter.Completion.Result.Continued
-        if (!known) Logger.e("Unknown error presenter result '$result'; treating it as Continued.")
+            result == ErrorPresenter.Completion.Result.Continue
+        if (!known) Logger.e("Unknown error presenter result '$result'; treating it as Continue.")
         host.closePaywall(
             paywallResult,
             if (navigatedBack) PaywallDismissReason.NAVIGATED_BACK else PaywallDismissReason.CLOSE,

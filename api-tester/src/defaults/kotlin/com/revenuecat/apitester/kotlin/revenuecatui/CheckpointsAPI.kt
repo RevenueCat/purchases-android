@@ -91,16 +91,16 @@ private class CheckpointsAPI {
             val customVariables: Map<String, CustomVariableValue> = params.customVariables
             val flowCanContinue: Boolean = params.flowCanContinue
             completion.complete(ErrorPresenter.Completion.Result.Retry)
-            completion.complete(ErrorPresenter.Completion.Result.Continued)
-            completion.complete(ErrorPresenter.Completion.Result.NavigatedBack)
+            completion.complete(ErrorPresenter.Completion.Result.Continue)
+            completion.complete(ErrorPresenter.Completion.Result.NavigateBack)
         }
     }
 
     fun checkErrorCompletionResult(result: ErrorPresenter.Completion.Result) {
         when (result) {
             ErrorPresenter.Completion.Result.Retry -> {}
-            ErrorPresenter.Completion.Result.Continued -> {}
-            ErrorPresenter.Completion.Result.NavigatedBack -> {}
+            ErrorPresenter.Completion.Result.Continue -> {}
+            ErrorPresenter.Completion.Result.NavigateBack -> {}
             // The hierarchy is closed but not sealed, so consumers must handle cases added later.
             else -> {}
         }

@@ -3675,7 +3675,7 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `Continued after a purchase error closes the paywall`() {
+    fun `Continue after a purchase error closes the paywall`() {
         val presenter = RecordingErrorPresenter()
         val dismissals = mutableListOf<Pair<PaywallResult?, PaywallDismissReason>>()
         val model = create(
@@ -3684,13 +3684,13 @@ class PaywallViewModelTest {
         )
         failPurchase(model)
 
-        presenter.complete(ErrorPresenter.Completion.Result.Continued)
+        presenter.complete(ErrorPresenter.Completion.Result.Continue)
 
         assertThat(dismissals).containsExactly(null to PaywallDismissReason.CLOSE)
     }
 
     @Test
-    fun `NavigatedBack after a purchase error closes the paywall as a back navigation`() {
+    fun `NavigateBack after a purchase error closes the paywall as a back navigation`() {
         val presenter = RecordingErrorPresenter()
         val dismissals = mutableListOf<Pair<PaywallResult?, PaywallDismissReason>>()
         val model = create(
@@ -3699,7 +3699,7 @@ class PaywallViewModelTest {
         )
         failPurchase(model)
 
-        presenter.complete(ErrorPresenter.Completion.Result.NavigatedBack)
+        presenter.complete(ErrorPresenter.Completion.Result.NavigateBack)
 
         assertThat(dismissals).containsExactly(null to PaywallDismissReason.NAVIGATED_BACK)
     }
@@ -3726,7 +3726,7 @@ class PaywallViewModelTest {
         failPurchase(model)
 
         presenter.complete(ErrorPresenter.Completion.Result.Retry)
-        presenter.complete(ErrorPresenter.Completion.Result.Continued)
+        presenter.complete(ErrorPresenter.Completion.Result.Continue)
 
         assertThat(dismissInvoked).isFalse
     }
@@ -3740,7 +3740,7 @@ class PaywallViewModelTest {
         model.closePaywall()
         assertThat(dismissals).isEqualTo(1)
 
-        presenter.complete(ErrorPresenter.Completion.Result.Continued)
+        presenter.complete(ErrorPresenter.Completion.Result.Continue)
 
         assertThat(dismissals).isEqualTo(1)
     }
@@ -3770,7 +3770,7 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `Retry after a loading error closes the paywall with the error like Continued`() {
+    fun `Retry after a loading error closes the paywall with the error like Continue`() {
         coEvery { purchases.awaitOfferings() } throws PurchasesException(PurchasesError(PurchasesErrorCode.NetworkError))
         val presenter = RecordingErrorPresenter()
         val dismissals = mutableListOf<Pair<PaywallResult?, PaywallDismissReason>>()
@@ -3788,7 +3788,7 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `NavigatedBack after a loading error closes the paywall with the error as a back navigation`() {
+    fun `NavigateBack after a loading error closes the paywall with the error as a back navigation`() {
         coEvery { purchases.awaitOfferings() } throws PurchasesException(PurchasesError(PurchasesErrorCode.NetworkError))
         val presenter = RecordingErrorPresenter()
         val dismissals = mutableListOf<Pair<PaywallResult?, PaywallDismissReason>>()
@@ -3797,7 +3797,7 @@ class PaywallViewModelTest {
             dismissRequestWithExitOffering = { _, result, reason -> dismissals += result to reason },
         )
 
-        presenter.complete(ErrorPresenter.Completion.Result.NavigatedBack)
+        presenter.complete(ErrorPresenter.Completion.Result.NavigateBack)
 
         val (result, reason) = dismissals.single()
         assertThat(result).isInstanceOf(PaywallResult.Error::class.java)
@@ -3820,7 +3820,7 @@ class PaywallViewModelTest {
         )
         assertThat(model.state.value).isInstanceOf(PaywallState.Loaded::class.java)
 
-        presenter.complete(ErrorPresenter.Completion.Result.Continued)
+        presenter.complete(ErrorPresenter.Completion.Result.Continue)
 
         assertThat(dismissInvoked).isFalse
         assertThat(model.state.value).isInstanceOf(PaywallState.Loaded::class.java)

@@ -1708,7 +1708,7 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
-    fun `NavigatedBack from the error presenter mid-flow goes to the previous step`() = runTest {
+    fun `NavigateBack from the error presenter mid-flow goes to the previous step`() = runTest {
         coEvery { purchases.awaitPurchase(any()) } throws
             PurchasesException(PurchasesError(PurchasesErrorCode.StoreProblemError))
         var completion: ErrorPresenter.Completion? = null
@@ -1723,7 +1723,7 @@ class PaywallViewModelWorkflowTest {
         advanceUntilIdle()
         vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
 
-        completion!!.complete(ErrorPresenter.Completion.Result.NavigatedBack)
+        completion!!.complete(ErrorPresenter.Completion.Result.NavigateBack)
         advanceUntilIdle()
 
         assertThat(dismissals).isEmpty()
@@ -1732,7 +1732,7 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
-    fun `NavigatedBack from the error presenter on the first step leaves the flow`() = runTest {
+    fun `NavigateBack from the error presenter on the first step leaves the flow`() = runTest {
         coEvery { purchases.awaitPurchase(any()) } throws
             PurchasesException(PurchasesError(PurchasesErrorCode.StoreProblemError))
         var completion: ErrorPresenter.Completion? = null
@@ -1745,7 +1745,7 @@ class PaywallViewModelWorkflowTest {
         advanceUntilIdle()
         vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
 
-        completion!!.complete(ErrorPresenter.Completion.Result.NavigatedBack)
+        completion!!.complete(ErrorPresenter.Completion.Result.NavigateBack)
         advanceUntilIdle()
 
         assertThat(dismissals).containsExactly(PaywallDismissReason.NAVIGATED_BACK)

@@ -40,49 +40,49 @@ public fun interface ErrorPresenter {
          * Whether the flow can go on after this error. True when a purchase or restore started from the flow
          * failed: the paywall stays on screen for another try. False when the flow itself could not be presented
          * or kept on screen (e.g. it has nothing to sell): there is nothing to go back to, so
-         * [Completion.Result.Retry] ends the flow like [Completion.Result.Continued].
+         * [Completion.Result.Retry] ends the flow like [Completion.Result.Continue].
          */
         public val flowCanContinue: Boolean,
     )
 
     /**
-     * How an [ErrorPresenter] reports the way the flow should go on. Only the first report counts; later reports,
+     * How an [ErrorPresenter] tells the SDK what the flow does next. Only the first report counts; later reports,
      * including reports for a flow that has since ended, are ignored.
      */
     @InviteOnlyCheckpointsAPI
     public fun interface Completion {
 
-        /** Reports how the flow should go on. */
+        /** Tells the SDK what the flow does next. */
         public fun complete(result: Result)
 
-        /** How the flow goes on after the app's error UI. */
+        /** What the flow does after the app's error UI. */
         @InviteOnlyCheckpointsAPI
         public abstract class Result internal constructor() {
 
             /**
-             * The error is acknowledged and the flow resumes where it was, so the user can try again. When
-             * [Params.flowCanContinue] is false there is nothing to resume, and this ends the flow like [Continued].
+             * Dismiss the error and resume the flow where it was, so the user can try again. When
+             * [Params.flowCanContinue] is false there is nothing to resume, and the flow ends as with [Continue].
              */
             public object Retry : Result() {
                 override fun toString(): String = "Retry"
             }
 
             /**
-             * The user goes on: the flow ends as if closed, the user passes the checkpoint, and its callback is
-             * invoked once the checkpoint resolves.
+             * End the flow and let the user go on: the flow ends as if closed, the user passes the checkpoint, and
+             * its callback is invoked once the checkpoint resolves.
              */
-            public object Continued : Result() {
-                override fun toString(): String = "Continued"
+            public object Continue : Result() {
+                override fun toString(): String = "Continue"
             }
 
             /**
-             * The user backs out, as with system back: a flow with a previous step goes back to it and stays on
-             * screen. Otherwise, or when [Params.flowCanContinue] is false, the flow ends as if the user had
-             * navigated back: the checkpoint resolves as dismissed, its callback is not invoked, and the app keeps
-             * the user where they were.
+             * Act as system back: a flow with a previous step goes back to it and stays on screen. Otherwise, or
+             * when [Params.flowCanContinue] is false, the flow ends as if the user had navigated back: the
+             * checkpoint resolves as dismissed, its callback is not invoked, and the app keeps the user where they
+             * were.
              */
-            public object NavigatedBack : Result() {
-                override fun toString(): String = "NavigatedBack"
+            public object NavigateBack : Result() {
+                override fun toString(): String = "NavigateBack"
             }
         }
     }

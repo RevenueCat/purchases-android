@@ -97,12 +97,12 @@ class DefaultErrorPresenterTest {
     }
 
     @Test
-    fun `acknowledging an unrecoverable error reports Continued`() {
+    fun `acknowledging an unrecoverable error reports Continue`() {
         present(params(flowCanContinue = false))
 
         acknowledge!!()
 
-        assertThat(results).containsExactly(Result.Continued)
+        assertThat(results).containsExactly(Result.Continue)
     }
 
     @Test
@@ -112,7 +112,7 @@ class DefaultErrorPresenterTest {
         ShadowDialog.getLatestDialog().cancel()
         shadowOf(Looper.getMainLooper()).idle()
 
-        assertThat(results).containsExactly(Result.Continued)
+        assertThat(results).containsExactly(Result.Continue)
         assertThat(ShadowDialog.getLatestDialog().isShowing).isFalse
     }
 
@@ -165,7 +165,7 @@ class DefaultErrorPresenterTest {
         assertThat(firstDialog.isShowing).isFalse
         assertThat(ShadowDialog.getLatestDialog().isShowing).isTrue
         acknowledge!!()
-        assertThat(secondResults).containsExactly(Result.Continued)
+        assertThat(secondResults).containsExactly(Result.Continue)
     }
 
     @Test

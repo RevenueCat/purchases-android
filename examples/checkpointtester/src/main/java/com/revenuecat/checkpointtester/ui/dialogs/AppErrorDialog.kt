@@ -24,7 +24,7 @@ fun AppErrorDialog(request: ParkedErrorPresenter.Request, presenterName: String)
     val params = request.params
     val error = params.error
     AlertDialog(
-        onDismissRequest = { request.finish(if (params.flowCanContinue) Result.Retry else Result.Continued) },
+        onDismissRequest = { request.finish(if (params.flowCanContinue) Result.Retry else Result.Continue) },
         title = { Text(text = "Handled by the $presenterName error presenter") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -41,11 +41,11 @@ fun AppErrorDialog(request: ParkedErrorPresenter.Request, presenterName: String)
                 if (params.flowCanContinue) {
                     TextButton(onClick = { request.finish(Result.Retry) }) { Text(text = "Retry") }
                 }
-                TextButton(onClick = { request.finish(Result.Continued) }) { Text(text = "Continue") }
+                TextButton(onClick = { request.finish(Result.Continue) }) { Text(text = "Continue") }
             }
         },
         dismissButton = {
-            TextButton(onClick = { request.finish(Result.NavigatedBack) }) { Text(text = "Back") }
+            TextButton(onClick = { request.finish(Result.NavigateBack) }) { Text(text = "Back") }
         },
     )
 }

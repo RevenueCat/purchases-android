@@ -76,8 +76,8 @@ final class CheckpointsAPI {
             Map<String, CustomVariableValue> customVariables = params.getCustomVariables();
             boolean flowCanContinue = params.getFlowCanContinue();
             completion.complete(ErrorPresenter.Completion.Result.Retry.INSTANCE);
-            completion.complete(ErrorPresenter.Completion.Result.Continued.INSTANCE);
-            completion.complete(ErrorPresenter.Completion.Result.NavigatedBack.INSTANCE);
+            completion.complete(ErrorPresenter.Completion.Result.Continue.INSTANCE);
+            completion.complete(ErrorPresenter.Completion.Result.NavigateBack.INSTANCE);
         };
         CheckpointsExtensionsKt.setErrorPresenter(purchases, presenter);
         CheckpointsExtensionsKt.setErrorPresenter(purchases, null);

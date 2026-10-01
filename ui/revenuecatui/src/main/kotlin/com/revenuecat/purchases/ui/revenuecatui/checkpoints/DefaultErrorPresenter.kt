@@ -83,7 +83,7 @@ internal class DefaultErrorPresenter(
     }
 
     private fun acknowledged(current: Presentation) {
-        finish(current, if (current.params.flowCanContinue) Result.Retry else Result.Continued)
+        finish(current, if (current.params.flowCanContinue) Result.Retry else Result.Continue)
     }
 
     // Only the current presentation finishes, and only once: a stale dialog's report is ignored.
