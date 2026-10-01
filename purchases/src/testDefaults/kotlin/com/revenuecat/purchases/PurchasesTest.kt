@@ -2070,6 +2070,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockBackend.getRewardVerificationResult(
                 appUserID = appUserId,
                 clientTransactionId = "ct_1",
+                adUnitId = null,
                 onSuccess = captureLambda(),
                 onError = any(),
             )
@@ -2080,6 +2081,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         var receivedResult: RewardVerificationPollStatus? = null
         purchases.getRewardVerificationResult(
             clientTransactionId = "ct_1",
+            adUnitId = null,
             callback = object : GetRewardVerificationResultCallback {
                 override fun onReceived(result: RewardVerificationPollStatus) {
                     receivedResult = result
@@ -2158,6 +2160,29 @@ internal class PurchasesTest : BasePurchasesTest() {
 
         assertThat(result.verifiedReward).isEqualTo(PollReward.VirtualCurrency(code = "coins", amount = 10))
         verify(exactly = 1) { mockVirtualCurrencyManager.invalidateVirtualCurrenciesCache() }
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `awaitPollRewardVerification forwards the tracking metadata ad unit id to the backend`() = runTest {
+        every { mockAdEventsManager.track(any()) } returns Unit
+        every {
+            mockBackend.getRewardVerificationResult(
+                appUserID = appUserId,
+                clientTransactionId = "ct_1",
+                adUnitId = "ad-unit-999",
+                onSuccess = captureLambda(),
+                onError = any(),
+            )
+        } answers {
+            lambda<(RewardVerificationPollStatus) -> Unit>().captured.invoke(
+                RewardVerificationPollStatus.Verified(VerifiedReward.NoReward),
+            )
+        }
+
+        val result = purchases.awaitPollRewardVerification("ct_1", testTrackingMetadata)
+
+        assertThat(result.verifiedReward).isEqualTo(PollReward.NoReward)
     }
 
     @OptIn(InternalRevenueCatAPI::class)
@@ -2390,6 +2415,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockBackend.getRewardVerificationResult(
                 appUserID = appUserId,
                 clientTransactionId = "ct_1",
+                adUnitId = null,
                 onSuccess = captureLambda(),
                 onError = any(),
             )
@@ -2407,6 +2433,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockBackend.getRewardVerificationResult(
                 appUserID = appUserId,
                 clientTransactionId = "ct_1",
+                adUnitId = null,
                 onSuccess = any(),
                 onError = captureLambda(),
             )
@@ -2419,6 +2446,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         var receivedError: PurchasesError? = null
         purchases.getRewardVerificationResult(
             clientTransactionId = "ct_1",
+            adUnitId = null,
             callback = object : GetRewardVerificationResultCallback {
                 override fun onReceived(result: RewardVerificationPollStatus) {
                     fail("should be error")
@@ -2441,6 +2469,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockBackend.getRewardVerificationResult(
                 appUserID = appUserId,
                 clientTransactionId = "ct_1",
+                adUnitId = null,
                 onSuccess = captureLambda(),
                 onError = any(),
             )
@@ -2455,12 +2484,33 @@ internal class PurchasesTest : BasePurchasesTest() {
 
     @OptIn(InternalRevenueCatAPI::class)
     @Test
+    fun `awaitGetRewardVerificationResult forwards ad unit id to backend`() = runTest {
+        every {
+            mockBackend.getRewardVerificationResult(
+                appUserID = appUserId,
+                clientTransactionId = "ct_1",
+                adUnitId = "ad_unit_1",
+                onSuccess = captureLambda(),
+                onError = any(),
+            )
+        } answers {
+            lambda<(RewardVerificationPollStatus) -> Unit>().captured.invoke(RewardVerificationPollStatus.PENDING)
+        }
+
+        val result = purchases.awaitGetRewardVerificationResult(clientTransactionId = "ct_1", adUnitId = "ad_unit_1")
+
+        assertThat(result).isEqualTo(RewardVerificationPollStatus.PENDING)
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
     fun `awaitGetRewardVerificationResult throws backend error`() = runTest {
         val expectedError = PurchasesError(PurchasesErrorCode.UnknownBackendError, "Unknown backend error")
         every {
             mockBackend.getRewardVerificationResult(
                 appUserID = appUserId,
                 clientTransactionId = "ct_1",
+                adUnitId = null,
                 onSuccess = any(),
                 onError = captureLambda(),
             )

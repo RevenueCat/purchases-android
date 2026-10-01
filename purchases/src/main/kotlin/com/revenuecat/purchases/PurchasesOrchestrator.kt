@@ -1143,11 +1143,13 @@ internal class PurchasesOrchestrator(
     @OptIn(InternalRevenueCatAPI::class)
     fun getRewardVerificationResult(
         clientTransactionId: String,
+        adUnitId: String?,
         callback: GetRewardVerificationResultCallback,
     ) {
         backend.getRewardVerificationResult(
             appUserID = identityManager.currentAppUserID,
             clientTransactionId = clientTransactionId,
+            adUnitId = adUnitId,
             onSuccess = { callback.onReceived(it) },
             onError = { callback.onError(it) },
         )

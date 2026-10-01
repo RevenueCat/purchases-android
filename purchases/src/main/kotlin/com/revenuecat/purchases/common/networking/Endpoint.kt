@@ -160,16 +160,19 @@ internal sealed class Endpoint(
     data class GetRewardVerification(
         val userId: String,
         val clientTransactionId: String,
+        val adUnitId: String?,
     ) : Endpoint(
         pathTemplate = "/v1/subscribers/%s/ads/reward_verifications/%s",
         name = "get_reward_verification",
     ) {
-        override fun getPath(useFallback: Boolean, useIAMPath: Boolean) =
-            if (useIAMPath && iamPathTemplate != null) {
+        override fun getPath(useFallback: Boolean, useIAMPath: Boolean): String {
+            val path = if (useIAMPath && iamPathTemplate != null) {
                 templateFor(useIAMPath).format(Uri.encode(clientTransactionId))
             } else {
                 templateFor(useIAMPath).format(Uri.encode(userId), Uri.encode(clientTransactionId))
             }
+            return adUnitId?.takeIf { it.isNotBlank() }?.let { "$path?ad_unit_id=${Uri.encode(it)}" } ?: path
+        }
         override val iamPathTemplate: String? = "/v1/customer/ads/reward_verifications/%s"
     }
 
