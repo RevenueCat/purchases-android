@@ -83,6 +83,31 @@ internal object TokenLoginOperation {
     private const val SCOPE_VALUE = "openid offline_access"
 }
 
+/** `POST /auth/token`: exchanges a refresh token for new tokens. Performed by HTTPClient on a 401. */
+internal object TokenRefreshOperation {
+
+    fun body(refreshToken: String): Map<String, Any?> =
+        mapOf("grant_type" to "refresh_token", "refresh_token" to refreshToken)
+
+    /** The refreshed tokens, or `null` if the refresh failed. */
+    fun handleResponse(result: HTTPResult): TokenManager.TokenSet? =
+        if (result.isSuccessful()) TokenResponse.parse(result.body) else null
+}
+
+/**
+ * `POST /auth/revoke`: revokes a refresh token. The server has no way to revoke a bare access token, so this
+ * only ever sends `token_type_hint=refresh_token`.
+ */
+internal object TokenLogoutOperation {
+
+    fun body(refreshToken: String): Map<String, Any?> =
+        mapOf("token" to refreshToken, "token_type_hint" to "refresh_token")
+
+    /** `null` on success, otherwise the error. */
+    fun handleResponse(result: HTTPResult): PurchasesError? =
+        if (result.isSuccessful()) null else result.toPurchasesError()
+}
+
 /** The token fields shared by `/auth/login` and `/auth/token` responses. */
 internal object TokenResponse {
 

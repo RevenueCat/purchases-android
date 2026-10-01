@@ -140,6 +140,65 @@ class TokenOperationsTest {
 
     // endregion
 
+    // region TokenRefreshOperation
+
+    @Test
+    fun `refresh body uses the refresh_token grant`() {
+        assertThat(TokenRefreshOperation.body("refresh-token"))
+            .isEqualTo(mapOf("grant_type" to "refresh_token", "refresh_token" to "refresh-token"))
+    }
+
+    @Test
+    fun `a successful refresh yields the new tokens`() {
+        val result = HTTPResult.createResult(payload = tokenResponse("access", "refresh", "id").toString())
+
+        assertThat(TokenRefreshOperation.handleResponse(result))
+            .isEqualTo(TokenManager.TokenSet("access", "refresh", "id"))
+    }
+
+    @Test
+    fun `a failed refresh yields null`() {
+        val result = HTTPResult.createResult(
+            responseCode = RCHTTPStatusCodes.UNAUTHORIZED,
+            payload = tokenResponse("access", "refresh", "id").toString(),
+        )
+
+        assertThat(TokenRefreshOperation.handleResponse(result)).isNull()
+    }
+
+    @Test
+    fun `a successful refresh without an access token yields null`() {
+        assertThat(TokenRefreshOperation.handleResponse(HTTPResult.createResult(payload = "{}"))).isNull()
+    }
+
+    // endregion
+
+    // region TokenLogoutOperation
+
+    @Test
+    fun `logout body always revokes the refresh token`() {
+        assertThat(TokenLogoutOperation.body("refresh-token"))
+            .isEqualTo(mapOf("token" to "refresh-token", "token_type_hint" to "refresh_token"))
+    }
+
+    @Test
+    fun `a successful logout has no error`() {
+        assertThat(TokenLogoutOperation.handleResponse(HTTPResult.createResult(payload = "{}"))).isNull()
+    }
+
+    @Test
+    fun `a failed logout passes the backend error through`() {
+        val result = HTTPResult.createResult(
+            responseCode = RCHTTPStatusCodes.BAD_REQUEST,
+            payload = JSONObject().put("code", 7226).put("message", "Bad request").toString(),
+        )
+
+        assertThat(TokenLogoutOperation.handleResponse(result)?.code)
+            .isEqualTo(PurchasesErrorCode.UnexpectedBackendResponseError)
+    }
+
+    // endregion
+
     // region TokenResponse
 
     @Test
