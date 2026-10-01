@@ -30,7 +30,7 @@ public fun CustomerCenter(
     CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onBackground) {
         InternalCustomerCenter(
             modifier = modifier,
-            listener = options.listener,
+            options = options,
             onDismiss = onDismiss,
         )
     }
