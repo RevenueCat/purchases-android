@@ -24,13 +24,9 @@ import kotlinx.coroutines.flow.StateFlow
 public interface CustomerCenterPreviewProvider {
 
     public val appUserID: String
-
     public val store: Store
-
     public val storefrontCountryCode: String? get() = null
-
     public val preferredUILocaleOverride: String? get() = null
-
     public val customerInfoUpdates: StateFlow<CustomerInfo>? get() = null
 
     public fun onDiagnosticsUpdated(diagnostics: List<CustomerCenterPreviewDiagnostic>): Unit = Unit

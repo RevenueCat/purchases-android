@@ -41,6 +41,8 @@ import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterPreviewAction
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterPreviewDiagnostic
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterPreviewDiagnosticReason
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterPreviewProvider
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterDestination
@@ -2378,6 +2380,76 @@ class CustomerCenterViewModelTests {
         assertThat(pending.isCompleted).isFalse()
     }
 
+    @Test
+    fun `preview reports missing purchases only for purchase specific actions`(): Unit = runBlocking {
+        val expectedReasons = listOf(
+            HelpPath.PathType.CANCEL to CustomerCenterPreviewDiagnosticReason.NO_PURCHASE_SELECTED,
+            HelpPath.PathType.REFUND_REQUEST to CustomerCenterPreviewDiagnosticReason.NO_PURCHASE_SELECTED,
+            HelpPath.PathType.CHANGE_PLANS to CustomerCenterPreviewDiagnosticReason.NO_PURCHASE_SELECTED,
+            HelpPath.PathType.UNKNOWN to CustomerCenterPreviewDiagnosticReason.UNSUPPORTED_STORE,
+            HelpPath.PathType.CUSTOM_URL to null,
+            HelpPath.PathType.CUSTOM_ACTION to null,
+            HelpPath.PathType.MISSING_PURCHASE to null,
+        )
+        for ((type, expectedReason) in expectedReasons) {
+            setupPurchasesMock()
+            val provider = mockk<CustomerCenterPreviewProvider>(relaxed = true)
+            val diagnostics = mutableListOf<CustomerCenterPreviewDiagnostic>()
+            every { provider.onDiagnosticsUpdated(any()) } answers {
+                diagnostics.addAll(firstArg<List<CustomerCenterPreviewDiagnostic>>())
+            }
+            val model = CustomerCenterViewModelImpl(
+                purchases = purchases,
+                colorScheme = TestData.Constants.currentColorScheme,
+                isDarkMode = false,
+                previewProvider = provider,
+            )
+            val path = HelpPath(id = "missing_$type", title = "Action", type = type)
+
+            val state = setupSuccessLoadScreen(path, model, noActivePaths = listOf(path))
+
+            assertThat(state.mainScreenPaths.contains(path)).isEqualTo(expectedReason == null)
+            assertThat(diagnostics.last().reason).isEqualTo(expectedReason)
+            assertThat(diagnostics.last().visible).isEqualTo(expectedReason == null)
+        }
+    }
+
+    @Test
+    fun `expired cancel diagnostics never use refund or family plan reasons`(): Unit = runBlocking {
+        setupPurchasesMock()
+        val provider = mockk<CustomerCenterPreviewProvider>(relaxed = true)
+        val diagnostics = mutableListOf<CustomerCenterPreviewDiagnostic>()
+        every { provider.onDiagnosticsUpdated(any()) } answers {
+            diagnostics.addAll(firstArg<List<CustomerCenterPreviewDiagnostic>>())
+        }
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            previewProvider = provider,
+        )
+        val path = HelpPath(id = "cancel", title = "Cancel", type = HelpPath.PathType.CANCEL)
+        setupSuccessLoadScreen(path, model)
+        val expired = CustomerCenterConfigTestData.purchaseInformationYearlyExpiring.copy(
+            store = Store.PLAY_STORE,
+            isExpired = true,
+        )
+        for (purchase in listOf(
+            expired.copy(isTrial = true),
+            expired.copy(pricePaid = PriceDetails.Free),
+            expired.copy(ownershipType = OwnershipType.FAMILY_SHARED),
+        )) {
+            model.selectPurchase(purchase)
+
+            assertThat(diagnostics.last().reason)
+                .isEqualTo(CustomerCenterPreviewDiagnosticReason.ACTIVE_SUBSCRIPTION_REQUIRED)
+            assertThat(diagnostics.last().visible).isFalse()
+            assertThat((model.state.value as CustomerCenterState.Success).detailScreenPaths).isEmpty()
+        }
+        model.selectPurchase(expired.copy(isSubscription = false, pricePaid = PriceDetails.Free))
+        assertThat(diagnostics.last().reason).isEqualTo(CustomerCenterPreviewDiagnosticReason.SUBSCRIPTION_REQUIRED)
+    }
+
     private fun setupPurchasesMock() {
         every { purchases.customerCenterListener } returns null
         coEvery { purchases.awaitGetProduct(any(), any()) } returns null
@@ -2416,6 +2488,7 @@ class CustomerCenterViewModelTests {
     private suspend fun setupSuccessLoadScreen(
         originalPath: HelpPath,
         model: CustomerCenterViewModelImpl,
+        noActivePaths: List<HelpPath> = emptyList(),
     ): CustomerCenterState.Success {
         // Set up the state as Success
         val managementScreen = Screen(
@@ -2429,7 +2502,7 @@ class CustomerCenterViewModelTests {
             type = Screen.ScreenType.NO_ACTIVE,
             title = "No Active Subscription",
             subtitle = "You don't have an active subscription.",
-            paths = emptyList()
+            paths = noActivePaths
         )
 
         val mockScreens = mapOf(

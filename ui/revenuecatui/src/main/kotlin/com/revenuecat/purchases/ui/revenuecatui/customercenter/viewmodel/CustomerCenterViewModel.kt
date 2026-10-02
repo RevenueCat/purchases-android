@@ -718,24 +718,12 @@ internal class CustomerCenterViewModelImpl(
         }
         val decisions = screen.paths.associateWith { path ->
             when {
-                !isPathAllowedForStore(
-                    path,
-                    selectedPurchaseInformation,
-                ) -> CustomerCenterPreviewDiagnosticReason.UNSUPPORTED_STORE
+                selectedPurchaseInformation == null && PathUtils.isSubscriptionSpecificPath(path) ->
+                    CustomerCenterPreviewDiagnosticReason.NO_PURCHASE_SELECTED
+                !isPathAllowedForStore(path, selectedPurchaseInformation) ->
+                    CustomerCenterPreviewDiagnosticReason.UNSUPPORTED_STORE
                 !isPathAllowedForSubscriptionState(path, selectedPurchaseInformation) ->
-                    when {
-                        selectedPurchaseInformation == null ->
-                            CustomerCenterPreviewDiagnosticReason.NO_PURCHASE_SELECTED
-                        selectedPurchaseInformation.isTrial ->
-                            CustomerCenterPreviewDiagnosticReason.REFUND_UNAVAILABLE_DURING_TRIAL
-                        selectedPurchaseInformation.pricePaid == PriceDetails.Free ->
-                            CustomerCenterPreviewDiagnosticReason.REFUND_REQUIRES_PAID_PURCHASE
-                        selectedPurchaseInformation.isExpired ->
-                            CustomerCenterPreviewDiagnosticReason.ACTIVE_SUBSCRIPTION_REQUIRED
-                        selectedPurchaseInformation.ownershipType == OwnershipType.FAMILY_SHARED ->
-                            CustomerCenterPreviewDiagnosticReason.PLAN_CHANGE_UNAVAILABLE_FOR_FAMILY_SHARED
-                        else -> CustomerCenterPreviewDiagnosticReason.SUBSCRIPTION_REQUIRED
-                    }
+                    previewSubscriptionStateReason(path, selectedPurchaseInformation)
                 else -> null
             }
         }
@@ -756,6 +744,20 @@ internal class CustomerCenterViewModelImpl(
         )
         return screen.paths.filter { decisions[it] == null }
             .transformPathsOnSubscriptionState(selectedPurchaseInformation, localization)
+    }
+
+    private fun previewSubscriptionStateReason(
+        path: HelpPath,
+        purchase: PurchaseInformation?,
+    ): CustomerCenterPreviewDiagnosticReason = when {
+        path.type == HelpPath.PathType.REFUND_REQUEST && purchase?.isTrial == true ->
+            CustomerCenterPreviewDiagnosticReason.REFUND_UNAVAILABLE_DURING_TRIAL
+        path.type == HelpPath.PathType.REFUND_REQUEST && purchase?.pricePaid == PriceDetails.Free ->
+            CustomerCenterPreviewDiagnosticReason.REFUND_REQUIRES_PAID_PURCHASE
+        purchase?.isSubscription != true -> CustomerCenterPreviewDiagnosticReason.SUBSCRIPTION_REQUIRED
+        path.type == HelpPath.PathType.CHANGE_PLANS && purchase.ownershipType == OwnershipType.FAMILY_SHARED ->
+            CustomerCenterPreviewDiagnosticReason.PLAN_CHANGE_UNAVAILABLE_FOR_FAMILY_SHARED
+        else -> CustomerCenterPreviewDiagnosticReason.ACTIVE_SUBSCRIPTION_REQUIRED
     }
 
     private fun List<HelpPath>.transformPathsOnSubscriptionState(
