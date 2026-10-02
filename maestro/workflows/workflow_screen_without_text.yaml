@@ -33,4 +33,3 @@ env:
 - extendedWaitUntil:
     visible: "Buy"
     timeout: 15000
-- takeScreenshot: "workflow_screen_without_text - screen 2"
