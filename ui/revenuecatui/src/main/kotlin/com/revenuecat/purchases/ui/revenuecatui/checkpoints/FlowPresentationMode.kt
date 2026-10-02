@@ -17,10 +17,6 @@ public class FlowPresentationMode private constructor(private val name: String) 
     override fun toString(): String = name
 
     public companion object {
-        /** The SDK chooses the presentation. Currently, that is [MODAL_SHEET]. */
-        @JvmField
-        public val DEFAULT: FlowPresentationMode = FlowPresentationMode("DEFAULT")
-
         /** The flow covers the whole screen. */
         @JvmField
         public val MODAL_FULL_SCREEN: FlowPresentationMode = FlowPresentationMode("MODAL_FULL_SCREEN")

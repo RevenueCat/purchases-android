@@ -382,11 +382,11 @@ package com.revenuecat.purchases.ui.revenuecatui.checkpoints {
     method @InaccessibleFromKotlin public java.util.Map<java.lang.String,com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue> getCustomVariables();
     method @InaccessibleFromKotlin public com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter? getErrorPresenter();
     method @InaccessibleFromKotlin public com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter? getPaywallPresenter();
-    method @InaccessibleFromKotlin public com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode getPresentationMode();
+    method @InaccessibleFromKotlin public com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode? getPresentationMode();
     property public java.util.Map<java.lang.String,com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue> customVariables;
     property public com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter? errorPresenter;
     property public com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter? paywallPresenter;
-    property public com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode presentationMode;
+    property public com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode? presentationMode;
   }
 
   @com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParamsDsl public static final class CheckpointParams.Builder {
@@ -399,7 +399,7 @@ package com.revenuecat.purchases.ui.revenuecatui.checkpoints {
     method public com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams.Builder setCustomVariables(java.util.Map<java.lang.String,? extends com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue> customVariables);
     method public com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams.Builder setErrorPresenter(com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter? errorPresenter);
     method public com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams.Builder setPaywallPresenter(com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter? paywallPresenter);
-    method public com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams.Builder setPresentationMode(com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode presentationMode);
+    method public com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams.Builder setPresentationMode(com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode? presentationMode);
   }
 
   @com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParamsDsl public static final class CheckpointParams.CustomVariablesBuilder {
@@ -480,13 +480,11 @@ package com.revenuecat.purchases.ui.revenuecatui.checkpoints {
 
   @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI public final class FlowPresentationMode {
     field public static final com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode.Companion Companion;
-    field public static final com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode DEFAULT;
     field public static final com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode MODAL_FULL_SCREEN;
     field public static final com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode MODAL_SHEET;
   }
 
   public static final class FlowPresentationMode.Companion {
-    property public com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode DEFAULT;
     property public com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode MODAL_FULL_SCREEN;
     property public com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode MODAL_SHEET;
   }

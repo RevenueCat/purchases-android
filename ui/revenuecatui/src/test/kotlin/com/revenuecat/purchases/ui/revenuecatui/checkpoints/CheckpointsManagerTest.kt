@@ -420,7 +420,7 @@ class CheckpointsManagerTest {
     fun `the default presentation mode is the sheet`() = runTest(dispatcher) {
         resolvesToWorkflow()
         val call = launch {
-            runCheckpoint(CheckpointParams { presentationMode(FlowPresentationMode.DEFAULT) })
+            runCheckpoint(CheckpointParams {})
         }
 
         assertThat(presentedModes).containsExactly(FlowPresentationMode.MODAL_SHEET)
@@ -467,7 +467,7 @@ class CheckpointsManagerTest {
         }
 
         runCheckpoint()
-        runCheckpoint(CheckpointParams { presentationMode(FlowPresentationMode.DEFAULT) })
+        runCheckpoint(CheckpointParams.Builder().setPresentationMode(null).build())
         runCheckpoint(CheckpointParams { presentationMode(FlowPresentationMode.MODAL_FULL_SCREEN) })
         runCheckpoint(CheckpointParams { presentationMode(FlowPresentationMode.MODAL_SHEET) })
 

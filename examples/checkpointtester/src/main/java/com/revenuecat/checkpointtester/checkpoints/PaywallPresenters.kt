@@ -69,23 +69,23 @@ object PaywallPresenters {
     private val _mode = MutableStateFlow(Mode.Default)
     val mode: StateFlow<Mode> = _mode.asStateFlow()
 
-    private val _presentationMode = MutableStateFlow(FlowPresentationMode.DEFAULT)
+    private val _presentationMode = MutableStateFlow<FlowPresentationMode?>(null)
 
     /** How flows are presented: by the SDK for workflows and offerings in [Mode.Default], and by the app otherwise. */
-    val presentationMode: StateFlow<FlowPresentationMode> = _presentationMode.asStateFlow()
+    val presentationMode: StateFlow<FlowPresentationMode?> = _presentationMode.asStateFlow()
 
     fun select(mode: Mode) {
         _mode.value = mode
         Purchases.sharedInstance.paywallPresenter = if (mode == Mode.Default) null else global
     }
 
-    fun selectPresentationMode(mode: FlowPresentationMode) {
+    fun selectPresentationMode(mode: FlowPresentationMode?) {
         _presentationMode.value = mode
     }
 
     fun params(block: CheckpointParams.Builder.() -> Unit = {}): CheckpointParams = CheckpointParams {
         block()
-        presentationMode(_presentationMode.value)
+        setPresentationMode(_presentationMode.value)
         if (_mode.value == Mode.Local) paywallPresenter(local)
         ErrorPresenters.apply(this)
     }

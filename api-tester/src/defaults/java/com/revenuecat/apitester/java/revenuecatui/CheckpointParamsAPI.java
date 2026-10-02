@@ -33,14 +33,17 @@ final class CheckpointParamsAPI {
         CheckpointParams sheet = new CheckpointParams.Builder()
                 .setPresentationMode(FlowPresentationMode.MODAL_SHEET)
                 .build();
+        CheckpointParams sdkChoice = new CheckpointParams.Builder()
+                .setPresentationMode(null)
+                .build();
+        FlowPresentationMode mode = sheet.getPresentationMode();
     }
 
     @OptIn(markerClass = InviteOnlyCheckpointsAPI.class)
     static void checkPresentationMode(FlowPresentationMode mode) {
-        FlowPresentationMode defaultMode = FlowPresentationMode.DEFAULT;
         FlowPresentationMode fullScreen = FlowPresentationMode.MODAL_FULL_SCREEN;
         FlowPresentationMode sheet = FlowPresentationMode.MODAL_SHEET;
-        boolean same = mode.equals(defaultMode);
+        boolean same = mode.equals(fullScreen);
         int hash = mode.hashCode();
         String text = mode.toString();
     }
