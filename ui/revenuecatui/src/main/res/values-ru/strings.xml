@@ -22,4 +22,5 @@
     <string name="cannot_open_link">Неверная ссылка. Не удалось открыть.</string>
     <string name="revenuecatui_purchase">Купить</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">Не удалось загрузить рабочий процесс предварительного просмотра. Повторите попытку.</string>
 </resources>

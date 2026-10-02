@@ -22,4 +22,5 @@
     <string name="cannot_open_link">الرابط غير صالح. لم يتمكن من الفتح.</string>
     <string name="revenuecatui_purchase">شراء</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">تعذّر تحميل سير العمل الخاص بالمعاينة. يُرجى المحاولة مرة أخرى.</string>
 </resources>

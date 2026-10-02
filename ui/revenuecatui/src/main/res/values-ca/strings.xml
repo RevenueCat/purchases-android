@@ -22,4 +22,5 @@
     <string name="cannot_open_link">Enllaç no vàlid. No s’ha pogut obrir.</string>
     <string name="revenuecatui_purchase">Comprar</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">No s\'ha pogut carregar el flux de treball de previsualització. Torna-ho a provar.</string>
 </resources>
