@@ -3,7 +3,7 @@ package com.revenuecat.checkpointtester.checkpoints
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPresentationMode
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.paywallPresenter
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,7 +37,7 @@ class ParkedPaywallPresenter : PaywallPresenter {
 
 /**
  * The tester's paywall presenters and the [Mode] selected on the main screen, which decides who presents the
- * offering a checkpoint resolves to, plus the [CheckpointPresentationMode] the SDK uses for the flows it presents
+ * offering a checkpoint resolves to, plus the [FlowPresentationMode] the SDK uses for the flows it presents
  * itself. Every checkpoint call in the tester builds its params through [params] so both selections apply wherever
  * a flow is presented.
  */
@@ -69,17 +69,17 @@ object PaywallPresenters {
     private val _mode = MutableStateFlow(Mode.Default)
     val mode: StateFlow<Mode> = _mode.asStateFlow()
 
-    private val _presentationMode = MutableStateFlow(CheckpointPresentationMode.DEFAULT)
+    private val _presentationMode = MutableStateFlow(FlowPresentationMode.DEFAULT)
 
     /** How flows are presented: by the SDK for workflows and offerings in [Mode.Default], and by the app otherwise. */
-    val presentationMode: StateFlow<CheckpointPresentationMode> = _presentationMode.asStateFlow()
+    val presentationMode: StateFlow<FlowPresentationMode> = _presentationMode.asStateFlow()
 
     fun select(mode: Mode) {
         _mode.value = mode
         Purchases.sharedInstance.paywallPresenter = if (mode == Mode.Default) null else global
     }
 
-    fun selectPresentationMode(mode: CheckpointPresentationMode) {
+    fun selectPresentationMode(mode: FlowPresentationMode) {
         _presentationMode.value = mode
     }
 

@@ -37,12 +37,12 @@ import com.revenuecat.checkpointtester.checkpoints.ParkedPaywallPresenter
 import com.revenuecat.checkpointtester.checkpoints.PaywallCheckout
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPresentationMode
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter
 import kotlinx.coroutines.launch
 
 /**
- * The app's full-screen paywall, drawn when a presenter is asked for [CheckpointPresentationMode.FULL_SCREEN]:
+ * The app's full-screen paywall, drawn when a presenter is asked for [FlowPresentationMode.MODAL_FULL_SCREEN]:
  * the packages as selectable cards, a purchase button, restore, continue without buying, and a close button. A
  * cancelled purchase keeps it open; any other checkout error shows inline. Reports how the user left it (purchased,
  * closed through the X, continued without buying, or backed out through system back); the SDK works out what the

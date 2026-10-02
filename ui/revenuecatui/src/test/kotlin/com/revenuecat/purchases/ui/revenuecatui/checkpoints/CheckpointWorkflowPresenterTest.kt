@@ -447,10 +447,10 @@ class CheckpointWorkflowPresenterTest {
     }
 
     private fun launchSheetCheckpoint(): Job =
-        launchCheckpoint(CheckpointParams { presentationMode(CheckpointPresentationMode.SHEET) })
+        launchCheckpoint(CheckpointParams { presentationMode(FlowPresentationMode.MODAL_SHEET) })
 
     private fun launchFullScreenCheckpoint(): Job =
-        launchCheckpoint(CheckpointParams { presentationMode(CheckpointPresentationMode.FULL_SCREEN) })
+        launchCheckpoint(CheckpointParams { presentationMode(FlowPresentationMode.MODAL_FULL_SCREEN) })
 
     private fun currentCallId(): String = presentedCallIds.last()
 

@@ -35,7 +35,7 @@ internal class DefaultPaywallPresenter(
     private val windowFactory: (
         callId: String,
         host: CheckpointPresentationHost,
-        presentationMode: CheckpointPresentationMode,
+        presentationMode: FlowPresentationMode,
     ) -> CheckpointWorkflowPresenter = { callId, host, mode -> CheckpointWorkflowPresenter(callId, host, mode) },
 ) : PaywallPresenter, CheckpointPresentationHost {
 

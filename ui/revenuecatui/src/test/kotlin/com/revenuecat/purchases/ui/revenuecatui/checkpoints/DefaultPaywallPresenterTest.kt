@@ -40,7 +40,7 @@ class DefaultPaywallPresenterTest {
         offering,
         "test_checkpoint",
         mapOf("goal" to CustomVariableValue.String("test")),
-        CheckpointPresentationMode.FULL_SCREEN,
+        FlowPresentationMode.MODAL_FULL_SCREEN,
     )
     private val events = mutableListOf<String>()
     private val results = mutableListOf<Result>()
@@ -56,7 +56,7 @@ class DefaultPaywallPresenterTest {
     private lateinit var mockPurchases: Purchases
     private lateinit var mockWindow: CheckpointWorkflowPresenter
     private var windowCallId: String? = null
-    private var windowMode: CheckpointPresentationMode? = null
+    private var windowMode: FlowPresentationMode? = null
     private lateinit var presenter: DefaultPaywallPresenter
 
     @Before
@@ -132,16 +132,16 @@ class DefaultPaywallPresenterTest {
     @Test
     fun `the window is presented the way the params ask`() {
         present()
-        assertThat(windowMode).isEqualTo(CheckpointPresentationMode.FULL_SCREEN)
+        assertThat(windowMode).isEqualTo(FlowPresentationMode.MODAL_FULL_SCREEN)
 
         val sheetParams = PaywallPresenter.Params(
             offering,
             params.checkpointIdentifier,
             params.customVariables,
-            CheckpointPresentationMode.SHEET,
+            FlowPresentationMode.MODAL_SHEET,
         )
         presenter.present(sheetParams, completion)
-        assertThat(windowMode).isEqualTo(CheckpointPresentationMode.SHEET)
+        assertThat(windowMode).isEqualTo(FlowPresentationMode.MODAL_SHEET)
     }
 
     @Test

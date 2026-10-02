@@ -47,7 +47,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.paywallstester.ui.screens.checkpoints.CheckpointsViewModel.CheckpointResultUi
 import com.revenuecat.paywallstester.ui.screens.checkpoints.CheckpointsViewModel.UiState
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPresentationMode
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -86,7 +86,7 @@ private fun CheckpointsScaffold(
     onHit: (String) -> Unit,
     onTogglePresentWithAppPaywall: (Boolean) -> Unit,
     onTogglePresentErrorsWithApp: (Boolean) -> Unit,
-    onSelectPresentationMode: (CheckpointPresentationMode) -> Unit,
+    onSelectPresentationMode: (FlowPresentationMode) -> Unit,
     dismissRequest: () -> Unit,
 ) {
     Scaffold(
@@ -176,16 +176,16 @@ private fun PresenterSection(
 }
 
 private val PRESENTATION_MODE_LABELS = mapOf(
-    CheckpointPresentationMode.DEFAULT to "Default",
-    CheckpointPresentationMode.FULL_SCREEN to "Full screen",
-    CheckpointPresentationMode.SHEET to "Sheet",
+    FlowPresentationMode.DEFAULT to "Default",
+    FlowPresentationMode.MODAL_FULL_SCREEN to "Full screen",
+    FlowPresentationMode.MODAL_SHEET to "Sheet",
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PresentationModeSection(
-    presentationMode: CheckpointPresentationMode,
-    onSelect: (CheckpointPresentationMode) -> Unit,
+    presentationMode: FlowPresentationMode,
+    onSelect: (FlowPresentationMode) -> Unit,
 ) {
     val modes = PRESENTATION_MODE_LABELS.keys.toList()
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -322,7 +322,7 @@ private fun CheckpointsScreenPreview() {
             override fun hit(identifier: String) {}
             override fun setPresentWithAppPaywall(enabled: Boolean) {}
             override fun setPresentErrorsWithApp(enabled: Boolean) {}
-            override fun setPresentationMode(mode: CheckpointPresentationMode) {}
+            override fun setPresentationMode(mode: FlowPresentationMode) {}
         },
     )
 }

@@ -38,7 +38,7 @@ import com.revenuecat.checkpointtester.ui.screens.onboarding.OnboardingScreen
 import com.revenuecat.checkpointtester.ui.screens.softpaywall.SoftPaywallScreen
 import com.revenuecat.checkpointtester.ui.screens.usecases.UseCasesScreen
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPresentationMode
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode
 
 private val ALL_SCREENS: List<Screen> = listOf(
     Screen.UseCases,
@@ -129,7 +129,7 @@ private fun AppPaywallHost() {
 @Composable
 private fun AppPaywall(request: ParkedPaywallPresenter.Request, presenterLabel: String) {
     when (request.params.presentationMode) {
-        CheckpointPresentationMode.FULL_SCREEN -> FullScreenAppPaywall(request, presenterLabel)
+        FlowPresentationMode.MODAL_FULL_SCREEN -> FullScreenAppPaywall(request, presenterLabel)
         else -> SheetAppPaywall(request, presenterLabel)
     }
 }

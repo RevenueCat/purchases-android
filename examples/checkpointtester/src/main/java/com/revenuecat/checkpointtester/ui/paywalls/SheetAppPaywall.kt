@@ -35,12 +35,12 @@ import com.revenuecat.checkpointtester.checkpoints.ParkedPaywallPresenter
 import com.revenuecat.checkpointtester.checkpoints.PaywallCheckout
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPresentationMode
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter
 import kotlinx.coroutines.launch
 
 /**
- * The app's bottom-sheet paywall, drawn when a presenter is asked for [CheckpointPresentationMode.SHEET]: a sheet
+ * The app's bottom-sheet paywall, drawn when a presenter is asked for [FlowPresentationMode.MODAL_SHEET]: a sheet
  * over a scrim, one buy button per package, restore, continue without buying, and "Not now". Reports how the user
  * left it (purchased, closed through "Not now", continued without buying, or backed out through system back or a
  * tap on the scrim); the SDK works out what the user obtained. [presenterLabel] names the presenter that was asked,

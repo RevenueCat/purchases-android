@@ -30,7 +30,7 @@ import com.revenuecat.checkpointtester.checkpoints.PaywallPresenters
 import com.revenuecat.checkpointtester.ui.Screen
 import com.revenuecat.checkpointtester.ui.theme.CheckpointTesterTheme
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPresentationMode
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode
 
 private data class NavigatedUseCase(
     val screen: Screen,
@@ -67,9 +67,9 @@ private val NAVIGATED_USE_CASES = listOf(
 )
 
 private val PRESENTATION_MODE_LABELS = mapOf(
-    CheckpointPresentationMode.DEFAULT to "Default",
-    CheckpointPresentationMode.FULL_SCREEN to "Full screen",
-    CheckpointPresentationMode.SHEET to "Sheet",
+    FlowPresentationMode.DEFAULT to "Default",
+    FlowPresentationMode.MODAL_FULL_SCREEN to "Full screen",
+    FlowPresentationMode.MODAL_SHEET to "Sheet",
 )
 
 private val INLINE_USE_CASES = listOf(

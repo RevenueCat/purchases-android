@@ -42,7 +42,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPresentationMode
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter
 import kotlinx.coroutines.launch
 
@@ -105,7 +105,7 @@ internal fun AppPaywall(
         )
     }
 
-    if (request.params.presentationMode == CheckpointPresentationMode.FULL_SCREEN) {
+    if (request.params.presentationMode == FlowPresentationMode.MODAL_FULL_SCREEN) {
         Surface(modifier = modifier.fillMaxSize()) {
             Box(modifier = Modifier.fillMaxSize().safeDrawingPadding()) { content(true) }
         }

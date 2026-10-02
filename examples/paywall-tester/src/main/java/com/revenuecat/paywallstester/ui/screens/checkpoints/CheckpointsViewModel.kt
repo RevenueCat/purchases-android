@@ -12,7 +12,7 @@ import com.revenuecat.paywallstester.ui.screens.checkpoints.CheckpointsViewModel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPresentationMode
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowResult
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint
@@ -35,7 +35,7 @@ interface CheckpointsViewModel {
         val lastResult: CheckpointResultUi? = null,
         val presentWithAppPaywall: Boolean = false,
         val presentErrorsWithApp: Boolean = false,
-        val presentationMode: CheckpointPresentationMode = CheckpointPresentationMode.DEFAULT,
+        val presentationMode: FlowPresentationMode = FlowPresentationMode.DEFAULT,
     )
 
     val state: StateFlow<UiState>
@@ -50,7 +50,7 @@ interface CheckpointsViewModel {
 
     fun setPresentErrorsWithApp(enabled: Boolean)
 
-    fun setPresentationMode(mode: CheckpointPresentationMode)
+    fun setPresentationMode(mode: FlowPresentationMode)
 }
 
 internal class CheckpointsViewModelImpl(
@@ -107,7 +107,7 @@ internal class CheckpointsViewModelImpl(
         _state.update { it.copy(presentErrorsWithApp = enabled) }
     }
 
-    override fun setPresentationMode(mode: CheckpointPresentationMode) {
+    override fun setPresentationMode(mode: FlowPresentationMode) {
         _state.update { it.copy(presentationMode = mode) }
     }
 

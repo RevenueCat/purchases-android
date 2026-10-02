@@ -10,8 +10,8 @@ import com.revenuecat.purchases.PurchasesError;
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPassedCallback;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams;
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPresentationMode;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter;
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowResult;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointsExtensionsKt;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ObtainedEntitlement;
@@ -60,7 +60,7 @@ final class CheckpointsAPI {
             Offering offering = params.getOffering();
             String checkpointIdentifier = params.getCheckpointIdentifier();
             Map<String, CustomVariableValue> customVariables = params.getCustomVariables();
-            CheckpointPresentationMode presentationMode = params.getPresentationMode();
+            FlowPresentationMode presentationMode = params.getPresentationMode();
             completion.complete(PaywallPresenter.Completion.Result.Continued.INSTANCE);
             completion.complete(PaywallPresenter.Completion.Result.Closed.INSTANCE);
             completion.complete(PaywallPresenter.Completion.Result.NavigatedBack.INSTANCE);

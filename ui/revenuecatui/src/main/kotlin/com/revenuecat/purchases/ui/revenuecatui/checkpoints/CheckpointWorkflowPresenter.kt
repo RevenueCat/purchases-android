@@ -49,7 +49,7 @@ internal interface CheckpointPresentationHost {
 internal class CheckpointWorkflowPresenter(
     private val callId: String,
     private val presentationHost: CheckpointPresentationHost,
-    presentationMode: CheckpointPresentationMode = CheckpointPresentationMode.FULL_SCREEN,
+    presentationMode: FlowPresentationMode = FlowPresentationMode.MODAL_FULL_SCREEN,
     private val createContent: (Activity, PaywallOptions, ModalSheetState?) -> View = { activity, options, sheet ->
         ComposeView(activity).apply {
             setContent { if (sheet == null) Paywall(options) else SheetWorkflowContent(sheet, options) }
@@ -60,7 +60,7 @@ internal class CheckpointWorkflowPresenter(
     // One sheet per presentation, not per window: a re-presented sheet composes where the previous one was, at
     // rest or mid-hide, and a hide that lost its window completes in the next one.
     private val sheetState: ModalSheetState? =
-        if (presentationMode == CheckpointPresentationMode.SHEET) ModalSheetState() else null
+        if (presentationMode == FlowPresentationMode.MODAL_SHEET) ModalSheetState() else null
 
     // Holds the workflow window and view hierarchy (and, through them, the host activity), so nulling it on
     // every dismissal is the no-leak guarantee at host destroy. host below is only kept for identity checks

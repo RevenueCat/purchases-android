@@ -105,38 +105,38 @@ class CheckpointParamsTest {
 
     @Test
     fun `params default to letting the SDK choose the presentation`() {
-        assertThat(CheckpointParams {}.presentationMode).isEqualTo(CheckpointPresentationMode.DEFAULT)
+        assertThat(CheckpointParams {}.presentationMode).isEqualTo(FlowPresentationMode.DEFAULT)
         assertThat(CheckpointParams.Builder().build().presentationMode)
-            .isEqualTo(CheckpointPresentationMode.DEFAULT)
+            .isEqualTo(FlowPresentationMode.DEFAULT)
     }
 
     @Test
     fun `the presentation mode is set through the builder and the DSL alike`() {
-        assertThat(CheckpointParams { presentationMode(CheckpointPresentationMode.SHEET) }.presentationMode)
-            .isEqualTo(CheckpointPresentationMode.SHEET)
+        assertThat(CheckpointParams { presentationMode(FlowPresentationMode.MODAL_SHEET) }.presentationMode)
+            .isEqualTo(FlowPresentationMode.MODAL_SHEET)
         assertThat(
-            CheckpointParams.Builder().setPresentationMode(CheckpointPresentationMode.SHEET).build().presentationMode,
-        ).isEqualTo(CheckpointPresentationMode.SHEET)
+            CheckpointParams.Builder().setPresentationMode(FlowPresentationMode.MODAL_SHEET).build().presentationMode,
+        ).isEqualTo(FlowPresentationMode.MODAL_SHEET)
     }
 
     @Test
     fun `params are equal only when their presentation modes are`() {
-        val sheet = CheckpointParams { presentationMode(CheckpointPresentationMode.SHEET) }
+        val sheet = CheckpointParams { presentationMode(FlowPresentationMode.MODAL_SHEET) }
 
-        assertThat(sheet).isEqualTo(CheckpointParams { presentationMode(CheckpointPresentationMode.SHEET) })
+        assertThat(sheet).isEqualTo(CheckpointParams { presentationMode(FlowPresentationMode.MODAL_SHEET) })
         assertThat(sheet.hashCode())
-            .isEqualTo(CheckpointParams { presentationMode(CheckpointPresentationMode.SHEET) }.hashCode())
+            .isEqualTo(CheckpointParams { presentationMode(FlowPresentationMode.MODAL_SHEET) }.hashCode())
         assertThat(sheet).isNotEqualTo(CheckpointParams {})
-        assertThat(sheet.toString()).contains("presentationMode=SHEET")
+        assertThat(sheet.toString()).contains("presentationMode=MODAL_SHEET")
     }
 
     @Test
     fun `presentation modes are values`() {
-        assertThat(CheckpointPresentationMode.SHEET).isEqualTo(CheckpointPresentationMode.SHEET)
-        assertThat(CheckpointPresentationMode.SHEET).isNotEqualTo(CheckpointPresentationMode.FULL_SCREEN)
-        assertThat(CheckpointPresentationMode.DEFAULT).isNotEqualTo(CheckpointPresentationMode.SHEET)
-        assertThat(CheckpointPresentationMode.SHEET.hashCode()).isEqualTo(CheckpointPresentationMode.SHEET.hashCode())
-        assertThat(CheckpointPresentationMode.FULL_SCREEN.toString()).isEqualTo("FULL_SCREEN")
+        assertThat(FlowPresentationMode.MODAL_SHEET).isEqualTo(FlowPresentationMode.MODAL_SHEET)
+        assertThat(FlowPresentationMode.MODAL_SHEET).isNotEqualTo(FlowPresentationMode.MODAL_FULL_SCREEN)
+        assertThat(FlowPresentationMode.DEFAULT).isNotEqualTo(FlowPresentationMode.MODAL_SHEET)
+        assertThat(FlowPresentationMode.MODAL_SHEET.hashCode()).isEqualTo(FlowPresentationMode.MODAL_SHEET.hashCode())
+        assertThat(FlowPresentationMode.MODAL_FULL_SCREEN.toString()).isEqualTo("MODAL_FULL_SCREEN")
     }
 
     @Test

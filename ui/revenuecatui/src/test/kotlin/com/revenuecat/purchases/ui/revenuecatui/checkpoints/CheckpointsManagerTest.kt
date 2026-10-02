@@ -57,8 +57,8 @@ class CheckpointsManagerTest {
     private var defaultPresenter: DefaultPaywallPresenter? = null
     private val defaultErrorPresenters = mutableListOf<DefaultErrorPresenter>()
     private val presentedCallIds = mutableListOf<String>()
-    private val presentedModes = mutableListOf<CheckpointPresentationMode>()
-    private val defaultPresenterModes = mutableListOf<CheckpointPresentationMode>()
+    private val presentedModes = mutableListOf<FlowPresentationMode>()
+    private val defaultPresenterModes = mutableListOf<FlowPresentationMode>()
     private val results = mutableListOf<FlowResult?>()
 
     private lateinit var manager: CheckpointsManager
@@ -410,7 +410,7 @@ class CheckpointsManagerTest {
         resolvesToWorkflow()
         val call = launch { runCheckpoint() }
 
-        assertThat(presentedModes).containsExactly(CheckpointPresentationMode.SHEET)
+        assertThat(presentedModes).containsExactly(FlowPresentationMode.MODAL_SHEET)
 
         finishPaywall(CheckpointFlowOutcome.Dismissed)
         call.join()
@@ -420,10 +420,10 @@ class CheckpointsManagerTest {
     fun `the default presentation mode is the sheet`() = runTest(dispatcher) {
         resolvesToWorkflow()
         val call = launch {
-            runCheckpoint(CheckpointParams { presentationMode(CheckpointPresentationMode.DEFAULT) })
+            runCheckpoint(CheckpointParams { presentationMode(FlowPresentationMode.DEFAULT) })
         }
 
-        assertThat(presentedModes).containsExactly(CheckpointPresentationMode.SHEET)
+        assertThat(presentedModes).containsExactly(FlowPresentationMode.MODAL_SHEET)
 
         finishPaywall(CheckpointFlowOutcome.Dismissed)
         call.join()
@@ -433,10 +433,10 @@ class CheckpointsManagerTest {
     fun `the presentation mode reaches the workflow window`() = runTest(dispatcher) {
         resolvesToWorkflow()
         val call = launch {
-            runCheckpoint(CheckpointParams { presentationMode(CheckpointPresentationMode.FULL_SCREEN) })
+            runCheckpoint(CheckpointParams { presentationMode(FlowPresentationMode.MODAL_FULL_SCREEN) })
         }
 
-        assertThat(presentedModes).containsExactly(CheckpointPresentationMode.FULL_SCREEN)
+        assertThat(presentedModes).containsExactly(FlowPresentationMode.MODAL_FULL_SCREEN)
 
         finishPaywall(CheckpointFlowOutcome.Dismissed)
         call.join()
@@ -447,10 +447,10 @@ class CheckpointsManagerTest {
         resolvesTo(CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null))
         syncedCustomerInfoIs(mockk())
         val call = launch {
-            runCheckpoint(CheckpointParams { presentationMode(CheckpointPresentationMode.FULL_SCREEN) })
+            runCheckpoint(CheckpointParams { presentationMode(FlowPresentationMode.MODAL_FULL_SCREEN) })
         }
 
-        assertThat(defaultPresenterModes).containsExactly(CheckpointPresentationMode.FULL_SCREEN)
+        assertThat(defaultPresenterModes).containsExactly(FlowPresentationMode.MODAL_FULL_SCREEN)
 
         finishDefaultPaywall()
         call.join()
@@ -460,22 +460,22 @@ class CheckpointsManagerTest {
     fun `an app presenter receives the resolved presentation mode`() = runTest(dispatcher) {
         syncedCustomerInfoIs(mockk())
         resolvesTo(CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null))
-        val receivedModes = mutableListOf<CheckpointPresentationMode>()
+        val receivedModes = mutableListOf<FlowPresentationMode>()
         manager.paywallPresenter = PaywallPresenter { params, completion ->
             receivedModes += params.presentationMode
             completion.complete(PaywallPresenter.Completion.Result.Closed)
         }
 
         runCheckpoint()
-        runCheckpoint(CheckpointParams { presentationMode(CheckpointPresentationMode.DEFAULT) })
-        runCheckpoint(CheckpointParams { presentationMode(CheckpointPresentationMode.FULL_SCREEN) })
-        runCheckpoint(CheckpointParams { presentationMode(CheckpointPresentationMode.SHEET) })
+        runCheckpoint(CheckpointParams { presentationMode(FlowPresentationMode.DEFAULT) })
+        runCheckpoint(CheckpointParams { presentationMode(FlowPresentationMode.MODAL_FULL_SCREEN) })
+        runCheckpoint(CheckpointParams { presentationMode(FlowPresentationMode.MODAL_SHEET) })
 
         assertThat(receivedModes).containsExactly(
-            CheckpointPresentationMode.SHEET,
-            CheckpointPresentationMode.SHEET,
-            CheckpointPresentationMode.FULL_SCREEN,
-            CheckpointPresentationMode.SHEET,
+            FlowPresentationMode.MODAL_SHEET,
+            FlowPresentationMode.MODAL_SHEET,
+            FlowPresentationMode.MODAL_FULL_SCREEN,
+            FlowPresentationMode.MODAL_SHEET,
         )
     }
 

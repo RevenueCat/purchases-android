@@ -76,7 +76,7 @@ internal class CheckpointsManager(
     private val presenterFactory: (
         callId: String,
         manager: CheckpointsManager,
-        presentationMode: CheckpointPresentationMode,
+        presentationMode: FlowPresentationMode,
     ) -> CheckpointWorkflowPresenter = { callId, manager, mode -> CheckpointWorkflowPresenter(callId, manager, mode) },
     private val defaultPresenterFactory: (Purchases, ErrorPresenter) -> DefaultPaywallPresenter =
         { purchases, errorPresenter -> DefaultPaywallPresenter(purchases, errorPresenter) },
@@ -376,7 +376,7 @@ internal class CheckpointsManager(
         resolution: CheckpointResolution.MatchedWorkflow,
         customVariables: Map<String, CustomVariableValue>,
         errorPresenter: ErrorPresenter,
-        presentationMode: CheckpointPresentationMode,
+        presentationMode: FlowPresentationMode,
     ): CheckpointRun {
         val activity = purchases.currentActivity ?: presentationError(
             PurchasesErrorCode.ConfigurationError,
@@ -418,9 +418,9 @@ internal class CheckpointsManager(
 
     // DEFAULT stands for whatever the SDK presents by default, which today is the sheet; presenters, the SDK's own
     // included, only ever see a concrete mode.
-    private fun resolvePresentationMode(requested: CheckpointPresentationMode?): CheckpointPresentationMode =
+    private fun resolvePresentationMode(requested: FlowPresentationMode?): FlowPresentationMode =
         when (requested) {
-            null, CheckpointPresentationMode.DEFAULT -> CheckpointPresentationMode.SHEET
+            null, FlowPresentationMode.DEFAULT -> FlowPresentationMode.MODAL_SHEET
             else -> requested
         }
 
