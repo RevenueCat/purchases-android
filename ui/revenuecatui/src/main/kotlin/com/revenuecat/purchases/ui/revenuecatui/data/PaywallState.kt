@@ -356,10 +356,11 @@ internal sealed interface PaywallState {
             /**
              * The measured height of the sticky-footer overlay in pixels. Set during the layout phase by
              * the custom Layout in [LoadedPaywallComponents], so main content can reserve bottom clearance
-             * (via [Modifier.footerBottomPadding]) in the same pass, without recomposition.
+             * (via [Modifier.footerBottomPadding]) in the same pass. This is observable so a later footer
+             * resize invalidates the main content's otherwise unchanged measurement constraints.
              */
             @get:JvmSynthetic
-            var footerHeightPx: Int = 0
+            var footerHeightPx by mutableIntStateOf(0)
                 @JvmSynthetic internal set
 
             /** Raised and cleared by the button, for the actions that begin and end with the click. */
