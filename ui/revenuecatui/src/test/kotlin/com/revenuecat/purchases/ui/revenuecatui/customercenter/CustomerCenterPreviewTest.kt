@@ -190,6 +190,43 @@ class CustomerCenterPreviewTest {
     }
 
     @Test
+    fun `refreshing preview purchase details updates content without animating navigation`() {
+        val purchase = CustomerCenterConfigTestData.purchaseInformationYearlyExpiring.copy(title = "Original purchase")
+        val initial = CustomerCenterState.Success(
+            customerCenterConfigData = CustomerCenterConfigTestData.customerCenterData(),
+            purchases = listOf(purchase),
+        )
+        val state = mutableStateOf(initial.copy(
+            navigationState = initial.navigationState.push(
+                CustomerCenterDestination.SelectedPurchaseDetail(purchase, "Management"),
+            ),
+        ))
+        composeTestRule.setContent {
+            MaterialTheme {
+                InternalCustomerCenter(state.value, previewOptions = CustomerCenterPreviewOptions(), onAction = {})
+            }
+        }
+        composeTestRule.onNode(hasText("Original purchase")).assertIsDisplayed()
+        composeTestRule.mainClock.autoAdvance = false
+
+        composeTestRule.runOnIdle {
+            val refreshed = purchase.copy(title = "Updated purchase")
+            state.value = state.value.copy(
+                purchases = listOf(refreshed),
+                navigationState = state.value.navigationState.pop().push(
+                    CustomerCenterDestination.SelectedPurchaseDetail(refreshed, "Management"),
+                ),
+            )
+        }
+        ShadowLooper.idleMainLooper()
+        composeTestRule.mainClock.advanceTimeBy(64)
+        composeTestRule.waitForIdle()
+
+        composeTestRule.onAllNodes(hasText("Original purchase")).assertCountEquals(0)
+        composeTestRule.onNode(hasText("Updated purchase")).assertIsDisplayed()
+    }
+
+    @Test
     fun `nested balances render supplied scenario without creating a live SDK view model`() {
         val config = CustomerCenterConfigTestData.customerCenterData()
         val state = CustomerCenterState.Success(

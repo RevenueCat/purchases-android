@@ -234,6 +234,8 @@ internal class CustomerCenterViewModelImpl(
     private val listener: CustomerCenterListener? = null,
     private val previewProvider: CustomerCenterPreviewProvider? = null,
 ) : ViewModel(), CustomerCenterViewModel {
+    private var previewPathDiagnostics: List<CustomerCenterPreviewDiagnostic> = emptyList()
+
     companion object {
         private const val STOP_FLOW_TIMEOUT = 5_000L
     }
@@ -740,7 +742,7 @@ internal class CustomerCenterViewModelImpl(
                         null
                     },
                 )
-            },
+            }.also { previewPathDiagnostics = it },
         )
         return screen.paths.filter { decisions[it] == null }
             .transformPathsOnSubscriptionState(selectedPurchaseInformation, localization)
@@ -1142,8 +1144,9 @@ internal class CustomerCenterViewModelImpl(
         }
         val purchaseParams = PurchaseParams.Builder(activity, subscriptionOption)
         if (previewProvider?.store == Store.PLAY_STORE) {
-            (_state.value as? CustomerCenterState.Success)?.purchases?.singleOrNull()
-                ?.productIdentifier?.let { purchaseParams.oldProductId(it) }
+            val selected = (_state.value as? CustomerCenterState.Success)?.currentDestination
+                as? CustomerCenterDestination.PromotionalOffer
+            selected?.purchaseInformation?.productIdentifier?.let { purchaseParams.oldProductId(it) }
         }
         try {
             val result = purchases.awaitPurchase(purchaseParams)
@@ -1551,7 +1554,8 @@ internal class CustomerCenterViewModelImpl(
         identifier: String,
     ) {
         previewProvider?.onDiagnosticsUpdated(
-            listOf(CustomerCenterPreviewDiagnostic("promotional_offer", "", productId, true, reason, identifier)),
+            previewPathDiagnostics +
+                CustomerCenterPreviewDiagnostic("promotional_offer", "", productId, false, reason, identifier),
         )
     }
 
