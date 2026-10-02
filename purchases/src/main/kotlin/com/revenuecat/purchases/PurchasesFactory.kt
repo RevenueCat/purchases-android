@@ -59,6 +59,7 @@ import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopicStore
 import com.revenuecat.purchases.common.safeResume
 import com.revenuecat.purchases.common.safeResumeWithException
 import com.revenuecat.purchases.common.sdksettings.SdkSettingsConfigProvider
+import com.revenuecat.purchases.common.subscriberdimensions.SubscriberDimensionsConfigProvider
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
@@ -375,11 +376,13 @@ internal class PurchasesFactory(
             val checkpointsConfigProvider = CheckpointsConfigProvider(remoteConfigManager)
             val audiencesConfigProvider = AudiencesConfigProvider(remoteConfigManager)
             val sdkSettingsConfigProvider = SdkSettingsConfigProvider(remoteConfigManager)
+            val subscriberDimensionsConfigProvider = SubscriberDimensionsConfigProvider(remoteConfigManager)
             remoteConfigManager.registerListener(uiConfigProvider)
             remoteConfigManager.registerListener(workflowsConfigProvider)
             remoteConfigManager.registerListener(checkpointsConfigProvider)
             remoteConfigManager.registerListener(audiencesConfigProvider)
             remoteConfigManager.registerListener(sdkSettingsConfigProvider)
+            remoteConfigManager.registerListener(subscriberDimensionsConfigProvider)
             // Cold-start-with-warm-disk: preload the in-memory caches from whatever is already committed on
             // disk without triggering a network config sync. A subsequent network commit re-warms with a
             // higher generation and supersedes this (store-if-newer). A no-op when the manager is disabled:
@@ -390,6 +393,7 @@ internal class PurchasesFactory(
             checkpointsConfigProvider.warmAsync(initialGeneration)
             audiencesConfigProvider.warmAsync(initialGeneration)
             sdkSettingsConfigProvider.preloadAsync(initialGeneration)
+            subscriberDimensionsConfigProvider.warmAsync(initialGeneration)
 
             val identityManager = IdentityManager(
                 appConfig,
@@ -604,6 +608,7 @@ internal class PurchasesFactory(
                 checkpointsConfigProvider = checkpointsConfigProvider,
                 audiencesConfigProvider = audiencesConfigProvider,
                 sdkSettingsConfigProvider = sdkSettingsConfigProvider,
+                subscriberDimensionsConfigProvider = subscriberDimensionsConfigProvider,
                 localRulesEvaluator = localRulesEvaluator,
                 tokenManager = tokenManager,
             )

@@ -236,6 +236,7 @@ class PurchasesFactoryTest {
 
         assertThat(purchases.purchasesOrchestrator.audiencesConfigProvider).isNotNull()
         assertThat(purchases.purchasesOrchestrator.sdkSettingsConfigProvider).isNotNull()
+        assertThat(purchases.purchasesOrchestrator.subscriberDimensionsConfigProvider).isNotNull()
         purchases.close()
     }
 
@@ -307,6 +308,7 @@ class PurchasesFactoryTest {
         // before touching the network.
         assertThat(purchases.purchasesOrchestrator.audiencesConfigProvider).isNotNull()
         assertThat(purchases.purchasesOrchestrator.sdkSettingsConfigProvider).isNotNull()
+        assertThat(purchases.purchasesOrchestrator.subscriberDimensionsConfigProvider).isNotNull()
         assertThatExceptionOfType(PurchasesException::class.java)
             .isThrownBy { runBlocking { purchases.purchasesOrchestrator.getWorkflow("some-workflow") } }
             .matches { it.code == PurchasesErrorCode.ConfigurationError }
