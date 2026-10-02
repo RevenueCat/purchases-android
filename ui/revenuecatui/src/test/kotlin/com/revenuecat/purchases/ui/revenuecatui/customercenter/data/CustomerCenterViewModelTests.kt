@@ -1,14 +1,20 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.data
 
 import android.app.Activity
+import android.app.Application
 import android.content.Context
 import android.net.Uri
+import androidx.lifecycle.ViewModelStore
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.EntitlementInfos
+import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.PurchaseResult
@@ -34,6 +40,8 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.models.Transaction
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterPreviewAction
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterPreviewProvider
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterDestination
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
@@ -60,16 +68,19 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.shadows.ShadowLooper
 import java.util.Date
 import java.util.Locale
 import kotlin.time.Duration
 
+@OptIn(InternalRevenueCatAPI::class)
 @RunWith(AndroidJUnit4::class)
 class CustomerCenterViewModelTests {
 
@@ -2285,6 +2296,86 @@ class CustomerCenterViewModelTests {
         assertThat(paths)
             .withFailMessage("Expected CUSTOM_URL path from NO_ACTIVE screen. Paths: $paths")
             .anyMatch { it.type == CustomerCenterConfigData.HelpPath.PathType.CUSTOM_URL && it.id == "support_id" }
+    }
+
+    @Test
+    fun `preview intercepts management URL and support email actions`(): Unit = runBlocking {
+        setupPurchasesMock()
+        val provider = mockk<CustomerCenterPreviewProvider>(relaxed = true)
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            previewProvider = provider,
+        )
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val path = HelpPath(id = "cancel", title = "Cancel", type = HelpPath.PathType.CANCEL)
+        val state = setupSuccessLoadScreen(path, model)
+        model.pathButtonPressed(context, path, state.purchases.firstOrNull())
+        model.openURL(context, "https://example.com", HelpPath.OpenMethod.EXTERNAL)
+        model.contactSupport(context, "support@example.com")
+        ShadowLooper.idleMainLooper()
+        coVerify { provider.handleAction(any<CustomerCenterPreviewAction.ManageSubscriptions>()) }
+        coVerify { provider.handleAction(CustomerCenterPreviewAction.OpenUrl("https://example.com")) }
+        coVerify { provider.handleAction(CustomerCenterPreviewAction.ContactSupport("support@example.com")) }
+        assertThat(shadowOf(context).nextStartedActivity).isNull()
+    }
+
+    @Test
+    fun `preview paywall fallback uses injected offerings and intercepts launch`(): Unit = runBlocking {
+        setupPurchasesMock()
+        val provider = mockk<CustomerCenterPreviewProvider>(relaxed = true)
+        val offering = mockk<Offering>()
+        coEvery { purchases.awaitOfferings() } returns Offerings(offering, emptyMap())
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            previewProvider = provider,
+        )
+        val path = HelpPath(id = "restore", title = "Restore", type = HelpPath.PathType.MISSING_PURCHASE)
+        setupSuccessLoadScreen(path, model)
+        val context = ApplicationProvider.getApplicationContext<Application>()
+
+        model.showPaywall(context)
+        ShadowLooper.idleMainLooper()
+
+        coVerify { purchases.awaitOfferings() }
+        coVerify { provider.handleAction(CustomerCenterPreviewAction.ShowPaywall(offering)) }
+        assertThat(shadowOf(context).nextStartedActivity).isNull()
+    }
+
+    @Test
+    fun `clearing a preview session cancels pending simulated actions`(): Unit = runBlocking {
+        setupPurchasesMock()
+        val provider = mockk<CustomerCenterPreviewProvider>()
+        val pending = CompletableDeferred<Unit>()
+        val cancelled = CompletableDeferred<Unit>()
+        coEvery { provider.handleAction(any()) } coAnswers {
+            try {
+                pending.await()
+            } finally {
+                cancelled.complete(Unit)
+            }
+        }
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            previewProvider = provider,
+        )
+        val store = ViewModelStore()
+        store.put("preview", model)
+        model.openURL(
+            ApplicationProvider.getApplicationContext(),
+            "https://example.com",
+            HelpPath.OpenMethod.EXTERNAL,
+        )
+        ShadowLooper.idleMainLooper()
+        store.clear()
+        ShadowLooper.idleMainLooper()
+        withTimeout(2_000) { cancelled.await() }
+        assertThat(pending.isCompleted).isFalse()
     }
 
     private fun setupPurchasesMock() {

@@ -29,6 +29,9 @@ public class PurchaseParams(public val builder: Builder) {
     @get:JvmSynthetic
     internal val purchasingData: PurchasingData
 
+    @InternalRevenueCatAPI
+    public val purchasingDataForPreview: PurchasingData get() = purchasingData
+
     @get:JvmSynthetic
     internal val activity: Activity
 
