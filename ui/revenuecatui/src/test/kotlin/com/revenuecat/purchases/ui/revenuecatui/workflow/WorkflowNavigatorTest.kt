@@ -124,6 +124,87 @@ class WorkflowNavigatorTest {
         assertThat(navigator.currentStep).isEqualTo(step3)
     }
 
+    // The route names a different step than the fallback, so a test can tell the two apart.
+    private fun branchExitWorkflow(): PublishedWorkflow {
+        val branchStep = WorkflowStep(
+            id = "step-1",
+            type = "screen",
+            screenId = "screen-1",
+            triggers = listOf(
+                WorkflowTrigger(
+                    name = "Next",
+                    type = WorkflowTriggerType.ON_PRESS,
+                    actionId = "action-next",
+                    componentId = "btn-next",
+                ),
+            ),
+            triggerActions = mapOf(
+                "action-next" to WorkflowTriggerAction.Branch(
+                    routes = listOf(
+                        WorkflowTriggerAction.Branch.Route(audienceId = "aud-a", stepId = "step-3"),
+                    ),
+                    fallbackStepId = "step-2",
+                ),
+            ),
+        )
+        return workflow.copy(
+            steps = mapOf("step-1" to branchStep, "step-2" to step2, "step-3" to step2.copy(id = "step-3")),
+        )
+    }
+
+    @Test
+    fun `a tap before resolution takes the fallback`() {
+        val navigator = WorkflowNavigator(branchExitWorkflow())
+        val result = navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)
+
+        assertThat(result).isEqualTo(step2)
+        assertThat(navigator.currentStep?.id).isEqualTo("step-2")
+    }
+
+    /** Config drift: the audiences pick a step the workflow no longer contains. */
+    @Test
+    fun `a route naming a missing step falls back`() {
+        val navigator = WorkflowNavigator(branchExitWorkflow())
+        navigator.recordResolvedBranches(mapOf("action-next" to "step-gone"), forStepId = "step-1")
+
+        assertThat(navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)?.id).isEqualTo("step-2")
+    }
+
+    @Test
+    fun `a resolved branch navigates to its route instead of the fallback`() {
+        val navigator = WorkflowNavigator(branchExitWorkflow())
+        navigator.recordResolvedBranches(mapOf("action-next" to "step-3"), forStepId = "step-1")
+
+        val result = navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)
+
+        assertThat(result?.id).isEqualTo("step-3")
+        assertThat(navigator.currentStep?.id).isEqualTo("step-3")
+    }
+
+    @Test
+    fun `returning to a step drops its previous branch resolution`() {
+        val navigator = WorkflowNavigator(branchExitWorkflow())
+        navigator.recordResolvedBranches(mapOf("action-next" to "step-3"), forStepId = "step-1")
+
+        navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        navigator.navigateBack()
+
+        // Back on step-1 with nothing resolved yet, so the fallback stands until the new pass lands.
+        assertThat(navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)?.id).isEqualTo("step-2")
+    }
+
+    // PaywallViewModel gates on the peek before navigating, so a peek that ignores branches
+    // dead-taps the UI even when triggerAction is correct.
+    @Test
+    fun `peekTriggerStep on a branch exit returns the step it picks`() {
+        val navigator = WorkflowNavigator(branchExitWorkflow())
+
+        val result = navigator.peekTriggerStep("btn-next", WorkflowTriggerType.ON_PRESS)
+
+        assertThat(result).isEqualTo(step2)
+        assertThat(navigator.currentStep?.id).isEqualTo("step-1")
+    }
+
     @Test
     fun `triggerAction with unknown componentId returns null and does not navigate`() {
         val navigator = WorkflowNavigator(workflow)

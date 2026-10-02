@@ -49,6 +49,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams
 import com.revenuecat.purchases.ui.revenuecatui.ProductChange
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.asRulesDimensionValue
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
@@ -211,6 +212,7 @@ internal class PaywallViewModelImpl(
     private var paywallPresentationData: PaywallEvent.Data? = null
 
     private var workflowNavigator: WorkflowNavigator? = null
+    private var branchResolveJob: Job? = null
     private var currentWorkflow: PublishedWorkflow? = null
     private var currentWorkflowBlobRef: String? = null
     private var currentWorkflowUiConfig: UiConfig = emptyUiConfig()
@@ -1203,6 +1205,24 @@ internal class PaywallViewModelImpl(
         preWarmWorkflowStepCache(workflow, uiConfig, offerings, presentedOfferingContext)
     }
 
+    /**
+     * Resolves a step's branches when it becomes current. Nothing waits on it: until it lands a branch takes
+     * its fallback, and the initial step cannot carry one.
+     */
+    private fun resolveBranchesFor(step: WorkflowStep) {
+        val navigator = workflowNavigator ?: return
+        // Abandons the previous step's resolve, so every visit routes on its own answer.
+        branchResolveJob?.cancel()
+        if (step.triggerActions.values.none { it is WorkflowTriggerAction.Branch }) return
+        branchResolveJob = viewModelScope.launch {
+            val resolved = purchases.resolveBranches(
+                step,
+                options.customVariables.mapValues { (_, value) -> value.asRulesDimensionValue },
+            )
+            navigator.recordResolvedBranches(resolved, step.id)
+        }
+    }
+
     private fun buildStateFromStep(
         step: WorkflowStep,
         workflow: PublishedWorkflow,
@@ -1213,6 +1233,7 @@ internal class PaywallViewModelImpl(
         navigationDirection: NavigationDirection? = null,
         shouldApplyState: Boolean = true,
     ) {
+        resolveBranchesFor(step)
         val cached = workflowStepStateCache[step.id]
         val newState = cached
             ?: computeStateForStep(
@@ -1500,9 +1521,12 @@ internal class PaywallViewModelImpl(
         }
     }
 
+    // A branch exit navigates too, so it counts here the same way the navigator treats it.
     private fun isTerminalStep(workflow: PublishedWorkflow, stepId: String): Boolean {
         val step = workflow.steps[stepId] ?: return false
-        return step.triggerActions.values.none { it is WorkflowTriggerAction.Step }
+        return step.triggerActions.values.none {
+            it is WorkflowTriggerAction.Step || it is WorkflowTriggerAction.Branch
+        }
     }
 
     private val currentWorkflowStep: WorkflowStep?
