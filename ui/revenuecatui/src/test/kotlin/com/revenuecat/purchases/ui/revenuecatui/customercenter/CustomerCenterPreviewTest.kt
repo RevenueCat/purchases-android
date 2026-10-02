@@ -23,6 +23,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
@@ -69,6 +70,29 @@ class CustomerCenterPreviewTest {
     }
 
     @Test
+    fun `preview paywall renders and restores through provider without a configured SDK`() {
+        val provider = mockk<CustomerCenterPreviewProvider>(relaxed = true)
+        every { provider.customerInfoUpdates } returns null
+        coEvery { provider.workflow(any()) } returns null
+        every { provider.store } returns Store.APP_STORE
+        coEvery { provider.customerInfo() } returns mockk<CustomerInfo>(relaxed = true)
+        coEvery { provider.restorePurchases() } returns mockk<CustomerInfo>(relaxed = true)
+        composeTestRule.setContent {
+            MaterialTheme {
+                CustomerCenterPreviewPaywall(provider, TestData.template1Offering, isDarkMode = true, onDismiss = {})
+            }
+        }
+        composeTestRule.waitUntil(timeoutMillis = 5_000) {
+            composeTestRule.onAllNodes(hasText("Restore purchases", ignoreCase = true))
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+        composeTestRule.onNode(hasText("Restore purchases", ignoreCase = true)).performClick()
+        composeTestRule.waitForIdle()
+        ShadowLooper.idleMainLooper()
+        coVerify(exactly = 1) { provider.restorePurchases() }
+    }
+
+    @Test
     fun `replacing provider cancels old scenario loading and renders the new session`() {
         val oldProvider = mockk<CustomerCenterPreviewProvider>(relaxed = true)
         val newProvider = mockk<CustomerCenterPreviewProvider>(relaxed = true)
@@ -101,6 +125,48 @@ class CustomerCenterPreviewTest {
         }
         coVerify(exactly = 1) { oldProvider.configuration() }
         coVerify(exactly = 1) { newProvider.configuration() }
+    }
+
+    @Test
+    fun `disposing preview paywall cancels an in flight restore`() {
+        val provider = mockk<CustomerCenterPreviewProvider>(relaxed = true)
+        every { provider.customerInfoUpdates } returns null
+        coEvery { provider.workflow(any()) } returns null
+        every { provider.store } returns Store.APP_STORE
+        coEvery { provider.customerInfo() } returns mockk<CustomerInfo>(relaxed = true)
+        val started = CompletableDeferred<Unit>()
+        val cancelled = CompletableDeferred<Unit>()
+        coEvery { provider.restorePurchases() } coAnswers {
+            started.complete(Unit)
+            try {
+                CompletableDeferred<Nothing>().await()
+            } finally {
+                cancelled.complete(Unit)
+            }
+        }
+        val visible = mutableStateOf(true)
+        composeTestRule.setContent {
+            MaterialTheme {
+                if (visible.value) {
+                    CustomerCenterPreviewPaywall(provider, TestData.template1Offering, onDismiss = {})
+                }
+            }
+        }
+        composeTestRule.waitUntil(timeoutMillis = 5_000) {
+            composeTestRule.onAllNodes(hasText("Restore purchases", ignoreCase = true))
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+        composeTestRule.onNode(hasText("Restore purchases", ignoreCase = true)).performClick()
+        composeTestRule.waitForIdle()
+        ShadowLooper.idleMainLooper()
+        composeTestRule.waitUntil(timeoutMillis = 5_000) { started.isCompleted }
+
+        composeTestRule.runOnIdle { visible.value = false }
+
+        composeTestRule.waitForIdle()
+        ShadowLooper.idleMainLooper()
+        assertThat(cancelled.isCompleted).isTrue()
+        coVerify(exactly = 1) { provider.restorePurchases() }
     }
 
     @Test

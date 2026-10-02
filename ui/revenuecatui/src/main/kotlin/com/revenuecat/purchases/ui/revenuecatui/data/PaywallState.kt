@@ -21,6 +21,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.UiConfig.VariableConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.storage.FileRepository
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
@@ -161,6 +162,7 @@ internal sealed interface PaywallState {
                 @JvmSynthetic internal set
 
             val store: Store get() = purchases.store
+            val fileRepositoryOverride: FileRepository? get() = purchases.fileRepositoryOverride
 
             /** A subset of the offering: packages the paywall never shows are not in it. */
             val paywallPackages: List<Package> by lazy {
