@@ -1857,6 +1857,63 @@ class CustomerCenterViewModelTests {
     }
 
     @Test
+    fun `preview allows App Store refund and plan changes without launching activities`(): Unit = runBlocking {
+        setupPurchasesMock()
+        val provider = mockk<CustomerCenterPreviewProvider>(relaxed = true)
+        coEvery { purchases.awaitGetProduct(any(), any()) } returns TestData.Packages.monthly.product
+
+        every { customerInfo.activeSubscriptions } returns setOf(TestData.Packages.monthly.product.id)
+        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
+            "productIdentifier" to SubscriptionInfo(
+                productIdentifier = "productIdentifier",
+                purchaseDate = Date(),
+                originalPurchaseDate = null,
+                expiresDate = null,
+                store = Store.APP_STORE,
+                unsubscribeDetectedAt = null,
+                isSandbox = false,
+                billingIssuesDetectedAt = null,
+                gracePeriodExpiresDate = null,
+                ownershipType = OwnershipType.PURCHASED,
+                periodType = PeriodType.NORMAL,
+                refundedAt = null,
+                storeTransactionId = null,
+                requestDate = Date(),
+                autoResumeDate = null,
+                displayName = null,
+                price = null,
+                productPlanIdentifier = "monthly",
+                managementURL = Uri.parse("https://example.com/manage"),
+            )
+        )
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            previewProvider = provider,
+        )
+
+        val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+        val paths = state.mainScreenPaths
+        assertThat(paths)
+            .withFailMessage("Expected REFUND_REQUEST path for APP_STORE. Paths: $paths")
+            .anyMatch { it.type == HelpPath.PathType.REFUND_REQUEST }
+        assertThat(paths)
+            .withFailMessage("Expected CHANGE_PLANS path for APP_STORE. Paths: $paths")
+            .anyMatch { it.type == HelpPath.PathType.CHANGE_PLANS }
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        for (path in paths.filter { it.type == HelpPath.PathType.REFUND_REQUEST || it.type == HelpPath.PathType.CHANGE_PLANS }) {
+            model.pathButtonPressed(context, path, state.purchases.single())
+            ShadowLooper.idleMainLooper()
+        }
+        coVerify { provider.handleAction(CustomerCenterPreviewAction.RequestRefund("productIdentifier")) }
+        coVerify { provider.handleAction(CustomerCenterPreviewAction.ChangePlans("productIdentifier")) }
+        assertThat(shadowOf(context).nextStartedActivity).isNull()
+    }
+
+    @Test
     fun `transformPathsOnSubscriptionState converts CANCEL to RESUBSCRIBE for cancelled subs`(): Unit = runBlocking {
         setupPurchasesMock()
 
@@ -2321,6 +2378,82 @@ class CustomerCenterViewModelTests {
         coVerify { provider.handleAction(CustomerCenterPreviewAction.OpenUrl("https://example.com")) }
         coVerify { provider.handleAction(CustomerCenterPreviewAction.ContactSupport("support@example.com")) }
         assertThat(shadowOf(context).nextStartedActivity).isNull()
+    }
+
+    @Test
+    fun `preview resolves cross product offers for simulated non Google products`(): Unit = runBlocking {
+        setupPurchasesMock()
+        val provider = mockk<CustomerCenterPreviewProvider>(relaxed = true)
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            previewProvider = provider,
+        )
+        val source = TestData.Packages.monthly.product
+        val target = TestData.Packages.annual.product
+        val option = target.subscriptionOptions!!.first()
+        coEvery { purchases.awaitGetProduct(target.id, null) } returns target
+        val offer = createPromotionalOffer(
+            productMapping = emptyMap(),
+            crossProductPromotions = mapOf(
+                source.id to HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion(option.id, target.id),
+            ),
+        )
+        val path = createOriginalPath()
+        setupSuccessLoadScreen(path, model)
+
+        val displayed = model.loadAndDisplayPromotionalOffer(
+            context = mockk(relaxed = true),
+            product = source,
+            promotionalOffer = offer,
+            originalPath = path,
+        )
+
+        assertThat(displayed).isTrue()
+        val state = model.state.value as CustomerCenterState.Success
+        val destination = state.currentDestination as CustomerCenterDestination.PromotionalOffer
+        assertThat(destination.data.subscriptionOption.id).isEqualTo(option.id)
+        coVerify { purchases.awaitGetProduct(target.id, null) }
+    }
+
+    @Test
+    fun `preview reports an unresolved promotional product as a typed reason with its identifier`(): Unit = runBlocking {
+        setupPurchasesMock()
+        val provider = mockk<CustomerCenterPreviewProvider>(relaxed = true)
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            previewProvider = provider,
+        )
+        val source = TestData.Packages.monthly.product
+        coEvery { purchases.awaitGetProduct("missing-product", null) } returns null
+        val offer = createPromotionalOffer(
+            productMapping = emptyMap(),
+            crossProductPromotions = mapOf(
+                source.id to HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion("offer", "missing-product"),
+            ),
+        )
+        val path = createOriginalPath()
+        setupSuccessLoadScreen(path, model)
+
+        val displayed = model.loadAndDisplayPromotionalOffer(
+            context = mockk(relaxed = true),
+            product = source,
+            promotionalOffer = offer,
+            originalPath = path,
+        )
+
+        assertThat(displayed).isFalse()
+        verify {
+            provider.onDiagnosticsUpdated(match { diagnostics ->
+                diagnostics.any {
+                    it.reason == CustomerCenterPreviewDiagnosticReason.TARGET_PRODUCT_NOT_FOUND &&
+                        it.detail == "missing-product" && it.productId == source.id
+                }
+            })
+        }
     }
 
     @Test
