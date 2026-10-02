@@ -120,6 +120,8 @@ private fun NotifyingUriHandler(
 internal fun InternalPaywall(
     options: PaywallOptions,
     viewModel: PaywallViewModel = getPaywallViewModel(options),
+    isDarkModeOverride: Boolean? = null,
+    externalActionInterceptor: (suspend (PaywallAction.External) -> Boolean)? = null,
 ) {
     DisposableEffect(viewModel) {
         viewModel.onPaywallPresented()
@@ -135,7 +137,7 @@ internal fun InternalPaywall(
     }
 
     val colorScheme = MaterialTheme.colorScheme
-    val isDark = isSystemInDarkTheme()
+    val isDark = paywallDarkMode(isDarkModeOverride)
     SideEffect {
         viewModel.refreshStateIfLocaleChanged()
         viewModel.refreshStateIfColorsChanged(colorScheme = colorScheme, isDark = isDark)
@@ -209,13 +211,13 @@ internal fun InternalPaywall(
                         LoadedWorkflowPaywall(
                             workflowState = workflowState,
                             onTransitionComplete = viewModel::onTransitionComplete,
-                            clickHandler = rememberPaywallActionHandler(viewModel),
+                            clickHandler = rememberPaywallActionHandler(viewModel, externalActionInterceptor),
                             componentInteractionTracker = componentInteractionTracker,
                         )
                     } else {
                         LoadedPaywallComponents(
                             state = state,
-                            clickHandler = rememberPaywallActionHandler(viewModel),
+                            clickHandler = rememberPaywallActionHandler(viewModel, externalActionInterceptor),
                             componentInteractionTracker = componentInteractionTracker,
                         )
                     }
@@ -410,12 +412,14 @@ private fun PaywallState.Loaded.Legacy.configurationWithOverriddenLocale(): Conf
 }
 
 @Composable
-private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (PaywallAction.External) -> Unit {
+private fun rememberPaywallActionHandler(
+    viewModel: PaywallViewModel,
+    interceptor: (suspend (PaywallAction.External) -> Boolean)?,
+): suspend (PaywallAction.External) -> Unit {
     val context: Context = LocalContext.current
     val activity: Activity? = context.getActivity()
-    return remember(viewModel) {
-        {
-                action ->
+    return remember(viewModel, interceptor) {
+        val handler: suspend (PaywallAction.External) -> Unit = { action ->
             when (action) {
                 is PaywallAction.External.RestorePurchases -> viewModel.handleRestorePurchases()
                 is PaywallAction.External.PurchasePackage ->
@@ -460,7 +464,19 @@ private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (
                 }
             }
         }
+        { action -> handleInterceptedAction(action, interceptor, handler) }
     }
+}
+
+@Composable
+private fun paywallDarkMode(override: Boolean?): Boolean = override ?: isSystemInDarkTheme()
+
+private suspend fun handleInterceptedAction(
+    action: PaywallAction.External,
+    interceptor: (suspend (PaywallAction.External) -> Boolean)?,
+    handler: suspend (PaywallAction.External) -> Unit,
+) {
+    if (interceptor?.invoke(action) != true) handler(action)
 }
 
 private fun handleLaunchWebCheckout(
