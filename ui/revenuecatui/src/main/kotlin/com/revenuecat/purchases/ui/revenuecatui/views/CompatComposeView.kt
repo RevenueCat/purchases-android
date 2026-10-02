@@ -3,12 +3,17 @@ package com.revenuecat.purchases.ui.revenuecatui.views
 import android.app.Activity
 import android.app.Application
 import android.content.Context
+import android.content.ContextWrapper
 import android.os.Bundle
 import android.os.Parcelable
 import android.util.AttributeSet
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.OnBackPressedDispatcher
+import androidx.activity.OnBackPressedDispatcherOwner
+import androidx.activity.findViewTreeOnBackPressedDispatcherOwner
+import androidx.activity.setViewTreeOnBackPressedDispatcherOwner
 import androidx.compose.ui.platform.AbstractComposeView
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
@@ -34,7 +39,8 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
  * A ComposeView expects a few things to be set up in the view tree it is added to. This gets handled automatically by
  * modern parents such as ComponentActivity and androidx Fragment. But this is not always the case, such as when the
  * ComposeView is added to a plain Window, or in certain hybrid frameworks. A [CompatComposeView] can handle this
- * scenario by acting as its own LifecycleOwner, SavedStateRegistryOwner and ViewModelStoreOwner if required.
+ * scenario by acting as its own LifecycleOwner, SavedStateRegistryOwner and ViewModelStoreOwner, and by providing an
+ * OnBackPressedDispatcherOwner, if required.
  *
  * Note that, in this scenario, this does imply that the ComposeView's lifecycle is tied to its visibility. It ends
  * when it is removed from the view tree.
@@ -161,6 +167,12 @@ public abstract class CompatComposeView @JvmOverloads internal constructor(
             }
     override val savedStateRegistry: SavedStateRegistry = savedStateRegistryController.savedStateRegistry
     override val viewModelStore: ViewModelStore = ViewModelStore()
+    private val onBackPressedDispatcherOwner = object : OnBackPressedDispatcherOwner {
+        override val lifecycle: Lifecycle
+            get() = this@CompatComposeView.lifecycle
+        override val onBackPressedDispatcher: OnBackPressedDispatcher =
+            OnBackPressedDispatcher { this@CompatComposeView.onBackPressed() }
+    }
 
     public open fun onBackPressed() {
         (parent as? ViewGroup)?.removeView(this)
@@ -280,12 +292,20 @@ public abstract class CompatComposeView @JvmOverloads internal constructor(
             windowRoot.setViewTreeViewModelStoreOwner(this)
             isManagingViewModelStore = true
         }
+        if (windowRoot.findViewTreeOnBackPressedDispatcherOwner() == null &&
+            context.findOnBackPressedDispatcherOwner() == null
+        ) {
+            windowRoot.setViewTreeOnBackPressedDispatcherOwner(onBackPressedDispatcherOwner)
+        }
     }
 
     private fun deinitViewTreeOwners() {
-        if (!isManagingViewTree) return
         val windowRoot = findWindowRoot() ?: return
 
+        if (windowRoot.findViewTreeOnBackPressedDispatcherOwner() === onBackPressedDispatcherOwner) {
+            windowRoot.setTag(androidx.activity.R.id.view_tree_on_back_pressed_dispatcher_owner, null)
+        }
+        if (!isManagingViewTree) return
         if (windowRoot.findViewTreeLifecycleOwner() === this) {
             windowRoot.setViewTreeLifecycleOwner(null)
         }
@@ -295,6 +315,15 @@ public abstract class CompatComposeView @JvmOverloads internal constructor(
         if (windowRoot.findViewTreeViewModelStoreOwner() === this) {
             windowRoot.setViewTreeViewModelStoreOwner(null)
         }
+    }
+
+    private fun Context.findOnBackPressedDispatcherOwner(): OnBackPressedDispatcherOwner? {
+        var currentContext: Context? = this
+        while (currentContext is ContextWrapper) {
+            if (currentContext is OnBackPressedDispatcherOwner) return currentContext
+            currentContext = currentContext.baseContext
+        }
+        return null
     }
 
     private fun View.findWindowRoot(): View? {
