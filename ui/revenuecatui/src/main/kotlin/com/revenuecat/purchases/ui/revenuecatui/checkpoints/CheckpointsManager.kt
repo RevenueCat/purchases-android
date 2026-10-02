@@ -416,10 +416,13 @@ internal class CheckpointsManager(
         slot.take(callId)?.presenter?.abandon()
     }
 
-    // Unset stands for whatever the SDK presents by default, which today is the sheet; presenters, the SDK's own
+    // DEFAULT stands for whatever the SDK presents by default, which today is the sheet; presenters, the SDK's own
     // included, only ever see a concrete mode.
     private fun resolvePresentationMode(requested: FlowPresentationMode?): FlowPresentationMode =
-        requested ?: FlowPresentationMode.MODAL_SHEET
+        when (requested) {
+            null, FlowPresentationMode.DEFAULT -> FlowPresentationMode.MODAL_SHEET
+            else -> requested
+        }
 
     private val CheckpointFlowOutcome?.isObtained: Boolean
         get() = this is CheckpointFlowOutcome.Purchased || this is CheckpointFlowOutcome.Restored

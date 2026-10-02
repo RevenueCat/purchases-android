@@ -66,8 +66,8 @@ private val NAVIGATED_USE_CASES = listOf(
     ),
 )
 
-private val PRESENTATION_MODE_LABELS = mapOf<FlowPresentationMode?, String>(
-    null to "Default",
+private val PRESENTATION_MODE_LABELS = mapOf(
+    FlowPresentationMode.DEFAULT to "Default",
     FlowPresentationMode.MODAL_FULL_SCREEN to "Full screen",
     FlowPresentationMode.MODAL_SHEET to "Sheet",
 )
@@ -124,7 +124,7 @@ fun UseCasesScreen(
                 label = PRESENTATION_MODE_LABELS::getValue,
                 description = "How the flow is presented. The SDK follows it for workflows and for offerings in " +
                     "the Default presenter mode; the app's own presenters above receive it and follow it too. " +
-                    "Default lets the SDK choose.",
+                    "Default lets the SDK choose (currently a sheet).",
                 onSelect = PaywallPresenters::selectPresentationMode,
             )
         }

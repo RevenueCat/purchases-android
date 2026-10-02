@@ -35,7 +35,7 @@ interface CheckpointsViewModel {
         val lastResult: CheckpointResultUi? = null,
         val presentWithAppPaywall: Boolean = false,
         val presentErrorsWithApp: Boolean = false,
-        val presentationMode: FlowPresentationMode? = null,
+        val presentationMode: FlowPresentationMode = FlowPresentationMode.DEFAULT,
     )
 
     val state: StateFlow<UiState>
@@ -50,7 +50,7 @@ interface CheckpointsViewModel {
 
     fun setPresentErrorsWithApp(enabled: Boolean)
 
-    fun setPresentationMode(mode: FlowPresentationMode?)
+    fun setPresentationMode(mode: FlowPresentationMode)
 }
 
 internal class CheckpointsViewModelImpl(
@@ -92,7 +92,7 @@ internal class CheckpointsViewModelImpl(
             customVariables { "source" to "paywall-tester" }
             if (_state.value.presentWithAppPaywall) paywallPresenter(appPaywallPresenter)
             if (_state.value.presentErrorsWithApp) errorPresenter(appErrorPresenter)
-            setPresentationMode(_state.value.presentationMode)
+            presentationMode(_state.value.presentationMode)
         }
         Purchases.sharedInstance.checkpoint(checkpointIdentifier, params) { result ->
             _state.update { it.copy(waitingFor = null, lastResult = result.toUi()) }
@@ -107,7 +107,7 @@ internal class CheckpointsViewModelImpl(
         _state.update { it.copy(presentErrorsWithApp = enabled) }
     }
 
-    override fun setPresentationMode(mode: FlowPresentationMode?) {
+    override fun setPresentationMode(mode: FlowPresentationMode) {
         _state.update { it.copy(presentationMode = mode) }
     }
 

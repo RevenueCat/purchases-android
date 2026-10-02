@@ -105,8 +105,9 @@ class CheckpointParamsTest {
 
     @Test
     fun `params default to letting the SDK choose the presentation`() {
-        assertThat(CheckpointParams {}.presentationMode).isNull()
-        assertThat(CheckpointParams.Builder().build().presentationMode).isNull()
+        assertThat(CheckpointParams {}.presentationMode).isEqualTo(FlowPresentationMode.DEFAULT)
+        assertThat(CheckpointParams.Builder().build().presentationMode)
+            .isEqualTo(FlowPresentationMode.DEFAULT)
     }
 
     @Test
@@ -116,11 +117,6 @@ class CheckpointParamsTest {
         assertThat(
             CheckpointParams.Builder().setPresentationMode(FlowPresentationMode.MODAL_SHEET).build().presentationMode,
         ).isEqualTo(FlowPresentationMode.MODAL_SHEET)
-        val cleared = CheckpointParams.Builder()
-            .setPresentationMode(FlowPresentationMode.MODAL_SHEET)
-            .setPresentationMode(null)
-            .build()
-        assertThat(cleared.presentationMode).isNull()
     }
 
     @Test
@@ -138,6 +134,7 @@ class CheckpointParamsTest {
     fun `presentation modes are values`() {
         assertThat(FlowPresentationMode.MODAL_SHEET).isEqualTo(FlowPresentationMode.MODAL_SHEET)
         assertThat(FlowPresentationMode.MODAL_SHEET).isNotEqualTo(FlowPresentationMode.MODAL_FULL_SCREEN)
+        assertThat(FlowPresentationMode.DEFAULT).isNotEqualTo(FlowPresentationMode.MODAL_SHEET)
         assertThat(FlowPresentationMode.MODAL_SHEET.hashCode()).isEqualTo(FlowPresentationMode.MODAL_SHEET.hashCode())
         assertThat(FlowPresentationMode.MODAL_FULL_SCREEN.toString()).isEqualTo("MODAL_FULL_SCREEN")
     }

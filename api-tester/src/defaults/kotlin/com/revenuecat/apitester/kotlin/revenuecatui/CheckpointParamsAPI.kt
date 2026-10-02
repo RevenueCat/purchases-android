@@ -12,7 +12,7 @@ private class CheckpointParamsAPI {
 
     fun check(params: CheckpointParams) {
         val customVariables: Map<String, CustomVariableValue> = params.customVariables
-        val presentationMode: FlowPresentationMode? = params.presentationMode
+        val presentationMode: FlowPresentationMode = params.presentationMode
 
         val empty: CheckpointParams = CheckpointParams.Builder().build()
         val emptyDsl: CheckpointParams = CheckpointParams {}
@@ -49,9 +49,10 @@ private class CheckpointParamsAPI {
     }
 
     fun checkPresentationMode(mode: FlowPresentationMode) {
+        val default: FlowPresentationMode = FlowPresentationMode.DEFAULT
         val fullScreen: FlowPresentationMode = FlowPresentationMode.MODAL_FULL_SCREEN
         val sheet: FlowPresentationMode = FlowPresentationMode.MODAL_SHEET
-        val same: Boolean = mode == fullScreen
+        val same: Boolean = mode == default
         val hash: Int = mode.hashCode()
         val text: String = mode.toString()
     }

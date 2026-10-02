@@ -33,9 +33,9 @@ public fun interface PaywallPresenter {
         /** The custom variables supplied to the checkpoint call. */
         public val customVariables: Map<String, CustomVariableValue>,
         /**
-         * How the flow is to be presented, already resolved by the SDK when the call left it unset: either
-         * [FlowPresentationMode.MODAL_FULL_SCREEN] or [FlowPresentationMode.MODAL_SHEET]. The app's UI should
-         * follow it.
+         * How the call asked for the flow to be presented, already resolved by the SDK: either
+         * [FlowPresentationMode.MODAL_FULL_SCREEN] or [FlowPresentationMode.MODAL_SHEET], never
+         * [FlowPresentationMode.DEFAULT]. The app's UI should follow it.
          */
         public val presentationMode: FlowPresentationMode,
     )

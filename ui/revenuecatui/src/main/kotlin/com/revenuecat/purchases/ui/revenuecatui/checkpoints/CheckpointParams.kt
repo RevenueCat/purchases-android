@@ -28,8 +28,8 @@ public annotation class CheckpointParamsDsl
  * presenter registered through [com.revenuecat.purchases.ui.revenuecatui.checkpoints.errorPresenter]. When neither
  * is set, the SDK presents its own error dialog through a presenter of its own.
  *
- * [presentationMode] decides how the SDK presents the flow itself, full screen or as a sheet; left unset, the SDK
- * chooses. App-owned presenters are not affected.
+ * [presentationMode] decides how the SDK presents the flow itself, full screen or as a sheet, or leaves the choice
+ * to the SDK with [FlowPresentationMode.DEFAULT]; app-owned presenters are not affected.
  *
  * Built through [Builder], or the DSL:
  * ```kotlin
@@ -49,7 +49,7 @@ public class CheckpointParams private constructor(
     customVariables: Map<String, CustomVariableValue>,
     public val paywallPresenter: PaywallPresenter?,
     public val errorPresenter: ErrorPresenter?,
-    public val presentationMode: FlowPresentationMode?,
+    public val presentationMode: FlowPresentationMode,
 ) {
 
     /**
@@ -82,7 +82,7 @@ public class CheckpointParams private constructor(
         private var customVariables: Map<String, CustomVariableValue> = emptyMap()
         private var paywallPresenter: PaywallPresenter? = null
         private var errorPresenter: ErrorPresenter? = null
-        private var presentationMode: FlowPresentationMode? = null
+        private var presentationMode: FlowPresentationMode = FlowPresentationMode.DEFAULT
 
         /** Replaces any previously set custom variables. */
         public fun setCustomVariables(customVariables: Map<String, CustomVariableValue>): Builder = apply {
@@ -114,12 +114,12 @@ public class CheckpointParams private constructor(
         @JvmSynthetic
         public fun errorPresenter(errorPresenter: ErrorPresenter): Builder = setErrorPresenter(errorPresenter)
 
-        /** How the SDK presents the flow this call resolves to; null leaves the choice to the SDK. */
-        public fun setPresentationMode(presentationMode: FlowPresentationMode?): Builder = apply {
+        /** How the SDK presents the flow this call resolves to. Defaults to [FlowPresentationMode.DEFAULT]. */
+        public fun setPresentationMode(presentationMode: FlowPresentationMode): Builder = apply {
             this.presentationMode = presentationMode
         }
 
-        /** How the SDK presents the flow this call resolves to. */
+        /** How the SDK presents the flow this call resolves to. Defaults to [FlowPresentationMode.DEFAULT]. */
         @JvmSynthetic
         public fun presentationMode(presentationMode: FlowPresentationMode): Builder =
             setPresentationMode(presentationMode)
