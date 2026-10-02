@@ -117,9 +117,11 @@ internal class PaywallErrorReporter(
         onResult: (ErrorPresenter.Completion.Result) -> Unit,
     ) {
         val generation = host.presentationGeneration
-        val completion = FirstReportCompletion { result ->
+        // A report from another thread is queued behind whatever main is doing, so it is checked again on arrival:
+        // the presentation must be the same, and the completion must still be the current one.
+        val completion = FirstReportCompletion { sender, result ->
             scope.launch {
-                if (host.presentationGeneration == generation) onResult(result)
+                if (host.presentationGeneration == generation && current === sender) onResult(result)
             }
         }
         // Like the SDK's own presenter, a new error replaces the one before it: whatever the app still shows for
@@ -140,7 +142,7 @@ internal class PaywallErrorReporter(
     // Delivers the first report once, and only after release(); a report made before then waits for it, and
     // discard() drops it. Reports can come from any thread, the delivery runs outside the lock.
     private class FirstReportCompletion(
-        private val onFirst: (ErrorPresenter.Completion.Result) -> Unit,
+        private val onFirst: (sender: FirstReportCompletion, ErrorPresenter.Completion.Result) -> Unit,
     ) : ErrorPresenter.Completion {
 
         private val lock = Any()
@@ -154,7 +156,7 @@ internal class PaywallErrorReporter(
                 reported = true
                 if (released) true else false.also { pending = result }
             }
-            if (deliverNow) onFirst(result)
+            if (deliverNow) onFirst(this, result)
         }
 
         fun release() {
@@ -162,7 +164,7 @@ internal class PaywallErrorReporter(
                 released = true
                 pending.also { pending = null }
             }
-            held?.let(onFirst)
+            held?.let { onFirst(this, it) }
         }
 
         fun discard() {
