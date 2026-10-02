@@ -32,10 +32,11 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.LocalizationDictionary
 import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.extensions.validatePaywallComponentsDataOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
-import com.revenuecat.purchases.ui.revenuecatui.extensions.validatePaywallComponentsDataOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
+import kotlinx.serialization.json.Json
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -57,6 +58,31 @@ internal class StackOverflowScrollTests {
         SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange)
 
     @Test
+    fun `unknown root overflow preserves automatic scrolling`() {
+        val decoded = Json.decodeFromString<StackComponent>(
+            """{"components": [], "overflow": "unknown_future_overflow"}""",
+        )
+        setPaywallContent(rootStack(overflow = decoded.overflow))
+
+        assertThat(verticallyScrollableNodeCount()).isEqualTo(1)
+    }
+
+    @Test
+    fun `unknown partial overflow preserves the base scroll`() {
+        val partial = Json.decodeFromString<PartialStackComponent>(
+            """{"overflow": "unknown_future_overflow"}""",
+        )
+        setPaywallContent(
+            rootStack(
+                overflow = StackComponent.Overflow.SCROLL,
+                overrides = listOf(matchingWindowOverride(partial)),
+            ),
+        )
+
+        assertThat(verticallyScrollableNodeCount()).isEqualTo(1)
+    }
+
+    @Test
     fun `base scroll overflow keeps the stack scrollable when a partial leaves overflow absent`() {
         setPaywallContent(
             rootStack(
@@ -66,6 +92,21 @@ internal class StackOverflowScrollTests {
         )
 
         assertThat(verticallyScrollableNodeCount()).isGreaterThan(0)
+    }
+
+    @Test
+    fun `window size rule enables absent root overflow on the first frame`() {
+        setPaywallContent(
+            rootStack(
+                overflow = null,
+                overrides = listOf(
+                    matchingWindowOverride(PartialStackComponent(overflow = StackComponent.Overflow.SCROLL)),
+                ),
+            ),
+        )
+
+        // An outer scroll selected before measuring bounds would nest two vertical scrolls and crash.
+        assertThat(verticallyScrollableNodeCount()).isEqualTo(1)
     }
 
     @Test

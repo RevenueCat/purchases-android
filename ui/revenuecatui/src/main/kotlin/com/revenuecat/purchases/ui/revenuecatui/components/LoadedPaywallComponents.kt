@@ -99,8 +99,8 @@ internal fun LoadedPaywallComponents(
     }
 
     CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
-        val shouldWrapMainContentInVerticalScroll = shouldWrapMainContentInVerticalScroll(state.stack, state)
         MeasurePaywallBounds(state, modifier) {
+            val shouldWrapMainContentInVerticalScroll = shouldWrapMainContentInVerticalScroll(state.stack, state)
             PaywallComponentsScaffold(
                 state = state,
                 headerContent = state.header?.let { headerStyle ->
