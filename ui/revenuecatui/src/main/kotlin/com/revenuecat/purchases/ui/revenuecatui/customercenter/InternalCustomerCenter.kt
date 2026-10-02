@@ -1,5 +1,6 @@
 @file:Suppress("TooManyFunctions")
 @file:JvmSynthetic
+@file:OptIn(InternalRevenueCatAPI::class)
 
 package com.revenuecat.purchases.ui.revenuecatui.customercenter
 
@@ -84,7 +85,6 @@ import com.revenuecat.purchases.ui.revenuecatui.icons.ArrowBack
 import com.revenuecat.purchases.ui.revenuecatui.icons.Close
 import kotlinx.coroutines.launch
 
-@OptIn(InternalRevenueCatAPI::class)
 @Suppress("LongMethod", "CyclomaticComplexMethod")
 @JvmSynthetic
 @Composable
@@ -215,7 +215,6 @@ internal fun InternalCustomerCenter(
 }
 
 @Composable
-@OptIn(InternalRevenueCatAPI::class)
 internal fun InternalCustomerCenter(
     state: CustomerCenterState,
     modifier: Modifier = Modifier,
@@ -431,7 +430,6 @@ private fun CustomerCenterNavigationIcon(
     }
 }
 
-@OptIn(InternalRevenueCatAPI::class)
 @Composable
 private fun CustomerCenterLoaded(
     state: CustomerCenterState.Success,
@@ -491,7 +489,13 @@ private fun CustomerCenterLoaded(
     }
 }
 
-@OptIn(InternalRevenueCatAPI::class)
+private fun CustomerCenterDestination.contentKey(isPreview: Boolean): Any =
+    (this as? CustomerCenterDestination.SelectedPurchaseDetail)?.takeIf { isPreview }?.purchaseInformation
+        ?.productIdentifier ?: this
+
+private fun CustomerCenterDestination.refreshed(current: CustomerCenterDestination, isPreview: Boolean) =
+    current.takeIf { isPreview && contentKey(true) == it.contentKey(true) } ?: this
+
 @Suppress("LongMethod")
 @Composable
 private fun CustomerCenterNavHost(
@@ -504,9 +508,10 @@ private fun CustomerCenterNavHost(
     val isDarkMode = previewOptions?.isDarkMode ?: isSystemInDarkTheme()
     AnimatedContent(
         targetState = currentDestination,
+        contentKey = { it.contentKey(isPreview = previewOptions != null) },
         transitionSpec = {
             CustomerCenterAnimations.getTransitionForNavigation(
-                from = initialState,
+                from = initialState.refreshed(targetState, previewOptions != null),
                 to = targetState,
                 navigationState = customerCenterState.navigationState,
             )

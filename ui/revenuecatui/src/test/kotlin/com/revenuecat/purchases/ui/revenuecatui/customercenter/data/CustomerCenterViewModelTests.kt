@@ -17,6 +17,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
+import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.PurchaseResult
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
@@ -2418,9 +2419,53 @@ class CustomerCenterViewModelTests {
     }
 
     @Test
+    fun `preview promotional purchase replaces the selected subscription with multiple purchases`(): Unit = runBlocking {
+        setupPurchasesMock()
+        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
+            "other_product" to subscriptionInfo("other_product", Store.PLAY_STORE, isActive = true),
+            "selected_product" to subscriptionInfo("selected_product", Store.PLAY_STORE, isActive = true),
+        )
+        every { customerInfo.activeSubscriptions } returns setOf("other_product", "selected_product")
+        val provider = mockk<CustomerCenterPreviewProvider>(relaxed = true)
+        every { provider.store } returns Store.PLAY_STORE
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            previewProvider = provider,
+        )
+        val path = createOriginalPath()
+        val state = setupSuccessLoadScreen(path, model)
+        assertThat(state.purchases).hasSize(2)
+        val selected = state.purchases.single { it.productIdentifier == "selected_product" }
+        val option = createSubscriptionOption("selected_product", "monthly", "rc-cancel-offer")
+        val product = createGoogleStoreProduct(
+            productId = "selected_product",
+            basePlanId = "monthly",
+            subscriptionOptions = listOf(option),
+        )
+        val displayed = model.loadAndDisplayPromotionalOffer(
+            context = mockk(relaxed = true),
+            product = product,
+            promotionalOffer = createPromotionalOffer(productMapping = mapOf(product.id to "rc-cancel-offer")),
+            originalPath = path,
+            purchaseInformation = selected,
+        )
+        assertThat(displayed).isTrue()
+        val params = slot<PurchaseParams.Builder>()
+        coEvery { purchases.awaitPurchase(capture(params)) } returns PurchaseResult(mockk(), customerInfo)
+
+        model.onAcceptedPromotionalOffer(option, mockk(relaxed = true))
+
+        assertThat(params.captured.build().oldProductId).isEqualTo("selected_product")
+    }
+
+    @Test
     fun `preview reports an unresolved promotional product as a typed reason with its identifier`(): Unit = runBlocking {
         setupPurchasesMock()
         val provider = mockk<CustomerCenterPreviewProvider>(relaxed = true)
+        val snapshots = mutableListOf<List<CustomerCenterPreviewDiagnostic>>()
+        every { provider.onDiagnosticsUpdated(any()) } answers { snapshots.add(firstArg()); Unit }
         val model = CustomerCenterViewModelImpl(
             purchases = purchases,
             colorScheme = TestData.Constants.currentColorScheme,
@@ -2436,7 +2481,7 @@ class CustomerCenterViewModelTests {
             ),
         )
         val path = createOriginalPath()
-        setupSuccessLoadScreen(path, model)
+        setupSuccessLoadScreen(path, model, noActivePaths = listOf(path))
 
         val displayed = model.loadAndDisplayPromotionalOffer(
             context = mockk(relaxed = true),
@@ -2446,6 +2491,9 @@ class CustomerCenterViewModelTests {
         )
 
         assertThat(displayed).isFalse()
+        assertThat(snapshots.last()).hasSize(2)
+        assertThat(snapshots.last().single { it.pathId == path.id }.visible).isTrue()
+        assertThat(snapshots.last().single { it.pathId == "promotional_offer" }.visible).isFalse()
         verify {
             provider.onDiagnosticsUpdated(match { diagnostics ->
                 diagnostics.any {
