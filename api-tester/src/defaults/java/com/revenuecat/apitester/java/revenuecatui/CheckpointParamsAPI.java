@@ -5,6 +5,7 @@ import androidx.annotation.OptIn;
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI;
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams;
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode;
 
 import java.util.Map;
 
@@ -14,6 +15,7 @@ final class CheckpointParamsAPI {
     @OptIn(markerClass = InviteOnlyCheckpointsAPI.class)
     static void check(CheckpointParams params) {
         Map<String, CustomVariableValue> customVariables = params.getCustomVariables();
+        FlowPresentationMode presentationMode = params.getPresentationMode();
 
         CheckpointParams empty = new CheckpointParams.Builder().build();
         Map<String, CustomVariableValue> added = new CheckpointParams.CustomVariablesBuilder()
@@ -28,5 +30,18 @@ final class CheckpointParamsAPI {
         CheckpointParams fromAdded = new CheckpointParams.Builder()
                 .setCustomVariables(added)
                 .build();
+        CheckpointParams sheet = new CheckpointParams.Builder()
+                .setPresentationMode(FlowPresentationMode.MODAL_SHEET)
+                .build();
+    }
+
+    @OptIn(markerClass = InviteOnlyCheckpointsAPI.class)
+    static void checkPresentationMode(FlowPresentationMode mode) {
+        FlowPresentationMode defaultMode = FlowPresentationMode.DEFAULT;
+        FlowPresentationMode fullScreen = FlowPresentationMode.MODAL_FULL_SCREEN;
+        FlowPresentationMode sheet = FlowPresentationMode.MODAL_SHEET;
+        boolean same = mode.equals(defaultMode);
+        int hash = mode.hashCode();
+        String text = mode.toString();
     }
 }

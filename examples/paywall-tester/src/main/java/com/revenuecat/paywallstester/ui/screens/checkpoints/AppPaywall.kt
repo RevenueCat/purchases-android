@@ -3,6 +3,9 @@ package com.revenuecat.paywallstester.ui.screens.checkpoints
 import android.app.Activity
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,8 +14,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
@@ -31,18 +36,21 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter
 import kotlinx.coroutines.launch
 
 /**
- * The paywall this app draws for an offering when the checkpoints screen is set to present offerings itself.
- * Reports how the user left it (purchased, closed through the X, continued without buying, or backed out through
- * system back); the SDK works out what the user obtained.
+ * The paywall this app draws for an offering when the checkpoints screen is set to present offerings itself, full
+ * screen or as a bottom sheet over a scrim depending on the presentation mode the request asks for. Reports how the
+ * user left it (purchased, closed through the X, continued without buying, or backed out through system back or,
+ * for the sheet, a tap on the scrim); the SDK works out what the user obtained.
  */
 @OptIn(InviteOnlyCheckpointsAPI::class)
 @Composable
@@ -71,58 +79,110 @@ internal fun AppPaywall(
         }
     }
 
-    BackHandler(enabled = !busy) { request.finish(PaywallPresenter.Completion.Result.NavigatedBack) }
+    fun finish(result: PaywallPresenter.Completion.Result) {
+        if (!busy) request.finish(result)
+    }
 
-    Surface(modifier = modifier.fillMaxSize()) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .safeDrawingPadding(),
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                AppPaywallHeader(request.params)
-                Spacer(modifier = Modifier.weight(1f))
-                PackageList(
-                    packages = request.params.offering.availablePackages,
-                    selected = selected,
-                    enabled = !busy,
-                    onSelect = { selected = it },
-                )
-                message?.let {
-                    Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.error,
-                    )
+    BackHandler(enabled = !busy) { finish(PaywallPresenter.Completion.Result.NavigatedBack) }
+
+    val content: @Composable (fillHeight: Boolean) -> Unit = { fillHeight ->
+        AppPaywallContent(
+            request = request,
+            fillHeight = fillHeight,
+            selected = selected,
+            busy = busy,
+            message = message,
+            canPurchase = selected != null && activity != null,
+            onSelect = { selected = it },
+            onPurchase = {
+                val packageToPurchase = selected
+                if (activity != null && packageToPurchase != null) {
+                    checkout { PaywallCheckout.purchase(activity, packageToPurchase) }
                 }
-                Spacer(modifier = Modifier.weight(1f))
-                AppPaywallActions(
-                    busy = busy,
-                    canPurchase = selected != null && activity != null,
-                    onPurchase = {
-                        val packageToPurchase = selected
-                        if (activity != null && packageToPurchase != null) {
-                            checkout { PaywallCheckout.purchase(activity, packageToPurchase) }
-                        }
-                    },
-                    onRestore = { checkout { PaywallCheckout.restore() } },
-                    onContinueWithoutBuying = {
-                        request.finish(PaywallPresenter.Completion.Result.Continued)
-                    },
+            },
+            onRestore = { checkout { PaywallCheckout.restore() } },
+            onFinish = ::finish,
+        )
+    }
+
+    if (request.params.presentationMode == FlowPresentationMode.MODAL_FULL_SCREEN) {
+        Surface(modifier = modifier.fillMaxSize()) {
+            Box(modifier = Modifier.fillMaxSize().safeDrawingPadding()) { content(true) }
+        }
+    } else {
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.5f))
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
+                    finish(PaywallPresenter.Completion.Result.NavigatedBack)
+                },
+            contentAlignment = Alignment.BottomCenter,
+        ) {
+            Surface(
+                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {},
+            ) {
+                Box(modifier = Modifier.navigationBarsPadding()) { content(false) }
+            }
+        }
+    }
+}
+
+@OptIn(InviteOnlyCheckpointsAPI::class)
+@Suppress("LongParameterList")
+@Composable
+private fun AppPaywallContent(
+    request: AppPaywallPresenter.Request,
+    fillHeight: Boolean,
+    selected: Package?,
+    busy: Boolean,
+    message: String?,
+    canPurchase: Boolean,
+    onSelect: (Package) -> Unit,
+    onPurchase: () -> Unit,
+    onRestore: () -> Unit,
+    onFinish: (PaywallPresenter.Completion.Result) -> Unit,
+) {
+    Box {
+        Column(
+            modifier = Modifier
+                .then(if (fillHeight) Modifier.fillMaxSize() else Modifier.fillMaxWidth())
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            AppPaywallHeader(request.params)
+            if (fillHeight) Spacer(modifier = Modifier.weight(1f))
+            PackageList(
+                packages = request.params.offering.availablePackages,
+                selected = selected,
+                enabled = !busy,
+                onSelect = onSelect,
+            )
+            message?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
                 )
             }
-            CloseButton(
-                enabled = !busy,
-                onClick = { request.finish(PaywallPresenter.Completion.Result.Closed) },
-                modifier = Modifier.align(Alignment.TopEnd),
+            if (fillHeight) Spacer(modifier = Modifier.weight(1f))
+            AppPaywallActions(
+                busy = busy,
+                canPurchase = canPurchase,
+                onPurchase = onPurchase,
+                onRestore = onRestore,
+                onContinueWithoutBuying = { onFinish(PaywallPresenter.Completion.Result.Continued) },
             )
         }
+        CloseButton(
+            enabled = !busy,
+            onClick = { onFinish(PaywallPresenter.Completion.Result.Closed) },
+            modifier = Modifier.align(Alignment.TopEnd),
+        )
     }
 }
 
@@ -153,7 +213,7 @@ private fun AppPaywallHeader(params: PaywallPresenter.Params) {
             )
         }
         Text(
-            text = "Drawn by the Paywall Tester app, not by RevenueCat. " +
+            text = "Drawn by the Paywall Tester app, not by RevenueCat, in mode ${params.presentationMode}. " +
                 "Offering \"${params.offering.identifier}\" for checkpoint \"${params.checkpointIdentifier}\".",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
