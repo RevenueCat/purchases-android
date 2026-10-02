@@ -115,13 +115,25 @@ private fun NotifyingUriHandler(
     CompositionLocalProvider(LocalUriHandler provides notifyingUriHandler, content = content)
 }
 
-@Suppress("LongMethod", "ViewModelForwarding")
+@Suppress("ViewModelForwarding")
 @Composable
 internal fun InternalPaywall(
     options: PaywallOptions,
     viewModel: PaywallViewModel = getPaywallViewModel(options),
     isDarkModeOverride: Boolean? = null,
     externalActionInterceptor: (suspend (PaywallAction.External) -> Boolean)? = null,
+) {
+    PaywallTheme(fontProvider = null, isDarkModeOverride = isDarkModeOverride) {
+        InternalPaywallContent(options, viewModel, externalActionInterceptor)
+    }
+}
+
+@Suppress("LongMethod", "ViewModelForwarding")
+@Composable
+private fun InternalPaywallContent(
+    options: PaywallOptions,
+    viewModel: PaywallViewModel,
+    externalActionInterceptor: (suspend (PaywallAction.External) -> Boolean)?,
 ) {
     DisposableEffect(viewModel) {
         viewModel.onPaywallPresented()
@@ -137,7 +149,7 @@ internal fun InternalPaywall(
     }
 
     val colorScheme = MaterialTheme.colorScheme
-    val isDark = paywallDarkMode(isDarkModeOverride)
+    val isDark = isSystemInDarkTheme()
     SideEffect {
         viewModel.refreshStateIfLocaleChanged()
         viewModel.refreshStateIfColorsChanged(colorScheme = colorScheme, isDark = isDark)
@@ -462,9 +474,6 @@ private fun rememberPaywallActionHandler(
         { action -> handleInterceptedAction(action, interceptor, handler) }
     }
 }
-
-@Composable
-private fun paywallDarkMode(override: Boolean?): Boolean = override ?: isSystemInDarkTheme()
 
 private suspend fun handleInterceptedAction(
     action: PaywallAction.External,

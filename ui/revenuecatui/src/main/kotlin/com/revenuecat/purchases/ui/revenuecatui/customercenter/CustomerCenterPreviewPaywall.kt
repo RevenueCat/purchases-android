@@ -59,18 +59,16 @@ public fun CustomerCenterPreviewPaywall(
     val colors = MaterialTheme.colorScheme
     val resources = LocalContext.current.applicationContext.toResourceProvider()
     val workflowState by rememberPreviewWorkflow(provider, offering)
-    val workflow = workflowState.workflow
-    workflowState.error?.let {
-        ErrorDialog(
-            dismissRequest = { latestDismiss.value() },
-            error = it.underlyingErrorMessage?.takeIf(String::isNotBlank)
-                ?: stringResource(R.string.revenuecatui_preview_workflow_load_error),
-        )
-        return
-    }
-    if (!workflowState.loaded) {
-        CustomerCenterLoadingView()
-        return
+    val workflow = when (val state = workflowState) {
+        PreviewWorkflowState.Loading -> {
+            CustomerCenterLoadingView()
+            return
+        }
+        is PreviewWorkflowState.Error -> {
+            PreviewWorkflowError(state.error) { latestDismiss.value() }
+            return
+        }
+        is PreviewWorkflowState.Loaded -> state.workflow
     }
     val options = remember(provider, offering, workflow) {
         previewPaywallOptions(offering, workflow) { latestDismiss.value() }
@@ -115,6 +113,15 @@ public fun CustomerCenterPreviewPaywall(
     }
 }
 
+@Composable
+private fun PreviewWorkflowError(error: PurchasesError, onDismiss: () -> Unit) {
+    ErrorDialog(
+        dismissRequest = onDismiss,
+        error = error.underlyingErrorMessage?.takeIf(String::isNotBlank)
+            ?: stringResource(R.string.revenuecatui_preview_workflow_load_error),
+    )
+}
+
 /** Uses the production URL resolver while keeping checkout and URL navigation inside the preview. */
 internal suspend fun interceptPreviewPaywallAction(
     action: PaywallAction.External,
@@ -150,18 +157,18 @@ internal fun previewPaywallOptions(
         workflow?.let { injectedWorkflow(it.workflow, it.offerings, it.uiConfig) }
     }.build()
 
-internal data class PreviewWorkflowState(
-    val loaded: Boolean = false,
-    val workflow: CustomerCenterPreviewWorkflow? = null,
-    val error: PurchasesError? = null,
-)
+internal sealed interface PreviewWorkflowState {
+    object Loading : PreviewWorkflowState
+    data class Loaded(val workflow: CustomerCenterPreviewWorkflow?) : PreviewWorkflowState
+    data class Error(val error: PurchasesError) : PreviewWorkflowState
+}
 
 @Composable
 private fun rememberPreviewWorkflow(
     provider: CustomerCenterPreviewProvider,
     offering: Offering,
 ): State<PreviewWorkflowState> {
-    val state = remember(provider, offering) { mutableStateOf(PreviewWorkflowState()) }
+    val state = remember(provider, offering) { mutableStateOf<PreviewWorkflowState>(PreviewWorkflowState.Loading) }
     LaunchedEffect(provider, offering) {
         state.value = loadPreviewWorkflow(provider, offering)
     }
@@ -174,13 +181,11 @@ internal suspend fun loadPreviewWorkflow(
     provider: CustomerCenterPreviewProvider,
     offering: Offering,
 ): PreviewWorkflowState = try {
-    PreviewWorkflowState(loaded = true, workflow = provider.workflow(offering))
+    PreviewWorkflowState.Loaded(provider.workflow(offering))
 } catch (e: CancellationException) {
     throw e
 } catch (e: PurchasesException) {
-    PreviewWorkflowState(error = e.error)
+    PreviewWorkflowState.Error(e.error)
 } catch (_: Exception) {
-    PreviewWorkflowState(
-        error = PurchasesError(PurchasesErrorCode.ConfigurationError),
-    )
+    PreviewWorkflowState.Error(PurchasesError(PurchasesErrorCode.ConfigurationError))
 }

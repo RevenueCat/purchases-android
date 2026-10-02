@@ -84,16 +84,33 @@ class CustomerCenterPreviewPaywallTest {
     }
 
     @Test
+    fun `missing workflow completes loading and allows the offering paywall fallback`() = runTest {
+        val offering = Offering("preview", "", emptyMap(), emptyList())
+        coEvery { provider.workflow(offering) } returns null
+
+        assertThat(loadPreviewWorkflow(provider, offering)).isEqualTo(PreviewWorkflowState.Loaded(null))
+    }
+
+    @Test
+    fun `published workflow is preserved in the loaded state`() = runTest {
+        val offering = Offering("preview", "", emptyMap(), emptyList())
+        val workflow = mockk<CustomerCenterPreviewWorkflow>()
+        coEvery { provider.workflow(offering) } returns workflow
+
+        val state = loadPreviewWorkflow(provider, offering) as PreviewWorkflowState.Loaded
+
+        assertThat(state.workflow).isSameAs(workflow)
+    }
+
+    @Test
     fun `workflow configuration errors preserve the reason supplied by the provider`() = runTest {
         val offering = Offering("preview", "", emptyMap(), emptyList())
         val error = PurchasesError(PurchasesErrorCode.ConfigurationError, "Selected workflow is unavailable")
         coEvery { provider.workflow(offering) } throws PurchasesException(error)
 
-        val state = loadPreviewWorkflow(provider, offering)
+        val state = loadPreviewWorkflow(provider, offering) as PreviewWorkflowState.Error
 
         assertThat(state.error).isSameAs(error)
-        assertThat(state.loaded).isFalse()
-        assertThat(state.workflow).isNull()
     }
 
     @Test
@@ -101,11 +118,9 @@ class CustomerCenterPreviewPaywallTest {
         val offering = Offering("preview", "", emptyMap(), emptyList())
         coEvery { provider.workflow(offering) } throws IllegalStateException("Invalid provider response")
 
-        val state = loadPreviewWorkflow(provider, offering)
+        val state = loadPreviewWorkflow(provider, offering) as PreviewWorkflowState.Error
 
-        assertThat(state.error?.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
-        assertThat(state.loaded).isFalse()
-        assertThat(state.workflow).isNull()
+        assertThat(state.error.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
     }
 
     @Test
