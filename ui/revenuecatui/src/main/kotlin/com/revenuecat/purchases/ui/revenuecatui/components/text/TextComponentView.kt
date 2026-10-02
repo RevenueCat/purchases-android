@@ -165,6 +165,7 @@ private fun rememberProcessedText(
                 VariableProcessor.PackageContext(
                     discountRelativeToMostExpensivePerMonth = discount,
                     showZeroDecimalPlacePrices = !state.showPricesWithDecimals,
+                    mostExpensivePricePerMonthMicros = state.mostExpensivePricePerMonthMicros,
                 )
             }
 
