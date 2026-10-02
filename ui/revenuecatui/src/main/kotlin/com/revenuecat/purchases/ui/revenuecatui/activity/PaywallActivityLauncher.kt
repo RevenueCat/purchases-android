@@ -41,27 +41,14 @@ public interface PaywallDisplayCallback {
  */
 @Suppress("TooManyFunctions")
 public class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler: PaywallResultHandler) {
-    private val activityResultLauncher: ActivityResultLauncher<PaywallActivityArgs>
-    private var currentNonSerializableArgsKey: Int? = null
+    private val activityResultLauncher: ActivityResultLauncher<PaywallActivityArgs> =
+        resultCaller.registerForActivityResult(PaywallContract(), resultHandler)
 
     // We need to know whether the activity is running or finished to avoid launching the paywall
     // after the activity has been destroyed. See https://github.com/RevenueCat/purchases-android/issues/1842.
     // We keep a weak reference to avoid memory leaks.
     private val weakActivity = WeakReference(resultCaller as? Activity)
     private val weakFragment = WeakReference(resultCaller as? Fragment)
-
-    init {
-        val wrappedHandler = object : PaywallResultHandler {
-            override fun onActivityResult(result: PaywallResult) {
-                currentNonSerializableArgsKey?.let {
-                    PaywallActivityNonSerializableArgsStore.remove(it)
-                    currentNonSerializableArgsKey = null
-                }
-                resultHandler.onActivityResult(result)
-            }
-        }
-        activityResultLauncher = resultCaller.registerForActivityResult(PaywallContract(), wrappedHandler)
-    }
 
     /**
      * Launch the paywall activity.
@@ -469,9 +456,7 @@ public class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultH
             purchaseLogic = purchaseLogic,
             listener = listener,
         )
-        val key = PaywallActivityNonSerializableArgsStore.store(args)
-        currentNonSerializableArgsKey = key
-        return key
+        return PaywallActivityNonSerializableArgsStore.store(args)
     }
 
     private fun launchPaywallWithArgs(args: PaywallActivityArgs) {
