@@ -6,6 +6,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeUp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.UiConfig
@@ -101,6 +103,50 @@ internal class StackOverflowScrollInstrumentedTests {
         assertThat(verticallyScrollableNodeCount()).isZero()
     }
 
+    @Test
+    fun windowSizeRuleEnablesAbsentRootOverflowOnFirstFrame() {
+        setPaywallContent(
+            rootStack(
+                overflow = null,
+                overrides = listOf(
+                    ComponentOverride(
+                        conditions = listOf(
+                            ComponentOverride.Condition.WindowWidthRule(
+                                operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                                value = 100.0,
+                            ),
+                        ),
+                        properties = PartialStackComponent(overflow = StackComponent.Overflow.SCROLL),
+                    ),
+                ),
+            ),
+        )
+
+        assertThat(verticallyScrollableNodeCount()).isEqualTo(1)
+    }
+
+    @Test
+    fun noScrollRootAllowsItsBoundedChildToScroll() {
+        val child = StackComponent(
+            components = listOf(
+                StackComponent(
+                    components = emptyList(),
+                    size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fixed(4000u)),
+                ),
+            ),
+            size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fixed(200u)),
+            overflow = StackComponent.Overflow.SCROLL,
+        )
+        setPaywallContent(rootStack(overflow = StackComponent.Overflow.NONE, children = listOf(child)))
+
+        assertThat(verticallyScrollableNodeCount()).isEqualTo(1)
+        val scrollNode = composeTestRule.onNode(verticallyScrollable)
+        scrollNode.performTouchInput { swipeUp() }
+        composeTestRule.waitForIdle()
+        val scrollRange = scrollNode.fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange]
+        assertThat(scrollRange.value()).isGreaterThan(0f)
+    }
+
     private fun verticallyScrollableNodeCount(): Int {
         composeTestRule.waitForIdle()
         return composeTestRule.onAllNodes(verticallyScrollable).fetchSemanticsNodes().size
@@ -120,8 +166,9 @@ internal class StackOverflowScrollInstrumentedTests {
     private fun rootStack(
         overflow: StackComponent.Overflow?,
         overrides: List<ComponentOverride<PartialStackComponent>> = emptyList(),
+        children: List<StackComponent>? = null,
     ): StackComponent = StackComponent(
-        components = listOf(
+        components = children ?: listOf(
             // Taller than any device, so the root always has something to scroll to.
             StackComponent(
                 components = emptyList(),
