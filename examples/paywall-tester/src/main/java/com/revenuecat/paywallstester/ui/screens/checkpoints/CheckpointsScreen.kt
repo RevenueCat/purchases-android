@@ -79,6 +79,7 @@ fun CheckpointsScreen(
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
+@Suppress("LongParameterList")
 @Composable
 private fun CheckpointsScaffold(
     state: UiState,

@@ -369,6 +369,7 @@ internal class CheckpointsManager(
         }
     }
 
+    @Suppress("LongParameterList")
     private suspend fun present(
         purchases: Purchases,
         identifier: String,

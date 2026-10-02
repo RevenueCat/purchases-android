@@ -93,6 +93,7 @@ private val INLINE_USE_CASES = listOf(
     ),
 )
 
+@Suppress("LongMethod")
 @Composable
 fun UseCasesScreen(
     onNavigate: (Screen) -> Unit,
