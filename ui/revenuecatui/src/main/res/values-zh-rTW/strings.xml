@@ -22,4 +22,5 @@
     <string name="cannot_open_link">連結無效，無法開啟。</string>
     <string name="revenuecatui_purchase">購買</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">無法載入預覽工作流程。請再試一次。</string>
 </resources>

@@ -22,4 +22,5 @@
     <string name="cannot_open_link">Odkaz je neplatný. Nelze otevřít.</string>
     <string name="revenuecatui_purchase">Koupit</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">Pracovní postup náhledu se nepodařilo načíst. Zkuste to prosím znovu.</string>
 </resources>
