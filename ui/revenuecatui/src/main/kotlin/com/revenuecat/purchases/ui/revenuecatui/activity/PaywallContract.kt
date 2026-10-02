@@ -20,6 +20,11 @@ internal class PaywallContract : ActivityResultContract<PaywallActivityArgs, Pay
     }
 
     override fun parseResult(resultCode: Int, intent: Intent?): PaywallResult {
+        if (intent?.hasExtra(PaywallActivity.NON_SERIALIZABLE_ARGS_KEY_EXTRA) == true) {
+            PaywallActivityNonSerializableArgsStore.remove(
+                intent.getIntExtra(PaywallActivity.NON_SERIALIZABLE_ARGS_KEY_EXTRA, 0),
+            )
+        }
         if (resultCode != Activity.RESULT_OK || intent == null) {
             return PaywallResult.Cancelled
         }
