@@ -1,4 +1,4 @@
-@file:OptIn(InternalRevenueCatAPI::class)
+@file:OptIn(InternalRevenueCatAPI::class, ExperimentalCoroutinesApi::class)
 
 package com.revenuecat.purchases.common.networking
 
@@ -11,7 +11,10 @@ import com.revenuecat.purchases.identity.IdentitySource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONArray
@@ -22,7 +25,7 @@ import org.robolectric.annotation.Config
 
 /**
  * Tests for [TokenManager]'s storage plumbing, construction, identity introspection, authorization
- * headers, and the token refresh state machine (IAM phase 3, steps 7-10). These go through the real
+ * headers, and the token refresh state machine. These go through the real
  * `derivePassword -> EncryptedItemStorage.create` chain -- a real [Application] context, a real API key,
  * no test doubles for storage -- since this step's whole purpose is to own that chain correctly.
  */
@@ -71,10 +74,12 @@ class TokenManagerTest {
 
     @Test
     fun `a blank API key leaves storage permanently unavailable`() = runTest {
-        val manager = TokenManager(context, "   ", enabled = true, scope = testScope())
+        val manager = unloadedManager(apiKey = "   ")
+        advanceUntilIdle()
 
         assertThat(manager.currentAccessToken("user")).isNull()
         manager.saveTokens("user", "access", "refresh", "id")
+        advanceUntilIdle()
         assertThat(manager.currentAccessToken("user")).isNull()
     }
 
@@ -91,6 +96,7 @@ class TokenManagerTest {
     fun `two instances built from the same API key derive the same storage key`() = runTest {
         val first = manager(apiKey = "shared_api_key")
         first.saveTokens("user", accessToken = "from-first-instance", refreshToken = "refresh", idToken = "id")
+        advanceUntilIdle()
 
         val second = manager(apiKey = "shared_api_key")
         assertThat(second.currentAccessToken("user")).isEqualTo("from-first-instance")
@@ -100,9 +106,99 @@ class TokenManagerTest {
     fun `two instances built from different API keys do not share readable storage`() = runTest {
         val first = manager(apiKey = "api_key_one")
         first.saveTokens("user", accessToken = "from-first-instance", refreshToken = "refresh", idToken = "id")
+        advanceUntilIdle()
 
         val second = manager(apiKey = "api_key_two")
         assertThat(second.currentAccessToken("user")).isNull()
+    }
+
+    // endregion
+
+    // region cache loading and persistence
+
+    @Test
+    fun `reads return null until the cache has loaded`() = runTest {
+        manager().apply {
+            saveTokens("user", accessToken = "stored", refreshToken = "refresh", idToken = "id")
+            advanceUntilIdle()
+        }
+
+        val manager = unloadedManager()
+
+        assertThat(manager.currentAccessToken("user")).isNull()
+        advanceUntilIdle()
+        assertThat(manager.currentAccessToken("user")).isEqualTo("stored")
+    }
+
+    @Test
+    fun `a write made before the cache loads wins over the stored value`() = runTest {
+        manager().apply {
+            saveTokens("user", accessToken = "stored", refreshToken = "refresh", idToken = "id")
+            advanceUntilIdle()
+        }
+
+        val manager = unloadedManager()
+        manager.saveTokens("user", accessToken = "newer", refreshToken = "refresh", idToken = "id")
+        advanceUntilIdle()
+
+        assertThat(manager.currentAccessToken("user")).isEqualTo("newer")
+        assertThat(manager().currentAccessToken("user")).isEqualTo("newer")
+    }
+
+    @Test
+    fun `a delete made before the cache loads is not resurrected by the load`() = runTest {
+        manager().apply {
+            saveTokens("user", accessToken = "stored", refreshToken = "refresh", idToken = "id")
+            advanceUntilIdle()
+        }
+
+        val manager = unloadedManager()
+        manager.deleteTokens("user")
+        advanceUntilIdle()
+
+        assertThat(manager.currentAccessToken("user")).isNull()
+        assertThat(manager().currentAccessToken("user")).isNull()
+    }
+
+    @Test
+    fun `writes are persisted in the order they were made`() = runTest {
+        val manager = manager()
+        manager.saveTokens("user", accessToken = "first", refreshToken = "refresh", idToken = "id")
+        manager.saveTokens("user", accessToken = "second", refreshToken = "refresh", idToken = "id")
+        manager.deleteAccessToken("user")
+        manager.saveTokens("other", accessToken = "other-access", refreshToken = "refresh", idToken = "id")
+        advanceUntilIdle()
+
+        val reloaded = manager()
+        assertThat(reloaded.currentAccessToken("user")).isNull()
+        assertThat(reloaded.currentRefreshToken("user")).isEqualTo("refresh")
+        assertThat(reloaded.currentAccessToken("other")).isEqualTo("other-access")
+    }
+
+    @Test
+    fun `the load picks up every stored user`() = runTest {
+        manager().apply {
+            saveTokens("user-a", accessToken = "a-access", refreshToken = "a-refresh", idToken = "a-id")
+            saveTokens("user-b", accessToken = "b-access", refreshToken = "b-refresh", idToken = "b-id")
+            advanceUntilIdle()
+        }
+
+        val reloaded = manager()
+
+        assertThat(reloaded.currentAccessToken("user-a")).isEqualTo("a-access")
+        assertThat(reloaded.currentIDToken("user-b")).isEqualTo("b-id")
+    }
+
+    @Test
+    fun `saveTokens with a null refresh or ID token clears that slot`() = runTest {
+        val manager = manager()
+        manager.saveTokens("user", accessToken = "access", refreshToken = "refresh", idToken = "id")
+
+        manager.saveTokens("user", accessToken = "new-access", refreshToken = null, idToken = null)
+
+        assertThat(manager.currentAccessToken("user")).isEqualTo("new-access")
+        assertThat(manager.currentRefreshToken("user")).isNull()
+        assertThat(manager.currentIDToken("user")).isNull()
     }
 
     // endregion
@@ -141,6 +237,7 @@ class TokenManagerTest {
     fun `a value that can't be decrypted is treated as absent for every token, not as a crash`() = runTest {
         val first = manager(apiKey = "api_key_one")
         first.saveTokens("user", accessToken = "from-first-instance", refreshToken = "refresh", idToken = "id")
+        advanceUntilIdle()
 
         // Same on-disk file, different derived key -- e.g. reconfiguring from a sandbox to a production key.
         val second = manager(apiKey = "api_key_two")
@@ -154,6 +251,7 @@ class TokenManagerTest {
     fun `hasCurrentAccessToken is false, not true, for a value left over from a different API key`() = runTest {
         val first = manager(apiKey = "api_key_one")
         first.saveTokens("user", accessToken = "from-first-instance", refreshToken = "refresh", idToken = "id")
+        advanceUntilIdle()
 
         val second = manager(apiKey = "api_key_two")
         assertThat(second.hasCurrentAccessToken("user")).isFalse()
@@ -163,6 +261,7 @@ class TokenManagerTest {
     fun `a fresh write cleanly overwrites a leftover undecryptable value for the same identifier`() = runTest {
         val first = manager(apiKey = "api_key_one")
         first.saveTokens("user", accessToken = "from-first-instance", refreshToken = "refresh", idToken = "id")
+        advanceUntilIdle()
 
         val second = manager(apiKey = "api_key_two")
         second.saveTokens("user", accessToken = "from-second-instance", refreshToken = "refresh", idToken = "id")
@@ -430,7 +529,7 @@ class TokenManagerTest {
             alreadyRetriedRefresh = false,
         ) { called = true }
 
-        assertThat(request).isNull()
+        assertThat(request).isEqualTo(TokenManager.TokenRefreshAction.NoAction)
         assertThat(called).isFalse()
     }
 
@@ -446,7 +545,7 @@ class TokenManagerTest {
             alreadyRetriedRefresh = true,
         ) { called = true }
 
-        assertThat(request).isNull()
+        assertThat(request).isEqualTo(TokenManager.TokenRefreshAction.NoAction)
         assertThat(called).isFalse()
     }
 
@@ -462,7 +561,7 @@ class TokenManagerTest {
             alreadyRetriedRefresh = false,
         ) { called = true }
 
-        assertThat(request).isNull()
+        assertThat(request).isEqualTo(TokenManager.TokenRefreshAction.NoAction)
         assertThat(called).isFalse()
     }
 
@@ -477,7 +576,7 @@ class TokenManagerTest {
             alreadyRetriedRefresh = false,
         ) {}
 
-        assertThat(request).isEqualTo(TokenManager.TokenRefreshRequest("user", "refresh-token"))
+        assertThat(request).isEqualTo(refreshAction("user", "refresh-token"))
     }
 
     @Test
@@ -505,8 +604,8 @@ class TokenManagerTest {
 
             // Only the first caller gets a request to actually perform; the second is folded into it rather
             // than starting a redundant refresh of its own.
-            assertThat(firstRequest).isNotNull()
-            assertThat(secondRequest).isNull()
+            assertThat(firstRequest).isEqualTo(refreshAction("user", "refresh-token"))
+            assertThat(secondRequest).isEqualTo(TokenManager.TokenRefreshAction.WaitingForOtherRequest)
 
             val refreshedTokens = TokenManager.TokenSet(
                 accessToken = "new-access",
@@ -576,7 +675,7 @@ class TokenManagerTest {
             alreadyRetriedRefresh = false,
         ) {}
 
-        assertThat(secondRequest).isEqualTo(TokenManager.TokenRefreshRequest("user", "refresh-token"))
+        assertThat(secondRequest).isEqualTo(refreshAction("user", "refresh-token"))
     }
 
     // endregion
@@ -596,11 +695,25 @@ class TokenManagerTest {
 
     // endregion
 
-    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun refreshAction(appUserID: String, refreshToken: String) =
+        TokenManager.TokenRefreshAction.Refresh(TokenManager.TokenRefreshRequest(appUserID, refreshToken))
+
     private fun testScope(): CoroutineScope = CoroutineScope(UnconfinedTestDispatcher())
 
-    private fun manager(apiKey: String = "test_api_key"): TokenManager =
-        TokenManager(context, apiKey, enabled = true, scope = testScope())
+    // Storage construction and persistence run on the test scheduler; advanceUntilIdle() completes them.
+    private fun TestScope.unloadedManager(apiKey: String = "test_api_key"): TokenManager {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        return TokenManager(
+            context,
+            apiKey,
+            enabled = true,
+            computationDispatcher = dispatcher,
+            ioDispatcher = dispatcher,
+        )
+    }
+
+    private fun TestScope.manager(apiKey: String = "test_api_key"): TokenManager =
+        unloadedManager(apiKey).also { advanceUntilIdle() }
 
     /**
      * A syntactically-valid (but unsigned and unverified) JWT with the given [amr] claim -- or no `amr`
