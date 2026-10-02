@@ -75,5 +75,6 @@ object PaywallPresenters {
     fun params(block: CheckpointParams.Builder.() -> Unit = {}): CheckpointParams = CheckpointParams {
         block()
         if (_mode.value == Mode.Local) paywallPresenter(local)
+        ErrorPresenters.apply(this)
     }
 }

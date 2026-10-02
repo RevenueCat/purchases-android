@@ -232,14 +232,7 @@ internal fun InternalPaywall(
     when (state) {
         is PaywallState.Loading -> {}
 
-        is PaywallState.Error -> {
-            PaywallTheme(fontProvider = options.fontProvider) {
-                ErrorDialog(
-                    dismissRequest = { viewModel.closePaywall(result = state.toPaywallResult()) },
-                    error = state.errorMessage,
-                )
-            }
-        }
+        is PaywallState.Error -> ErrorStateDialog(state, viewModel, options)
 
         is PaywallState.Loaded -> {
             viewModel.actionError.value?.let {
@@ -255,6 +248,18 @@ internal fun InternalPaywall(
                 }
             }
         }
+    }
+}
+
+// With an app error presenter, the ViewModel has already handed the error to it, so nothing is shown here.
+@Composable
+private fun ErrorStateDialog(state: PaywallState.Error, viewModel: PaywallViewModel, options: PaywallOptions) {
+    if (options.errorPresenter != null) return
+    PaywallTheme(fontProvider = options.fontProvider) {
+        ErrorDialog(
+            dismissRequest = { viewModel.closePaywall(result = state.toPaywallResult()) },
+            error = state.errorMessage,
+        )
     }
 }
 

@@ -7,10 +7,12 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PresentedOfferingContext
+import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.common.CustomVariableKeyValidator
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 import dev.drewhamilton.poko.Poko
 import kotlinx.parcelize.Parcelize
@@ -66,6 +68,7 @@ public class PaywallOptions internal constructor(
     internal val injectedWorkflowUiConfig: UiConfig = emptyUiConfig(),
     internal val injectedWorkflowOfferings: Offerings? = null,
     internal val injectedWorkflowTraceId: String? = null,
+    internal val errorPresenter: PaywallErrorPresenter? = null,
 ) {
     public companion object {
         private const val hashMultiplier = 31
@@ -85,6 +88,7 @@ public class PaywallOptions internal constructor(
         injectedWorkflowUiConfig = builder.injectedWorkflowUiConfig,
         injectedWorkflowOfferings = builder.injectedWorkflowOfferings,
         injectedWorkflowTraceId = builder.injectedWorkflowTraceId,
+        errorPresenter = builder.errorPresenter,
     )
 
     // Only key fields that affect the paywall's identity and rendering logic are used in hashCode.
@@ -137,6 +141,7 @@ public class PaywallOptions internal constructor(
         injectedWorkflowUiConfig: UiConfig = this.injectedWorkflowUiConfig,
         injectedWorkflowOfferings: Offerings? = this.injectedWorkflowOfferings,
         injectedWorkflowTraceId: String? = this.injectedWorkflowTraceId,
+        errorPresenter: PaywallErrorPresenter? = this.errorPresenter,
     ): PaywallOptions = PaywallOptions(
         offeringSelection = offeringSelection,
         shouldDisplayDismissButton = shouldDisplayDismissButton,
@@ -151,6 +156,7 @@ public class PaywallOptions internal constructor(
         injectedWorkflowUiConfig = injectedWorkflowUiConfig,
         injectedWorkflowOfferings = injectedWorkflowOfferings,
         injectedWorkflowTraceId = injectedWorkflowTraceId,
+        errorPresenter = errorPresenter,
     )
 
     @Suppress("TooManyFunctions")
@@ -169,6 +175,7 @@ public class PaywallOptions internal constructor(
         internal var injectedWorkflowUiConfig: UiConfig = emptyUiConfig()
         internal var injectedWorkflowOfferings: Offerings? = null
         internal var injectedWorkflowTraceId: String? = null
+        internal var errorPresenter: PaywallErrorPresenter? = null
 
         public fun setOffering(offering: Offering?): Builder = apply {
             this.offeringSelection = offering?.let { OfferingSelection.OfferingType(it) }
@@ -218,6 +225,11 @@ public class PaywallOptions internal constructor(
             dismissRequestWithExitOffering: DismissRequestWithExitOffering?,
         ) = apply {
             this.dismissRequestWithExitOffering = dismissRequestWithExitOffering
+        }
+
+        /** Hands the paywall's errors to the app instead of showing the SDK's dialog; null keeps the dialog. */
+        internal fun setErrorPresenter(errorPresenter: PaywallErrorPresenter?) = apply {
+            this.errorPresenter = errorPresenter
         }
 
         /**
@@ -285,6 +297,15 @@ public class PaywallOptions internal constructor(
  */
 internal typealias DismissRequestWithExitOffering =
     (exitOffering: Offering?, result: PaywallResult?, reason: PaywallDismissReason) -> Unit
+
+/**
+ * Internal channel through which a paywall presented for a checkpoint hands its errors to the app's
+ * [ErrorPresenter] instead of showing its own dialog. The checkpoint host adds the checkpoint's context; the
+ * paywall knows what failed and whether it can go on, and acts on the completion's first report.
+ */
+internal fun interface PaywallErrorPresenter {
+    fun present(error: PurchasesError, flowCanContinue: Boolean, completion: ErrorPresenter.Completion)
+}
 
 /** How a paywall was dismissed, reported through [DismissRequestWithExitOffering]. */
 internal enum class PaywallDismissReason {
