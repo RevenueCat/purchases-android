@@ -137,24 +137,17 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
         return null
     }
 
-    // Check that the default localization is present in the localizations map.
-    val defaultLocalization = componentsData.defaultLocalization
-        .errorIfNull(PaywallValidationError.AllLocalizationsMissing(componentsData.defaultLocaleIdentifier))
-        .mapError { nonEmptyListOf(it) }
-        .getOrElse { error -> return RcResult.Error(error) }
+    // A missing or empty localization table is valid, e.g. a paywall without text components. This matches iOS.
+    val defaultLocalization = componentsData.defaultLocalization ?: run {
+        Logger.w("No localizations found for default locale '${componentsData.defaultLocaleIdentifier}'.")
+        emptyMap()
+    }
 
     // Build a NonEmptyMap of localizations, ensuring that we always have the default localization as fallback.
     val localizations = nonEmptyMapOf(
         componentsData.defaultLocaleIdentifier to defaultLocalization,
         componentsData.componentsLocalizations,
-    ).mapValues { (locale, map) ->
-        // We need to turn our NonEmptyMap<LocaleId, Map> into NonEmptyMap<LocaleId, NonEmptyMap>. If a certain locale
-        // has an empty Map, we add an AllLocalizationsMissing error for that locale to our list of errors.
-        map.toNonEmptyMapOrNull()
-            .errorIfNull(PaywallValidationError.AllLocalizationsMissing(locale))
-            .mapError { nonEmptyListOf(it) }
-    }.mapValuesOrAccumulate { it }
-        .getOrElse { error -> return RcResult.Error(error) }
+    )
 
     // Check that the default variable localization is present in the localizations map.
     val defaultVariableLocalization = paywallComponents.defaultVariableLocalization
