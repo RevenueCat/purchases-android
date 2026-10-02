@@ -60,6 +60,7 @@ import com.revenuecat.purchases.common.safeResume
 import com.revenuecat.purchases.common.safeResumeWithException
 import com.revenuecat.purchases.common.sdksettings.SdkSettingsConfigProvider
 import com.revenuecat.purchases.common.subscriberdimensions.SubscriberDimensionsConfigProvider
+import com.revenuecat.purchases.common.subscriberdimensions.SubscriberDimensionsReceiptStore
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
@@ -229,6 +230,7 @@ internal class PurchasesFactory(
             val signingManager = SigningManager(signatureVerificationMode, appConfig, apiKey)
 
             val cache = DeviceCache(prefs, apiKey)
+            val subscriberDimensionsReceiptStore = SubscriberDimensionsReceiptStore(cache)
 
             // TokenManager owns constructing IAM's secure token storage end-to-end (context, API key,
             // iamEnabled in; a ready-or-not SecureItemStorage never leaves this class) since it's the only
@@ -430,9 +432,15 @@ internal class PurchasesFactory(
                             Purchases.sharedInstance.purchasesOrchestrator.awaitCustomerInfo(appUserID)
                         },
                     ),
-                    SubscriberDimensionsProvider {
-                        cache.getCachedSubscriberDimensionsJson(identityManager.currentAppUserID)
-                    },
+                    SubscriberDimensionsProvider(
+                        configDimensions = { subscriberDimensionsConfigProvider.getDimensions() },
+                        receiptDimensions = {
+                            subscriberDimensionsReceiptStore.get(identityManager.currentAppUserID)
+                        },
+                        discardReceiptDimensions = { superseded ->
+                            subscriberDimensionsReceiptStore.discardAsync(identityManager.currentAppUserID, superseded)
+                        },
+                    ),
                 ),
                 currentAppUserId = { identityManager.currentAppUserID },
             )
@@ -459,6 +467,7 @@ internal class PurchasesFactory(
                 offlineEntitlementsManager,
                 paywallPresentedCache,
                 localTransactionMetadataStore,
+                subscriberDimensionsReceiptStore,
             )
 
             val postTransactionWithProductDetailsHelper = PostTransactionWithProductDetailsHelper(

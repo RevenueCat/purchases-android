@@ -11,6 +11,8 @@ import com.revenuecat.purchases.common.Config
 import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.LocaleProvider
+import com.revenuecat.purchases.common.subscriberdimensions.SubscriberDimensions
+import com.revenuecat.purchases.common.subscriberdimensions.SubscriberDimensionsResolution
 import com.revenuecat.purchases.rules.RulesEngine
 import com.revenuecat.purchases.rules.Value
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
@@ -19,6 +21,8 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.Test
@@ -227,7 +231,13 @@ class RulesDimensionScopeTest {
                     customerInfo = { customerInfo },
                 ),
                 SubscriberAttributesDimensionProvider { SUBSCRIBER_ATTRIBUTES },
-                SubscriberDimensionsProvider { SUBSCRIBER_DIMENSIONS },
+                SubscriberDimensionsProvider(
+                    configDimensions = { SubscriberDimensionsResolution.NotConfigured },
+                    receiptDimensions = {
+                        SubscriberDimensions.parse(Json.parseToJsonElement(SUBSCRIBER_DIMENSIONS).jsonObject)
+                    },
+                    discardReceiptDimensions = {},
+                ),
             ),
             currentAppUserId = { APP_USER_ID },
             dateProvider = object : DateProvider {
@@ -291,11 +301,14 @@ class RulesDimensionScopeTest {
             "trialEligible" to RulesDimensionValue.BoolValue(true),
         )
 
-        /** The dimensions the backend last sent alongside the subscriber, root-level under their own names. */
+        /** The dimensions the last purchase response carried, root-level under their own names. */
         val SUBSCRIBER_DIMENSIONS = """
             {
-              "acquisition_channel": "paid_search",
-              "predicted_ltv_band": 3
+              "dimensions": {
+                "acquisition_channel": "paid_search",
+                "predicted_ltv_band": 3
+              },
+              "as_of": 1718452700000
             }
         """
 
