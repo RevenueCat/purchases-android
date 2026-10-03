@@ -15,6 +15,22 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
 ## Android
 
+### android build_sdk_update_test_apps
+
+```sh
+[bundle exec] fastlane android build_sdk_update_test_apps
+```
+
+Build the SDK update test apps
+
+### android run_sdk_update_test
+
+```sh
+[bundle exec] fastlane android run_sdk_update_test
+```
+
+Run an SDK update Maestro test case
+
 ### android setup_local_properties
 
 ```sh
