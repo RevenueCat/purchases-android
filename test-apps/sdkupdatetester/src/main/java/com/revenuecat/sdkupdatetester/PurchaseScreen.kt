@@ -13,7 +13,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,7 +33,6 @@ import com.revenuecat.purchases.PurchasesTransactionException
 import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.awaitPurchase
-import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import kotlinx.coroutines.launch
 
 private const val OFFERING_IDENTIFIER = "no_paywall"
@@ -47,12 +45,6 @@ internal fun PurchaseScreen(activity: Activity) {
     val scope = rememberCoroutineScope()
     val purchases = Purchases.sharedInstance
 
-    DisposableEffect(purchases) {
-        purchases.updatedCustomerInfoListener = UpdatedCustomerInfoListener {
-            activeEntitlements = it.activeEntitlementsText()
-        }
-        onDispose { purchases.updatedCustomerInfoListener = null }
-    }
     LaunchedEffect(purchases) {
         try {
             activeEntitlements = purchases.awaitCustomerInfo().activeEntitlementsText()
