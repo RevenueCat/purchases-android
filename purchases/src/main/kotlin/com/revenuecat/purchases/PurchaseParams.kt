@@ -5,6 +5,7 @@ import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
+import com.revenuecat.purchases.models.OneTimePurchaseOfferDetails
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreReplacementMode
@@ -85,6 +86,17 @@ public class PurchaseParams(public val builder: Builder) {
                 activity,
                 subscriptionOption.purchasingData,
                 subscriptionOption.presentedOfferingContext,
+                product = null,
+            )
+
+        public constructor(
+            activity: Activity,
+            oneTimePurchaseOfferDetails: OneTimePurchaseOfferDetails,
+        ) :
+            this(
+                activity,
+                oneTimePurchaseOfferDetails.purchasingData,
+                oneTimePurchaseOfferDetails.presentedOfferingContext,
                 product = null,
             )
 
