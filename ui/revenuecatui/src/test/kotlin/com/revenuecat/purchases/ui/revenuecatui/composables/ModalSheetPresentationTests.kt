@@ -13,7 +13,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.click
+import androidx.compose.ui.test.down
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.moveBy
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -21,6 +23,7 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeDown
+import androidx.compose.ui.test.up
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.assertj.core.api.Assertions.assertThat
@@ -134,6 +137,32 @@ class ModalSheetPresentationTests {
         waitForIdle()
         assertThat(hidden).isTrue
         assertThat(state.hiddenFraction).isEqualTo(1f)
+    }
+
+    @Test
+    fun `releasing the sheet during a programmatic hide does not bring it back`(): Unit = with(composeTestRule) {
+        val state = ModalSheetState()
+        var dismissRequests = 0
+        setSheet(state, onDismissRequest = { dismissRequests++ })
+        mainClock.advanceTimeBy(ANIMATION_SLACK_MILLIS)
+        waitForIdle()
+        var hidden = false
+        onNodeWithText(contentText).performTouchInput {
+            down(center)
+            moveBy(Offset(0f, 100f))
+        }
+        assertThat(state.hiddenFraction).isGreaterThan(0f)
+
+        runOnUiThread { state.hide { hidden = true } }
+        waitForIdle()
+        mainClock.advanceTimeBy(ANIMATION_SLACK_MILLIS / 4)
+        onNodeWithText(contentText).performTouchInput { up() }
+        mainClock.advanceTimeBy(ANIMATION_SLACK_MILLIS)
+        waitForIdle()
+
+        assertThat(hidden).isTrue
+        assertThat(state.hiddenFraction).isEqualTo(1f)
+        assertThat(dismissRequests).isEqualTo(0)
     }
 
     @Test

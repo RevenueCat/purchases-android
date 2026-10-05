@@ -75,7 +75,8 @@ internal class ModalSheetState {
     private var hidden = false
     private var onHidden: (() -> Unit)? = null
 
-    // The enter, exit or settle animation in flight; a drag takes over from a settle or the enter animation.
+    // The enter, exit or settle animation in flight. Whatever moves the sheet next, a drag or another animation,
+    // takes over from it, so a single owner writes hiddenFraction at any time.
     private var animation: Job? = null
 
     /**
@@ -117,6 +118,7 @@ internal class ModalSheetState {
 
     internal suspend fun animateTo(target: Float, initialVelocityPxPerSecond: Float = 0f) {
         if (hiddenFraction == target) return
+        animation?.takeIf { it !== coroutineContext.job }?.cancel()
         animation = coroutineContext.job
         animate(
             initialValue = hiddenFraction,
@@ -163,12 +165,15 @@ internal fun ModalSheetPresentation(
         if (!state.visible) state.notifyHidden()
     }
 
+    // A release while the sheet is already leaving changes nothing: the exit animation owns it from hide() on.
     val settle: suspend (velocityPxPerSecond: Float) -> Unit = { velocity ->
-        if (state.shouldDismiss(velocity, velocityThresholdPx)) {
-            state.animateTo(1f, velocity)
-            onDismissRequest()
-        } else {
-            state.animateTo(0f, velocity)
+        when {
+            !state.visible -> Unit
+            state.shouldDismiss(velocity, velocityThresholdPx) -> {
+                state.animateTo(1f, velocity)
+                onDismissRequest()
+            }
+            else -> state.animateTo(0f, velocity)
         }
     }
 
