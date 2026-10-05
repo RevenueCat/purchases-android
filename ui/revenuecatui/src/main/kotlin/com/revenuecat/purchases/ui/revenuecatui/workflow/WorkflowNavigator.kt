@@ -28,7 +28,8 @@ internal class WorkflowNavigator(private val workflow: PublishedWorkflow) {
         val step = currentStep ?: return null
         val trigger = step.triggers.firstOrNull { it.componentId == componentId && it.type == triggerType }
             ?: return null
-        val stepId = nextStepId(step.triggerActions[trigger.actionId], trigger.actionId) ?: return null
+        val stepId = nextStepId(action = step.triggerActions[trigger.actionId], actionId = trigger.actionId)
+            ?: return null
         return workflow.steps[stepId]
     }
 
@@ -46,7 +47,7 @@ internal class WorkflowNavigator(private val workflow: PublishedWorkflow) {
             Logger.w("No trigger action found for actionId '${trigger.actionId}' in step '${step.id}'")
             return null
         }
-        val stepId = nextStepId(action, trigger.actionId) ?: run {
+        val stepId = nextStepId(action = action, actionId = trigger.actionId) ?: run {
             Logger.w("Workflow trigger action '${trigger.actionId}' leads nowhere, ignoring")
             return null
         }

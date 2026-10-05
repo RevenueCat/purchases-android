@@ -125,7 +125,7 @@ class WorkflowNavigatorTest {
     }
 
     // The route names a different step than the fallback, so a test can tell the two apart.
-    private fun branchExitWorkflow(): PublishedWorkflow {
+    private fun branchWorkflow(): PublishedWorkflow {
         val branchStep = WorkflowStep(
             id = "step-1",
             type = "screen",
@@ -154,7 +154,7 @@ class WorkflowNavigatorTest {
 
     @Test
     fun `a tap before resolution takes the fallback`() {
-        val navigator = WorkflowNavigator(branchExitWorkflow())
+        val navigator = WorkflowNavigator(branchWorkflow())
         val result = navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)
 
         assertThat(result).isEqualTo(step2)
@@ -164,7 +164,7 @@ class WorkflowNavigatorTest {
     /** Config drift: the audiences pick a step the workflow no longer contains. */
     @Test
     fun `a route naming a missing step falls back`() {
-        val navigator = WorkflowNavigator(branchExitWorkflow())
+        val navigator = WorkflowNavigator(branchWorkflow())
         navigator.recordResolvedBranches(mapOf("action-next" to "step-gone"), forStepId = "step-1")
 
         assertThat(navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)?.id).isEqualTo("step-2")
@@ -172,7 +172,7 @@ class WorkflowNavigatorTest {
 
     @Test
     fun `a resolved branch navigates to its route instead of the fallback`() {
-        val navigator = WorkflowNavigator(branchExitWorkflow())
+        val navigator = WorkflowNavigator(branchWorkflow())
         navigator.recordResolvedBranches(mapOf("action-next" to "step-3"), forStepId = "step-1")
 
         val result = navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)
@@ -183,7 +183,7 @@ class WorkflowNavigatorTest {
 
     @Test
     fun `returning to a step drops its previous branch resolution`() {
-        val navigator = WorkflowNavigator(branchExitWorkflow())
+        val navigator = WorkflowNavigator(branchWorkflow())
         navigator.recordResolvedBranches(mapOf("action-next" to "step-3"), forStepId = "step-1")
 
         navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)
@@ -196,8 +196,8 @@ class WorkflowNavigatorTest {
     // PaywallViewModel gates on the peek before navigating, so a peek that ignores branches
     // dead-taps the UI even when triggerAction is correct.
     @Test
-    fun `peekTriggerStep on a branch exit returns the step it picks`() {
-        val navigator = WorkflowNavigator(branchExitWorkflow())
+    fun `peekTriggerStep on a branch returns the step it picks`() {
+        val navigator = WorkflowNavigator(branchWorkflow())
 
         val result = navigator.peekTriggerStep("btn-next", WorkflowTriggerType.ON_PRESS)
 
