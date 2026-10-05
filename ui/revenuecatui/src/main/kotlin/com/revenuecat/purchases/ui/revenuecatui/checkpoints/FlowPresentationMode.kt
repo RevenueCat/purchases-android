@@ -4,8 +4,7 @@ import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 
 /**
  * How the SDK presents the flow a checkpoint resolves to, a workflow or the offering's paywall. Every mode is a modal
- * window over the current activity; they differ in how much of the screen the flow takes. Presenters supplied by the
- * app are not affected: they present however they want.
+ * window over the current activity; they differ in how much of the screen the flow takes.
  */
 @InviteOnlyCheckpointsAPI
 public class FlowPresentationMode private constructor(private val name: String) {

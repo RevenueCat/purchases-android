@@ -29,7 +29,7 @@ public annotation class CheckpointParamsDsl
  * is set, the SDK presents its own error dialog through a presenter of its own.
  *
  * [presentationMode] decides how the SDK presents the flow itself, full screen or as a sheet, or leaves the choice
- * to the SDK with [FlowPresentationMode.DEFAULT]; app-owned presenters are not affected.
+ * to the SDK with [FlowPresentationMode.DEFAULT].
  *
  * Built through [Builder], or the DSL:
  * ```kotlin
