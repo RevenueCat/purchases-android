@@ -77,6 +77,7 @@ import com.revenuecat.purchases.common.workflows.WorkflowsConfigProvider
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.WebPurchaseRedemptionHelper
 import com.revenuecat.purchases.google.isSuccessful
+import com.revenuecat.purchases.identity.Identity
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
@@ -317,6 +318,7 @@ internal class PurchasesOrchestrator(
         localeProvider.setPreferredLocaleOverride(_preferredUILocaleOverride)
 
         identityManager.configure(backingFieldAppUserID)
+        logInThroughIAMIfNeeded()
         sdkSettingsConfigProvider.listener = this
 
         billing.stateListener = object : BillingAbstract.StateListener {
@@ -921,17 +923,8 @@ internal class PurchasesOrchestrator(
                 identityManager.logIn(
                     newAppUserID,
                     onSuccess = { customerInfo, created ->
-                        dispatch {
-                            callback?.onReceived(customerInfo, created)
-                            customerInfoUpdateHandler.notifyListeners(customerInfo, newAppUserID)
-                        }
-                        remoteConfigManager.refreshRemoteConfig(
-                            state.appInBackground,
-                            newAppUserID,
-                            RemoteConfigFetchContext.IdentityChange,
-                        )
-                        offeringsManager.fetchAndCacheOfferings(newAppUserID, state.appInBackground)
-                        backupManager.dataChanged()
+                        dispatch { callback?.onReceived(customerInfo, created) }
+                        handleIdentityChange(customerInfo, newAppUserID)
                     },
                     onError = { error ->
                         dispatch { callback?.onError(error) }
@@ -1591,6 +1584,29 @@ internal class PurchasesOrchestrator(
             trackGetProductsResult(nonNullStartTime, productIds, notFoundProductIds, null)
             callback.onReceived(collectedStoreProducts)
         }
+    }
+
+    // Silent bootstrap: an anonymous user without tokens gets them once the token cache has loaded.
+    private fun logInThroughIAMIfNeeded() {
+        identityManager.whenIAMLoginNeeded {
+            identityManager.logIn(
+                Identity.anonymous,
+                onSuccess = { customerInfo, appUserID -> handleIdentityChange(customerInfo, appUserID) },
+                onError = { errorLog(it) },
+            )
+        }
+    }
+
+    // Everything a login does after IdentityManager has switched users and fetched their CustomerInfo.
+    private fun handleIdentityChange(customerInfo: CustomerInfo, appUserID: String) {
+        dispatch { customerInfoUpdateHandler.notifyListeners(customerInfo, appUserID) }
+        remoteConfigManager.refreshRemoteConfig(
+            state.appInBackground,
+            appUserID,
+            RemoteConfigFetchContext.IdentityChange,
+        )
+        offeringsManager.fetchAndCacheOfferings(appUserID, state.appInBackground)
+        backupManager.dataChanged()
     }
 
     private fun updateAllCaches(

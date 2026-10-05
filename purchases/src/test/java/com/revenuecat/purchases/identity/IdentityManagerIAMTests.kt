@@ -189,7 +189,7 @@ class IdentityManagerIAMTests {
 
         val result = logIn(googleIdentity)
 
-        assertThat(result).isEqualTo(customerInfo to false)
+        assertThat(result).isEqualTo(customerInfo to serverID)
         assertThat(identityManager.currentAppUserID).isEqualTo(serverID)
         verify(exactly = 1) { tokenAPI.logIn(anonymousID, googleIdentity, any(), any()) }
         verify(exactly = 1) { backend.getCustomerInfo(serverID, false, any(), any()) }
@@ -468,75 +468,17 @@ class IdentityManagerIAMTests {
 
     // endregion
 
-    // region silent bootstrap login
+    // region configure
 
     @Test
-    fun `configure logs a fresh anonymous user in exactly once, after the token cache loads`() = runTest {
-        createIdentityManager(loaded = false)
-        stubTokenLogIn(succeedWith = serverID)
-
-        identityManager.configure(null)
-        val anonymousAppUserID = identityManager.currentAppUserID
-        verify(exactly = 0) { tokenAPI.logIn(any(), any(), any(), any()) }
-
-        advanceUntilIdle()
-        verify(exactly = 1) { tokenAPI.logIn(anonymousAppUserID, Identity.anonymous, any(), any()) }
-        assertThat(identityManager.currentAppUserID).isEqualTo(serverID)
-    }
-
-    @Test
-    fun `configure logs in immediately when the token cache has already loaded`() = runTest {
+    fun `configure leaves the bootstrap login to its caller`() = runTest {
         cachedAppUserID = anonymousID
         createIdentityManager()
-        stubTokenLogIn(succeedWith = serverID)
-
-        identityManager.configure(null)
-
-        verify(exactly = 1) { tokenAPI.logIn(anonymousID, Identity.anonymous, any(), any()) }
-    }
-
-    @Test
-    fun `configure does not log in an anonymous user who already has an access token`() = runTest {
-        cachedAppUserID = anonymousID
-        createIdentityManager()
-        tokenManager.saveTokens(anonymousID, accessToken = "access", refreshToken = null, idToken = null)
 
         identityManager.configure(null)
         advanceUntilIdle()
 
         verify(exactly = 0) { tokenAPI.logIn(any(), any(), any(), any()) }
-    }
-
-    @Test
-    fun `configure does not log in an identified user`() = runTest {
-        createIdentityManager()
-
-        identityManager.configure(identifiedID)
-        advanceUntilIdle()
-
-        verify(exactly = 0) { tokenAPI.logIn(any(), any(), any(), any()) }
-    }
-
-    @Test
-    fun `configure does not touch TokenAPI when IAM is disabled`() = runTest {
-        createIdentityManager(iamEnabled = false)
-
-        identityManager.configure(null)
-        advanceUntilIdle()
-
-        verify(exactly = 0) { tokenAPI.logIn(any(), any(), any(), any()) }
-        assertThat(IdentityManager.isUserIDAnonymous(identityManager.currentAppUserID)).isTrue()
-    }
-
-    @Test
-    fun `a failed bootstrap login leaves the anonymous user in place`() = runTest {
-        cachedAppUserID = anonymousID
-        createIdentityManager()
-        stubTokenLogIn(failWith = PurchasesError(PurchasesErrorCode.NetworkError))
-
-        identityManager.configure(null)
-
-        assertThat(identityManager.currentAppUserID).isEqualTo(anonymousID)
     }
 
     // endregion
@@ -549,7 +491,7 @@ class IdentityManagerIAMTests {
         createIdentityManager()
         val pending = deferTokenLogIn()
         var result: Any? = null
-        identityManager.logIn(googleIdentity, { info, created -> result = info to created }, { result = it })
+        identityManager.logIn(googleIdentity, { info, appUserID -> result = info to appUserID }, { result = it })
 
         identityManager.switchUser(identifiedID)
         pending.onSuccess(serverID)
@@ -562,12 +504,11 @@ class IdentityManagerIAMTests {
     }
 
     @Test
-    fun `a late bootstrap login success does not undo an identified logIn made meanwhile`() = runTest {
+    fun `a late anonymous IAM logIn success does not undo an identified logIn made meanwhile`() = runTest {
         cachedAppUserID = anonymousID
         createIdentityManager()
         val pending = deferTokenLogIn()
-        identityManager.configure(null)
-        verify(exactly = 1) { tokenAPI.logIn(anonymousID, Identity.anonymous, any(), any()) }
+        identityManager.logIn(Identity.anonymous, { _, _ -> }, { })
 
         every { backend.logIn(anonymousID, identifiedID, any(), any()) } answers {
             thirdArg<(CustomerInfo, Boolean) -> Unit>()(customerInfo, false)
@@ -643,10 +584,10 @@ class IdentityManagerIAMTests {
         }
     }
 
-    // Returns (CustomerInfo, created) on success, or the PurchasesError.
+    // Returns (CustomerInfo, appUserID) on success, or the PurchasesError.
     private fun logIn(identity: Identity): Any? {
         var result: Any? = null
-        identityManager.logIn(identity, { info, created -> result = info to created }, { result = it })
+        identityManager.logIn(identity, { info, appUserID -> result = info to appUserID }, { result = it })
         return result
     }
 

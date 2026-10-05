@@ -99,11 +99,6 @@ internal class IdentityManager(
         enqueue {
             deviceCache.cleanupOldAttributionData()
         }
-
-        // Silent bootstrap: an anonymous user without tokens gets them once the token cache has loaded.
-        whenIAMLoginNeeded {
-            logIn(Identity.anonymous, onSuccess = { _, _ -> }, onError = { errorLog(it) })
-        }
     }
 
     suspend fun aliasCurrentUserIdTo(
@@ -195,11 +190,11 @@ internal class IdentityManager(
 
     /**
      * Logs in with [identity] through IAM, then switches to the app user ID the server assigned and fetches
-     * its [CustomerInfo]. `created` is always `false`; the token endpoints don't report it.
+     * its [CustomerInfo]. [onSuccess] receives that app user ID.
      */
     fun logIn(
         identity: Identity,
-        onSuccess: (CustomerInfo, Boolean) -> Unit,
+        onSuccess: (customerInfo: CustomerInfo, appUserID: String) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
         if (currentAppUserID == UI_PREVIEW_MODE_APP_USER_ID) {
@@ -365,7 +360,7 @@ internal class IdentityManager(
 
     private fun fetchCustomerInfo(
         appUserID: String,
-        onSuccess: (CustomerInfo, Boolean) -> Unit,
+        onSuccess: (CustomerInfo, String) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
         backend.getCustomerInfo(
@@ -373,7 +368,7 @@ internal class IdentityManager(
             appConfig.isAppBackgrounded,
             onSuccess = { customerInfo ->
                 deviceCache.cacheCustomerInfo(appUserID, customerInfo)
-                onSuccess(customerInfo, false)
+                onSuccess(customerInfo, appUserID)
             },
             onError = { error, _ -> onError(error) },
         )
