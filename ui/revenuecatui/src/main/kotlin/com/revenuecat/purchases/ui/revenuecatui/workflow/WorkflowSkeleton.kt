@@ -30,6 +30,8 @@ import com.revenuecat.purchases.paywalls.components.properties.Badge
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.Size
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 
 /**
  * Rewrites a paywall into a grey stand-in of itself, for the window where the SDK knows the layout
@@ -100,12 +102,13 @@ internal class WorkflowSkeleton private constructor(
             is StickyFooterComponent -> stack(component.stack, contentHidden)
             is HeaderComponent -> stack(component.stack, contentHidden)
             is ImageComponent -> image(component, contentHidden)
-            // A stand-in fetches nothing, so a video becomes a plain block of the same size rather
-            // than an image. Its own url is not an image, and a fallback would be a wasted download.
+            // A video becomes a plain block rather than an image: its own url is not an image, and the
+            // image loader would download and fail to decode it. An empty block has nothing to measure,
+            // so a Fit axis takes the video's own size as its default instead of collapsing to zero.
             is VideoComponent -> StackComponent(
                 components = emptyList(),
                 visible = component.visible,
-                size = component.size,
+                size = videoSize(component),
                 backgroundColor = if (contentHidden) null else tone,
                 padding = component.padding ?: PADDING_ZERO,
                 margin = component.margin ?: PADDING_ZERO,
@@ -166,6 +169,20 @@ internal class WorkflowSkeleton private constructor(
             is TabControlToggleComponent,
             FallbackHeaderComponent,
             -> null
+        }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    private fun videoSize(video: VideoComponent): Size = Size(
+        width = fitDefault(video.size.width, video.source.light.width),
+        height = fitDefault(video.size.height, video.source.light.height),
+    )
+
+    @OptIn(InternalRevenueCatAPI::class)
+    private fun fitDefault(constraint: SizeConstraint, intrinsic: UInt): SizeConstraint =
+        if (constraint is SizeConstraint.Fit && constraint.default == null) {
+            SizeConstraint.Fit(default = intrinsic)
+        } else {
+            constraint
         }
 
     @OptIn(InternalRevenueCatAPI::class)

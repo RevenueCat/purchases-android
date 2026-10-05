@@ -12,6 +12,8 @@ import com.revenuecat.purchases.paywalls.components.VideoComponent
 import com.revenuecat.purchases.paywalls.components.WebViewComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
+import com.revenuecat.purchases.paywalls.components.common.ExitOffer
+import com.revenuecat.purchases.paywalls.components.common.ExitOffers
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
@@ -19,6 +21,7 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.Badge
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.FitMode
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
@@ -57,6 +60,7 @@ class WorkflowSkeletonTests {
             ),
         ),
         componentsLocalizations = mapOf(LocaleId("en_US") to emptyMap()),
+        exitOffers = ExitOffers(dismiss = ExitOffer(offeringId = "exit")),
     )
 
     private fun transformedChildren(vararg components: PaywallComponent): List<PaywallComponent> =
@@ -121,9 +125,11 @@ class WorkflowSkeletonTests {
 
     @Test
     fun `drops exit offers so the stand-in cannot trigger one`() {
-        val transformed = WorkflowSkeleton.transform(dataWith(StackComponent(components = emptyList())))
+        val data = dataWith(StackComponent(components = emptyList()))
+        // Guard the fixture: without this the assertion below holds whether or not the transform runs.
+        assertThat(data.exitOffers).isNotNull
 
-        assertThat(transformed.exitOffers).isNull()
+        assertThat(WorkflowSkeleton.transform(data).exitOffers).isNull()
     }
 
     @Test
@@ -198,6 +204,40 @@ class WorkflowSkeletonTests {
         val badgeText = card.badge!!.stack.components.first() as TextComponent
         assertThat(badgeText.color).isNotEqualTo(green)
     }
+
+    @Test
+    fun `gives a fit-height video stand-in the video's own height so it cannot collapse`() {
+        val video = videoComponent(size = Size(SizeConstraint.Fill(), SizeConstraint.Fit()))
+
+        val block = transformedChildren(video).first() as StackComponent
+
+        // An empty block has nothing to measure, so a bare Fit would lay out at zero height.
+        val height = block.size.height
+        assertThat(height).isInstanceOf(SizeConstraint.Fit::class.java)
+        assertThat((height as SizeConstraint.Fit).default).isEqualTo(720u)
+    }
+
+    private fun videoComponent(size: Size = Size(SizeConstraint.Fill(), SizeConstraint.Fit())) = VideoComponent(
+        source = ThemeVideoUrls(
+            light = VideoUrls(width = 1280u, height = 720u, url = URL("https://example.com/v.mp4")),
+            dark = null,
+        ),
+        fallbackSource = imageUrls,
+        visible = null,
+        showControls = false,
+        autoplay = true,
+        loop = true,
+        muteAudio = true,
+        size = size,
+        fitMode = FitMode.FIT,
+        maskShape = null,
+        colorOverlay = null,
+        padding = null,
+        margin = null,
+        border = null,
+        shadow = null,
+        overrides = null,
+    )
 
     private fun iconFormats() = IconComponent.Formats(
         webp = "star.webp",
