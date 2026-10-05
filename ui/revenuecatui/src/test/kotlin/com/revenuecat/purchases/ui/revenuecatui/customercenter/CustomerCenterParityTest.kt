@@ -31,7 +31,6 @@ import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.time.Instant
 import java.util.Date
 
 /** Executes the same scenario contract consumed by both mobile platforms against SDK action filtering. */
@@ -40,7 +39,7 @@ class CustomerCenterParityTest {
     @Test
     fun `shared scenarios drive the actual SDK action decisions`(): Unit = runBlocking {
         val fixture = JSONObject(javaClass.getResource("/customer_center_parity.json")!!.readText())
-        val now = Date.from(Instant.parse(fixture.getString("now")))
+        val now = Date()
         val cases = fixture.getJSONArray("cases")
         val config = Json { ignoreUnknownKeys = true }.decodeFromString<CustomerCenterConfigData>(Configuration)
         for (index in 0 until cases.length()) {
