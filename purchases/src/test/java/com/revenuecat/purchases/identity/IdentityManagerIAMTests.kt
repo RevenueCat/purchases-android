@@ -297,6 +297,108 @@ class IdentityManagerIAMTests {
 
     // endregion
 
+    // region logOut
+
+    @Test
+    fun `IAM logOut revokes, then switches to a server-assigned anonymous user with tokens`() = runTest {
+        cachedAppUserID = identifiedID
+        createIdentityManager()
+        stubRevoke(fail = null)
+        stubTokenLogIn(succeedWith = serverID)
+
+        val error = logOut()
+
+        assertThat(error).isNull()
+        assertThat(identityManager.currentAppUserID).isEqualTo(serverID)
+        assertThat(tokenManager.hasCurrentAccessToken(serverID)).isTrue()
+        verifyOrder {
+            tokenAPI.revokeTokens(identifiedID, any(), any())
+            tokenAPI.logIn(identifiedID, Identity.anonymous, any(), any())
+            deviceCache.clearCachesForAppUserID(identifiedID)
+            deviceCache.cacheAppUserID(serverID)
+        }
+        verify(exactly = 1) { backend.clearCaches() }
+        verify(exactly = 0) { backend.getCustomerInfo(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `IAM logOut fails for an anonymous user without touching TokenAPI`() = runTest {
+        cachedAppUserID = anonymousID
+        createIdentityManager()
+
+        val error = logOut()
+
+        assertThat(error?.code).isEqualTo(PurchasesErrorCode.LogOutWithAnonymousUserError)
+        verify(exactly = 0) { tokenAPI.revokeTokens(any(), any(), any()) }
+    }
+
+    @Test
+    fun `IAM logOut revocation failure leaves the identity untouched`() = runTest {
+        cachedAppUserID = identifiedID
+        createIdentityManager()
+        val revokeError = PurchasesError(PurchasesErrorCode.NetworkError)
+        stubRevoke(fail = revokeError)
+
+        val error = logOut()
+
+        assertThat(error).isEqualTo(revokeError)
+        assertThat(identityManager.currentAppUserID).isEqualTo(identifiedID)
+        verify(exactly = 0) { tokenAPI.logIn(any(), any(), any(), any()) }
+        verify(exactly = 0) { deviceCache.clearCachesForAppUserID(any()) }
+        verify(exactly = 0) { backend.clearCaches() }
+    }
+
+    @Test
+    fun `IAM logOut falls back to a local anonymous user when the anonymous login fails`() = runTest {
+        cachedAppUserID = identifiedID
+        createIdentityManager()
+        stubRevoke(fail = null)
+        val loginError = PurchasesError(PurchasesErrorCode.NetworkError)
+        stubTokenLogIn(failWith = loginError)
+
+        val error = logOut()
+
+        assertThat(error).isEqualTo(loginError)
+        val newAppUserID = identityManager.currentAppUserID
+        assertThat(IdentityManager.isUserIDAnonymous(newAppUserID)).isTrue()
+        assertThat(tokenManager.hasCurrentAccessToken(newAppUserID)).isFalse()
+        verify(exactly = 1) { deviceCache.clearCachesForAppUserID(identifiedID) }
+        verify(exactly = 1) { backend.clearCaches() }
+        assertThat(iamLoginNeeded()).isTrue()
+    }
+
+    @Test
+    fun `logOut does not touch TokenAPI when IAM is disabled`() = runTest {
+        cachedAppUserID = identifiedID
+        createIdentityManager(iamEnabled = false)
+
+        val error = logOut()
+
+        assertThat(error).isNull()
+        assertThat(IdentityManager.isUserIDAnonymous(identityManager.currentAppUserID)).isTrue()
+        verify(exactly = 0) { tokenAPI.revokeTokens(any(), any(), any()) }
+        verify(exactly = 0) { tokenAPI.logIn(any(), any(), any(), any()) }
+    }
+
+    // endregion
+
+    private fun logOut(): PurchasesError? {
+        var result: PurchasesError? = null
+        var completed = false
+        identityManager.logOut {
+            result = it
+            completed = true
+        }
+        assertThat(completed).isTrue()
+        return result
+    }
+
+    private fun stubRevoke(fail: PurchasesError?) {
+        every { tokenAPI.revokeTokens(any(), any(), any()) } answers {
+            if (fail == null) secondArg<() -> Unit>()() else thirdArg<(PurchasesError) -> Unit>()(fail)
+        }
+    }
+
     // Returns (CustomerInfo, created) on success, or the PurchasesError.
     private fun logIn(identity: Identity): Any? {
         var result: Any? = null
@@ -306,7 +408,10 @@ class IdentityManagerIAMTests {
 
     private fun stubTokenLogIn(succeedWith: String? = null, failWith: PurchasesError? = null) {
         every { tokenAPI.logIn(any(), any(), any(), any()) } answers {
-            if (succeedWith != null) thirdArg<(String) -> Unit>()(succeedWith)
+            if (succeedWith != null) {
+                tokenManager.saveTokens(succeedWith, accessToken = "access", refreshToken = "refresh", idToken = null)
+                thirdArg<(String) -> Unit>()(succeedWith)
+            }
             if (failWith != null) arg<(PurchasesError) -> Unit>(3)(failWith)
         }
     }

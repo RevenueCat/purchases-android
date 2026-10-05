@@ -221,6 +221,7 @@ internal class IdentityManager(
                 oldAppUserID,
                 identity,
                 onSuccess = { newAppUserID ->
+                    log(LogIntent.USER) { IdentityStrings.IAM_LOG_IN_SUCCESSFUL.format(newAppUserID) }
                     switchToIAMUser(oldAppUserID, newAppUserID)
                     fetchCustomerInfo(newAppUserID, onSuccess, onError)
                 },
@@ -265,9 +266,13 @@ internal class IdentityManager(
             currentAppUserID,
             Delay.jitterOnlyIfInBackground(appConfig.isAppBackgrounded),
         ) {
-            resetAndSaveUserID(generateRandomID())
-            log(LogIntent.USER) { IdentityStrings.LOG_OUT_SUCCESSFUL }
-            completion(null)
+            if (tokenManager.enabled) {
+                logOutThroughIAM(completion)
+            } else {
+                resetAndSaveUserID(generateRandomID())
+                log(LogIntent.USER) { IdentityStrings.LOG_OUT_SUCCESSFUL }
+                completion(null)
+            }
         }
     }
 
@@ -294,7 +299,6 @@ internal class IdentityManager(
     // IAM paths aren't user-specific, so the URL-keyed ETag cache must go too.
     @Synchronized
     private fun switchToIAMUser(oldAppUserID: String, newAppUserID: String) {
-        log(LogIntent.USER) { IdentityStrings.IAM_LOG_IN_SUCCESSFUL.format(newAppUserID) }
         deviceCache.clearCachesForAppUserID(oldAppUserID)
         clearRemoteConfigThenOfferingsCaches(newAppUserID)
         subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
@@ -303,6 +307,34 @@ internal class IdentityManager(
         clearPaywallWebViewStorageIfUserChanged(oldAppUserID, newAppUserID)
         offlineEntitlementsManager.resetOfflineCustomerInfoCache()
         backend.clearCaches()
+    }
+
+    /**
+     * Revokes the current user's tokens, then logs in anonymously; the server assigns the new app user ID.
+     * A revocation failure changes nothing. If the anonymous login then fails, the user falls back to a local
+     * anonymous ID with no tokens, which [whenIAMLoginNeeded] picks up on the next configure.
+     */
+    private fun logOutThroughIAM(completion: (PurchasesError?) -> Unit) {
+        val oldAppUserID = currentAppUserID
+        tokenAPI.revokeTokens(
+            oldAppUserID,
+            onSuccess = {
+                tokenAPI.logIn(
+                    oldAppUserID,
+                    Identity.anonymous,
+                    onSuccess = { newAppUserID ->
+                        switchToIAMUser(oldAppUserID, newAppUserID)
+                        log(LogIntent.USER) { IdentityStrings.LOG_OUT_SUCCESSFUL }
+                        completion(null)
+                    },
+                    onError = { error ->
+                        resetAndSaveUserID(generateRandomID())
+                        completion(error)
+                    },
+                )
+            },
+            onError = completion,
+        )
     }
 
     private fun fetchCustomerInfo(
