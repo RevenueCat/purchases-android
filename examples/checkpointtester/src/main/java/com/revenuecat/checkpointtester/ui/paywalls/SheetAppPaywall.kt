@@ -35,19 +35,22 @@ import com.revenuecat.checkpointtester.checkpoints.ParkedPaywallPresenter
 import com.revenuecat.checkpointtester.checkpoints.PaywallCheckout
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter
 import kotlinx.coroutines.launch
 
 /**
- * The paywall behind the per-call presenter: a bottom sheet over a scrim, one buy button per package, restore,
- * continue without buying, and "Not now". Reports how the user left it (purchased, closed through "Not now",
- * continued without buying, or backed out through system back or a tap on the scrim); the SDK works out what the
- * user obtained.
+ * The app's bottom-sheet paywall, drawn when a presenter is asked for [FlowPresentationMode.MODAL_SHEET]: a sheet
+ * over a scrim, one buy button per package, restore, continue without buying, and "Not now". Reports how the user
+ * left it (purchased, closed through "Not now", continued without buying, or backed out through system back or a
+ * tap on the scrim); the SDK works out what the user obtained. [presenterLabel] names the presenter that was asked,
+ * for the description.
  */
 @OptIn(InviteOnlyCheckpointsAPI::class)
 @Composable
-fun LocalPaywall(
+fun SheetAppPaywall(
     request: ParkedPaywallPresenter.Request,
+    presenterLabel: String,
     modifier: Modifier = Modifier,
 ) {
     val activity = LocalContext.current as? Activity
@@ -94,6 +97,7 @@ fun LocalPaywall(
         ) {
             SheetContent(
                 request = request,
+                presenterLabel = presenterLabel,
                 state = SheetUiState(busy, message, canPurchase = activity != null),
                 onPurchase = { pkg -> activity?.let { checkout { PaywallCheckout.purchase(it, pkg) } } },
                 onRestore = { checkout { PaywallCheckout.restore() } },
@@ -110,9 +114,11 @@ private class SheetUiState(
 )
 
 @OptIn(InviteOnlyCheckpointsAPI::class)
+@Suppress("LongParameterList")
 @Composable
 private fun SheetContent(
     request: ParkedPaywallPresenter.Request,
+    presenterLabel: String,
     state: SheetUiState,
     onPurchase: (Package) -> Unit,
     onRestore: () -> Unit,
@@ -126,10 +132,11 @@ private fun SheetContent(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("Local presenter", style = MaterialTheme.typography.headlineSmall)
+        Text("App paywall, sheet", style = MaterialTheme.typography.headlineSmall)
         Text(
-            text = "Presented by the presenter passed in CheckpointParams for offering " +
-                "\"${request.params.offering.identifier}\" (checkpoint \"${request.params.checkpointIdentifier}\").",
+            text = "Presented by $presenterLabel for offering " +
+                "\"${request.params.offering.identifier}\" (checkpoint \"${request.params.checkpointIdentifier}\") " +
+                "in mode ${request.params.presentationMode}.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onTertiaryContainer,
             textAlign = TextAlign.Center,

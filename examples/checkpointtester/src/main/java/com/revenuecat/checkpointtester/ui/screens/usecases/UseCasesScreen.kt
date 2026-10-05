@@ -1,3 +1,5 @@
+@file:OptIn(InviteOnlyCheckpointsAPI::class)
+
 package com.revenuecat.checkpointtester.ui.screens.usecases
 
 import androidx.compose.foundation.clickable
@@ -27,6 +29,8 @@ import com.revenuecat.checkpointtester.checkpoints.ErrorPresenters
 import com.revenuecat.checkpointtester.checkpoints.PaywallPresenters
 import com.revenuecat.checkpointtester.ui.Screen
 import com.revenuecat.checkpointtester.ui.theme.CheckpointTesterTheme
+import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode
 
 private data class NavigatedUseCase(
     val screen: Screen,
@@ -62,6 +66,12 @@ private val NAVIGATED_USE_CASES = listOf(
     ),
 )
 
+private val PRESENTATION_MODE_LABELS = mapOf(
+    FlowPresentationMode.DEFAULT to "Default",
+    FlowPresentationMode.MODAL_FULL_SCREEN to "Full screen",
+    FlowPresentationMode.MODAL_SHEET to "Sheet",
+)
+
 private val INLINE_USE_CASES = listOf(
     InlineUseCase(
         identifier = "offering_checkpoint",
@@ -83,6 +93,7 @@ private val INLINE_USE_CASES = listOf(
     ),
 )
 
+@Suppress("LongMethod")
 @Composable
 fun UseCasesScreen(
     onNavigate: (Screen) -> Unit,
@@ -91,24 +102,37 @@ fun UseCasesScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val presenterMode by PaywallPresenters.mode.collectAsState()
+    val presentationMode by PaywallPresenters.presentationMode.collectAsState()
     val errorPresenterMode by ErrorPresenters.mode.collectAsState()
 
     LazyColumn(modifier = modifier.fillMaxSize()) {
         item {
             SectionHeader(text = "Paywall presenter")
-            PresenterSelector(
-                modes = PaywallPresenters.Mode.entries,
-                mode = presenterMode,
+            SegmentedSelector(
+                options = PaywallPresenters.Mode.entries,
+                selected = presenterMode,
                 label = { it.label },
                 description = presenterMode.description,
                 onSelect = PaywallPresenters::select,
             )
         }
         item {
+            SectionHeader(text = "Presentation mode")
+            SegmentedSelector(
+                options = PRESENTATION_MODE_LABELS.keys.toList(),
+                selected = presentationMode,
+                label = PRESENTATION_MODE_LABELS::getValue,
+                description = "How the flow is presented. The SDK follows it for workflows and for offerings in " +
+                    "the Default presenter mode; the app's own presenters above receive it and follow it too. " +
+                    "Default lets the SDK choose (currently a sheet).",
+                onSelect = PaywallPresenters::selectPresentationMode,
+            )
+        }
+        item {
             SectionHeader(text = "Error presenter")
-            PresenterSelector(
-                modes = ErrorPresenters.Mode.entries,
-                mode = errorPresenterMode,
+            SegmentedSelector(
+                options = ErrorPresenters.Mode.entries,
+                selected = errorPresenterMode,
                 label = { it.label },
                 description = errorPresenterMode.description,
                 onSelect = ErrorPresenters::select,
@@ -149,9 +173,9 @@ fun UseCasesScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun <T> PresenterSelector(
-    modes: List<T>,
-    mode: T,
+private fun <T> SegmentedSelector(
+    options: List<T>,
+    selected: T,
     label: (T) -> String,
     description: String,
     onSelect: (T) -> Unit,
@@ -161,11 +185,11 @@ private fun <T> PresenterSelector(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-            modes.forEachIndexed { index, candidate ->
+            options.forEachIndexed { index, candidate ->
                 SegmentedButton(
-                    selected = candidate == mode,
+                    selected = candidate == selected,
                     onClick = { onSelect(candidate) },
-                    shape = SegmentedButtonDefaults.itemShape(index = index, count = modes.size),
+                    shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
                 ) {
                     Text(text = label(candidate))
                 }

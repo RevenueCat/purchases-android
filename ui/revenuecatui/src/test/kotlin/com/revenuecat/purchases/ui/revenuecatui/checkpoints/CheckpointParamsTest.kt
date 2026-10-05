@@ -104,6 +104,42 @@ class CheckpointParamsTest {
     }
 
     @Test
+    fun `params default to letting the SDK choose the presentation`() {
+        assertThat(CheckpointParams {}.presentationMode).isEqualTo(FlowPresentationMode.DEFAULT)
+        assertThat(CheckpointParams.Builder().build().presentationMode)
+            .isEqualTo(FlowPresentationMode.DEFAULT)
+    }
+
+    @Test
+    fun `the presentation mode is set through the builder and the DSL alike`() {
+        assertThat(CheckpointParams { presentationMode(FlowPresentationMode.MODAL_SHEET) }.presentationMode)
+            .isEqualTo(FlowPresentationMode.MODAL_SHEET)
+        assertThat(
+            CheckpointParams.Builder().setPresentationMode(FlowPresentationMode.MODAL_SHEET).build().presentationMode,
+        ).isEqualTo(FlowPresentationMode.MODAL_SHEET)
+    }
+
+    @Test
+    fun `params are equal only when their presentation modes are`() {
+        val sheet = CheckpointParams { presentationMode(FlowPresentationMode.MODAL_SHEET) }
+
+        assertThat(sheet).isEqualTo(CheckpointParams { presentationMode(FlowPresentationMode.MODAL_SHEET) })
+        assertThat(sheet.hashCode())
+            .isEqualTo(CheckpointParams { presentationMode(FlowPresentationMode.MODAL_SHEET) }.hashCode())
+        assertThat(sheet).isNotEqualTo(CheckpointParams {})
+        assertThat(sheet.toString()).contains("presentationMode=MODAL_SHEET")
+    }
+
+    @Test
+    fun `presentation modes are values`() {
+        assertThat(FlowPresentationMode.MODAL_SHEET).isEqualTo(FlowPresentationMode.MODAL_SHEET)
+        assertThat(FlowPresentationMode.MODAL_SHEET).isNotEqualTo(FlowPresentationMode.MODAL_FULL_SCREEN)
+        assertThat(FlowPresentationMode.DEFAULT).isNotEqualTo(FlowPresentationMode.MODAL_SHEET)
+        assertThat(FlowPresentationMode.MODAL_SHEET.hashCode()).isEqualTo(FlowPresentationMode.MODAL_SHEET.hashCode())
+        assertThat(FlowPresentationMode.MODAL_FULL_SCREEN.toString()).isEqualTo("MODAL_FULL_SCREEN")
+    }
+
+    @Test
     fun `each infix overload maps to its custom variable variant`() {
         val params = CheckpointParams {
             customVariables {

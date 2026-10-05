@@ -40,6 +40,7 @@ class DefaultPaywallPresenterTest {
         offering,
         "test_checkpoint",
         mapOf("goal" to CustomVariableValue.String("test")),
+        FlowPresentationMode.MODAL_FULL_SCREEN,
     )
     private val events = mutableListOf<String>()
     private val results = mutableListOf<Result>()
@@ -55,6 +56,7 @@ class DefaultPaywallPresenterTest {
     private lateinit var mockPurchases: Purchases
     private lateinit var mockWindow: CheckpointWorkflowPresenter
     private var windowCallId: String? = null
+    private var windowMode: FlowPresentationMode? = null
     private lateinit var presenter: DefaultPaywallPresenter
 
     @Before
@@ -65,8 +67,9 @@ class DefaultPaywallPresenterTest {
         mockPurchases = mockk { every { currentActivity } returns mockActivity }
         cachedActiveEntitlements()
         mockWindow = mockk(relaxed = true)
-        presenter = DefaultPaywallPresenter(mockPurchases, errorPresenter = { _, _ -> }) { callId, host ->
+        presenter = DefaultPaywallPresenter(mockPurchases, errorPresenter = { _, _ -> }) { callId, host, mode ->
             windowCallId = callId
+            windowMode = mode
             assertThat(host).isSameAs(presenter)
             mockWindow
         }
@@ -110,7 +113,7 @@ class DefaultPaywallPresenterTest {
                 presented += errorParams
                 completions += completion
             },
-        ) { callId, _ ->
+        ) { callId, _, _ ->
             windowCallId = callId
             mockWindow
         }
@@ -124,6 +127,21 @@ class DefaultPaywallPresenterTest {
             ErrorPresenter.Params(error, params.checkpointIdentifier, params.customVariables, flowCanContinue = true),
         )
         assertThat(completions).containsExactly(completion)
+    }
+
+    @Test
+    fun `the window is presented the way the params ask`() {
+        present()
+        assertThat(windowMode).isEqualTo(FlowPresentationMode.MODAL_FULL_SCREEN)
+
+        val sheetParams = PaywallPresenter.Params(
+            offering,
+            params.checkpointIdentifier,
+            params.customVariables,
+            FlowPresentationMode.MODAL_SHEET,
+        )
+        presenter.present(sheetParams, completion)
+        assertThat(windowMode).isEqualTo(FlowPresentationMode.MODAL_SHEET)
     }
 
     @Test

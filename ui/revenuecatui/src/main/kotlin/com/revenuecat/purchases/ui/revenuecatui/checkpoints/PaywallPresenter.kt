@@ -15,10 +15,10 @@ import dev.drewhamilton.poko.Poko
 public fun interface PaywallPresenter {
 
     /**
-     * Called on the main thread when a checkpoint resolves to an offering. Present [params]'s offering however
-     * the app wants and report through [completion] how the presentation ended; the checkpoint stays unresolved
-     * until then. The SDK works out what the user obtained by itself, so the app only reports how the user left
-     * its UI.
+     * Called on the main thread when a checkpoint resolves to an offering. Present [params]'s offering the way
+     * [Params.presentationMode] asks and report through [completion] how the presentation ended; the checkpoint
+     * stays unresolved until then. The SDK works out what the user obtained by itself, so the app only reports how
+     * the user left its UI.
      */
     public fun present(params: Params, completion: Completion)
 
@@ -32,6 +32,12 @@ public fun interface PaywallPresenter {
         public val checkpointIdentifier: String,
         /** The custom variables supplied to the checkpoint call. */
         public val customVariables: Map<String, CustomVariableValue>,
+        /**
+         * How the call asked for the flow to be presented, already resolved by the SDK: either
+         * [FlowPresentationMode.MODAL_FULL_SCREEN] or [FlowPresentationMode.MODAL_SHEET], never
+         * [FlowPresentationMode.DEFAULT]. The app's UI should follow it.
+         */
+        public val presentationMode: FlowPresentationMode,
     )
 
     /**
