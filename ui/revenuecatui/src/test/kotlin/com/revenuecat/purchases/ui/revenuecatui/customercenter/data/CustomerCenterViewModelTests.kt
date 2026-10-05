@@ -1,14 +1,20 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.data
 
 import android.app.Activity
+import android.app.Application
 import android.content.Context
 import android.net.Uri
+import androidx.lifecycle.ViewModelStore
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.EntitlementInfos
+import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.PurchaseResult
@@ -34,6 +40,10 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.models.Transaction
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterPreviewAction
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterPreviewDiagnostic
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterPreviewDiagnosticReason
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterPreviewProvider
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterDestination
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
@@ -60,16 +70,19 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.shadows.ShadowLooper
 import java.util.Date
 import java.util.Locale
 import kotlin.time.Duration
 
+@OptIn(InternalRevenueCatAPI::class)
 @RunWith(AndroidJUnit4::class)
 class CustomerCenterViewModelTests {
 
@@ -2287,6 +2300,156 @@ class CustomerCenterViewModelTests {
             .anyMatch { it.type == CustomerCenterConfigData.HelpPath.PathType.CUSTOM_URL && it.id == "support_id" }
     }
 
+    @Test
+    fun `preview intercepts management URL and support email actions`(): Unit = runBlocking {
+        setupPurchasesMock()
+        val provider = mockk<CustomerCenterPreviewProvider>(relaxed = true)
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            previewProvider = provider,
+        )
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val path = HelpPath(id = "cancel", title = "Cancel", type = HelpPath.PathType.CANCEL)
+        val state = setupSuccessLoadScreen(path, model)
+        model.pathButtonPressed(context, path, state.purchases.firstOrNull())
+        model.openURL(context, "https://example.com", HelpPath.OpenMethod.EXTERNAL)
+        model.contactSupport(context, "support@example.com")
+        ShadowLooper.idleMainLooper()
+        coVerify { provider.handleAction(any<CustomerCenterPreviewAction.ManageSubscriptions>()) }
+        coVerify { provider.handleAction(CustomerCenterPreviewAction.OpenUrl("https://example.com")) }
+        coVerify { provider.handleAction(CustomerCenterPreviewAction.ContactSupport("support@example.com")) }
+        assertThat(shadowOf(context).nextStartedActivity).isNull()
+    }
+
+    @Test
+    fun `preview paywall fallback uses injected offerings and intercepts launch`(): Unit = runBlocking {
+        setupPurchasesMock()
+        val provider = mockk<CustomerCenterPreviewProvider>(relaxed = true)
+        val offering = mockk<Offering>()
+        coEvery { purchases.awaitOfferings() } returns Offerings(offering, emptyMap())
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            previewProvider = provider,
+        )
+        val path = HelpPath(id = "restore", title = "Restore", type = HelpPath.PathType.MISSING_PURCHASE)
+        setupSuccessLoadScreen(path, model)
+        val context = ApplicationProvider.getApplicationContext<Application>()
+
+        model.showPaywall(context)
+        ShadowLooper.idleMainLooper()
+
+        coVerify { purchases.awaitOfferings() }
+        coVerify { provider.handleAction(CustomerCenterPreviewAction.ShowPaywall(offering)) }
+        assertThat(shadowOf(context).nextStartedActivity).isNull()
+    }
+
+    @Test
+    fun `clearing a preview session cancels pending simulated actions`(): Unit = runBlocking {
+        setupPurchasesMock()
+        val provider = mockk<CustomerCenterPreviewProvider>()
+        val pending = CompletableDeferred<Unit>()
+        val cancelled = CompletableDeferred<Unit>()
+        coEvery { provider.handleAction(any()) } coAnswers {
+            try {
+                pending.await()
+            } finally {
+                cancelled.complete(Unit)
+            }
+        }
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            previewProvider = provider,
+        )
+        val store = ViewModelStore()
+        store.put("preview", model)
+        model.openURL(
+            ApplicationProvider.getApplicationContext(),
+            "https://example.com",
+            HelpPath.OpenMethod.EXTERNAL,
+        )
+        ShadowLooper.idleMainLooper()
+        store.clear()
+        ShadowLooper.idleMainLooper()
+        withTimeout(2_000) { cancelled.await() }
+        assertThat(pending.isCompleted).isFalse()
+    }
+
+    @Test
+    fun `preview reports missing purchases only for purchase specific actions`(): Unit = runBlocking {
+        val expectedReasons = listOf(
+            HelpPath.PathType.CANCEL to CustomerCenterPreviewDiagnosticReason.NO_PURCHASE_SELECTED,
+            HelpPath.PathType.REFUND_REQUEST to CustomerCenterPreviewDiagnosticReason.NO_PURCHASE_SELECTED,
+            HelpPath.PathType.CHANGE_PLANS to CustomerCenterPreviewDiagnosticReason.NO_PURCHASE_SELECTED,
+            HelpPath.PathType.UNKNOWN to CustomerCenterPreviewDiagnosticReason.UNSUPPORTED_STORE,
+            HelpPath.PathType.CUSTOM_URL to null,
+            HelpPath.PathType.CUSTOM_ACTION to null,
+            HelpPath.PathType.MISSING_PURCHASE to null,
+        )
+        for ((type, expectedReason) in expectedReasons) {
+            setupPurchasesMock()
+            val provider = mockk<CustomerCenterPreviewProvider>(relaxed = true)
+            val diagnostics = mutableListOf<CustomerCenterPreviewDiagnostic>()
+            every { provider.onDiagnosticsUpdated(any()) } answers {
+                diagnostics.addAll(firstArg<List<CustomerCenterPreviewDiagnostic>>())
+            }
+            val model = CustomerCenterViewModelImpl(
+                purchases = purchases,
+                colorScheme = TestData.Constants.currentColorScheme,
+                isDarkMode = false,
+                previewProvider = provider,
+            )
+            val path = HelpPath(id = "missing_$type", title = "Action", type = type)
+
+            val state = setupSuccessLoadScreen(path, model, noActivePaths = listOf(path))
+
+            assertThat(state.mainScreenPaths.contains(path)).isEqualTo(expectedReason == null)
+            assertThat(diagnostics.last().reason).isEqualTo(expectedReason)
+            assertThat(diagnostics.last().visible).isEqualTo(expectedReason == null)
+        }
+    }
+
+    @Test
+    fun `expired cancel diagnostics never use refund or family plan reasons`(): Unit = runBlocking {
+        setupPurchasesMock()
+        val provider = mockk<CustomerCenterPreviewProvider>(relaxed = true)
+        val diagnostics = mutableListOf<CustomerCenterPreviewDiagnostic>()
+        every { provider.onDiagnosticsUpdated(any()) } answers {
+            diagnostics.addAll(firstArg<List<CustomerCenterPreviewDiagnostic>>())
+        }
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            previewProvider = provider,
+        )
+        val path = HelpPath(id = "cancel", title = "Cancel", type = HelpPath.PathType.CANCEL)
+        setupSuccessLoadScreen(path, model)
+        val expired = CustomerCenterConfigTestData.purchaseInformationYearlyExpiring.copy(
+            store = Store.PLAY_STORE,
+            isExpired = true,
+        )
+        for (purchase in listOf(
+            expired.copy(isTrial = true),
+            expired.copy(pricePaid = PriceDetails.Free),
+            expired.copy(ownershipType = OwnershipType.FAMILY_SHARED),
+        )) {
+            model.selectPurchase(purchase)
+
+            assertThat(diagnostics.last().reason)
+                .isEqualTo(CustomerCenterPreviewDiagnosticReason.ACTIVE_SUBSCRIPTION_REQUIRED)
+            assertThat(diagnostics.last().visible).isFalse()
+            assertThat((model.state.value as CustomerCenterState.Success).detailScreenPaths).isEmpty()
+        }
+        model.selectPurchase(expired.copy(isSubscription = false, pricePaid = PriceDetails.Free))
+        assertThat(diagnostics.last().reason).isEqualTo(CustomerCenterPreviewDiagnosticReason.SUBSCRIPTION_REQUIRED)
+    }
+
     private fun setupPurchasesMock() {
         every { purchases.customerCenterListener } returns null
         coEvery { purchases.awaitGetProduct(any(), any()) } returns null
@@ -2325,6 +2488,7 @@ class CustomerCenterViewModelTests {
     private suspend fun setupSuccessLoadScreen(
         originalPath: HelpPath,
         model: CustomerCenterViewModelImpl,
+        noActivePaths: List<HelpPath> = emptyList(),
     ): CustomerCenterState.Success {
         // Set up the state as Success
         val managementScreen = Screen(
@@ -2338,7 +2502,7 @@ class CustomerCenterViewModelTests {
             type = Screen.ScreenType.NO_ACTIVE,
             title = "No Active Subscription",
             subtitle = "You don't have an active subscription.",
-            paths = emptyList()
+            paths = noActivePaths
         )
 
         val mockScreens = mapOf(
