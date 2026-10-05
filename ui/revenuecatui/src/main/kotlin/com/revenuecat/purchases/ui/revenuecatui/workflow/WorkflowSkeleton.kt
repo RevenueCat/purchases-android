@@ -26,11 +26,10 @@ import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
+import com.revenuecat.purchases.paywalls.components.properties.Badge
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
-import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
-import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 
 /**
  * Rewrites a paywall into a grey stand-in of itself, for the window where the SDK knows the layout
@@ -60,6 +59,8 @@ internal class WorkflowSkeleton private constructor(
             margin = stack.margin,
             shape = stack.shape,
             border = stack.border?.let { Border(color = if (contentHidden) CLEAR else tone, width = it.width) },
+            // A badge adds to the measured size, so it stays, with its own stack as a stand-in too.
+            badge = stack.badge?.let { Badge(this.stack(it.stack, contentHidden), it.style, it.alignment) },
             overflow = stack.overflow,
         )
     }
@@ -99,22 +100,19 @@ internal class WorkflowSkeleton private constructor(
             is StickyFooterComponent -> stack(component.stack, contentHidden)
             is HeaderComponent -> stack(component.stack, contentHidden)
             is ImageComponent -> image(component, contentHidden)
-            // A video would play behind the stand-in, so it becomes a still block of the same size.
-            is VideoComponent -> videoImage(component)?.let { source ->
-                image(
-                    ImageComponent(
-                        source = source,
-                        visible = component.visible,
-                        size = component.size,
-                        maskShape = component.maskShape,
-                        fitMode = component.fitMode,
-                        padding = component.padding ?: PADDING_ZERO,
-                        margin = component.margin ?: PADDING_ZERO,
-                        border = component.border,
-                    ),
-                    contentHidden,
-                )
-            }
+            // A stand-in fetches nothing, so a video becomes a plain block of the same size rather
+            // than an image. Its own url is not an image, and a fallback would be a wasted download.
+            is VideoComponent -> StackComponent(
+                components = emptyList(),
+                visible = component.visible,
+                size = component.size,
+                backgroundColor = if (contentHidden) null else tone,
+                padding = component.padding ?: PADDING_ZERO,
+                margin = component.margin ?: PADDING_ZERO,
+                border = component.border?.let {
+                    Border(color = if (contentHidden) CLEAR else tone, width = it.width)
+                },
+            )
             is TabsComponent -> stack(
                 StackComponent(
                     components = component.tabs.firstOrNull()?.let { listOf(it.stack) } ?: emptyList(),
@@ -185,20 +183,6 @@ internal class WorkflowSkeleton private constructor(
             margin = image.margin,
             border = image.border?.let { Border(color = if (contentHidden) CLEAR else tone, width = it.width) },
         )
-
-    @OptIn(InternalRevenueCatAPI::class)
-    private fun videoImage(video: VideoComponent): ThemeImageUrls? =
-        video.fallbackSource ?: video.source.light.let { light ->
-            ThemeImageUrls(
-                light = ImageUrls(
-                    original = light.url,
-                    webp = light.url,
-                    webpLowRes = light.url,
-                    width = light.width,
-                    height = light.height,
-                ),
-            )
-        }
 
     @OptIn(InternalRevenueCatAPI::class)
     private fun hasFill(background: Background?, color: ColorScheme?, border: Border?): Boolean {

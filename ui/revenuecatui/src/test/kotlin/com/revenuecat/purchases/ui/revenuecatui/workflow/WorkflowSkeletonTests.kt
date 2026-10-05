@@ -16,12 +16,14 @@ import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
+import com.revenuecat.purchases.paywalls.components.properties.Badge
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
+import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.ThemeVideoUrls
 import com.revenuecat.purchases.paywalls.components.properties.VideoUrls
 import org.assertj.core.api.Assertions.assertThat
@@ -76,7 +78,7 @@ class WorkflowSkeletonTests {
     }
 
     @Test
-    fun `turns a video into a still image so it cannot play behind the stand-in`() {
+    fun `turns a video into a plain block so it neither plays nor downloads`() {
         val video = VideoComponent(
             source = ThemeVideoUrls(
                 light = VideoUrls(width = 10u, height = 10u, url = URL("https://example.com/v.mp4")),
@@ -102,8 +104,9 @@ class WorkflowSkeletonTests {
         val children = transformedChildren(video)
 
         assertThat(children).hasSize(1)
-        assertThat(children.first()).isInstanceOf(ImageComponent::class.java)
-        assertThat((children.first() as ImageComponent).colorOverlay).isNotNull
+        // An image stand-in would send the video url, or a fallback, through the image loader.
+        assertThat(children.first()).isInstanceOf(StackComponent::class.java)
+        assertThat((children.first() as StackComponent).backgroundColor).isNotNull
     }
 
     @Test
@@ -175,6 +178,25 @@ class WorkflowSkeletonTests {
         val collapsed = transformedChildren(tabs).first() as StackComponent
 
         assertThat(collapsed.backgroundColor).isNotNull
+    }
+
+    @Test
+    fun `keeps a badge so the stack still measures its height`() {
+        val badged = StackComponent(
+            components = emptyList(),
+            badge = Badge(
+                stack = StackComponent(components = listOf(TextComponent(LocalizationKey("k"), green, fontSize = 20))),
+                style = Badge.Style.EdgeToEdge,
+                alignment = TwoDimensionalAlignment.TOP,
+            ),
+        )
+
+        val card = transformedChildren(badged).first() as StackComponent
+
+        assertThat(card.badge).isNotNull
+        // The badge is a stand-in too, so it must not keep the real colour.
+        val badgeText = card.badge!!.stack.components.first() as TextComponent
+        assertThat(badgeText.color).isNotEqualTo(green)
     }
 
     private fun iconFormats() = IconComponent.Formats(
