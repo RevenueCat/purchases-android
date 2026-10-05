@@ -15,6 +15,7 @@ import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
 import com.revenuecat.purchases.common.networking.SourceHealthChecker
 import com.revenuecat.purchases.common.networking.TokenAuthenticator
+import com.revenuecat.purchases.common.networking.disabledTokenAuthenticator
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceProvider
 import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import com.revenuecat.purchases.common.verification.SigningManager
@@ -80,7 +81,7 @@ internal abstract class BaseHTTPClientTest {
         localeProvider: LocaleProvider = DefaultLocaleProvider(),
         forceServerErrorStrategy: ForceServerErrorStrategy? = null,
         timeoutManager: HTTPTimeoutManager? = null,
-        tokenAuthenticator: TokenAuthenticator? = null,
+        tokenAuthenticator: TokenAuthenticator = disabledTokenAuthenticator(),
     ) = HTTPClient(
         appConfig,
         eTagManager,

@@ -77,7 +77,7 @@ internal class HTTPClient(
     private val forceServerErrorStrategy: ForceServerErrorStrategy? = null,
     private val requestResponseListener: RequestResponseListener? = null,
     private val timeoutManager: HTTPTimeoutManager = HTTPTimeoutManager(appConfig, dateProvider),
-    private val tokenAuthenticator: TokenAuthenticator? = null,
+    private val tokenAuthenticator: TokenAuthenticator,
 ) {
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal companion object {
@@ -200,7 +200,7 @@ internal class HTTPClient(
 
         val isMainBackend = fallbackURLIndex == 0 && !endpoint.targetsFallbackHost
         // Read once per request, so the refresh check below compares against what was actually sent.
-        val iamHeaders = tokenAuthenticator?.authorizationHeaders(endpoint).orEmpty()
+        val iamHeaders = tokenAuthenticator.authorizationHeaders(endpoint)
 
         var source = apiSourceFailover?.currentSource(endpoint, baseURL, isFallbackAttempt = !isMainBackend)
         var sourceAttempts = 0
@@ -265,7 +265,7 @@ internal class HTTPClient(
                             performRequestToFallbackURL()
 
                         // Refreshes the IAM tokens as a side effect. /auth/token authenticates with the API key.
-                        tokenAuthenticator?.refreshTokensIfNeeded(
+                        tokenAuthenticator.refreshTokensIfNeeded(
                             endpoint,
                             result.responseCode,
                             retriedAfterTokenRefresh,
@@ -273,7 +273,7 @@ internal class HTTPClient(
                         ) { refreshBody ->
                             val apiKeyHeaders = requestHeaders.filterKeys { it == "Authorization" }
                             performRequest(appConfig.baseURL, Endpoint.TokenRefresh, refreshBody, null, apiKeyHeaders)
-                        } == true ->
+                        } ->
                             performRequest(
                                 baseURL,
                                 endpoint,
@@ -420,7 +420,7 @@ internal class HTTPClient(
         onVerificationFailed: (verificationResult: SignatureVerificationResult, requestDate: Date?) -> Unit,
     ): HTTPResult? {
         val jsonBody = body?.let { mapConverter.convertToJSON(it) }
-        val path = endpoint.getPath(useFallback = isFallbackURL, useIAMPath = tokenAuthenticator?.usesIAMPaths == true)
+        val path = endpoint.getPath(useFallback = isFallbackURL, useIAMPath = tokenAuthenticator.usesIAMPaths)
         val connection: HttpURLConnection
         val shouldSignResponse = signingManager.shouldVerifyEndpoint(endpoint)
         val shouldAddNonce = shouldSignResponse && endpoint.needsNonceToPerformSigning
