@@ -48,9 +48,10 @@ internal class TokenManager(
 ) {
 
     // Identifier -> value. A null value is a deletion made before the load finished, so the load doesn't
-    // resurrect it. Guarded by `this`, along with isLoaded.
+    // resurrect it. Guarded by `this`, along with isLoaded and loadedCallbacks.
     private val cache = mutableMapOf<String, String?>()
     private var isLoaded = false
+    private val loadedCallbacks = mutableListOf<() -> Unit>()
 
     // Drained in order by a single coroutine, once storage is built and loaded.
     private val pendingWrites = Channel<PendingWrite>(Channel.UNLIMITED)
@@ -65,6 +66,19 @@ internal class TokenManager(
                 }
             }
         }
+    }
+
+    /**
+     * Runs [callback] once the cache has loaded: immediately on the calling thread if it already has, otherwise
+     * on [scope] when the load finishes. Never runs when disabled or when storage is unavailable.
+     */
+    fun onLoaded(callback: () -> Unit) {
+        if (!enabled) return
+        val loaded = synchronized(this) {
+            if (!isLoaded) loadedCallbacks.add(callback)
+            isLoaded
+        }
+        if (loaded) callback()
     }
 
     // region Read access
@@ -196,11 +210,13 @@ internal class TokenManager(
                 null
             }
         }
-        synchronized(this) {
+        val callbacks = synchronized(this) {
             // Writes made while loading are newer than what's on disk.
             stored.forEach { (identifier, value) -> if (!cache.containsKey(identifier)) cache[identifier] = value }
             isLoaded = true
+            loadedCallbacks.toList().also { loadedCallbacks.clear() }
         }
+        callbacks.forEach { it() }
     }
 
     private fun persist(storage: SecureItemStorage, write: PendingWrite) {

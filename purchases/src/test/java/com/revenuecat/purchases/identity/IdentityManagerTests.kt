@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.identity
 
 import android.content.SharedPreferences.Editor
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
@@ -13,6 +14,7 @@ import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.networking.TokenManager
 import com.revenuecat.purchases.common.offerings.OfferingsCache
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
@@ -1061,6 +1063,7 @@ class IdentityManagerTests {
             offlineEntitlementsManager,
             SyncDispatcher(),
             paywallAssetWarming,
+            TokenManager(ApplicationProvider.getApplicationContext(), "api_key", enabled = false),
             uiPreviewMode = uiPreviewMode,
         )
     }

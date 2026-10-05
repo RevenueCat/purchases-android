@@ -16,6 +16,7 @@ import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.common.networking.TokenManager
 import com.revenuecat.purchases.common.offerings.OfferingsCache
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
@@ -43,6 +44,7 @@ internal class IdentityManager(
     private val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val dispatcher: Dispatcher,
     private val paywallAssetWarming: PaywallAssetWarming,
+    private val tokenManager: TokenManager,
     private val uiPreviewMode: Boolean = false,
 ) {
     companion object {
@@ -234,9 +236,20 @@ internal class IdentityManager(
         return currentAppUserIDLooksAnonymous || isLegacyAnonymousAppUserID
     }
 
+    /**
+     * Runs [action] once the token cache has loaded, if the current user needs an IAM login at that point.
+     * Evaluated only after the load, since a missing token is indistinguishable from an unloaded cache.
+     */
+    fun whenIAMLoginNeeded(action: () -> Unit) {
+        tokenManager.onLoaded { if (needsIAMLogin()) action() }
+    }
+
     // endregion
 
     // region Private functions
+
+    private fun needsIAMLogin(): Boolean =
+        tokenManager.enabled && currentUserIsAnonymous() && !tokenManager.hasCurrentAccessToken(currentAppUserID)
 
     /**
      * Clears the remote-config caches and then the offerings cache on an identity change, always in this
