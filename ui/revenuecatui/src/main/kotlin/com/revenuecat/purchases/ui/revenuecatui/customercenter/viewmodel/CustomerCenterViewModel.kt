@@ -50,10 +50,15 @@ import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivity
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityArgs
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterPreviewAction
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterPreviewDiagnostic
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterPreviewDiagnosticReason
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterPreviewProvider
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CreateSupportTicketData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.FeedbackSurveyData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PathUtils
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PriceDetails
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PromotionalOfferData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseHistory
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
@@ -61,6 +66,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.shouldShowSe
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.extensions.getLocalizedDescription
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterDestination
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterNavigationState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.resolveOfferingSuspend
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -81,8 +87,10 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import java.util.ArrayDeque
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicLong
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion as CrossProductPromotion
 
 @Suppress("TooManyFunctions")
@@ -218,7 +226,8 @@ internal sealed class TransactionDetails(
     ) : TransactionDetails(productIdentifier, store, price, isSandbox, purchaseHistoryEntryId, displayName)
 }
 
-@Suppress("TooManyFunctions", "LargeClass")
+@OptIn(InternalRevenueCatAPI::class)
+@Suppress("TooManyFunctions", "LargeClass", "LongParameterList")
 internal class CustomerCenterViewModelImpl(
     private val purchases: PurchasesType,
     private val dateFormatter: DateFormatter = DefaultDateFormatter(),
@@ -226,7 +235,11 @@ internal class CustomerCenterViewModelImpl(
     private val colorScheme: ColorScheme,
     private var isDarkMode: Boolean,
     private val listener: CustomerCenterListener? = null,
+    private val previewProvider: CustomerCenterPreviewProvider? = null,
 ) : ViewModel(), CustomerCenterViewModel {
+    private val loadGeneration = AtomicLong()
+    private var previewPathDiagnostics: List<CustomerCenterPreviewDiagnostic> = emptyList()
+
     companion object {
         private const val STOP_FLOW_TIMEOUT = 5_000L
     }
@@ -274,18 +287,19 @@ internal class CustomerCenterViewModelImpl(
                     notifyListenersForFeedbackSurveyCompleted(it.id)
 
                     viewModelScope.launch {
+                        val currentPurchase = currentPreviewPurchase(purchaseInformation)
                         val promotionalOfferDisplayed =
                             handlePromotionalOffer(
                                 context,
-                                purchaseInformation?.product,
+                                currentPurchase?.product,
                                 it.promotionalOffer,
                                 path,
-                                purchaseInformation,
+                                currentPurchase,
                             )
                         if (!promotionalOfferDisplayed) {
                             // No promotional offer, close survey and execute main path action
                             goBackToMain()
-                            mainPathAction(path, context, purchaseInformation)
+                            mainPathAction(path, context, currentPurchase)
                         }
                     }
                 } ?: run {
@@ -346,6 +360,15 @@ internal class CustomerCenterViewModelImpl(
     }
 
     override fun onCustomActionSelected(customActionData: CustomActionData) {
+        if (previewProvider != null) {
+            performPreviewAction(
+                CustomerCenterPreviewAction.CustomAction(
+                    customActionData.actionIdentifier,
+                    customActionData.purchaseIdentifier,
+                ),
+            )
+            return
+        }
         notifyListenersForCustomActionSelected(customActionData)
     }
 
@@ -515,6 +538,11 @@ internal class CustomerCenterViewModelImpl(
             }
         }
 
+        if (previewProvider != null) {
+            performPreviewAction(CustomerCenterPreviewAction.ManageSubscriptions(purchaseInfo?.productIdentifier))
+            return
+        }
+
         when {
             purchaseInfo?.store == Store.PLAY_STORE && purchaseInfo.product != null ->
                 startGoogleProductCancellation(context, purchaseInfo.product)
@@ -580,6 +608,9 @@ internal class CustomerCenterViewModelImpl(
             }
 
             HelpPath.PathType.CANCEL -> handleCancelPath(context, purchaseInformation)
+            HelpPath.PathType.REFUND_REQUEST,
+            HelpPath.PathType.CHANGE_PLANS,
+            -> performPreviewPlatformAction(path.type, purchaseInformation?.productIdentifier)
 
             HelpPath.PathType.CUSTOM_URL -> {
                 path.url?.let {
@@ -686,10 +717,54 @@ internal class CustomerCenterViewModelImpl(
         screen: CustomerCenterConfigData.Screen,
         localization: CustomerCenterConfigData.Localization,
     ): List<HelpPath> {
-        return screen.paths
-            .filter { isPathAllowedForStore(it, selectedPurchaseInformation) }
-            .filter { isPathAllowedForSubscriptionState(it, selectedPurchaseInformation) }
+        if (previewProvider == null) {
+            return screen.paths
+                .filter { isPathAllowedForStore(it, selectedPurchaseInformation) }
+                .filter { isPathAllowedForSubscriptionState(it, selectedPurchaseInformation) }
+                .transformPathsOnSubscriptionState(selectedPurchaseInformation, localization)
+        }
+        val decisions = screen.paths.associateWith { path ->
+            when {
+                selectedPurchaseInformation == null && PathUtils.isSubscriptionSpecificPath(path) ->
+                    CustomerCenterPreviewDiagnosticReason.NO_PURCHASE_SELECTED
+                !isPathAllowedForStore(path, selectedPurchaseInformation) ->
+                    CustomerCenterPreviewDiagnosticReason.UNSUPPORTED_STORE
+                !isPathAllowedForSubscriptionState(path, selectedPurchaseInformation) ->
+                    previewSubscriptionStateReason(path, selectedPurchaseInformation)
+                else -> null
+            }
+        }
+        previewProvider.onDiagnosticsUpdated(
+            decisions.map { (path, reason) ->
+                CustomerCenterPreviewDiagnostic(
+                    path.id,
+                    path.title,
+                    selectedPurchaseInformation?.productIdentifier,
+                    reason == null,
+                    reason ?: if (path.promotionalOffer?.eligible == false) {
+                        CustomerCenterPreviewDiagnosticReason.PROMOTIONAL_OFFER_INELIGIBLE
+                    } else {
+                        null
+                    },
+                )
+            }.also { previewPathDiagnostics = it },
+        )
+        return screen.paths.filter { decisions[it] == null }
             .transformPathsOnSubscriptionState(selectedPurchaseInformation, localization)
+    }
+
+    private fun previewSubscriptionStateReason(
+        path: HelpPath,
+        purchase: PurchaseInformation?,
+    ): CustomerCenterPreviewDiagnosticReason = when {
+        path.type == HelpPath.PathType.REFUND_REQUEST && purchase?.isTrial == true ->
+            CustomerCenterPreviewDiagnosticReason.REFUND_UNAVAILABLE_DURING_TRIAL
+        path.type == HelpPath.PathType.REFUND_REQUEST && purchase?.pricePaid == PriceDetails.Free ->
+            CustomerCenterPreviewDiagnosticReason.REFUND_REQUIRES_PAID_PURCHASE
+        purchase?.isSubscription != true -> CustomerCenterPreviewDiagnosticReason.SUBSCRIPTION_REQUIRED
+        path.type == HelpPath.PathType.CHANGE_PLANS && purchase.ownershipType == OwnershipType.FAMILY_SHARED ->
+            CustomerCenterPreviewDiagnosticReason.PLAN_CHANGE_UNAVAILABLE_FOR_FAMILY_SHARED
+        else -> CustomerCenterPreviewDiagnosticReason.ACTIVE_SUBSCRIPTION_REQUIRED
     }
 
     private fun List<HelpPath>.transformPathsOnSubscriptionState(
@@ -717,11 +792,16 @@ internal class CustomerCenterViewModelImpl(
     private fun isPathAllowedForSubscriptionState(
         path: HelpPath,
         purchaseInformation: PurchaseInformation?,
-    ): Boolean {
-        if (path.type == HelpPath.PathType.CANCEL) {
-            return purchaseInformation?.isSubscription == true && !purchaseInformation.isExpired
-        }
-        return true
+    ): Boolean = when {
+        previewProvider != null && path.type == HelpPath.PathType.CHANGE_PLANS ->
+            purchaseInformation?.isSubscription == true && !purchaseInformation.isExpired &&
+                purchaseInformation.ownershipType != OwnershipType.FAMILY_SHARED
+        previewProvider != null && path.type == HelpPath.PathType.REFUND_REQUEST ->
+            purchaseInformation != null && !purchaseInformation.isTrial &&
+                purchaseInformation.pricePaid != PriceDetails.Free
+        path.type == HelpPath.PathType.CANCEL ->
+            purchaseInformation?.isSubscription == true && !purchaseInformation.isExpired
+        else -> true
     }
 
     private fun isPathAllowedForStore(
@@ -734,11 +814,12 @@ internal class CustomerCenterViewModelImpl(
             HelpPath.PathType.CUSTOM_ACTION,
             -> true
             HelpPath.PathType.CANCEL ->
-                purchaseInformation?.store == Store.PLAY_STORE || purchaseInformation?.managementURL != null
+                purchaseInformation?.store == Store.PLAY_STORE || purchaseInformation?.managementURL != null ||
+                    (previewProvider != null && purchaseInformation?.store == Store.APP_STORE)
             HelpPath.PathType.REFUND_REQUEST,
             HelpPath.PathType.CHANGE_PLANS,
-            HelpPath.PathType.UNKNOWN,
-            -> false
+            -> previewProvider != null && purchaseInformation?.store == Store.APP_STORE
+            HelpPath.PathType.UNKNOWN -> false
         }
     }
 
@@ -950,7 +1031,7 @@ internal class CustomerCenterViewModelImpl(
         locale: Locale,
         localization: CustomerCenterConfigData.Localization,
     ): PurchaseInformation {
-        val product = if (transaction.store == Store.PLAY_STORE) {
+        val product = if (transaction.store == Store.PLAY_STORE || previewProvider != null) {
             purchases.awaitGetProduct(
                 transaction.productIdentifier,
                 (transaction as? TransactionDetails.Subscription)?.productPlanIdentifier,
@@ -977,6 +1058,10 @@ internal class CustomerCenterViewModelImpl(
     }
 
     override fun contactSupport(context: Context, supportEmail: String) {
+        if (previewProvider != null) {
+            performPreviewAction(CustomerCenterPreviewAction.ContactSupport(supportEmail))
+            return
+        }
         val intent = Intent(Intent.ACTION_SENDTO).apply {
             data = "mailto:$supportEmail".toUri()
             putExtra(Intent.EXTRA_SUBJECT, "Support Request")
@@ -987,6 +1072,10 @@ internal class CustomerCenterViewModelImpl(
 
     @SuppressWarnings("ForbiddenComment")
     override fun openURL(context: Context, url: String, method: HelpPath.OpenMethod) {
+        if (previewProvider != null) {
+            performPreviewAction(CustomerCenterPreviewAction.OpenUrl(url))
+            return
+        }
         val openingMethod = when (method) {
             HelpPath.OpenMethod.IN_APP -> URLOpeningMethod.IN_APP_BROWSER
             HelpPath.OpenMethod.EXTERNAL,
@@ -1009,7 +1098,7 @@ internal class CustomerCenterViewModelImpl(
     ): Boolean {
         if (!promotionalOffer.eligible) {
             Logger.d(
-                "User not eligible for promo with id '${promotionalOffer.androidOfferId}'. " +
+                "User not eligible for promo '${promotionalOffer.title}'. " +
                     "Check eligibility configuration in the dashboard, and make sure the user has " +
                     "an active/expired subscription for the product with id '${product.id}'.",
             )
@@ -1059,6 +1148,11 @@ internal class CustomerCenterViewModelImpl(
             return
         }
         val purchaseParams = PurchaseParams.Builder(activity, subscriptionOption)
+        if (previewProvider?.store == Store.PLAY_STORE) {
+            val selected = (_state.value as? CustomerCenterState.Success)?.currentDestination
+                as? CustomerCenterDestination.PromotionalOffer
+            selected?.purchaseInformation?.productIdentifier?.let { purchaseParams.oldProductId(it) }
+        }
         try {
             val result = purchases.awaitPurchase(purchaseParams)
             notifyListenersForPromotionalOfferSucceeded(
@@ -1160,6 +1254,7 @@ internal class CustomerCenterViewModelImpl(
 
     @Suppress("LongMethod")
     private suspend fun loadCustomerCenter(isRefresh: Boolean) {
+        val generation = loadGeneration.incrementAndGet()
         _state.update { state ->
             if (isRefresh && state is CustomerCenterState.Success) {
                 // For refresh, keep Success state but set isRefreshing flag
@@ -1218,21 +1313,31 @@ internal class CustomerCenterViewModelImpl(
                 shouldShowPurchaseHistory = customerCenterConfigData.support.displayPurchaseHistoryLink == true &&
                     customerInfo.shouldShowSeeAllPurchases(),
             )
+            if (generation != loadGeneration.get()) return
             val mainScreenPaths = computeMainScreenPaths(successState)
 
             _state.update { currentState ->
-                successState.copy(mainScreenPaths = mainScreenPaths)
-                    .preservingUIStateIfRefresh(isRefresh, currentState)
+                if (generation == loadGeneration.get()) {
+                    successState.copy(mainScreenPaths = mainScreenPaths)
+                        .preservingUIStateIfRefresh(isRefresh, currentState)
+                } else {
+                    currentState
+                }
             }
         } catch (e: PurchasesException) {
-            _state.update { currentState ->
-                if (isRefresh && currentState is CustomerCenterState.Success) {
-                    // On error during refresh, keep the existing state but clear isRefreshing
-                    Logger.e("Error refreshing Customer Center data, keeping existing state", e)
-                    currentState.copy(isRefreshing = false)
-                } else {
-                    CustomerCenterState.Error(e.error)
-                }
+            handleLoadError(e, isRefresh, generation)
+        }
+    }
+
+    private fun handleLoadError(error: PurchasesException, isRefresh: Boolean, generation: Long) {
+        _state.update { currentState ->
+            if (generation != loadGeneration.get()) {
+                currentState
+            } else if (isRefresh && currentState is CustomerCenterState.Success) {
+                Logger.e("Error refreshing Customer Center data, keeping existing state", error)
+                currentState.copy(isRefreshing = false)
+            } else {
+                CustomerCenterState.Error(error.error)
             }
         }
     }
@@ -1242,14 +1347,79 @@ internal class CustomerCenterViewModelImpl(
         previousState: CustomerCenterState,
     ): CustomerCenterState.Success {
         if (!isRefresh || previousState !is CustomerCenterState.Success) return this
+        val selected = previousState.navigationState.backStack
+            .filterIsInstance<CustomerCenterDestination.SelectedPurchaseDetail>().firstOrNull()
+        val refreshed = selected?.let { refreshedPurchase(it.purchaseInformation) }
+        val previewSelectionChanged = previewProvider != null && selected != null
+        val navigation = if (previewProvider == null) {
+            previousState.navigationState
+        } else {
+            refreshedNavigation(previousState.navigationState)
+        }
+        val paths = if (previewSelectionChanged && refreshed == null) {
+            emptyList()
+        } else if (previewSelectionChanged) {
+            customerCenterConfigData.getManagementScreen()?.let {
+                PathUtils.filterSubscriptionSpecificPaths(
+                    supportedPaths(refreshed, it, customerCenterConfigData.localization),
+                )
+            }.orEmpty()
+        } else {
+            previousState.detailScreenPaths
+        }
         return copy(
-            navigationState = previousState.navigationState,
-            navigationButtonType = previousState.navigationButtonType,
+            navigationState = navigation,
+            navigationButtonType = if (previewProvider == null) {
+                previousState.navigationButtonType
+            } else if (navigation.canNavigateBack) {
+                CustomerCenterState.NavigationButtonType.BACK
+            } else {
+                CustomerCenterState.NavigationButtonType.CLOSE
+            },
             restorePurchasesState = previousState.restorePurchasesState,
             showSupportTicketSuccessSnackbar = previousState.showSupportTicketSuccessSnackbar,
-            detailScreenPaths = previousState.detailScreenPaths,
+            detailScreenPaths = paths,
         )
     }
+
+    private fun CustomerCenterState.Success.refreshedNavigation(
+        previousNavigation: CustomerCenterNavigationState,
+    ): CustomerCenterNavigationState {
+        val destinations = previousNavigation.backStack.map { destination ->
+            when (destination) {
+                is CustomerCenterDestination.SelectedPurchaseDetail ->
+                    refreshedPurchase(
+                        destination.purchaseInformation,
+                    )?.let { destination.copy(purchaseInformation = it) }
+                is CustomerCenterDestination.PromotionalOffer -> {
+                    val originalPurchase = destination.purchaseInformation
+                    if (originalPurchase == null) {
+                        destination
+                    } else {
+                        refreshedPurchase(originalPurchase)?.let { destination.copy(purchaseInformation = it) }
+                    }
+                }
+                else -> destination
+            }
+        }
+        return if (destinations.any { it == null }) {
+            navigationState
+        } else {
+            previousNavigation.copy(backStack = ArrayDeque(destinations.filterNotNull()))
+        }
+    }
+
+    private fun CustomerCenterState.Success.refreshedPurchase(purchase: PurchaseInformation): PurchaseInformation? =
+        purchases.firstOrNull { it.productIdentifier == purchase.productIdentifier }
+
+    private fun currentPreviewPurchase(purchase: PurchaseInformation?): PurchaseInformation? =
+        if (previewProvider == null) {
+            purchase
+        } else {
+            purchase?.let {
+                (_state.value as? CustomerCenterState.Success)?.refreshedPurchase(it)
+            }
+        }
 
     override fun onActivityStopped(isChangingConfigurations: Boolean) {
         if (!isChangingConfigurations) {
@@ -1402,10 +1572,16 @@ internal class CustomerCenterViewModelImpl(
                 // which is common for old products. Purchases.getProducts would return all products
                 // with the same product ID but different base plan IDs. That way we can find the most relevant product.
                 findTargetProduct(crossProductPromotion.targetProductId, googleProduct.basePlanId!!)
+            previewProvider != null -> purchases.awaitGetProduct(crossProductPromotion.targetProductId, null)
             else -> null
         }
 
         if (targetProduct == null) {
+            reportPreviewOfferIssue(
+                product.id,
+                CustomerCenterPreviewDiagnosticReason.TARGET_PRODUCT_NOT_FOUND,
+                crossProductPromotion.targetProductId,
+            )
             Logger.d(
                 "Could not find discount of product (${crossProductPromotion.targetProductId}) " +
                     "for active subscription ${product.id}",
@@ -1413,9 +1589,25 @@ internal class CustomerCenterViewModelImpl(
             return null
         }
 
-        return getCustomerCenterSubscriptionOption(
-            crossProductPromotion.storeOfferIdentifier,
-            targetProduct,
+        val option = getCustomerCenterSubscriptionOption(crossProductPromotion.storeOfferIdentifier, targetProduct)
+        if (option == null) {
+            reportPreviewOfferIssue(
+                product.id,
+                CustomerCenterPreviewDiagnosticReason.PROMOTIONAL_OFFER_NOT_FOUND,
+                crossProductPromotion.storeOfferIdentifier,
+            )
+        }
+        return option
+    }
+
+    private fun reportPreviewOfferIssue(
+        productId: String,
+        reason: CustomerCenterPreviewDiagnosticReason,
+        identifier: String,
+    ) {
+        previewProvider?.onDiagnosticsUpdated(
+            previewPathDiagnostics +
+                CustomerCenterPreviewDiagnostic("promotional_offer", "", productId, false, reason, identifier),
         )
     }
 
@@ -1439,7 +1631,7 @@ internal class CustomerCenterViewModelImpl(
                 is GoogleSubscriptionOption ->
                     option.tags.contains(SharedConstants.RC_CUSTOMER_CENTER_TAG) && option.offerId == offerIdentifier
 
-                else -> false
+                else -> previewProvider != null && option.id == offerIdentifier
             }
         }
     }
@@ -1576,6 +1768,21 @@ internal class CustomerCenterViewModelImpl(
     }
 
     private fun tryFallbackToCurrentOffering(context: Context) {
+        if (previewProvider != null) {
+            viewModelScope.launch {
+                try {
+                    val offering = purchases.awaitOfferings().current
+                    if (offering != null) {
+                        previewProvider.handleAction(CustomerCenterPreviewAction.ShowPaywall(offering))
+                    } else {
+                        handlePaywallError("No offering available for preview", PurchasesErrorCode.ConfigurationError)
+                    }
+                } catch (e: PurchasesException) {
+                    _actionError.value = e.error
+                }
+            }
+            return
+        }
         Purchases.sharedInstance.getOfferingsWith(
             onError = { error ->
                 handlePaywallError("Failed to get current offering: ${error.message}", error.code)
@@ -1596,6 +1803,10 @@ internal class CustomerCenterViewModelImpl(
     }
 
     private fun launchPaywallActivity(context: Context, offering: Offering) {
+        if (previewProvider != null) {
+            performPreviewAction(CustomerCenterPreviewAction.ShowPaywall(offering))
+            return
+        }
         try {
             Logger.d("Showing paywall for offering: ${offering.identifier}")
 
@@ -1620,6 +1831,27 @@ internal class CustomerCenterViewModelImpl(
             handlePaywallError("Security error launching paywall: ${e.message}", PurchasesErrorCode.UnknownError)
         } catch (e: IllegalArgumentException) {
             handlePaywallError("Invalid argument for paywall: ${e.message}", PurchasesErrorCode.UnknownError)
+        }
+    }
+
+    private fun performPreviewPlatformAction(type: HelpPath.PathType, productId: String?) {
+        if (previewProvider == null) return
+        val action = when (type) {
+            HelpPath.PathType.REFUND_REQUEST -> CustomerCenterPreviewAction.RequestRefund(productId)
+            HelpPath.PathType.CHANGE_PLANS -> CustomerCenterPreviewAction.ChangePlans(productId)
+            else -> return
+        }
+        performPreviewAction(action)
+    }
+
+    private fun performPreviewAction(action: CustomerCenterPreviewAction) {
+        val provider = previewProvider ?: return
+        viewModelScope.launch {
+            try {
+                provider.handleAction(action)
+            } catch (e: PurchasesException) {
+                _actionError.value = e.error
+            }
         }
     }
 

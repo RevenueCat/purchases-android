@@ -62,7 +62,6 @@ class BackendGetCustomerCenterConfigTest {
                         title = "Request a refund",
                         type = HelpPath.PathType.REFUND_REQUEST,
                         promotionalOffer = HelpPath.PathDetail.PromotionalOffer(
-                            androidOfferId = "rc-refund-offer",
                             eligible = true,
                             title = "Wait!",
                             subtitle = "Before you go, here's a one-time offer to continue at a discount.",
@@ -91,7 +90,6 @@ class BackendGetCustomerCenterConfigTest {
                                     id = "cancel_survey_too_expensive",
                                     title = "Too expensive",
                                     promotionalOffer = HelpPath.PathDetail.PromotionalOffer(
-                                        androidOfferId = "rc-cancel-offer",
                                         eligible = true,
                                         title = "Wait!",
                                         subtitle = "Before you go, here's a one-time offer to continue at a discount.",
@@ -108,7 +106,6 @@ class BackendGetCustomerCenterConfigTest {
                                     id = "cancel_survey_usage",
                                     title = "Don't use the app",
                                     promotionalOffer = HelpPath.PathDetail.PromotionalOffer(
-                                        androidOfferId = "rc-cancel-offer",
                                         eligible = true,
                                         title = "Wait!",
                                         subtitle = "Before you go, here's a one-time offer to continue at a discount.",

@@ -22,4 +22,5 @@
     <string name="cannot_open_link">Link səhvdir. Açıla bilmədi.</string>
     <string name="revenuecatui_purchase">Satın al</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">Önizləmə iş axınını yükləmək mümkün olmadı. Yenidən cəhd edin.</string>
 </resources>
