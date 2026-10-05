@@ -120,6 +120,7 @@ internal class WorkflowSkeleton private constructor(
                     components = component.tabs.firstOrNull()?.let { listOf(it.stack) } ?: emptyList(),
                     visible = component.visible,
                     size = component.size,
+                    backgroundColor = component.backgroundColor,
                     background = component.background,
                     padding = component.padding,
                     margin = component.margin,
@@ -133,6 +134,7 @@ internal class WorkflowSkeleton private constructor(
                     components = component.pages.firstOrNull()?.let { listOf(it) } ?: emptyList(),
                     visible = component.visible,
                     size = component.size,
+                    backgroundColor = component.backgroundColor,
                     background = component.background,
                     padding = component.padding,
                     margin = component.margin,
@@ -175,7 +177,9 @@ internal class WorkflowSkeleton private constructor(
             visible = image.visible,
             size = image.size,
             maskShape = image.maskShape,
-            colorOverlay = if (contentHidden) CLEAR else tone,
+            // An overlay paints over the bitmap, so a clear one would leave the real image showing.
+            // Inside a hidden block the tone matches the block, which is what makes the image vanish.
+            colorOverlay = tone,
             fitMode = image.fitMode,
             padding = image.padding,
             margin = image.margin,
@@ -210,11 +214,11 @@ internal class WorkflowSkeleton private constructor(
 
     @OptIn(InternalRevenueCatAPI::class)
     private fun isVisible(color: ColorScheme): Boolean =
-        alpha(color.light, colors) > 0 || alpha(color.dark ?: color.light, colors) > 0
+        alpha(color.light, colors, dark = false) > 0 || alpha(color.dark ?: color.light, colors, dark = true) > 0
 
     @OptIn(InternalRevenueCatAPI::class)
-    private fun alpha(color: ColorInfo, colors: Map<ColorAlias, ColorScheme>): Int =
-        argbValues(color, colors).maxOfOrNull { (it ushr ALPHA_SHIFT) and COLOR_MASK } ?: 0
+    private fun alpha(color: ColorInfo, colors: Map<ColorAlias, ColorScheme>, dark: Boolean): Int =
+        argbValues(color, colors, dark).maxOfOrNull { (it ushr ALPHA_SHIFT) and COLOR_MASK } ?: 0
 
     internal companion object {
 
@@ -300,17 +304,23 @@ internal class WorkflowSkeleton private constructor(
             }
 
         @OptIn(InternalRevenueCatAPI::class)
-        private fun argbValues(color: ColorInfo, colors: Map<ColorAlias, ColorScheme>): List<Int> =
+        private fun argbValues(
+            color: ColorInfo,
+            colors: Map<ColorAlias, ColorScheme>,
+            dark: Boolean,
+        ): List<Int> =
             when (color) {
                 is ColorInfo.Hex -> listOf(color.value)
                 is ColorInfo.Gradient.Linear -> color.points.map { it.color }
                 is ColorInfo.Gradient.Radial -> color.points.map { it.color }
-                is ColorInfo.Alias -> colors[color.value]?.let { argbValues(it.light, emptyMap()) } ?: emptyList()
+                is ColorInfo.Alias -> colors[color.value]
+                    ?.let { argbValues(if (dark) it.dark ?: it.light else it.light, emptyMap(), dark) }
+                    ?: emptyList()
             }
 
         @OptIn(InternalRevenueCatAPI::class)
         private fun brightness(color: ColorInfo, colors: Map<ColorAlias, ColorScheme>, dark: Boolean): Double {
-            val values = argbValues(color, colors).map { argb ->
+            val values = argbValues(color, colors, dark).map { argb ->
                 (
                     RED_WEIGHT * ((argb ushr RED_SHIFT) and COLOR_MASK) +
                         GREEN_WEIGHT * ((argb ushr GREEN_SHIFT) and COLOR_MASK) +

@@ -1,10 +1,12 @@
 package com.revenuecat.purchases.ui.revenuecatui.workflow
 
+import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PaywallComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.VideoComponent
 import com.revenuecat.purchases.paywalls.components.WebViewComponent
@@ -31,6 +33,7 @@ class WorkflowSkeletonTests {
 
     private val white = ColorScheme(light = ColorInfo.Hex(0xFFFFFFFF.toInt()))
     private val green = ColorScheme(light = ColorInfo.Hex(0xFF00FF00.toInt()))
+    private val clear = ColorScheme(light = ColorInfo.Hex(0x00000000))
 
     private val imageUrls = ThemeImageUrls(
         light = ImageUrls(
@@ -118,6 +121,60 @@ class WorkflowSkeletonTests {
         val transformed = WorkflowSkeleton.transform(dataWith(StackComponent(components = emptyList())))
 
         assertThat(transformed.exitOffers).isNull()
+    }
+
+    @Test
+    fun `covers an image inside a hidden block instead of leaving the bitmap bare`() {
+        val filledCard = StackComponent(
+            components = listOf(ImageComponent(source = imageUrls)),
+            backgroundColor = green,
+        )
+
+        val card = transformedChildren(filledCard).first() as StackComponent
+        val image = card.components.first() as ImageComponent
+
+        // A clear overlay would paint nothing and leave the real image showing through the block.
+        assertThat(image.colorOverlay).isNotNull
+        assertThat(image.colorOverlay).isNotEqualTo(clear)
+    }
+
+    @Test
+    fun `resolves an alias to its dark colour when it measures the dark background`() {
+        val alias = ColorAlias("brand")
+        val data = PaywallComponentsData(
+            templateName = "template",
+            assetBaseURL = URL("https://example.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(TextComponent(LocalizationKey("k"), green, fontSize = 20))),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Alias(alias), dark = ColorInfo.Alias(alias))),
+                ),
+            ),
+            componentsLocalizations = mapOf(LocaleId("en_US") to emptyMap()),
+        )
+        // Light swatch is bright, dark swatch is nearly black. Reading light for both would pick the
+        // same tone twice; the dark side must pick the opposite one.
+        val colors = mapOf(
+            alias to ColorScheme(light = ColorInfo.Hex(0xFFFFFFFF.toInt()), dark = ColorInfo.Hex(0xFF000000.toInt())),
+        )
+
+        val text = WorkflowSkeleton.transform(data, colors)
+            .componentsConfig.base.stack.components.first() as TextComponent
+
+        assertThat(text.color.light).isNotEqualTo(text.color.dark)
+    }
+
+    @Test
+    fun `keeps a tabs legacy background colour so it still counts as a filled block`() {
+        val tabs = TabsComponent(
+            backgroundColor = green,
+            control = TabsComponent.TabControl.Buttons(StackComponent(components = emptyList())),
+            tabs = listOf(TabsComponent.Tab(id = "a", stack = StackComponent(components = emptyList()))),
+        )
+
+        val collapsed = transformedChildren(tabs).first() as StackComponent
+
+        assertThat(collapsed.backgroundColor).isNotNull
     }
 
     private fun iconFormats() = IconComponent.Formats(
