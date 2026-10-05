@@ -66,6 +66,7 @@ import com.revenuecat.purchases.common.sdksettings.SdkSettingsConfigProvider
 import com.revenuecat.purchases.common.sdksettings.SdkSettingsListener
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
+import com.revenuecat.purchases.common.subscriberdimensions.SubscriberDimensionsConfigProvider
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.warnLog
@@ -191,6 +192,8 @@ internal class PurchasesOrchestrator(
     internal val audiencesConfigProvider: AudiencesConfigProvider,
     @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal val sdkSettingsConfigProvider: SdkSettingsConfigProvider,
+    @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal val subscriberDimensionsConfigProvider: SubscriberDimensionsConfigProvider,
     @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal val tokenManager: TokenManager,
     val adTracker: AdTracker = AdTracker(adEventsManager),
@@ -982,6 +985,7 @@ internal class PurchasesOrchestrator(
         this.checkpointsConfigProvider.close()
         this.audiencesConfigProvider.close()
         this.sdkSettingsConfigProvider.close()
+        this.subscriberDimensionsConfigProvider.close()
         this.tokenManager.close()
 
         billing.close()
