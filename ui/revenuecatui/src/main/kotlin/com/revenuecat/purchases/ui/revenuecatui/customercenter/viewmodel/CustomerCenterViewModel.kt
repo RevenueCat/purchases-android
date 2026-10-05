@@ -66,6 +66,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.shouldShowSe
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.extensions.getLocalizedDescription
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterDestination
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterNavigationState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.resolveOfferingSuspend
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -86,8 +87,10 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import java.util.ArrayDeque
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicLong
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion as CrossProductPromotion
 
 @Suppress("TooManyFunctions")
@@ -234,6 +237,7 @@ internal class CustomerCenterViewModelImpl(
     private val listener: CustomerCenterListener? = null,
     private val previewProvider: CustomerCenterPreviewProvider? = null,
 ) : ViewModel(), CustomerCenterViewModel {
+    private val loadGeneration = AtomicLong()
     private var previewPathDiagnostics: List<CustomerCenterPreviewDiagnostic> = emptyList()
 
     companion object {
@@ -283,18 +287,19 @@ internal class CustomerCenterViewModelImpl(
                     notifyListenersForFeedbackSurveyCompleted(it.id)
 
                     viewModelScope.launch {
+                        val currentPurchase = currentPreviewPurchase(purchaseInformation)
                         val promotionalOfferDisplayed =
                             handlePromotionalOffer(
                                 context,
-                                purchaseInformation?.product,
+                                currentPurchase?.product,
                                 it.promotionalOffer,
                                 path,
-                                purchaseInformation,
+                                currentPurchase,
                             )
                         if (!promotionalOfferDisplayed) {
                             // No promotional offer, close survey and execute main path action
                             goBackToMain()
-                            mainPathAction(path, context, purchaseInformation)
+                            mainPathAction(path, context, currentPurchase)
                         }
                     }
                 } ?: run {
@@ -1249,6 +1254,7 @@ internal class CustomerCenterViewModelImpl(
 
     @Suppress("LongMethod")
     private suspend fun loadCustomerCenter(isRefresh: Boolean) {
+        val generation = loadGeneration.incrementAndGet()
         _state.update { state ->
             if (isRefresh && state is CustomerCenterState.Success) {
                 // For refresh, keep Success state but set isRefreshing flag
@@ -1307,21 +1313,31 @@ internal class CustomerCenterViewModelImpl(
                 shouldShowPurchaseHistory = customerCenterConfigData.support.displayPurchaseHistoryLink == true &&
                     customerInfo.shouldShowSeeAllPurchases(),
             )
+            if (generation != loadGeneration.get()) return
             val mainScreenPaths = computeMainScreenPaths(successState)
 
             _state.update { currentState ->
-                successState.copy(mainScreenPaths = mainScreenPaths)
-                    .preservingUIStateIfRefresh(isRefresh, currentState)
+                if (generation == loadGeneration.get()) {
+                    successState.copy(mainScreenPaths = mainScreenPaths)
+                        .preservingUIStateIfRefresh(isRefresh, currentState)
+                } else {
+                    currentState
+                }
             }
         } catch (e: PurchasesException) {
-            _state.update { currentState ->
-                if (isRefresh && currentState is CustomerCenterState.Success) {
-                    // On error during refresh, keep the existing state but clear isRefreshing
-                    Logger.e("Error refreshing Customer Center data, keeping existing state", e)
-                    currentState.copy(isRefreshing = false)
-                } else {
-                    CustomerCenterState.Error(e.error)
-                }
+            handleLoadError(e, isRefresh, generation)
+        }
+    }
+
+    private fun handleLoadError(error: PurchasesException, isRefresh: Boolean, generation: Long) {
+        _state.update { currentState ->
+            if (generation != loadGeneration.get()) {
+                currentState
+            } else if (isRefresh && currentState is CustomerCenterState.Success) {
+                Logger.e("Error refreshing Customer Center data, keeping existing state", error)
+                currentState.copy(isRefreshing = false)
+            } else {
+                CustomerCenterState.Error(error.error)
             }
         }
     }
@@ -1331,21 +1347,18 @@ internal class CustomerCenterViewModelImpl(
         previousState: CustomerCenterState,
     ): CustomerCenterState.Success {
         if (!isRefresh || previousState !is CustomerCenterState.Success) return this
-        val selected = previousState.currentDestination as? CustomerCenterDestination.SelectedPurchaseDetail
-        val refreshed = selected?.let { old ->
-            purchases.firstOrNull {
-                it.productIdentifier == old.purchaseInformation.productIdentifier
-            }
-        }
+        val selected = previousState.navigationState.backStack
+            .filterIsInstance<CustomerCenterDestination.SelectedPurchaseDetail>().firstOrNull()
+        val refreshed = selected?.let { refreshedPurchase(it.purchaseInformation) }
         val previewSelectionChanged = previewProvider != null && selected != null
-        val navigation = when {
-            !previewSelectionChanged -> previousState.navigationState
-            refreshed == null -> navigationState
-            else -> previousState.navigationState.pop().push(
-                CustomerCenterDestination.SelectedPurchaseDetail(refreshed, selected!!.title),
-            )
+        val navigation = if (previewProvider == null) {
+            previousState.navigationState
+        } else {
+            refreshedNavigation(previousState.navigationState)
         }
-        val paths = if (previewSelectionChanged) {
+        val paths = if (previewSelectionChanged && refreshed == null) {
+            emptyList()
+        } else if (previewSelectionChanged) {
             customerCenterConfigData.getManagementScreen()?.let {
                 PathUtils.filterSubscriptionSpecificPaths(
                     supportedPaths(refreshed, it, customerCenterConfigData.localization),
@@ -1356,7 +1369,7 @@ internal class CustomerCenterViewModelImpl(
         }
         return copy(
             navigationState = navigation,
-            navigationButtonType = if (!previewSelectionChanged) {
+            navigationButtonType = if (previewProvider == null) {
                 previousState.navigationButtonType
             } else if (navigation.canNavigateBack) {
                 CustomerCenterState.NavigationButtonType.BACK
@@ -1368,6 +1381,45 @@ internal class CustomerCenterViewModelImpl(
             detailScreenPaths = paths,
         )
     }
+
+    private fun CustomerCenterState.Success.refreshedNavigation(
+        previousNavigation: CustomerCenterNavigationState,
+    ): CustomerCenterNavigationState {
+        val destinations = previousNavigation.backStack.map { destination ->
+            when (destination) {
+                is CustomerCenterDestination.SelectedPurchaseDetail ->
+                    refreshedPurchase(
+                        destination.purchaseInformation,
+                    )?.let { destination.copy(purchaseInformation = it) }
+                is CustomerCenterDestination.PromotionalOffer -> {
+                    val originalPurchase = destination.purchaseInformation
+                    if (originalPurchase == null) {
+                        destination
+                    } else {
+                        refreshedPurchase(originalPurchase)?.let { destination.copy(purchaseInformation = it) }
+                    }
+                }
+                else -> destination
+            }
+        }
+        return if (destinations.any { it == null }) {
+            navigationState
+        } else {
+            previousNavigation.copy(backStack = ArrayDeque(destinations.filterNotNull()))
+        }
+    }
+
+    private fun CustomerCenterState.Success.refreshedPurchase(purchase: PurchaseInformation): PurchaseInformation? =
+        purchases.firstOrNull { it.productIdentifier == purchase.productIdentifier }
+
+    private fun currentPreviewPurchase(purchase: PurchaseInformation?): PurchaseInformation? =
+        if (previewProvider == null) {
+            purchase
+        } else {
+            purchase?.let {
+                (_state.value as? CustomerCenterState.Success)?.refreshedPurchase(it)
+            }
+        }
 
     override fun onActivityStopped(isChangingConfigurations: Boolean) {
         if (!isChangingConfigurations) {

@@ -2359,6 +2359,192 @@ class CustomerCenterViewModelTests {
     }
 
     @Test
+    fun `a slower initial load cannot overwrite a newer refresh`(): Unit = runBlocking {
+        setupPurchasesMock()
+        val model = setupViewModel()
+        model.state.filterIsInstance<CustomerCenterState.Success>().first()
+        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
+            "old_product" to subscriptionInfo("old_product", Store.PLAY_STORE, isActive = true),
+        )
+        every { customerInfo.activeSubscriptions } returns setOf("old_product")
+        val productLookupStarted = CompletableDeferred<Unit>()
+        val completeProductLookup = CompletableDeferred<Unit>()
+        coEvery { purchases.awaitGetProduct("old_product", any()) } coAnswers {
+            productLookupStarted.complete(Unit)
+            completeProductLookup.await()
+            null
+        }
+        val initialLoad = launch { model.loadCustomerCenter() }
+        withTimeout(2_000) { productLookupStarted.await() }
+        every { customerInfo.subscriptionsByProductIdentifier } returns emptyMap()
+        every { customerInfo.activeSubscriptions } returns emptySet()
+
+        model.refreshCustomerCenter()
+        val refreshed = model.state.value as CustomerCenterState.Success
+        assertThat(refreshed.purchases).isEmpty()
+        completeProductLookup.complete(Unit)
+        initialLoad.join()
+
+        assertThat(model.state.value).isEqualTo(refreshed)
+    }
+
+    @Test
+    fun `a slower initial load error cannot overwrite a newer refresh`(): Unit = runBlocking {
+        setupPurchasesMock()
+        val model = setupViewModel()
+        model.state.filterIsInstance<CustomerCenterState.Success>().first()
+        val loadStarted = CompletableDeferred<Unit>()
+        val failLoad = CompletableDeferred<Unit>()
+        var calls = 0
+        coEvery { purchases.awaitCustomerCenterConfigData() } coAnswers {
+            if (calls++ == 0) {
+                loadStarted.complete(Unit)
+                failLoad.await()
+                throw PurchasesException(PurchasesError(PurchasesErrorCode.UnknownError, "Old load failed"))
+            }
+            configData
+        }
+        val initialLoad = launch { model.loadCustomerCenter() }
+        withTimeout(2_000) { loadStarted.await() }
+
+        model.refreshCustomerCenter()
+        val refreshed = model.state.value
+        assertThat(refreshed).isInstanceOf(CustomerCenterState.Success::class.java)
+        failLoad.complete(Unit)
+        initialLoad.join()
+
+        assertThat(model.state.value).isEqualTo(refreshed)
+    }
+
+    @Test
+    fun `preview refresh updates purchase details beneath a survey`(): Unit = runBlocking {
+        setupPurchasesMock()
+        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
+            "selected_product" to subscriptionInfo("selected_product", Store.PLAY_STORE, isActive = true),
+        )
+        every { customerInfo.activeSubscriptions } returns setOf("selected_product")
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            previewProvider = mockk(relaxed = true),
+        )
+        val path = HelpPath(
+            id = "cancel", title = "Cancel", type = HelpPath.PathType.CANCEL,
+            feedbackSurvey = HelpPath.PathDetail.FeedbackSurvey("Why?", emptyList()),
+        )
+        val state = setupSuccessLoadScreen(path, model)
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        model.selectPurchase(state.purchases.single())
+        model.pathButtonPressed(context, path, state.purchases.single())
+        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
+            "selected_product" to subscriptionInfo("selected_product", Store.PLAY_STORE, isActive = false),
+        )
+        every { customerInfo.activeSubscriptions } returns emptySet()
+
+        model.refreshCustomerCenter()
+        val refreshed = model.state.value as CustomerCenterState.Success
+        assertThat(refreshed.currentDestination).isInstanceOf(CustomerCenterDestination.FeedbackSurvey::class.java)
+        assertThat(refreshed.detailScreenPaths).isEmpty()
+        val details = refreshed.navigationState.backStack
+            .filterIsInstance<CustomerCenterDestination.SelectedPurchaseDetail>().single()
+        assertThat(details.purchaseInformation.isExpired).isTrue()
+        model.onNavigationButtonPressed(context) {}
+        val returned = model.state.value as CustomerCenterState.Success
+        assertThat(returned.currentDestination).isEqualTo(details)
+        assertThat(returned.detailScreenPaths).isEmpty()
+    }
+
+    @Test
+    fun `preview refresh removes nested screens when their selected purchase disappears`(): Unit = runBlocking {
+        setupPurchasesMock()
+        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
+            "selected_product" to subscriptionInfo("selected_product", Store.PLAY_STORE, isActive = true),
+        )
+        every { customerInfo.activeSubscriptions } returns setOf("selected_product")
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            previewProvider = mockk(relaxed = true),
+        )
+        val path = HelpPath(
+            id = "cancel", title = "Cancel", type = HelpPath.PathType.CANCEL,
+            feedbackSurvey = HelpPath.PathDetail.FeedbackSurvey("Why?", emptyList()),
+        )
+        val state = setupSuccessLoadScreen(path, model)
+        model.selectPurchase(state.purchases.single())
+        model.pathButtonPressed(ApplicationProvider.getApplicationContext(), path, state.purchases.single())
+        every { customerInfo.subscriptionsByProductIdentifier } returns emptyMap()
+        every { customerInfo.activeSubscriptions } returns emptySet()
+
+        model.refreshCustomerCenter()
+
+        val refreshed = model.state.value as CustomerCenterState.Success
+        assertThat(refreshed.currentDestination).isInstanceOf(CustomerCenterDestination.Main::class.java)
+        assertThat(refreshed.navigationState.canNavigateBack).isFalse()
+        assertThat(refreshed.detailScreenPaths).isEmpty()
+        assertThat(refreshed.navigationButtonType).isEqualTo(CustomerCenterState.NavigationButtonType.CLOSE)
+    }
+
+    @Test
+    fun `preview survey uses the refreshed purchase and updates the offer destination`(): Unit = runBlocking {
+        setupPurchasesMock()
+        val source = TestData.Packages.monthly.product
+        val target = TestData.Packages.annual.product
+        val option = target.subscriptionOptions!!.first()
+        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
+            source.id to subscriptionInfo(source.id, Store.PLAY_STORE, isActive = true),
+        )
+        every { customerInfo.activeSubscriptions } returns setOf(source.id)
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            previewProvider = mockk(relaxed = true),
+        )
+        val offer = createPromotionalOffer(
+            productMapping = emptyMap(),
+            crossProductPromotions = mapOf(
+                source.id to HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion(option.id, target.id),
+            ),
+        )
+        val answer = HelpPath.PathDetail.FeedbackSurvey.Option("reason", "Reason", offer)
+        val path = HelpPath(
+            id = "cancel", title = "Cancel", type = HelpPath.PathType.CANCEL,
+            feedbackSurvey = HelpPath.PathDetail.FeedbackSurvey("Why?", listOf(answer)),
+        )
+        val initial = setupSuccessLoadScreen(path, model)
+        assertThat(initial.purchases.single().product).isNull()
+        model.selectPurchase(initial.purchases.single())
+        model.pathButtonPressed(ApplicationProvider.getApplicationContext(), path, initial.purchases.single())
+        coEvery { purchases.awaitGetProduct(source.id, any()) } returns source
+        coEvery { purchases.awaitGetProduct(target.id, null) } returns target
+        model.refreshCustomerCenter()
+        val survey = (model.state.value as CustomerCenterState.Success).currentDestination
+            as CustomerCenterDestination.FeedbackSurvey
+
+        survey.data.onAnswerSubmitted(answer)
+        ShadowLooper.idleMainLooper()
+
+        val displayed = (model.state.value as CustomerCenterState.Success).currentDestination
+            as CustomerCenterDestination.PromotionalOffer
+        assertThat(displayed.purchaseInformation?.product).isEqualTo(source)
+        assertThat(displayed.data.subscriptionOption.id).isEqualTo(option.id)
+        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
+            source.id to subscriptionInfo(source.id, Store.PLAY_STORE, isActive = false),
+        )
+        every { customerInfo.activeSubscriptions } returns emptySet()
+        model.refreshCustomerCenter()
+        val refreshed = model.state.value as CustomerCenterState.Success
+        val refreshedOffer = refreshed.currentDestination as CustomerCenterDestination.PromotionalOffer
+        assertThat(refreshedOffer.purchaseInformation?.isExpired).isTrue()
+        assertThat(refreshed.navigationState.backStack
+            .filterIsInstance<CustomerCenterDestination.SelectedPurchaseDetail>().single().purchaseInformation.isExpired)
+            .isTrue()
+    }
+
+    @Test
     fun `preview intercepts management URL and support email actions`(): Unit = runBlocking {
         setupPurchasesMock()
         val provider = mockk<CustomerCenterPreviewProvider>(relaxed = true)
