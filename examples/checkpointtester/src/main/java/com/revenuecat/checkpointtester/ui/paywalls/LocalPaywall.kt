@@ -33,8 +33,8 @@ import androidx.compose.ui.unit.dp
 import com.revenuecat.checkpointtester.checkpoints.CheckoutOutcome
 import com.revenuecat.checkpointtester.checkpoints.ParkedPaywallPresenter
 import com.revenuecat.checkpointtester.checkpoints.PaywallCheckout
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter
 import kotlinx.coroutines.launch
 
@@ -44,7 +44,7 @@ import kotlinx.coroutines.launch
  * continued without buying, or backed out through system back or a tap on the scrim); the SDK works out what the
  * user obtained.
  */
-@OptIn(InternalRevenueCatAPI::class)
+@OptIn(InviteOnlyCheckpointsAPI::class)
 @Composable
 fun LocalPaywall(
     request: ParkedPaywallPresenter.Request,
@@ -109,7 +109,7 @@ private class SheetUiState(
     val canPurchase: Boolean,
 )
 
-@OptIn(InternalRevenueCatAPI::class)
+@OptIn(InviteOnlyCheckpointsAPI::class)
 @Composable
 private fun SheetContent(
     request: ParkedPaywallPresenter.Request,

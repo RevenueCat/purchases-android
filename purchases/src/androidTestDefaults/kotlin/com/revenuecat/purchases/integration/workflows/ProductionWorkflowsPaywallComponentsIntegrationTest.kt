@@ -6,11 +6,11 @@ import com.revenuecat.purchases.Constants
 import com.revenuecat.purchases.ForceServerErrorStrategy
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import com.revenuecat.purchases.helpers.mockQueryProductDetails
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
@@ -70,7 +70,7 @@ class ProductionWorkflowsPaywallComponentsIntegrationTest : BasePurchasesIntegra
                 payload = "",
                 origin = HTTPResult.Origin.BACKEND,
                 requestDate = null,
-                verificationResult = VerificationResult.NOT_REQUESTED,
+                verificationResult = SignatureVerificationResult.NotRequested,
                 isLoadShedderResponse = false,
                 isFallbackURL = false,
             )

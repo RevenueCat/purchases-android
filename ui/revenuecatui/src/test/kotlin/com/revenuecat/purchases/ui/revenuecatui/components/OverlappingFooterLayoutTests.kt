@@ -1,8 +1,19 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -17,6 +28,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
+import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -27,12 +40,12 @@ import org.junit.runner.RunWith
  * full-height scrollable content, which reserves bottom clearance equal to the footer's measured
  * height ([Modifier.footerBottomPadding]) so the last content item can scroll clear of the footer.
  *
- * The root invariant guarded here: a background (image or color) must NOT change the size of the
- * element it decorates. An image background applied via [Modifier.background] previously used
- * `paint(sizeToIntrinsics = true)`, so the painter's intrinsic size (scaled by its contentScale
- * against the incoming constraints) inflated the container. For a sticky footer that meant it
- * measured taller than its content, over-reserving clearance and letting the main content scroll
- * entirely off-screen behind a transparent footer.
+ * The root invariants guarded here:
+ * - A background (image or color) must NOT change the size of the element it decorates. An image
+ *   background applied via [Modifier.background] previously used `paint(sizeToIntrinsics = true)`,
+ *   so the painter's intrinsic size inflated the container.
+ * - When the footer changes height after its first layout, the scrollable body must update its
+ *   bottom clearance so its final item can still scroll above the footer.
  */
 @RunWith(AndroidJUnit4::class)
 internal class OverlappingFooterLayoutTests {
@@ -88,5 +101,60 @@ internal class OverlappingFooterLayoutTests {
             // the fix it ballooned toward the painter's (Crop-scaled) 512px intrinsic height.
             assertThat(imageSize.height).isEqualTo(colorSize.height)
             assertThat(imageSize.width).isEqualTo(colorSize.width)
+        }
+
+    @Test
+    fun `last scroll item clears a footer whose height changes`(): Unit =
+        with(composeTestRule) {
+            val state = FakePaywallState()
+            var footerHeight by mutableStateOf(60.dp)
+            lateinit var scrollState: ScrollState
+
+            setContent {
+                scrollState = rememberScrollState()
+                Box(Modifier.size(width = 300.dp, height = 400.dp)) {
+                    PaywallComponentsScaffold(
+                        state = state,
+                        background = null,
+                        footerContent = {
+                            Box(
+                                Modifier
+                                    .testTag("footer")
+                                    .fillMaxWidth()
+                                    .height(footerHeight),
+                            )
+                        },
+                    ) {
+                        Column(
+                            Modifier
+                                .fillMaxSize()
+                                .verticalScroll(scrollState)
+                                .footerBottomPadding(state),
+                        ) {
+                            Spacer(Modifier.height(600.dp))
+                            Box(
+                                Modifier
+                                    .testTag("last-item")
+                                    .fillMaxWidth()
+                                    .height(40.dp),
+                            )
+                        }
+                    }
+                }
+            }
+
+            fun scrollToEndAndAssertLastItemClearsFooter() {
+                runOnIdle { runBlocking { scrollState.scrollTo(scrollState.maxValue) } }
+                waitForIdle()
+
+                val lastItemBottom = onNodeWithTag("last-item").fetchSemanticsNode().boundsInRoot.bottom
+                val footerTop = onNodeWithTag("footer").fetchSemanticsNode().boundsInRoot.top
+                assertThat(lastItemBottom).isEqualTo(footerTop)
+            }
+
+            scrollToEndAndAssertLastItemClearsFooter()
+
+            runOnIdle { footerHeight = 120.dp }
+            scrollToEndAndAssertLastItemClearsFooter()
         }
 }

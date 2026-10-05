@@ -47,6 +47,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallWarning
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.ui.revenuecatui.helpers.createLocaleFromString
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
+import java.text.NumberFormat
 import java.util.Date
 import java.util.Locale
 import android.os.LocaleList as FrameworkLocaleList
@@ -264,14 +265,18 @@ internal sealed interface PaywallState {
                 } else {
                     val deviceLanguageCode = locale.language.lowercase()
 
-                    // We pick the one with the same language as the device if available. If not, we just pick the
-                    // first. If the list is empty, we use the device locale with the storefront country.
+                    val fallbackLocale = Locale.Builder()
+                        .setLocale(locale.toJavaLocale())
+                        .setRegion(storefrontCountryCode.uppercase())
+                        .build()
+
+                    // Use a storefront locale with the same number format when possible, preserving its currency
+                    // symbol (for example, ￥ in Japan). Otherwise, keep the paywall language's number format.
                     val javaLocale = availableStorefrontCountryLocalesByLanguage[deviceLanguageCode]
-                        ?: availableStorefrontCountryLocalesByLanguage.values.firstOrNull()
-                        ?: Locale.Builder()
-                            .setLocale(locale.toJavaLocale())
-                            .setRegion(storefrontCountryCode.uppercase())
-                            .build()
+                        ?: availableStorefrontCountryLocalesByLanguage.values.firstOrNull {
+                            it.hasSameNumberFormatAs(fallbackLocale)
+                        }
+                        ?: fallbackLocale
 
                     javaLocale.toComposeLocale()
                 }
@@ -351,10 +356,11 @@ internal sealed interface PaywallState {
             /**
              * The measured height of the sticky-footer overlay in pixels. Set during the layout phase by
              * the custom Layout in [LoadedPaywallComponents], so main content can reserve bottom clearance
-             * (via [Modifier.footerBottomPadding]) in the same pass, without recomposition.
+             * (via [Modifier.footerBottomPadding]) in the same pass. This is observable so a later footer
+             * resize invalidates the main content's otherwise unchanged measurement constraints.
              */
             @get:JvmSynthetic
-            var footerHeightPx: Int = 0
+            var footerHeightPx by mutableIntStateOf(0)
                 @JvmSynthetic internal set
 
             /** Raised and cleared by the button, for the actions that begin and end with the click. */
@@ -512,6 +518,12 @@ internal fun getAvailableStorefrontCountryLocalesByLanguage(
             }
             .associateBy { it.language.lowercase() }
     }
+
+private const val NUMBER_FORMAT_SAMPLE = 1_234_567.89
+
+private fun Locale.hasSameNumberFormatAs(other: Locale): Boolean =
+    NumberFormat.getNumberInstance(this).format(NUMBER_FORMAT_SAMPLE) ==
+        NumberFormat.getNumberInstance(other).format(NUMBER_FORMAT_SAMPLE)
 
 internal fun PaywallState.loadedLegacy(): PaywallState.Loaded.Legacy? {
     return when (val state = this) {

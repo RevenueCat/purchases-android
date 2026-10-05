@@ -1,8 +1,8 @@
 package com.revenuecat.purchases.common
 
-import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import java.util.Date
 
 internal fun HTTPResult.Companion.createResult(
@@ -10,7 +10,7 @@ internal fun HTTPResult.Companion.createResult(
     payload: String = "{}",
     origin: HTTPResult.Origin = HTTPResult.Origin.BACKEND,
     requestDate: Date? = null,
-    verificationResult: VerificationResult = VerificationResult.NOT_REQUESTED,
+    verificationResult: SignatureVerificationResult = SignatureVerificationResult.NotRequested,
     isLoadShedderResponse: Boolean = false,
     isFallbackURL: Boolean = false,
 ) = HTTPResult(responseCode, payload, origin, requestDate, verificationResult, isLoadShedderResponse, isFallbackURL)

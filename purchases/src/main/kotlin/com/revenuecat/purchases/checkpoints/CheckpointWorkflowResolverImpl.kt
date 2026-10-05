@@ -24,6 +24,7 @@ import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.common.workflows.WorkflowStep
 import kotlinx.coroutines.CancellationException
+import java.util.UUID
 
 /**
  * Resolves a checkpoint through the `checkpoint_rules` topic: the checkpoint's rules are read from remote config
@@ -197,7 +198,13 @@ internal class CheckpointWorkflowResolverImpl(
             ?: return unservableRule(rule, "the offerings its steps present could not be fetched")
         debugLog { "Checkpoint resolved to workflow '${rule.workflowId}'" }
         workflowManager.prewarmWorkflowAssets(workflow, uiConfig)
-        return CheckpointResolution.MatchedWorkflow(workflow, uiConfig, offerings, checkpointRuleId = rule.id)
+        return CheckpointResolution.MatchedWorkflow(
+            workflow,
+            uiConfig,
+            offerings,
+            checkpointRuleId = rule.id,
+            traceId = UUID.randomUUID().toString(),
+        )
     }
 
     private suspend fun loadOfferings(checkpointIdentifier: String): Offerings? =

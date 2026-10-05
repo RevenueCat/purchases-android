@@ -129,7 +129,7 @@ internal class RewardVerificationManagerTest {
         // The ad was never loaded via loadAndTrackRewardedAd, so it has no TrackingFullScreenContentCallback
         // to read metadata from.
         assertNull(polledTrackingMetadata.captured)
-        assertEquals(AdCaptureMethod.ADAPTER, polledCaptureMethod.captured)
+        assertEquals(AdCaptureMethod.ANDROID_ADMOB_LEGACY_ADAPTER, polledCaptureMethod.captured)
     }
 
     @Test
@@ -188,7 +188,7 @@ internal class RewardVerificationManagerTest {
         assertFalse(completedResult!!.failed)
         assertEquals("client-transaction-id", polledClientTransactionId.captured)
         assertNull(polledTrackingMetadata.captured)
-        assertEquals(AdCaptureMethod.ADAPTER, polledCaptureMethod.captured)
+        assertEquals(AdCaptureMethod.ANDROID_ADMOB_LEGACY_ADAPTER, polledCaptureMethod.captured)
     }
 
     @Test

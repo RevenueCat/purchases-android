@@ -5,6 +5,7 @@ import com.revenuecat.purchases.CustomerInfoOriginalSource
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.utils.Iso8601Utils
@@ -70,7 +71,7 @@ class CustomerInfoFactoryTest {
             Responses.validFullPurchaserResponse,
             HTTPResult.Origin.BACKEND,
             null,
-            VerificationResult.NOT_REQUESTED,
+            SignatureVerificationResult.NotRequested,
             isLoadShedderResponse = false,
             isFallbackURL = false,
         )
@@ -86,7 +87,7 @@ class CustomerInfoFactoryTest {
             Responses.validFullPurchaserResponse,
             HTTPResult.Origin.BACKEND,
             null,
-            VerificationResult.NOT_REQUESTED,
+            SignatureVerificationResult.NotRequested,
             isLoadShedderResponse = true,
             isFallbackURL = false,
         )
@@ -102,7 +103,7 @@ class CustomerInfoFactoryTest {
             Responses.validFullPurchaserResponse,
             HTTPResult.Origin.BACKEND,
             null,
-            VerificationResult.NOT_REQUESTED,
+            SignatureVerificationResult.NotRequested,
             isLoadShedderResponse = false,
             isFallbackURL = false,
         )

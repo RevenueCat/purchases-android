@@ -35,8 +35,8 @@ import androidx.compose.ui.unit.dp
 import com.revenuecat.checkpointtester.checkpoints.CheckoutOutcome
 import com.revenuecat.checkpointtester.checkpoints.ParkedPaywallPresenter
 import com.revenuecat.checkpointtester.checkpoints.PaywallCheckout
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter
 import kotlinx.coroutines.launch
 
@@ -46,7 +46,7 @@ import kotlinx.coroutines.launch
  * error shows inline. Reports how the user left it (purchased, closed through the X, continued without buying, or
  * backed out through system back); the SDK works out what the user obtained.
  */
-@OptIn(InternalRevenueCatAPI::class)
+@OptIn(InviteOnlyCheckpointsAPI::class)
 @Composable
 fun GlobalPaywall(
     request: ParkedPaywallPresenter.Request,
@@ -102,7 +102,7 @@ private class PaywallUiState(
     val canPurchase: Boolean,
 )
 
-@OptIn(InternalRevenueCatAPI::class)
+@OptIn(InviteOnlyCheckpointsAPI::class)
 @Composable
 private fun PaywallBody(
     request: ParkedPaywallPresenter.Request,

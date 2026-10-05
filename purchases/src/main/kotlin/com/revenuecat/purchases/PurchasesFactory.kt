@@ -58,6 +58,7 @@ import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopicStore
 import com.revenuecat.purchases.common.safeResume
 import com.revenuecat.purchases.common.safeResumeWithException
+import com.revenuecat.purchases.common.sdksettings.SdkSettingsConfigProvider
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
@@ -193,10 +194,18 @@ internal class PurchasesFactory(
                 runningIntegrationTests = runningIntegrationTests,
             )
 
+            // The config layer is on everywhere except the customEntitlementComputation flavor, which doesn't
+            // serve paywalls this way. The manager is always constructed; when disabled it never touches the
+            // network or disk, so the whole graph below stays non-null in both flavors.
+            val remoteConfigEnabled = !appConfig.customEntitlementComputation
+
             var diagnosticsFileHelper: DiagnosticsFileHelper? = null
             var diagnosticsHelper: DiagnosticsHelper? = null
             var diagnosticsTracker: DiagnosticsTracker? = null
-            if (shouldInitializeDiagnostics(diagnosticsEnabled, appConfig.uiPreviewMode) && isAndroidNOrNewer()) {
+            // Collected regardless of `diagnosticsEnabled`: the remote `sdk_settings` decides at runtime whether
+            // collection stays on (and syncs) or stops and deletes what was written; the flag is only its fallback.
+            // Without the config layer that setting can never arrive, so the flag decides right away.
+            if (!appConfig.uiPreviewMode && isAndroidNOrNewer()) {
                 diagnosticsFileHelper = DiagnosticsFileHelper(FileHelper(contextForStorage))
                 diagnosticsHelper = DiagnosticsHelper(contextForStorage, diagnosticsFileHelper)
                 diagnosticsTracker = DiagnosticsTracker(
@@ -204,8 +213,12 @@ internal class PurchasesFactory(
                     diagnosticsFileHelper,
                     diagnosticsHelper,
                     eventsDispatcher,
+                    enabledBySdkConfiguration = diagnosticsEnabled,
                 )
-            } else if (shouldInitializeDiagnostics(diagnosticsEnabled, appConfig.uiPreviewMode)) {
+                if (!remoteConfigEnabled) {
+                    diagnosticsTracker.applyRemoteCollectionSetting(remoteEnabled = null)
+                }
+            } else if (diagnosticsEnabled && !appConfig.uiPreviewMode) {
                 warnLog { "Diagnostics are only supported on Android N or newer." }
             }
 
@@ -228,10 +241,6 @@ internal class PurchasesFactory(
 
             val localeProvider = DefaultLocaleProvider()
 
-            // The config layer is on everywhere except the customEntitlementComputation flavor, which doesn't
-            // serve paywalls this way. The manager is always constructed; when disabled it never touches the
-            // network or disk, so the whole graph below stays non-null in both flavors.
-            val remoteConfigEnabled = !appConfig.customEntitlementComputation
             val remoteConfigDiskCache = RemoteConfigDiskCache(contextForStorage)
             // Gated here, not just in the manager: the API source provider reads this store directly (bypassing
             // the manager's isDisabled gates), and a disk cache left behind by a pre-CEC install of the app must
@@ -365,10 +374,12 @@ internal class PurchasesFactory(
             )
             val checkpointsConfigProvider = CheckpointsConfigProvider(remoteConfigManager)
             val audiencesConfigProvider = AudiencesConfigProvider(remoteConfigManager)
+            val sdkSettingsConfigProvider = SdkSettingsConfigProvider(remoteConfigManager)
             remoteConfigManager.registerListener(uiConfigProvider)
             remoteConfigManager.registerListener(workflowsConfigProvider)
             remoteConfigManager.registerListener(checkpointsConfigProvider)
             remoteConfigManager.registerListener(audiencesConfigProvider)
+            remoteConfigManager.registerListener(sdkSettingsConfigProvider)
             // Cold-start-with-warm-disk: preload the in-memory caches from whatever is already committed on
             // disk without triggering a network config sync. A subsequent network commit re-warms with a
             // higher generation and supersedes this (store-if-newer). A no-op when the manager is disabled:
@@ -378,6 +389,7 @@ internal class PurchasesFactory(
             workflowsConfigProvider.warmAsync(initialGeneration)
             checkpointsConfigProvider.warmAsync(initialGeneration)
             audiencesConfigProvider.warmAsync(initialGeneration)
+            sdkSettingsConfigProvider.preloadAsync(initialGeneration)
 
             val identityManager = IdentityManager(
                 appConfig,
@@ -591,6 +603,7 @@ internal class PurchasesFactory(
                 workflowsConfigProvider = workflowsConfigProvider,
                 checkpointsConfigProvider = checkpointsConfigProvider,
                 audiencesConfigProvider = audiencesConfigProvider,
+                sdkSettingsConfigProvider = sdkSettingsConfigProvider,
                 localRulesEvaluator = localRulesEvaluator,
                 tokenManager = tokenManager,
             )
@@ -696,14 +709,6 @@ internal class PurchasesFactory(
             }
             return Thread(wrapperRunnable, threadName)
         }
-    }
-
-    companion object {
-        @VisibleForTesting
-        internal fun shouldInitializeDiagnostics(
-            diagnosticsEnabled: Boolean,
-            uiPreviewMode: Boolean,
-        ): Boolean = diagnosticsEnabled && !uiPreviewMode
     }
 }
 

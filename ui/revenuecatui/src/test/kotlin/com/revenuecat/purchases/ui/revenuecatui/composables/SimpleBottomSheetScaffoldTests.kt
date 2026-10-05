@@ -1,11 +1,19 @@
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
@@ -57,5 +65,36 @@ class SimpleBottomSheetScaffoldTests {
         waitForIdle()
 
         assertThat(events).containsExactlyInAnyOrder("compose:A", "dispose:A", "compose:B")
+    }
+
+    @Test
+    fun `content behind an open sheet is hidden from accessibility services`(): Unit = with(composeTestRule) {
+        val sheetState = SimpleSheetState()
+
+        setContent {
+            SimpleBottomSheetScaffold(
+                sheetState = sheetState,
+                modifier = Modifier.fillMaxSize(),
+                content = {
+                    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                        Text("Behind the sheet")
+                    }
+                },
+            )
+        }
+        onNodeWithText("Behind the sheet").assertIsDisplayed()
+
+        runOnUiThread {
+            sheetState.show(backgroundBlur = false, content = { Text("In the sheet") })
+        }
+        waitForIdle()
+
+        onNodeWithText("In the sheet").assertIsDisplayed()
+        onAllNodesWithText("Behind the sheet").assertCountEquals(0)
+
+        runOnUiThread { sheetState.hide() }
+        waitForIdle()
+
+        onNodeWithText("Behind the sheet").assertIsDisplayed()
     }
 }

@@ -3,12 +3,12 @@ package com.revenuecat.purchases.common.remoteconfig
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.networking.RCContainerTestData
 import com.revenuecat.purchases.common.networking.RCContentEncoding
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -55,7 +55,7 @@ class RemoteConfigManagerIntegrationTest {
     private var capturedManifest: String? = null
     private var capturedLastRefreshTime: Date? = null
     private var capturedPrefetchedBlobs: List<String>? = null
-    private lateinit var onSuccess: (RCContainer?, Date?, VerificationResult) -> Unit
+    private lateinit var onSuccess: (RCContainer?, Date?, SignatureVerificationResult) -> Unit
 
     @Before
     fun setup() {
@@ -386,7 +386,7 @@ class RemoteConfigManagerIntegrationTest {
     }
 
     private fun settle(container: RCContainer?) {
-        onSuccess.invoke(container, Date(), VerificationResult.VERIFIED)
+        onSuccess.invoke(container, Date(), SignatureVerificationResult.Verified)
     }
 
     private companion object {

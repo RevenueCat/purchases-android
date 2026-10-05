@@ -6,7 +6,6 @@ import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
@@ -20,6 +19,7 @@ import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.SyncDispatcher
 import io.mockk.every
@@ -560,5 +560,5 @@ class SubscriberAttributesPosterTests {
     private fun createResult(
         responseCode: Int,
         responseBody: String
-    ) = HTTPResult(responseCode, responseBody, HTTPResult.Origin.BACKEND, null, VerificationResult.NOT_REQUESTED, isLoadShedderResponse = false, isFallbackURL = false)
+    ) = HTTPResult(responseCode, responseBody, HTTPResult.Origin.BACKEND, null, SignatureVerificationResult.NotRequested, isLoadShedderResponse = false, isFallbackURL = false)
 }

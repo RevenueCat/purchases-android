@@ -5,7 +5,6 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.RewardVerificationPollStatus
 import com.revenuecat.purchases.VerifiedReward
-import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
@@ -15,6 +14,7 @@ import com.revenuecat.purchases.common.SyncDispatcher
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -88,6 +88,7 @@ class BackendGetRewardVerificationResultTest {
         backend.getRewardVerificationResult(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
+            adUnitId = null,
             onSuccess = { receivedResult = it },
             onError = { error -> fail("Expected success. Got error: $error") },
         )
@@ -98,7 +99,30 @@ class BackendGetRewardVerificationResultTest {
         verify(exactly = 1) {
             httpClient.performRequest(
                 mockBaseURL,
-                Endpoint.GetRewardVerification(appUserId, clientTransactionId),
+                Endpoint.GetRewardVerification(appUserId, clientTransactionId, null),
+                body = null,
+                postFieldsToSign = null,
+                requestHeaders = any(),
+            )
+        }
+    }
+
+    @Test
+    fun `getRewardVerificationResult passes ad unit id to endpoint`() {
+        mockHttpResult(payload = """{"status":"pending"}""")
+
+        backend.getRewardVerificationResult(
+            appUserID = appUserId,
+            clientTransactionId = clientTransactionId,
+            adUnitId = "ad_unit_1",
+            onSuccess = {},
+            onError = { error -> fail("Expected success. Got error: $error") },
+        )
+
+        verify(exactly = 1) {
+            httpClient.performRequest(
+                mockBaseURL,
+                Endpoint.GetRewardVerification(appUserId, clientTransactionId, "ad_unit_1"),
                 body = null,
                 postFieldsToSign = null,
                 requestHeaders = any(),
@@ -114,6 +138,7 @@ class BackendGetRewardVerificationResultTest {
         backend.getRewardVerificationResult(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
+            adUnitId = null,
             onSuccess = { receivedResult = it },
             onError = { error -> fail("Expected success. Got error: $error") },
         )
@@ -129,6 +154,7 @@ class BackendGetRewardVerificationResultTest {
         backend.getRewardVerificationResult(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
+            adUnitId = null,
             onSuccess = { receivedResult = it },
             onError = { error -> fail("Expected success. Got error: $error") },
         )
@@ -146,6 +172,7 @@ class BackendGetRewardVerificationResultTest {
         backend.getRewardVerificationResult(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
+            adUnitId = null,
             onSuccess = { receivedResult = it },
             onError = { error -> fail("Expected success. Got error: $error") },
         )
@@ -165,6 +192,7 @@ class BackendGetRewardVerificationResultTest {
         backend.getRewardVerificationResult(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
+            adUnitId = null,
             onSuccess = { receivedResult = it },
             onError = { error -> fail("Expected success. Got error: $error") },
         )
@@ -181,6 +209,7 @@ class BackendGetRewardVerificationResultTest {
         backend.getRewardVerificationResult(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
+            adUnitId = null,
             onSuccess = { fail("Expected error. Got success") },
             onError = { error -> obtainedError = error.error },
         )
@@ -200,6 +229,7 @@ class BackendGetRewardVerificationResultTest {
         backend.getRewardVerificationResult(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
+            adUnitId = null,
             onSuccess = { fail("Expected error. Got success") },
             onError = { error ->
                 obtainedError = error.error
@@ -218,12 +248,14 @@ class BackendGetRewardVerificationResultTest {
         asyncBackend.getRewardVerificationResult(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
+            adUnitId = null,
             onSuccess = { lock.countDown() },
             onError = { error -> fail("Expected success. Got error: $error") },
         )
         asyncBackend.getRewardVerificationResult(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
+            adUnitId = null,
             onSuccess = { lock.countDown() },
             onError = { error -> fail("Expected success. Got error: $error") },
         )
@@ -232,7 +264,7 @@ class BackendGetRewardVerificationResultTest {
         verify(exactly = 1) {
             httpClient.performRequest(
                 mockBaseURL,
-                Endpoint.GetRewardVerification(appUserId, clientTransactionId),
+                Endpoint.GetRewardVerification(appUserId, clientTransactionId, null),
                 body = null,
                 postFieldsToSign = null,
                 requestHeaders = any(),
@@ -263,7 +295,7 @@ class BackendGetRewardVerificationResultTest {
                 payload,
                 HTTPResult.Origin.BACKEND,
                 requestDate = null,
-                VerificationResult.NOT_REQUESTED,
+                SignatureVerificationResult.NotRequested,
                 isLoadShedderResponse = false,
                 isFallbackURL = false,
             )

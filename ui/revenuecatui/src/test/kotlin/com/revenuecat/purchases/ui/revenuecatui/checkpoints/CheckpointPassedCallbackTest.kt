@@ -70,8 +70,9 @@ class CheckpointPassedCallbackTest {
                 presentedCallIds += callId
                 mockPresenter
             },
-            defaultPresenterFactory = { purchases ->
-                DefaultPaywallPresenter(purchases) { _, _ -> mockPresenter }.also { defaultPresenter = it }
+            defaultPresenterFactory = { purchases, errorPresenter ->
+                DefaultPaywallPresenter(purchases, errorPresenter) { _, _ -> mockPresenter }
+                    .also { defaultPresenter = it }
             },
         )
     }
@@ -269,7 +270,13 @@ class CheckpointPassedCallbackTest {
     }
 
     private fun resolvesToWorkflow() {
-        resolvesTo(CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk(), checkpointRuleId = null))
+        resolvesTo(CheckpointResolution.MatchedWorkflow(
+            mockk(),
+            mockk(),
+            mockk(),
+            checkpointRuleId = null,
+            traceId = "trace-id",
+        ))
     }
 
     private fun cachedCustomerInfoHasActive(vararg identifiers: String) {

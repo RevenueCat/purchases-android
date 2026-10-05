@@ -11,6 +11,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -26,6 +27,8 @@ import com.revenuecat.purchases.ads.events.types.AdLoadedData
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
 import com.revenuecat.purchases.ads.events.types.AdOpenedData
 import com.revenuecat.purchases.ads.events.types.AdRevenueData
+import com.revenuecat.purchases.ads.events.types.AdRewardPromptAcceptedData
+import com.revenuecat.purchases.ads.events.types.AdRewardPromptShownData
 import com.revenuecat.sample.vanilla.data.Constants
 import com.unity3d.mediation.LevelPlayAdError
 import com.unity3d.mediation.LevelPlayAdInfo
@@ -133,8 +136,19 @@ internal fun RewardedAdContent(activity: Activity) {
         }
     }
 
+    LaunchedEffect(Unit) {
+        Purchases.sharedInstance.adTracker.trackRewardedAdPromptShown(
+            AdRewardPromptShownData(
+                mediatorName = AdMediatorName.LEVEL_PLAY,
+                placement = REWARDED_PLACEMENT,
+                adUnitId = Constants.LevelPlay.REWARDED_AD_UNIT_ID,
+            ),
+        )
+    }
+
     Text(
-        text = "Full-screen ad that rewards users. Tracks: Loaded, Displayed, Opened (on click), Revenue.",
+        text = "Full-screen ad that rewards users. " +
+            "Tracks: Prompt Shown, Prompt Accepted, Loaded, Displayed, Opened (on click), Revenue.",
         style = MaterialTheme.typography.bodySmall,
     )
     Text(
@@ -156,7 +170,16 @@ internal fun RewardedAdContent(activity: Activity) {
             Text("Load")
         }
         Button(
-            onClick = { rewardedAd.showAd(activity) },
+            onClick = {
+                Purchases.sharedInstance.adTracker.trackRewardedAdPromptAccepted(
+                    AdRewardPromptAcceptedData(
+                        mediatorName = AdMediatorName.LEVEL_PLAY,
+                        placement = REWARDED_PLACEMENT,
+                        adUnitId = Constants.LevelPlay.REWARDED_AD_UNIT_ID,
+                    ),
+                )
+                rewardedAd.showAd(activity)
+            },
             modifier = Modifier.weight(1f),
             enabled = rewardedAd.isAdReady,
         ) {

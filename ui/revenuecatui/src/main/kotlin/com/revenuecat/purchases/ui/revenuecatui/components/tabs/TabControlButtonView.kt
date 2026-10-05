@@ -34,7 +34,10 @@ internal fun TabControlButtonView(
             } else {
                 destinationIndex
             }
-            if (ordered.isNotEmpty()) {
+            // Built before the update so the origin fields still describe the tab being left, but
+            // tracked after it. Tracking reaches the app's PaywallListener on this same main thread
+            // message, so switching first lets the frame be scheduled before the app's callback.
+            val selection = if (ordered.isNotEmpty()) {
                 val originIndex = state.selectedTabIndex.coerceIn(0, ordered.lastIndex)
                 if (originIndex == resolvedTabIndex) {
                     state.update(selectedTabIndex = resolvedTabIndex)
@@ -42,31 +45,28 @@ internal fun TabControlButtonView(
                 }
                 val originTabId = ordered[originIndex]
                 val destinationTabId = style.tabId
-                componentInteractionTracker.track(
-                    paywallTabControlButtonSelection(
-                        tabsComponentName = style.tabsComponentName,
-                        destinationTabId = destinationTabId,
-                        originIndex = originIndex,
-                        destinationIndex = resolvedTabIndex,
-                        originContextName = style.tabContextNamesById[originTabId],
-                        destinationContextName = style.tabContextNamesById[destinationTabId],
-                        defaultIndex = style.tabsDefaultTabIndex,
-                    ),
+                paywallTabControlButtonSelection(
+                    tabsComponentName = style.tabsComponentName,
+                    destinationTabId = destinationTabId,
+                    originIndex = originIndex,
+                    destinationIndex = resolvedTabIndex,
+                    originContextName = style.tabContextNamesById[originTabId],
+                    destinationContextName = style.tabContextNamesById[destinationTabId],
+                    defaultIndex = style.tabsDefaultTabIndex,
                 )
             } else {
-                componentInteractionTracker.track(
-                    paywallTabControlButtonSelection(
-                        tabsComponentName = style.tabsComponentName,
-                        destinationTabId = style.tabId,
-                        originIndex = null,
-                        destinationIndex = null,
-                        originContextName = null,
-                        destinationContextName = null,
-                        defaultIndex = null,
-                    ),
+                paywallTabControlButtonSelection(
+                    tabsComponentName = style.tabsComponentName,
+                    destinationTabId = style.tabId,
+                    originIndex = null,
+                    destinationIndex = null,
+                    originContextName = null,
+                    destinationContextName = null,
+                    defaultIndex = null,
                 )
             }
             state.update(selectedTabIndex = resolvedTabIndex)
+            componentInteractionTracker.track(selection)
         },
     )
 }

@@ -18,8 +18,9 @@ import java.util.UUID
  * instance supplies one: presents the offering's configured paywall, falling back to the default paywall, in a
  * [CheckpointWorkflowPresenter] window over the current activity. It goes through the same contract an app
  * presenter does, and configures the paywall with the same [PaywallOptions] an app embedding it would (offering,
- * custom variables, dismiss button, [PaywallListener]), so what it does is available to app presenters. The one
- * exception is learning how the paywall was dismissed, which the paywall only reports internally.
+ * custom variables, dismiss button, [PaywallListener]), so what it does is available to app presenters. The two
+ * exceptions are learning how the paywall was dismissed, which the paywall only reports internally, and handing
+ * the paywall's errors to the checkpoint's [ErrorPresenter], which the paywall only offers internally.
  *
  * It reports how the user left the paywall, except that a purchase, or a restore that granted an entitlement the
  * user did not hold when the paywall opened, continues the flow whatever closed the window; a granting restore
@@ -30,6 +31,7 @@ import java.util.UUID
  */
 internal class DefaultPaywallPresenter(
     private val purchases: Purchases,
+    private val errorPresenter: ErrorPresenter,
     private val windowFactory: (callId: String, host: CheckpointPresentationHost) -> CheckpointWorkflowPresenter =
         { callId, host -> CheckpointWorkflowPresenter(callId, host) },
 ) : PaywallPresenter, CheckpointPresentationHost {
@@ -73,6 +75,7 @@ internal class DefaultPaywallPresenter(
                 .setDismissRequestWithExitOffering { _, _, reason ->
                     dismiss(reason == PaywallDismissReason.NAVIGATED_BACK)
                 }
+                .setErrorPresenter(errorPresenter.forCheckpoint(params.checkpointIdentifier, params.customVariables))
                 .setOffering(params.offering)
                 .setShouldDisplayDismissButton(true)
                 .setCustomVariables(params.customVariables)

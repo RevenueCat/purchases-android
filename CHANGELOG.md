@@ -1,3 +1,98 @@
+## 10.24.1
+## RevenueCatUI SDK
+### 🐞 Bugfixes
+* Fix paywall content clipping after footer resizes (#4363) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* feat(ads): send ad unit id to backend during reward polling (#4347) via Peter Porfy (@peterporfy)
+
+## 10.24.0
+## RevenueCat SDK
+### ✨ New Features
+* Track rewarded ad prompt shown and accepted events (#4352) via Drago Crnjac (@popcorn)
+
+### 🔄 Other Changes
+* Resolve the diagnostics collection decision at configure when remote config is disabled (#4353) via Toni Rico (@tonidero)
+* Chore(Paywalls): Support min/max on Fill sizes only (#4280) via Jacob Rakidzich (@JZDesign)
+* Drive diagnostics collection from the sdk_settings remote config (#4322) via Toni Rico (@tonidero)
+
+## 10.23.4
+## RevenueCatUI SDK
+### Paywallsv2
+#### 🐞 Bugfixes
+* Fix price formatting when paywall language lacks a storefront locale (#4268) via Josh Holtz (@joshdholtz)
+
+### 🔄 Other Changes
+* Add the sdk_settings remote config topic (#4302) via Toni Rico (@tonidero)
+* Mark the developer-facing checkpoints API @InviteOnlyCheckpointsAPI (#4338) via Toni Rico (@tonidero)
+* [SDK-4500] Add `is_synced` to `customer_info` purchase records (#4304) via Toni Rico (@tonidero)
+
+## 10.23.3
+## RevenueCat SDK
+### 📦 Dependency Updates
+* [RENOVATE] Update dependency com.google.android.libraries.ads.mobile.sdk:ads-mobile-sdk to v1.5.0 (#4331) via RevenueCat Git Bot (@RCGitBot)
+* [RENOVATE] Update circleci-orb (#4330) via RevenueCat Git Bot (@RCGitBot)
+
+## RevenueCatUI SDK
+### 🐞 Bugfixes
+* Accept underscore and digit as first character in custom variable keys (#4306) via Toni Rico (@tonidero)
+### Paywallsv2
+#### 🐞 Bugfixes
+* Apply the package selection before tracking it (#4298) via Jaewoong Eum (@skydoves)
+* fix: read paywall prices as words with TalkBack (#4327) via Facundo Menzella (@facumenzella)
+* fix: announce the selected package to TalkBack (#4296) via Facundo Menzella (@facumenzella)
+* fix: open paywall text links through the paywall when using TalkBack (#4326) via Facundo Menzella (@facumenzella)
+* fix: keep TalkBack inside the paywall bottom sheet (#4297) via Facundo Menzella (@facumenzella)
+
+### 🔄 Other Changes
+* Distinguish legacy and next-gen AdMob capture methods (#4329) via Pol Miro (@polmiro)
+* Update baseline profiles (#4332) via RevenueCat Git Bot (@RCGitBot)
+* Bump CI images and let Renovate track the circleci/android orb (#4310) via Toni Rico (@tonidero)
+* Stop running sdkmanager --update in CI (#4309) via Toni Rico (@tonidero)
+* Bump CI JDK to Liberica 21.0.12.1 and retry unit tests once on JVM crash (#4319) via Toni Rico (@tonidero)
+
+## 10.23.2
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Skip obfuscatedAccountId when the device already owns the subscription being purchased (#4308) via Toni Rico (@tonidero)
+
+## 10.23.1
+## RevenueCatUI SDK
+### 🐞 Bugfixes
+* fix(paywalls): don't resume workflow step pre-warm inside the composition snapshot (#4316) via Jamie Holwill (@jholwill)
+### Paywallsv2
+#### 🐞 Bugfixes
+* fix(paywalls): decode localized value based on derived type (#4303) via Sufi Gaffar (@sufigaffar)
+
+### 🔄 Other Changes
+* other: only announce backend integration test successes on recovery (#4289) via Facundo Menzella (@facumenzella)
+
+## 10.23.0
+## RevenueCat SDK
+### ✨ New Features
+* feat(admob): add next-gen SDK support (#3958) via Pol Miro (@polmiro)
+### 🐞 Bugfixes
+* Treat a -1 HTTP status code as a connection error (#4270) via Toni Rico (@tonidero)
+* fix: bypass app-installed HTTP response caches for API requests (#4271) via Toni Rico (@tonidero)
+
+### 🔄 Other Changes
+* Maestro flows for workflow experiments (#4290) via Facundo Menzella (@facumenzella)
+* Add signature verification failure context to diagnostics (#4288) via Toni Rico (@tonidero)
+* Add trace_id to the checkpoint hit event (#4291) via Facundo Menzella (@facumenzella)
+* test(admob): verify legacy adapter with latest Google Mobile Ads SDK (#4285) via Pol Miro (@polmiro)
+* IAM Phase 4: Endpoints (#4273) via Dave DeLong (@davedelong)
+* Chore(Paywalls): gate min/max size JSON decoding behind a build flag (#4250) via Jacob Rakidzich (@JZDesign)
+* Extract signature verification failure reasons (#4279) via Toni Rico (@tonidero)
+* build(deps): bump fastlane from 2.240.0 to 2.240.1 (#4286) via dependabot[bot] (@dependabot[bot])
+* build(deps): bump fastlane-plugin-revenuecat_internal from `a65e499` to `9f7a03e` (#4287) via dependabot[bot] (@dependabot[bot])
+* Update Google Mobile Ads Next-Gen SDK to 1.4.0 (#4283) via Pol Miro (@polmiro)
+* Serve checkpoint_rules and audiences from memory on the checkpoint path (#4275) via Toni Rico (@tonidero)
+* Auto-approve the next-version SNAPSHOT PR (#4284) via Álvaro Brey (@AlvaroBrey)
+* Update baseline profiles (#4281) via RevenueCat Git Bot (@RCGitBot)
+* build(deps): bump fastlane-plugin-revenuecat_internal from `6db1da0` to `fc64a1a` (#4277) via dependabot[bot] (@dependabot[bot])
+* Present the SDK's own offering paywall through PaywallPresenter (#4255) via Toni Rico (@tonidero)
+* build(deps): bump fastlane from 2.239.0 to 2.240.0 (#4269) via dependabot[bot] (@dependabot[bot])
+
 ## 10.22.1
 ## RevenueCat SDK
 ### 🐞 Bugfixes

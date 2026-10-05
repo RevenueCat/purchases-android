@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
 import com.revenuecat.purchases.EntitlementInfo
-import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import dev.drewhamilton.poko.Poko
 
 /**
@@ -9,7 +9,7 @@ import dev.drewhamilton.poko.Poko
  * [com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint]'s callback, which receives null instead when
  * nothing was presented.
  */
-@InternalRevenueCatAPI
+@InviteOnlyCheckpointsAPI
 @Poko
 public class FlowResult internal constructor(
     /** The entitlements the user obtained during this checkpoint. Empty when they obtained none. */
@@ -19,7 +19,7 @@ public class FlowResult internal constructor(
 /**
  * An entitlement the user obtained during a checkpoint.
  */
-@InternalRevenueCatAPI
+@InviteOnlyCheckpointsAPI
 @Poko
 public class ObtainedEntitlement internal constructor(
     /** The entitlement as it stands after the checkpoint. */

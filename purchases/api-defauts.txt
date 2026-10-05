@@ -746,6 +746,8 @@ package com.revenuecat.purchases.ads.events {
     method public void trackAdLoaded(com.revenuecat.purchases.ads.events.types.AdLoadedData data);
     method public void trackAdOpened(com.revenuecat.purchases.ads.events.types.AdOpenedData data);
     method public void trackAdRevenue(com.revenuecat.purchases.ads.events.types.AdRevenueData data);
+    method public void trackRewardedAdPromptAccepted(com.revenuecat.purchases.ads.events.types.AdRewardPromptAcceptedData data);
+    method public void trackRewardedAdPromptShown(com.revenuecat.purchases.ads.events.types.AdRewardPromptShownData data);
   }
 
 }
@@ -861,6 +863,24 @@ package com.revenuecat.purchases.ads.events.types {
     property public com.revenuecat.purchases.ads.events.types.AdRevenuePrecision EXACT;
     property public com.revenuecat.purchases.ads.events.types.AdRevenuePrecision PUBLISHER_DEFINED;
     property public com.revenuecat.purchases.ads.events.types.AdRevenuePrecision UNKNOWN;
+  }
+
+  @dev.drewhamilton.poko.Poko public final class AdRewardPromptAcceptedData {
+    ctor @KotlinOnly public AdRewardPromptAcceptedData(com.revenuecat.purchases.ads.events.types.AdMediatorName mediatorName, String? placement, String adUnitId);
+    method @InaccessibleFromKotlin public String getAdUnitId();
+    method @InaccessibleFromKotlin public String? getPlacement();
+    property public String adUnitId;
+    property public com.revenuecat.purchases.ads.events.types.AdMediatorName mediatorName;
+    property public String? placement;
+  }
+
+  @dev.drewhamilton.poko.Poko public final class AdRewardPromptShownData {
+    ctor @KotlinOnly public AdRewardPromptShownData(com.revenuecat.purchases.ads.events.types.AdMediatorName mediatorName, String? placement, String adUnitId);
+    method @InaccessibleFromKotlin public String getAdUnitId();
+    method @InaccessibleFromKotlin public String? getPlacement();
+    property public String adUnitId;
+    property public com.revenuecat.purchases.ads.events.types.AdMediatorName mediatorName;
+    property public String? placement;
   }
 
 }

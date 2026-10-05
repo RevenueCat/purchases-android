@@ -6,11 +6,11 @@ import com.revenuecat.purchases.ForceServerErrorStrategy
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
-import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigBlobStore
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import com.revenuecat.purchases.helpers.mockQueryProductDetails
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
@@ -130,7 +130,7 @@ abstract class BaseCachedOfferingsUsageIntegrationTest : BasePurchasesIntegratio
                             payload = "{}",
                             origin = HTTPResult.Origin.BACKEND,
                             requestDate = null,
-                            verificationResult = VerificationResult.VERIFIED_ON_DEVICE,
+                            verificationResult = SignatureVerificationResult.NotRequested,
                             isLoadShedderResponse = false,
                             isFallbackURL = false,
                         )

@@ -1564,7 +1564,7 @@ internal class TextComponentViewVariablesTests(
         // Select the first package to make sure the variables reflect its values.
         state.update(packages.first().identifier)
 
-        onNodeWithTag("text")
+        onNodeWithTag("text", useUnmergedTree = true)
             .onChild()
             .assertTextEquals(expectedText)
     }

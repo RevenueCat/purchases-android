@@ -3,9 +3,9 @@ package com.revenuecat.purchases.common.networking
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.createResult
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
@@ -86,7 +86,7 @@ class ETagManagerMemoryTest {
                 urlString = URL,
                 refreshETag = false,
                 requestDate = testDate,
-                verificationResult = VerificationResult.NOT_REQUESTED,
+                verificationResult = SignatureVerificationResult.NotRequested,
                 isLoadShedderResponse = false,
                 isFallbackURL = false,
             )
@@ -148,7 +148,7 @@ class ETagManagerMemoryTest {
             urlString = warmUpUrl,
             refreshETag = false,
             requestDate = testDate,
-            verificationResult = VerificationResult.NOT_REQUESTED,
+            verificationResult = SignatureVerificationResult.NotRequested,
             isLoadShedderResponse = false,
             isFallbackURL = false,
         )

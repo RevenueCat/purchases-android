@@ -50,6 +50,7 @@ class DiagnosticsTrackerFunctionalTest {
             diagnosticsFileHelper = diagnosticsFileHelper,
             diagnosticsHelper = DiagnosticsHelper(applicationContext, diagnosticsFileHelper, lazy { mockk(relaxed = true) }),
             diagnosticsDispatcher = SyncDispatcher(),
+            enabledBySdkConfiguration = true,
         )
     }
 

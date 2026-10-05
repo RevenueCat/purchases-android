@@ -4,6 +4,7 @@ import android.content.Context
 import com.revenuecat.purchases.CacheFetchPolicy.CACHED_OR_FETCHED
 import com.revenuecat.purchases.ads.events.AdCaptureMethod
 import com.revenuecat.purchases.ads.rewardverification.Poller
+import com.revenuecat.purchases.ads.rewardverification.RewardVerificationFetcher
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult
 import com.revenuecat.purchases.ads.rewardverification.RewardedAdTrackingMetadata
 import com.revenuecat.purchases.common.safeResume
@@ -100,7 +101,9 @@ public suspend fun Purchases.awaitPollRewardVerification(
     trackingMetadata: RewardedAdTrackingMetadata?,
     captureMethod: AdCaptureMethod,
 ): RewardVerificationResult {
-    return pollRewardVerification(clientTransactionId, trackingMetadata, captureMethod) { Poller.poll(it) }
+    return pollRewardVerification(clientTransactionId, trackingMetadata, captureMethod) {
+        Poller.poll(it, RewardVerificationFetcher.forAdUnit(trackingMetadata?.adUnitId))
+    }
 }
 
 /**
@@ -285,14 +288,17 @@ public suspend fun Purchases.awaitCustomerCenterConfigData(): CustomerCenterConf
  * HTTP 5xx failures (retryable) from deterministic ones.
  */
 @JvmSynthetic
+@JvmOverloads
 @Throws(RewardVerificationException::class)
 @InternalRevenueCatAPI
 public suspend fun Purchases.awaitGetRewardVerificationResult(
     clientTransactionId: String,
+    adUnitId: String? = null,
 ): RewardVerificationPollStatus {
     return suspendCancellableCoroutine { continuation ->
         getRewardVerificationResult(
             clientTransactionId = clientTransactionId,
+            adUnitId = adUnitId,
             callback = object : GetRewardVerificationResultCallback {
                 override fun onReceived(result: RewardVerificationPollStatus) {
                     continuation.safeResume(result)

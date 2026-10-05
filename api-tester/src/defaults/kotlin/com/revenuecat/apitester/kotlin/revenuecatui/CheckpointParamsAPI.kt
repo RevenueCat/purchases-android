@@ -1,9 +1,9 @@
-@file:OptIn(InternalRevenueCatAPI::class)
+@file:OptIn(InviteOnlyCheckpointsAPI::class)
 
 package com.revenuecat.apitester.kotlin.revenuecatui
 
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
 
 @Suppress("unused", "UNUSED_VARIABLE", "LongMethod")

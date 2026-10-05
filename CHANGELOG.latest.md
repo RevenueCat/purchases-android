@@ -1,11 +1,6 @@
-## RevenueCat SDK
-### 🐞 Bugfixes
-* Do not apply a previous user's CustomerInfo after an identity change (#4257) via Toni Rico (@tonidero)
-
 ## RevenueCatUI SDK
 ### 🐞 Bugfixes
-* Fix crash when launching PaywallActivity on Android 13 (#4260) via Álvaro Brey (@AlvaroBrey)
+* Fix paywall content clipping after footer resizes (#4363) via Cesar de la Vega (@vegaro)
 
 ### 🔄 Other Changes
-* ci: only run the release hold workflow on release branches (#4263) via Álvaro Brey (@AlvaroBrey)
-* test(remote-config): verify the fallback 304 under enforced signature verification (#4264) via Toni Rico (@tonidero)
+* feat(ads): send ad unit id to backend during reward polling (#4347) via Peter Porfy (@peterporfy)

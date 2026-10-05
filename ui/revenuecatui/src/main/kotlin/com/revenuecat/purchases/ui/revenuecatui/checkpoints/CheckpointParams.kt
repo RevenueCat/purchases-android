@@ -4,13 +4,14 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.CustomVariableKeyValidator
 import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 
 /**
  * Marks the receivers of the [CheckpointParams] DSL, so an inner block cannot implicitly call methods of an
  * outer one.
  */
 @DslMarker
-@InternalRevenueCatAPI
+@InviteOnlyCheckpointsAPI
 public annotation class CheckpointParamsDsl
 
 /**
@@ -23,6 +24,10 @@ public annotation class CheckpointParamsDsl
  * registered through [com.revenuecat.purchases.ui.revenuecatui.checkpoints.paywallPresenter]. When neither is set,
  * the offering's configured paywall is presented, falling back to the default paywall.
  *
+ * [errorPresenter] presents the errors of the flow the SDK presents for this call with app-owned UI, ahead of the
+ * presenter registered through [com.revenuecat.purchases.ui.revenuecatui.checkpoints.errorPresenter]. When neither
+ * is set, the SDK presents its own error dialog through a presenter of its own.
+ *
  * Built through [Builder], or the DSL:
  * ```kotlin
  * val params = CheckpointParams {
@@ -32,17 +37,19 @@ public annotation class CheckpointParamsDsl
  *         "premium" to true
  *     }
  *     paywallPresenter { params, completion -> presentCustomPaywall(params, completion) }
+ *     errorPresenter { params, completion -> presentCustomError(params, completion) }
  * }
  * ```
  */
-@InternalRevenueCatAPI
+@InviteOnlyCheckpointsAPI
 public class CheckpointParams private constructor(
     customVariables: Map<String, CustomVariableValue>,
     public val paywallPresenter: PaywallPresenter?,
+    public val errorPresenter: ErrorPresenter?,
 ) {
 
     /**
-     * Keys must start with a letter and contain only letters, numbers and underscores, since anything else cannot
+     * Keys must not be empty and contain only letters, numbers and underscores, since anything else cannot
      * be addressed as `custom.<key>`. Invalid entries are dropped here, once, with a warning: everything
      * downstream — targeting rules and the presented paywall alike — validates what it is given, and a map that is
      * already clean gives them nothing to report.
@@ -53,18 +60,22 @@ public class CheckpointParams private constructor(
     override fun equals(other: Any?): Boolean =
         other is CheckpointParams &&
             other.customVariables == customVariables &&
-            other.paywallPresenter == paywallPresenter
+            other.paywallPresenter == paywallPresenter &&
+            other.errorPresenter == errorPresenter
 
-    override fun hashCode(): Int = 31 * customVariables.hashCode() + paywallPresenter.hashCode()
+    override fun hashCode(): Int =
+        31 * (31 * customVariables.hashCode() + paywallPresenter.hashCode()) + errorPresenter.hashCode()
 
     override fun toString(): String =
-        "CheckpointParams(customVariables=$customVariables, paywallPresenter=$paywallPresenter)"
+        "CheckpointParams(customVariables=$customVariables, paywallPresenter=$paywallPresenter, " +
+            "errorPresenter=$errorPresenter)"
 
     @CheckpointParamsDsl
     public class Builder {
 
         private var customVariables: Map<String, CustomVariableValue> = emptyMap()
         private var paywallPresenter: PaywallPresenter? = null
+        private var errorPresenter: ErrorPresenter? = null
 
         /** Replaces any previously set custom variables. */
         public fun setCustomVariables(customVariables: Map<String, CustomVariableValue>): Builder = apply {
@@ -87,7 +98,16 @@ public class CheckpointParams private constructor(
         public fun paywallPresenter(paywallPresenter: PaywallPresenter): Builder =
             setPaywallPresenter(paywallPresenter)
 
-        public fun build(): CheckpointParams = CheckpointParams(customVariables, paywallPresenter)
+        /** Presents the errors of this call's flow; null leaves it to the registered presenter or the SDK. */
+        public fun setErrorPresenter(errorPresenter: ErrorPresenter?): Builder = apply {
+            this.errorPresenter = errorPresenter
+        }
+
+        /** Presents the errors of this call's flow, ahead of the registered presenter. */
+        @JvmSynthetic
+        public fun errorPresenter(errorPresenter: ErrorPresenter): Builder = setErrorPresenter(errorPresenter)
+
+        public fun build(): CheckpointParams = CheckpointParams(customVariables, paywallPresenter, errorPresenter)
     }
 
     /**
@@ -178,7 +198,7 @@ public class CheckpointParams private constructor(
  * DSL entry point: `CheckpointParams { customVariables { "goal" to "lose_weight" } }`.
  */
 @JvmSynthetic
-@InternalRevenueCatAPI
+@InviteOnlyCheckpointsAPI
 @Suppress("FunctionName")
 public fun CheckpointParams(block: CheckpointParams.Builder.() -> Unit): CheckpointParams =
     CheckpointParams.Builder().apply(block).build()

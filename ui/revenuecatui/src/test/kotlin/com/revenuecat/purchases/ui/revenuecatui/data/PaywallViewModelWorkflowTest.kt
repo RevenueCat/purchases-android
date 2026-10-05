@@ -3,7 +3,9 @@
 package com.revenuecat.purchases.ui.revenuecatui.data
 
 import android.app.Activity
+import android.os.Looper
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -48,11 +50,13 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
+import com.revenuecat.purchases.ui.revenuecatui.PaywallErrorPresenter
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter
 import com.revenuecat.purchases.ui.revenuecatui.components.style.WebViewComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.webview.webViewContextSnapshot
 import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable
@@ -72,9 +76,11 @@ import io.mockk.runs
 import io.mockk.verify
 import io.mockk.verifyOrder
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -91,7 +97,11 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Shadows.shadowOf
 import java.net.URL
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import kotlin.coroutines.CoroutineContext
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
@@ -485,10 +495,12 @@ class PaywallViewModelWorkflowTest {
         dismissRequest: () -> Unit = {},
         dismissRequestWithExitOffering: ((Offering?, PaywallResult?, PaywallDismissReason) -> Unit)? = null,
         listener: PaywallListener? = null,
+        errorPresenter: PaywallErrorPresenter? = null,
     ): PaywallViewModelImpl {
         val builder = PaywallOptions.Builder(dismissRequest = dismissRequest)
         dismissRequestWithExitOffering?.let { builder.setDismissRequestWithExitOffering(it) }
         listener?.let { builder.setListener(it) }
+        errorPresenter?.let { builder.setErrorPresenter(it) }
         return PaywallViewModelImpl(
             resourceProvider = MockResourceProvider(),
             purchases = purchases,
@@ -500,6 +512,22 @@ class PaywallViewModelWorkflowTest {
             // instead of it escaping to Dispatchers.Default and resuming after resetMain().
             backgroundDispatcher = testDispatcher,
         )
+    }
+
+    private fun TestScope.createInjectedWorkflowVm(traceId: String?): PaywallViewModelImpl {
+        val vm = PaywallViewModelImpl(
+            resourceProvider = MockResourceProvider(),
+            purchases = purchases,
+            options = PaywallOptions.Builder(dismissRequest = {})
+                .injectedWorkflow(workflow, testOfferings, uiConfig, traceId)
+                .build(),
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+            backgroundDispatcher = testDispatcher,
+        )
+        advanceUntilIdle()
+        return vm
     }
 
     private fun makeListener(): PaywallListener = mockk {
@@ -1044,6 +1072,46 @@ class PaywallViewModelWorkflowTest {
             // It is the same single suspend path — the reads are invoked, they just resolve synchronously.
             coVerify(exactly = 1) { purchases.awaitGetWorkflow(workflow.id) }
         } finally {
+            Dispatchers.setMain(testDispatcher)
+        }
+    }
+
+    @Test
+    fun `warm cache pre-warm does not write step state inside the composition snapshot`() {
+        // Real Looper-backed Main, so viewModelScope behaves as on a device.
+        Dispatchers.resetMain()
+        val uncaught = mutableListOf<Throwable>()
+        val mainThread = Thread.currentThread()
+        val previousHandler = mainThread.uncaughtExceptionHandler
+        mainThread.uncaughtExceptionHandler = Thread.UncaughtExceptionHandler { _, e -> uncaught += e }
+        val backgroundDispatcher = FinishBeforeReturnDispatcher()
+        try {
+            coEvery { purchases.resolveWorkflow(offeringId) } returns WorkflowResolution.Found(workflow.id)
+            coEvery { purchases.awaitGetWorkflow(workflow.id) } returns fetchResult
+            coEvery { purchases.awaitGetUiConfig() } returns uiConfig
+
+            // Mirrors Recomposer.composing(): viewModel() constructs the VM inside a mutable snapshot.
+            val snapshot = Snapshot.takeMutableSnapshot()
+            val vm = snapshot.enter {
+                PaywallViewModelImpl(
+                    resourceProvider = MockResourceProvider(),
+                    purchases = purchases,
+                    options = PaywallOptions.Builder(dismissRequest = {}).build(),
+                    colorScheme = TestData.Constants.currentColorScheme,
+                    isDarkMode = false,
+                    shouldDisplayBlock = null,
+                    backgroundDispatcher = backgroundDispatcher,
+                )
+            }
+            snapshot.apply().check()
+            snapshot.dispose()
+            shadowOf(Looper.getMainLooper()).idle()
+
+            assertThat(uncaught).isEmpty()
+            assertThat(vm.workflowState.value?.stepStates?.keys).containsExactlyInAnyOrder("step-1", "step-2")
+        } finally {
+            mainThread.uncaughtExceptionHandler = previousHandler
+            backgroundDispatcher.close()
             Dispatchers.setMain(testDispatcher)
         }
     }
@@ -1625,6 +1693,65 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
+    fun `a failed purchase during a workflow is handed to the error presenter`() = runTest {
+        coEvery { purchases.awaitPurchase(any()) } throws
+            PurchasesException(PurchasesError(PurchasesErrorCode.StoreProblemError))
+        val presented = mutableListOf<Boolean>()
+        val vm = createVm(errorPresenter = { _, flowCanContinue, _ -> presented += flowCanContinue })
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
+        advanceUntilIdle()
+
+        vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
+
+        assertThat(presented).containsExactly(true)
+        assertThat(vm.actionError.value).isNull()
+    }
+
+    @Test
+    fun `NavigateBack from the error presenter mid-flow goes to the previous step`() = runTest {
+        coEvery { purchases.awaitPurchase(any()) } throws
+            PurchasesException(PurchasesError(PurchasesErrorCode.StoreProblemError))
+        var completion: ErrorPresenter.Completion? = null
+        val dismissals = mutableListOf<PaywallDismissReason>()
+        val vm = createVm(
+            dismissRequestWithExitOffering = { _, _, reason -> dismissals += reason },
+            errorPresenter = { _, _, c -> completion = c },
+        )
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        vm.onTransitionComplete(vm.workflowState.value!!.pendingTransition!!.id)
+        advanceUntilIdle()
+        vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
+
+        completion!!.complete(ErrorPresenter.Completion.Result.NavigateBack)
+        advanceUntilIdle()
+
+        assertThat(dismissals).isEmpty()
+        assertThat(vm.workflowState.value?.pendingTransition?.direction).isEqualTo(NavigationDirection.BACKWARD)
+        assertThat(vm.workflowState.value?.pendingTransition?.fromStepId).isEqualTo("step-2")
+    }
+
+    @Test
+    fun `NavigateBack from the error presenter on the first step leaves the flow`() = runTest {
+        coEvery { purchases.awaitPurchase(any()) } throws
+            PurchasesException(PurchasesError(PurchasesErrorCode.StoreProblemError))
+        var completion: ErrorPresenter.Completion? = null
+        val dismissals = mutableListOf<PaywallDismissReason>()
+        val vm = createVm(
+            dismissRequestWithExitOffering = { _, _, reason -> dismissals += reason },
+            errorPresenter = { _, _, c -> completion = c },
+        )
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
+        advanceUntilIdle()
+        vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
+
+        completion!!.complete(ErrorPresenter.Completion.Result.NavigateBack)
+        advanceUntilIdle()
+
+        assertThat(dismissals).containsExactly(PaywallDismissReason.NAVIGATED_BACK)
+    }
+
+    @Test
     fun `RevenueCat purchase completion during workflow fires StepCompleted with null toStepId`() = runTest {
         val captured = mutableListOf<FeatureEvent>()
         every { purchases.track(any()) } answers { captured.add(firstArg()) }
@@ -2122,6 +2249,31 @@ class PaywallViewModelWorkflowTest {
             .single { it.type == PaywallEventType.IMPRESSION }
         assertThat(impression.data.traceId).isNotNull()
         assertThat(impression.data.traceId).isEqualTo(startedTraceId)
+    }
+
+    @Test
+    fun `an injected workflow reports the trace id it was given`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createInjectedWorkflowVm(traceId = "checkpoint-trace")
+        vm.trackPaywallImpressionIfNeeded()
+
+        assertThat(captured.filterIsInstance<WorkflowEvent.StepStarted>().single().traceId)
+            .isEqualTo("checkpoint-trace")
+        val impression = captured.filterIsInstance<PaywallEvent>()
+            .single { it.type == PaywallEventType.IMPRESSION }
+        assertThat(impression.data.traceId).isEqualTo("checkpoint-trace")
+    }
+
+    @Test
+    fun `an injected workflow without a trace id still gets one`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        createInjectedWorkflowVm(traceId = null)
+
+        assertThat(captured.filterIsInstance<WorkflowEvent.StepStarted>().single().traceId).isNotBlank()
     }
 
     @Test
@@ -2702,4 +2854,16 @@ class PaywallViewModelWorkflowTest {
     }
 
     // endregion
+
+    /**
+     * Returns from dispatch() only after the block has run on another thread, so withContext's result is ready
+     * before its caller reaches the suspension point and it returns without suspending.
+     */
+    private class FinishBeforeReturnDispatcher : CoroutineDispatcher(), AutoCloseable {
+        private val executor = Executors.newSingleThreadExecutor()
+        override fun dispatch(context: CoroutineContext, block: Runnable) {
+            executor.submit(block).get(10, TimeUnit.SECONDS)
+        }
+        override fun close() = executor.shutdown()
+    }
 }

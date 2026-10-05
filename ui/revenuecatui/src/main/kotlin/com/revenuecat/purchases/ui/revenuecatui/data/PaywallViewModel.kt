@@ -273,6 +273,7 @@ internal class PaywallViewModelImpl(
     private var exitOfferData: ExitOfferData = ExitOfferData.Loading()
     private var updateStateJob: Job? = null
     private var shouldReloadStateOnNextPresentation = false
+    private var presentationGeneration = 0
 
     private data class PaywallPresentationFingerprint(
         val paywallIdentifier: String?,
@@ -286,6 +287,29 @@ internal class PaywallViewModelImpl(
     private data class ResolvedOfferingSelection(
         val selectedOffering: Offering?,
         val offeringsForExitOfferLookup: Offerings?,
+    )
+
+    // Declared last: its collector reads the state above as soon as it is created.
+    private val errorReporter = PaywallErrorReporter(
+        presenter = { options.errorPresenter },
+        scope = viewModelScope,
+        state = _state,
+        host = object : PaywallErrorReporter.Host {
+            override fun showErrorDialog(error: PurchasesError) {
+                _actionError.value = error
+            }
+
+            override fun closePaywall(result: PaywallResult?, reason: PaywallDismissReason) =
+                this@PaywallViewModelImpl.closePaywall(result, reason)
+
+            override fun navigateBack(): Boolean = handleBackNavigation()
+
+            override val flowEnded: Boolean
+                get() = shouldReloadStateOnNextPresentation
+
+            override val presentationGeneration: Int
+                get() = this@PaywallViewModelImpl.presentationGeneration
+        },
     )
 
     init {
@@ -422,6 +446,7 @@ internal class PaywallViewModelImpl(
         // the paywall enters composition again. Keep the last generic state rendered until then: activity and
         // navigation dismissals can leave InternalPaywall composed while their exit animation finishes.
         shouldReloadStateOnNextPresentation = true
+        presentationGeneration++
     }
 
     private fun updateExitOfferData(data: ExitOfferData) {
@@ -611,7 +636,7 @@ internal class PaywallViewModelImpl(
                             // silently ignore
                         }
                         is PurchaseLogicResult.Error -> {
-                            result.errorDetails?.let { _actionError.value = it }
+                            result.errorDetails?.let { errorReporter.onActionError(it) }
                         }
                     }
                 }
@@ -651,7 +676,7 @@ internal class PaywallViewModelImpl(
         } catch (e: PurchasesException) {
             Logger.e("Error restoring purchases: $e")
             listener?.onRestoreError(e.error)
-            _actionError.value = e.error
+            errorReporter.onActionError(e.error)
         }
     }
 
@@ -762,7 +787,7 @@ internal class PaywallViewModelImpl(
                         is PurchaseLogicResult.Error -> {
                             result.errorDetails?.let {
                                 trackPaywallPurchaseError(packageToPurchase, it)
-                                _actionError.value = it
+                                errorReporter.onActionError(it)
                             }
                         }
                     }
@@ -817,7 +842,7 @@ internal class PaywallViewModelImpl(
             } else {
                 trackPaywallPurchaseError(packageToPurchase, e.error)
                 listener?.onPurchaseError(e.error)
-                _actionError.value = e.error
+                errorReporter.onActionError(e.error)
             }
         }
     }
@@ -841,6 +866,7 @@ internal class PaywallViewModelImpl(
                 updateExitOfferData(ExitOfferData.Unavailable())
                 _state.value = PaywallState.Error(
                     "Error ${e.code.code}: ${e.code.description}",
+                    e.error,
                 )
             }
         }
@@ -1145,7 +1171,8 @@ internal class PaywallViewModelImpl(
         workflowStepStateCache.clear()
         _workflowState.value = null
         if (isNewWorkflowImpression) {
-            workflowTraceId = UUID.randomUUID().toString()
+            workflowTraceId = options.injectedWorkflowTraceId.takeIf { workflow == options.injectedWorkflow }
+                ?: UUID.randomUUID().toString()
             // Fresh presentation: start the shared store empty; each step registers its declarations as it builds.
             // Rebuilds (navigation, color change) reuse the existing store so values persist across screens.
             currentWorkflowStateStore = PaywallStateStore(emptyMap())
@@ -1310,7 +1337,9 @@ internal class PaywallViewModelImpl(
         // Capture on the main thread: cancellation is cooperative and can't stop an in-flight
         // computeStateForStep, so a late prewarm must not write into a store swapped in by a newer session.
         val stateStore = currentWorkflowStateStore
-        preWarmJob = viewModelScope.launch {
+        // Dispatched to a later main-looper message: this can start inside composition (warm-cache init), and a
+        // withContext that returns without suspending would otherwise write step state inside its snapshot.
+        preWarmJob = viewModelScope.launch(Dispatchers.Main) {
             for ((stepId, step) in workflow.steps) {
                 if (stepId in workflowStepStateCache) continue
                 val computed = withContext(backgroundDispatcher) {

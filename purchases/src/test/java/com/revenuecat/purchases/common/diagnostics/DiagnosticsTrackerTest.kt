@@ -14,6 +14,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
+import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.SyncDispatcher
@@ -22,6 +23,8 @@ import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.playServicesVersionName
 import com.revenuecat.purchases.common.playStoreVersionName
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult.FailureReason
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import io.mockk.Runs
 import io.mockk.every
@@ -39,7 +42,10 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.io.IOException
 import java.util.UUID
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -165,7 +171,8 @@ class DiagnosticsTrackerTest {
             200,
             null,
             HTTPResult.Origin.CACHE,
-            VerificationResult.NOT_REQUESTED,
+            SignatureVerificationResult.NotRequested,
+            deviceClockOffset = null,
             isRetry = false,
             connectionErrorReason = ConnectionErrorReason.NO_NETWORK,
         )
@@ -201,7 +208,8 @@ class DiagnosticsTrackerTest {
             200,
             1234,
             HTTPResult.Origin.BACKEND,
-            VerificationResult.NOT_REQUESTED,
+            SignatureVerificationResult.NotRequested,
+            deviceClockOffset = null,
             isRetry = false,
             connectionErrorReason = ConnectionErrorReason.NO_NETWORK,
         )
@@ -237,7 +245,8 @@ class DiagnosticsTrackerTest {
             200,
             1234,
             HTTPResult.Origin.BACKEND,
-            VerificationResult.NOT_REQUESTED,
+            SignatureVerificationResult.NotRequested,
+            deviceClockOffset = null,
             isRetry = true,
             connectionErrorReason = ConnectionErrorReason.NO_NETWORK,
         )
@@ -246,6 +255,140 @@ class DiagnosticsTrackerTest {
                 event.name == DiagnosticsEntryName.HTTP_REQUEST_PERFORMED && event.properties == expectedProperties
             })
         }
+    }
+
+    @Test
+    fun `trackHttpRequestPerformed tracks the public name of a verified result`() {
+        val expectedProperties = mapOf(
+            "host" to "test.host.com",
+            "play_store_version" to "123",
+            "play_services_version" to "456",
+            "endpoint_name" to "get_offerings",
+            "response_time_millis" to 1234L,
+            "successful" to true,
+            "response_code" to 200,
+            "etag_hit" to false,
+            "verification_result" to "VERIFIED",
+            "is_retry" to false,
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackHttpRequestPerformed(
+            "test.host.com",
+            Endpoint.GetOfferings("test id"),
+            1234L.milliseconds,
+            true,
+            200,
+            null,
+            HTTPResult.Origin.BACKEND,
+            SignatureVerificationResult.Verified,
+            deviceClockOffset = null,
+            isRetry = false,
+            connectionErrorReason = null,
+        )
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event.name == DiagnosticsEntryName.HTTP_REQUEST_PERFORMED && event.properties == expectedProperties
+            })
+        }
+    }
+
+    @Test
+    fun `trackHttpRequestPerformed tracks the public name of a failed result`() {
+        val expectedProperties = mapOf(
+            "host" to "test.host.com",
+            "play_store_version" to "123",
+            "play_services_version" to "456",
+            "endpoint_name" to "get_offerings",
+            "response_time_millis" to 1234L,
+            "successful" to true,
+            "response_code" to 200,
+            "etag_hit" to false,
+            "verification_result" to "FAILED",
+            "verification_failure_reason" to "MISSING_SIGNATURE",
+            "is_retry" to false,
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackHttpRequestPerformed(
+            "test.host.com",
+            Endpoint.GetOfferings("test id"),
+            1234L.milliseconds,
+            true,
+            200,
+            null,
+            HTTPResult.Origin.BACKEND,
+            SignatureVerificationResult.Failed(FailureReason.MISSING_SIGNATURE),
+            deviceClockOffset = null,
+            isRetry = false,
+            connectionErrorReason = null,
+        )
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event.name == DiagnosticsEntryName.HTTP_REQUEST_PERFORMED && event.properties == expectedProperties
+            })
+        }
+    }
+
+    @Test
+    fun `trackHttpRequestPerformed tracks the failure reason of a failed result`() {
+        val properties = trackHttpRequestPerformedProperties(
+            verificationResult = SignatureVerificationResult.Failed(FailureReason.INTERMEDIATE_KEY_EXPIRED),
+        )
+        Assertions.assertThat(properties["verification_result"]).isEqualTo("FAILED")
+        Assertions.assertThat(properties["verification_failure_reason"]).isEqualTo("INTERMEDIATE_KEY_EXPIRED")
+    }
+
+    @Test
+    fun `trackHttpRequestPerformed does not track a failure reason for a verified result`() {
+        val properties = trackHttpRequestPerformedProperties(verificationResult = SignatureVerificationResult.Verified)
+        Assertions.assertThat(properties).doesNotContainKey("verification_failure_reason")
+    }
+
+    @Test
+    fun `trackHttpRequestPerformed tracks positive device clock offset in whole minutes`() {
+        val properties = trackHttpRequestPerformedProperties(deviceClockOffset = 120.minutes)
+        Assertions.assertThat(properties["verification_device_clock_offset_minutes"]).isEqualTo(120L)
+    }
+
+    @Test
+    fun `trackHttpRequestPerformed tracks negative device clock offset in whole minutes`() {
+        val properties = trackHttpRequestPerformedProperties(deviceClockOffset = (-120).minutes)
+        Assertions.assertThat(properties["verification_device_clock_offset_minutes"]).isEqualTo(-120L)
+    }
+
+    @Test
+    fun `trackHttpRequestPerformed truncates sub-minute device clock offsets`() {
+        val properties = trackHttpRequestPerformedProperties(deviceClockOffset = 59.seconds)
+        Assertions.assertThat(properties["verification_device_clock_offset_minutes"]).isEqualTo(0L)
+    }
+
+    @Test
+    fun `trackHttpRequestPerformed does not track device clock offset without a request date`() {
+        val properties = trackHttpRequestPerformedProperties(deviceClockOffset = null)
+        Assertions.assertThat(properties).doesNotContainKey("verification_device_clock_offset_minutes")
+    }
+
+    private fun trackHttpRequestPerformedProperties(
+        verificationResult: SignatureVerificationResult = SignatureVerificationResult.Verified,
+        deviceClockOffset: Duration? = null,
+    ): Map<String, Any> {
+        val trackedEvents = mutableListOf<DiagnosticsEntry>()
+        every { diagnosticsFileHelper.appendEvent(capture(trackedEvents)) } just Runs
+        diagnosticsTracker.trackHttpRequestPerformed(
+            "test.host.com",
+            Endpoint.GetOfferings("test id"),
+            1234L.milliseconds,
+            true,
+            200,
+            null,
+            HTTPResult.Origin.BACKEND,
+            verificationResult,
+            deviceClockOffset,
+            isRetry = false,
+            connectionErrorReason = null,
+        )
+        Assertions.assertThat(trackedEvents).hasSize(1)
+        Assertions.assertThat(trackedEvents.single().name).isEqualTo(DiagnosticsEntryName.HTTP_REQUEST_PERFORMED)
+        return trackedEvents.single().properties
     }
 
     @Test
@@ -905,6 +1048,118 @@ class DiagnosticsTrackerTest {
 
     // endregion Purchase
 
+    // region collection decision
+
+    @Test
+    fun `events are collected on disk before a collection decision`() {
+        every { diagnosticsFileHelper.appendEvent(testDiagnosticsEntry) } just Runs
+
+        diagnosticsTracker.trackEvent(testDiagnosticsEntry)
+
+        Assertions.assertThat(diagnosticsTracker.isCollectionEnabled).isFalse
+        verify(exactly = 1) { diagnosticsFileHelper.appendEvent(testDiagnosticsEntry) }
+    }
+
+    @Test
+    fun `a remote disabled setting deletes the diagnostics file and drops later events`() {
+        every { diagnosticsFileHelper.deleteFile() } just Runs
+        diagnosticsTracker = createDiagnosticsTracker(enabledBySdkConfiguration = true)
+
+        diagnosticsTracker.applyRemoteCollectionSetting(remoteEnabled = false)
+        diagnosticsTracker.trackEvent(testDiagnosticsEntry)
+        diagnosticsTracker.trackEventInCurrentThread(testDiagnosticsEntry)
+
+        Assertions.assertThat(diagnosticsTracker.isCollectionEnabled).isFalse
+        verify(exactly = 1) { diagnosticsFileHelper.deleteFile() }
+        verify(exactly = 1) { sharedPreferencesEditor.remove(DiagnosticsHelper.CONSECUTIVE_FAILURES_COUNT_KEY) }
+        verify(exactly = 0) { diagnosticsFileHelper.appendEvent(any()) }
+    }
+
+    @Test
+    fun `a remote enabled setting keeps collecting and notifies the listener`() {
+        var collectionEnabledCount = 0
+        diagnosticsTracker = createDiagnosticsTracker(enabledBySdkConfiguration = false)
+        diagnosticsTracker.listener = object : DiagnosticsEventTrackerListener {
+            override fun onEventTracked() {}
+            override fun onCollectionEnabled() {
+                collectionEnabledCount++
+            }
+        }
+        every { diagnosticsFileHelper.appendEvent(testDiagnosticsEntry) } just Runs
+
+        diagnosticsTracker.applyRemoteCollectionSetting(remoteEnabled = true)
+        diagnosticsTracker.trackEvent(testDiagnosticsEntry)
+
+        Assertions.assertThat(diagnosticsTracker.isCollectionEnabled).isTrue
+        Assertions.assertThat(collectionEnabledCount).isEqualTo(1)
+        verify(exactly = 1) { diagnosticsFileHelper.appendEvent(testDiagnosticsEntry) }
+        verify(exactly = 0) { diagnosticsFileHelper.deleteFile() }
+    }
+
+    @Test
+    fun `without a remote setting the SDK configuration decides`() {
+        every { diagnosticsFileHelper.deleteFile() } just Runs
+        val enabledBySdk = createDiagnosticsTracker(enabledBySdkConfiguration = true)
+        val disabledBySdk = createDiagnosticsTracker(enabledBySdkConfiguration = false)
+
+        enabledBySdk.applyRemoteCollectionSetting(remoteEnabled = null)
+        disabledBySdk.applyRemoteCollectionSetting(remoteEnabled = null)
+
+        Assertions.assertThat(enabledBySdk.isCollectionEnabled).isTrue
+        Assertions.assertThat(disabledBySdk.isCollectionEnabled).isFalse
+        verify(exactly = 1) { diagnosticsFileHelper.deleteFile() }
+    }
+
+    @Test
+    fun `repeating the same decision does not delete the file again`() {
+        every { diagnosticsFileHelper.deleteFile() } just Runs
+
+        diagnosticsTracker.applyRemoteCollectionSetting(remoteEnabled = false)
+        diagnosticsTracker.applyRemoteCollectionSetting(remoteEnabled = false)
+
+        verify(exactly = 1) { diagnosticsFileHelper.deleteFile() }
+    }
+
+    @Test
+    fun `re-enabling after a disable resumes collection`() {
+        every { diagnosticsFileHelper.deleteFile() } just Runs
+        every { diagnosticsFileHelper.appendEvent(testDiagnosticsEntry) } just Runs
+
+        diagnosticsTracker.applyRemoteCollectionSetting(remoteEnabled = false)
+        diagnosticsTracker.applyRemoteCollectionSetting(remoteEnabled = true)
+        diagnosticsTracker.trackEvent(testDiagnosticsEntry)
+
+        verify(exactly = 1) { diagnosticsFileHelper.appendEvent(testDiagnosticsEntry) }
+    }
+
+    @Test
+    fun `an event queued before a disable is dropped when it runs after it, one tracked after is never queued`() {
+        val queue = ArrayDeque<Runnable>()
+        dispatcher = object : Dispatcher(mockk()) {
+            override fun enqueue(command: Runnable, delay: Delay) {
+                queue.addLast(command)
+            }
+        }
+        diagnosticsTracker = createDiagnosticsTracker()
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        every { diagnosticsFileHelper.deleteFile() } just Runs
+
+        diagnosticsTracker.trackEvent(testDiagnosticsEntry)
+        diagnosticsTracker.applyRemoteCollectionSetting(remoteEnabled = false)
+        diagnosticsTracker.trackEvent(testDiagnosticsEntry)
+        Assertions.assertThat(queue).hasSize(2)
+        while (queue.isNotEmpty()) queue.removeFirst().run()
+
+        // The queued append re-checks the state when it runs, so it is dropped rather than written to a file
+        // that is about to be deleted. Either way nothing tracked around the decision survives on disk.
+        verifySequence {
+            diagnosticsFileHelper.isDiagnosticsFileTooBig()
+            diagnosticsFileHelper.deleteFile()
+        }
+    }
+
+    // endregion collection decision
+
     private fun mockSharedPreferences() {
         sharedPreferences = mockk()
         sharedPreferencesEditor = mockk()
@@ -934,12 +1189,16 @@ class DiagnosticsTrackerTest {
         )
     }
 
-    private fun createDiagnosticsTracker(store: Store = Store.PLAY_STORE): DiagnosticsTracker {
+    private fun createDiagnosticsTracker(
+        store: Store = Store.PLAY_STORE,
+        enabledBySdkConfiguration: Boolean = false,
+    ): DiagnosticsTracker {
         return DiagnosticsTracker(
             createAppConfig(store),
             diagnosticsFileHelper,
             DiagnosticsHelper(mockk(), diagnosticsFileHelper, lazy { sharedPreferences }),
-            dispatcher
+            dispatcher,
+            enabledBySdkConfiguration,
         )
     }
 }
