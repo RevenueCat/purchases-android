@@ -59,5 +59,6 @@ final class CustomerCenterViewAPI {
         view.setDismissHandler(dismissHandlerFunction);
         view.setCustomerCenterListener(null);
         view.setCustomerCenterListener(listener);
+        view.navigateBack();
     }
 }
