@@ -1009,7 +1009,7 @@ internal class CustomerCenterViewModelImpl(
     ): Boolean {
         if (!promotionalOffer.eligible) {
             Logger.d(
-                "User not eligible for promo with id '${promotionalOffer.androidOfferId}'. " +
+                "User not eligible for promo '${promotionalOffer.title}'. " +
                     "Check eligibility configuration in the dashboard, and make sure the user has " +
                     "an active/expired subscription for the product with id '${product.id}'.",
             )

@@ -2402,7 +2402,6 @@ class CustomerCenterViewModelTests {
         crossProductPromotions: Map<String, HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion> = emptyMap()
     ): HelpPath.PathDetail.PromotionalOffer {
         return HelpPath.PathDetail.PromotionalOffer(
-            androidOfferId = "",
             eligible = eligible,
             title = title,
             subtitle = subtitle,
