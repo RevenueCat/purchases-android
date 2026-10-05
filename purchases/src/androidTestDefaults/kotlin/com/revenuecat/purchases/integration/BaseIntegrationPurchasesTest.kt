@@ -17,6 +17,8 @@ import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.networking.TokenAuthenticator
+import com.revenuecat.purchases.common.networking.TokenManager
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.factories.StoreProductFactory
 import com.revenuecat.purchases.factories.StoreTransactionFactory
@@ -522,6 +524,7 @@ abstract class BaseIntegrationPurchasesTest : BasePurchasesIntegrationTest() {
             },
             apiSourceFailover = null,
             localeProvider = DefaultLocaleProvider(),
+            tokenAuthenticator = TokenAuthenticator(TokenManager(context, "test_api_key", enabled = false)) { "" },
         )
     }
 

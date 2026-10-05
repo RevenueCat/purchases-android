@@ -160,77 +160,8 @@ internal class TokenManager(
 
     // endregion
 
-    // region Token refresh state machine
-
     /** The tokens a successful `/auth/login` or `/auth/token` call produced. */
     data class TokenSet(val accessToken: String, val refreshToken: String?, val idToken: String?)
-
-    /** The `/auth/token` call [tokenRefreshRequest] wants performed on behalf of [appUserID]. */
-    data class TokenRefreshRequest(val appUserID: String, val refreshToken: String)
-
-    /** What a caller should do about a failed request, per [tokenRefreshRequest]. */
-    sealed interface TokenRefreshAction {
-        /** No refresh applies; the failed request stands. */
-        object NoAction : TokenRefreshAction
-
-        /** Perform [request], then report its result via [handleTokenRefreshResponse]. */
-        data class Refresh(val request: TokenRefreshRequest) : TokenRefreshAction
-
-        /** A refresh for this user is already in flight; its result will be reported to the caller. */
-        object WaitingForOtherRequest : TokenRefreshAction
-    }
-
-    // Keyed by appUserID; a present entry means a refresh is in flight for that user, and its list is every
-    // reportTokenUpdate callback waiting on it. Guarded by `this`.
-    private val pendingRefreshes = mutableMapOf<String, MutableList<(TokenSet?) -> Unit>>()
-
-    /**
-     * Whether a request for [appUserID] that failed with [statusCode] should refresh its tokens.
-     *
-     * [TokenRefreshAction.NoAction] when [statusCode] isn't 401, when [alreadyRetriedRefresh] (a second
-     * refresh would risk looping against a refresh token the server keeps rejecting), or when there's no
-     * refresh token for [appUserID]; [reportTokenUpdate] is never called in those cases. Otherwise
-     * [reportTokenUpdate] is registered to receive the refresh's result, and the first caller for a user gets
-     * [TokenRefreshAction.Refresh] while concurrent callers get [TokenRefreshAction.WaitingForOtherRequest].
-     */
-    fun tokenRefreshRequest(
-        appUserID: String,
-        statusCode: Int,
-        alreadyRetriedRefresh: Boolean,
-        reportTokenUpdate: (TokenSet?) -> Unit,
-    ): TokenRefreshAction {
-        val refreshToken = if (statusCode == RCHTTPStatusCodes.UNAUTHORIZED && !alreadyRetriedRefresh) {
-            currentRefreshToken(appUserID)
-        } else {
-            null
-        }
-        if (refreshToken == null) return TokenRefreshAction.NoAction
-
-        val isFirstWaiter = synchronized(this) {
-            val isFirst = !pendingRefreshes.containsKey(appUserID)
-            pendingRefreshes.getOrPut(appUserID) { mutableListOf() }.add(reportTokenUpdate)
-            isFirst
-        }
-        return if (isFirstWaiter) {
-            TokenRefreshAction.Refresh(TokenRefreshRequest(appUserID, refreshToken))
-        } else {
-            TokenRefreshAction.WaitingForOtherRequest
-        }
-    }
-
-    /**
-     * Resolves the in-flight refresh for [appUserID] with [tokens] (`null` for a failed refresh): saves them,
-     * then notifies every waiter registered via [tokenRefreshRequest] and clears the in-flight state.
-     */
-    fun handleTokenRefreshResponse(appUserID: String, tokens: TokenSet?) {
-        if (tokens != null) {
-            saveTokens(appUserID, tokens.accessToken, tokens.refreshToken, tokens.idToken)
-        }
-        val waiters = synchronized(this) { pendingRefreshes.remove(appUserID).orEmpty() }
-        waiters.forEach { it(tokens) }
-    }
-
-    // endregion
 
     /** Cancels [scope], including storage construction and any writes not yet persisted. */
     fun close() {
