@@ -1287,6 +1287,7 @@ internal class PaywallViewModelImpl(
         offerings: Offerings,
         presentedOfferingContext: PresentedOfferingContext?,
         stateStore: PaywallStateStore?,
+        skeleton: Boolean = false,
     ): PaywallState {
         val resolved = when (val resolution = resolveStep(step, workflow, offerings)) {
             is StepResolution.Invalid -> return resolution.toErrorState()
@@ -1295,7 +1296,7 @@ internal class PaywallViewModelImpl(
         val baseOffering = resolved.offering
 
         val paywallComponents =
-            WorkflowScreenMapper.toPaywallComponents(resolved.screen, resolved.screenId, uiConfig)
+            WorkflowScreenMapper.toPaywallComponents(resolved.screen, resolved.screenId, uiConfig, skeleton)
         // A step without an offering renders its screen against a package-less placeholder: the screen can still
         // use the workflow's default package as context, but has no packages of its own.
         val offering = Offering(

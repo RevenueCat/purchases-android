@@ -57,7 +57,6 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessor
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessorV2
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
-import com.revenuecat.purchases.ui.revenuecatui.workflow.workflowSkeleton
 
 @Composable
 internal fun TextComponentView(
@@ -125,7 +124,6 @@ internal fun TextComponentView(
             Markdown(
                 text = text,
                 modifier = modifier
-                    .workflowSkeleton()
                     .resolveComponentSizeParentData(size)
                     .applyIfNotNull(spokenText) { clearAndSetSemantics { contentDescription = it } }
                     .size(size, horizontalAlignment = textState.horizontalAlignment)

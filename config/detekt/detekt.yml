@@ -38,7 +38,7 @@ libraries:
     excludes: [ '**/examples/**' ]
 Compose:
   CompositionLocalAllowlist:
-    allowedCompositionLocals: LocalPreviewImageLoader,LocalWorkflowSkeleton
+    allowedCompositionLocals: LocalPreviewImageLoader
 revenuecat:
   active: true
   ForbiddenPublicSealedClass:

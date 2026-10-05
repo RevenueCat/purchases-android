@@ -15,6 +15,11 @@ internal data class WorkflowPaywallUiState(
     val currentStepId: String,
     val stepStates: Map<String, PaywallState.Loaded.Components>,
     /**
+     * True while the step on screen stands in for one the SDK has not resolved yet. The stand-in is
+     * inert: it takes no touches and reports nothing to accessibility services.
+     */
+    val isSkeleton: Boolean = false,
+    /**
      * Describes a navigation that should be animated. Set atomically with [currentStepId] so
      * the first recomposition after navigation already knows both surfaces and can position them
      * correctly — no gap-detection or [androidx.compose.animation.core.Animatable.snapTo] needed.

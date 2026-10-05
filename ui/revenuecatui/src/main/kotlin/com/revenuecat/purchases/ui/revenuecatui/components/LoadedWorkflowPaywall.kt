@@ -12,9 +12,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBackgroundStyle
@@ -75,6 +77,7 @@ internal fun LoadedWorkflowPaywall(
 ) {
     val currentStepId = workflowState.currentStepId
     val stepStates = workflowState.stepStates
+    val isSkeleton = workflowState.isSkeleton
     val currentState = stepStates[currentStepId] ?: run {
         Logger.e("Workflow step '$currentStepId' not found in stepStates — rendering nothing")
         return
@@ -136,6 +139,7 @@ internal fun LoadedWorkflowPaywall(
                     WorkflowStepsContent(
                         currentStepId = currentStepId,
                         stepStates = stepStates,
+                        isSkeleton = isSkeleton,
                         transitionState = transitionState,
                         clickHandler = clickHandler,
                         componentInteractionTracker = componentInteractionTracker,
@@ -146,6 +150,7 @@ internal fun LoadedWorkflowPaywall(
                 WorkflowStepsContent(
                     currentStepId = currentStepId,
                     stepStates = stepStates,
+                    isSkeleton = isSkeleton,
                     transitionState = transitionState,
                     clickHandler = clickHandler,
                     componentInteractionTracker = componentInteractionTracker,
@@ -189,6 +194,7 @@ private fun workflowHeaderState(
 private fun WorkflowStepsContent(
     currentStepId: String,
     stepStates: Map<String, PaywallState.Loaded.Components>,
+    isSkeleton: Boolean,
     transitionState: WorkflowTransitionState,
     clickHandler: suspend (PaywallAction.External) -> Unit,
     componentInteractionTracker: PaywallComponentInteractionTracker,
@@ -197,7 +203,13 @@ private fun WorkflowStepsContent(
     // No clipToBounds here — horizontal overflow is bounded by the window/dialog, and adding
     // a top clip causes the hero image (which renders behind the status bar) to get cropped
     // during the slide transition.
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            // A stand-in must not take touches or be announced: its labels describe a step the user
+            // may never reach, and its buttons point at actions that are not resolved yet.
+            .conditional(isSkeleton) { pointerInput(Unit) {}.clearAndSetSemantics { } },
+    ) {
         listOfNotNull(transitionState.animatingFromStepId, transitionState.animatingToStepId)
             .forEach { stepId ->
                 val stepState = stepStates[stepId] ?: return@forEach
