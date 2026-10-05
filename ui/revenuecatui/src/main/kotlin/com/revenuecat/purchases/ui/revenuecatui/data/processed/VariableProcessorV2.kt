@@ -173,7 +173,24 @@ internal object VariableProcessorV2 {
         text: String,
         localizedVariableKeys: Map<VariableLocalizationKey, String>,
     ): String {
-        val replacements = spokenPeriodKeys
+        val replacements = spokenReplacements(localizedVariableKeys)
+
+        // A URL path segment can read exactly like an abbreviation ("day" is `day_short` in English),
+        // and rewriting one breaks the link.
+        return text.transformOutsideUrls { segment ->
+            replacements.fold(segment) { partial, (regex, spokenWord) -> partial.replace(regex) { spokenWord } }
+        }
+    }
+
+    // Every text in a paywall shares the same localizations, so the compiled regexes are reused across texts
+    // and across re-processing on package selection instead of being rebuilt on each call.
+    @Volatile
+    private var cachedSpokenReplacements: Pair<List<Pair<String, String>>, List<Pair<Regex, String>>>? = null
+
+    private fun spokenReplacements(
+        localizedVariableKeys: Map<VariableLocalizationKey, String>,
+    ): List<Pair<Regex, String>> {
+        val pairs = spokenPeriodKeys
             .mapNotNull { (writtenKey, spokenKey) ->
                 val written = localizedVariableKeys[writtenKey]?.takeIf { it.isNotEmpty() }
                 val spokenWord = localizedVariableKeys[spokenKey]?.takeIf { it.isNotEmpty() }
@@ -181,16 +198,17 @@ internal object VariableProcessorV2 {
             }
             // Longest first, so "/month" is taken by the long form and not left to "mo".
             .sortedByDescending { (written, _) -> written.length }
-            .map { (written, spokenWord) ->
-                // Trailing guard so "/mo" does not match inside a spelled-out "/month".
-                Regex("/\\s*${Regex.escape(written)}(?!\\p{L})", RegexOption.IGNORE_CASE) to " $spokenWord"
-            }
 
-        // A URL path segment can read exactly like an abbreviation ("day" is `day_short` in English),
-        // and rewriting one breaks the link.
-        return text.transformOutsideUrls { segment ->
-            replacements.fold(segment) { partial, (regex, spokenWord) -> partial.replace(regex) { spokenWord } }
+        cachedSpokenReplacements?.let { (cachedPairs, replacements) ->
+            if (cachedPairs == pairs) return replacements
         }
+
+        val replacements = pairs.map { (written, spokenWord) ->
+            // Trailing guard so "/mo" does not match inside a spelled-out "/month".
+            Regex("/\\s*${Regex.escape(written)}(?!\\p{L})", RegexOption.IGNORE_CASE) to " $spokenWord"
+        }
+        cachedSpokenReplacements = pairs to replacements
+        return replacements
     }
 
     private fun String.transformOutsideUrls(transform: (String) -> String): String = buildString {
