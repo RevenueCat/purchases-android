@@ -226,9 +226,12 @@ internal class IdentityManager(
                 oldAppUserID,
                 identity,
                 onSuccess = { newAppUserID ->
-                    log(LogIntent.USER) { IdentityStrings.IAM_LOG_IN_SUCCESSFUL.format(newAppUserID) }
-                    switchToIAMUser(oldAppUserID, newAppUserID)
-                    fetchCustomerInfo(newAppUserID, onSuccess, onError)
+                    if (switchToIAMUserIfStillCurrent(oldAppUserID, newAppUserID)) {
+                        log(LogIntent.USER) { IdentityStrings.IAM_LOG_IN_SUCCESSFUL.format(newAppUserID) }
+                        fetchCustomerInfo(newAppUserID, onSuccess, onError)
+                    } else {
+                        onError(identityChangedError())
+                    }
                 },
                 onError = onError,
             )
@@ -303,9 +306,13 @@ internal class IdentityManager(
 
     // region Private functions
 
-    // IAM paths aren't user-specific, so the URL-keyed ETag cache must go too.
+    /**
+     * Switches to [newAppUserID] only if [oldAppUserID] is still current, so a late IAM result can't undo an
+     * identity change made meanwhile. IAM paths aren't user-specific, so the URL-keyed ETag cache goes too.
+     */
     @Synchronized
-    private fun switchToIAMUser(oldAppUserID: String, newAppUserID: String) {
+    private fun switchToIAMUserIfStillCurrent(oldAppUserID: String, newAppUserID: String): Boolean {
+        if (currentAppUserID != oldAppUserID) return false
         deviceCache.clearCachesForAppUserID(oldAppUserID)
         clearRemoteConfigThenOfferingsCaches(newAppUserID)
         subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
@@ -314,12 +321,14 @@ internal class IdentityManager(
         clearPaywallWebViewStorageIfUserChanged(oldAppUserID, newAppUserID)
         offlineEntitlementsManager.resetOfflineCustomerInfoCache()
         backend.clearCaches()
+        return true
     }
 
     /**
      * Revokes the current user's tokens, then logs in anonymously; the server assigns the new app user ID.
      * A revocation failure changes nothing. If the anonymous login then fails, the user falls back to a local
-     * anonymous ID with no tokens, which [whenIAMLoginNeeded] picks up on the next configure.
+     * anonymous ID with no tokens, which [whenIAMLoginNeeded] picks up on the next configure. Neither happens
+     * if the identity changed while the requests were in flight.
      */
     private fun logOutThroughIAM(completion: (PurchasesError?) -> Unit) {
         val oldAppUserID = currentAppUserID
@@ -330,12 +339,17 @@ internal class IdentityManager(
                     oldAppUserID,
                     Identity.anonymous,
                     onSuccess = { newAppUserID ->
-                        switchToIAMUser(oldAppUserID, newAppUserID)
-                        log(LogIntent.USER) { IdentityStrings.LOG_OUT_SUCCESSFUL }
-                        completion(null)
+                        if (switchToIAMUserIfStillCurrent(oldAppUserID, newAppUserID)) {
+                            log(LogIntent.USER) { IdentityStrings.LOG_OUT_SUCCESSFUL }
+                            completion(null)
+                        } else {
+                            completion(identityChangedError())
+                        }
                     },
                     onError = { error ->
-                        resetAndSaveUserID(generateRandomID())
+                        synchronized(this@IdentityManager) {
+                            if (currentAppUserID == oldAppUserID) resetAndSaveUserID(generateRandomID())
+                        }
                         completion(error)
                     },
                 )
@@ -343,6 +357,11 @@ internal class IdentityManager(
             onError = completion,
         )
     }
+
+    private fun identityChangedError() = PurchasesError(
+        PurchasesErrorCode.OperationAlreadyInProgressError,
+        IdentityStrings.IAM_IDENTITY_CHANGED_DURING_REQUEST,
+    )
 
     private fun fetchCustomerInfo(
         appUserID: String,

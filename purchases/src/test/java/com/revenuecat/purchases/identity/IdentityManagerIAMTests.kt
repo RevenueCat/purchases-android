@@ -541,6 +541,76 @@ class IdentityManagerIAMTests {
 
     // endregion
 
+    // region identity changes while a request is in flight
+
+    @Test
+    fun `a late IAM logIn success does not undo a switchUser made meanwhile`() = runTest {
+        cachedAppUserID = anonymousID
+        createIdentityManager()
+        val pending = deferTokenLogIn()
+        var result: Any? = null
+        identityManager.logIn(googleIdentity, { info, created -> result = info to created }, { result = it })
+
+        identityManager.switchUser(identifiedID)
+        pending.onSuccess(serverID)
+
+        assertThat(identityManager.currentAppUserID).isEqualTo(identifiedID)
+        assertThat((result as PurchasesError).code).isEqualTo(PurchasesErrorCode.OperationAlreadyInProgressError)
+        verify(exactly = 0) { deviceCache.cacheAppUserID(serverID) }
+        verify(exactly = 0) { subscriberAttributesManager.copyUnsyncedSubscriberAttributes(any(), any()) }
+        verify(exactly = 0) { backend.getCustomerInfo(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `a late bootstrap login success does not undo an identified logIn made meanwhile`() = runTest {
+        cachedAppUserID = anonymousID
+        createIdentityManager()
+        val pending = deferTokenLogIn()
+        identityManager.configure(null)
+        verify(exactly = 1) { tokenAPI.logIn(anonymousID, Identity.anonymous, any(), any()) }
+
+        every { backend.logIn(anonymousID, identifiedID, any(), any()) } answers {
+            thirdArg<(CustomerInfo, Boolean) -> Unit>()(customerInfo, false)
+        }
+        identityManager.logIn(identifiedID, { _, _ -> }, { })
+        pending.onSuccess(serverID)
+
+        assertThat(identityManager.currentAppUserID).isEqualTo(identifiedID)
+        verify(exactly = 0) { deviceCache.cacheAppUserID(serverID) }
+    }
+
+    @Test
+    fun `a late logOut anonymous login does not undo an identity change made meanwhile`() = runTest {
+        cachedAppUserID = identifiedID
+        createIdentityManager()
+        stubRevoke(fail = null)
+        val pending = deferTokenLogIn()
+        var error: PurchasesError? = null
+        identityManager.logOut { error = it }
+
+        identityManager.switchUser("another-user")
+        pending.onSuccess(serverID)
+
+        assertThat(identityManager.currentAppUserID).isEqualTo("another-user")
+        assertThat(error?.code).isEqualTo(PurchasesErrorCode.OperationAlreadyInProgressError)
+    }
+
+    @Test
+    fun `a late logOut anonymous login failure does not reset an identity changed meanwhile`() = runTest {
+        cachedAppUserID = identifiedID
+        createIdentityManager()
+        stubRevoke(fail = null)
+        val pending = deferTokenLogIn()
+        identityManager.logOut { }
+
+        identityManager.switchUser("another-user")
+        pending.onError(PurchasesError(PurchasesErrorCode.NetworkError))
+
+        assertThat(identityManager.currentAppUserID).isEqualTo("another-user")
+    }
+
+    // endregion
+
     private fun logOut(): PurchasesError? {
         var result: PurchasesError? = null
         var completed = false
@@ -578,6 +648,21 @@ class IdentityManagerIAMTests {
         var result: Any? = null
         identityManager.logIn(identity, { info, created -> result = info to created }, { result = it })
         return result
+    }
+
+    // Holds TokenAPI.logIn's callbacks so a test can change identity while the request is in flight.
+    private class PendingLogIn {
+        lateinit var onSuccess: (String) -> Unit
+        lateinit var onError: (PurchasesError) -> Unit
+    }
+
+    private fun deferTokenLogIn(): PendingLogIn {
+        val pending = PendingLogIn()
+        every { tokenAPI.logIn(any(), any(), any(), any()) } answers {
+            pending.onSuccess = thirdArg()
+            pending.onError = arg(3)
+        }
+        return pending
     }
 
     private fun stubTokenLogIn(succeedWith: String? = null, failWith: PurchasesError? = null) {
