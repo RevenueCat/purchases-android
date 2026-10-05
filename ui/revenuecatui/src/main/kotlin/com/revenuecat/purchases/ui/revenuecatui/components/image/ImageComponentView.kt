@@ -76,6 +76,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ProvidePreviewImageLoader
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
+import com.revenuecat.purchases.ui.revenuecatui.workflow.workflowSkeleton
 import java.net.URL
 import androidx.compose.ui.graphics.Color as ComposeColor
 
@@ -102,6 +103,7 @@ internal fun ImageComponentView(
         // in order to have the border applied on top of the overlay, which uses onDrawWithContent
         Box(
             modifier = modifier
+                .workflowSkeleton()
                 .resolveComponentSizeParentData(imageState.sizePlusMargin)
                 .size(imageState.sizePlusMargin)
                 .applyIfNotNull(imageState.marginAdjustedAspectRatio) { aspectRatio(it) }
