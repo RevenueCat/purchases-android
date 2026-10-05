@@ -12,21 +12,20 @@ import com.revenuecat.purchases.common.networking.TokenAuthenticator
 import com.revenuecat.purchases.common.networking.TokenManager
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.slot
-import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.RecordedRequest
 import okhttp3.mockwebserver.SocketPolicy
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import kotlin.concurrent.thread
 import org.robolectric.annotation.Config as AnnotationConfig
 
 /** IAM behavior of [HTTPClient]: access-token auth, IAM paths, and 401 refresh-and-retry. */
@@ -229,27 +228,28 @@ internal class HTTPClientIAMTest : BaseHTTPClientTest() {
     }
 
     @Test
-    fun `a request waiting on another request's refresh retries once that refresh succeeds`() {
-        val tokenManager = waitingTokenManager(refreshResult = TokenManager.TokenSet("new-access", null, null))
-        client = createClient(tokenAuthenticator = TokenAuthenticator(tokenManager) { appUserID })
+    fun `a 401 after another request already refreshed retries with the new token, without refreshing`() = runTest {
+        client = iamClient()
+        tokenManager.saveTokens(appUserID, "old-access", "refresh-token", "old-id")
         enqueue("/v1/customer", unauthorized)
         enqueue("/v1/customer", HTTPResult.createResult())
+        // Another request's refresh lands while this one is in flight.
+        server.dispatcher = object : Dispatcher() {
+            override fun dispatch(request: RecordedRequest): MockResponse =
+                if (request.getHeader("Authorization") == "Bearer old-access") {
+                    tokenManager.saveTokens(appUserID, "new-access", "new-refresh", "new-id")
+                    MockResponse().setResponseCode(RCHTTPStatusCodes.UNAUTHORIZED).setBody(unauthorized.payloadText)
+                } else {
+                    MockResponse().setBody("{}")
+                }
+        }
 
         val result = performRequest(customerInfo)
 
         assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
         assertThat(server.requestCount).isEqualTo(2)
-        verify(exactly = 0) { tokenManager.handleTokenRefreshResponse(any(), any()) }
-    }
-
-    @Test
-    fun `a request waiting on another request's refresh returns its 401 if that refresh fails`() {
-        val tokenManager = waitingTokenManager(refreshResult = null)
-        client = createClient(tokenAuthenticator = TokenAuthenticator(tokenManager) { appUserID })
-        enqueue("/v1/customer", unauthorized)
-
-        assertThat(performRequest(customerInfo)).isEqualTo(unauthorized)
-        assertThat(server.requestCount).isEqualTo(1)
+        assertThat(server.takeRequest().getHeader("Authorization")).isEqualTo("Bearer old-access")
+        assertThat(server.takeRequest().getHeader("Authorization")).isEqualTo("Bearer new-access")
     }
 
     // endregion
@@ -268,22 +268,6 @@ internal class HTTPClientIAMTest : BaseHTTPClientTest() {
         )
         advanceUntilIdle()
         return createClient(tokenAuthenticator = TokenAuthenticator(tokenManager) { currentUser })
-    }
-
-    // A TokenManager for which another request's refresh is already in flight, resolving to refreshResult.
-    private fun waitingTokenManager(refreshResult: TokenManager.TokenSet?): TokenManager {
-        val reportTokenUpdate = slot<(TokenManager.TokenSet?) -> Unit>()
-        return mockk(relaxed = true) {
-            every { enabled } returns true
-            every { authorizationHeaders(appUserID, isIAMEndpoint = false) } returns
-                mapOf("Authorization" to "Bearer access")
-            every {
-                tokenRefreshRequest(appUserID, RCHTTPStatusCodes.UNAUTHORIZED, false, capture(reportTokenUpdate))
-            } answers {
-                thread { reportTokenUpdate.captured(refreshResult) }
-                TokenManager.TokenRefreshAction.WaitingForOtherRequest
-            }
-        }
     }
 
     private fun tokenResponse(accessToken: String, refreshToken: String, idToken: String) =

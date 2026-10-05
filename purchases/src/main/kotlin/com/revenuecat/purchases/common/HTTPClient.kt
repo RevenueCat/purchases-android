@@ -199,6 +199,8 @@ internal class HTTPClient(
         }
 
         val isMainBackend = fallbackURLIndex == 0 && !endpoint.targetsFallbackHost
+        // Read once per request, so the refresh check below compares against what was actually sent.
+        val iamHeaders = tokenAuthenticator?.authorizationHeaders(endpoint).orEmpty()
 
         var source = apiSourceFailover?.currentSource(endpoint, baseURL, isFallbackAttempt = !isMainBackend)
         var sourceAttempts = 0
@@ -213,7 +215,7 @@ internal class HTTPClient(
                 endpoint = endpoint,
                 body = body,
                 postFieldsToSign = postFieldsToSign,
-                requestHeaders = requestHeaders,
+                requestHeaders = requestHeaders + iamHeaders,
                 refreshETag = refreshETag,
             )
             if (outcome.canFailOverToNextSource) {
@@ -267,6 +269,7 @@ internal class HTTPClient(
                             endpoint,
                             result.responseCode,
                             retriedAfterTokenRefresh,
+                            sentAuthorizationHeaders = iamHeaders,
                         ) { refreshBody ->
                             val apiKeyHeaders = requestHeaders.filterKeys { it == "Authorization" }
                             performRequest(appConfig.baseURL, Endpoint.TokenRefresh, refreshBody, null, apiKeyHeaders)
@@ -418,8 +421,6 @@ internal class HTTPClient(
     ): HTTPResult? {
         val jsonBody = body?.let { mapConverter.convertToJSON(it) }
         val path = endpoint.getPath(useFallback = isFallbackURL, useIAMPath = tokenAuthenticator?.usesIAMPaths == true)
-        // Computed per attempt, so a retry after a token refresh sends the new access token.
-        val authorizedHeaders = requestHeaders + tokenAuthenticator?.authorizationHeaders(endpoint).orEmpty()
         val connection: HttpURLConnection
         val shouldSignResponse = signingManager.shouldVerifyEndpoint(endpoint)
         val shouldAddNonce = shouldSignResponse && endpoint.needsNonceToPerformSigning
@@ -450,7 +451,7 @@ internal class HTTPClient(
                 signingManager.getPostParamsForSigningHeaderIfNeeded(endpoint, postFieldsToSign)
             }
             val headers = getHeaders(
-                authorizedHeaders,
+                requestHeaders,
                 fullURL,
                 refreshETag,
                 nonce,
@@ -554,7 +555,7 @@ internal class HTTPClient(
                         url = fullURL.toString(),
                         method = connection.requestMethod,
                         requestHeaders = getHeaders(
-                            authorizedHeaders,
+                            requestHeaders,
                             fullURL,
                             refreshETag,
                             nonce,

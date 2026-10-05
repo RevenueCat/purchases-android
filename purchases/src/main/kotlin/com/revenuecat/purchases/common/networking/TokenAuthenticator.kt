@@ -6,9 +6,6 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.errorLog
 import org.json.JSONException
 import java.io.IOException
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicReference
 
 /**
  * IAM authentication for [com.revenuecat.purchases.common.HTTPClient]: the current user's access token in
@@ -27,50 +24,41 @@ internal class TokenAuthenticator(
     fun authorizationHeaders(endpoint: Endpoint): Map<String, String> =
         tokenManager.authorizationHeaders(currentAppUserID(), endpoint.isIAMEndpoint)
 
+    // Serializes refreshes, so concurrent 401s for the same token cause one /auth/token call.
+    private val refreshLock = Any()
+
     /**
-     * Whether a request to [endpoint] that got [responseCode] should be retried because the current user's
-     * tokens were refreshed -- by posting [Endpoint.TokenRefresh] with [postTokenRefresh], or by waiting for a
-     * refresh already in flight. Blocks the calling thread until then, so only call it from a background thread.
+     * Whether a request to [endpoint] that got [responseCode], sent with [sentAuthorizationHeaders], should be
+     * retried with refreshed tokens. If another request refreshed while this one was in flight, it just
+     * retries; otherwise it posts [Endpoint.TokenRefresh] with [postTokenRefresh]. Blocks while a refresh is in
+     * progress, so only call it from a background thread.
      */
     fun refreshTokensIfNeeded(
         endpoint: Endpoint,
         responseCode: Int,
         alreadyRetried: Boolean,
+        sentAuthorizationHeaders: Map<String, String>,
         postTokenRefresh: (body: Map<String, Any?>) -> HTTPResult,
     ): Boolean {
-        if (responseCode != RCHTTPStatusCodes.UNAUTHORIZED || endpoint.isIAMEndpoint) return false
+        if (responseCode != RCHTTPStatusCodes.UNAUTHORIZED || endpoint.isIAMEndpoint || alreadyRetried) return false
         val appUserID = currentAppUserID()
-
-        val refreshedTokens = AtomicReference<TokenManager.TokenSet?>()
-        val refreshCompleted = CountDownLatch(1)
-        val action = tokenManager.tokenRefreshRequest(appUserID, responseCode, alreadyRetried) {
-            refreshedTokens.set(it)
-            refreshCompleted.countDown()
-        }
-        val completed = when (action) {
-            TokenManager.TokenRefreshAction.NoAction -> false
-            is TokenManager.TokenRefreshAction.Refresh -> {
-                var tokens: TokenManager.TokenSet? = null
-                try {
-                    tokens = refresh(action.request, postTokenRefresh)
-                } finally {
-                    // Always resolve the refresh, or later 401s for this user would wait on it.
-                    tokenManager.handleTokenRefreshResponse(appUserID, tokens)
-                }
-                true
+        return synchronized(refreshLock) {
+            val currentHeaders = tokenManager.authorizationHeaders(appUserID, isIAMEndpoint = false)
+            if (currentHeaders.isNotEmpty() && currentHeaders != sentAuthorizationHeaders) {
+                true // Already refreshed by another request.
+            } else {
+                val tokens = tokenManager.currentRefreshToken(appUserID)?.let { refresh(it, postTokenRefresh) }
+                tokens?.let { tokenManager.saveTokens(appUserID, it.accessToken, it.refreshToken, it.idToken) } != null
             }
-            TokenManager.TokenRefreshAction.WaitingForOtherRequest ->
-                refreshCompleted.await(REFRESH_WAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
         }
-        return completed && refreshedTokens.get() != null
     }
 
     private fun refresh(
-        request: TokenManager.TokenRefreshRequest,
+        refreshToken: String,
         postTokenRefresh: (body: Map<String, Any?>) -> HTTPResult,
     ): TokenManager.TokenSet? =
         try {
-            TokenRefreshOperation.handleResponse(postTokenRefresh(TokenRefreshOperation.body(request.refreshToken)))
+            TokenRefreshOperation.handleResponse(postTokenRefresh(TokenRefreshOperation.body(refreshToken)))
         } catch (e: IOException) {
             errorLog(e) { "IAM token refresh failed." }
             null
@@ -78,9 +66,4 @@ internal class TokenAuthenticator(
             errorLog(e) { "IAM token refresh failed." }
             null
         }
-
-    private companion object {
-        // How long to wait on another request's refresh; matches HTTPClient's default request timeout.
-        const val REFRESH_WAIT_TIMEOUT_MS = 30_000L
-    }
 }
