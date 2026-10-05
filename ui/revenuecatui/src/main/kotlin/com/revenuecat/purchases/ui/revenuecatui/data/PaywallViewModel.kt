@@ -79,6 +79,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -398,6 +399,8 @@ internal class PaywallViewModelImpl(
     private fun clearWorkflowState() {
         preWarmJob?.cancel()
         preWarmJob = null
+        branchResolveJob?.cancel()
+        branchResolveJob = null
         workflowNavigator = null
         currentWorkflow = null
         currentWorkflowBlobRef = null
@@ -1193,6 +1196,10 @@ internal class PaywallViewModelImpl(
                 step,
                 options.customVariables.mapValues { (_, value) -> value.asRulesDimensionValue },
             )
+            // Cancellation is cooperative and the resolve above is the only suspension point, so a
+            // cancelled job still reaches this line. Returning to the same step would let that stale
+            // answer pass the step id guard and overwrite a fresher one.
+            ensureActive()
             navigator.recordResolvedBranches(resolved, step.id)
         }
     }

@@ -153,35 +153,6 @@ class BranchResolverTest {
     )
 
     /** `step_1` branches on `aud_a`, `step_2` branches on `aud_b`. */
-    private fun workflowWithTwoBranches(): PublishedWorkflow {
-        fun step(id: String, audienceId: String, routeStepId: String, fallbackStepId: String) = WorkflowStep(
-            id = id,
-            type = "screen",
-            screenId = "screen_$id",
-            triggers = listOf(
-                WorkflowTrigger(
-                    name = "Next",
-                    type = WorkflowTriggerType.ON_PRESS,
-                    actionId = "action-next",
-                    componentId = "btn-next",
-                ),
-            ),
-            triggerActions = mapOf(
-                "action-next" to branch(listOf(audienceId to routeStepId), fallbackStepId),
-            ),
-        )
-
-        return PublishedWorkflow(
-            id = "wf_test",
-            displayName = "Test Workflow",
-            initialStepId = "step_1",
-            steps = mapOf(
-                "step_1" to step("step_1", "aud_a", "step_a", "step_fallback_1"),
-                "step_2" to step("step_2", "aud_b", "step_b", "step_fallback_2"),
-            ),
-            screens = emptyMap(),
-        )
-    }
 
     // endregion
 }

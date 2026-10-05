@@ -199,6 +199,30 @@ class PaywallViewModelWorkflowTest {
         ),
     )
 
+    @Test
+    fun `a step whose only exit is a branch does not report itself as the last step`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        // step-1 leaves only through a branch. Counting Step actions alone would read it as terminal.
+        val branchStep = step1.copy(
+            triggerActions = mapOf(
+                "action-next" to WorkflowTriggerAction.Branch(
+                    routes = emptyList(),
+                    fallbackStepId = "step-2",
+                ),
+            ),
+        )
+        val wfl = workflow.copy(steps = mapOf("step-1" to branchStep, "step-2" to step2))
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, testOfferings, null, uiConfig)
+
+        val started = captured.filterIsInstance<WorkflowEvent.StepStarted>()
+        assertThat(started).hasSize(1)
+        assertThat(started.first().isLastStep).isFalse
+    }
+
     private fun makeTwoPackageWorkflow(): Pair<PublishedWorkflow, Offerings> {
         val screen1 = makeScreen(screenId1).copy(componentsConfig = twoPackageComponentsConfig)
         val screen2 = makeScreen(screenId2).copy(componentsConfig = twoPackageComponentsConfig)
