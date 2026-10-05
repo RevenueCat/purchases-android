@@ -22,4 +22,5 @@
     <string name="cannot_open_link">Link non valido. Impossibile aprire.</string>
     <string name="revenuecatui_purchase">Acquista</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">Impossibile caricare il flusso di lavoro di anteprima. Riprova.</string>
 </resources>

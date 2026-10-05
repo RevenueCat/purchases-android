@@ -22,4 +22,5 @@
     <string name="cannot_open_link">Ugyldigt link. Kunne ikke åbnes.</string>
     <string name="revenuecatui_purchase">Køb</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">Forhåndsvisningens workflow kunne ikke indlæses. Prøv igen.</string>
 </resources>

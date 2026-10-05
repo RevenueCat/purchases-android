@@ -23,4 +23,5 @@
     <!-- Default Paywall -->
     <string name="revenuecatui_purchase">Purchase</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">The preview workflow could not be loaded. Please try again.</string>
 </resources>

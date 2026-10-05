@@ -22,4 +22,5 @@
     <string name="cannot_open_link">링크가 유효하지 않아 열 수 없습니다.</string>
     <string name="revenuecatui_purchase">구매</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">미리보기 워크플로를 불러올 수 없습니다. 다시 시도해 주세요.</string>
 </resources>
