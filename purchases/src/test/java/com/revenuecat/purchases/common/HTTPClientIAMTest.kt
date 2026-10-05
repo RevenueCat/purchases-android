@@ -10,8 +10,11 @@ import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.networking.TokenAuthenticator
 import com.revenuecat.purchases.common.networking.TokenManager
+import com.revenuecat.purchases.common.verification.SignatureVerificationMode
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -130,6 +133,61 @@ internal class HTTPClientIAMTest : BaseHTTPClientTest() {
         performRequest(Endpoint.GetOfferings(appUserID))
 
         assertThat(server.takeRequest().path).isEqualTo("/v1/customer/offerings")
+    }
+
+    // endregion
+
+    // region signature verification
+
+    @Test
+    fun `responses are verified against the access token that was sent, on the IAM path`() = runTest {
+        client = iamClient()
+        verifyCustomerInfoSignatures()
+        tokenManager.saveTokens(appUserID, "access-token", "refresh-token", "id-token")
+        enqueue("/v1/customer", HTTPResult.createResult())
+
+        performRequest(customerInfo)
+
+        verifySignedWith("/v1/customer", "Bearer access-token")
+    }
+
+    @Test
+    fun `without IAM, responses are verified against the API key on the regular path`() = runTest {
+        client = iamClient(enabled = false)
+        verifyCustomerInfoSignatures()
+        enqueue(customerInfo.getPath(), HTTPResult.createResult())
+
+        performRequest(customerInfo)
+
+        verifySignedWith("/v1/subscribers/user", "Bearer api_key")
+    }
+
+    @Test
+    fun `with no stored token, responses are verified against the API key on the IAM path`() = runTest {
+        client = iamClient()
+        verifyCustomerInfoSignatures()
+        enqueue("/v1/customer", HTTPResult.createResult())
+
+        performRequest(customerInfo)
+
+        verifySignedWith("/v1/customer", "Bearer api_key")
+    }
+
+    @Test
+    fun `after a refresh, the retried response is verified against the new token`() = runTest {
+        client = iamClient()
+        verifyCustomerInfoSignatures()
+        tokenManager.saveTokens(appUserID, "old-access", "refresh-token", "old-id")
+        enqueue("/v1/customer", unauthorized)
+        enqueue("/auth/token", tokenResponse("new-access", "new-refresh", "new-id"))
+        enqueue("/v1/customer", HTTPResult.createResult())
+
+        performRequest(customerInfo)
+
+        verifySignedWith("/v1/customer", "Bearer new-access")
+        verify(exactly = 1) {
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any(), any())
+        }
     }
 
     // endregion
@@ -253,6 +311,31 @@ internal class HTTPClientIAMTest : BaseHTTPClientTest() {
     }
 
     // endregion
+
+    // Customer info responses go through signature verification; the result itself is irrelevant here.
+    private fun verifyCustomerInfoSignatures() {
+        every { mockSigningManager.shouldVerifyEndpoint(customerInfo) } returns true
+        every { mockSigningManager.createRandomNonce() } returns "test-nonce"
+        every { mockSigningManager.signatureVerificationMode } returns mockk<SignatureVerificationMode.Informational>()
+        every {
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any(), any())
+        } returns SignatureVerificationResult.NotRequested
+    }
+
+    private fun verifySignedWith(urlPath: String, authorizationHeader: String) {
+        verify {
+            mockSigningManager.verifyResponse(
+                urlPath = urlPath,
+                signatureString = any(),
+                nonce = any(),
+                bodyBytes = any(),
+                requestTime = any(),
+                eTag = any(),
+                postFieldsToSignHeader = any(),
+                authorizationHeader = authorizationHeader,
+            )
+        }
+    }
 
     private fun performRequest(endpoint: Endpoint): HTTPResult =
         client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, apiKeyHeaders)
