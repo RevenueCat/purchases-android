@@ -959,7 +959,7 @@ jobs:
           install: true
       - android/start_emulator:
           avd_name: test-sdk-update-tester
-          post_emulator_launch_assemble_command: MAESTRO_TEST_STORE_API_KEY="$WORKFLOWS_TEST_STORE_API_KEY" bundle exec fastlane build_sdk_update_test_apps
+          post_emulator_launch_assemble_command: bundle exec fastlane build_sdk_update_test_apps
       - revenuecat/install-maestro
       - run:
           name: Run SDK update test (anonymous_user)
