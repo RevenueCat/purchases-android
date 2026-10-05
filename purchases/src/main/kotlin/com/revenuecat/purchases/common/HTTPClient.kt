@@ -575,17 +575,19 @@ internal class HTTPClient(
             }
         }
 
+        // requestHeaders includes the IAM header when one was sent, so this is what the backend signed with.
+        val authorizationHeader = requestHeaders["Authorization"]
         val verificationResult = if (shouldSignResponse &&
             RCHTTPStatusCodes.isSuccessful(responseCode)
         ) {
             if (endpoint.expectsRCFormatResponse) {
                 if (responseCode == RCHTTPStatusCodes.NO_CONTENT && bodyBytes.isEmpty()) {
-                    verifyRCFormatNoContentResponse(path, connection, nonce)
+                    verifyRCFormatNoContentResponse(path, connection, nonce, authorizationHeader)
                 } else {
-                    verifyRCFormatResponse(path, connection, bodyBytes, nonce)
+                    verifyRCFormatResponse(path, connection, bodyBytes, nonce, authorizationHeader)
                 }
             } else {
-                verifyResponse(path, connection, payloadText, nonce, postFieldsToSignHeader)
+                verifyResponse(path, connection, payloadText, nonce, postFieldsToSignHeader, authorizationHeader)
             }
         } else {
             SignatureVerificationResult.NotRequested
@@ -777,6 +779,7 @@ internal class HTTPClient(
         payload: String?,
         nonce: String?,
         postFieldsToSignHeader: String?,
+        authorizationHeader: String?,
     ): SignatureVerificationResult {
         return signingManager.verifyResponse(
             urlPath = urlPath,
@@ -786,6 +789,7 @@ internal class HTTPClient(
             requestTime = getRequestTimeHeader(connection),
             eTag = getETagHeader(connection),
             postFieldsToSignHeader = postFieldsToSignHeader,
+            authorizationHeader = authorizationHeader,
         )
     }
 
@@ -794,6 +798,7 @@ internal class HTTPClient(
         connection: URLConnection,
         payloadBytes: ByteArray,
         nonce: String?,
+        authorizationHeader: String?,
     ): SignatureVerificationResult {
         return signingManager.verifyRCFormatResponse(
             urlPath = urlPath,
@@ -802,18 +807,20 @@ internal class HTTPClient(
             containerBytes = payloadBytes,
             requestTime = getRequestTimeHeader(connection),
             eTag = getETagHeader(connection),
+            authorizationHeader = authorizationHeader,
         )
     }
 
     /**
      * Verifies a `204 No Content` RC Container Format response. There is no body to sign, but the signature still
-     * covers the request context (api key, [nonce], path, request time), so the empty response remains replay-
+     * covers the request context (auth credential, [nonce], path, request time), so the empty response remains replay-
      * and tamper-evident. This endpoint emits no ETag, so the empty body is the only signed payload component.
      */
     private fun verifyRCFormatNoContentResponse(
         urlPath: String,
         connection: URLConnection,
         nonce: String?,
+        authorizationHeader: String?,
     ): SignatureVerificationResult {
         return signingManager.verifyResponse(
             urlPath = urlPath,
@@ -823,6 +830,7 @@ internal class HTTPClient(
             requestTime = getRequestTimeHeader(connection),
             eTag = getETagHeader(connection),
             postFieldsToSignHeader = null,
+            authorizationHeader = authorizationHeader,
         )
     }
 

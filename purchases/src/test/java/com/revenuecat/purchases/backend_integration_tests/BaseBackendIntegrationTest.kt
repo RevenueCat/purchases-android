@@ -195,15 +195,19 @@ internal abstract class BaseBackendIntegrationTest {
     }
 
     protected fun assertSigningPerformed(times: Int = 1) {
-        verify(exactly = times) { signingManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())  }
+        verify(exactly = times) {
+            signingManager.verifyResponse(any(), any(), any(), any(), any(), any(), any(), any())
+        }
     }
 
     protected fun assertRCFormatSigningPerformed(times: Int = 1) {
-        verify(exactly = times) { signingManager.verifyRCFormatResponse(any(), any(), any(), any(), any(), any()) }
+        verify(exactly = times) {
+            signingManager.verifyRCFormatResponse(any(), any(), any(), any(), any(), any(), any())
+        }
     }
 
     protected fun assertSigningNotPerformed() {
-        verify(exactly = 0) { signingManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())  }
-        verify(exactly = 0) { signingManager.verifyRCFormatResponse(any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 0) { signingManager.verifyResponse(any(), any(), any(), any(), any(), any(), any(), any())  }
+        verify(exactly = 0) { signingManager.verifyRCFormatResponse(any(), any(), any(), any(), any(), any(), any()) }
     }
 }
