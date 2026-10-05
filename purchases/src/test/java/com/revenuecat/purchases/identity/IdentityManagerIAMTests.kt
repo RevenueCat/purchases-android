@@ -2,6 +2,7 @@
 
 package com.revenuecat.purchases.identity
 
+import android.content.SharedPreferences
 import android.util.Base64
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -16,6 +17,7 @@ import com.revenuecat.purchases.common.networking.TokenManager
 import com.revenuecat.purchases.common.offerings.OfferingsCache
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
+import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.paywalls.PaywallAssetWarming
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
@@ -49,6 +51,7 @@ class IdentityManagerIAMTests {
     private val serverID = "server-assigned-user"
     private val googleIdentity = Identity.google("google-token".toByteArray())
     private val customerInfo = mockk<CustomerInfo>()
+    private val editor = mockk<SharedPreferences.Editor>().apply { every { apply() } just Runs }
 
     private var cachedAppUserID: String? = null
     private lateinit var appConfig: AppConfig
@@ -75,9 +78,16 @@ class IdentityManagerIAMTests {
             every { cacheAppUserID(any()) } answers { cachedAppUserID = firstArg() }
             every { clearCachesForAppUserID(any()) } just Runs
             every { cacheCustomerInfo(any(), any()) } just Runs
+            every { startEditing() } returns editor
+            every { cacheAppUserID(any(), editor) } answers {
+                cachedAppUserID = firstArg()
+                editor
+            }
+            every { cleanupOldAttributionData() } just Runs
         }
         subscriberAttributesCache = mockk<SubscriberAttributesCache>().apply {
             every { clearSubscriberAttributesIfSyncedForSubscriber(any()) } just Runs
+            every { cleanUpSubscriberAttributeCache(any(), editor) } just Runs
         }
         subscriberAttributesManager = mockk<SubscriberAttributesManager>().apply {
             every { synchronizeSubscriberAttributesForAllUsers(any(), any(), any()) } answers {
@@ -93,6 +103,7 @@ class IdentityManagerIAMTests {
         }
         backend = mockk<Backend>().apply {
             every { clearCaches() } just Runs
+            every { verificationMode } returns SignatureVerificationMode.Disabled
             every { getCustomerInfo(any(), any(), any(), any()) } answers {
                 thirdArg<(CustomerInfo) -> Unit>()(customerInfo)
             }
@@ -453,6 +464,79 @@ class IdentityManagerIAMTests {
         assertThat(IdentityManager.isUserIDAnonymous(identityManager.currentAppUserID)).isTrue()
         verify(exactly = 0) { tokenAPI.revokeTokens(any(), any(), any()) }
         verify(exactly = 0) { tokenAPI.logIn(any(), any(), any(), any()) }
+    }
+
+    // endregion
+
+    // region silent bootstrap login
+
+    @Test
+    fun `configure logs a fresh anonymous user in exactly once, after the token cache loads`() = runTest {
+        createIdentityManager(loaded = false)
+        stubTokenLogIn(succeedWith = serverID)
+
+        identityManager.configure(null)
+        val anonymousAppUserID = identityManager.currentAppUserID
+        verify(exactly = 0) { tokenAPI.logIn(any(), any(), any(), any()) }
+
+        advanceUntilIdle()
+        verify(exactly = 1) { tokenAPI.logIn(anonymousAppUserID, Identity.anonymous, any(), any()) }
+        assertThat(identityManager.currentAppUserID).isEqualTo(serverID)
+    }
+
+    @Test
+    fun `configure logs in immediately when the token cache has already loaded`() = runTest {
+        cachedAppUserID = anonymousID
+        createIdentityManager()
+        stubTokenLogIn(succeedWith = serverID)
+
+        identityManager.configure(null)
+
+        verify(exactly = 1) { tokenAPI.logIn(anonymousID, Identity.anonymous, any(), any()) }
+    }
+
+    @Test
+    fun `configure does not log in an anonymous user who already has an access token`() = runTest {
+        cachedAppUserID = anonymousID
+        createIdentityManager()
+        tokenManager.saveTokens(anonymousID, accessToken = "access", refreshToken = null, idToken = null)
+
+        identityManager.configure(null)
+        advanceUntilIdle()
+
+        verify(exactly = 0) { tokenAPI.logIn(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `configure does not log in an identified user`() = runTest {
+        createIdentityManager()
+
+        identityManager.configure(identifiedID)
+        advanceUntilIdle()
+
+        verify(exactly = 0) { tokenAPI.logIn(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `configure does not touch TokenAPI when IAM is disabled`() = runTest {
+        createIdentityManager(iamEnabled = false)
+
+        identityManager.configure(null)
+        advanceUntilIdle()
+
+        verify(exactly = 0) { tokenAPI.logIn(any(), any(), any(), any()) }
+        assertThat(IdentityManager.isUserIDAnonymous(identityManager.currentAppUserID)).isTrue()
+    }
+
+    @Test
+    fun `a failed bootstrap login leaves the anonymous user in place`() = runTest {
+        cachedAppUserID = anonymousID
+        createIdentityManager()
+        stubTokenLogIn(failWith = PurchasesError(PurchasesErrorCode.NetworkError))
+
+        identityManager.configure(null)
+
+        assertThat(identityManager.currentAppUserID).isEqualTo(anonymousID)
     }
 
     // endregion

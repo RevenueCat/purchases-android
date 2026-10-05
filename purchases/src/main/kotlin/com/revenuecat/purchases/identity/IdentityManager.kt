@@ -99,6 +99,11 @@ internal class IdentityManager(
         enqueue {
             deviceCache.cleanupOldAttributionData()
         }
+
+        // Silent bootstrap: an anonymous user without tokens gets them once the token cache has loaded.
+        whenIAMLoginNeeded {
+            logIn(Identity.anonymous, onSuccess = { _, _ -> }, onError = { errorLog(it) })
+        }
     }
 
     suspend fun aliasCurrentUserIdTo(
