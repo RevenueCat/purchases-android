@@ -2,6 +2,7 @@
 
 package com.revenuecat.purchases.identity
 
+import android.util.Base64
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
@@ -31,6 +32,8 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.json.JSONArray
+import org.json.JSONObject
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -297,6 +300,78 @@ class IdentityManagerIAMTests {
 
     // endregion
 
+    // region currentUserIsAnonymous
+
+    @Test
+    fun `a regex-anonymous app user ID is anonymous without an ID token`() = runTest {
+        cachedAppUserID = anonymousID
+        createIdentityManager()
+
+        assertThat(identityManager.currentUserIsAnonymous()).isTrue()
+    }
+
+    @Test
+    fun `an identified app user ID is not anonymous without an ID token`() = runTest {
+        cachedAppUserID = identifiedID
+        createIdentityManager()
+
+        assertThat(identityManager.currentUserIsAnonymous()).isFalse()
+    }
+
+    @Test
+    fun `an anonymous ID token makes a server-assigned app user ID anonymous`() = runTest {
+        cachedAppUserID = serverID
+        createIdentityManager()
+        saveIDToken(serverID, amr = listOf("anonymous"))
+
+        assertThat(identityManager.currentUserIsAnonymous()).isTrue()
+    }
+
+    @Test
+    fun `a regex-anonymous app user ID stays anonymous even with a non-anonymous ID token`() = runTest {
+        cachedAppUserID = anonymousID
+        createIdentityManager()
+        saveIDToken(anonymousID, amr = listOf("google"))
+
+        assertThat(identityManager.currentUserIsAnonymous()).isTrue()
+    }
+
+    @Test
+    fun `a non-anonymous ID token leaves a server-assigned app user ID identified`() = runTest {
+        cachedAppUserID = serverID
+        createIdentityManager()
+        saveIDToken(serverID, amr = listOf("anonymous", "google"))
+
+        assertThat(identityManager.currentUserIsAnonymous()).isFalse()
+    }
+
+    @Test
+    fun `the ID token is not consulted before the token cache loads`() = runTest {
+        val idToken = fakeIDToken(listOf("anonymous"))
+        newTokenManager(iamEnabled = true).saveTokens(serverID, "access", refreshToken = null, idToken = idToken)
+        advanceUntilIdle()
+        cachedAppUserID = serverID
+        createIdentityManager(loaded = false)
+
+        assertThat(identityManager.currentUserIsAnonymous()).isFalse()
+        advanceUntilIdle()
+        assertThat(identityManager.currentUserIsAnonymous()).isTrue()
+    }
+
+    @Test
+    fun `logOut fails for a server-assigned anonymous user`() = runTest {
+        cachedAppUserID = serverID
+        createIdentityManager()
+        saveIDToken(serverID, amr = listOf("anonymous"))
+
+        val error = logOut()
+
+        assertThat(error?.code).isEqualTo(PurchasesErrorCode.LogOutWithAnonymousUserError)
+        verify(exactly = 0) { tokenAPI.revokeTokens(any(), any(), any()) }
+    }
+
+    // endregion
+
     // region logOut
 
     @Test
@@ -391,6 +466,21 @@ class IdentityManagerIAMTests {
         }
         assertThat(completed).isTrue()
         return result
+    }
+
+    private fun saveIDToken(appUserID: String, amr: List<String>) {
+        tokenManager.saveTokens(appUserID, accessToken = "access", refreshToken = null, idToken = fakeIDToken(amr))
+    }
+
+    // Unsigned; only the amr claim is ever read.
+    private fun fakeIDToken(amr: List<String>): String {
+        fun base64Url(value: String) = Base64.encodeToString(
+            value.toByteArray(Charsets.UTF_8),
+            Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING,
+        )
+        val payload = JSONObject().put("amr", JSONArray(amr)).toString()
+        val header = base64Url("{\"alg\":\"none\"}")
+        return "$header.${base64Url(payload)}.${base64Url("")}"
     }
 
     private fun stubRevoke(fail: PurchasesError?) {

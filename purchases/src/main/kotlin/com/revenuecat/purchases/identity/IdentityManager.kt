@@ -281,7 +281,9 @@ internal class IdentityManager(
         val currentAppUserIDLooksAnonymous = isUserIDAnonymous(deviceCache.getCachedAppUserID() ?: "")
         val isLegacyAnonymousAppUserID =
             deviceCache.getCachedAppUserID() == deviceCache.getLegacyCachedAppUserID()
-        return currentAppUserIDLooksAnonymous || isLegacyAnonymousAppUserID
+        // Server-assigned anonymous IDs needn't match the regex; the ID token says so. False until it loads.
+        val tokenSaysAnonymous = tokenManager.isCurrentIdentityAnonymous(currentAppUserID)
+        return currentAppUserIDLooksAnonymous || isLegacyAnonymousAppUserID || tokenSaysAnonymous
     }
 
     /**
