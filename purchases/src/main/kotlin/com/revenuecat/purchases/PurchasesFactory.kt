@@ -43,6 +43,7 @@ import com.revenuecat.purchases.common.networking.DeviceConnectivityChecker
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
 import com.revenuecat.purchases.common.networking.SourceHealthChecker
+import com.revenuecat.purchases.common.networking.TokenAPI
 import com.revenuecat.purchases.common.networking.TokenAuthenticator
 import com.revenuecat.purchases.common.networking.TokenManager
 import com.revenuecat.purchases.common.offerings.OfferingsCache
@@ -412,6 +413,7 @@ internal class PurchasesFactory(
                 dispatcher,
                 paywallAssetWarming,
                 tokenManager,
+                TokenAPI(tokenManager, httpClient, backendHelper, backendDispatcher, appConfig),
                 uiPreviewMode = appConfig.uiPreviewMode,
             )
 

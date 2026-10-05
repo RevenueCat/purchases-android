@@ -16,6 +16,7 @@ import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.common.networking.TokenAPI
 import com.revenuecat.purchases.common.networking.TokenManager
 import com.revenuecat.purchases.common.offerings.OfferingsCache
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
@@ -45,6 +46,7 @@ internal class IdentityManager(
     private val dispatcher: Dispatcher,
     private val paywallAssetWarming: PaywallAssetWarming,
     private val tokenManager: TokenManager,
+    private val tokenAPI: TokenAPI,
     private val uiPreviewMode: Boolean = false,
 ) {
     companion object {
@@ -186,6 +188,47 @@ internal class IdentityManager(
         }
     }
 
+    /**
+     * Logs in with [identity] through IAM, then switches to the app user ID the server assigned and fetches
+     * its [CustomerInfo]. `created` is always `false`; the token endpoints don't report it.
+     */
+    fun logIn(
+        identity: Identity,
+        onSuccess: (CustomerInfo, Boolean) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        if (currentAppUserID == UI_PREVIEW_MODE_APP_USER_ID) {
+            onError(
+                PurchasesError(
+                    PurchasesErrorCode.UnsupportedError,
+                    IdentityStrings.OPERATION_NOT_SUPPORTED_IN_PREVIEW_MODE,
+                ).also { errorLog(it) },
+            )
+            return
+        }
+        if (!tokenManager.enabled) {
+            onError(PurchasesError(PurchasesErrorCode.ConfigurationError, "IAM login is not enabled."))
+            return
+        }
+
+        val oldAppUserID = currentAppUserID
+        log(LogIntent.USER) { IdentityStrings.IAM_LOGGING_IN.format(oldAppUserID, identity.identitySource) }
+        subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
+            oldAppUserID,
+            Delay.jitterOnlyIfInBackground(appConfig.isAppBackgrounded),
+        ) {
+            tokenAPI.logIn(
+                oldAppUserID,
+                identity,
+                onSuccess = { newAppUserID ->
+                    switchToIAMUser(oldAppUserID, newAppUserID)
+                    fetchCustomerInfo(newAppUserID, onSuccess, onError)
+                },
+                onError = onError,
+            )
+        }
+    }
+
     fun switchUser(newAppUserID: String) {
         if (currentAppUserID == UI_PREVIEW_MODE_APP_USER_ID ||
             newAppUserID == UI_PREVIEW_MODE_APP_USER_ID
@@ -247,6 +290,36 @@ internal class IdentityManager(
     // endregion
 
     // region Private functions
+
+    // IAM paths aren't user-specific, so the URL-keyed ETag cache must go too.
+    @Synchronized
+    private fun switchToIAMUser(oldAppUserID: String, newAppUserID: String) {
+        log(LogIntent.USER) { IdentityStrings.IAM_LOG_IN_SUCCESSFUL.format(newAppUserID) }
+        deviceCache.clearCachesForAppUserID(oldAppUserID)
+        clearRemoteConfigThenOfferingsCaches(newAppUserID)
+        subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
+        deviceCache.cacheAppUserID(newAppUserID)
+        copySubscriberAttributesToNewUserIfOldIsAnonymous(oldAppUserID, newAppUserID)
+        clearPaywallWebViewStorageIfUserChanged(oldAppUserID, newAppUserID)
+        offlineEntitlementsManager.resetOfflineCustomerInfoCache()
+        backend.clearCaches()
+    }
+
+    private fun fetchCustomerInfo(
+        appUserID: String,
+        onSuccess: (CustomerInfo, Boolean) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        backend.getCustomerInfo(
+            appUserID,
+            appConfig.isAppBackgrounded,
+            onSuccess = { customerInfo ->
+                deviceCache.cacheCustomerInfo(appUserID, customerInfo)
+                onSuccess(customerInfo, false)
+            },
+            onError = { error, _ -> onError(error) },
+        )
+    }
 
     private fun needsIAMLogin(): Boolean =
         tokenManager.enabled && currentUserIsAnonymous() && !tokenManager.hasCurrentAccessToken(currentAppUserID)

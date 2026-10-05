@@ -14,6 +14,7 @@ import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.networking.TokenAPI
 import com.revenuecat.purchases.common.networking.TokenManager
 import com.revenuecat.purchases.common.offerings.OfferingsCache
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
@@ -1064,6 +1065,7 @@ class IdentityManagerTests {
             SyncDispatcher(),
             paywallAssetWarming,
             TokenManager(ApplicationProvider.getApplicationContext(), "api_key", enabled = false),
+            mockk<TokenAPI>(),
             uiPreviewMode = uiPreviewMode,
         )
     }
