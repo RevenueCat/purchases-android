@@ -563,9 +563,9 @@ private fun PaywallState.Loaded.Components.AvailablePackages.Info.resolvesVisibl
 ): Boolean =
     visibilityOverrides.buildPresentedPartial(
         windowSize = ScreenCondition.COMPACT,
-        offerEligibility = offerEligibility ?: OfferEligibility.Ineligible,
-        state = ComponentViewState.DEFAULT,
-        conditionContext = ConditionContext(selectedPackageId = null, customVariables = customVariables),
+        offerEligibility = { offerEligibility ?: OfferEligibility.Ineligible },
+        state = { ComponentViewState.DEFAULT },
+        conditionContext = ConditionContext(selectedPackageId = { null }, customVariables = customVariables),
     )?.partial?.visible ?: visible
 
 /**

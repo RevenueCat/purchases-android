@@ -92,9 +92,10 @@ internal fun <T : PartialComponent, P : PresentedPartial<P>> List<ComponentOverr
  * Context needed to evaluate conditions on component overrides.
  */
 internal class ConditionContext(
-    val selectedPackageId: String?,
+    // Lambdas, like stateReader below: calls inside derivedStateOf subscribe only to what condition evaluation
+    // actually reads, so components without a matching condition don't re-evaluate on package selection.
+    val selectedPackageId: () -> String?,
     val customVariables: Map<String, CustomVariableValue>,
-    // Calls inside derivedStateOf subscribe only to the keys condition evaluation actually reads.
     val stateReader: (String) -> JsonPrimitive? = { null },
     /**
      * The paywall's measured bounds in dp, for window size condition evaluation.
@@ -117,9 +118,9 @@ internal class ConditionContext(
 @JvmSynthetic
 internal fun <T : PresentedPartial<T>> List<PresentedOverride<T>>.buildPresentedPartial(
     windowSize: ScreenCondition,
-    offerEligibility: OfferEligibility,
-    state: ComponentViewState,
-    conditionContext: ConditionContext = ConditionContext(null, emptyMap()),
+    offerEligibility: () -> OfferEligibility,
+    state: () -> ComponentViewState,
+    conditionContext: ConditionContext = ConditionContext({ null }, emptyMap()),
 ): T? {
     var partial: T? = null
     for (override in this) {
@@ -132,8 +133,8 @@ internal fun <T : PresentedPartial<T>> List<PresentedOverride<T>>.buildPresented
 
 private fun <T : PresentedPartial<T>> PresentedOverride<T>.shouldApply(
     windowSize: ScreenCondition,
-    offerEligibility: OfferEligibility,
-    state: ComponentViewState,
+    offerEligibility: () -> OfferEligibility,
+    state: () -> ComponentViewState,
     conditionContext: ConditionContext,
 ): Boolean = conditions.all { condition ->
     condition.evaluate(windowSize, offerEligibility, state, conditionContext)
@@ -141,21 +142,21 @@ private fun <T : PresentedPartial<T>> PresentedOverride<T>.shouldApply(
 
 private fun ComponentOverride.Condition.evaluate(
     windowSize: ScreenCondition,
-    offerEligibility: OfferEligibility,
-    state: ComponentViewState,
+    offerEligibility: () -> OfferEligibility,
+    state: () -> ComponentViewState,
     conditionContext: ConditionContext,
 ): Boolean = when (this) {
     ComponentOverride.Condition.Compact,
     ComponentOverride.Condition.Medium,
     ComponentOverride.Condition.Expanded,
     -> windowSize.applicableConditions.contains(this)
-    ComponentOverride.Condition.MultiplePhaseOffers -> offerEligibility.hasMultipleDiscountedPhases
-    ComponentOverride.Condition.IntroOffer -> offerEligibility.isIntroOffer
-    is ComponentOverride.Condition.IntroOfferRule -> evaluate(offerEligibility)
-    ComponentOverride.Condition.Selected -> state == ComponentViewState.SELECTED
-    ComponentOverride.Condition.PromoOffer -> offerEligibility.isPromoOffer
-    is ComponentOverride.Condition.PromoOfferRule -> evaluate(offerEligibility)
-    is ComponentOverride.Condition.SelectedPackage -> evaluate(conditionContext.selectedPackageId)
+    ComponentOverride.Condition.MultiplePhaseOffers -> offerEligibility().hasMultipleDiscountedPhases
+    ComponentOverride.Condition.IntroOffer -> offerEligibility().isIntroOffer
+    is ComponentOverride.Condition.IntroOfferRule -> evaluate(offerEligibility())
+    ComponentOverride.Condition.Selected -> state() == ComponentViewState.SELECTED
+    ComponentOverride.Condition.PromoOffer -> offerEligibility().isPromoOffer
+    is ComponentOverride.Condition.PromoOfferRule -> evaluate(offerEligibility())
+    is ComponentOverride.Condition.SelectedPackage -> evaluate(conditionContext.selectedPackageId())
     is ComponentOverride.Condition.Variable -> evaluate(conditionContext.customVariables)
     is ComponentOverride.Condition.State -> evaluate(conditionContext.stateReader)
     is ComponentOverride.Condition.WindowWidthRule,
