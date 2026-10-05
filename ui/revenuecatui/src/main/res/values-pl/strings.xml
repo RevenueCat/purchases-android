@@ -22,4 +22,5 @@
     <string name="cannot_open_link">Link jest nieprawidłowy. Nie można go otworzyć.</string>
     <string name="revenuecatui_purchase">Kup</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">Nie udało się wczytać przepływu pracy podglądu. Spróbuj ponownie.</string>
 </resources>

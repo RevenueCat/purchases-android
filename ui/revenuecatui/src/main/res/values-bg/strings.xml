@@ -22,4 +22,5 @@
     <string name="cannot_open_link">Невалиден линк. Не може да бъде отворен.</string>
     <string name="revenuecatui_purchase">Купи</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">Работният процес за предварителен преглед не може да бъде зареден. Моля, опитайте отново.</string>
 </resources>

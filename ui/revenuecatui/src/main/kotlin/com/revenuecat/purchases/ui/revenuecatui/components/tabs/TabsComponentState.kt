@@ -83,14 +83,12 @@ internal class TabsComponentState(
 
     private val presentedPartial by derivedStateOf {
         val windowCondition = ScreenCondition.from(windowSize)
-        val componentState = ComponentViewState.DEFAULT
-
         style.overrides.buildPresentedPartial(
             windowCondition,
-            offerEligibility,
-            componentState,
+            offerEligibility = { offerEligibility },
+            state = { ComponentViewState.DEFAULT },
             conditionContext = ConditionContext(
-                selectedPackageId = selectedPackageInfoProvider()?.rcPackage?.identifier,
+                selectedPackageId = { selectedPackageInfoProvider()?.rcPackage?.identifier },
                 customVariables = customVariablesProvider(),
                 windowDpSize = windowDpSize,
             ),

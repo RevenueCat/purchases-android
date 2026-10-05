@@ -115,11 +115,25 @@ private fun NotifyingUriHandler(
     CompositionLocalProvider(LocalUriHandler provides notifyingUriHandler, content = content)
 }
 
-@Suppress("LongMethod", "ViewModelForwarding")
+@Suppress("ViewModelForwarding")
 @Composable
 internal fun InternalPaywall(
     options: PaywallOptions,
     viewModel: PaywallViewModel = getPaywallViewModel(options),
+    isDarkModeOverride: Boolean? = null,
+    externalActionInterceptor: (suspend (PaywallAction.External) -> Boolean)? = null,
+) {
+    PaywallTheme(fontProvider = null, isDarkModeOverride = isDarkModeOverride) {
+        InternalPaywallContent(options, viewModel, externalActionInterceptor)
+    }
+}
+
+@Suppress("LongMethod", "ViewModelForwarding")
+@Composable
+private fun InternalPaywallContent(
+    options: PaywallOptions,
+    viewModel: PaywallViewModel,
+    externalActionInterceptor: (suspend (PaywallAction.External) -> Boolean)?,
 ) {
     DisposableEffect(viewModel) {
         viewModel.onPaywallPresented()
@@ -209,13 +223,13 @@ internal fun InternalPaywall(
                         LoadedWorkflowPaywall(
                             workflowState = workflowState,
                             onTransitionComplete = viewModel::onTransitionComplete,
-                            clickHandler = rememberPaywallActionHandler(viewModel),
+                            clickHandler = rememberPaywallActionHandler(viewModel, externalActionInterceptor),
                             componentInteractionTracker = componentInteractionTracker,
                         )
                     } else {
                         LoadedPaywallComponents(
                             state = state,
-                            clickHandler = rememberPaywallActionHandler(viewModel),
+                            clickHandler = rememberPaywallActionHandler(viewModel, externalActionInterceptor),
                             componentInteractionTracker = componentInteractionTracker,
                         )
                     }
@@ -410,12 +424,14 @@ private fun PaywallState.Loaded.Legacy.configurationWithOverriddenLocale(): Conf
 }
 
 @Composable
-private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (PaywallAction.External) -> Unit {
+private fun rememberPaywallActionHandler(
+    viewModel: PaywallViewModel,
+    interceptor: (suspend (PaywallAction.External) -> Boolean)?,
+): suspend (PaywallAction.External) -> Unit {
     val context: Context = LocalContext.current
     val activity: Activity? = context.getActivity()
-    return remember(viewModel) {
-        {
-                action ->
+    return remember(viewModel, interceptor) {
+        val handler: suspend (PaywallAction.External) -> Unit = { action ->
             when (action) {
                 is PaywallAction.External.RestorePurchases -> viewModel.handleRestorePurchases()
                 is PaywallAction.External.PurchasePackage ->
@@ -460,7 +476,16 @@ private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (
                 }
             }
         }
+        { action -> handleInterceptedAction(action, interceptor, handler) }
     }
+}
+
+private suspend fun handleInterceptedAction(
+    action: PaywallAction.External,
+    interceptor: (suspend (PaywallAction.External) -> Boolean)?,
+    handler: suspend (PaywallAction.External) -> Unit,
+) {
+    if (interceptor?.invoke(action) != true) handler(action)
 }
 
 private fun handleLaunchWebCheckout(

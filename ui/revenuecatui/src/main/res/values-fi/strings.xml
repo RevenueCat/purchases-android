@@ -22,4 +22,5 @@
     <string name="cannot_open_link">Virheellinen linkki. Ei voitu avata.</string>
     <string name="revenuecatui_purchase">Osta</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">Esikatselun työnkulkua ei voitu ladata. Yritä uudelleen.</string>
 </resources>

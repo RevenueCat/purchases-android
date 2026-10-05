@@ -38,6 +38,7 @@ import com.revenuecat.purchases.virtualcurrencies.VirtualCurrency
 
 private const val MAX_NUMBER_OF_ROWS = 4
 
+@Suppress("LongParameterList")
 @Composable
 internal fun VirtualCurrenciesListView(
     virtualCurrencies: VirtualCurrencies,
@@ -45,6 +46,7 @@ internal fun VirtualCurrenciesListView(
     localization: CustomerCenterConfigData.Localization,
     onAction: (CustomerCenterAction) -> Unit,
     modifier: Modifier = Modifier,
+    isDarkMode: Boolean = isSystemInDarkTheme(),
 ) {
     if (virtualCurrencies.all.isEmpty()) return
 
@@ -95,6 +97,7 @@ internal fun VirtualCurrenciesListView(
                 appearance = appearance,
                 localization = localization,
                 virtualCurrency = virtualCurrency,
+                isDarkMode = isDarkMode,
                 position = position,
             )
         }
@@ -110,6 +113,7 @@ internal fun VirtualCurrenciesListView(
     }
 }
 
+@Suppress("LongParameterList")
 @Composable
 internal fun VirtualCurrencyRow(
     appearance: CustomerCenterConfigData.Appearance,
@@ -117,6 +121,7 @@ internal fun VirtualCurrencyRow(
     virtualCurrency: VirtualCurrency,
     position: ButtonPosition,
     modifier: Modifier = Modifier,
+    isDarkMode: Boolean = isSystemInDarkTheme(),
 ) {
     val formattedBalance = remember(virtualCurrency.balance) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -146,8 +151,7 @@ internal fun VirtualCurrencyRow(
         ButtonPosition.MIDDLE -> RoundedCornerShape(CustomerCenterConstants.Card.MIDDLE_CORNER_SIZE)
     }
 
-    val isDark = isSystemInDarkTheme()
-    val textColor = appearance.getColorForTheme(isDark) { it.textColor } ?: MaterialTheme.colorScheme.onSurface
+    val textColor = appearance.getColorForTheme(isDarkMode) { it.textColor } ?: MaterialTheme.colorScheme.onSurface
 
     Surface(
         modifier = modifier.fillMaxWidth(),
