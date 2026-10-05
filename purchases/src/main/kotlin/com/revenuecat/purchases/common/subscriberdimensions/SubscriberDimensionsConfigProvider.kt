@@ -24,7 +24,8 @@ import kotlinx.coroutines.launch
  * every config commit, so [cachedDimensions] can be read synchronously on the caller's thread. It is served only
  * while warm at the manager's *current* [RemoteConfigManager.configGeneration]; otherwise [cachedDimensions] is
  * `null` and [getDimensions] falls through to the config layer. The topic is optional: a committed config
- * without it warms [SubscriberDimensionsResolution.NotConfigured], which is served from memory like any value.
+ * without it warms [SubscriberDimensionsResolution.NotConfigured], and one whose `default` item is missing or
+ * unusable warms [SubscriberDimensionsResolution.Unavailable]; both are served from memory like any value.
  */
 internal class SubscriberDimensionsConfigProvider(
     private val manager: RemoteConfigManager,
@@ -41,14 +42,20 @@ internal class SubscriberDimensionsConfigProvider(
 
     /**
      * The committed resolution. A cold read happens under one config generation: [readConsistent] re-reads once
-     * if a commit races the read, and gives up with [SubscriberDimensionsResolution.NotConfigured] if that read
-     * is superseded too.
+     * if a commit races the read, and gives up with [SubscriberDimensionsResolution.Unavailable] if that read
+     * is superseded too. An absent topic is [SubscriberDimensionsResolution.NotConfigured] only once a config is
+     * committed; before that (the self-primed sync failed, or the manager is disabled) it is unavailable.
      */
     suspend fun getDimensions(): SubscriberDimensionsResolution {
         cachedDimensions()?.let { return it }
         return manager.readConsistent(what = { "the subscriber_dimensions topic" }) { _ ->
-            manager.topic(RemoteConfigTopic.SubscriberDimensions).toResolution()
-        } ?: SubscriberDimensionsResolution.NotConfigured
+            val topic = manager.topic(RemoteConfigTopic.SubscriberDimensions)
+            if (topic == null && !manager.hasCommittedConfig()) {
+                SubscriberDimensionsResolution.Unavailable
+            } else {
+                topic.toResolution()
+            }
+        } ?: SubscriberDimensionsResolution.Unavailable
     }
 
     /**
@@ -67,6 +74,8 @@ internal class SubscriberDimensionsConfigProvider(
                         "as of ${resolution.dimensions.asOf}."
                 SubscriberDimensionsResolution.NotConfigured ->
                     "Warmed subscriber dimensions cache: the topic is not configured."
+                SubscriberDimensionsResolution.Unavailable ->
+                    "Warmed subscriber dimensions cache: the topic carries no usable default item."
             }
         }
     }
@@ -88,11 +97,13 @@ internal class SubscriberDimensionsConfigProvider(
         scope.cancel()
     }
 
-    private fun ConfigTopic?.toResolution(): SubscriberDimensionsResolution =
-        this?.get(ITEM_DEFAULT)
+    private fun ConfigTopic?.toResolution(): SubscriberDimensionsResolution {
+        if (this == null) return SubscriberDimensionsResolution.NotConfigured
+        return get(ITEM_DEFAULT)
             ?.let { SubscriberDimensions.parse(it.metadata) }
             ?.let { SubscriberDimensionsResolution.Found(it) }
-            ?: SubscriberDimensionsResolution.NotConfigured
+            ?: SubscriberDimensionsResolution.Unavailable
+    }
 
     private companion object {
         const val ITEM_DEFAULT = "default"

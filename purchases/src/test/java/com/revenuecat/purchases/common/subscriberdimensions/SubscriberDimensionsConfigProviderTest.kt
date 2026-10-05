@@ -108,21 +108,21 @@ internal class SubscriberDimensionsConfigProviderTest {
     }
 
     @Test
-    fun `a committed topic without a default item warms not configured`() = runTest {
+    fun `a committed topic without a default item warms unavailable`() = runTest {
         coEvery { manager.committedTopicOrNull(RemoteConfigTopic.SubscriberDimensions) } returns ConfigTopic(emptyMap())
 
         provider.warm(generation = 0)
 
-        assertThat(provider.cachedDimensions()).isEqualTo(SubscriberDimensionsResolution.NotConfigured)
+        assertThat(provider.cachedDimensions()).isEqualTo(SubscriberDimensionsResolution.Unavailable)
     }
 
     @Test
-    fun `an unusable default item warms not configured`() = runTest {
+    fun `an unusable default item warms unavailable`() = runTest {
         commitTopic("""{"dimensions":{"country":"ES"}}""")
 
         provider.warm(generation = 0)
 
-        assertThat(provider.cachedDimensions()).isEqualTo(SubscriberDimensionsResolution.NotConfigured)
+        assertThat(provider.cachedDimensions()).isEqualTo(SubscriberDimensionsResolution.Unavailable)
     }
 
     @Test
@@ -221,6 +221,15 @@ internal class SubscriberDimensionsConfigProviderTest {
     }
 
     @Test
+    fun `getDimensions serves a warmed unavailable without reading the topic`() = runTest {
+        commitTopic("""{"dimensions":{"country":"ES"}}""")
+        provider.warm(generation = 0)
+
+        assertThat(provider.getDimensions()).isEqualTo(SubscriberDimensionsResolution.Unavailable)
+        coVerify(exactly = 0) { manager.topic(RemoteConfigTopic.SubscriberDimensions) }
+    }
+
+    @Test
     fun `getDimensions reads the topic through the config layer when cold`() = runTest {
         coEvery { manager.topic(RemoteConfigTopic.SubscriberDimensions) } returns topic(franceJson)
 
@@ -229,8 +238,22 @@ internal class SubscriberDimensionsConfigProviderTest {
     }
 
     @Test
-    fun `getDimensions is not configured when the topic is absent`() = runTest {
+    fun `getDimensions is not configured when a committed config omits the topic`() = runTest {
         assertThat(provider.getDimensions()).isEqualTo(SubscriberDimensionsResolution.NotConfigured)
+    }
+
+    @Test
+    fun `getDimensions is unavailable when nothing is committed`() = runTest {
+        coEvery { manager.hasCommittedConfig() } returns false
+
+        assertThat(provider.getDimensions()).isEqualTo(SubscriberDimensionsResolution.Unavailable)
+    }
+
+    @Test
+    fun `getDimensions is unavailable when the committed topic has no default item`() = runTest {
+        coEvery { manager.topic(RemoteConfigTopic.SubscriberDimensions) } returns ConfigTopic(emptyMap())
+
+        assertThat(provider.getDimensions()).isEqualTo(SubscriberDimensionsResolution.Unavailable)
     }
 
     @Test
@@ -243,11 +266,11 @@ internal class SubscriberDimensionsConfigProviderTest {
     }
 
     @Test
-    fun `getDimensions is not configured when the config changes during both reads`() = runTest {
+    fun `getDimensions is unavailable when the config changes during both reads`() = runTest {
         every { manager.configGeneration } returnsMany listOf(0, 0, 1, 1, 2)
         coEvery { manager.topic(RemoteConfigTopic.SubscriberDimensions) } returns topic(spainJson)
 
-        assertThat(provider.getDimensions()).isEqualTo(SubscriberDimensionsResolution.NotConfigured)
+        assertThat(provider.getDimensions()).isEqualTo(SubscriberDimensionsResolution.Unavailable)
         coVerify(exactly = 2) { manager.topic(RemoteConfigTopic.SubscriberDimensions) }
     }
 

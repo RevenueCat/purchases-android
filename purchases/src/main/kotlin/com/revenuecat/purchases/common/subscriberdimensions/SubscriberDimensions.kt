@@ -24,12 +24,12 @@ internal data class SubscriberDimensions(
     companion object {
         /**
          * Reads the topic's `default` item metadata. `null` when the item is unusable: `dimensions` is not an
-         * object, or `as_of` is not an epoch-millis number. Like the `/subscribers` copy, an explicit JSON `null`
-         * is a stated value and is kept; an entry no rule could read is dropped.
+         * object, or `as_of` is not a non-negative epoch-millis number. Like the `/subscribers` copy, an explicit
+         * JSON `null` is a stated value and is kept; an entry no rule could read is dropped.
          */
         fun parse(item: JsonObject): SubscriberDimensions? {
             val dimensions = item[KEY_DIMENSIONS] as? JsonObject
-            val asOf = (item[KEY_AS_OF] as? JsonPrimitive)?.longOrNull
+            val asOf = (item[KEY_AS_OF] as? JsonPrimitive)?.longOrNull?.takeIf { it >= 0 }
             if (dimensions == null || asOf == null) {
                 errorLog {
                     "Ignoring the subscriber dimensions config: it needs a '$KEY_DIMENSIONS' object and an " +

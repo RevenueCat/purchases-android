@@ -91,6 +91,7 @@ internal class SubscriberDimensionsTest {
         assertThat(parse("""{"dimensions":{"country":"ES"}}""")).isNull()
         assertThat(parse("""{"dimensions":{"country":"ES"},"as_of":null}""")).isNull()
         assertThat(parse("""{"dimensions":{"country":"ES"},"as_of":"yesterday"}""")).isNull()
+        assertThat(parse("""{"dimensions":{"country":"ES"},"as_of":-1}""")).isNull()
         assertThat(parse("""{"dimensions":{"country":"ES"},"as_of":{"ms":1}}""")).isNull()
     }
 
