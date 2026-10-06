@@ -126,7 +126,7 @@ class WorkflowSkeletonTests {
         assertThat(children).hasSize(1)
         val color = (children.first() as TextComponent).color
         assertThat(color).isNotEqualTo(green)
-        // Inverting contentHidden would make every label invisible and still not be green.
+        // An inverted contentHidden makes every label invisible and still not green.
         assertThat(color).isNotEqualTo(clear)
     }
 
@@ -256,7 +256,7 @@ class WorkflowSkeletonTests {
 
         assertThat(card.overrides).hasSize(1)
         val partial = card.overrides.first().properties
-        // The size decides the shape, so it survives; the colour must not.
+        // The size decides the shape, so it survives. The colour must not.
         assertThat(partial.size?.width).isEqualTo(SizeConstraint.Fixed(42u))
         assertThat(partial.backgroundColor).isNotEqualTo(green)
     }

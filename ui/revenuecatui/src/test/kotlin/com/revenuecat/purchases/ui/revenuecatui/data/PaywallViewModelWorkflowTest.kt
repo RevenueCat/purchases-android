@@ -331,7 +331,7 @@ class PaywallViewModelWorkflowTest {
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
-        // The live fallback here would be a screen the user may never reach, and it would take taps.
+        // The live fallback takes taps on a screen the audience can still route away from.
         assertThat(vm.workflowState.value?.isSkeleton).isTrue
         assertThat(resolves).isOne()
 

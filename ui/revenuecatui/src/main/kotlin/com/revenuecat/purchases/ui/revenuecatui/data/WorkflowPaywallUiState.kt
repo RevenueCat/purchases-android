@@ -15,8 +15,7 @@ internal data class WorkflowPaywallUiState(
     val currentStepId: String,
     val stepStates: Map<String, PaywallState.Loaded.Components>,
     /**
-     * True while the step on screen stands in for one the SDK has not resolved yet. The stand-in is
-     * inert: it takes no touches and reports nothing to accessibility services.
+     * True while the step on screen stands in for one the SDK did not resolve yet.
      */
     val isSkeleton: Boolean = false,
     /**

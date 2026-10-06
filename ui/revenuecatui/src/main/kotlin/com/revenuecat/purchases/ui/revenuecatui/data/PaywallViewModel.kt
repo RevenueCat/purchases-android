@@ -1206,8 +1206,7 @@ internal class PaywallViewModelImpl(
         val awaitingInitialStep = isNewWorkflowImpression || initialStepJob?.isActive == true
         val initialBranch = workflow.initialBranch?.takeIf { awaitingInitialStep }
         if (initialBranch != null) {
-            // The first screen is audience routed, so the step to show is not known yet. Stand in with
-            // the fallback until it is, rather than rendering a screen the user may never have reached.
+            // The step to show is not known yet, so the fallback stands in for it.
             buildStateFromStep(
                 currentStep,
                 workflow,
@@ -1233,7 +1232,7 @@ internal class PaywallViewModelImpl(
     }
 
     /**
-     * The one resolve the UI waits on: there is nothing to render until the first step is known.
+     * The one resolve the UI waits on. Nothing renders until the first step is known.
      */
     private fun resolveInitialStep(
         branch: WorkflowTriggerAction.Branch,
@@ -1287,8 +1286,8 @@ internal class PaywallViewModelImpl(
     }
 
     /**
-     * A step without an offering has nothing to attribute paywall events to, and a stand-in is not a
-     * screen the user reached, so neither records an impression.
+     * A step without an offering cannot attribute a paywall event. A stand-in is not a screen the
+     * user reached. Neither records an impression.
      */
     private fun tracksPaywallEvents(
         state: PaywallState,
@@ -1311,7 +1310,7 @@ internal class PaywallViewModelImpl(
         shouldApplyState: Boolean = true,
         skeleton: Boolean = false,
     ) {
-        // A stand-in must not be cached: the real step reuses this id once the branch resolves.
+        // Never cache a stand-in. The real step reuses this id once the branch resolves.
         val cached = workflowStepStateCache[step.id].takeUnless { skeleton }
         val newState = cached
             ?: computeStateForStep(

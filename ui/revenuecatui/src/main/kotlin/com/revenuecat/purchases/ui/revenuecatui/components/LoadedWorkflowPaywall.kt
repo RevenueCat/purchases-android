@@ -196,8 +196,7 @@ private fun workflowHeaderState(
 }
 
 /**
- * Swallows every pointer change on the Initial pass, which runs before descendants see it. An empty
- * [pointerInput] block installs a handler that consumes nothing, so touches would reach the children.
+ * Consumes every pointer change on the Initial pass, which runs before descendants see it.
  */
 internal fun Modifier.blockInput(): Modifier = pointerInput(Unit) {
     awaitPointerEventScope {
@@ -225,8 +224,7 @@ private fun WorkflowStepsContent(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            // A stand-in takes no touches, and it reports itself as loading rather than reading out
-            // labels for a step the user may never reach.
+            // A stand-in takes no touches, and it announces itself instead of the labels below it.
             .conditional(isSkeleton) {
                 blockInput().clearAndSetSemantics {
                     contentDescription = loadingDescription

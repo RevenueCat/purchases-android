@@ -24,9 +24,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * A stand-in stands in for a step the SDK has not resolved yet, so nothing under it may act on a
- * touch. The placeholder only greys content out, so a button or a markdown link stays live
- * underneath unless the container swallows the event before its children see it.
+ * The transform only greys content out, so a markdown link stays live until the container
+ * consumes the touch.
  */
 @RunWith(AndroidJUnit4::class)
 internal class WorkflowSkeletonInputTest {
