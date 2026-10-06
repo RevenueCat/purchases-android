@@ -54,7 +54,7 @@ public sealed class WorkflowTriggerAction {
     @InternalRevenueCatAPI
     @Serializable
     public data class Branch(
-        val branches: List<Route>,
+        val routes: List<Route>,
         @SerialName("fallback_step_id") val fallbackStepId: String,
     ) : WorkflowTriggerAction() {
         @InternalRevenueCatAPI

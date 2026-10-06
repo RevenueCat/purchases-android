@@ -70,9 +70,15 @@ import com.revenuecat.purchases.common.subscriberdimensions.SubscriberDimensions
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.warnLog
+import com.revenuecat.purchases.common.workflows.BranchResolver
+import com.revenuecat.purchases.common.workflows.BranchResolverImpl
+import com.revenuecat.purchases.common.workflows.DisabledBranchResolver
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
+import com.revenuecat.purchases.common.workflows.WorkflowActionID
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.common.workflows.WorkflowResolution
+import com.revenuecat.purchases.common.workflows.WorkflowStep
+import com.revenuecat.purchases.common.workflows.WorkflowStepID
 import com.revenuecat.purchases.common.workflows.WorkflowsConfigProvider
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.WebPurchaseRedemptionHelper
@@ -211,6 +217,15 @@ internal class PurchasesOrchestrator(
         localRulesEvaluator = localRulesEvaluator,
         getOfferings = { Purchases.sharedInstance.awaitOfferings() },
     ),
+    @OptIn(InternalRevenueCatAPI::class)
+    private val branchResolver: BranchResolver = if (appConfig.branchingEnabled) {
+        BranchResolverImpl(
+            audiencesConfigProvider = audiencesConfigProvider,
+            localRulesEvaluator = localRulesEvaluator,
+        )
+    } else {
+        DisabledBranchResolver
+    },
 ) : LifecycleDelegate, CustomActivityLifecycleHandler, SdkSettingsListener {
 
     internal var state: PurchasesState
@@ -717,6 +732,12 @@ internal class PurchasesOrchestrator(
 
     suspend fun resolveWorkflow(offeringId: String): WorkflowResolution =
         workflowManager.resolveWorkflow(offeringId)
+
+    @OptIn(InternalRevenueCatAPI::class)
+    suspend fun resolveBranches(
+        step: WorkflowStep,
+        customVariables: Map<String, RulesDimensionValue>,
+    ): Map<WorkflowActionID, WorkflowStepID> = branchResolver.resolveBranches(step, customVariables)
 
     suspend fun workflowBlobRef(workflowId: String): String? =
         workflowManager.workflowBlobRef(workflowId)

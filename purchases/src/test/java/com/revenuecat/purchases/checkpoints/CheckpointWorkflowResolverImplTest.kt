@@ -26,10 +26,10 @@ import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
+import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.common.workflows.WorkflowStep
 import com.revenuecat.purchases.common.workflows.WorkflowTrigger
-import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import io.mockk.Runs
 import io.mockk.coEvery
