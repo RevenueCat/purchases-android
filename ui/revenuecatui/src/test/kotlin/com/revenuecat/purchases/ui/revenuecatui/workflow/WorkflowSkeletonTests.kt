@@ -211,10 +211,11 @@ class WorkflowSkeletonTests {
 
         val block = transformedChildren(video).first() as StackComponent
 
-        // An empty block has nothing to measure, so a bare Fit would lay out at zero height.
+        // Modifier.size maps Fit to wrapContent and ignores Fit.default, so a Fit axis on an empty
+        // block lays out at zero. Only Fixed reserves real space.
         val height = block.size.height
-        assertThat(height).isInstanceOf(SizeConstraint.Fit::class.java)
-        assertThat((height as SizeConstraint.Fit).default).isEqualTo(720u)
+        assertThat(height).isInstanceOf(SizeConstraint.Fixed::class.java)
+        assertThat((height as SizeConstraint.Fixed).value).isEqualTo(720u)
     }
 
     private fun videoComponent(size: Size = Size(SizeConstraint.Fill(), SizeConstraint.Fit())) = VideoComponent(

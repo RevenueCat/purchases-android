@@ -176,13 +176,15 @@ internal class WorkflowSkeleton private constructor(
         height = fitDefault(video.size.height, video.source.light.height),
     )
 
+    /**
+     * An empty block has no content to wrap, and `Modifier.size` maps a Fit axis straight to
+     * `wrapContent`, ignoring its default. Pin the axis to the video's own dimension so the block
+     * reserves space instead of collapsing. The real video scales its height to the measured width,
+     * so this reserves an approximate height, not the exact one.
+     */
     @OptIn(InternalRevenueCatAPI::class)
     private fun fitDefault(constraint: SizeConstraint, intrinsic: UInt): SizeConstraint =
-        if (constraint is SizeConstraint.Fit && constraint.default == null) {
-            SizeConstraint.Fit(default = intrinsic)
-        } else {
-            constraint
-        }
+        if (constraint is SizeConstraint.Fit) SizeConstraint.Fixed(constraint.default ?: intrinsic) else constraint
 
     @OptIn(InternalRevenueCatAPI::class)
     private fun image(image: ImageComponent, contentHidden: Boolean): ImageComponent =
