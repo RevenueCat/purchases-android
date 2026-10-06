@@ -3,7 +3,6 @@
 package com.revenuecat.purchases.common.subscriberdimensions
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 import com.revenuecat.purchases.common.localrules.asRulesDimensionValue
 import com.revenuecat.purchases.common.warnLog
@@ -13,9 +12,9 @@ import kotlinx.serialization.json.longOrNull
 import java.util.Date
 
 /**
- * The backend's view of a subscriber's dimensions as served by the `subscriber_dimensions` topic: the same
- * root-level names the `dimensions` sibling of a `/subscribers` response carries, taken [asOf] a server instant so
- * the two copies can be ordered.
+ * The backend's view of a subscriber's dimensions, as served by the `subscriber_dimensions` topic and by the
+ * `dimensions` sibling of a purchase (POST `/receipts`) response: root-level names, taken [asOf] a server instant
+ * so the two copies can be ordered.
  */
 internal data class SubscriberDimensions(
     val values: Map<String, RulesDimensionValue>,
@@ -23,16 +22,16 @@ internal data class SubscriberDimensions(
 ) {
     companion object {
         /**
-         * Reads the topic's `default` item metadata. `null` when the item is unusable: `dimensions` is not an
-         * object, or `as_of` is not a non-negative epoch-millis number. Like the `/subscribers` copy, an explicit
-         * JSON `null` is a stated value and is kept; an entry no rule could read is dropped.
+         * Reads a `{dimensions, as_of}` object. `null` when it is unusable: `dimensions` is not an object, or
+         * `as_of` is not a non-negative epoch-millis number. An explicit JSON `null` is a stated value and is kept;
+         * an entry no rule could read is dropped.
          */
         fun parse(item: JsonObject): SubscriberDimensions? {
             val dimensions = item[KEY_DIMENSIONS] as? JsonObject
             val asOf = (item[KEY_AS_OF] as? JsonPrimitive)?.longOrNull?.takeIf { it >= 0 }
             if (dimensions == null || asOf == null) {
-                errorLog {
-                    "Ignoring the subscriber dimensions config: it needs a '$KEY_DIMENSIONS' object and an " +
+                warnLog {
+                    "Ignoring the subscriber dimensions: it needs a '$KEY_DIMENSIONS' object and an " +
                         "'$KEY_AS_OF' timestamp."
                 }
                 return null

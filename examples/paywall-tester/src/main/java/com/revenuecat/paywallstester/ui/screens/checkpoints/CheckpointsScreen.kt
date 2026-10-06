@@ -7,17 +7,20 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -25,16 +28,14 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -98,35 +99,26 @@ private fun CheckpointsScaffold(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
+                actions = {
+                    OptionsMenu(
+                        state = state,
+                        onTogglePresentWithAppPaywall = onTogglePresentWithAppPaywall,
+                        onTogglePresentErrorsWithApp = onTogglePresentErrorsWithApp,
+                        onSelectPresentationMode = onSelectPresentationMode,
+                    )
+                },
             )
         },
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .padding(paddingValues)
-                .fillMaxSize()
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            HitCheckpointSection(onHit = onHit)
-            PresenterSection(
-                title = "Present offerings with the app's own paywall",
-                description = "Off: RevenueCat shows the offering's paywall. " +
-                    "On: this app shows its own paywall through PaywallPresenter.",
-                checked = state.presentWithAppPaywall,
-                onToggle = onTogglePresentWithAppPaywall,
-            )
-            PresenterSection(
-                title = "Present errors with the app's own dialog",
-                description = "Off: RevenueCat shows its error dialog. " +
-                    "On: this app shows its own dialog through ErrorPresenter, for SDK-presented flows.",
-                checked = state.presentErrorsWithApp,
-                onToggle = onTogglePresentErrorsWithApp,
-            )
-            PresentationModeSection(
-                presentationMode = state.presentationMode,
-                onSelect = onSelectPresentationMode,
-            )
+            HitCheckpointSection(state = state, onHit = onHit)
             ResultCard(
                 waitingFor = state.waitingFor,
                 result = state.lastResult,
@@ -134,14 +126,57 @@ private fun CheckpointsScaffold(
             RecentCheckpointsSection(
                 recents = state.recents,
                 onRecentTap = onHit,
-                modifier = Modifier.weight(1f),
             )
         }
     }
 }
 
 @Composable
-private fun HitCheckpointSection(onHit: (String) -> Unit) {
+private fun OptionsMenu(
+    state: UiState,
+    onTogglePresentWithAppPaywall: (Boolean) -> Unit,
+    onTogglePresentErrorsWithApp: (Boolean) -> Unit,
+    onSelectPresentationMode: (FlowPresentationMode) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            Icon(Icons.Default.MoreVert, contentDescription = "Options")
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            CheckableMenuItem(
+                text = "Present offerings with the app's own paywall",
+                checked = state.presentWithAppPaywall,
+                onToggle = onTogglePresentWithAppPaywall,
+            )
+            CheckableMenuItem(
+                text = "Present errors with the app's own dialog",
+                checked = state.presentErrorsWithApp,
+                onToggle = onTogglePresentErrorsWithApp,
+            )
+            HorizontalDivider()
+            PRESENTATION_MODE_LABELS.forEach { (mode, label) ->
+                DropdownMenuItem(
+                    text = { Text(text = label) },
+                    leadingIcon = { RadioButton(selected = mode == state.presentationMode, onClick = null) },
+                    onClick = { onSelectPresentationMode(mode) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CheckableMenuItem(text: String, checked: Boolean, onToggle: (Boolean) -> Unit) {
+    DropdownMenuItem(
+        text = { Text(text = text) },
+        leadingIcon = { Checkbox(checked = checked, onCheckedChange = null) },
+        onClick = { onToggle(!checked) },
+    )
+}
+
+@Composable
+private fun HitCheckpointSection(state: UiState, onHit: (String) -> Unit) {
     var identifier by rememberSaveable { mutableStateOf("") }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedTextField(
@@ -158,57 +193,31 @@ private fun HitCheckpointSection(onHit: (String) -> Unit) {
         ) {
             Text(text = "Hit checkpoint")
         }
-    }
-}
-
-@Composable
-private fun PresenterSection(
-    title: String,
-    description: String,
-    checked: Boolean,
-    onToggle: (Boolean) -> Unit,
-) {
-    ListItem(
-        headlineContent = { Text(text = title) },
-        supportingContent = { Text(text = description) },
-        trailingContent = { Switch(checked = checked, onCheckedChange = onToggle) },
-    )
-}
-
-private val PRESENTATION_MODE_LABELS = mapOf(
-    FlowPresentationMode.DEFAULT to "Default",
-    FlowPresentationMode.MODAL_FULL_SCREEN to "Full screen",
-    FlowPresentationMode.MODAL_SHEET to "Sheet",
-)
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun PresentationModeSection(
-    presentationMode: FlowPresentationMode,
-    onSelect: (FlowPresentationMode) -> Unit,
-) {
-    val modes = PRESENTATION_MODE_LABELS.keys.toList()
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(text = "How RevenueCat presents its flows", style = MaterialTheme.typography.titleMedium)
-        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-            modes.forEachIndexed { index, mode ->
-                SegmentedButton(
-                    selected = mode == presentationMode,
-                    onClick = { onSelect(mode) },
-                    shape = SegmentedButtonDefaults.itemShape(index = index, count = modes.size),
-                ) {
-                    Text(text = PRESENTATION_MODE_LABELS.getValue(mode))
-                }
-            }
-        }
         Text(
-            text = "Applies to workflows and to offerings RevenueCat presents itself, and the app's own paywall " +
-                "above follows it too. Default lets the SDK choose (currently a sheet).",
+            text = state.optionsSummary(),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
+
+private val PRESENTATION_MODE_LABELS = mapOf(
+    FlowPresentationMode.DEFAULT to "Default presentation (SDK picks, currently a sheet)",
+    FlowPresentationMode.MODAL_FULL_SCREEN to "Full screen presentation",
+    FlowPresentationMode.MODAL_SHEET to "Sheet presentation",
+)
+
+private val PRESENTATION_MODE_SHORT_LABELS = mapOf(
+    FlowPresentationMode.DEFAULT to "Default",
+    FlowPresentationMode.MODAL_FULL_SCREEN to "Full screen",
+    FlowPresentationMode.MODAL_SHEET to "Sheet",
+)
+
+private fun UiState.optionsSummary(): String = listOf(
+    if (presentWithAppPaywall) "App paywall" else "SDK paywall",
+    if (presentErrorsWithApp) "App errors" else "SDK errors",
+    PRESENTATION_MODE_SHORT_LABELS.getValue(presentationMode),
+).joinToString(separator = " · ")
 
 @Composable
 private fun ResultCard(waitingFor: String?, result: CheckpointResultUi?) {
@@ -273,22 +282,26 @@ private fun WaitingRow(waitingFor: String) {
 private fun RecentCheckpointsSection(
     recents: List<String>,
     onRecentTap: (String) -> Unit,
-    modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier) {
+    Column {
         Text(
             text = "Recent checkpoints",
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(bottom = 8.dp),
         )
-        LazyColumn {
-            items(recents) { recentIdentifier ->
-                ListItem(
-                    headlineContent = { Text(text = recentIdentifier) },
-                    modifier = Modifier.clickable { onRecentTap(recentIdentifier) },
-                )
-                HorizontalDivider()
-            }
+        if (recents.isEmpty()) {
+            Text(
+                text = "No recent checkpoints yet.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        recents.forEach { recentIdentifier ->
+            ListItem(
+                headlineContent = { Text(text = recentIdentifier) },
+                modifier = Modifier.clickable { onRecentTap(recentIdentifier) },
+            )
+            HorizontalDivider()
         }
     }
 }

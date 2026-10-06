@@ -49,6 +49,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams
 import com.revenuecat.purchases.ui.revenuecatui.ProductChange
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.asRulesDimensionValue
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
@@ -78,6 +79,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -211,6 +213,7 @@ internal class PaywallViewModelImpl(
     private var paywallPresentationData: PaywallEvent.Data? = null
 
     private var workflowNavigator: WorkflowNavigator? = null
+    private var branchResolveJob: Job? = null
     private var currentWorkflow: PublishedWorkflow? = null
     private var currentWorkflowBlobRef: String? = null
     private var currentWorkflowUiConfig: UiConfig = emptyUiConfig()
@@ -420,6 +423,8 @@ internal class PaywallViewModelImpl(
     private fun clearWorkflowState() {
         preWarmJob?.cancel()
         preWarmJob = null
+        branchResolveJob?.cancel()
+        branchResolveJob = null
         workflowNavigator = null
         currentWorkflow = null
         currentWorkflowBlobRef = null
@@ -1192,6 +1197,8 @@ internal class PaywallViewModelImpl(
             )
         }
 
+        // A rebuild is the same visit, so re-resolving there could route the step somewhere else.
+        if (isNewWorkflowImpression) resolveBranchesFor(currentStep)
         buildStateFromStep(currentStep, workflow, uiConfig, offerings, presentedOfferingContext)
         if (isNewWorkflowImpression && _workflowState.value != null) {
             trackWorkflowStepStarted(
@@ -1201,6 +1208,23 @@ internal class PaywallViewModelImpl(
             )
         }
         preWarmWorkflowStepCache(workflow, uiConfig, offerings, presentedOfferingContext)
+    }
+
+    /** Nothing waits on this: until it lands, a branch takes its fallback. */
+    private fun resolveBranchesFor(step: WorkflowStep) {
+        val navigator = workflowNavigator ?: return
+        // Abandons the previous step's resolve, so every visit routes on its own answer.
+        branchResolveJob?.cancel()
+        if (step.triggerActions.values.none { it is WorkflowTriggerAction.Branch }) return
+        branchResolveJob = viewModelScope.launch {
+            val resolved = purchases.resolveBranches(
+                step,
+                options.customVariables.mapValues { (_, value) -> value.asRulesDimensionValue },
+            )
+            // Cancellation is cooperative, so a cancelled job still reaches this line.
+            ensureActive()
+            navigator.recordResolvedBranches(resolved, step.id)
+        }
     }
 
     private fun buildStateFromStep(
@@ -1379,6 +1403,7 @@ internal class PaywallViewModelImpl(
             Logger.e("triggerAction returned null after peekTriggerStep succeeded — this is a bug")
             return
         }
+        resolveBranchesFor(newStep)
         buildStateFromStep(
             newStep,
             workflow,
@@ -1413,6 +1438,7 @@ internal class PaywallViewModelImpl(
             Logger.e("navigateBack returned null after canNavigateBack was true — this is a bug")
             return false
         }
+        resolveBranchesFor(newStep)
         buildStateFromStep(
             newStep,
             workflow,
@@ -1501,9 +1527,12 @@ internal class PaywallViewModelImpl(
         }
     }
 
+    // A branch navigates too, so it counts here the same way the navigator treats it.
     private fun isTerminalStep(workflow: PublishedWorkflow, stepId: String): Boolean {
         val step = workflow.steps[stepId] ?: return false
-        return step.triggerActions.values.none { it is WorkflowTriggerAction.Step }
+        return step.triggerActions.values.none {
+            it is WorkflowTriggerAction.Step || it is WorkflowTriggerAction.Branch
+        }
     }
 
     private val currentWorkflowStep: WorkflowStep?

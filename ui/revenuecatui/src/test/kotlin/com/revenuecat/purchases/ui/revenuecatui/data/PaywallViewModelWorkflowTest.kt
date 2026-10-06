@@ -201,6 +201,59 @@ class PaywallViewModelWorkflowTest {
         ),
     )
 
+    @Test
+    fun `a step that only branches does not report itself as the last step`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        // Counting Step actions alone would read this as terminal.
+        val branchStep = step1.copy(
+            triggerActions = mapOf(
+                "action-next" to WorkflowTriggerAction.Branch(
+                    routes = emptyList(),
+                    fallbackStepId = "step-2",
+                ),
+            ),
+        )
+        val wfl = workflow.copy(steps = mapOf("step-1" to branchStep, "step-2" to step2))
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, testOfferings, null, uiConfig)
+
+        val started = captured.filterIsInstance<WorkflowEvent.StepStarted>()
+        assertThat(started).hasSize(1)
+        assertThat(started.first().isLastStep).isFalse
+    }
+
+    @Test
+    fun `a colour rebuild does not resolve a step's branches again`() {
+        var resolves = 0
+        coEvery { purchases.resolveBranches(any(), any()) } answers {
+            resolves++
+            mapOf("action-next" to "step-2")
+        }
+        val branchStep = step1.copy(
+            triggerActions = mapOf(
+                "action-next" to WorkflowTriggerAction.Branch(routes = emptyList(), fallbackStepId = "step-2"),
+            ),
+        )
+        val wfl = workflow.copy(steps = mapOf("step-1" to branchStep, "step-2" to step2))
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, testOfferings, null, uiConfig)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertThat(resolves).isOne()
+
+        // The same visit: re-resolving here would cancel the answer in flight and could route elsewhere.
+        vm.refreshStateIfColorsChanged(
+            colorScheme = TestData.Constants.currentColorScheme.copy(primary = Color.Black),
+            isDark = true,
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertThat(resolves).isOne()
+    }
+
     private fun makeTwoPackageWorkflow(): Pair<PublishedWorkflow, Offerings> {
         val screen1 = makeScreen(screenId1).copy(componentsConfig = twoPackageComponentsConfig)
         val screen2 = makeScreen(screenId2).copy(componentsConfig = twoPackageComponentsConfig)
