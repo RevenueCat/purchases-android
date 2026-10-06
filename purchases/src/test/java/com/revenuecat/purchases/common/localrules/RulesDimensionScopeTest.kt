@@ -11,7 +11,7 @@ import com.revenuecat.purchases.common.Config
 import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.LocaleProvider
-import com.revenuecat.purchases.common.subscriberdimensions.SubscriberDimensions
+import com.revenuecat.purchases.common.subscriberdimensions.SubscriberDimensionsReceiptStore
 import com.revenuecat.purchases.common.subscriberdimensions.SubscriberDimensionsResolution
 import com.revenuecat.purchases.rules.RulesEngine
 import com.revenuecat.purchases.rules.Value
@@ -21,8 +21,6 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonObject
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.Test
@@ -233,10 +231,12 @@ class RulesDimensionScopeTest {
                 SubscriberAttributesDimensionProvider { SUBSCRIBER_ATTRIBUTES },
                 SubscriberDimensionsProvider(
                     configDimensions = { SubscriberDimensionsResolution.NotConfigured },
-                    receiptDimensions = {
-                        SubscriberDimensions.parse(Json.parseToJsonElement(SUBSCRIBER_DIMENSIONS).jsonObject)
-                    },
-                    discardReceiptDimensions = {},
+                    receiptStore = SubscriberDimensionsReceiptStore(
+                        mockk {
+                            every { getCachedSubscriberDimensionsJson(APP_USER_ID) } returns SUBSCRIBER_DIMENSIONS
+                        },
+                    ),
+                    currentAppUserId = { APP_USER_ID },
                 ),
             ),
             currentAppUserId = { APP_USER_ID },

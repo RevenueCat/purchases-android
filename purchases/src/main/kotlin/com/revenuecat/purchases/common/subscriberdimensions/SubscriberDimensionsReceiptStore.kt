@@ -9,10 +9,6 @@ import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.responses.CustomerInfoResponseJsonKeys
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.warnLog
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonObject
 import org.json.JSONObject
@@ -21,11 +17,11 @@ import org.json.JSONObject
  * The copy of the subscriber's dimensions that the purchase response (POST `/receipts`) carries as the
  * `dimensions` and `as_of` siblings of `subscriber`. Persisted per app user in [DeviceCache] under the same
  * `{dimensions, as_of}` shape the `subscriber_dimensions` topic uses, and parsed once per stored value so a read
- * on the evaluation thread is a preference lookup plus a string comparison.
+ * on the evaluation thread is a preference lookup plus a string comparison. Every operation stays on the
+ * caller's thread: the preference writes are in-memory updates with the disk write deferred.
  */
 internal class SubscriberDimensionsReceiptStore(
     private val deviceCache: DeviceCache,
-    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
 
     private val lock = Any()
@@ -62,7 +58,7 @@ internal class SubscriberDimensionsReceiptStore(
         }
     }
 
-    /** The stored copy for [appUserID], or `null`. Never leaves the caller's thread. */
+    /** The stored copy for [appUserID], or `null`. */
     fun get(appUserID: String): SubscriberDimensions? = synchronized(lock) {
         val json = deviceCache.getCachedSubscriberDimensionsJson(appUserID) ?: return null
         if (json !== memoJson && json != memoJson) {
@@ -73,21 +69,19 @@ internal class SubscriberDimensionsReceiptStore(
     }
 
     /**
-     * Removes the stored copy once the config endpoint has served a newer one, off the caller's thread. A copy
-     * stored in the meantime that is newer than [superseded] is kept.
+     * Removes the stored copy once the config endpoint has served a newer one. A copy stored in the meantime
+     * that is newer than [superseded] is kept.
      */
-    fun discardAsync(appUserID: String, superseded: SubscriberDimensions) {
-        scope.launch {
-            synchronized(lock) {
-                val stored = get(appUserID) ?: return@launch
-                if (stored.asOf.after(superseded.asOf)) return@launch
-                deviceCache.clearSubscriberDimensions(appUserID)
-                memoJson = null
-                memoDimensions = null
-                verboseLog {
-                    "Discarded the purchase response's subscriber dimensions (as of ${stored.asOf}): the config " +
-                        "endpoint's copy is newer."
-                }
+    fun discard(appUserID: String, superseded: SubscriberDimensions) {
+        synchronized(lock) {
+            val stored = get(appUserID) ?: return
+            if (stored.asOf.after(superseded.asOf)) return
+            deviceCache.clearSubscriberDimensions(appUserID)
+            memoJson = null
+            memoDimensions = null
+            verboseLog {
+                "Discarded the purchase response's subscriber dimensions (as of ${stored.asOf}): the config " +
+                    "endpoint's copy is newer."
             }
         }
     }

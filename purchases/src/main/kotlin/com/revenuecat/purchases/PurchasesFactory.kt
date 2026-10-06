@@ -439,12 +439,8 @@ internal class PurchasesFactory(
                     ),
                     SubscriberDimensionsProvider(
                         configDimensions = { subscriberDimensionsConfigProvider.getDimensions() },
-                        receiptDimensions = {
-                            subscriberDimensionsReceiptStore.get(identityManager.currentAppUserID)
-                        },
-                        discardReceiptDimensions = { superseded ->
-                            subscriberDimensionsReceiptStore.discardAsync(identityManager.currentAppUserID, superseded)
-                        },
+                        receiptStore = subscriberDimensionsReceiptStore,
+                        currentAppUserId = { identityManager.currentAppUserID },
                     ),
                 ),
                 currentAppUserId = { identityManager.currentAppUserID },

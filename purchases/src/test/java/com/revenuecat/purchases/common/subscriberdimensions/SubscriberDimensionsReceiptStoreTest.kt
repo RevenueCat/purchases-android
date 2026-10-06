@@ -1,4 +1,4 @@
-@file:OptIn(InternalRevenueCatAPI::class, ExperimentalCoroutinesApi::class)
+@file:OptIn(InternalRevenueCatAPI::class)
 
 package com.revenuecat.purchases.common.subscriberdimensions
 
@@ -10,9 +10,6 @@ import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.After
@@ -140,39 +137,31 @@ internal class SubscriberDimensionsReceiptStoreTest {
     }
 
     @Test
-    fun `discardAsync removes the stored copy once the config copy is newer`() = runTest {
-        val store = SubscriberDimensionsReceiptStore(deviceCache, scope = this)
+    fun `discard removes the stored copy once the config copy is newer`() {
         store.store(USER, response(dimensions = """{"country":"ES"}""", asOf = 100))
         val superseded = store.get(USER)!!
 
-        store.discardAsync(USER, superseded)
-        verify(exactly = 0) { deviceCache.clearSubscriberDimensions(any()) }
-        advanceUntilIdle()
+        store.discard(USER, superseded)
 
         verify(exactly = 1) { deviceCache.clearSubscriberDimensions(USER) }
         assertThat(store.get(USER)).isNull()
     }
 
     @Test
-    fun `discardAsync keeps a newer copy stored in the meantime`() = runTest {
-        val store = SubscriberDimensionsReceiptStore(deviceCache, scope = this)
+    fun `discard keeps a newer copy stored in the meantime`() {
         store.store(USER, response(dimensions = """{"country":"ES"}""", asOf = 100))
         val superseded = store.get(USER)!!
         store.store(USER, response(dimensions = """{"country":"FR"}""", asOf = 300))
 
-        store.discardAsync(USER, superseded)
-        advanceUntilIdle()
+        store.discard(USER, superseded)
 
         verify(exactly = 0) { deviceCache.clearSubscriberDimensions(any()) }
         assertThat(store.get(USER)?.asOf).isEqualTo(Date(300))
     }
 
     @Test
-    fun `discardAsync does nothing when nothing is stored`() = runTest {
-        val store = SubscriberDimensionsReceiptStore(deviceCache, scope = this)
-
-        store.discardAsync(USER, SubscriberDimensions(emptyMap(), Date(100)))
-        advanceUntilIdle()
+    fun `discard does nothing when nothing is stored`() {
+        store.discard(USER, SubscriberDimensions(emptyMap(), Date(100)))
 
         verify(exactly = 0) { deviceCache.clearSubscriberDimensions(any()) }
     }

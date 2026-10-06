@@ -3,7 +3,6 @@
 package com.revenuecat.purchases.common.subscriberdimensions
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 import com.revenuecat.purchases.common.localrules.asRulesDimensionValue
 import com.revenuecat.purchases.common.warnLog
@@ -31,8 +30,8 @@ internal data class SubscriberDimensions(
             val dimensions = item[KEY_DIMENSIONS] as? JsonObject
             val asOf = (item[KEY_AS_OF] as? JsonPrimitive)?.longOrNull?.takeIf { it >= 0 }
             if (dimensions == null || asOf == null) {
-                errorLog {
-                    "Ignoring the subscriber dimensions config: it needs a '$KEY_DIMENSIONS' object and an " +
+                warnLog {
+                    "Ignoring the subscriber dimensions: it needs a '$KEY_DIMENSIONS' object and an " +
                         "'$KEY_AS_OF' timestamp."
                 }
                 return null

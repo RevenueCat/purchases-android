@@ -3,7 +3,7 @@
 package com.revenuecat.purchases.common.localrules
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.common.subscriberdimensions.SubscriberDimensions
+import com.revenuecat.purchases.common.subscriberdimensions.SubscriberDimensionsReceiptStore
 import com.revenuecat.purchases.common.subscriberdimensions.SubscriberDimensionsResolution
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.warnLog
@@ -15,21 +15,26 @@ import java.util.Date
  * The fresher one is used whole (never merged); on a tie the purchase response wins. A purchase copy the config
  * has superseded is discarded.
  *
+ * The app user is read once, before the purchase copy, and the same user is used for the discard: the config
+ * read can suspend, and an identity change under it must not discard the new user's copy. The resolver rejects
+ * the snapshot in that case.
+ *
  * The names are the backend's to choose, and the root-name contract applies to it like any other source: one
  * that collides with an SDK-provided dimension fails the snapshot. An explicit null is kept as null, since the
  * backend stated it, and a purchase copy that cannot be read contributes nothing.
  */
 internal class SubscriberDimensionsProvider(
     private val configDimensions: suspend () -> SubscriberDimensionsResolution,
-    private val receiptDimensions: () -> SubscriberDimensions?,
-    private val discardReceiptDimensions: (SubscriberDimensions) -> Unit,
+    private val receiptStore: SubscriberDimensionsReceiptStore,
+    private val currentAppUserId: () -> String,
 ) : RulesDimensionProvider {
 
     override val name: String = "subscriber_dimensions"
 
     override suspend fun dimensions(date: Date): Map<String, RulesDimensionValue> {
+        val appUserId = currentAppUserId()
         val receipt = try {
-            receiptDimensions()
+            receiptStore.get(appUserId)
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             warnLog { "The purchase response's subscriber dimensions are unavailable, so they can't be evaluated: $e" }
             null
@@ -39,7 +44,7 @@ internal class SubscriberDimensionsProvider(
             config == null -> receipt
             receipt == null -> config
             config.asOf.after(receipt.asOf) -> {
-                discardReceiptDimensions(receipt)
+                receiptStore.discard(appUserId, receipt)
                 config
             }
             else -> receipt
