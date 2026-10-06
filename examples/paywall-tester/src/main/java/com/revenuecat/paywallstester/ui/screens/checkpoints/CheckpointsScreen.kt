@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -123,24 +124,19 @@ private fun OptionsMenu(
             Icon(Icons.Default.MoreVert, contentDescription = "Options")
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            MenuSectionHeader(text = "Present with the app's own")
             CheckableMenuItem(
-                text = "Present offerings with the app's own paywall",
+                text = "Paywall",
                 checked = state.presentWithAppPaywall,
                 onToggle = onTogglePresentWithAppPaywall,
             )
             CheckableMenuItem(
-                text = "Present errors with the app's own dialog",
+                text = "Error dialog",
                 checked = state.presentErrorsWithApp,
                 onToggle = onTogglePresentErrorsWithApp,
             )
-            DropdownMenuItem(
-                text = { Text(text = "Custom variables…") },
-                onClick = {
-                    expanded = false
-                    onEditCustomVariables()
-                },
-            )
             HorizontalDivider()
+            MenuSectionHeader(text = "Presentation mode")
             PRESENTATION_MODE_LABELS.forEach { (mode, label) ->
                 DropdownMenuItem(
                     text = { Text(text = label) },
@@ -148,8 +144,28 @@ private fun OptionsMenu(
                     onClick = { onSelectPresentationMode(mode) },
                 )
             }
+            HorizontalDivider()
+            DropdownMenuItem(
+                text = { Text(text = "Custom variables…") },
+                leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                trailingIcon = { Text(text = state.customVariables.size.toString()) },
+                onClick = {
+                    expanded = false
+                    onEditCustomVariables()
+                },
+            )
         }
     }
+}
+
+@Composable
+private fun MenuSectionHeader(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+    )
 }
 
 @Composable
@@ -188,9 +204,9 @@ private fun HitCheckpointSection(state: UiState, onHit: (String) -> Unit) {
 }
 
 private val PRESENTATION_MODE_LABELS = mapOf(
-    FlowPresentationMode.DEFAULT to "Default presentation (SDK picks, currently a sheet)",
-    FlowPresentationMode.MODAL_FULL_SCREEN to "Full screen presentation",
-    FlowPresentationMode.MODAL_SHEET to "Sheet presentation",
+    FlowPresentationMode.DEFAULT to "Default (SDK picks, currently a sheet)",
+    FlowPresentationMode.MODAL_FULL_SCREEN to "Full screen",
+    FlowPresentationMode.MODAL_SHEET to "Sheet",
 )
 
 private val PRESENTATION_MODE_SHORT_LABELS = mapOf(
