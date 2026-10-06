@@ -17,8 +17,13 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -212,6 +217,7 @@ private fun WorkflowStepsContent(
     clickHandler: suspend (PaywallAction.External) -> Unit,
     componentInteractionTracker: PaywallComponentInteractionTracker,
 ) {
+    val loadingDescription = stringResource(R.string.loading)
     // Multi-step container: the current and outgoing steps are stacked and translated by workflowTransition.
     // No clipToBounds here — horizontal overflow is bounded by the window/dialog, and adding
     // a top clip causes the hero image (which renders behind the status bar) to get cropped
@@ -219,9 +225,14 @@ private fun WorkflowStepsContent(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            // A stand-in must not take touches or be announced: its labels describe a step the user
-            // may never reach, and a markdown link in its text would still open a browser.
-            .conditional(isSkeleton) { blockInput().clearAndSetSemantics { } },
+            // A stand-in takes no touches, and it reports itself as loading rather than reading out
+            // labels for a step the user may never reach.
+            .conditional(isSkeleton) {
+                blockInput().clearAndSetSemantics {
+                    contentDescription = loadingDescription
+                    liveRegion = LiveRegionMode.Polite
+                }
+            },
     ) {
         listOfNotNull(transitionState.animatingFromStepId, transitionState.animatingToStepId)
             .forEach { stepId ->

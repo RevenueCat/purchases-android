@@ -4,6 +4,7 @@ import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
+import com.revenuecat.purchases.paywalls.components.PartialStackComponent
 import com.revenuecat.purchases.paywalls.components.PaywallComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.TabsComponent
@@ -11,6 +12,7 @@ import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.VideoComponent
 import com.revenuecat.purchases.paywalls.components.WebViewComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.ExitOffer
 import com.revenuecat.purchases.paywalls.components.common.ExitOffers
@@ -228,6 +230,31 @@ class WorkflowSkeletonTests {
 
         // Tab "a" is empty, so keeping the first tab would grey out nothing.
         assertThat(keptTab.components).hasSize(1)
+    }
+
+    @Test
+    fun `keeps an override so the stand-in can take the shape the rules will pick`() {
+        val overridden = StackComponent(
+            components = emptyList(),
+            backgroundColor = green,
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Compact),
+                    properties = PartialStackComponent(
+                        size = Size(SizeConstraint.Fixed(42u), SizeConstraint.Fixed(42u)),
+                        backgroundColor = green,
+                    ),
+                ),
+            ),
+        )
+
+        val card = transformedChildren(overridden).first() as StackComponent
+
+        assertThat(card.overrides).hasSize(1)
+        val partial = card.overrides.first().properties
+        // The size decides the shape, so it survives; the colour must not.
+        assertThat(partial.size?.width).isEqualTo(SizeConstraint.Fixed(42u))
+        assertThat(partial.backgroundColor).isNotEqualTo(green)
     }
 
     private fun videoComponent(size: Size = Size(SizeConstraint.Fill(), SizeConstraint.Fit())) = VideoComponent(

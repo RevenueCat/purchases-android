@@ -10,6 +10,10 @@ import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
+import com.revenuecat.purchases.paywalls.components.PartialComponent
+import com.revenuecat.purchases.paywalls.components.PartialImageComponent
+import com.revenuecat.purchases.paywalls.components.PartialStackComponent
+import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.PaywallComponent
 import com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
@@ -23,6 +27,7 @@ import com.revenuecat.purchases.paywalls.components.TimelineComponent
 import com.revenuecat.purchases.paywalls.components.VideoComponent
 import com.revenuecat.purchases.paywalls.components.WebViewComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
@@ -58,6 +63,8 @@ internal class WorkflowSkeleton private constructor(
             margin = stack.margin,
             shape = stack.shape,
             border = stack.border?.let { Border(color = if (contentHidden) CLEAR else tone, width = it.width) },
+            // Overrides change size and visibility by condition, so the stand-in keeps them.
+            overrides = stack.overrides.map { override(it) { partial -> stackPartial(partial, contentHidden) } },
             // A badge adds to the measured size, so it stays, with its own stack as a stand-in too.
             badge = stack.badge?.let { Badge(this.stack(it.stack, contentHidden), it.style, it.alignment) },
             overflow = stack.overflow,
@@ -84,6 +91,7 @@ internal class WorkflowSkeleton private constructor(
                     size = component.size,
                     padding = component.padding,
                     margin = component.margin,
+                    overrides = component.overrides.map { override(it) { p -> textPartial(p, contentHidden) } },
                 )
             } else {
                 null
@@ -186,6 +194,55 @@ internal class WorkflowSkeleton private constructor(
         }
 
     @OptIn(InternalRevenueCatAPI::class)
+    private fun <T : PartialComponent> override(
+        source: ComponentOverride<T>,
+        transform: (T) -> T,
+    ): ComponentOverride<T> = ComponentOverride(source.conditions, transform(source.properties))
+
+    @OptIn(InternalRevenueCatAPI::class)
+    private fun stackPartial(partial: PartialStackComponent, contentHidden: Boolean) = PartialStackComponent(
+        visible = partial.visible,
+        dimension = partial.dimension,
+        size = partial.size,
+        spacing = partial.spacing,
+        backgroundColor = partial.backgroundColor?.let { if (contentHidden) CLEAR else tone },
+        padding = partial.padding,
+        margin = partial.margin,
+        shape = partial.shape,
+        border = partial.border?.let { Border(color = if (contentHidden) CLEAR else tone, width = it.width) },
+        overflow = partial.overflow,
+    )
+
+    @OptIn(InternalRevenueCatAPI::class)
+    private fun textPartial(partial: PartialTextComponent, contentHidden: Boolean) = PartialTextComponent(
+        visible = partial.visible,
+        text = partial.text,
+        color = partial.color?.let { if (contentHidden) CLEAR else tone },
+        fontName = partial.fontName,
+        fontWeight = partial.fontWeight,
+        fontWeightInt = partial.fontWeightInt,
+        fontSize = partial.fontSize,
+        horizontalAlignment = partial.horizontalAlignment,
+        size = partial.size,
+        padding = partial.padding,
+        margin = partial.margin,
+    )
+
+    @OptIn(InternalRevenueCatAPI::class)
+    private fun imagePartial(partial: PartialImageComponent, contentHidden: Boolean) = PartialImageComponent(
+        visible = partial.visible,
+        source = partial.source,
+        size = partial.size,
+        overrideSourceLid = partial.overrideSourceLid,
+        fitMode = partial.fitMode,
+        maskShape = partial.maskShape,
+        colorOverlay = if (contentHidden) CLEAR else tone,
+        padding = partial.padding,
+        margin = partial.margin,
+        border = partial.border?.let { Border(color = if (contentHidden) CLEAR else tone, width = it.width) },
+    )
+
+    @OptIn(InternalRevenueCatAPI::class)
     private fun image(image: ImageComponent, contentHidden: Boolean): ImageComponent =
         ImageComponent(
             source = image.source,
@@ -199,6 +256,7 @@ internal class WorkflowSkeleton private constructor(
             padding = image.padding,
             margin = image.margin,
             border = image.border?.let { Border(color = if (contentHidden) CLEAR else tone, width = it.width) },
+            overrides = image.overrides.map { override(it) { p -> imagePartial(p, contentHidden) } },
         )
 
     @OptIn(InternalRevenueCatAPI::class)
