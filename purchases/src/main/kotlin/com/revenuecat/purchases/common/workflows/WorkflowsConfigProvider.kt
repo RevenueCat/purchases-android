@@ -20,6 +20,8 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
@@ -65,6 +67,10 @@ internal class WorkflowsConfigProvider(
     )
 
     private val cache = GenerationGuardedCache<Cached>()
+
+    // Each prewarm fully decodes a workflow body; left unbounded, one launch per prewarm offering can saturate
+    // the CPU and starve the main thread (reported as ANRs).
+    private val prewarmPermits = Semaphore(MAX_CONCURRENT_PREWARM_LOADS)
 
     /**
      * Whether the in-memory cache already holds what the current offering's paywall needs, so the offerings
@@ -252,7 +258,9 @@ internal class WorkflowsConfigProvider(
             prewarmOfferingIdsProvider().mapNotNullTo(linkedSetOf(), mapping::get)
         }
         if (workflowIds.isNullOrEmpty()) return
-        workflowIds.forEach { workflowId -> scope.launch { notify(workflowId, ::resolveWorkflowBody) } }
+        workflowIds.forEach { workflowId ->
+            scope.launch { prewarmPermits.withPermit { notify(workflowId, ::resolveWorkflowBody) } }
+        }
     }
 
     /** Warms at the current config generation; used by the offerings readiness gate. */
@@ -288,6 +296,7 @@ internal class WorkflowsConfigProvider(
 
     private companion object {
         private const val KEY_OFFERING_IDENTIFIER = "offering_identifier"
+        private const val MAX_CONCURRENT_PREWARM_LOADS = 4
 
         private fun JsonObject.stringOrNull(key: String): String? =
             (this[key] as? JsonPrimitive)?.takeIf { it.isString }?.content
