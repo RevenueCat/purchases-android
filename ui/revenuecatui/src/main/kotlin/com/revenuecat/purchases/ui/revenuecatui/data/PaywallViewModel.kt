@@ -1197,8 +1197,7 @@ internal class PaywallViewModelImpl(
             )
         }
 
-        // Only a real entry resolves. A rebuild (a colour change, a theme flap) is the same visit, and
-        // re-resolving there would cancel the answer in flight and could route the step somewhere else.
+        // A rebuild is the same visit, so re-resolving there could route the step somewhere else.
         if (isNewWorkflowImpression) resolveBranchesFor(currentStep)
         buildStateFromStep(currentStep, workflow, uiConfig, offerings, presentedOfferingContext)
         if (isNewWorkflowImpression && _workflowState.value != null) {
@@ -1211,10 +1210,7 @@ internal class PaywallViewModelImpl(
         preWarmWorkflowStepCache(workflow, uiConfig, offerings, presentedOfferingContext)
     }
 
-    /**
-     * Resolves a step's branches when it becomes current. Nothing waits on it: until it lands a branch takes
-     * its fallback, and the initial step cannot carry one.
-     */
+    /** Nothing waits on this: until it lands, a branch takes its fallback. */
     private fun resolveBranchesFor(step: WorkflowStep) {
         val navigator = workflowNavigator ?: return
         // Abandons the previous step's resolve, so every visit routes on its own answer.
@@ -1225,9 +1221,7 @@ internal class PaywallViewModelImpl(
                 step,
                 options.customVariables.mapValues { (_, value) -> value.asRulesDimensionValue },
             )
-            // Cancellation is cooperative and the resolve above is the only suspension point, so a
-            // cancelled job still reaches this line. Returning to the same step would let that stale
-            // answer pass the step id guard and overwrite a fresher one.
+            // Cancellation is cooperative, so a cancelled job still reaches this line.
             ensureActive()
             navigator.recordResolvedBranches(resolved, step.id)
         }
