@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">OK</string>
+    <string name="loading">Laster</string>
     <string name="all_plans">Alle abonnementer</string>
     <string name="privacy">Personvern</string>
     <string name="privacy_policy">Personvernerklæring</string>

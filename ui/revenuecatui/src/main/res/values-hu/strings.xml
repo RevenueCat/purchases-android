@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">rendben</string>
+    <string name="loading">Betöltés</string>
     <string name="all_plans">Minden előfizetés</string>
     <string name="privacy">Magánélet</string>
     <string name="privacy_policy">Adatvédelmi irányelvek</string>

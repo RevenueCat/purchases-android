@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">OK</string>
+    <string name="loading">Läser in</string>
     <string name="all_plans">Alla prenumerationer</string>
     <string name="privacy">Integritet</string>
     <string name="privacy_policy">Integritetspolicy</string>
