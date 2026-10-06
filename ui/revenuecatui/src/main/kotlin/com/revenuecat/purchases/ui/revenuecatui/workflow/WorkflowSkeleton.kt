@@ -30,8 +30,6 @@ import com.revenuecat.purchases.paywalls.components.properties.Badge
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
-import com.revenuecat.purchases.paywalls.components.properties.Size
-import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 
 /**
  * A loading screen for the first step of a flow: the SDK has the paywall tree before it knows which
@@ -101,13 +99,27 @@ internal class WorkflowSkeleton private constructor(
             is StickyFooterComponent -> stack(component.stack, contentHidden)
             is HeaderComponent -> stack(component.stack, contentHidden)
             is ImageComponent -> image(component, contentHidden)
-            // A video becomes a plain block rather than an image: its own url is not an image, and the
-            // image loader would download and fail to decode it. An empty block has nothing to measure,
-            // so a Fit axis takes the video's own size as its default instead of collapsing to zero.
-            is VideoComponent -> StackComponent(
+            // A stand-in has no density, so it cannot turn the source's pixels into a height. The
+            // fallback image goes through the normal image sizing instead. The video url is not an
+            // image, so it never reaches the loader.
+            is VideoComponent -> component.fallbackSource?.let { fallback ->
+                image(
+                    ImageComponent(
+                        source = fallback,
+                        visible = component.visible,
+                        size = component.size,
+                        maskShape = component.maskShape,
+                        fitMode = component.fitMode,
+                        padding = component.padding ?: PADDING_ZERO,
+                        margin = component.margin ?: PADDING_ZERO,
+                        border = component.border,
+                    ),
+                    contentHidden,
+                )
+            } ?: StackComponent(
                 components = emptyList(),
                 visible = component.visible,
-                size = videoSize(component),
+                size = component.size,
                 backgroundColor = if (contentHidden) null else tone,
                 padding = component.padding ?: PADDING_ZERO,
                 margin = component.margin ?: PADDING_ZERO,
@@ -117,7 +129,9 @@ internal class WorkflowSkeleton private constructor(
             )
             is TabsComponent -> stack(
                 StackComponent(
-                    components = component.tabs.firstOrNull()?.let { listOf(it.stack) } ?: emptyList(),
+                    components = (
+                        component.tabs.firstOrNull { it.id == component.defaultTabId } ?: component.tabs.firstOrNull()
+                        )?.let { listOf(it.stack) } ?: emptyList(),
                     visible = component.visible,
                     size = component.size,
                     backgroundColor = component.backgroundColor,
@@ -131,7 +145,8 @@ internal class WorkflowSkeleton private constructor(
             )
             is CarouselComponent -> stack(
                 StackComponent(
-                    components = component.pages.firstOrNull()?.let { listOf(it) } ?: emptyList(),
+                    components = component.pages.getOrNull(component.initialPageIndex ?: 0)
+                        ?.let { listOf(it) } ?: emptyList(),
                     visible = component.visible,
                     size = component.size,
                     backgroundColor = component.backgroundColor,
@@ -169,22 +184,6 @@ internal class WorkflowSkeleton private constructor(
             FallbackHeaderComponent,
             -> null
         }
-
-    @OptIn(InternalRevenueCatAPI::class)
-    private fun videoSize(video: VideoComponent): Size = Size(
-        width = fitDefault(video.size.width, video.source.light.width),
-        height = fitDefault(video.size.height, video.source.light.height),
-    )
-
-    /**
-     * An empty block has no content to wrap, and `Modifier.size` maps a Fit axis straight to
-     * `wrapContent`, ignoring its default. Pin the axis to the video's own dimension so the block
-     * reserves space instead of collapsing. The real video scales its height to the measured width,
-     * so this reserves an approximate height, not the exact one.
-     */
-    @OptIn(InternalRevenueCatAPI::class)
-    private fun fitDefault(constraint: SizeConstraint, intrinsic: UInt): SizeConstraint =
-        if (constraint is SizeConstraint.Fit) SizeConstraint.Fixed(constraint.default ?: intrinsic) else constraint
 
     @OptIn(InternalRevenueCatAPI::class)
     private fun image(image: ImageComponent, contentHidden: Boolean): ImageComponent =

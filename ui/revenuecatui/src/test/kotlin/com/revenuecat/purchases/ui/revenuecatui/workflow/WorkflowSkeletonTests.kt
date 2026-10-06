@@ -82,7 +82,7 @@ class WorkflowSkeletonTests {
     }
 
     @Test
-    fun `turns a video into a plain block so it neither plays nor downloads`() {
+    fun `turns a video into its fallback image so it cannot play`() {
         val video = VideoComponent(
             source = ThemeVideoUrls(
                 light = VideoUrls(width = 10u, height = 10u, url = URL("https://example.com/v.mp4")),
@@ -108,9 +108,10 @@ class WorkflowSkeletonTests {
         val children = transformedChildren(video)
 
         assertThat(children).hasSize(1)
-        // An image stand-in would send the video url, or a fallback, through the image loader.
-        assertThat(children.first()).isInstanceOf(StackComponent::class.java)
-        assertThat((children.first() as StackComponent).backgroundColor).isNotNull
+        // The video url is not an image, so it must never become the source.
+        val standIn = children.first() as ImageComponent
+        assertThat(standIn.source).isEqualTo(imageUrls)
+        assertThat(standIn.colorOverlay).isNotNull
     }
 
     @Test
@@ -205,17 +206,28 @@ class WorkflowSkeletonTests {
         assertThat(badgeText.color).isNotEqualTo(green)
     }
 
+
     @Test
-    fun `gives a fit-height video stand-in the video's own height so it cannot collapse`() {
-        val video = videoComponent(size = Size(SizeConstraint.Fill(), SizeConstraint.Fit()))
+    fun `opens tabs on the configured tab, not the first`() {
+        val tabs = TabsComponent(
+            defaultTabId = "b",
+            control = TabsComponent.TabControl.Buttons(StackComponent(components = emptyList())),
+            tabs = listOf(
+                TabsComponent.Tab(id = "a", stack = StackComponent(components = emptyList())),
+                TabsComponent.Tab(
+                    id = "b",
+                    stack = StackComponent(
+                        components = listOf(TextComponent(LocalizationKey("k"), green, fontSize = 20)),
+                    ),
+                ),
+            ),
+        )
 
-        val block = transformedChildren(video).first() as StackComponent
+        val collapsed = transformedChildren(tabs).first() as StackComponent
+        val keptTab = collapsed.components.first() as StackComponent
 
-        // Modifier.size maps Fit to wrapContent and ignores Fit.default, so a Fit axis on an empty
-        // block lays out at zero. Only Fixed reserves real space.
-        val height = block.size.height
-        assertThat(height).isInstanceOf(SizeConstraint.Fixed::class.java)
-        assertThat((height as SizeConstraint.Fixed).value).isEqualTo(720u)
+        // Tab "a" is empty, so keeping the first tab would grey out nothing.
+        assertThat(keptTab.components).hasSize(1)
     }
 
     private fun videoComponent(size: Size = Size(SizeConstraint.Fill(), SizeConstraint.Fit())) = VideoComponent(
