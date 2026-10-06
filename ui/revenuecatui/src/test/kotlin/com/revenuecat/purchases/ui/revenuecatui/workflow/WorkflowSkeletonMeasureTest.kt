@@ -43,6 +43,8 @@ internal class WorkflowSkeletonMeasureTest {
     val composeTestRule = createComposeRule()
 
     private fun measuredHeightOfEmptyBlock(height: SizeConstraint): Float {
+        // The placeholder shimmer is an infiniteRepeatable, so a shared clock never reports idle.
+        composeTestRule.mainClock.autoAdvance = false
         composeTestRule.setContent {
             Box(Modifier.fillMaxSize()) {
                 Box(
