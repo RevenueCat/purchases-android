@@ -12,6 +12,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
@@ -189,6 +190,18 @@ private fun workflowHeaderState(
     )
 }
 
+/**
+ * Swallows every pointer change on the Initial pass, which runs before descendants see it. An empty
+ * [pointerInput] block installs a handler that consumes nothing, so touches would reach the children.
+ */
+internal fun Modifier.blockInput(): Modifier = pointerInput(Unit) {
+    awaitPointerEventScope {
+        while (true) {
+            awaitPointerEvent(PointerEventPass.Initial).changes.forEach { it.consume() }
+        }
+    }
+}
+
 @Suppress("LongParameterList")
 @Composable
 private fun WorkflowStepsContent(
@@ -207,8 +220,8 @@ private fun WorkflowStepsContent(
         modifier = Modifier
             .fillMaxSize()
             // A stand-in must not take touches or be announced: its labels describe a step the user
-            // may never reach, and its buttons point at actions that are not resolved yet.
-            .conditional(isSkeleton) { pointerInput(Unit) {}.clearAndSetSemantics { } },
+            // may never reach, and a markdown link in its text would still open a browser.
+            .conditional(isSkeleton) { blockInput().clearAndSetSemantics { } },
     ) {
         listOfNotNull(transitionState.animatingFromStepId, transitionState.animatingToStepId)
             .forEach { stepId ->
