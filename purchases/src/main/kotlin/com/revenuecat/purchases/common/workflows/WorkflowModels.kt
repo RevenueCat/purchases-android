@@ -146,10 +146,10 @@ public data class WorkflowStep(
 
     /** `metadata` first, `param_values` for blobs published before khepri moves them to `metadata`. */
     public val experimentId: String?
-        get() = experimentParam(EXPERIMENT_ID_PARAM)
+        get() = experimentValueFromMetadataOrParams(EXPERIMENT_ID_PARAM)
 
     public val experimentVariant: String?
-        get() = experimentParam(EXPERIMENT_VARIANT_PARAM)
+        get() = experimentValueFromMetadataOrParams(EXPERIMENT_VARIANT_PARAM)
 
     /** A terminal step that resolves to an offering instead of rendering a screen. */
     @InternalRevenueCatAPI
@@ -171,7 +171,7 @@ public data class WorkflowStep(
                 ?.takeIf { it.isNotBlank() }
         }
 
-    private fun experimentParam(key: String): String? =
+    private fun experimentValueFromMetadataOrParams(key: String): String? =
         (metadata as? JsonObject)?.get(key).stringOrNull() ?: paramValues[key].stringOrNull()
 
     private fun JsonElement?.stringOrNull(): String? =
