@@ -14,6 +14,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,6 +24,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.awaitCustomerInfo
+import com.revenuecat.purchases.awaitLogIn
 import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.StoreTransaction
@@ -30,6 +32,7 @@ import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import kotlinx.coroutines.launch
 
 private const val WORKFLOW_OFFERING_ID = "default_workflows"
 private const val ENTITLEMENT_ID = "pro"
@@ -45,10 +48,13 @@ fun WorkflowScreen(
     modifier: Modifier = Modifier,
     usersCountOverride: Int? = null,
     offeringId: String? = null,
+    logInAppUserIds: List<String> = emptyList(),
 ) {
     var offeringState by remember { mutableStateOf<OfferingState>(OfferingState.Loading) }
     var showPaywall by remember { mutableStateOf(false) }
     var customerInfo by remember { mutableStateOf<CustomerInfo?>(null) }
+    var loggedInAppUserId by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         customerInfo = loadCustomerInfo()
@@ -77,6 +83,26 @@ fun WorkflowScreen(
         offeringState = loaded,
         customerInfo = customerInfo,
         onPresentPaywall = { showPaywall = true },
+        logInButtons = {
+            logInAppUserIds.forEach { appUserId ->
+                Button(
+                    onClick = {
+                        scope.launch {
+                            try {
+                                customerInfo = Purchases.sharedInstance.awaitLogIn(appUserId).customerInfo
+                            } catch (@Suppress("SwallowedException") e: PurchasesException) {
+                                customerInfo = null
+                            }
+                            offeringState = loadWorkflowOffering(offeringId ?: WORKFLOW_OFFERING_ID)
+                            loggedInAppUserId = appUserId
+                        }
+                    },
+                ) {
+                    Text("Log In as $appUserId")
+                }
+            }
+            loggedInAppUserId?.let { Text("Logged in as $it") }
+        },
         modifier = modifier,
     )
 }
@@ -112,6 +138,7 @@ private fun WorkflowLauncher(
     offeringState: OfferingState,
     customerInfo: CustomerInfo?,
     onPresentPaywall: () -> Unit,
+    logInButtons: @Composable () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -133,6 +160,8 @@ private fun WorkflowLauncher(
                 color = MaterialTheme.colorScheme.error,
             )
         }
+
+        logInButtons()
 
         Text(text = "entitlement ($ENTITLEMENT_ID): ${entitlementStatus(customerInfo)}")
     }

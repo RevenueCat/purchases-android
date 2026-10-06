@@ -31,12 +31,16 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
         val flow = E2ETestFlow.fromRawValue(intent.getStringExtra(E2ETestFlow.INTENT_EXTRA_KEY))
         val usersCountOverride = intent.getStringExtra(CUSTOM_USERS_COUNT_EXTRA_KEY)?.toIntOrNull()
         val offeringId = intent.getStringExtra(WORKFLOW_OFFERING_EXTRA_KEY)
+        val logInAppUserIds = intent.getStringExtra(LOG_IN_APP_USER_IDS_EXTRA_KEY)
+            ?.split(",")
+            .orEmpty()
         setContent {
             PurchasesandroidTheme {
                 when (flow) {
                     E2ETestFlow.OPEN_WORKFLOW -> WorkflowScreen(
                         usersCountOverride = usersCountOverride,
                         offeringId = offeringId,
+                        logInAppUserIds = logInAppUserIds,
                     )
                     E2ETestFlow.OPEN_WORKFLOW_PRESENTED -> PresentedWorkflowScreen(
                         onPresentPaywall = { paywallLauncher.launch(it) },
@@ -55,5 +59,8 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
     private companion object {
         const val CUSTOM_USERS_COUNT_EXTRA_KEY = "custom_users_count"
         const val WORKFLOW_OFFERING_EXTRA_KEY = "workflow_offering_identifier"
+
+        // Comma-separated app user ids. Each one gets a button that logs in as it.
+        const val LOG_IN_APP_USER_IDS_EXTRA_KEY = "log_in_app_user_ids"
     }
 }
