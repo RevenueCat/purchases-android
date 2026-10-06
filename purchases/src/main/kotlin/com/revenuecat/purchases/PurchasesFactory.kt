@@ -43,6 +43,7 @@ import com.revenuecat.purchases.common.networking.DeviceConnectivityChecker
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
 import com.revenuecat.purchases.common.networking.SourceHealthChecker
+import com.revenuecat.purchases.common.networking.TokenAuthenticator
 import com.revenuecat.purchases.common.networking.TokenManager
 import com.revenuecat.purchases.common.offerings.OfferingsCache
 import com.revenuecat.purchases.common.offerings.OfferingsFactory
@@ -258,6 +259,9 @@ internal class PurchasesFactory(
             )
 
             val timeoutManager = HTTPTimeoutManager(appConfig)
+            // IdentityManager depends on Backend, which depends on HTTPClient, so HTTPClient's current-user lookup
+            // is bound late. Nothing sends a request before it's assigned below.
+            lateinit var identityManager: IdentityManager
             val httpClient = HTTPClient(
                 appConfig,
                 eTagManager,
@@ -268,6 +272,7 @@ internal class PurchasesFactory(
                 localeProvider = localeProvider,
                 forceServerErrorStrategy = forceServerErrorStrategy,
                 timeoutManager = timeoutManager,
+                tokenAuthenticator = TokenAuthenticator(tokenManager) { identityManager.currentAppUserID },
             )
             val backendHelper = BackendHelper(apiKey, backendDispatcher, appConfig, httpClient)
             val backend = Backend(
@@ -395,7 +400,7 @@ internal class PurchasesFactory(
             sdkSettingsConfigProvider.preloadAsync(initialGeneration)
             subscriberDimensionsConfigProvider.warmAsync(initialGeneration)
 
-            val identityManager = IdentityManager(
+            identityManager = IdentityManager(
                 appConfig,
                 cache,
                 subscriberAttributesCache,
