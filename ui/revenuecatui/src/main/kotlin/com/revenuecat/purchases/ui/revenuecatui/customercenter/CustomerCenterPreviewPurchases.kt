@@ -11,7 +11,11 @@ import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.events.FeatureEvent
+import com.revenuecat.purchases.common.localrules.RulesDimensionValue
+import com.revenuecat.purchases.common.workflows.WorkflowActionID
 import com.revenuecat.purchases.common.workflows.WorkflowResolution
+import com.revenuecat.purchases.common.workflows.WorkflowStep
+import com.revenuecat.purchases.common.workflows.WorkflowStepID
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.Checksum
 import com.revenuecat.purchases.storage.FileRepository
@@ -45,6 +49,12 @@ internal class CustomerCenterPreviewPurchases(private val provider: CustomerCent
     override suspend fun awaitGetUiConfig(): Nothing = unsupportedWorkflow()
     override suspend fun resolveWorkflow(offeringId: String): WorkflowResolution = WorkflowResolution.NoWorkflow
     override suspend fun awaitWorkflowBlobRef(workflowId: String): Nothing = unsupportedWorkflow()
+
+    // A preview has no audiences to evaluate, so every branch takes its fallback.
+    override suspend fun resolveBranches(
+        step: WorkflowStep,
+        customVariables: Map<String, RulesDimensionValue>,
+    ): Map<WorkflowActionID, WorkflowStepID> = emptyMap()
 
     private fun unsupportedWorkflow(): Nothing = error("Preview paywalls must be hosted by the preview action handler")
 }
