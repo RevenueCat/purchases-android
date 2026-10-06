@@ -28,8 +28,7 @@ internal class WorkflowNavigator(private val workflow: PublishedWorkflow) {
         val step = currentStep ?: return null
         val trigger = step.triggers.firstOrNull { it.componentId == componentId && it.type == triggerType }
             ?: return null
-        val stepId = nextStepId(action = step.triggerActions[trigger.actionId], actionId = trigger.actionId)
-            ?: return null
+        val stepId = nextStepId(step.triggerActions, trigger.actionId) ?: return null
         return workflow.steps[stepId]
     }
 
@@ -43,11 +42,11 @@ internal class WorkflowNavigator(private val workflow: PublishedWorkflow) {
             Logger.w("No trigger found for componentId '$componentId' and type '$triggerType' in step '${step.id}'")
             return null
         }
-        val action = step.triggerActions[trigger.actionId] ?: run {
+        if (trigger.actionId !in step.triggerActions) {
             Logger.w("No trigger action found for actionId '${trigger.actionId}' in step '${step.id}'")
             return null
         }
-        val stepId = nextStepId(action = action, actionId = trigger.actionId) ?: run {
+        val stepId = nextStepId(step.triggerActions, trigger.actionId) ?: run {
             Logger.w("Workflow trigger action '${trigger.actionId}' leads nowhere, ignoring")
             return null
         }
@@ -73,7 +72,10 @@ internal class WorkflowNavigator(private val workflow: PublishedWorkflow) {
         get() = backStack.isNotEmpty()
 
     /** If the branch has not been resolved, pick the fallback. */
-    private fun nextStepId(action: WorkflowTriggerAction?, actionId: String): String? = when (action) {
+    private fun nextStepId(
+        triggerActions: Map<WorkflowActionID, WorkflowTriggerAction>,
+        actionId: WorkflowActionID,
+    ): String? = when (val action = triggerActions[actionId]) {
         is WorkflowTriggerAction.Step -> action.stepId
         is WorkflowTriggerAction.Branch ->
             currentStepBranches[actionId]?.takeIf { workflow.steps.containsKey(it) } ?: action.fallbackStepId
