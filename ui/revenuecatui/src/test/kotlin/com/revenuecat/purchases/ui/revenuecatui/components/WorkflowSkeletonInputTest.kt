@@ -18,6 +18,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withLink
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -32,6 +33,12 @@ internal class WorkflowSkeletonInputTest {
 
     @get:Rule
     val composeTestRule = createComposeRule()
+
+    @Before
+    fun pinClock() {
+        // Espresso idling is global, so an animation left running elsewhere can hang waitForIdle.
+        composeTestRule.mainClock.autoAdvance = false
+    }
 
     private fun setUpChild(blocked: Boolean, onClick: () -> Unit) {
         composeTestRule.setContent {

@@ -4,6 +4,7 @@ import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
+import com.revenuecat.purchases.paywalls.components.PartialImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
 import com.revenuecat.purchases.paywalls.components.PaywallComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
@@ -123,7 +124,10 @@ class WorkflowSkeletonTests {
         val children = transformedChildren(text)
 
         assertThat(children).hasSize(1)
-        assertThat((children.first() as TextComponent).color).isNotEqualTo(green)
+        val color = (children.first() as TextComponent).color
+        assertThat(color).isNotEqualTo(green)
+        // Inverting contentHidden would make every label invisible and still not be green.
+        assertThat(color).isNotEqualTo(clear)
     }
 
     @Test
@@ -257,27 +261,29 @@ class WorkflowSkeletonTests {
         assertThat(partial.backgroundColor).isNotEqualTo(green)
     }
 
-    private fun videoComponent(size: Size = Size(SizeConstraint.Fill(), SizeConstraint.Fit())) = VideoComponent(
-        source = ThemeVideoUrls(
-            light = VideoUrls(width = 1280u, height = 720u, url = URL("https://example.com/v.mp4")),
-            dark = null,
-        ),
-        fallbackSource = imageUrls,
-        visible = null,
-        showControls = false,
-        autoplay = true,
-        loop = true,
-        muteAudio = true,
-        size = size,
-        fitMode = FitMode.FIT,
-        maskShape = null,
-        colorOverlay = null,
-        padding = null,
-        margin = null,
-        border = null,
-        shadow = null,
-        overrides = null,
-    )
+
+    @Test
+    fun `keeps an image override opaque so a matching rule cannot expose the bitmap`() {
+        val card = StackComponent(
+            components = listOf(
+                ImageComponent(
+                    source = imageUrls,
+                    overrides = listOf(
+                        ComponentOverride(
+                            conditions = listOf(ComponentOverride.Condition.Compact),
+                            properties = PartialImageComponent(size = Size(SizeConstraint.Fixed(10u), SizeConstraint.Fixed(10u))),
+                        ),
+                    ),
+                ),
+            ),
+            backgroundColor = green,
+        )
+
+        val image = (transformedChildren(card).first() as StackComponent).components.first() as ImageComponent
+
+        // A clear overlay on a matching override draws the real photo inside the grey card.
+        assertThat(image.overrides.first().properties.colorOverlay).isNotEqualTo(clear)
+    }
 
     private fun iconFormats() = IconComponent.Formats(
         webp = "star.webp",

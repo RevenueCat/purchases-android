@@ -236,7 +236,7 @@ internal class WorkflowSkeleton private constructor(
         overrideSourceLid = partial.overrideSourceLid,
         fitMode = partial.fitMode,
         maskShape = partial.maskShape,
-        colorOverlay = if (contentHidden) CLEAR else tone,
+        colorOverlay = tone,
         padding = partial.padding,
         margin = partial.margin,
         border = partial.border?.let { Border(color = if (contentHidden) CLEAR else tone, width = it.width) },
