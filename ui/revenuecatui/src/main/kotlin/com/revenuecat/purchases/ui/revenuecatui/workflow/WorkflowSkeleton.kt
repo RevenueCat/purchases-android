@@ -34,9 +34,8 @@ import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 
 /**
- * Rewrites a paywall into a grey stand-in of itself, for the window where the SDK knows the layout
- * of a step but not yet which step to show. The transform runs on the component tree rather than at
- * render time, so every component type is accounted for here and the real layout still measures.
+ * A loading screen for the first step of a flow: the SDK has the paywall tree before it knows which
+ * step the audiences pick, so it greys that tree out rather than showing a spinner.
  */
 internal class WorkflowSkeleton private constructor(
     private val tone: ColorScheme,
