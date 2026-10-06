@@ -12,16 +12,21 @@ import com.revenuecat.purchases.paywalls.components.VideoComponent
 import com.revenuecat.purchases.paywalls.components.WebViewComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
+import com.revenuecat.purchases.paywalls.components.common.ExitOffer
+import com.revenuecat.purchases.paywalls.components.common.ExitOffers
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
+import com.revenuecat.purchases.paywalls.components.properties.Badge
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.FitMode
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
+import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.ThemeVideoUrls
 import com.revenuecat.purchases.paywalls.components.properties.VideoUrls
 import org.assertj.core.api.Assertions.assertThat
@@ -55,6 +60,7 @@ class WorkflowSkeletonTests {
             ),
         ),
         componentsLocalizations = mapOf(LocaleId("en_US") to emptyMap()),
+        exitOffers = ExitOffers(dismiss = ExitOffer(offeringId = "exit")),
     )
 
     private fun transformedChildren(vararg components: PaywallComponent): List<PaywallComponent> =
@@ -76,7 +82,7 @@ class WorkflowSkeletonTests {
     }
 
     @Test
-    fun `turns a video into a still image so it cannot play behind the stand-in`() {
+    fun `turns a video into its fallback image so it cannot play`() {
         val video = VideoComponent(
             source = ThemeVideoUrls(
                 light = VideoUrls(width = 10u, height = 10u, url = URL("https://example.com/v.mp4")),
@@ -102,8 +108,10 @@ class WorkflowSkeletonTests {
         val children = transformedChildren(video)
 
         assertThat(children).hasSize(1)
-        assertThat(children.first()).isInstanceOf(ImageComponent::class.java)
-        assertThat((children.first() as ImageComponent).colorOverlay).isNotNull
+        // The video url is not an image, so it must never become the source.
+        val standIn = children.first() as ImageComponent
+        assertThat(standIn.source).isEqualTo(imageUrls)
+        assertThat(standIn.colorOverlay).isNotNull
     }
 
     @Test
@@ -118,9 +126,11 @@ class WorkflowSkeletonTests {
 
     @Test
     fun `drops exit offers so the stand-in cannot trigger one`() {
-        val transformed = WorkflowSkeleton.transform(dataWith(StackComponent(components = emptyList())))
+        val data = dataWith(StackComponent(components = emptyList()))
+        // Guard the fixture: without this the assertion below holds whether or not the transform runs.
+        assertThat(data.exitOffers).isNotNull
 
-        assertThat(transformed.exitOffers).isNull()
+        assertThat(WorkflowSkeleton.transform(data).exitOffers).isNull()
     }
 
     @Test
@@ -176,6 +186,71 @@ class WorkflowSkeletonTests {
 
         assertThat(collapsed.backgroundColor).isNotNull
     }
+
+    @Test
+    fun `keeps a badge so the stack still measures its height`() {
+        val badged = StackComponent(
+            components = emptyList(),
+            badge = Badge(
+                stack = StackComponent(components = listOf(TextComponent(LocalizationKey("k"), green, fontSize = 20))),
+                style = Badge.Style.EdgeToEdge,
+                alignment = TwoDimensionalAlignment.TOP,
+            ),
+        )
+
+        val card = transformedChildren(badged).first() as StackComponent
+
+        assertThat(card.badge).isNotNull
+        // The badge is a stand-in too, so it must not keep the real colour.
+        val badgeText = card.badge!!.stack.components.first() as TextComponent
+        assertThat(badgeText.color).isNotEqualTo(green)
+    }
+
+
+    @Test
+    fun `opens tabs on the configured tab, not the first`() {
+        val tabs = TabsComponent(
+            defaultTabId = "b",
+            control = TabsComponent.TabControl.Buttons(StackComponent(components = emptyList())),
+            tabs = listOf(
+                TabsComponent.Tab(id = "a", stack = StackComponent(components = emptyList())),
+                TabsComponent.Tab(
+                    id = "b",
+                    stack = StackComponent(
+                        components = listOf(TextComponent(LocalizationKey("k"), green, fontSize = 20)),
+                    ),
+                ),
+            ),
+        )
+
+        val collapsed = transformedChildren(tabs).first() as StackComponent
+        val keptTab = collapsed.components.first() as StackComponent
+
+        // Tab "a" is empty, so keeping the first tab would grey out nothing.
+        assertThat(keptTab.components).hasSize(1)
+    }
+
+    private fun videoComponent(size: Size = Size(SizeConstraint.Fill(), SizeConstraint.Fit())) = VideoComponent(
+        source = ThemeVideoUrls(
+            light = VideoUrls(width = 1280u, height = 720u, url = URL("https://example.com/v.mp4")),
+            dark = null,
+        ),
+        fallbackSource = imageUrls,
+        visible = null,
+        showControls = false,
+        autoplay = true,
+        loop = true,
+        muteAudio = true,
+        size = size,
+        fitMode = FitMode.FIT,
+        maskShape = null,
+        colorOverlay = null,
+        padding = null,
+        margin = null,
+        border = null,
+        shadow = null,
+        overrides = null,
+    )
 
     private fun iconFormats() = IconComponent.Formats(
         webp = "star.webp",

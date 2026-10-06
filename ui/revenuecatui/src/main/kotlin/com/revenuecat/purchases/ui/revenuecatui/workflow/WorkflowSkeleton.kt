@@ -26,16 +26,14 @@ import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
+import com.revenuecat.purchases.paywalls.components.properties.Badge
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
-import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
-import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 
 /**
- * Rewrites a paywall into a grey stand-in of itself, for the window where the SDK knows the layout
- * of a step but not yet which step to show. The transform runs on the component tree rather than at
- * render time, so every component type is accounted for here and the real layout still measures.
+ * A loading screen for the first step of a flow: the SDK has the paywall tree before it knows which
+ * step the audiences pick, so it greys that tree out rather than showing a spinner.
  */
 internal class WorkflowSkeleton private constructor(
     private val tone: ColorScheme,
@@ -60,6 +58,8 @@ internal class WorkflowSkeleton private constructor(
             margin = stack.margin,
             shape = stack.shape,
             border = stack.border?.let { Border(color = if (contentHidden) CLEAR else tone, width = it.width) },
+            // A badge adds to the measured size, so it stays, with its own stack as a stand-in too.
+            badge = stack.badge?.let { Badge(this.stack(it.stack, contentHidden), it.style, it.alignment) },
             overflow = stack.overflow,
         )
     }
@@ -99,11 +99,13 @@ internal class WorkflowSkeleton private constructor(
             is StickyFooterComponent -> stack(component.stack, contentHidden)
             is HeaderComponent -> stack(component.stack, contentHidden)
             is ImageComponent -> image(component, contentHidden)
-            // A video would play behind the stand-in, so it becomes a still block of the same size.
-            is VideoComponent -> videoImage(component)?.let { source ->
+            // A stand-in has no density, so it cannot turn the source's pixels into a height. The
+            // fallback image goes through the normal image sizing instead. The video url is not an
+            // image, so it never reaches the loader.
+            is VideoComponent -> component.fallbackSource?.let { fallback ->
                 image(
                     ImageComponent(
-                        source = source,
+                        source = fallback,
                         visible = component.visible,
                         size = component.size,
                         maskShape = component.maskShape,
@@ -114,10 +116,22 @@ internal class WorkflowSkeleton private constructor(
                     ),
                     contentHidden,
                 )
-            }
+            } ?: StackComponent(
+                components = emptyList(),
+                visible = component.visible,
+                size = component.size,
+                backgroundColor = if (contentHidden) null else tone,
+                padding = component.padding ?: PADDING_ZERO,
+                margin = component.margin ?: PADDING_ZERO,
+                border = component.border?.let {
+                    Border(color = if (contentHidden) CLEAR else tone, width = it.width)
+                },
+            )
             is TabsComponent -> stack(
                 StackComponent(
-                    components = component.tabs.firstOrNull()?.let { listOf(it.stack) } ?: emptyList(),
+                    components = (
+                        component.tabs.firstOrNull { it.id == component.defaultTabId } ?: component.tabs.firstOrNull()
+                        )?.let { listOf(it.stack) } ?: emptyList(),
                     visible = component.visible,
                     size = component.size,
                     backgroundColor = component.backgroundColor,
@@ -131,7 +145,8 @@ internal class WorkflowSkeleton private constructor(
             )
             is CarouselComponent -> stack(
                 StackComponent(
-                    components = component.pages.firstOrNull()?.let { listOf(it) } ?: emptyList(),
+                    components = component.pages.getOrNull(component.initialPageIndex ?: 0)
+                        ?.let { listOf(it) } ?: emptyList(),
                     visible = component.visible,
                     size = component.size,
                     backgroundColor = component.backgroundColor,
@@ -185,20 +200,6 @@ internal class WorkflowSkeleton private constructor(
             margin = image.margin,
             border = image.border?.let { Border(color = if (contentHidden) CLEAR else tone, width = it.width) },
         )
-
-    @OptIn(InternalRevenueCatAPI::class)
-    private fun videoImage(video: VideoComponent): ThemeImageUrls? =
-        video.fallbackSource ?: video.source.light.let { light ->
-            ThemeImageUrls(
-                light = ImageUrls(
-                    original = light.url,
-                    webp = light.url,
-                    webpLowRes = light.url,
-                    width = light.width,
-                    height = light.height,
-                ),
-            )
-        }
 
     @OptIn(InternalRevenueCatAPI::class)
     private fun hasFill(background: Background?, color: ColorScheme?, border: Border?): Boolean {
