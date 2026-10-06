@@ -1261,6 +1261,9 @@ internal class PaywallViewModelImpl(
                     fromStepId = null,
                     entryReason = WorkflowStepEntryReason.START,
                 )
+                // The stand-in suppressed the impression, and the UI only retracks when the screen id
+                // changes. A branch that lands on its fallback keeps the same id, so ask here.
+                trackPaywallImpressionIfNeeded()
             }
             preWarmWorkflowStepCache(workflow, uiConfig, offerings, presentedOfferingContext)
         }

@@ -304,9 +304,12 @@ class PaywallViewModelWorkflowTest {
 
         assertThat(captured.filterIsInstance<PaywallEvent>()).isEmpty()
 
-        // Leaving the resolve suspended would keep a coroutine alive into the next test.
+        // The branch lands on its own fallback, which is the usual no-match outcome.
         gate.complete("step-1")
         testDispatcher.scheduler.advanceUntilIdle()
+
+        // The screen id does not change here, so the UI never retracks on its own.
+        assertThat(captured.filterIsInstance<PaywallEvent>()).isNotEmpty
     }
 
     @Test
