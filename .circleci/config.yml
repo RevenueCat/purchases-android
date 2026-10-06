@@ -1186,7 +1186,6 @@ workflows:
             - prepare-tests
       - size_analysis_tests:
           context:
-            - slack-secrets
             - sentry
           requires:
             - prepare-tests
