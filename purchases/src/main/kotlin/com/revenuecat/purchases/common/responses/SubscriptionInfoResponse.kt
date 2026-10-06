@@ -13,6 +13,7 @@ import java.text.NumberFormat
 import java.util.Currency
 import java.util.Date
 import java.util.Locale
+import kotlin.math.roundToLong
 
 @Serializable
 @SuppressWarnings("LongParameterList")
@@ -69,7 +70,7 @@ internal data class SubscriptionInfoResponse(
 
             val formatted = numberFormat.format(amount)
 
-            return Price(formatted, (amount * MICRO_MULTIPLIER).toLong(), currencyCode)
+            return Price(formatted, (amount * MICRO_MULTIPLIER).roundToLong(), currencyCode)
         }
     }
 }

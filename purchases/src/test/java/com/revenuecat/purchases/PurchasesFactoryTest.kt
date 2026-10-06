@@ -236,6 +236,7 @@ class PurchasesFactoryTest {
 
         assertThat(purchases.purchasesOrchestrator.audiencesConfigProvider).isNotNull()
         assertThat(purchases.purchasesOrchestrator.sdkSettingsConfigProvider).isNotNull()
+        assertThat(purchases.purchasesOrchestrator.subscriberDimensionsConfigProvider).isNotNull()
         purchases.close()
     }
 
@@ -307,6 +308,7 @@ class PurchasesFactoryTest {
         // before touching the network.
         assertThat(purchases.purchasesOrchestrator.audiencesConfigProvider).isNotNull()
         assertThat(purchases.purchasesOrchestrator.sdkSettingsConfigProvider).isNotNull()
+        assertThat(purchases.purchasesOrchestrator.subscriberDimensionsConfigProvider).isNotNull()
         assertThatExceptionOfType(PurchasesException::class.java)
             .isThrownBy { runBlocking { purchases.purchasesOrchestrator.getWorkflow("some-workflow") } }
             .matches { it.code == PurchasesErrorCode.ConfigurationError }
@@ -348,6 +350,26 @@ class PurchasesFactoryTest {
         purchases.purchasesOrchestrator.onSdkSettingsChanged(
             SdkSettings(diagnostics = DiagnosticsSettings(enabled = false)),
         )
+
+        assertThat(awaitDiagnosticsFileDeletion(diagnosticsFile)).isTrue()
+        purchases.close()
+    }
+
+    @Test
+    fun `the diagnostics file survives configure until the remote decision when remote config is enabled`() {
+        val diagnosticsFile = createEmptyDiagnosticsFile()
+        val purchases = createPurchases { diagnosticsEnabled(false) }
+
+        assertThat(awaitDiagnosticsFileDeletion(diagnosticsFile)).isFalse()
+        purchases.close()
+    }
+
+    @Test
+    fun `custom entitlement computation deletes the diagnostics file at configure without a remote decision`() {
+        val diagnosticsFile = createEmptyDiagnosticsFile()
+        val purchases = createPurchases {
+            dangerousSettings(DangerousSettings(customEntitlementComputation = true))
+        }
 
         assertThat(awaitDiagnosticsFileDeletion(diagnosticsFile)).isTrue()
         purchases.close()

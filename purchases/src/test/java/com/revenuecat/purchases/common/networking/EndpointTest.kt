@@ -23,7 +23,7 @@ class EndpointTest {
         Endpoint.PostEvents,
         Endpoint.PostRedeemWebPurchase,
         Endpoint.GetVirtualCurrencies("test-user-id"),
-        Endpoint.GetRewardVerification("test-user-id", "client-transaction-id"),
+        Endpoint.GetRewardVerification("test-user-id", "client-transaction-id", null),
         Endpoint.AliasUsers("test-user-id"),
         Endpoint.GetRemoteConfig("app"),
         Endpoint.GetRemoteConfigFallback("app"),
@@ -121,9 +121,41 @@ class EndpointTest {
         val endpoint = Endpoint.GetRewardVerification(
             userId = "test user-id",
             clientTransactionId = "client transaction id",
+            adUnitId = null,
         )
         val expectedPath = "/v1/subscribers/test%20user-id/ads/reward_verifications/client%20transaction%20id"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
+    }
+
+    @Test
+    fun `GetRewardVerification includes encoded ad unit id query parameter`() {
+        val endpoint = Endpoint.GetRewardVerification(
+            userId = "test user-id",
+            clientTransactionId = "client transaction id",
+            adUnitId = "ca-app-pub-123/456 a&b=c+d?é",
+        )
+        val expectedQuery = "?ad_unit_id=ca-app-pub-123%2F456%20a%26b%3Dc%2Bd%3F%C3%A9"
+        assertThat(endpoint.getPath()).isEqualTo(
+            "/v1/subscribers/test%20user-id/ads/reward_verifications/client%20transaction%20id$expectedQuery",
+        )
+        assertThat(endpoint.getPath(useIAMPath = true)).isEqualTo(
+            "/v1/customer/ads/reward_verifications/client%20transaction%20id$expectedQuery",
+        )
+    }
+
+    @Test
+    fun `GetRewardVerification omits ad unit id query parameter when null or blank`() {
+        for (adUnitId in listOf(null, "", "  ")) {
+            val endpoint = Endpoint.GetRewardVerification(
+                userId = "test user-id",
+                clientTransactionId = "client transaction id",
+                adUnitId = adUnitId,
+            )
+            assertThat(endpoint.getPath())
+                .isEqualTo("/v1/subscribers/test%20user-id/ads/reward_verifications/client%20transaction%20id")
+            assertThat(endpoint.getPath(useIAMPath = true))
+                .isEqualTo("/v1/customer/ads/reward_verifications/client%20transaction%20id")
+        }
     }
 
     @Test
@@ -131,6 +163,7 @@ class EndpointTest {
         val endpoint = Endpoint.GetRewardVerification(
             userId = "test user-id",
             clientTransactionId = "client transaction id",
+            adUnitId = null,
         )
         val expectedName = "get_reward_verification"
         assertThat(endpoint.name).isEqualTo(expectedName)
@@ -219,7 +252,7 @@ class EndpointTest {
             Endpoint.GetProductEntitlementMapping,
             Endpoint.PostRedeemWebPurchase,
             Endpoint.GetVirtualCurrencies(userId = "test-user-id"),
-            Endpoint.GetRewardVerification("test-user-id", "client-transaction-id"),
+            Endpoint.GetRewardVerification("test-user-id", "client-transaction-id", null),
             Endpoint.GetRemoteConfig("app"),
             Endpoint.GetRemoteConfigFallback("app"),
         )
@@ -269,7 +302,7 @@ class EndpointTest {
             Endpoint.PostReceipt,
             Endpoint.PostRedeemWebPurchase,
             Endpoint.GetVirtualCurrencies(userId = "test-user-id"),
-            Endpoint.GetRewardVerification("test-user-id", "client-transaction-id"),
+            Endpoint.GetRewardVerification("test-user-id", "client-transaction-id", null),
             Endpoint.GetRemoteConfig("app"),
         )
         for (endpoint in expectedEndpoints) {
@@ -318,7 +351,7 @@ class EndpointTest {
             Endpoint.PostCreateSupportTicket,
             Endpoint.PostRedeemWebPurchase,
             Endpoint.GetVirtualCurrencies("test-user-id"),
-            Endpoint.GetRewardVerification("test-user-id", "client-transaction-id"),
+            Endpoint.GetRewardVerification("test-user-id", "client-transaction-id", null),
             Endpoint.WebBillingGetProducts("test-user-id", setOf("product1", "product2")),
             Endpoint.TokenLogin,
             Endpoint.TokenRefresh,
@@ -431,7 +464,7 @@ class EndpointTest {
 
     @Test
     fun `GetRewardVerification has an IAM path that drops the app user id`() {
-        val endpoint = Endpoint.GetRewardVerification("test-user-id", "client-transaction-id")
+        val endpoint = Endpoint.GetRewardVerification("test-user-id", "client-transaction-id", null)
         assertThat(endpoint.getPath())
             .isEqualTo("/v1/subscribers/test-user-id/ads/reward_verifications/client-transaction-id")
         assertThat(endpoint.getPath(useIAMPath = true))

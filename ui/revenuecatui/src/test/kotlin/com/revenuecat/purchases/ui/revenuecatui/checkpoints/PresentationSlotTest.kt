@@ -50,6 +50,7 @@ class PresentationSlotTest {
         callId = callId,
         workflow = null,
         activeEntitlementsBefore = null,
+        errorPresenter = null,
         customVariables = emptyMap(),
         flowFinished = CompletableDeferred(),
     )

@@ -32,6 +32,7 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.googleProduct
+import com.revenuecat.purchases.storage.FileRepository
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 
 /**
@@ -40,6 +41,8 @@ import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 @Suppress("TooManyFunctions")
 internal interface PurchasesType {
     val appUserID: String
+
+    val fileRepositoryOverride: FileRepository? get() = null
 
     suspend fun awaitPurchase(purchaseParams: PurchaseParams.Builder): PurchaseResult
 

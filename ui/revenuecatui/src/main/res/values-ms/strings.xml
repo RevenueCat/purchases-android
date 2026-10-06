@@ -22,4 +22,5 @@
     <string name="cannot_open_link">Pautan tidak sah. Tidak dapat dibuka.</string>
     <string name="revenuecatui_purchase">Beli</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">Aliran kerja pratonton tidak dapat dimuatkan. Sila cuba lagi.</string>
 </resources>

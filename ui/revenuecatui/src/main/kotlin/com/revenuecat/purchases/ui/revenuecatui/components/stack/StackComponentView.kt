@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.onConsumedWindowInsetsChanged
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
@@ -29,8 +30,10 @@ import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.IntState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -77,6 +80,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toVerticalAlignmentOrNull
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
+import com.revenuecat.purchases.ui.revenuecatui.components.modifier.resolveComponentSizeParentData
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.scrollable
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
@@ -154,6 +158,7 @@ internal fun StackComponentView(
         return
     }
 
+    val resolvedModifier = modifier.resolveComponentSizeParentData(stackState.size)
     val badge = stackState.badge
     if (badge != null) {
         when (badge.style) {
@@ -166,7 +171,7 @@ internal fun StackComponentView(
                     clickHandler,
                     componentInteractionTracker,
                     contentAlpha,
-                    modifier,
+                    resolvedModifier,
                     onStackClick = onStackClick,
                     enabled = enabled,
                     selected = selected,
@@ -186,7 +191,7 @@ internal fun StackComponentView(
                         clickHandler,
                         componentInteractionTracker,
                         contentAlpha,
-                        modifier,
+                        resolvedModifier,
                         onStackClick = onStackClick,
                         enabled = enabled,
                         selected = selected,
@@ -202,7 +207,7 @@ internal fun StackComponentView(
                         clickHandler,
                         componentInteractionTracker,
                         contentAlpha,
-                        modifier,
+                        resolvedModifier,
                         onStackClick = onStackClick,
                         enabled = enabled,
                         selected = selected,
@@ -218,7 +223,7 @@ internal fun StackComponentView(
                     clickHandler = clickHandler,
                     componentInteractionTracker = componentInteractionTracker,
                     contentAlpha = contentAlpha,
-                    modifier = modifier,
+                    modifier = resolvedModifier,
                     onStackClick = onStackClick,
                     enabled = enabled,
                     selected = selected,
@@ -233,7 +238,7 @@ internal fun StackComponentView(
             clickHandler = clickHandler,
             componentInteractionTracker = componentInteractionTracker,
             contentAlpha = contentAlpha,
-            modifier = modifier,
+            modifier = resolvedModifier,
             onStackClick = onStackClick,
             enabled = enabled,
             selected = selected,
@@ -644,6 +649,8 @@ private fun MainStackComponent(
                         size = stackState.size,
                         dimension = dimension,
                         spacing = stackState.spacing,
+                        items = stackState.children,
+                        mainAxisUnbounded = mainAxisUnbounded.value,
                         modifier = outerModifier
                             .size(stackState.size, verticalAlignment = dimension.alignment.toAlignment())
                             .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
@@ -653,25 +660,20 @@ private fun MainStackComponent(
                             .conditional(hasFillWidthChild) {
                                 trackMainAxisUnbounded(isHorizontal = true, unboundedState = mainAxisUnbounded)
                             },
-                    ) {
-                        items(stackState.children) { _, child ->
-                            ComponentView(
-                                style = child,
-                                state = state,
-                                onClick = clickHandler,
-                                componentInteractionTracker = componentInteractionTracker,
-                                modifier = Modifier
-                                    .conditional(child.size.width is Fill && !mainAxisUnbounded.value) {
-                                        Modifier.weight(1f)
-                                    }
-                                    .conditional(
-                                        stackState.applyTopWindowInsets && !child.shouldIgnoreTopWindowInsets,
-                                    ) {
-                                        windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
-                                    }
-                                    .contentAlpha(contentAlpha),
-                            )
-                        }
+                    ) { _, child, childModifier ->
+                        ComponentView(
+                            style = child,
+                            state = state,
+                            onClick = clickHandler,
+                            componentInteractionTracker = componentInteractionTracker,
+                            modifier = childModifier
+                                .conditional(
+                                    stackState.applyTopWindowInsets && !child.shouldIgnoreTopWindowInsets,
+                                ) {
+                                    windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
+                                }
+                                .contentAlpha(contentAlpha),
+                        )
                     }
                 }
 
@@ -683,6 +685,8 @@ private fun MainStackComponent(
                         size = stackState.size,
                         dimension = dimension,
                         spacing = stackState.spacing,
+                        items = stackState.children,
+                        mainAxisUnbounded = mainAxisUnbounded.value,
                         modifier = outerModifier
                             .size(stackState.size, horizontalAlignment = dimension.alignment.toAlignment())
                             .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
@@ -692,43 +696,38 @@ private fun MainStackComponent(
                             .conditional(hasFillHeightChild) {
                                 trackMainAxisUnbounded(isHorizontal = false, unboundedState = mainAxisUnbounded)
                             },
-                    ) {
-                        items(stackState.children) { index, child ->
-                            ComponentView(
-                                style = child,
-                                state = state,
-                                onClick = clickHandler,
-                                componentInteractionTracker = componentInteractionTracker,
-                                modifier = Modifier
-                                    .conditional(child.size.height is Fill && !mainAxisUnbounded.value) {
-                                        Modifier.weight(1f)
-                                    }
-                                    .conditional(
-                                        // In a Vertical container, we only want to apply topSystemBarsPadding to the
-                                        // first child, except when that child has `ignoreTopWindowInsets` set to true.
-                                        stackState.applyTopWindowInsets &&
-                                            index == 0 &&
-                                            !child.shouldIgnoreTopWindowInsets,
-                                    ) {
-                                        windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
-                                    }
-                                    .contentAlpha(contentAlpha),
-                            )
-                        }
+                    ) { index, child, childModifier ->
+                        ComponentView(
+                            style = child,
+                            state = state,
+                            onClick = clickHandler,
+                            componentInteractionTracker = componentInteractionTracker,
+                            modifier = childModifier
+                                .conditional(
+                                    // In a Vertical container, we only want to apply topSystemBarsPadding to the
+                                    // first child, except when that child has `ignoreTopWindowInsets` set to true.
+                                    stackState.applyTopWindowInsets &&
+                                        index == 0 &&
+                                        !child.shouldIgnoreTopWindowInsets,
+                                ) {
+                                    windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
+                                }
+                                .contentAlpha(contentAlpha),
+                        )
                     }
                 }
 
                 is Dimension.ZLayer -> {
-                    // Pre-compute the top safe-drawing inset in px for use as a fallback
-                    // when no header height is available. Captured at composition time so
-                    // the Modifier.layout closure can branch at layout time.
-                    val topInsetPx = if (stackState.applyTopWindowInsets && !stackState.ignoreHeaderHeight) {
-                        safeDrawingInsets.getTop(LocalDensity.current)
-                    } else {
-                        0
-                    }
+                    // Unlike windowInsetsPadding, a direct inset read does not see what an
+                    // ancestor already consumed (e.g. a sheet sitting below the status bar), so
+                    // that part is tracked here. The callback fires on attach, before the first
+                    // measure, and the value is only read inside the layout block: the first
+                    // frame is already right, and inset changes remeasure rather than recompose.
+                    val density = LocalDensity.current
+                    val consumedTopInsetPx = remember { mutableIntStateOf(0) }
                     Box(
                         modifier = outerModifier
+                            .onConsumedWindowInsetsChanged { consumedTopInsetPx.intValue = it.getTop(density) }
                             .size(
                                 size = stackState.size,
                                 horizontalAlignment = dimension.alignment.toHorizontalAlignmentOrNull(),
@@ -752,8 +751,8 @@ private fun MainStackComponent(
                                     .conditional(applyTopInsets && !stackState.ignoreHeaderHeight) {
                                         // Read header height at layout time. If set (hero case),
                                         // it already includes status bar padding. Otherwise fall
-                                        // back to the safe-drawing top inset.
-                                        headerOrInsetsTopPadding(state, topInsetPx)
+                                        // back to the unconsumed safe-drawing top inset.
+                                        headerOrInsetsTopPadding(state, safeDrawingInsets, consumedTopInsetPx)
                                     }
                                     .conditional(applyTopInsets && stackState.ignoreHeaderHeight) {
                                         windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
@@ -2170,13 +2169,16 @@ private fun previewBadge(
 
 /**
  * Adds top padding read at layout time: uses [state]'s header height in pixels if set (hero case
- * where the header already accounts for the status bar), otherwise falls back to [fallbackInsetPx]
- * (the safe-drawing top inset, pre-computed at composition time).
+ * where the header already accounts for the status bar), otherwise falls back to the top of [insets]
+ * minus [consumedTopInsetPx], what an ancestor already consumed. Both inset reads happen in the
+ * layout block, so they are observed there and a change remeasures without recomposing.
  */
 private fun Modifier.headerOrInsetsTopPadding(
     state: PaywallState.Loaded.Components,
-    fallbackInsetPx: Int,
+    insets: WindowInsets,
+    consumedTopInsetPx: IntState,
 ): Modifier = this.layout { measurable, constraints ->
+    val fallbackInsetPx = (insets.getTop(this) - consumedTopInsetPx.intValue).coerceAtLeast(0)
     val topPad = if (state.headerHeightPx > 0) state.headerHeightPx else fallbackInsetPx
     val placeable = measurable.measure(constraints.offset(vertical = -topPad))
     layout(placeable.width, placeable.height + topPad) {

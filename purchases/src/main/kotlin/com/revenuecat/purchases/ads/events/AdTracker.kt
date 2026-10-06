@@ -3,12 +3,15 @@ package com.revenuecat.purchases.ads.events
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ads.events.types.AdDisplayedData
 import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
+import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdLoadedData
 import com.revenuecat.purchases.ads.events.types.AdOpenedData
 import com.revenuecat.purchases.ads.events.types.AdRevenueData
 import com.revenuecat.purchases.ads.events.types.AdRewardEarnedUnverifiedData
 import com.revenuecat.purchases.ads.events.types.AdRewardFailedToVerifyData
 import com.revenuecat.purchases.ads.events.types.AdRewardGrantedData
+import com.revenuecat.purchases.ads.events.types.AdRewardPromptAcceptedData
+import com.revenuecat.purchases.ads.events.types.AdRewardPromptShownData
 import com.revenuecat.purchases.ads.events.types.AdRewardVerifiedData
 import com.revenuecat.purchases.common.events.EventsManager
 
@@ -241,6 +244,40 @@ public class AdTracker internal constructor(
                 impressionId = data.impressionId,
                 captureMethod = captureMethod,
                 failureReason = data.failureReason,
+            ),
+        )
+    }
+
+    /**
+     * Tracks when the app prompts the user to watch a rewarded ad. Always manual capture.
+     *
+     * @param data The rewarded ad prompt shown event data.
+     */
+    public fun trackRewardedAdPromptShown(data: AdRewardPromptShownData) {
+        eventsManager.track(
+            event = AdEvent.RewardedAdPromptShown(
+                mediatorName = data.mediatorName,
+                adFormat = AdFormat.REWARDED,
+                placement = data.placement,
+                adUnitId = data.adUnitId,
+                captureMethod = AdCaptureMethod.MANUAL,
+            ),
+        )
+    }
+
+    /**
+     * Tracks when the user accepts a prompt to watch a rewarded ad. Always manual capture.
+     *
+     * @param data The rewarded ad prompt accepted event data.
+     */
+    public fun trackRewardedAdPromptAccepted(data: AdRewardPromptAcceptedData) {
+        eventsManager.track(
+            event = AdEvent.RewardedAdPromptAccepted(
+                mediatorName = data.mediatorName,
+                adFormat = AdFormat.REWARDED,
+                placement = data.placement,
+                adUnitId = data.adUnitId,
+                captureMethod = AdCaptureMethod.MANUAL,
             ),
         )
     }

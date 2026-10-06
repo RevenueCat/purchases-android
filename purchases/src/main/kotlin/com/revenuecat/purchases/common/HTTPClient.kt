@@ -22,6 +22,7 @@ import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
 import com.revenuecat.purchases.common.networking.MapConverter
 import com.revenuecat.purchases.common.networking.NullPointerReadingErrorStreamException
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.networking.TokenAuthenticator
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SignatureVerificationResult
@@ -62,7 +63,7 @@ internal interface RequestResponseListener {
 }
 
 @OptIn(InternalRevenueCatAPI::class)
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "LargeClass")
 internal class HTTPClient(
     private val appConfig: AppConfig,
     private val eTagManager: ETagManager,
@@ -76,6 +77,7 @@ internal class HTTPClient(
     private val forceServerErrorStrategy: ForceServerErrorStrategy? = null,
     private val requestResponseListener: RequestResponseListener? = null,
     private val timeoutManager: HTTPTimeoutManager = HTTPTimeoutManager(appConfig, dateProvider),
+    private val tokenAuthenticator: TokenAuthenticator,
 ) {
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal companion object {
@@ -154,6 +156,7 @@ internal class HTTPClient(
      * @param endpoint Endpoint being used for the request
      * @param body The body of the request, for GET must be null
      * @param requestHeaders Map of headers, basic headers are added automatically
+     * @param retriedAfterTokenRefresh whether this request is already the retry after an IAM token refresh
      * @return Result containing the HTTP response code and the parsed JSON body
      * @throws JSONException Thrown for any JSON errors, not thrown for returned HTTP error codes
      * @throws IOException Thrown for any unexpected errors, not thrown for returned HTTP error codes
@@ -169,6 +172,7 @@ internal class HTTPClient(
         refreshETag: Boolean = false,
         fallbackBaseURLs: List<URL> = emptyList(),
         fallbackURLIndex: Int = 0,
+        retriedAfterTokenRefresh: Boolean = false,
     ): HTTPResult {
         fun canUseFallback(): Boolean =
             endpoint.supportsFallbackBaseURLs && fallbackURLIndex in fallbackBaseURLs.indices
@@ -190,10 +194,13 @@ internal class HTTPClient(
                 refreshETag,
                 fallbackBaseURLs,
                 fallbackURLIndex + 1,
+                retriedAfterTokenRefresh,
             )
         }
 
         val isMainBackend = fallbackURLIndex == 0 && !endpoint.targetsFallbackHost
+        // Read once per request, so the refresh check below compares against what was actually sent.
+        val iamHeaders = tokenAuthenticator.authorizationHeaders(endpoint)
 
         var source = apiSourceFailover?.currentSource(endpoint, baseURL, isFallbackAttempt = !isMainBackend)
         var sourceAttempts = 0
@@ -208,7 +215,7 @@ internal class HTTPClient(
                 endpoint = endpoint,
                 body = body,
                 postFieldsToSign = postFieldsToSign,
-                requestHeaders = requestHeaders,
+                requestHeaders = requestHeaders + iamHeaders,
                 refreshETag = refreshETag,
             )
             if (outcome.canFailOverToNextSource) {
@@ -249,12 +256,35 @@ internal class HTTPClient(
                                 refreshETag = true,
                                 fallbackBaseURLs,
                                 fallbackURLIndex,
+                                retriedAfterTokenRefresh,
                             )
                         }
 
                         RCHTTPStatusCodes.isServerError(result.responseCode) && canUseFallback() ->
                             // Handle server errors with fallback URLs
                             performRequestToFallbackURL()
+
+                        // Refreshes the IAM tokens as a side effect. /auth/token authenticates with the API key.
+                        tokenAuthenticator.refreshTokensIfNeeded(
+                            endpoint,
+                            result.responseCode,
+                            retriedAfterTokenRefresh,
+                            sentAuthorizationHeaders = iamHeaders,
+                        ) { refreshBody ->
+                            val apiKeyHeaders = requestHeaders.filterKeys { it == "Authorization" }
+                            performRequest(appConfig.baseURL, Endpoint.TokenRefresh, refreshBody, null, apiKeyHeaders)
+                        } ->
+                            performRequest(
+                                baseURL,
+                                endpoint,
+                                body,
+                                postFieldsToSign,
+                                requestHeaders,
+                                refreshETag,
+                                fallbackBaseURLs,
+                                fallbackURLIndex,
+                                retriedAfterTokenRefresh = true,
+                            )
 
                         else -> result
                     }
@@ -390,7 +420,7 @@ internal class HTTPClient(
         onVerificationFailed: (verificationResult: SignatureVerificationResult, requestDate: Date?) -> Unit,
     ): HTTPResult? {
         val jsonBody = body?.let { mapConverter.convertToJSON(it) }
-        val path = endpoint.getPath(useFallback = isFallbackURL)
+        val path = endpoint.getPath(useFallback = isFallbackURL, useIAMPath = tokenAuthenticator.usesIAMPaths)
         val connection: HttpURLConnection
         val shouldSignResponse = signingManager.shouldVerifyEndpoint(endpoint)
         val shouldAddNonce = shouldSignResponse && endpoint.needsNonceToPerformSigning
@@ -545,17 +575,19 @@ internal class HTTPClient(
             }
         }
 
+        // requestHeaders includes the IAM header when one was sent, so this is what the backend signed with.
+        val authorizationHeader = requestHeaders["Authorization"]
         val verificationResult = if (shouldSignResponse &&
             RCHTTPStatusCodes.isSuccessful(responseCode)
         ) {
             if (endpoint.expectsRCFormatResponse) {
                 if (responseCode == RCHTTPStatusCodes.NO_CONTENT && bodyBytes.isEmpty()) {
-                    verifyRCFormatNoContentResponse(path, connection, nonce)
+                    verifyRCFormatNoContentResponse(path, connection, nonce, authorizationHeader)
                 } else {
-                    verifyRCFormatResponse(path, connection, bodyBytes, nonce)
+                    verifyRCFormatResponse(path, connection, bodyBytes, nonce, authorizationHeader)
                 }
             } else {
-                verifyResponse(path, connection, payloadText, nonce, postFieldsToSignHeader)
+                verifyResponse(path, connection, payloadText, nonce, postFieldsToSignHeader, authorizationHeader)
             }
         } else {
             SignatureVerificationResult.NotRequested
@@ -747,6 +779,7 @@ internal class HTTPClient(
         payload: String?,
         nonce: String?,
         postFieldsToSignHeader: String?,
+        authorizationHeader: String?,
     ): SignatureVerificationResult {
         return signingManager.verifyResponse(
             urlPath = urlPath,
@@ -756,6 +789,7 @@ internal class HTTPClient(
             requestTime = getRequestTimeHeader(connection),
             eTag = getETagHeader(connection),
             postFieldsToSignHeader = postFieldsToSignHeader,
+            authorizationHeader = authorizationHeader,
         )
     }
 
@@ -764,6 +798,7 @@ internal class HTTPClient(
         connection: URLConnection,
         payloadBytes: ByteArray,
         nonce: String?,
+        authorizationHeader: String?,
     ): SignatureVerificationResult {
         return signingManager.verifyRCFormatResponse(
             urlPath = urlPath,
@@ -772,18 +807,20 @@ internal class HTTPClient(
             containerBytes = payloadBytes,
             requestTime = getRequestTimeHeader(connection),
             eTag = getETagHeader(connection),
+            authorizationHeader = authorizationHeader,
         )
     }
 
     /**
      * Verifies a `204 No Content` RC Container Format response. There is no body to sign, but the signature still
-     * covers the request context (api key, [nonce], path, request time), so the empty response remains replay-
+     * covers the request context (auth credential, [nonce], path, request time), so the empty response remains replay-
      * and tamper-evident. This endpoint emits no ETag, so the empty body is the only signed payload component.
      */
     private fun verifyRCFormatNoContentResponse(
         urlPath: String,
         connection: URLConnection,
         nonce: String?,
+        authorizationHeader: String?,
     ): SignatureVerificationResult {
         return signingManager.verifyResponse(
             urlPath = urlPath,
@@ -793,6 +830,7 @@ internal class HTTPClient(
             requestTime = getRequestTimeHeader(connection),
             eTag = getETagHeader(connection),
             postFieldsToSignHeader = null,
+            authorizationHeader = authorizationHeader,
         )
     }
 

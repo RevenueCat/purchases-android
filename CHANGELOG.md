@@ -1,3 +1,39 @@
+## 10.24.2
+## RevenueCat SDK
+### 🐞 Bugfixes
+* [EXTERNAL] Fix backend prices losing a micro when converted to amountMicros (#4349) by @AndroidPoet (#4350) via Toni Rico (@tonidero)
+
+## RevenueCatUI SDK
+### 🐞 Bugfixes
+* fix(paywalls): avoid locking buttons when click scope is cancelled (#4380) via Cesar de la Vega (@vegaro)
+* Fix PaywallListener leak when the launching Activity is recreated or finishes (#4373) via Toni Rico (@tonidero)
+### Paywallsv2
+#### 🐞 Bugfixes
+* Reduce recomposition work when selecting a package in Paywalls (#4383) via Toni Rico (@tonidero)
+
+### 🔄 Other Changes
+* Update baseline profiles (#4382) via RevenueCat Git Bot (@RCGitBot)
+* Adds Checkpoint ErrorPresenter API (#4274) via Toni Rico (@tonidero)
+* other(workflows): pin each user to a variant in the experiment maestro flow (#4362) via Facundo Menzella (@facumenzella)
+
+## 10.24.1
+## RevenueCatUI SDK
+### 🐞 Bugfixes
+* Fix paywall content clipping after footer resizes (#4363) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* feat(ads): send ad unit id to backend during reward polling (#4347) via Peter Porfy (@peterporfy)
+
+## 10.24.0
+## RevenueCat SDK
+### ✨ New Features
+* Track rewarded ad prompt shown and accepted events (#4352) via Drago Crnjac (@popcorn)
+
+### 🔄 Other Changes
+* Resolve the diagnostics collection decision at configure when remote config is disabled (#4353) via Toni Rico (@tonidero)
+* Chore(Paywalls): Support min/max on Fill sizes only (#4280) via Jacob Rakidzich (@JZDesign)
+* Drive diagnostics collection from the sdk_settings remote config (#4322) via Toni Rico (@tonidero)
+
 ## 10.23.4
 ## RevenueCatUI SDK
 ### Paywallsv2

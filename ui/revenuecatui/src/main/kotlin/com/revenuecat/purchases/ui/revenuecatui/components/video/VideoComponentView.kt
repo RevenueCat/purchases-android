@@ -26,6 +26,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.image.ImageComponentV
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.aspectRatio
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.overlay
+import com.revenuecat.purchases.ui.revenuecatui.components.modifier.resolveComponentSizeParentData
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.forCurrentTheme
@@ -47,7 +48,7 @@ internal fun VideoComponentView(
     style: VideoComponentStyle,
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
-    repository: FileRepository = Purchases.sharedInstance.fileRepository,
+    repository: FileRepository = state.fileRepositoryOverride ?: Purchases.sharedInstance.fileRepository,
 ) {
     val videoState = rememberUpdatedVideoComponentState(style, state)
 
@@ -92,6 +93,7 @@ internal fun VideoComponentView(
 
         Box(
             modifier = modifier
+                .resolveComponentSizeParentData(videoState.sizePlusMargin)
                 .size(videoState.sizePlusMargin)
                 .applyIfNotNull(videoState.marginAdjustedAspectRatio) { aspectRatio(it) }
                 .padding(videoState.margin)

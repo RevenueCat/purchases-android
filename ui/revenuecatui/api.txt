@@ -380,18 +380,26 @@ package com.revenuecat.purchases.ui.revenuecatui.checkpoints {
 
   @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI public final class CheckpointParams {
     method @InaccessibleFromKotlin public java.util.Map<java.lang.String,com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue> getCustomVariables();
+    method @InaccessibleFromKotlin public com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter? getErrorPresenter();
     method @InaccessibleFromKotlin public com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter? getPaywallPresenter();
+    method @InaccessibleFromKotlin public com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode getPresentationMode();
     property public java.util.Map<java.lang.String,com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue> customVariables;
+    property public com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter? errorPresenter;
     property public com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter? paywallPresenter;
+    property public com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode presentationMode;
   }
 
   @com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParamsDsl public static final class CheckpointParams.Builder {
     ctor public CheckpointParams.Builder();
     method public com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams build();
     method @KotlinOnly @kotlin.jvm.JvmSynthetic public com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams.Builder customVariables(kotlin.jvm.functions.Function1<com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams.CustomVariablesBuilder,kotlin.Unit> block);
+    method @KotlinOnly @kotlin.jvm.JvmSynthetic public com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams.Builder errorPresenter(com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter errorPresenter);
     method @KotlinOnly @kotlin.jvm.JvmSynthetic public com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams.Builder paywallPresenter(com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter paywallPresenter);
+    method @KotlinOnly @kotlin.jvm.JvmSynthetic public com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams.Builder presentationMode(com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode presentationMode);
     method public com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams.Builder setCustomVariables(java.util.Map<java.lang.String,? extends com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue> customVariables);
+    method public com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams.Builder setErrorPresenter(com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter? errorPresenter);
     method public com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams.Builder setPaywallPresenter(com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter? paywallPresenter);
+    method public com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams.Builder setPresentationMode(com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode presentationMode);
   }
 
   @com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParamsDsl public static final class CheckpointParams.CustomVariablesBuilder {
@@ -428,9 +436,59 @@ package com.revenuecat.purchases.ui.revenuecatui.checkpoints {
   public final class CheckpointsExtensionsKt {
     method @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI public static void checkpoint(com.revenuecat.purchases.Purchases, String checkpointIdentifier, com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams? params, com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPassedCallback callback);
     method @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI public static void checkpoint(com.revenuecat.purchases.Purchases, String checkpointIdentifier, com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPassedCallback callback);
+    method @InaccessibleFromKotlin public static com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter? getErrorPresenter(com.revenuecat.purchases.Purchases);
     method @InaccessibleFromKotlin public static com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter? getPaywallPresenter(com.revenuecat.purchases.Purchases);
+    method @InaccessibleFromKotlin public static void setErrorPresenter(com.revenuecat.purchases.Purchases, com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter?);
     method @InaccessibleFromKotlin public static void setPaywallPresenter(com.revenuecat.purchases.Purchases, com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter?);
+    property @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI public static com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter? com.revenuecat.purchases.Purchases.errorPresenter;
     property @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI public static com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter? com.revenuecat.purchases.Purchases.paywallPresenter;
+  }
+
+  @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI public fun interface ErrorPresenter {
+    method public void present(com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter.Params params, com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter.Completion completion);
+  }
+
+  @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI public static fun interface ErrorPresenter.Completion {
+    method public void complete(com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter.Completion.Result result);
+  }
+
+  @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI public abstract static class ErrorPresenter.Completion.Result {
+  }
+
+  public static final class ErrorPresenter.Completion.Result.Continue extends com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter.Completion.Result {
+    field public static final com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter.Completion.Result.Continue INSTANCE;
+  }
+
+  public static final class ErrorPresenter.Completion.Result.NavigateBack extends com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter.Completion.Result {
+    field public static final com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter.Completion.Result.NavigateBack INSTANCE;
+  }
+
+  public static final class ErrorPresenter.Completion.Result.Retry extends com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter.Completion.Result {
+    field public static final com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter.Completion.Result.Retry INSTANCE;
+  }
+
+  @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI @dev.drewhamilton.poko.Poko public static final class ErrorPresenter.Params {
+    method @InaccessibleFromKotlin public String getCheckpointIdentifier();
+    method @InaccessibleFromKotlin public java.util.Map<java.lang.String,com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue> getCustomVariables();
+    method @InaccessibleFromKotlin public com.revenuecat.purchases.PurchasesError getError();
+    method @InaccessibleFromKotlin public boolean getFlowCanContinue();
+    property public String checkpointIdentifier;
+    property public java.util.Map<java.lang.String,com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue> customVariables;
+    property public com.revenuecat.purchases.PurchasesError error;
+    property public boolean flowCanContinue;
+  }
+
+  @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI public final class FlowPresentationMode {
+    field public static final com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode.Companion Companion;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode DEFAULT;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode MODAL_FULL_SCREEN;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode MODAL_SHEET;
+  }
+
+  public static final class FlowPresentationMode.Companion {
+    property public com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode DEFAULT;
+    property public com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode MODAL_FULL_SCREEN;
+    property public com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode MODAL_SHEET;
   }
 
   @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI @dev.drewhamilton.poko.Poko public final class FlowResult {
@@ -470,9 +528,11 @@ package com.revenuecat.purchases.ui.revenuecatui.checkpoints {
     method @InaccessibleFromKotlin public String getCheckpointIdentifier();
     method @InaccessibleFromKotlin public java.util.Map<java.lang.String,com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue> getCustomVariables();
     method @InaccessibleFromKotlin public com.revenuecat.purchases.Offering getOffering();
+    method @InaccessibleFromKotlin public com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode getPresentationMode();
     property public String checkpointIdentifier;
     property public java.util.Map<java.lang.String,com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue> customVariables;
     property public com.revenuecat.purchases.Offering offering;
+    property public com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode presentationMode;
   }
 
 }
