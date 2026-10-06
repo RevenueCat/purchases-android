@@ -308,8 +308,8 @@ class PaywallViewModelWorkflowTest {
         gate.complete("step-1")
         testDispatcher.scheduler.advanceUntilIdle()
 
-        // The screen id does not change here, so the UI never retracks on its own.
-        assertThat(captured.filterIsInstance<PaywallEvent>()).isNotEmpty
+        // Composition records the impression now, so the view model fires none by itself.
+        assertThat(captured.filterIsInstance<PaywallEvent>()).isEmpty()
     }
 
     @Test
@@ -337,6 +337,48 @@ class PaywallViewModelWorkflowTest {
 
         gate.complete("step-1")
         testDispatcher.scheduler.advanceUntilIdle()
+    }
+
+    @Test
+    fun `a dismiss while standing in attributes no step to the fallback`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        val gate = CompletableDeferred<WorkflowStepID>()
+        coEvery { purchases.resolveBranch(any(), any()) } coAnswers { gate.await() }
+        val wfl = workflow.copy(
+            initialTrigger = WorkflowTriggerAction.Branch(routes = emptyList(), fallbackStepId = "step-1"),
+        )
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, testOfferings, null, uiConfig)
+        testDispatcher.scheduler.advanceUntilIdle()
+        vm.closePaywall()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Nobody saw step-1, so it completed nothing.
+        assertThat(captured.filterIsInstance<WorkflowEvent.StepCompleted>()).isEmpty()
+
+        gate.complete("step-1")
+        testDispatcher.scheduler.advanceUntilIdle()
+    }
+
+    @Test
+    fun `the step a branch picks reports itself as the first step`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        coEvery { purchases.resolveBranch(any(), any()) } returns "step-2"
+        val wfl = workflow.copy(
+            initialTrigger = WorkflowTriggerAction.Branch(routes = emptyList(), fallbackStepId = "step-1"),
+        )
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, testOfferings, null, uiConfig)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // step-2 is not initialStepId, but it is the first screen the user sees.
+        val started = captured.filterIsInstance<WorkflowEvent.StepStarted>().single()
+        assertThat(started.stepId).isEqualTo("step-2")
+        assertThat(started.isFirstStep).isTrue
     }
 
     private fun makeTwoPackageWorkflow(): Pair<PublishedWorkflow, Offerings> {

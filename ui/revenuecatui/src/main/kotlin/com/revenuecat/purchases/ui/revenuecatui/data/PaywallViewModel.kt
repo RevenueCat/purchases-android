@@ -215,6 +215,7 @@ internal class PaywallViewModelImpl(
     private var workflowNavigator: WorkflowNavigator? = null
     private var branchResolveJob: Job? = null
     private var initialStepJob: Job? = null
+    private var resolvedInitialStepId: String? = null
     private var currentWorkflow: PublishedWorkflow? = null
     private var currentWorkflowBlobRef: String? = null
     private var currentWorkflowUiConfig: UiConfig = emptyUiConfig()
@@ -428,6 +429,7 @@ internal class PaywallViewModelImpl(
         branchResolveJob = null
         initialStepJob?.cancel()
         initialStepJob = null
+        resolvedInitialStepId = null
         workflowNavigator = null
         currentWorkflow = null
         currentWorkflowBlobRef = null
@@ -1252,6 +1254,7 @@ internal class PaywallViewModelImpl(
             if (navigator !== workflowNavigator) return@launch
             navigator.enterInitialStep(stepId)
             val step = navigator.currentStep ?: return@launch
+            resolvedInitialStepId = step.id
             resolveBranchesFor(step)
             buildStateFromStep(step, workflow, uiConfig, offerings, presentedOfferingContext)
             if (_workflowState.value != null) {
@@ -1260,9 +1263,6 @@ internal class PaywallViewModelImpl(
                     fromStepId = null,
                     entryReason = WorkflowStepEntryReason.START,
                 )
-                // The stand-in suppressed the impression, and the UI only retracks when the screen id
-                // changes. A branch that lands on its fallback keeps the same id, so ask here.
-                trackPaywallImpressionIfNeeded()
             }
             preWarmWorkflowStepCache(workflow, uiConfig, offerings, presentedOfferingContext)
         }
@@ -1319,7 +1319,8 @@ internal class PaywallViewModelImpl(
                 uiConfig,
                 offerings,
                 presentedOfferingContext,
-                currentWorkflowStateStore,
+                // A stand-in shares no store: its declarations would shadow the routed screen's.
+                currentWorkflowStateStore.takeUnless { skeleton },
                 skeleton = skeleton,
             )
         if (cached == null && !skeleton && newState is PaywallState.Loaded.Components) {
@@ -1562,7 +1563,7 @@ internal class PaywallViewModelImpl(
                 traceId = workflowTraceId,
                 fromStepId = fromStepId,
                 entryReason = entryReason.value,
-                isFirstStep = step.id == workflow.initialStepId,
+                isFirstStep = step.id == (resolvedInitialStepId ?: workflow.initialStepId),
                 isLastStep = isTerminalStep(workflow, step.id),
                 experiment = experimentData(step),
             ),
@@ -1578,7 +1579,7 @@ internal class PaywallViewModelImpl(
                 stepId = step.id,
                 traceId = workflowTraceId,
                 toStepId = toStepId,
-                isFirstStep = step.id == workflow.initialStepId,
+                isFirstStep = step.id == (resolvedInitialStepId ?: workflow.initialStepId),
                 isLastStep = isTerminalStep(workflow, step.id),
                 experiment = experimentData(step),
             ),
@@ -1610,8 +1611,9 @@ internal class PaywallViewModelImpl(
 
     private val currentWorkflowStep: WorkflowStep?
         get() {
-            val stepId = _workflowState.value?.currentStepId ?: return null
-            return currentWorkflow?.steps?.get(stepId)
+            // A stand-in is not a visit, so no event attributes to the step it shows.
+            val state = _workflowState.value?.takeUnless { it.isSkeleton } ?: return null
+            return currentWorkflow?.steps?.get(state.currentStepId)
         }
 
     /**
@@ -1650,7 +1652,7 @@ internal class PaywallViewModelImpl(
                 workflowId = workflow.id,
                 stepId = step.id,
                 traceId = workflowTraceId,
-                isFirstStep = step.id == workflow.initialStepId,
+                isFirstStep = step.id == (resolvedInitialStepId ?: workflow.initialStepId),
                 isLastStep = isTerminalStep(workflow, step.id),
                 experiment = experimentData(step),
             ),
