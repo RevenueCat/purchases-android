@@ -214,6 +214,7 @@ internal class PaywallViewModelImpl(
 
     private var workflowNavigator: WorkflowNavigator? = null
     private var branchResolveJob: Job? = null
+    private var initialStepJob: Job? = null
     private var currentWorkflow: PublishedWorkflow? = null
     private var currentWorkflowBlobRef: String? = null
     private var currentWorkflowUiConfig: UiConfig = emptyUiConfig()
@@ -425,6 +426,8 @@ internal class PaywallViewModelImpl(
         preWarmJob = null
         branchResolveJob?.cancel()
         branchResolveJob = null
+        initialStepJob?.cancel()
+        initialStepJob = null
         workflowNavigator = null
         currentWorkflow = null
         currentWorkflowBlobRef = null
@@ -1199,6 +1202,21 @@ internal class PaywallViewModelImpl(
 
         // A rebuild is the same visit, so re-resolving there could route the step somewhere else.
         if (isNewWorkflowImpression) resolveBranchesFor(currentStep)
+        val initialBranch = workflow.initialBranch?.takeIf { isNewWorkflowImpression }
+        if (initialBranch != null) {
+            // The first screen is audience routed, so the step to show is not known yet. Stand in with
+            // the fallback until it is, rather than rendering a screen the user may never have reached.
+            buildStateFromStep(
+                currentStep,
+                workflow,
+                uiConfig,
+                offerings,
+                presentedOfferingContext,
+                skeleton = true,
+            )
+            resolveInitialStep(initialBranch, workflow, uiConfig, offerings, presentedOfferingContext)
+            return
+        }
         buildStateFromStep(currentStep, workflow, uiConfig, offerings, presentedOfferingContext)
         if (isNewWorkflowImpression && _workflowState.value != null) {
             trackWorkflowStepStarted(
@@ -1208,6 +1226,40 @@ internal class PaywallViewModelImpl(
             )
         }
         preWarmWorkflowStepCache(workflow, uiConfig, offerings, presentedOfferingContext)
+    }
+
+    /**
+     * The one resolve the UI waits on: there is nothing to render until the first step is known.
+     */
+    private fun resolveInitialStep(
+        branch: WorkflowTriggerAction.Branch,
+        workflow: PublishedWorkflow,
+        uiConfig: UiConfig,
+        offerings: Offerings,
+        presentedOfferingContext: PresentedOfferingContext?,
+    ) {
+        val navigator = workflowNavigator ?: return
+        initialStepJob?.cancel()
+        initialStepJob = viewModelScope.launch {
+            val stepId = purchases.resolveBranch(
+                branch,
+                options.customVariables.mapValues { (_, value) -> value.asRulesDimensionValue },
+            )
+            ensureActive()
+            if (navigator !== workflowNavigator) return@launch
+            navigator.enterInitialStep(stepId)
+            val step = navigator.currentStep ?: return@launch
+            resolveBranchesFor(step)
+            buildStateFromStep(step, workflow, uiConfig, offerings, presentedOfferingContext)
+            if (_workflowState.value != null) {
+                trackWorkflowStepStarted(
+                    step = step,
+                    fromStepId = null,
+                    entryReason = WorkflowStepEntryReason.START,
+                )
+            }
+            preWarmWorkflowStepCache(workflow, uiConfig, offerings, presentedOfferingContext)
+        }
     }
 
     /** Nothing waits on this: until it lands, a branch takes its fallback. */
@@ -1236,8 +1288,10 @@ internal class PaywallViewModelImpl(
         fromStepId: String? = null,
         navigationDirection: NavigationDirection? = null,
         shouldApplyState: Boolean = true,
+        skeleton: Boolean = false,
     ) {
-        val cached = workflowStepStateCache[step.id]
+        // A stand-in must not be cached: the real step reuses this id once the branch resolves.
+        val cached = workflowStepStateCache[step.id].takeUnless { skeleton }
         val newState = cached
             ?: computeStateForStep(
                 step,
@@ -1246,8 +1300,9 @@ internal class PaywallViewModelImpl(
                 offerings,
                 presentedOfferingContext,
                 currentWorkflowStateStore,
+                skeleton = skeleton,
             )
-        if (cached == null && newState is PaywallState.Loaded.Components) {
+        if (cached == null && !skeleton && newState is PaywallState.Loaded.Components) {
             workflowStepStateCache[step.id] = newState
         }
         // Apply the workflow's default package to all steps. setDefaultPackage is idempotent
@@ -1282,7 +1337,8 @@ internal class PaywallViewModelImpl(
         // sees the workflow branch and the correct step, not the single-page branch.
         _workflowState.value = WorkflowPaywallUiState(
             currentStepId = step.id,
-            stepStates = workflowStepStateCache.toMap(),
+            stepStates = workflowStepStateCache.toMap() + (step.id to newState),
+            isSkeleton = skeleton,
             pendingTransition = pendingTransition,
         )
         _state.value = newState

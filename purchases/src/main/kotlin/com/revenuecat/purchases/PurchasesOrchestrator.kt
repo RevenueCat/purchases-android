@@ -79,6 +79,7 @@ import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.common.workflows.WorkflowResolution
 import com.revenuecat.purchases.common.workflows.WorkflowStep
 import com.revenuecat.purchases.common.workflows.WorkflowStepID
+import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.common.workflows.WorkflowsConfigProvider
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.WebPurchaseRedemptionHelper
@@ -738,6 +739,12 @@ internal class PurchasesOrchestrator(
         step: WorkflowStep,
         customVariables: Map<String, RulesDimensionValue>,
     ): Map<WorkflowActionID, WorkflowStepID> = branchResolver.resolveBranches(step, customVariables)
+
+    @OptIn(InternalRevenueCatAPI::class)
+    suspend fun resolveBranch(
+        branch: WorkflowTriggerAction.Branch,
+        customVariables: Map<String, RulesDimensionValue>,
+    ): WorkflowStepID = branchResolver.resolve(branch, customVariables)
 
     suspend fun workflowBlobRef(workflowId: String): String? =
         workflowManager.workflowBlobRef(workflowId)

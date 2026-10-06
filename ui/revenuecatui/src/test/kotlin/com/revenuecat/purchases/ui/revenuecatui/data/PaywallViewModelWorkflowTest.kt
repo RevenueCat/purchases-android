@@ -77,6 +77,7 @@ import io.mockk.verify
 import io.mockk.verifyOrder
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
+import com.revenuecat.purchases.common.workflows.WorkflowStepID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -252,6 +253,38 @@ class PaywallViewModelWorkflowTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertThat(resolves).isOne()
+    }
+
+    @Test
+    fun `an audience-routed first step stands in until the branch resolves`() {
+        val gate = CompletableDeferred<WorkflowStepID>()
+        coEvery { purchases.resolveBranch(any(), any()) } coAnswers { gate.await() }
+        val wfl = workflow.copy(
+            initialTrigger = WorkflowTriggerAction.Branch(routes = emptyList(), fallbackStepId = "step-1"),
+        )
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, testOfferings, null, uiConfig)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Nothing is known yet, so the fallback stands in rather than counting as a real visit.
+        assertThat(vm.workflowState.value?.isSkeleton).isTrue
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+
+        gate.complete("step-2")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertThat(vm.workflowState.value?.isSkeleton).isFalse
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-2")
+    }
+
+    @Test
+    fun `a first step with no branch renders straight away`() {
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertThat(vm.workflowState.value?.isSkeleton).isFalse
     }
 
     private fun makeTwoPackageWorkflow(): Pair<PublishedWorkflow, Offerings> {

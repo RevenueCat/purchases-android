@@ -210,6 +210,8 @@ public data class PublishedWorkflow(
     val id: String,
     @SerialName("display_name") val displayName: String,
     @SerialName("initial_step_id") val initialStepId: String,
+    /** Set when the first screen is audience-routed. [initialStepId] names this branch's fallback. */
+    @SerialName("initial_trigger") val initialTrigger: WorkflowTriggerAction? = null,
     val steps: Map<String, WorkflowStep>,
     val screens: Map<String, WorkflowScreen>,
     @Serializable(with = JsonObjectToMapSerializer::class)
@@ -226,6 +228,11 @@ public data class PublishedWorkflow(
             val offeringId = screens[screenId]?.exitOffers?.dismiss?.offeringId ?: return null
             return WorkflowExitOffer(offeringId = offeringId, stepId = step.id)
         }
+
+    /** The branch that has to route the first step before anything can render. */
+    @InternalRevenueCatAPI
+    public val initialBranch: WorkflowTriggerAction.Branch?
+        get() = initialTrigger as? WorkflowTriggerAction.Branch
 }
 
 @InternalRevenueCatAPI
