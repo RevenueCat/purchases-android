@@ -1535,7 +1535,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         every { mockSigningManager.shouldVerifyEndpoint(any()) } returns true
         every { mockSigningManager.createRandomNonce() } returns "test-nonce"
         every {
-            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any(), any())
         } returns SignatureVerificationResult.Failed(SignatureVerificationResult.FailureReason.PAYLOAD_SIGNATURE_MISMATCH)
         client = createClient(diagnosticsTracker = diagnosticsTracker)
 
@@ -1556,7 +1556,9 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             client.performRequest(noStatusCodeBaseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
         }.isInstanceOf(IOException::class.java).hasMessage(NetworkStrings.HTTP_RESPONSE_NO_STATUS_CODE)
 
-        verify(exactly = 0) { mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 0) {
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any(), any())
+        }
         verify(exactly = 1) {
             diagnosticsTracker.trackHttpRequestPerformed(
                 noStatusCodeBaseURL.host,
@@ -2272,7 +2274,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         every { mockSigningManager.createRandomNonce() } returns "test-nonce"
         every { mockSigningManager.getPostParamsForSigningHeaderIfNeeded(any(), any()) } returns null
         every {
-            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any(), any())
         } returns SignatureVerificationResult.Failed(SignatureVerificationResult.FailureReason.PAYLOAD_SIGNATURE_MISMATCH)
         every { mockSigningManager.signatureVerificationMode } returns mockk<SignatureVerificationMode.Enforced>()
 
