@@ -486,6 +486,7 @@ public class Purchases internal constructor(
     ): Map<WorkflowActionID, WorkflowStepID> = purchasesOrchestrator.resolveBranches(step, customVariables)
 
     /** Routes one branch to the step its audiences pick, or to the branch's fallback. */
+    @JvmSynthetic
     @InternalRevenueCatAPI
     public suspend fun resolveBranch(
         branch: WorkflowTriggerAction.Branch,

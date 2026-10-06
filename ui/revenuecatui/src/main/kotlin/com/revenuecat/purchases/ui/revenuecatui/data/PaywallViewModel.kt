@@ -1202,7 +1202,9 @@ internal class PaywallViewModelImpl(
 
         // A rebuild is the same visit, so re-resolving there could route the step somewhere else.
         if (isNewWorkflowImpression) resolveBranchesFor(currentStep)
-        val initialBranch = workflow.initialBranch?.takeIf { isNewWorkflowImpression }
+        // A rebuild during the wait is still the wait: keep standing in, but do not resolve again.
+        val awaitingInitialStep = isNewWorkflowImpression || initialStepJob?.isActive == true
+        val initialBranch = workflow.initialBranch?.takeIf { awaitingInitialStep }
         if (initialBranch != null) {
             // The first screen is audience routed, so the step to show is not known yet. Stand in with
             // the fallback until it is, rather than rendering a screen the user may never have reached.
@@ -1214,7 +1216,9 @@ internal class PaywallViewModelImpl(
                 presentedOfferingContext,
                 skeleton = true,
             )
-            resolveInitialStep(initialBranch, workflow, uiConfig, offerings, presentedOfferingContext)
+            if (isNewWorkflowImpression) {
+                resolveInitialStep(initialBranch, workflow, uiConfig, offerings, presentedOfferingContext)
+            }
             return
         }
         buildStateFromStep(currentStep, workflow, uiConfig, offerings, presentedOfferingContext)
@@ -1279,6 +1283,20 @@ internal class PaywallViewModelImpl(
         }
     }
 
+    /**
+     * A step without an offering has nothing to attribute paywall events to, and a stand-in is not a
+     * screen the user reached, so neither records an impression.
+     */
+    private fun tracksPaywallEvents(
+        state: PaywallState,
+        step: WorkflowStep,
+        workflow: PublishedWorkflow,
+        skeleton: Boolean,
+    ): Boolean = !skeleton &&
+        state is PaywallState.Loaded.Components &&
+        state.workflowScreen?.hasOffering != false &&
+        step.tracksPaywallEvents(workflow)
+
     private fun buildStateFromStep(
         step: WorkflowStep,
         workflow: PublishedWorkflow,
@@ -1316,10 +1334,7 @@ internal class PaywallViewModelImpl(
             }
         }
         if (!shouldApplyState) return
-        // A step without an offering has nothing to attribute paywall events to.
-        currentWorkflowStepTracksPaywallEvents = newState is PaywallState.Loaded.Components &&
-            newState.workflowScreen?.hasOffering != false &&
-            step.tracksPaywallEvents(workflow)
+        currentWorkflowStepTracksPaywallEvents = tracksPaywallEvents(newState, step, workflow, skeleton)
         val pendingTransition = if (fromStepId != null && navigationDirection != null) {
             WorkflowPendingTransition(
                 fromStepId = fromStepId,

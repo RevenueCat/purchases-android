@@ -287,6 +287,55 @@ class PaywallViewModelWorkflowTest {
         assertThat(vm.workflowState.value?.isSkeleton).isFalse
     }
 
+    @Test
+    fun `a stand-in does not record a paywall impression for a step nobody reached`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        val gate = CompletableDeferred<WorkflowStepID>()
+        coEvery { purchases.resolveBranch(any(), any()) } coAnswers { gate.await() }
+        val wfl = workflow.copy(
+            initialTrigger = WorkflowTriggerAction.Branch(routes = emptyList(), fallbackStepId = "step-1"),
+        )
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, testOfferings, null, uiConfig)
+        testDispatcher.scheduler.advanceUntilIdle()
+        vm.trackPaywallImpressionIfNeeded()
+
+        assertThat(captured.filterIsInstance<PaywallEvent>()).isEmpty()
+
+        // Leaving the resolve suspended would keep a coroutine alive into the next test.
+        gate.complete("step-1")
+        testDispatcher.scheduler.advanceUntilIdle()
+    }
+
+    @Test
+    fun `a colour rebuild during the wait keeps standing in`() {
+        val gate = CompletableDeferred<WorkflowStepID>()
+        var resolves = 0
+        coEvery { purchases.resolveBranch(any(), any()) } coAnswers { resolves++; gate.await() }
+        val wfl = workflow.copy(
+            initialTrigger = WorkflowTriggerAction.Branch(routes = emptyList(), fallbackStepId = "step-1"),
+        )
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, testOfferings, null, uiConfig)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        vm.refreshStateIfColorsChanged(
+            colorScheme = TestData.Constants.currentColorScheme.copy(primary = Color.Black),
+            isDark = true,
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // The live fallback here would be a screen the user may never reach, and it would take taps.
+        assertThat(vm.workflowState.value?.isSkeleton).isTrue
+        assertThat(resolves).isOne()
+
+        gate.complete("step-1")
+        testDispatcher.scheduler.advanceUntilIdle()
+    }
+
     private fun makeTwoPackageWorkflow(): Pair<PublishedWorkflow, Offerings> {
         val screen1 = makeScreen(screenId1).copy(componentsConfig = twoPackageComponentsConfig)
         val screen2 = makeScreen(screenId2).copy(componentsConfig = twoPackageComponentsConfig)
