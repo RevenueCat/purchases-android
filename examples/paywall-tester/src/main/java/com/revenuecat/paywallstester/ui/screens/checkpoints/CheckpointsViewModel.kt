@@ -10,6 +10,7 @@ import com.revenuecat.paywallstester.data.RecentCheckpointsStore
 import com.revenuecat.paywallstester.ui.screens.checkpoints.CheckpointsViewModel.CheckpointResultUi
 import com.revenuecat.paywallstester.ui.screens.checkpoints.CheckpointsViewModel.UiState
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode
@@ -36,7 +37,14 @@ interface CheckpointsViewModel {
         val presentWithAppPaywall: Boolean = false,
         val presentErrorsWithApp: Boolean = false,
         val presentationMode: FlowPresentationMode = FlowPresentationMode.DEFAULT,
+        val customVariables: Map<String, CustomVariableValue> = DEFAULT_CUSTOM_VARIABLES,
     )
+
+    companion object {
+        val DEFAULT_CUSTOM_VARIABLES: Map<String, CustomVariableValue> = mapOf(
+            "source" to CustomVariableValue.String("paywall-tester"),
+        )
+    }
 
     val state: StateFlow<UiState>
 
@@ -51,6 +59,10 @@ interface CheckpointsViewModel {
     fun setPresentErrorsWithApp(enabled: Boolean)
 
     fun setPresentationMode(mode: FlowPresentationMode)
+
+    fun saveCustomVariable(previousName: String?, name: String, value: CustomVariableValue)
+
+    fun removeCustomVariable(name: String)
 }
 
 internal class CheckpointsViewModelImpl(
@@ -89,7 +101,7 @@ internal class CheckpointsViewModelImpl(
         val updatedRecents = recentCheckpointsStore.recordUse(checkpointIdentifier)
         _state.update { it.copy(recents = updatedRecents, waitingFor = checkpointIdentifier) }
         val params = CheckpointParams {
-            customVariables { "source" to "paywall-tester" }
+            setCustomVariables(_state.value.customVariables)
             if (_state.value.presentWithAppPaywall) paywallPresenter(appPaywallPresenter)
             if (_state.value.presentErrorsWithApp) errorPresenter(appErrorPresenter)
             presentationMode(_state.value.presentationMode)
@@ -109,6 +121,21 @@ internal class CheckpointsViewModelImpl(
 
     override fun setPresentationMode(mode: FlowPresentationMode) {
         _state.update { it.copy(presentationMode = mode) }
+    }
+
+    override fun saveCustomVariable(previousName: String?, name: String, value: CustomVariableValue) {
+        _state.update { state ->
+            val variables = if (previousName != null && previousName != name) {
+                state.customVariables - previousName
+            } else {
+                state.customVariables
+            }
+            state.copy(customVariables = variables + (name to value))
+        }
+    }
+
+    override fun removeCustomVariable(name: String) {
+        _state.update { it.copy(customVariables = it.customVariables - name) }
     }
 
     private fun onAppPaywallFinished(result: PaywallPresenter.Completion.Result) {

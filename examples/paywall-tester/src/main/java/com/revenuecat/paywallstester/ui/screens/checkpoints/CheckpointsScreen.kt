@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -44,9 +44,10 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.paywallstester.ui.screens.checkpoints.CheckpointsViewModel.CheckpointResultUi
 import com.revenuecat.paywallstester.ui.screens.checkpoints.CheckpointsViewModel.UiState
+import com.revenuecat.paywallstester.ui.screens.main.customvariables.CustomVariablesEditorDialog
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -55,56 +56,24 @@ import kotlinx.coroutines.flow.StateFlow
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CheckpointsScreen(
-    dismissRequest: () -> Unit,
+    viewModel: CheckpointsViewModel,
     modifier: Modifier = Modifier,
-    viewModel: CheckpointsViewModel = viewModel<CheckpointsViewModelImpl>(
-        factory = CheckpointsViewModelImpl.Factory,
-    ),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val paywallRequest by viewModel.paywallRequest.collectAsStateWithLifecycle()
-    val errorRequest by viewModel.errorRequest.collectAsStateWithLifecycle()
+    var showCustomVariablesEditor by rememberSaveable { mutableStateOf(false) }
 
-    Box(modifier = modifier) {
-        CheckpointsScaffold(
-            state = state,
-            onHit = viewModel::hit,
-            onTogglePresentWithAppPaywall = viewModel::setPresentWithAppPaywall,
-            onTogglePresentErrorsWithApp = viewModel::setPresentErrorsWithApp,
-            onSelectPresentationMode = viewModel::setPresentationMode,
-            dismissRequest = dismissRequest,
-        )
-        paywallRequest?.let { AppPaywall(request = it) }
-        errorRequest?.let { AppErrorDialog(request = it) }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Suppress("LongParameterList")
-@Composable
-private fun CheckpointsScaffold(
-    state: UiState,
-    onHit: (String) -> Unit,
-    onTogglePresentWithAppPaywall: (Boolean) -> Unit,
-    onTogglePresentErrorsWithApp: (Boolean) -> Unit,
-    onSelectPresentationMode: (FlowPresentationMode) -> Unit,
-    dismissRequest: () -> Unit,
-) {
     Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = { Text(text = "Checkpoints") },
-                navigationIcon = {
-                    IconButton(onClick = dismissRequest) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
                 actions = {
                     OptionsMenu(
                         state = state,
-                        onTogglePresentWithAppPaywall = onTogglePresentWithAppPaywall,
-                        onTogglePresentErrorsWithApp = onTogglePresentErrorsWithApp,
-                        onSelectPresentationMode = onSelectPresentationMode,
+                        onTogglePresentWithAppPaywall = viewModel::setPresentWithAppPaywall,
+                        onTogglePresentErrorsWithApp = viewModel::setPresentErrorsWithApp,
+                        onSelectPresentationMode = viewModel::setPresentationMode,
+                        onEditCustomVariables = { showCustomVariablesEditor = true },
                     )
                 },
             )
@@ -118,25 +87,36 @@ private fun CheckpointsScaffold(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            HitCheckpointSection(state = state, onHit = onHit)
+            HitCheckpointSection(state = state, onHit = viewModel::hit)
             ResultCard(
                 waitingFor = state.waitingFor,
                 result = state.lastResult,
             )
             RecentCheckpointsSection(
                 recents = state.recents,
-                onRecentTap = onHit,
+                onRecentTap = viewModel::hit,
             )
         }
     }
+
+    if (showCustomVariablesEditor) {
+        CustomVariablesEditorDialog(
+            customVariables = state.customVariables,
+            onSaveVariable = viewModel::saveCustomVariable,
+            onRemoveVariable = viewModel::removeCustomVariable,
+            onDismiss = { showCustomVariablesEditor = false },
+        )
+    }
 }
 
+@Suppress("LongParameterList")
 @Composable
 private fun OptionsMenu(
     state: UiState,
     onTogglePresentWithAppPaywall: (Boolean) -> Unit,
     onTogglePresentErrorsWithApp: (Boolean) -> Unit,
     onSelectPresentationMode: (FlowPresentationMode) -> Unit,
+    onEditCustomVariables: () -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
     Box {
@@ -144,17 +124,19 @@ private fun OptionsMenu(
             Icon(Icons.Default.MoreVert, contentDescription = "Options")
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            MenuSectionHeader(text = "Present with the app's own")
             CheckableMenuItem(
-                text = "Present offerings with the app's own paywall",
+                text = "Paywall",
                 checked = state.presentWithAppPaywall,
                 onToggle = onTogglePresentWithAppPaywall,
             )
             CheckableMenuItem(
-                text = "Present errors with the app's own dialog",
+                text = "Error dialog",
                 checked = state.presentErrorsWithApp,
                 onToggle = onTogglePresentErrorsWithApp,
             )
             HorizontalDivider()
+            MenuSectionHeader(text = "Presentation mode")
             PRESENTATION_MODE_LABELS.forEach { (mode, label) ->
                 DropdownMenuItem(
                     text = { Text(text = label) },
@@ -162,8 +144,28 @@ private fun OptionsMenu(
                     onClick = { onSelectPresentationMode(mode) },
                 )
             }
+            HorizontalDivider()
+            DropdownMenuItem(
+                text = { Text(text = "Custom variables…") },
+                leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                trailingIcon = { Text(text = state.customVariables.size.toString()) },
+                onClick = {
+                    expanded = false
+                    onEditCustomVariables()
+                },
+            )
         }
     }
+}
+
+@Composable
+private fun MenuSectionHeader(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+    )
 }
 
 @Composable
@@ -202,9 +204,9 @@ private fun HitCheckpointSection(state: UiState, onHit: (String) -> Unit) {
 }
 
 private val PRESENTATION_MODE_LABELS = mapOf(
-    FlowPresentationMode.DEFAULT to "Default presentation (SDK picks, currently a sheet)",
-    FlowPresentationMode.MODAL_FULL_SCREEN to "Full screen presentation",
-    FlowPresentationMode.MODAL_SHEET to "Sheet presentation",
+    FlowPresentationMode.DEFAULT to "Default (SDK picks, currently a sheet)",
+    FlowPresentationMode.MODAL_FULL_SCREEN to "Full screen",
+    FlowPresentationMode.MODAL_SHEET to "Sheet",
 )
 
 private val PRESENTATION_MODE_SHORT_LABELS = mapOf(
@@ -217,6 +219,7 @@ private fun UiState.optionsSummary(): String = listOf(
     if (presentWithAppPaywall) "App paywall" else "SDK paywall",
     if (presentErrorsWithApp) "App errors" else "SDK errors",
     PRESENTATION_MODE_SHORT_LABELS.getValue(presentationMode),
+    customVariables.size.let { if (it == 1) "1 variable" else "$it variables" },
 ).joinToString(separator = " · ")
 
 @Composable
@@ -311,7 +314,6 @@ private fun RecentCheckpointsSection(
 @Composable
 private fun CheckpointsScreenPreview() {
     CheckpointsScreen(
-        dismissRequest = {},
         viewModel = object : CheckpointsViewModel {
             override val state: StateFlow<UiState>
                 get() = MutableStateFlow(
@@ -336,6 +338,8 @@ private fun CheckpointsScreenPreview() {
             override fun setPresentWithAppPaywall(enabled: Boolean) {}
             override fun setPresentErrorsWithApp(enabled: Boolean) {}
             override fun setPresentationMode(mode: FlowPresentationMode) {}
+            override fun saveCustomVariable(previousName: String?, name: String, value: CustomVariableValue) {}
+            override fun removeCustomVariable(name: String) {}
         },
     )
 }
