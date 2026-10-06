@@ -127,6 +127,23 @@ class SubscriberDimensionsProviderTest {
     }
 
     @Test
+    fun `a purchase copy stored during the config read is used`() = runTest {
+        val provider = SubscriberDimensionsProvider(
+            configDimensions = {
+                storeReceipt(asOf = 300, "plan" to "monthly")
+                SubscriberDimensionsResolution.Found(dimensions(asOf = 200, "plan" to "annual"))
+            },
+            receiptStore = receiptStore,
+            currentAppUserId = { USER },
+        )
+
+        val dimensions = provider.dimensions(evaluationDate)
+
+        assertThat(dimensions).isEqualTo(mapOf("plan" to RulesDimensionValue.StringValue("monthly")))
+        assertThat(receiptStore.get(USER)?.asOf).isEqualTo(Date(300))
+    }
+
+    @Test
     fun `a purchase copy that cannot be read leaves the config copy and the other dimensions usable`() = runTest {
         val failingCache = mockk<DeviceCache> {
             every { getCachedSubscriberDimensionsJson(any()) } throws IllegalStateException("no cache")

@@ -15,9 +15,10 @@ import java.util.Date
  * The fresher one is used whole (never merged); on a tie the purchase response wins. A purchase copy the config
  * has superseded is discarded.
  *
- * The app user is read once, before the purchase copy, and the same user is used for the discard: the config
- * read can suspend, and an identity change under it must not discard the new user's copy. The resolver rejects
- * the snapshot in that case.
+ * The app user is read once, before the config read, and the same user is used for the purchase copy and the
+ * discard: the config read can suspend, and an identity change under it must not discard the new user's copy.
+ * The resolver rejects the snapshot in that case. The purchase copy is read after the config read so a purchase
+ * that completes while it suspends is seen.
  *
  * The names are the backend's to choose, and the root-name contract applies to it like any other source: one
  * that collides with an SDK-provided dimension fails the snapshot. An explicit null is kept as null, since the
@@ -33,13 +34,13 @@ internal class SubscriberDimensionsProvider(
 
     override suspend fun dimensions(date: Date): Map<String, RulesDimensionValue> {
         val appUserId = currentAppUserId()
+        val config = (configDimensions() as? SubscriberDimensionsResolution.Found)?.dimensions
         val receipt = try {
             receiptStore.get(appUserId)
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             warnLog { "The purchase response's subscriber dimensions are unavailable, so they can't be evaluated: $e" }
             null
         }
-        val config = (configDimensions() as? SubscriberDimensionsResolution.Found)?.dimensions
         val chosen = when {
             config == null -> receipt
             receipt == null -> config
