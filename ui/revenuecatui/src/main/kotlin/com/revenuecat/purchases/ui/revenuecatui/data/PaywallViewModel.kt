@@ -1197,6 +1197,9 @@ internal class PaywallViewModelImpl(
             )
         }
 
+        // Only a real entry resolves. A rebuild (a colour change, a theme flap) is the same visit, and
+        // re-resolving there would cancel the answer in flight and could route the step somewhere else.
+        if (isNewWorkflowImpression) resolveBranchesFor(currentStep)
         buildStateFromStep(currentStep, workflow, uiConfig, offerings, presentedOfferingContext)
         if (isNewWorkflowImpression && _workflowState.value != null) {
             trackWorkflowStepStarted(
@@ -1240,7 +1243,6 @@ internal class PaywallViewModelImpl(
         navigationDirection: NavigationDirection? = null,
         shouldApplyState: Boolean = true,
     ) {
-        resolveBranchesFor(step)
         val cached = workflowStepStateCache[step.id]
         val newState = cached
             ?: computeStateForStep(
@@ -1406,6 +1408,7 @@ internal class PaywallViewModelImpl(
             Logger.e("triggerAction returned null after peekTriggerStep succeeded — this is a bug")
             return
         }
+        resolveBranchesFor(newStep)
         buildStateFromStep(
             newStep,
             workflow,
@@ -1440,6 +1443,7 @@ internal class PaywallViewModelImpl(
             Logger.e("navigateBack returned null after canNavigateBack was true — this is a bug")
             return false
         }
+        resolveBranchesFor(newStep)
         buildStateFromStep(
             newStep,
             workflow,
