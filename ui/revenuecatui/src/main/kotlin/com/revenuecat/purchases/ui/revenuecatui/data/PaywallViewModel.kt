@@ -1257,8 +1257,6 @@ internal class PaywallViewModelImpl(
             )
             ensureActive()
             if (navigator !== workflowNavigator) return@launch
-            // The presentation can fail or end while the branch resolves.
-            if (_workflowState.value == null) return@launch
             navigator.enterInitialStep(stepId)
             val step = navigator.currentStep ?: return@launch
             resolvedInitialStepId = step.id
@@ -1355,7 +1353,8 @@ internal class PaywallViewModelImpl(
             null
         }
         if (newState !is PaywallState.Loaded.Components) {
-            failWorkflowPresentation(newState)
+            // The routed step decides. A broken fallback must not end a flow the audience routes past.
+            if (!skeleton) failWorkflowPresentation(newState)
             return
         }
         // Set workflowState before _state so a recomposition that lands between the two writes

@@ -403,6 +403,23 @@ class PaywallViewModelWorkflowTest {
             .isEqualTo(PackageType.MONTHLY.identifier)
     }
 
+    @Test
+    fun `a broken fallback step does not stop the step the branch picks`() {
+        // step-1 has no screen, so it cannot render. The audience routes past it.
+        val wfl = workflow.copy(
+            screens = mapOf(screenId2 to makeScreen(screenId2)),
+            initialTrigger = WorkflowTriggerAction.Branch(routes = emptyList(), fallbackStepId = "step-1"),
+        )
+        coEvery { purchases.resolveBranch(any(), any()) } returns "step-2"
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, testOfferings, null, uiConfig)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-2")
+        assertThat(vm.workflowState.value?.isSkeleton).isFalse
+    }
+
     private fun makeTwoPackageWorkflow(): Pair<PublishedWorkflow, Offerings> {
         val screen1 = makeScreen(screenId1).copy(componentsConfig = twoPackageComponentsConfig)
         val screen2 = makeScreen(screenId2).copy(componentsConfig = twoPackageComponentsConfig)
