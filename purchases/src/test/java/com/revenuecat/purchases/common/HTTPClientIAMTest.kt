@@ -15,6 +15,7 @@ import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -307,6 +308,41 @@ internal class HTTPClientIAMTest : BaseHTTPClientTest() {
         assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
         assertThat(server.requestCount).isEqualTo(2)
         assertThat(server.takeRequest().getHeader("Authorization")).isEqualTo("Bearer old-access")
+        assertThat(server.takeRequest().getHeader("Authorization")).isEqualTo("Bearer new-access")
+    }
+
+    @Test
+    fun `a 401 retry stays bound to the original user when the identity changes`() = runTest {
+        client = iamClient()
+        val otherUserID = "other-user"
+        val currentUser = AtomicReference(appUserID)
+        client = createClient(tokenAuthenticator = TokenAuthenticator(tokenManager) { currentUser.get() })
+        tokenManager.saveTokens(appUserID, "old-access", "user-refresh", "user-id")
+        tokenManager.saveTokens(otherUserID, "other-access", "other-refresh", "other-id")
+        enqueue("/v1/customer", unauthorized)
+        enqueue("/auth/token", tokenResponse("new-access", "new-refresh", "new-id"))
+        enqueue("/v1/customer", HTTPResult.createResult())
+        server.dispatcher = object : Dispatcher() {
+            override fun dispatch(request: RecordedRequest): MockResponse = when {
+                request.getHeader("Authorization") == "Bearer old-access" -> {
+                    currentUser.set(otherUserID)
+                    MockResponse()
+                        .setResponseCode(RCHTTPStatusCodes.UNAUTHORIZED)
+                        .setBody(unauthorized.payloadText)
+                }
+                request.path == "/auth/token" -> MockResponse().setBody(
+                    tokenResponse("new-access", "new-refresh", "new-id").payloadText,
+                )
+                else -> MockResponse().setBody("{}")
+            }
+        }
+
+        val result = performRequest(customerInfo)
+
+        assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
+        assertThat(server.requestCount).isEqualTo(3)
+        assertThat(server.takeRequest().getHeader("Authorization")).isEqualTo("Bearer old-access")
+        assertThat(server.takeRequest().getHeader("Authorization")).isEqualTo("Bearer api_key")
         assertThat(server.takeRequest().getHeader("Authorization")).isEqualTo("Bearer new-access")
     }
 
