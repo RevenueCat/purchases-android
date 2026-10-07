@@ -281,12 +281,9 @@ internal class IdentityManager(
 
     @Synchronized
     fun currentUserIsAnonymous(): Boolean {
-        val currentAppUserIDLooksAnonymous = isUserIDAnonymous(deviceCache.getCachedAppUserID() ?: "")
         val isLegacyAnonymousAppUserID =
             deviceCache.getCachedAppUserID() == deviceCache.getLegacyCachedAppUserID()
-        // Server-assigned anonymous IDs needn't match the regex; the ID token says so. False until it loads.
-        val tokenSaysAnonymous = tokenManager.isCurrentIdentityAnonymous(currentAppUserID)
-        return currentAppUserIDLooksAnonymous || isLegacyAnonymousAppUserID || tokenSaysAnonymous
+        return isAnonymous(currentAppUserID) || isLegacyAnonymousAppUserID
     }
 
     /**
@@ -397,15 +394,19 @@ internal class IdentityManager(
         offeringsCache.clearCache()
     }
 
+    // Server-assigned anonymous IDs needn't match the regex; their ID token says so. False until tokens load.
+    private fun isAnonymous(appUserID: String): Boolean =
+        isUserIDAnonymous(appUserID) || tokenManager.isCurrentIdentityAnonymous(appUserID)
+
     // Anonymous is exempt: signing in mid-flow is the multipage paywall case, same customer either side.
     private fun clearPaywallWebViewStorageIfUserChanged(oldAppUserID: String, newAppUserID: String) {
-        if (oldAppUserID != newAppUserID && !isUserIDAnonymous(oldAppUserID)) {
+        if (oldAppUserID != newAppUserID && !isAnonymous(oldAppUserID)) {
             paywallAssetWarming.clearWebViewStorage()
         }
     }
 
     private fun copySubscriberAttributesToNewUserIfOldIsAnonymous(oldAppUserId: String, newAppUserId: String) {
-        if (isUserIDAnonymous(oldAppUserId)) {
+        if (isAnonymous(oldAppUserId)) {
             subscriberAttributesManager.copyUnsyncedSubscriberAttributes(oldAppUserId, newAppUserId)
         }
     }

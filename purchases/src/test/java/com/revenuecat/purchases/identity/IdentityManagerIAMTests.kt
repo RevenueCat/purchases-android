@@ -254,6 +254,34 @@ class IdentityManagerIAMTests {
     }
 
     @Test
+    fun `IAM logIn from a server-assigned anonymous user copies attributes and keeps paywall web storage`() =
+        runTest {
+            cachedAppUserID = serverID
+            createIdentityManager()
+            saveIDToken(serverID, amr = listOf("anonymous"))
+            stubTokenLogIn(succeedWith = identifiedID)
+
+            logIn(googleIdentity)
+
+            verify(exactly = 1) { subscriberAttributesManager.copyUnsyncedSubscriberAttributes(serverID, identifiedID) }
+            verify(exactly = 0) { paywallAssetWarming.clearWebViewStorage() }
+        }
+
+    @Test
+    fun `IAM logIn from a server-assigned identified user copies nothing and clears paywall web storage`() =
+        runTest {
+            cachedAppUserID = serverID
+            createIdentityManager()
+            saveIDToken(serverID, amr = listOf("anonymous", "google"))
+            stubTokenLogIn(succeedWith = identifiedID)
+
+            logIn(googleIdentity)
+
+            verify(exactly = 0) { subscriberAttributesManager.copyUnsyncedSubscriberAttributes(any(), any()) }
+            verify(exactly = 1) { paywallAssetWarming.clearWebViewStorage() }
+        }
+
+    @Test
     fun `IAM logIn error leaves the current identity untouched`() = runTest {
         cachedAppUserID = anonymousID
         createIdentityManager()
