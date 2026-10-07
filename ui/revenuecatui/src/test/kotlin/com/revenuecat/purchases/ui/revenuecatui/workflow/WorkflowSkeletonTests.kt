@@ -283,6 +283,10 @@ class WorkflowSkeletonTests {
         // The rule hides the button on compact, so the skeleton must reserve nothing there either.
         assertThat(card.overrides).hasSize(1)
         assertThat(card.overrides.first().properties.visible).isFalse
+        // The button's rule stays a level above its stack, the way the real tree nests them.
+        val innerStack = card.components.single() as StackComponent
+        assertThat(innerStack.overrides).isEmpty()
+        assertThat(card.size).isEqualTo(innerStack.size)
     }
 
     @Test

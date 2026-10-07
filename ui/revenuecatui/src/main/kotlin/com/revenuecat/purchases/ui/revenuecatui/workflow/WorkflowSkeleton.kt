@@ -104,25 +104,16 @@ internal class WorkflowSkeleton private constructor(
             is ButtonComponent -> if (component.visible == false) {
                 null
             } else {
-                stack(
-                    component.stack,
-                    contentHidden,
-                    outerOverrides = component.overrides.map {
-                        ComponentOverride(it.conditions, PartialStackComponent(visible = it.properties.visible))
-                    },
-                )
+                visibilityWrapper(component.overrides.map { it.conditions to it.properties.visible }) {
+                    stack(component.stack, contentHidden)
+                }
             }
             is PackageComponent -> if (component.visible == false) {
                 null
             } else {
-                stack(
-                    component.stack,
-                    contentHidden,
-                    forceBlock = true,
-                    outerOverrides = component.overrides.map {
-                        ComponentOverride(it.conditions, PartialStackComponent(visible = it.properties.visible))
-                    },
-                )
+                visibilityWrapper(component.overrides.map { it.conditions to it.properties.visible }) {
+                    stack(component.stack, contentHidden, forceBlock = true)
+                }
             }
             is PurchaseButtonComponent -> stack(component.stack, contentHidden, forceBlock = true)
             is StickyFooterComponent -> stack(component.stack, contentHidden)
@@ -200,7 +191,11 @@ internal class WorkflowSkeleton private constructor(
                 outerOverrides = component.overrides.map {
                     ComponentOverride(
                         it.conditions,
-                        PartialStackComponent(visible = it.properties.visible, size = it.properties.size),
+                        PartialStackComponent(
+                            visible = it.properties.visible,
+                            size = it.properties.size,
+                            spacing = it.properties.pageSpacing,
+                        ),
                     )
                 },
             )
@@ -226,6 +221,7 @@ internal class WorkflowSkeleton private constructor(
                         PartialStackComponent(
                             visible = it.properties.visible,
                             size = it.properties.size,
+                            spacing = it.properties.itemSpacing?.toFloat(),
                             padding = it.properties.padding,
                             margin = it.properties.margin,
                         ),
@@ -442,4 +438,25 @@ internal class WorkflowSkeleton private constructor(
             }
         }
     }
+}
+
+/**
+ * Keeps a component's own visibility a level above its stack's overrides, the way the real tree nests
+ * them. Merging both onto one stack would let the inner rules decide the outer visibility.
+ */
+@OptIn(InternalRevenueCatAPI::class)
+private fun visibilityWrapper(
+    rules: List<Pair<List<ComponentOverride.Condition>, Boolean?>>,
+    content: () -> StackComponent,
+): StackComponent {
+    val inner = content()
+    if (rules.isEmpty()) return inner
+    return StackComponent(
+        components = listOf(inner),
+        // Mirrors the stack it wraps, so the extra level changes no measurement.
+        size = inner.size,
+        overrides = rules.map { (conditions, visible) ->
+            ComponentOverride(conditions, PartialStackComponent(visible = visible))
+        },
+    )
 }
