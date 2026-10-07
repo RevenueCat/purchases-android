@@ -91,6 +91,7 @@ import kotlinx.coroutines.test.setMain
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
+import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
 import kotlinx.serialization.json.JsonPrimitive
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
@@ -418,6 +419,30 @@ class PaywallViewModelWorkflowTest {
 
         assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-2")
         assertThat(vm.workflowState.value?.isSkeleton).isFalse
+    }
+
+    @Test
+    fun `a key two screens declare differently resolves by screen id, not by build order`() {
+        // screen-1 sorts first, so its default wins wherever the workflow starts.
+        val declared = { value: String ->
+            mapOf("tier" to StateDeclaration(StateDeclaration.ValueType.STRING, JsonPrimitive(value)))
+        }
+        // Starting on step-2, and it is also the package step, so nothing builds screen-1 first.
+        val wfl = workflow.copy(
+            initialStepId = "step-2",
+            singleStepFallbackId = "step-2",
+            screens = mapOf(
+                screenId1 to makeScreen(screenId1).copy(stateDeclarations = declared("one")),
+                screenId2 to makeScreen(screenId2).copy(stateDeclarations = declared("two")),
+            ),
+        )
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, testOfferings, null, uiConfig)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = vm.workflowState.value?.stepStates?.get("step-2") as PaywallState.Loaded.Components
+        assertThat(state.stateStore.currentValueOrDefault("tier")).isEqualTo(JsonPrimitive("one"))
     }
 
     private fun makeTwoPackageWorkflow(): Pair<PublishedWorkflow, Offerings> {

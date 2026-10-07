@@ -33,6 +33,7 @@ import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.common.workflows.events.WorkflowEvent
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
+import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
 import com.revenuecat.purchases.paywalls.events.ExitOfferType
 import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
 import com.revenuecat.purchases.paywalls.events.PaywallComponentType
@@ -1186,20 +1187,21 @@ internal class PaywallViewModelImpl(
         if (isNewWorkflowImpression) {
             workflowTraceId = options.injectedWorkflowTraceId.takeIf { workflow == options.injectedWorkflow }
                 ?: UUID.randomUUID().toString()
-            // Fresh presentation: start the shared store empty; each step registers its declarations as it builds.
+            // Fresh presentation: seed the shared store from every screen, sorted by id, so the build order
+            // never decides which declaration of a key wins.
             // Rebuilds (navigation, color change) reuse the existing store so values persist across screens.
-            currentWorkflowStateStore = PaywallStateStore(emptyMap())
+            currentWorkflowStateStore = PaywallStateStore(workflow.mergedStateDeclarations())
         }
 
         // A rebuild during the wait is still the wait: keep the skeleton, but do not resolve again.
         val awaitingInitialStep = isNewWorkflowImpression || initialStepJob?.isActive == true
-        val initialBranch = workflow.initialBranch?.takeIf { awaitingInitialStep }
+        val unresolvedInitialBranch = workflow.initialBranch?.takeIf { awaitingInitialStep }
 
         // Pre-compute the package step so its default package is available in cache
         // for early packageless steps to use as context. The skeleton caches nothing, so the step it
         // replaces still needs this even when it is the current step.
         val stepWithPackages = workflow.singleStepFallbackId?.let { workflow.steps[it] }
-        if (stepWithPackages != null && (initialBranch != null || stepWithPackages.id != currentStep.id)) {
+        if (stepWithPackages != null && (unresolvedInitialBranch != null || stepWithPackages.id != currentStep.id)) {
             buildStateFromStep(
                 stepWithPackages,
                 workflow,
@@ -1211,8 +1213,8 @@ internal class PaywallViewModelImpl(
         }
         // A rebuild is the same visit, so re-resolving there could route the step somewhere else. The
         // skeleton resolves nothing: its answers belong to a step the branch may route away from.
-        if (isNewWorkflowImpression && initialBranch == null) resolveBranchesFor(currentStep)
-        if (initialBranch != null) {
+        if (isNewWorkflowImpression && unresolvedInitialBranch == null) resolveBranchesFor(currentStep)
+        if (unresolvedInitialBranch != null) {
             // The step to show is not known yet, so the fallback renders as a skeleton.
             buildStateFromStep(
                 currentStep,
@@ -1223,7 +1225,7 @@ internal class PaywallViewModelImpl(
                 skeleton = true,
             )
             if (isNewWorkflowImpression) {
-                resolveInitialStep(initialBranch, workflow, uiConfig, offerings, presentedOfferingContext)
+                resolveInitialStep(unresolvedInitialBranch, workflow, uiConfig, offerings, presentedOfferingContext)
             }
             return
         }
@@ -1383,6 +1385,13 @@ internal class PaywallViewModelImpl(
             _workflowState.value = current.copy(pendingTransition = null)
         }
     }
+
+    /** Declarations of every screen, so a key two screens declare differently resolves the same way. */
+    private fun PublishedWorkflow.mergedStateDeclarations(): Map<String, StateDeclaration> =
+        screens.toSortedMap().values.fold(mutableMapOf()) { merged, screen ->
+            screen.stateDeclarations?.forEach { (key, declaration) -> merged.putIfAbsent(key, declaration) }
+            merged
+        }
 
     private fun computeStateForStep(
         step: WorkflowStep,

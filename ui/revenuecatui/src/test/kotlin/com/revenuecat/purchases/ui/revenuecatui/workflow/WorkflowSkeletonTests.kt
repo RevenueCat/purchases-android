@@ -4,8 +4,11 @@ import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
+import com.revenuecat.purchases.paywalls.components.ButtonComponent
+import com.revenuecat.purchases.paywalls.components.PartialButtonComponent
 import com.revenuecat.purchases.paywalls.components.PartialImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
+import com.revenuecat.purchases.paywalls.components.PartialTabsComponent
 import com.revenuecat.purchases.paywalls.components.PaywallComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.TabsComponent
@@ -261,6 +264,45 @@ class WorkflowSkeletonTests {
         assertThat(partial.backgroundColor).isNotEqualTo(green)
     }
 
+
+    @Test
+    fun `keeps a button's own override, not only the override on its stack`() {
+        val button = ButtonComponent(
+            stack = StackComponent(components = emptyList()),
+            action = ButtonComponent.Action.NavigateBack,
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Compact),
+                    properties = PartialButtonComponent(visible = false),
+                ),
+            ),
+        )
+
+        val card = transformedChildren(button).first() as StackComponent
+
+        // The rule hides the button on compact, so the skeleton must reserve nothing there either.
+        assertThat(card.overrides).hasSize(1)
+        assertThat(card.overrides.first().properties.visible).isFalse
+    }
+
+    @Test
+    fun `keeps a tabs block's own size override`() {
+        val tabs = TabsComponent(
+            control = TabsComponent.TabControl.Buttons(stack = StackComponent(components = emptyList())),
+            tabs = listOf(TabsComponent.Tab(id = "a", stack = StackComponent(components = emptyList()))),
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Compact),
+                    properties = PartialTabsComponent(size = Size(SizeConstraint.Fixed(42u), SizeConstraint.Fixed(42u))),
+                ),
+            ),
+        )
+
+        val card = transformedChildren(tabs).first() as StackComponent
+
+        assertThat(card.overrides).hasSize(1)
+        assertThat(card.overrides.first().properties.size?.width).isEqualTo(SizeConstraint.Fixed(42u))
+    }
 
     @Test
     fun `keeps an image override opaque so a matching rule cannot expose the bitmap`() {
