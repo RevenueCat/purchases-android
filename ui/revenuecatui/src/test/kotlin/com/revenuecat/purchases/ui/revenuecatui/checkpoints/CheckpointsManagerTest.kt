@@ -256,6 +256,38 @@ class CheckpointsManagerTest {
         assertThat(run!!.backedOut).isFalse
     }
 
+    // The paywall closes itself after a restore for which the options' block says not to display, so the flow
+    // closes on a granting restore like it does on a purchase, and stays up otherwise.
+    @Test
+    fun `the workflow window's options stop displaying after a restore that grants a new entitlement`() =
+        runTest(dispatcher) {
+            cachedActiveEntitlements("plus")
+            resolvesToWorkflow()
+            val call = launch { runCheckpoint() }
+
+            val shouldDisplay = manager.paywallOptions(currentCallId()) {}!!.shouldDisplayBlock!!
+            assertThat(shouldDisplay(customerInfoWithActive("plus", "pro"))).isFalse
+            assertThat(shouldDisplay(customerInfoWithActive("plus"))).isTrue
+            assertThat(shouldDisplay(customerInfoWithActive())).isTrue
+
+            finishPaywall(outcome = null)
+            call.join()
+        }
+
+    @Test
+    fun `the workflow window's options count every active entitlement as new when there is no cached customer info`() =
+        runTest(dispatcher) {
+            resolvesToWorkflow()
+            val call = launch { runCheckpoint() }
+
+            val shouldDisplay = manager.paywallOptions(currentCallId()) {}!!.shouldDisplayBlock!!
+            assertThat(shouldDisplay(customerInfoWithActive("plus"))).isFalse
+            assertThat(shouldDisplay(customerInfoWithActive())).isTrue
+
+            finishPaywall(outcome = null)
+            call.join()
+        }
+
     @Test
     fun `the SDK's own paywall without a started activity fails and presents nothing`() = runTest(dispatcher) {
         every { mockPurchases.currentActivity } returns null
