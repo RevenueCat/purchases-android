@@ -278,9 +278,10 @@ internal class CheckpointsManager(
     fun presentation(callId: String): CheckpointPresentation? =
         slot.with(callId) { it.presentation }
 
-    // Direct dismissals (a completed purchase or restore) carry no reason and count as a close; everything else
-    // reports one, and a paywall that could not load carries the error as its result when its error UI is done.
-    // The exit offering, if any, is not presented for checkpoints.
+    // Direct dismissals (a completed purchase, or a restore that granted an entitlement the user did not hold when
+    // the flow opened) carry no reason and count as a close; everything else reports one, and a paywall that could
+    // not load carries the error as its result when its error UI is done. The exit offering, if any, is not
+    // presented for checkpoints.
     override fun paywallOptions(callId: String, dismiss: (navigatedBack: Boolean) -> Unit): PaywallOptions? =
         presentation(callId)?.let { presentation ->
             PaywallOptions.Builder(dismissRequest = { dismiss(false) })
@@ -289,6 +290,9 @@ internal class CheckpointsManager(
                         recordOutcome(callId, CheckpointFlowOutcome.Error(it.error))
                     }
                     dismiss(reason == PaywallDismissReason.NAVIGATED_BACK)
+                }
+                .setShouldDisplayBlock { customerInfo ->
+                    !customerInfo.grantsNewEntitlements(slot.with(callId) { it.activeEntitlementsBefore })
                 }
                 .setErrorPresenter(presentation.errorPresenter)
                 .setCustomVariables(presentation.customVariables)
@@ -333,9 +337,9 @@ internal class CheckpointsManager(
         }
     }
 
-    // A recorded purchase or restore means the user went through, however the window went away: checkpoint
-    // paywalls don't auto-dismiss on restore, so a user who restored and then backed out still went through. A
-    // paywall that went away without reporting anything was dismissed.
+    // A recorded purchase or restore means the user went through, however the window went away: a window the
+    // system took down, or a back press that raced the dismissal, still delivers it. A paywall that went away
+    // without reporting anything was dismissed.
     override fun onPresentationFinished(
         callId: String,
         navigatedBack: Boolean,
