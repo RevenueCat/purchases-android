@@ -322,7 +322,7 @@ internal class IdentityManager(
     /**
      * Revokes the current user's tokens, then logs in anonymously; the server assigns the new app user ID.
      * A revocation failure changes nothing. If the anonymous login then fails, the user falls back to a local
-     * anonymous ID with no tokens, which [whenIAMLoginNeeded] picks up on the next configure. Neither happens
+     * anonymous ID with no tokens, which [whenIAMLoginNeeded] picks up on the next foreground. Neither happens
      * if the identity changed while the requests were in flight.
      */
     private fun logOutThroughIAM(completion: (PurchasesError?) -> Unit) {

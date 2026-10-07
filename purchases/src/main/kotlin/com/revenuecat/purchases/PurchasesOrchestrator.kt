@@ -328,12 +328,13 @@ internal class PurchasesOrchestrator(
     val preferredUILocaleOverride: String?
         get() = _preferredUILocaleOverride
 
+    private val iamBootstrapInFlight = AtomicBoolean(false)
+
     init {
         // Initialize locale provider with the initial preferred locale override
         localeProvider.setPreferredLocaleOverride(_preferredUILocaleOverride)
 
         identityManager.configure(backingFieldAppUserID)
-        logInThroughIAMIfNeeded()
         sdkSettingsConfigProvider.listener = this
 
         billing.stateListener = object : BillingAbstract.StateListener {
@@ -400,6 +401,7 @@ internal class PurchasesOrchestrator(
         enqueue {
             if (appConfig.uiPreviewMode) return@enqueue
 
+            logInThroughIAMIfNeeded()
             remoteConfigManager.refreshRemoteConfigIfStale(
                 appInBackground = false,
                 appUserID = identityManager.currentAppUserID,
@@ -1607,13 +1609,22 @@ internal class PurchasesOrchestrator(
         }
     }
 
-    // Silent bootstrap: an anonymous user without tokens gets them once the token cache has loaded.
+    // Silent bootstrap: an anonymous user without tokens gets them once the token cache has loaded. Runs on
+    // foreground, never on configure, which also runs on background wake-ups (pushes, jobs).
     private fun logInThroughIAMIfNeeded() {
         identityManager.whenIAMLoginNeeded {
+            // Foregrounds before the first login finishes would otherwise each start one.
+            if (!iamBootstrapInFlight.compareAndSet(false, true)) return@whenIAMLoginNeeded
             identityManager.logIn(
                 Identity.anonymous,
-                onSuccess = { customerInfo, appUserID -> handleIdentityChange(customerInfo, appUserID) },
-                onError = { errorLog(it) },
+                onSuccess = { customerInfo, appUserID ->
+                    iamBootstrapInFlight.set(false)
+                    handleIdentityChange(customerInfo, appUserID)
+                },
+                onError = { error ->
+                    iamBootstrapInFlight.set(false)
+                    errorLog(error)
+                },
             )
         }
     }

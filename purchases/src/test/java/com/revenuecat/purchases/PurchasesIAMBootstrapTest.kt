@@ -3,8 +3,9 @@ package com.revenuecat.purchases
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.identity.Identity
+import io.mockk.Runs
 import io.mockk.every
-import io.mockk.slot
+import io.mockk.just
 import io.mockk.verify
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -15,28 +16,38 @@ import org.robolectric.annotation.Config
 internal class PurchasesIAMBootstrapTest : BasePurchasesTest() {
 
     private val serverID = "server-assigned-user"
-    private val whenNeeded = slot<() -> Unit>()
+    private val whenNeeded = mutableListOf<() -> Unit>()
 
     override val shouldConfigureOnSetUp: Boolean
         get() = false
 
     @Test
-    fun `configure registers the bootstrap login once`() {
+    fun `configure alone does not start the bootstrap login`() {
         configure()
 
-        verify(exactly = 1) { mockIdentityManager.whenIAMLoginNeeded(any()) }
+        verify(exactly = 0) { mockIdentityManager.whenIAMLoginNeeded(any()) }
         verify(exactly = 0) { mockIdentityManager.logIn(any<Identity>(), any(), any()) }
+    }
+
+    @Test
+    fun `foregrounding registers the bootstrap login`() {
+        configure()
+
+        foreground()
+
+        verify(exactly = 1) { mockIdentityManager.whenIAMLoginNeeded(any()) }
     }
 
     @Test
     fun `a successful bootstrap login refreshes everything for the server-assigned user`() {
         configure()
+        foreground()
         mockOfferingsManagerFetchOfferings(serverID)
         every { mockIdentityManager.logIn(Identity.anonymous, captureLambda(), any()) } answers {
             lambda<(CustomerInfo, String) -> Unit>().captured.invoke(mockInfo, serverID)
         }
 
-        whenNeeded.captured.invoke()
+        whenNeeded.single().invoke()
 
         verify(exactly = 1) { mockCustomerInfoUpdateHandler.notifyListeners(mockInfo, serverID) }
         verify(exactly = 1) {
@@ -49,11 +60,10 @@ internal class PurchasesIAMBootstrapTest : BasePurchasesTest() {
     @Test
     fun `a failed bootstrap login refreshes nothing`() {
         configure()
-        every { mockIdentityManager.logIn(Identity.anonymous, any(), captureLambda()) } answers {
-            lambda<(PurchasesError) -> Unit>().captured.invoke(PurchasesError(PurchasesErrorCode.NetworkError))
-        }
+        foreground()
+        failBootstrapLogIn()
 
-        whenNeeded.captured.invoke()
+        whenNeeded.single().invoke()
 
         verify(exactly = 0) { mockCustomerInfoUpdateHandler.notifyListeners(any(), any()) }
         verify(exactly = 0) {
@@ -63,8 +73,48 @@ internal class PurchasesIAMBootstrapTest : BasePurchasesTest() {
         verify(exactly = 0) { mockBackupManager.dataChanged() }
     }
 
+    @Test
+    fun `repeated foregrounds start one bootstrap login while it is in flight`() {
+        configure()
+        every {
+            mockIdentityManager.logIn(Identity.anonymous, any<(CustomerInfo, String) -> Unit>(), any())
+        } just Runs
+
+        foreground()
+        foreground()
+        whenNeeded.forEach { it() }
+
+        verify(exactly = 1) { mockIdentityManager.logIn(Identity.anonymous, any(), any()) }
+    }
+
+    @Test
+    fun `a later foreground retries after a failed bootstrap login`() {
+        configure()
+        failBootstrapLogIn()
+
+        foreground()
+        whenNeeded.last().invoke()
+        foreground()
+        whenNeeded.last().invoke()
+
+        verify(exactly = 2) { mockIdentityManager.logIn(Identity.anonymous, any(), any()) }
+    }
+
     private fun configure() {
-        every { mockIdentityManager.whenIAMLoginNeeded(capture(whenNeeded)) } answers { }
-        anonymousSetup(anonymous = true)
+        every { mockIdentityManager.whenIAMLoginNeeded(capture(whenNeeded)) } just Runs
+        // Whether a login is needed is IdentityManager's call; the base fixtures' user stubs the foreground work.
+        anonymousSetup(anonymous = false)
+        mockOfferingsManagerAppForeground()
+        every { mockCustomerInfoHelper.retrieveCustomerInfo(any(), any(), any(), any(), any(), any()) } just Runs
+    }
+
+    private fun foreground() {
+        purchases.purchasesOrchestrator.onAppForegrounded()
+    }
+
+    private fun failBootstrapLogIn() {
+        every { mockIdentityManager.logIn(Identity.anonymous, any(), captureLambda()) } answers {
+            lambda<(PurchasesError) -> Unit>().captured.invoke(PurchasesError(PurchasesErrorCode.NetworkError))
+        }
     }
 }
