@@ -78,6 +78,35 @@ internal class LocalizationDataTests(@Suppress("UNUSED_PARAMETER") name: String,
                     ),
                 ),
             ),
+            arrayOf(
+                "ThemeImageUrls - light only",
+                Args(
+                    serialized = """
+                         {
+                           "light": {
+                             "heic": "https://assets.pawwalls.com/1151049_1732039548.heic",
+                             "heic_low_res": "https://assets.pawwalls.com/1151049_low_res_1732039548.heic",
+                             "original": "https://assets.pawwalls.com/1151049_1732039548.png",
+                             "webp": "https://assets.pawwalls.com/1151049_1732039548.webp",
+                             "webp_low_res": "https://assets.pawwalls.com/1151049_low_res_1732039548.webp",
+                             "width": 2345,
+                             "height": 1234
+                           }
+                         }
+                        """.trimIndent(),
+                    deserialized = LocalizationData.Image(
+                        ThemeImageUrls(
+                            light = ImageUrls(
+                                original = URL("https://assets.pawwalls.com/1151049_1732039548.png"),
+                                webp = URL("https://assets.pawwalls.com/1151049_1732039548.webp"),
+                                webpLowRes = URL("https://assets.pawwalls.com/1151049_low_res_1732039548.webp"),
+                                width = 2345.toUInt(),
+                                height = 1234.toUInt(),
+                            ),
+                        )
+                    ),
+                ),
+            ),
         )
     }
 

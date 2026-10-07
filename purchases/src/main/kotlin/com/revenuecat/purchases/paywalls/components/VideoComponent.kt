@@ -64,8 +64,8 @@ public class VideoComponent(
     @get:JvmSynthetic
     public val overrides: List<ComponentOverride<PartialVideoComponent>>?,
     @get:JvmSynthetic
-    @SerialName("override_source_lid")
-    public val overrideSourceLid: LocalizationKey? = null,
+    @SerialName("override_video_lid")
+    public val overrideVideoLid: LocalizationKey? = null,
 ) : PaywallComponent
 
 @Suppress("LongParameterList")
@@ -112,6 +112,6 @@ public class PartialVideoComponent(
     @get:JvmSynthetic
     public val shadow: Shadow? = null,
     @get:JvmSynthetic
-    @SerialName("override_source_lid")
-    public val overrideSourceLid: LocalizationKey? = null,
+    @SerialName("override_video_lid")
+    public val overrideVideoLid: LocalizationKey? = null,
 ) : PartialComponent
