@@ -1628,7 +1628,7 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `starting a new workflow presentation without a preferred offering drops the previous one`() {
+    fun `starting a new workflow presentation without a developer provided offering drops the previous one`() {
         val workflow = workflowForOffering(modifiedTemplate2Offering.identifier)
         val model = createWorkflowModel(passedOffering = modifiedTemplate2Offering, workflow = workflow)
         assertThat(loadedOffering(model).availablePackages).hasSize(1)
