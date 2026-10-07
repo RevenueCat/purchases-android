@@ -1481,6 +1481,166 @@ class PaywallViewModelTest {
         assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
     }
 
+    // region Passed offering instance in workflows
+
+    private val modifiedTemplate2Offering = Offering(
+        identifier = TestData.template2Offering.identifier,
+        serverDescription = "modified",
+        metadata = mapOf("custom_key" to "custom_value"),
+        availablePackages = listOf(TestData.Packages.monthly),
+    )
+
+    private fun workflowForOffering(stepOfferingId: String, twoSteps: Boolean = false): PublishedWorkflow {
+        val workflowScreen = WorkflowScreen(
+            templateName = "template",
+            revision = 0,
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(TestData.Components.monthlyPackageComponent)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = defaultLocaleIdentifier,
+            offeringIdentifier = stepOfferingId,
+        )
+        val params = mapOf("offering" to JsonObject(mapOf("identifier" to JsonPrimitive(stepOfferingId))))
+        val stepOne = WorkflowStep(
+            id = "step-1",
+            type = "screen",
+            screenId = "screen-1",
+            triggers = listOf(
+                WorkflowTrigger(
+                    name = "Next",
+                    type = WorkflowTriggerType.ON_PRESS,
+                    actionId = "action-next",
+                    componentId = "btn-next",
+                ),
+            ),
+            triggerActions = mapOf("action-next" to WorkflowTriggerAction.Step(stepId = "step-2")),
+            paramValues = params,
+        )
+        val stepTwo = WorkflowStep(id = "step-2", type = "screen", screenId = "screen-1", paramValues = params)
+        return PublishedWorkflow(
+            id = "wfl-test",
+            displayName = "Test Workflow",
+            initialStepId = "step-1",
+            steps = if (twoSteps) mapOf("step-1" to stepOne, "step-2" to stepTwo) else mapOf("step-1" to stepOne),
+            screens = mapOf("screen-1" to workflowScreen),
+        )
+    }
+
+    private fun createWorkflowModel(passedOffering: Offering, workflow: PublishedWorkflow): PaywallViewModelImpl {
+        coEvery { purchases.resolveWorkflow(passedOffering.identifier) } returns WorkflowResolution.Found(workflow.id)
+        coEvery { purchases.awaitGetWorkflow(workflow.id) } returns workflow
+        return PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOffering(passedOffering)
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+        )
+    }
+
+    private fun loadedOffering(model: PaywallViewModelImpl): Offering {
+        val state = model.state.value
+        assertThat(state).isInstanceOf(PaywallState.Loaded.Components::class.java)
+        return (state as PaywallState.Loaded.Components).offering
+    }
+
+    @Test
+    fun `workflow step matching passed offering id renders the passed offering instance`() {
+        val model = createWorkflowModel(
+            passedOffering = modifiedTemplate2Offering,
+            workflow = workflowForOffering(modifiedTemplate2Offering.identifier),
+        )
+
+        val offering = loadedOffering(model)
+        assertThat(offering.identifier).isEqualTo(modifiedTemplate2Offering.identifier)
+        assertThat(offering.availablePackages.map { it.identifier })
+            .containsExactly(TestData.Packages.monthly.identifier)
+        assertThat(offering.metadata["custom_key"]).isEqualTo("custom_value")
+        assertThat(offering.paywallComponents).isNotNull
+    }
+
+    @Test
+    fun `workflow step referencing another offering id renders the fetched offering`() {
+        val model = createWorkflowModel(
+            passedOffering = modifiedTemplate2Offering,
+            workflow = workflowForOffering(TestData.template1Offering.identifier),
+        )
+
+        val offering = loadedOffering(model)
+        assertThat(offering.identifier).isEqualTo(TestData.template1Offering.identifier)
+        assertThat(offering.availablePackages).hasSize(TestData.template1Offering.availablePackages.size)
+        assertThat(offering.metadata).doesNotContainKey("custom_key")
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `workflow preserves presented offering context when rendering the passed offering instance`() {
+        val presentedOfferingContext = PresentedOfferingContext(
+            offeringIdentifier = modifiedTemplate2Offering.identifier,
+            placementIdentifier = "placement",
+            targetingContext = PresentedOfferingContext.TargetingContext(revision = 7, ruleId = "rule"),
+        )
+        val passedOffering = modifiedTemplate2Offering.copy(presentedOfferingContext)
+        val model = createWorkflowModel(
+            passedOffering = passedOffering,
+            workflow = workflowForOffering(modifiedTemplate2Offering.identifier),
+        )
+
+        val offering = loadedOffering(model)
+        assertThat(offering.availablePackages.map { it.identifier })
+            .containsExactly(TestData.Packages.monthly.identifier)
+        assertThat(offering.availablePackages.first().presentedOfferingContext.placementIdentifier)
+            .isEqualTo("placement")
+        assertThat(offering.availablePackages.first().presentedOfferingContext.targetingContext?.ruleId)
+            .isEqualTo("rule")
+    }
+
+    @Test
+    fun `later workflow step with the passed offering id also renders the passed instance`() {
+        val model = createWorkflowModel(
+            passedOffering = modifiedTemplate2Offering,
+            workflow = workflowForOffering(modifiedTemplate2Offering.identifier, twoSteps = true),
+        )
+        assertThat(model.workflowState.value?.currentStepId).isEqualTo("step-1")
+
+        model.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        assertThat(model.workflowState.value?.currentStepId).isEqualTo("step-2")
+        assertThat(loadedOffering(model).availablePackages.map { it.identifier })
+            .containsExactly(TestData.Packages.monthly.identifier)
+
+        model.refreshStateIfColorsChanged(
+            colorScheme = TestData.Constants.currentColorScheme.copy(primary = Color.Black),
+            isDark = true,
+        )
+        assertThat(model.workflowState.value?.currentStepId).isEqualTo("step-2")
+        assertThat(loadedOffering(model).availablePackages.map { it.identifier })
+            .containsExactly(TestData.Packages.monthly.identifier)
+    }
+
+    @Test
+    fun `starting a new workflow presentation without a preferred offering drops the previous one`() {
+        val workflow = workflowForOffering(modifiedTemplate2Offering.identifier)
+        val model = createWorkflowModel(passedOffering = modifiedTemplate2Offering, workflow = workflow)
+        assertThat(loadedOffering(model).availablePackages).hasSize(1)
+
+        model.startWorkflowPresentationFromResult(workflow, offerings, presentedOfferingContext = null, UiConfig())
+
+        assertThat(loadedOffering(model).availablePackages)
+            .hasSize(TestData.template2Offering.availablePackages.size)
+    }
+
+    // endregion
+
     @Test
     fun `refreshStateIfColorsChanged on workflow does not trigger updateState`() {
         // updateState would re-fetch the workflow and reset the navigator; this test verifies
