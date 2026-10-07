@@ -29,7 +29,7 @@ env:
 - tapOn:
     point: "50%,50%"
 
-# Screen 2
+# Screen 2. Its purchase button label is not in the accessibility tree, so assert on the package instead.
 - extendedWaitUntil:
-    visible: "Buy"
+    visible: "Package"
     timeout: 15000
