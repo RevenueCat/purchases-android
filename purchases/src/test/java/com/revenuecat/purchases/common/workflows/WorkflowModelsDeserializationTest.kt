@@ -108,6 +108,76 @@ internal class WorkflowModelsDeserializationTest {
     }
 
     @Test
+    fun `WorkflowStep experiment params are read from metadata`() {
+        val json = """
+            {"id": "step_1", "type": "screen", "metadata": {"experiment_id": "exp_abc", "experiment_variant": "holdout"}}
+        """.trimIndent()
+        val step = JsonTools.json.decodeFromString(WorkflowStep.serializer(), json)
+        assertThat(step.experimentId).isEqualTo("exp_abc")
+        assertThat(step.experimentVariant).isEqualTo("holdout")
+    }
+
+    @Test
+    fun `WorkflowStep experiment params prefer metadata over param_values`() {
+        val json = """
+            {
+              "id": "step_1",
+              "type": "screen",
+              "param_values": {"experiment_id": "exp_old", "experiment_variant": "a"},
+              "metadata": {"experiment_id": "exp_new", "experiment_variant": "b"}
+            }
+        """.trimIndent()
+        val step = JsonTools.json.decodeFromString(WorkflowStep.serializer(), json)
+        assertThat(step.experimentId).isEqualTo("exp_new")
+        assertThat(step.experimentVariant).isEqualTo("b")
+    }
+
+    @Test
+    fun `PublishedWorkflow decodes a fallback copy step`() {
+        val json = """
+            {
+              "id": "wf_test",
+              "display_name": "Test",
+              "initial_step_id": "entry",
+              "steps": {
+                "entry": {
+                  "id": "entry",
+                  "type": "screen",
+                  "trigger_actions": {"btn": {"type": "step", "step_id": "paywall_a~f"}}
+                },
+                "paywall_a": {
+                  "id": "paywall_a",
+                  "type": "screen",
+                  "screen_id": "pw_123",
+                  "param_values": {"experiment_id": "exp_abc", "experiment_variant": "b"},
+                  "metadata": {"screen_type": ["paywall"]}
+                },
+                "paywall_a~f": {
+                  "id": "paywall_a~f",
+                  "type": "screen",
+                  "screen_id": "pw_123",
+                  "param_values": {},
+                  "metadata": {"screen_type": ["paywall"], "fallback_original_step_id": "paywall_a"}
+                }
+              },
+              "screens": {}
+            }
+        """.trimIndent()
+        val workflow = JsonTools.json.decodeFromString(PublishedWorkflow.serializer(), json)
+
+        val original = workflow.steps.getValue("paywall_a")
+        val copy = workflow.steps.getValue("paywall_a~f")
+        assertThat(workflow.steps.getValue("entry").triggerActions["btn"])
+            .isEqualTo(WorkflowTriggerAction.Step(stepId = "paywall_a~f"))
+        assertThat(copy.id).isEqualTo("paywall_a~f")
+        assertThat(copy.screenId).isEqualTo(original.screenId)
+        assertThat(copy.fallbackOriginalStepId).isEqualTo("paywall_a")
+        assertThat(copy.experimentId).isNull()
+        assertThat(copy.stepScreenType).containsExactly("paywall")
+        assertThat(original.fallbackOriginalStepId).isNull()
+    }
+
+    @Test
     fun `WorkflowStep stepScreenType is null when metadata is absent`() {
         val json = """
             {"id": "step_1", "type": "screen"}
