@@ -277,8 +277,10 @@ internal class HTTPClient(
                             endpoint,
                             result.responseCode,
                             retriedAfterTokenRefresh,
-                            appUserID = requestAppUserID,
-                            sentAuthorizationHeaders = iamHeaders,
+                            requestAuthentication = TokenAuthenticator.RequestAuthentication(
+                                requestAppUserID,
+                                iamHeaders,
+                            ),
                         ) { refreshBody ->
                             val apiKeyHeaders = requestHeaders.filterKeys { it == "Authorization" }
                             performRequest(

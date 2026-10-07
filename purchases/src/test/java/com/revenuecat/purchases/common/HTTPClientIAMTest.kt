@@ -319,6 +319,9 @@ internal class HTTPClientIAMTest : BaseHTTPClientTest() {
         client = createClient(tokenAuthenticator = TokenAuthenticator(tokenManager) { currentUser.get() })
         tokenManager.saveTokens(appUserID, "old-access", "user-refresh", "user-id")
         tokenManager.saveTokens(otherUserID, "other-access", "other-refresh", "other-id")
+        enqueue("/v1/customer", unauthorized)
+        enqueue("/auth/token", tokenResponse("new-access", "new-refresh", "new-id"))
+        enqueue("/v1/customer", HTTPResult.createResult())
         server.dispatcher = object : Dispatcher() {
             override fun dispatch(request: RecordedRequest): MockResponse = when {
                 request.getHeader("Authorization") == "Bearer old-access" -> {

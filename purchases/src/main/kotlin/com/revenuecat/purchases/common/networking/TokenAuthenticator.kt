@@ -16,6 +16,11 @@ internal class TokenAuthenticator(
     private val currentAppUserID: () -> String,
 ) {
 
+    data class RequestAuthentication(
+        val appUserID: String,
+        val sentAuthorizationHeaders: Map<String, String>,
+    )
+
     /** Whether requests should use their IAM paths. */
     val usesIAMPaths: Boolean
         get() = tokenManager.enabled
@@ -50,8 +55,7 @@ internal class TokenAuthenticator(
         endpoint,
         responseCode,
         alreadyRetried,
-        appUserIDForRequest(),
-        sentAuthorizationHeaders,
+        RequestAuthentication(appUserIDForRequest(), sentAuthorizationHeaders),
         postTokenRefresh,
     )
 
@@ -60,18 +64,28 @@ internal class TokenAuthenticator(
         endpoint: Endpoint,
         responseCode: Int,
         alreadyRetried: Boolean,
-        appUserID: String,
-        sentAuthorizationHeaders: Map<String, String>,
+        requestAuthentication: RequestAuthentication,
         postTokenRefresh: (body: Map<String, Any?>) -> HTTPResult,
     ): Boolean {
         if (responseCode != RCHTTPStatusCodes.UNAUTHORIZED || endpoint.isIAMEndpoint || alreadyRetried) return false
         return synchronized(refreshLock) {
-            val currentHeaders = tokenManager.authorizationHeaders(appUserID, isIAMEndpoint = false)
-            if (currentHeaders.isNotEmpty() && currentHeaders != sentAuthorizationHeaders) {
+            val currentHeaders = tokenManager.authorizationHeaders(
+                requestAuthentication.appUserID,
+                isIAMEndpoint = false,
+            )
+            if (currentHeaders.isNotEmpty() && currentHeaders != requestAuthentication.sentAuthorizationHeaders) {
                 true // Already refreshed by another request.
             } else {
-                val tokens = tokenManager.currentRefreshToken(appUserID)?.let { refresh(it, postTokenRefresh) }
-                tokens?.let { tokenManager.saveTokens(appUserID, it.accessToken, it.refreshToken, it.idToken) } != null
+                val tokens = tokenManager.currentRefreshToken(requestAuthentication.appUserID)
+                    ?.let { refresh(it, postTokenRefresh) }
+                tokens?.let {
+                    tokenManager.saveTokens(
+                        requestAuthentication.appUserID,
+                        it.accessToken,
+                        it.refreshToken,
+                        it.idToken,
+                    )
+                } != null
             }
         }
     }

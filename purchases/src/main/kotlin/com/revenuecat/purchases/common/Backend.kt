@@ -262,6 +262,7 @@ internal class Backend(
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
                     fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                    iamAppUserID = appUserID,
                 )
             }
 
@@ -374,6 +375,7 @@ internal class Backend(
                     postFieldsToSign,
                     backendHelper.authenticationHeaders + extraHeaders,
                     fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                    iamAppUserID = appUserID,
                 )
             }
 
@@ -441,6 +443,7 @@ internal class Backend(
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
                     fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                    iamAppUserID = appUserID,
                 )
             }
 
@@ -510,6 +513,7 @@ internal class Backend(
                     postFieldsToSign,
                     backendHelper.authenticationHeaders,
                     fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                    iamAppUserID = appUserID,
                 )
             }
 
@@ -570,6 +574,7 @@ internal class Backend(
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
                     fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                    iamAppUserID = oldAppUserID,
                 )
             }
 
@@ -782,6 +787,7 @@ internal class Backend(
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
                     fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                    iamAppUserID = appUserID,
                 )
             }
 
@@ -848,6 +854,7 @@ internal class Backend(
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
                     fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                    iamAppUserID = appUserID,
                 )
             }
 
@@ -907,6 +914,7 @@ internal class Backend(
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
                     fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                    iamAppUserID = appUserID,
                 )
             }
 
@@ -983,6 +991,7 @@ internal class Backend(
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
                     fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                    iamAppUserID = appUserID,
                 )
             }
 
@@ -1047,6 +1056,7 @@ internal class Backend(
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
                     fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                    iamAppUserID = appUserID,
                 )
             }
 
@@ -1113,6 +1123,7 @@ internal class Backend(
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
                     fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                    iamAppUserID = appUserID,
                 )
             }
 
@@ -1208,6 +1219,7 @@ internal class Backend(
                     body = body,
                     postFieldsToSign = null,
                     requestHeaders,
+                    iamAppUserID = appUserID,
                 )
             }
 
