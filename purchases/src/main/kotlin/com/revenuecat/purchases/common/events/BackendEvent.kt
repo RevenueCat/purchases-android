@@ -328,6 +328,8 @@ internal sealed class BackendEvent : Event {
             val experimentVariant: String? = null,
             @SerialName("blob_ref")
             val workflowBlobRef: String? = null,
+            @SerialName("fallback_original_step_id")
+            val fallbackOriginalStepId: String? = null,
         )
     }
 
