@@ -1227,6 +1227,7 @@ workflows:
             - prepare-tests
           <<: *non-main-branches
       - run-sdk-update-test:
+          <<: *release-branches
           context:
             - maestro
       - run-integration-tests:
