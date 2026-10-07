@@ -285,6 +285,8 @@ class PaywallViewModelWorkflowTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertThat(vm.workflowState.value?.isSkeleton).isFalse
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+        coVerify(exactly = 0) { purchases.resolveBranch(any(), any()) }
     }
 
     @Test
@@ -308,8 +310,9 @@ class PaywallViewModelWorkflowTest {
         gate.complete("step-1")
         testDispatcher.scheduler.advanceUntilIdle()
 
-        // Composition records the impression now, so the view model fires none by itself.
-        assertThat(captured.filterIsInstance<PaywallEvent>()).isEmpty()
+        // Composition asks again once the real step is on screen, and that one must land.
+        vm.trackPaywallImpressionIfNeeded()
+        assertThat(captured.filterIsInstance<PaywallEvent>()).hasSize(1)
     }
 
     @Test

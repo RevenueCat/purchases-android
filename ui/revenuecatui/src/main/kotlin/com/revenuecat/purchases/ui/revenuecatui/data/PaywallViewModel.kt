@@ -477,7 +477,9 @@ internal class PaywallViewModelImpl(
         get() = when (val loadedExitOfferData = exitOfferData) {
             is ExitOfferData.Configured -> {
                 val triggeringWorkflowStepId = loadedExitOfferData.triggeringWorkflowStepId
-                triggeringWorkflowStepId == null || _workflowState.value?.currentStepId == triggeringWorkflowStepId
+                // A stand-in is not a visit, so its step triggers no exit offer.
+                val state = _workflowState.value?.takeUnless { it.isSkeleton }
+                triggeringWorkflowStepId == null || state?.currentStepId == triggeringWorkflowStepId
             }
             is ExitOfferData.Loading,
             is ExitOfferData.Unavailable,
@@ -1119,6 +1121,7 @@ internal class PaywallViewModelImpl(
         currentWorkflowOfferings = offerings
         currentWorkflowPresentedOfferingContext = presentedOfferingContext
         workflowNavigator = WorkflowNavigator(workflow)
+        resolvedInitialStepId = null
         val dismissExitOffer = workflow.dismissExitOffer
         updateExitOfferData(
             dismissExitOffer?.let {
@@ -1202,11 +1205,12 @@ internal class PaywallViewModelImpl(
             )
         }
 
-        // A rebuild is the same visit, so re-resolving there could route the step somewhere else.
-        if (isNewWorkflowImpression) resolveBranchesFor(currentStep)
         // A rebuild during the wait is still the wait: keep standing in, but do not resolve again.
         val awaitingInitialStep = isNewWorkflowImpression || initialStepJob?.isActive == true
         val initialBranch = workflow.initialBranch?.takeIf { awaitingInitialStep }
+        // A rebuild is the same visit, so re-resolving there could route the step somewhere else. The
+        // stand-in resolves nothing: its answers belong to a step the branch may route away from.
+        if (isNewWorkflowImpression && initialBranch == null) resolveBranchesFor(currentStep)
         if (initialBranch != null) {
             // The step to show is not known yet, so the fallback stands in for it.
             buildStateFromStep(
@@ -1252,6 +1256,8 @@ internal class PaywallViewModelImpl(
             )
             ensureActive()
             if (navigator !== workflowNavigator) return@launch
+            // The presentation can fail or end while the branch resolves.
+            if (_workflowState.value == null) return@launch
             navigator.enterInitialStep(stepId)
             val step = navigator.currentStep ?: return@launch
             resolvedInitialStepId = step.id

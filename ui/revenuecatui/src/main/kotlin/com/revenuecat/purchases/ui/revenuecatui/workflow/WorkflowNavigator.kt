@@ -20,6 +20,7 @@ internal class WorkflowNavigator(private val workflow: PublishedWorkflow) {
 
     /** A route the workflow does not have is ignored, leaving the fallback that [initialStepId] names. */
     fun enterInitialStep(stepId: WorkflowStepID) {
+        currentStepBranches = emptyMap()
         if (workflow.steps.containsKey(stepId)) currentStepId = stepId
     }
 
