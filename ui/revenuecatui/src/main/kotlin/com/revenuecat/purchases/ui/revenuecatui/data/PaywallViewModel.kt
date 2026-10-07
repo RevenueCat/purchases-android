@@ -940,6 +940,7 @@ internal class PaywallViewModelImpl(
             options.injectedWorkflowUiConfig,
             offerings,
             offeringSelection.offering?.presentedOfferingContext,
+            options.injectedWorkflowBlobRef,
         )
         return true
     }

@@ -200,6 +200,7 @@ class CheckpointsManagerTest {
             mockk(),
             checkpointRuleId = null,
             traceId = "trace-id",
+            workflowBlobRef = "blob-ref",
         )
         resolvesTo(resolution)
         val customerInfo = mockk<CustomerInfo>()
@@ -212,6 +213,7 @@ class CheckpointsManagerTest {
         val options = manager.paywallOptions(currentCallId()) { dismissals += it }!!
         assertThat(options.injectedWorkflow).isSameAs(resolution.workflow)
         assertThat(options.injectedWorkflowTraceId).isEqualTo(resolution.traceId)
+        assertThat(options.injectedWorkflowBlobRef).isEqualTo(resolution.workflowBlobRef)
         options.listener!!.onPurchaseCompleted(customerInfo, storeTransaction)
         options.dismissRequestWithExitOffering!!(null, PaywallResult.Error(error), PaywallDismissReason.NAVIGATED_BACK)
         assertThat(dismissals).containsExactly(true)
@@ -297,6 +299,7 @@ class CheckpointsManagerTest {
                 mockk(),
                 checkpointRuleId = null,
                 traceId = "trace-id",
+                workflowBlobRef = null,
             ),
             CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null),
         )
@@ -928,6 +931,7 @@ class CheckpointsManagerTest {
                 mockk(),
                 checkpointRuleId = null,
                 traceId = "trace-id",
+                workflowBlobRef = null,
             ),
         )
         val presenterCall = launch { runCheckpoint() }
@@ -1185,6 +1189,7 @@ class CheckpointsManagerTest {
             mockk(),
             checkpointRuleId = null,
             traceId = "trace-id",
+            workflowBlobRef = null,
         ))
     }
 

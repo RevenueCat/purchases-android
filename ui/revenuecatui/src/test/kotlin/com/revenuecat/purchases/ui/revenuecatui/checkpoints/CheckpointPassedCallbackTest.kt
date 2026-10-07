@@ -276,6 +276,7 @@ class CheckpointPassedCallbackTest {
             mockk(),
             checkpointRuleId = null,
             traceId = "trace-id",
+            workflowBlobRef = null,
         ))
     }
 
