@@ -201,6 +201,59 @@ class PaywallViewModelWorkflowTest {
         ),
     )
 
+    @Test
+    fun `a step that only branches does not report itself as the last step`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        // Counting Step actions alone would read this as terminal.
+        val branchStep = step1.copy(
+            triggerActions = mapOf(
+                "action-next" to WorkflowTriggerAction.Branch(
+                    routes = emptyList(),
+                    fallbackStepId = "step-2",
+                ),
+            ),
+        )
+        val wfl = workflow.copy(steps = mapOf("step-1" to branchStep, "step-2" to step2))
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, testOfferings, null, uiConfig)
+
+        val started = captured.filterIsInstance<WorkflowEvent.StepStarted>()
+        assertThat(started).hasSize(1)
+        assertThat(started.first().isLastStep).isFalse
+    }
+
+    @Test
+    fun `a colour rebuild does not resolve a step's branches again`() {
+        var resolves = 0
+        coEvery { purchases.resolveBranches(any(), any()) } answers {
+            resolves++
+            mapOf("action-next" to "step-2")
+        }
+        val branchStep = step1.copy(
+            triggerActions = mapOf(
+                "action-next" to WorkflowTriggerAction.Branch(routes = emptyList(), fallbackStepId = "step-2"),
+            ),
+        )
+        val wfl = workflow.copy(steps = mapOf("step-1" to branchStep, "step-2" to step2))
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, testOfferings, null, uiConfig)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertThat(resolves).isOne()
+
+        // The same visit: re-resolving here would cancel the answer in flight and could route elsewhere.
+        vm.refreshStateIfColorsChanged(
+            colorScheme = TestData.Constants.currentColorScheme.copy(primary = Color.Black),
+            isDark = true,
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertThat(resolves).isOne()
+    }
+
     private fun makeTwoPackageWorkflow(): Pair<PublishedWorkflow, Offerings> {
         val screen1 = makeScreen(screenId1).copy(componentsConfig = twoPackageComponentsConfig)
         val screen2 = makeScreen(screenId2).copy(componentsConfig = twoPackageComponentsConfig)
@@ -1498,7 +1551,7 @@ class PaywallViewModelWorkflowTest {
         assertThat(step1Started).hasSize(2)
         assertThat(step1Started.map { it.experiment?.experimentId }).containsOnly("exp_abc")
         assertThat(step1Started.map { it.experiment?.experimentVariant }).containsOnly("b")
-        assertThat(step1Started.map { it.experiment?.workflowBlobRef }).containsOnly("blob-ref-1")
+        assertThat(step1Started.map { it.workflowBlobRef }).containsOnly("blob-ref-1")
         // step-1 completes twice: once on forward navigation, once from closePaywall.
         val step1Completed = completed.filter { it.stepId == "step-1" }
         assertThat(step1Completed).hasSize(2)
@@ -1507,12 +1560,83 @@ class PaywallViewModelWorkflowTest {
         assertThat(close.stepId).isEqualTo("step-1")
         assertThat(close.experiment?.experimentId).isEqualTo("exp_abc")
         assertThat(close.experiment?.experimentVariant).isEqualTo("b")
-        assertThat(close.experiment?.workflowBlobRef).isEqualTo("blob-ref-1")
+        assertThat(close.workflowBlobRef).isEqualTo("blob-ref-1")
 
         val step2Started = started.single { it.stepId == "step-2" }
         assertThat(step2Started.experiment).isNull()
         val step2Completed = completed.single { it.stepId == "step-2" }
         assertThat(step2Completed.experiment).isNull()
+    }
+
+    @Test
+    fun `step events carry the workflow blob ref outside an experiment`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(
+            fetchResult,
+            testOfferings,
+            null,
+            uiConfig,
+            workflowBlobRef = "blob-ref-1",
+        )
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        vm.onTransitionComplete(vm.workflowState.value!!.pendingTransition!!.id)
+        vm.closePaywall(result = null)
+
+        val workflowEvents = captured.filterIsInstance<WorkflowEvent>()
+        assertThat(workflowEvents).isNotEmpty
+        workflowEvents.forEach { event ->
+            val (blobRef, experiment) = when (event) {
+                is WorkflowEvent.StepStarted -> event.workflowBlobRef to event.experiment
+                is WorkflowEvent.StepCompleted -> event.workflowBlobRef to event.experiment
+                is WorkflowEvent.Close -> event.workflowBlobRef to event.experiment
+            }
+            assertThat(blobRef).`as`(event::class.simpleName).isEqualTo("blob-ref-1")
+            assertThat(experiment).`as`(event::class.simpleName).isNull()
+        }
+    }
+
+    @Test
+    fun `fallback copy events report the raw step id and the original step id`() {
+        val copyStepId = "step-2~f"
+        val entryStep = step1.copy(
+            triggerActions = mapOf("action-next" to WorkflowTriggerAction.Step(stepId = copyStepId)),
+        )
+        val copyStep = step2.copy(
+            id = copyStepId,
+            metadata = JsonObject(mapOf("fallback_original_step_id" to JsonPrimitive("step-2"))),
+        )
+        val fallbackWorkflow = workflow.copy(steps = mapOf("step-1" to entryStep, copyStepId to copyStep))
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(
+            fallbackWorkflow,
+            testOfferings,
+            null,
+            uiConfig,
+            workflowBlobRef = "blob-ref-1",
+        )
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        vm.onTransitionComplete(vm.workflowState.value!!.pendingTransition!!.id)
+        vm.closePaywall(result = null)
+
+        val entryCompleted = captured.filterIsInstance<WorkflowEvent.StepCompleted>().first { it.stepId == "step-1" }
+        assertThat(entryCompleted.toStepId).isEqualTo(copyStepId)
+        assertThat(entryCompleted.fallbackOriginalStepId).isNull()
+
+        val copyStarted = captured.filterIsInstance<WorkflowEvent.StepStarted>().single { it.stepId == copyStepId }
+        assertThat(copyStarted.fromStepId).isEqualTo("step-1")
+        assertThat(copyStarted.fallbackOriginalStepId).isEqualTo("step-2")
+        assertThat(copyStarted.workflowBlobRef).isEqualTo("blob-ref-1")
+        assertThat(copyStarted.experiment).isNull()
+
+        val close = captured.filterIsInstance<WorkflowEvent.Close>().single()
+        assertThat(close.stepId).isEqualTo(copyStepId)
+        assertThat(close.fallbackOriginalStepId).isEqualTo("step-2")
     }
 
     @Test

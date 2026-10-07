@@ -448,7 +448,7 @@ jobs:
       - install-awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/10.25.0-SNAPSHOT s3://purchases-docs/android/10.25.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/10.26.0-SNAPSHOT s3://purchases-docs/android/10.26.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -708,8 +708,8 @@ jobs:
             bundle exec fastlane android emerge_purchases_ui_snapshot_tests
       - android/save_build_cache
 
-  emerge_size_analysis_tests:
-    description: "Emerge size analysis tests"
+  size_analysis_tests:
+    description: "SDK size analysis tests"
     <<: *android-executor
     steps:
       - checkout
@@ -722,9 +722,9 @@ jobs:
       - prepare-signing-key
       - android/restore_gradle_cache
       - run:
-          name: Upload size testing app to emerge
+          name: Upload size testing app to Emerge and Sentry
           command: |
-            bundle exec fastlane android emerge_sdk_size_tests
+            bundle exec fastlane android sdk_size_tests
       - android/save_build_cache
 
   run-integration-tests:
@@ -1184,7 +1184,9 @@ workflows:
       - emerge_purchases_ui_snapshot_tests:
           requires:
             - prepare-tests
-      - emerge_size_analysis_tests:
+      - size_analysis_tests:
+          context:
+            - sentry
           requires:
             - prepare-tests
       - run-maestro-tests:

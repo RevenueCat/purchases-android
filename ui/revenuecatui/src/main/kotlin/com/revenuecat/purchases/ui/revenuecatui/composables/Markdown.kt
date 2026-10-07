@@ -25,6 +25,7 @@ import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.LinkInteractionListener
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
@@ -75,6 +76,7 @@ private val parser = Parser.builder()
  */
 internal class MarkdownState(val uriHandler: UriHandler? = null) {
     private val underlineStartPositions = mutableListOf<Int>()
+    private val codeRanges = mutableListOf<TextRange>()
 
     val underlineDepth: Int
         get() = underlineStartPositions.size
@@ -89,6 +91,31 @@ internal class MarkdownState(val uriHandler: UriHandler? = null) {
         } else {
             underlineStartPositions.removeAt(underlineStartPositions.lastIndex)
         }
+    }
+
+    fun addCodeRange(start: Int, end: Int) {
+        if (start < end) {
+            codeRanges += TextRange(start, end)
+        }
+    }
+
+    fun nonCodeRanges(start: Int, end: Int): List<TextRange> {
+        val ranges = mutableListOf<TextRange>()
+        var currentStart = start
+
+        codeRanges.forEach { codeRange ->
+            if (codeRange.end <= currentStart || codeRange.start >= end) return@forEach
+
+            if (currentStart < codeRange.start) {
+                ranges += TextRange(currentStart, minOf(codeRange.start, end))
+            }
+            currentStart = maxOf(currentStart, codeRange.end)
+        }
+
+        if (currentStart < end) {
+            ranges += TextRange(currentStart, end)
+        }
+        return ranges
     }
 }
 
@@ -588,7 +615,9 @@ private fun AnnotatedString.Builder.appendMarkdownChildren(
             }
             is Code -> {
                 pushStyle(TextStyle(fontFamily = FontFamily.Monospace).toSpanStyle())
-                appendTextWithUnderlines(child.literal, state)
+                val start = length
+                append(child.literal)
+                state.addCodeRange(start, length)
                 pop()
             }
             is HardLineBreak, is SoftLineBreak -> {
@@ -682,11 +711,11 @@ internal fun AnnotatedString.Builder.handleInlineHTML(tag: String, state: Markdo
         }
         MarkdownTagDefinitions.UNDERLINE_CLOSE_TAG -> {
             state.endUnderline()?.let { start ->
-                if (start < length) {
+                state.nonCodeRanges(start, length).forEach { range ->
                     addStyle(
                         style = SpanStyle(textDecoration = TextDecoration.Underline),
-                        start = start,
-                        end = length,
+                        start = range.start,
+                        end = range.end,
                     )
                 }
             }

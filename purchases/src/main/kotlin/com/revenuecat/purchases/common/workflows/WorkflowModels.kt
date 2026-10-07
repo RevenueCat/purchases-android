@@ -8,10 +8,12 @@ import com.revenuecat.purchases.paywalls.components.common.ExitOffers
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
+import com.revenuecat.purchases.paywalls.components.common.LocalizedVideoMapSerializer
 import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
 import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfigSerializer
 import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
 import com.revenuecat.purchases.paywalls.components.common.StateDeclarationMapSerializer
+import com.revenuecat.purchases.paywalls.components.properties.ThemeVideoUrls
 import com.revenuecat.purchases.utils.serializers.DefaultLocaleIdSerializer
 import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
 import com.revenuecat.purchases.utils.serializers.GoogleListSerializer
@@ -54,7 +56,7 @@ public sealed class WorkflowTriggerAction {
     @InternalRevenueCatAPI
     @Serializable
     public data class Branch(
-        val branches: List<Route>,
+        val routes: List<Route>,
         @SerialName("fallback_step_id") val fallbackStepId: String,
     ) : WorkflowTriggerAction() {
         @InternalRevenueCatAPI
@@ -139,11 +141,17 @@ public data class WorkflowStep(
             }
         }
 
+    /** Set on khepri's `<id>~f` fallback copies: the id of the step they were copied from. */
+    @InternalRevenueCatAPI
+    public val fallbackOriginalStepId: String?
+        get() = (metadata as? JsonObject)?.get(FALLBACK_ORIGINAL_STEP_ID_KEY).stringOrNull()
+
+    /** `metadata` first, `param_values` for blobs published before khepri moves them to `metadata`. */
     public val experimentId: String?
-        get() = stringParam(EXPERIMENT_ID_PARAM)
+        get() = experimentValueFromMetadataOrParams(EXPERIMENT_ID_PARAM)
 
     public val experimentVariant: String?
-        get() = stringParam(EXPERIMENT_VARIANT_PARAM)
+        get() = experimentValueFromMetadataOrParams(EXPERIMENT_VARIANT_PARAM)
 
     /** A terminal step that resolves to an offering instead of rendering a screen. */
     @InternalRevenueCatAPI
@@ -165,12 +173,16 @@ public data class WorkflowStep(
                 ?.takeIf { it.isNotBlank() }
         }
 
-    private fun stringParam(key: String): String? =
-        (paramValues[key] as? JsonPrimitive)?.takeIf { it.isString }?.content
+    private fun experimentValueFromMetadataOrParams(key: String): String? =
+        (metadata as? JsonObject)?.get(key).stringOrNull() ?: paramValues[key].stringOrNull()
+
+    private fun JsonElement?.stringOrNull(): String? =
+        (this as? JsonPrimitive)?.takeIf { it.isString }?.content
 }
 
 private const val EXPERIMENT_ID_PARAM = "experiment_id"
 private const val EXPERIMENT_VARIANT_PARAM = "experiment_variant"
+private const val FALLBACK_ORIGINAL_STEP_ID_KEY = "fallback_original_step_id"
 private const val OFFERING_STEP_TYPE = "offering"
 private const val OFFERING_PARAM = "offering"
 private const val OFFERING_IDENTIFIER_PARAM = "identifier"
@@ -199,6 +211,9 @@ public data class WorkflowScreen(
     @SerialName("automatically_scale_font_size") val automaticallyScaleFontSize: Boolean = true,
     @Serializable(with = StateDeclarationMapSerializer::class)
     @SerialName("state_declarations") val stateDeclarations: Map<String, StateDeclaration>? = null,
+    @Serializable(with = LocalizedVideoMapSerializer::class)
+    @SerialName("components_video_localizations")
+    val componentsVideoLocalizations: Map<LocaleId, Map<LocalizationKey, ThemeVideoUrls>> = emptyMap(),
 )
 
 /**
