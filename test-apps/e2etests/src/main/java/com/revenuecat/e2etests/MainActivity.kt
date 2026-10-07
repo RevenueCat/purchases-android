@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import com.revenuecat.e2etests.main.DeveloperProvidedOfferingScreen
 import com.revenuecat.e2etests.main.MainPage
 import com.revenuecat.e2etests.main.NoPaywallScreen
 import com.revenuecat.e2etests.ui.theme.PurchasesandroidTheme
@@ -42,6 +43,7 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
                         onPresentPaywall = { paywallLauncher.launch(it) },
                     )
                     E2ETestFlow.OPEN_NO_PAYWALL -> NoPaywallScreen()
+                    E2ETestFlow.OPEN_DEVELOPER_PROVIDED_OFFERING -> DeveloperProvidedOfferingScreen()
                     null -> MainPage()
                 }
             }

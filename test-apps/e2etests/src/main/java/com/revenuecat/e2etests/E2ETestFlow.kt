@@ -8,6 +8,7 @@ internal enum class E2ETestFlow(val rawValue: String) {
     OPEN_WORKFLOW("open_workflow"),
     OPEN_WORKFLOW_PRESENTED("open_workflow_presented"),
     OPEN_NO_PAYWALL("open_no_paywall"),
+    OPEN_DEVELOPER_PROVIDED_OFFERING("open_developer_provided_offering"),
     ;
 
     companion object {
