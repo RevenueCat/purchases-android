@@ -176,10 +176,8 @@ internal class HTTPClient(
         retriedAfterTokenRefresh: Boolean = false,
         iamAppUserID: String? = null,
     ): HTTPResult {
-        // Bind all internal retries to the same user. Re-reading the global current user after an identity change
-        // could send this request with another user's token while its callback and cache key still belong to the
-        // original user.
         val requestAppUserID = iamAppUserID ?: tokenAuthenticator.appUserIDForRequest()
+        // Snapshot the headers sent by this attempt for the token-refresh check below.
         val iamHeaders = tokenAuthenticator.authorizationHeaders(endpoint, requestAppUserID)
 
         fun canUseFallback(): Boolean =
