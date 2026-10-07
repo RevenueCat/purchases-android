@@ -210,7 +210,7 @@ private fun InternalPaywallContent(
                     options.mode,
                     state.locale.toString(),
                     isDark,
-                    // A stand-in and the step that replaces it share a screen id, so the swap needs
+                    // The skeleton and the step that replaces it share a screen id, so the swap needs
                     // its own key for the impression to track once the real step is on screen.
                     viewModel.workflowState.value?.isSkeleton,
                 ) {

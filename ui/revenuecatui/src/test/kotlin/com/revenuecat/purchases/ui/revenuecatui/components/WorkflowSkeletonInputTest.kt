@@ -73,7 +73,7 @@ internal class WorkflowSkeletonInputTest {
     }
 
     @Test
-    fun `a tap reaches a button when the step is not a stand-in`() {
+    fun `a tap reaches a button when the step is not a skeleton`() {
         var clicks = 0
         setUpChild(blocked = false) { clicks++ }
 
@@ -84,7 +84,7 @@ internal class WorkflowSkeletonInputTest {
     }
 
     @Test
-    fun `a stand-in swallows a tap that would otherwise reach a button`() {
+    fun `a skeleton swallows a tap that would otherwise reach a button`() {
         var clicks = 0
         setUpChild(blocked = true) { clicks++ }
 
@@ -95,7 +95,7 @@ internal class WorkflowSkeletonInputTest {
     }
 
     @Test
-    fun `a tap opens a link when the step is not a stand-in`() {
+    fun `a tap opens a link when the step is not a skeleton`() {
         var opened = 0
         setUpLink(blocked = false, handler = countingHandler { opened++ })
 
@@ -106,7 +106,7 @@ internal class WorkflowSkeletonInputTest {
     }
 
     @Test
-    fun `a stand-in swallows a tap on a markdown link`() {
+    fun `a skeleton swallows a tap on a markdown link`() {
         var opened = 0
         setUpLink(blocked = true, handler = countingHandler { opened++ })
 

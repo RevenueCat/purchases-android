@@ -224,7 +224,7 @@ private fun WorkflowStepsContent(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            // A stand-in takes no touches, and it announces itself instead of the labels below it.
+            // The skeleton takes no touches, and it announces itself instead of the labels below it.
             .conditional(isSkeleton) {
                 blockInput().clearAndSetSemantics {
                     contentDescription = loadingDescription

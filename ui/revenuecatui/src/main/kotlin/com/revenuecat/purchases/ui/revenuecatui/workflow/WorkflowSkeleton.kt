@@ -63,9 +63,9 @@ internal class WorkflowSkeleton private constructor(
             margin = stack.margin,
             shape = stack.shape,
             border = stack.border?.let { Border(color = if (contentHidden) CLEAR else tone, width = it.width) },
-            // Overrides change size and visibility by condition, so the stand-in keeps them.
+            // Overrides change size and visibility by condition, so the skeleton keeps them.
             overrides = stack.overrides.map { override(it) { partial -> stackPartial(partial, contentHidden) } },
-            // A badge adds to the measured size, so it stays, with its own stack as a stand-in too.
+            // A badge adds to the measured size, so it stays, with its own stack as a skeleton too.
             badge = stack.badge?.let { Badge(this.stack(it.stack, contentHidden), it.style, it.alignment) },
             overflow = stack.overflow,
         )
@@ -107,7 +107,7 @@ internal class WorkflowSkeleton private constructor(
             is StickyFooterComponent -> stack(component.stack, contentHidden)
             is HeaderComponent -> stack(component.stack, contentHidden)
             is ImageComponent -> image(component, contentHidden)
-            // A stand-in has no density, so it cannot turn the source's pixels into a height. The
+            // The skeleton has no density, so it cannot turn the source's pixels into a height. The
             // fallback image goes through the normal image sizing instead. The video url is not an
             // image, so it never reaches the loader.
             is VideoComponent -> component.fallbackSource?.let { fallback ->
@@ -183,7 +183,7 @@ internal class WorkflowSkeleton private constructor(
                 ),
                 contentHidden,
             )
-            // These draw their own live content and have no meaningful grey stand-in.
+            // These draw their own live content and have no meaningful grey skeleton.
             is IconComponent,
             is WebViewComponent,
             is TabControlComponent,

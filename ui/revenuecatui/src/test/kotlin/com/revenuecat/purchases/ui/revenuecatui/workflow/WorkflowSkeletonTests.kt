@@ -70,7 +70,7 @@ class WorkflowSkeletonTests {
         WorkflowSkeleton.transform(dataWith(*components)).componentsConfig.base.stack.components
 
     @Test
-    fun `removes leaves that have no grey stand-in`() {
+    fun `removes leaves that have no grey skeleton`() {
         val children = transformedChildren(
             IconComponent(baseUrl = "https://example.com", iconName = "star", formats = iconFormats()),
             WebViewComponent(
@@ -131,7 +131,7 @@ class WorkflowSkeletonTests {
     }
 
     @Test
-    fun `drops exit offers so the stand-in cannot trigger one`() {
+    fun `drops exit offers so the skeleton cannot trigger one`() {
         val data = dataWith(StackComponent(components = emptyList()))
         // Guard the fixture: without this the assertion below holds whether or not the transform runs.
         assertThat(data.exitOffers).isNotNull
@@ -207,7 +207,7 @@ class WorkflowSkeletonTests {
         val card = transformedChildren(badged).first() as StackComponent
 
         assertThat(card.badge).isNotNull
-        // The badge is a stand-in too, so it must not keep the real colour.
+        // The badge is a skeleton too, so it must not keep the real colour.
         val badgeText = card.badge!!.stack.components.first() as TextComponent
         assertThat(badgeText.color).isNotEqualTo(green)
     }
@@ -237,7 +237,7 @@ class WorkflowSkeletonTests {
     }
 
     @Test
-    fun `keeps an override so the stand-in can take the shape the rules will pick`() {
+    fun `keeps an override so the skeleton can take the shape the rules will pick`() {
         val overridden = StackComponent(
             components = emptyList(),
             backgroundColor = green,

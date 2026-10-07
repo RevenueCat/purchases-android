@@ -15,7 +15,7 @@ internal data class WorkflowPaywallUiState(
     val currentStepId: String,
     val stepStates: Map<String, PaywallState.Loaded.Components>,
     /**
-     * True while the step on screen stands in for one the SDK did not resolve yet.
+     * True while the screen shows a skeleton for a step the SDK did not resolve yet.
      */
     val isSkeleton: Boolean = false,
     /**

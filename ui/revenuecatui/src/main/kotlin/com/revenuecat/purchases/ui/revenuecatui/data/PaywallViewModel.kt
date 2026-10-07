@@ -477,7 +477,7 @@ internal class PaywallViewModelImpl(
         get() = when (val loadedExitOfferData = exitOfferData) {
             is ExitOfferData.Configured -> {
                 val triggeringWorkflowStepId = loadedExitOfferData.triggeringWorkflowStepId
-                // A stand-in is not a visit, so its step triggers no exit offer.
+                // The skeleton is not a visit, so its step triggers no exit offer.
                 val state = _workflowState.value?.takeUnless { it.isSkeleton }
                 triggeringWorkflowStepId == null || state?.currentStepId == triggeringWorkflowStepId
             }
@@ -1191,13 +1191,13 @@ internal class PaywallViewModelImpl(
             currentWorkflowStateStore = PaywallStateStore(emptyMap())
         }
 
-        // A rebuild during the wait is still the wait: keep standing in, but do not resolve again.
+        // A rebuild during the wait is still the wait: keep the skeleton, but do not resolve again.
         val awaitingInitialStep = isNewWorkflowImpression || initialStepJob?.isActive == true
         val initialBranch = workflow.initialBranch?.takeIf { awaitingInitialStep }
 
         // Pre-compute the package step so its default package is available in cache
-        // for early packageless steps to use as context. A stand-in caches nothing, so the step it
-        // stands in for still needs this even when it is the current step.
+        // for early packageless steps to use as context. The skeleton caches nothing, so the step it
+        // replaces still needs this even when it is the current step.
         val stepWithPackages = workflow.singleStepFallbackId?.let { workflow.steps[it] }
         if (stepWithPackages != null && (initialBranch != null || stepWithPackages.id != currentStep.id)) {
             buildStateFromStep(
@@ -1210,10 +1210,10 @@ internal class PaywallViewModelImpl(
             )
         }
         // A rebuild is the same visit, so re-resolving there could route the step somewhere else. The
-        // stand-in resolves nothing: its answers belong to a step the branch may route away from.
+        // skeleton resolves nothing: its answers belong to a step the branch may route away from.
         if (isNewWorkflowImpression && initialBranch == null) resolveBranchesFor(currentStep)
         if (initialBranch != null) {
-            // The step to show is not known yet, so the fallback stands in for it.
+            // The step to show is not known yet, so the fallback renders as a skeleton.
             buildStateFromStep(
                 currentStep,
                 workflow,
@@ -1293,7 +1293,7 @@ internal class PaywallViewModelImpl(
     }
 
     /**
-     * A step without an offering cannot attribute a paywall event. A stand-in is not a screen the
+     * A step without an offering cannot attribute a paywall event. The skeleton is not a screen the
      * user reached. Neither records an impression.
      */
     private fun tracksPaywallEvents(
@@ -1317,7 +1317,7 @@ internal class PaywallViewModelImpl(
         shouldApplyState: Boolean = true,
         skeleton: Boolean = false,
     ) {
-        // Never cache a stand-in. The real step reuses this id once the branch resolves.
+        // Never cache the skeleton. The real step reuses this id once the branch resolves.
         val cached = workflowStepStateCache[step.id].takeUnless { skeleton }
         val newState = cached
             ?: computeStateForStep(
@@ -1326,7 +1326,7 @@ internal class PaywallViewModelImpl(
                 uiConfig,
                 offerings,
                 presentedOfferingContext,
-                // A stand-in shares no store: its declarations would shadow the routed screen's.
+                // The skeleton shares no store: its declarations would shadow the routed screen's.
                 currentWorkflowStateStore.takeUnless { skeleton },
                 skeleton = skeleton,
             )
@@ -1618,7 +1618,7 @@ internal class PaywallViewModelImpl(
 
     private val currentWorkflowStep: WorkflowStep?
         get() {
-            // A stand-in is not a visit, so no event attributes to the step it shows.
+            // The skeleton is not a visit, so no event attributes to the step it shows.
             val state = _workflowState.value?.takeUnless { it.isSkeleton } ?: return null
             return currentWorkflow?.steps?.get(state.currentStepId)
         }

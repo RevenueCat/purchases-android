@@ -256,7 +256,7 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
-    fun `an audience-routed first step stands in until the branch resolves`() {
+    fun `an audience-routed first step shows a skeleton until the branch resolves`() {
         val gate = CompletableDeferred<WorkflowStepID>()
         coEvery { purchases.resolveBranch(any(), any()) } coAnswers { gate.await() }
         val wfl = workflow.copy(
@@ -267,7 +267,7 @@ class PaywallViewModelWorkflowTest {
         vm.startWorkflowPresentationFromResult(wfl, testOfferings, null, uiConfig)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        // Nothing is known yet, so the fallback stands in rather than counting as a real visit.
+        // Nothing is known yet, so the fallback renders as a skeleton and does not count as a real visit.
         assertThat(vm.workflowState.value?.isSkeleton).isTrue
         assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
 
@@ -290,7 +290,7 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
-    fun `a stand-in does not record a paywall impression for a step nobody reached`() {
+    fun `a skeleton does not record a paywall impression for a step nobody reached`() {
         val captured = mutableListOf<FeatureEvent>()
         every { purchases.track(any()) } answers { captured.add(firstArg()) }
         val gate = CompletableDeferred<WorkflowStepID>()
@@ -316,7 +316,7 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
-    fun `a colour rebuild during the wait keeps standing in`() {
+    fun `a colour rebuild during the wait keeps the skeleton`() {
         val gate = CompletableDeferred<WorkflowStepID>()
         var resolves = 0
         coEvery { purchases.resolveBranch(any(), any()) } coAnswers { resolves++; gate.await() }
@@ -343,7 +343,7 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
-    fun `a dismiss while standing in attributes no step to the fallback`() {
+    fun `a dismiss while the skeleton is up attributes no step to the fallback`() {
         val captured = mutableListOf<FeatureEvent>()
         every { purchases.track(any()) } answers { captured.add(firstArg()) }
         val gate = CompletableDeferred<WorkflowStepID>()
