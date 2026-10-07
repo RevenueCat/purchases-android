@@ -221,6 +221,13 @@ internal class PaywallViewModelImpl(
     private var currentWorkflowBlobRef: String? = null
     private var currentWorkflowUiConfig: UiConfig = emptyUiConfig()
     private var currentWorkflowOfferings: Offerings? = null
+
+    /**
+     * The developer-supplied [Offering] from [PaywallOptions.offeringSelection], if any. Wins over the entry in
+     * [currentWorkflowOfferings] for steps that reference its identifier, so modifications made by the developer
+     * (e.g. filtered packages or extra metadata) are what the workflow renders.
+     */
+    private var currentWorkflowDeveloperProvidedOffering: Offering? = null
     private var currentWorkflowPresentedOfferingContext: PresentedOfferingContext? = null
     private var currentWorkflowStepTracksPaywallEvents = true
     private val workflowStepStateCache = mutableMapOf<String, PaywallState.Loaded.Components>()
@@ -435,6 +442,7 @@ internal class PaywallViewModelImpl(
         currentWorkflow = null
         currentWorkflowBlobRef = null
         currentWorkflowOfferings = null
+        currentWorkflowDeveloperProvidedOffering = null
         currentWorkflowPresentedOfferingContext = null
         currentWorkflowStepTracksPaywallEvents = true
         workflowStepStateCache.clear()
@@ -901,7 +909,13 @@ internal class PaywallViewModelImpl(
         // paywalls move to workflows. We deliberately do NOT gate on `paywallComponents`, which is going away.
         val workflowOffering = selectedOffering
         if (workflowOffering != null && workflowOffering.paywall == null) {
-            when (val outcome = presentWorkflowOrResolveFallback(workflowOffering, offeringsForExitOfferLookup)) {
+            val developerProvidedOffering = (offeringSelection as? OfferingSelection.OfferingType)?.offeringType
+            val outcome = presentWorkflowOrResolveFallback(
+                workflowOffering,
+                offeringsForExitOfferLookup,
+                developerProvidedOffering,
+            )
+            when (outcome) {
                 WorkflowOutcome.Presented -> return
                 is WorkflowOutcome.Fallback -> {
                     selectedOffering = outcome.offering
@@ -956,11 +970,17 @@ internal class PaywallViewModelImpl(
     private suspend fun presentWorkflowOrResolveFallback(
         workflowOffering: Offering,
         preloadedOfferings: Offerings?,
+        developerProvidedOffering: Offering?,
     ): WorkflowOutcome {
         when (val resolution = purchases.resolveWorkflow(workflowOffering.identifier)) {
             is WorkflowResolution.Found -> {
                 try {
-                    return presentWorkflow(resolution.workflowId, workflowOffering, preloadedOfferings)
+                    return presentWorkflow(
+                        resolution.workflowId,
+                        workflowOffering,
+                        preloadedOfferings,
+                        developerProvidedOffering,
+                    )
                 } catch (e: PurchasesException) {
                     // The workflow id resolved but its body or ui config could not be served. Reloading offerings
                     // would only yield the offering's skipped-away components, so surface the error instead of
@@ -997,6 +1017,7 @@ internal class PaywallViewModelImpl(
         workflowId: String,
         offering: Offering,
         preloadedOfferings: Offerings?,
+        developerProvidedOffering: Offering?,
     ): WorkflowOutcome = coroutineScope {
         val workflowDeferred = async { purchases.awaitGetWorkflow(workflowId) }
         val uiConfigDeferred = async { purchases.awaitGetUiConfig() }
@@ -1020,6 +1041,7 @@ internal class PaywallViewModelImpl(
             offeringsDeferred.await(),
             offering.presentedOfferingContext,
             workflowBlobRefDeferred.await(),
+            developerProvidedOffering,
         )
         WorkflowOutcome.Presented
     }
@@ -1095,13 +1117,14 @@ internal class PaywallViewModelImpl(
         startWorkflowPresentation(workflow, uiConfig, offerings, presentedOfferingContext, workflowBlobRef)
     }
 
-    @Suppress("ReturnCount")
+    @Suppress("ReturnCount", "LongParameterList")
     private fun startWorkflowPresentation(
         workflow: PublishedWorkflow,
         uiConfig: UiConfig,
         offerings: Offerings,
         presentedOfferingContext: PresentedOfferingContext?,
         workflowBlobRef: String? = null,
+        developerProvidedOffering: Offering? = null,
     ) {
         val initialStep = workflow.steps[workflow.initialStepId]
         if (initialStep == null) {
@@ -1120,6 +1143,8 @@ internal class PaywallViewModelImpl(
         currentWorkflowBlobRef = workflowBlobRef
         currentWorkflowUiConfig = uiConfig
         currentWorkflowOfferings = offerings
+        // Always overwritten so a developer instance from a previous presentation never leaks into a new one.
+        currentWorkflowDeveloperProvidedOffering = developerProvidedOffering
         currentWorkflowPresentedOfferingContext = presentedOfferingContext
         workflowNavigator = WorkflowNavigator(workflow)
         resolvedInitialStepId = null
@@ -1683,7 +1708,8 @@ internal class PaywallViewModelImpl(
             ?: return StepResolution.Invalid("Screen '$screenId' not found in workflow '${workflow.id}'")
         val offeringId = step.offeringIdentifier
             ?: return StepResolution.Ready(screenId, screen, offering = null)
-        val offering = offerings[offeringId]
+        val offering = currentWorkflowDeveloperProvidedOffering?.takeIf { it.identifier == offeringId }
+            ?: offerings[offeringId]
             ?: return StepResolution.Invalid("Offering '$offeringId' not found for step '${step.id}'")
         return StepResolution.Ready(screenId, screen, offering)
     }

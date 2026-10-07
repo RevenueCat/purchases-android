@@ -190,6 +190,7 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
     // Create the StyleFactory to recursively create and validate all ComponentStyles.
     val styleFactory = StyleFactory(
         localizations = localizations,
+        videoLocalizations = componentsData.componentsVideoLocalizations,
         colorAliases = colorAliases,
         fontAliases = fontAliases,
         variableLocalizations = variableLocalizations,

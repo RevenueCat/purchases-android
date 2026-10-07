@@ -24,6 +24,7 @@ internal object WorkflowScreenMapper {
             productChangeConfig = screen.productChangeConfig,
             automaticallyScaleFontSize = screen.automaticallyScaleFontSize,
             stateDeclarations = screen.stateDeclarations,
+            componentsVideoLocalizations = screen.componentsVideoLocalizations,
         )
 
     fun toPaywallComponents(

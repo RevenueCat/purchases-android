@@ -98,7 +98,7 @@ internal fun LocalizationDictionary.image(key: LocalizationKey): Result<ThemeIma
         ?: Result.Error(MissingImageLocalization(key))
 
 /**
- * Retrieves a Video for all locales in this map, associated with the provided [key].
+ * Retrieves a video from [videoLocalizations] for all locales in this map, associated with the provided [key].
  *
  * @return A successful result containing the video keyed by the locale if it was found for all locales, or an error
  * result containing a [MissingVideoLocalization] error for each locale the [key] wasn't found for.
@@ -106,24 +106,13 @@ internal fun LocalizationDictionary.image(key: LocalizationKey): Result<ThemeIma
 @JvmSynthetic
 internal fun NonEmptyMap<LocaleId, LocalizationDictionary>.videoForAllLocales(
     key: LocalizationKey,
+    videoLocalizations: Map<LocaleId, Map<LocalizationKey, ThemeVideoUrls>>,
 ): Result<NonEmptyMap<LocaleId, ThemeVideoUrls>, NonEmptyList<MissingVideoLocalization>> =
-    mapValues { (locale, localizationDictionary) ->
-        localizationDictionary
-            .video(key)
-            .mapError { nonEmptyListOf(MissingVideoLocalization(key, locale)) }
+    mapValues { (locale, _) ->
+        videoLocalizations[locale]?.get(key)
+            ?.let { Result.Success(it) }
+            ?: Result.Error(nonEmptyListOf(MissingVideoLocalization(key, locale)))
     }.mapValuesOrAccumulate { it }
-
-/**
- * Retrieves a video from this [LocalizationDictionary] associated with the provided [key].
- *
- * @return A successful result containing the video if it was found, or an error result containing a
- * [MissingStringLocalization] error if there was no image value associated with the provided [key].
- */
-@JvmSynthetic
-internal fun LocalizationDictionary.video(key: LocalizationKey): Result<ThemeVideoUrls, MissingVideoLocalization> =
-    (get(key) as? LocalizationData.Video)?.value
-        ?.let { Result.Success(it) }
-        ?: Result.Error(MissingVideoLocalization(key))
 
 @JvmSynthetic
 internal fun LocaleId.toComposeLocale(): ComposeLocale =
