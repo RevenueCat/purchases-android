@@ -39,14 +39,6 @@ internal interface BranchResolver {
         .toMap()
 }
 
-/** Every branch takes its fallback. Goes away with [AppConfig.branchingEnabled] once branching ships. */
-internal object DisabledBranchResolver : BranchResolver {
-    override suspend fun resolve(
-        branch: WorkflowTriggerAction.Branch,
-        customVariables: Map<String, RulesDimensionValue>,
-    ): WorkflowStepID = branch.fallbackStepId
-}
-
 /** Resolves audiences in order and returns the first match. */
 internal class BranchResolverImpl(
     private val audiencesConfigProvider: AudiencesConfigProvider,

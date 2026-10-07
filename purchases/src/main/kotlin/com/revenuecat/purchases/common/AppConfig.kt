@@ -36,9 +36,6 @@ internal class AppConfig(
         val adEventsURL = URL("https://a.revenue.cat/")
         val fallbackURL = URL("https://api-production.8-lives-cat.io/")
         const val baseUrlString = "https://api.revenuecat.com/"
-
-        /** Workflow branch routing. Kept as a kill switch while branching rolls out. */
-        internal const val BRANCHING_ENABLED = true
     }
 
     // Should only be used for tests
@@ -69,9 +66,6 @@ internal class AppConfig(
     val customEntitlementComputation: Boolean
         get() = dangerousSettings.customEntitlementComputation
 
-    /** Workflow branch routing, unreleased. Goes away with [DisabledBranchResolver] once branching ships. */
-    val branchingEnabled: Boolean
-        get() = BRANCHING_ENABLED
     val uiPreviewMode: Boolean
         get() = dangerousSettings.uiPreviewMode
     val applyObfuscatedAccountIdToSubscriptionChanges: Boolean

@@ -72,7 +72,6 @@ import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.common.workflows.BranchResolver
 import com.revenuecat.purchases.common.workflows.BranchResolverImpl
-import com.revenuecat.purchases.common.workflows.DisabledBranchResolver
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowActionID
 import com.revenuecat.purchases.common.workflows.WorkflowManager
@@ -219,14 +218,12 @@ internal class PurchasesOrchestrator(
         getOfferings = { Purchases.sharedInstance.awaitOfferings() },
     ),
     @OptIn(InternalRevenueCatAPI::class)
-    private val branchResolver: BranchResolver = if (appConfig.branchingEnabled) {
-        BranchResolverImpl(
-            audiencesConfigProvider = audiencesConfigProvider,
-            localRulesEvaluator = localRulesEvaluator,
-        )
-    } else {
-        DisabledBranchResolver
-    },
+    // With remote config off there is no audiences topic to read, so every branch takes its
+    // fallback through the provider. No separate resolver is needed for that.
+    private val branchResolver: BranchResolver = BranchResolverImpl(
+        audiencesConfigProvider = audiencesConfigProvider,
+        localRulesEvaluator = localRulesEvaluator,
+    ),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler, SdkSettingsListener {
 
     internal var state: PurchasesState
