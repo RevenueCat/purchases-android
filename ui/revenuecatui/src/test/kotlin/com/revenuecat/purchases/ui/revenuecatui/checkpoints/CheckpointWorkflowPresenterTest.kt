@@ -396,7 +396,7 @@ class CheckpointWorkflowPresenterTest {
         // Stands in for the composition, which is what animates the sheet away.
         lastSheet!!.attach()
 
-        lastOptions!!.dismissRequestWithExitOffering!!(null, null, PaywallDismissReason.NAVIGATED_BACK)
+        lastOptions!!.dismissRequestWithExitOffering!!(null, null, PaywallDismissReason.CLOSE)
 
         assertThat(result).isNull()
         assertThat(lastSheet!!.visible).isFalse
@@ -405,7 +405,7 @@ class CheckpointWorkflowPresenterTest {
         lastSheet!!.notifyHidden()
 
         assertThat(paywallOutcome()).isEqualTo(CheckpointFlowOutcome.Dismissed)
-        assertThat(backedOut()).isTrue
+        assertThat(backedOut()).isFalse
         assertThat(ShadowDialog.getLatestDialog().isShowing).isTrue
         finishPresentation()
         assertThat(ShadowDialog.getLatestDialog().isShowing).isFalse
