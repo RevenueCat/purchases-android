@@ -100,6 +100,38 @@ internal class PurchasesIAMBootstrapTest : BasePurchasesTest() {
         verify(exactly = 2) { mockIdentityManager.logIn(Identity.anonymous, any(), any()) }
     }
 
+    @Test
+    fun `a foreground that starts the bootstrap login skips the CustomerInfo refresh for the user it replaces`() {
+        configure()
+        every { mockIdentityManager.whenIAMLoginNeeded(any()) } answers { firstArg<() -> Unit>().invoke() }
+        every {
+            mockIdentityManager.logIn(Identity.anonymous, any<(CustomerInfo, String) -> Unit>(), any())
+        } just Runs
+
+        foreground()
+
+        verify(exactly = 1) { mockIdentityManager.logIn(Identity.anonymous, any(), any()) }
+        verify(exactly = 0) { mockCustomerInfoHelper.retrieveCustomerInfo(any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `a foreground that needs no bootstrap login still refreshes CustomerInfo`() {
+        configure()
+
+        foreground()
+
+        verify(exactly = 1) {
+            mockCustomerInfoHelper.retrieveCustomerInfo(
+                appUserId,
+                CacheFetchPolicy.FETCH_CURRENT,
+                false,
+                any(),
+                any(),
+                any(),
+            )
+        }
+    }
+
     private fun configure() {
         every { mockIdentityManager.whenIAMLoginNeeded(capture(whenNeeded)) } just Runs
         // Whether a login is needed is IdentityManager's call; the base fixtures' user stubs the foreground work.

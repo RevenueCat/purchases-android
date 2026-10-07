@@ -416,7 +416,8 @@ internal class PurchasesOrchestrator(
                 sdkSettingsConfigProvider.ensureSettingsDelivered()
             }
 
-            if (shouldRefreshCustomerInfo(firstTimeInForeground)) {
+            // A bootstrap login fetches CustomerInfo for the user it switches to; skip the user it replaces.
+            if (!iamBootstrapInFlight.get() && shouldRefreshCustomerInfo(firstTimeInForeground)) {
                 log(LogIntent.DEBUG) { CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND }
                 customerInfoHelper.retrieveCustomerInfo(
                     identityManager.currentAppUserID,
