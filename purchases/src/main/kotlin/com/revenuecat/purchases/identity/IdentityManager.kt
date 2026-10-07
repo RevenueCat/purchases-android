@@ -319,8 +319,9 @@ internal class IdentityManager(
     /**
      * Revokes the current user's tokens, then logs in anonymously; the server assigns the new app user ID.
      * A revocation failure changes nothing. If the anonymous login then fails, the user falls back to a local
-     * anonymous ID with no tokens, which [whenIAMLoginNeeded] picks up on the next foreground. Neither happens
-     * if the identity changed while the requests were in flight.
+     * anonymous ID with no tokens, which [whenIAMLoginNeeded] picks up on the next foreground; that still counts
+     * as a successful logout, since the identity did change. Neither happens if the identity changed while the
+     * requests were in flight.
      */
     private fun logOutThroughIAM(completion: (PurchasesError?) -> Unit) {
         val oldAppUserID = currentAppUserID
@@ -339,10 +340,20 @@ internal class IdentityManager(
                         }
                     },
                     onError = { error ->
-                        synchronized(this@IdentityManager) {
-                            if (currentAppUserID == oldAppUserID) resetAndSaveUserID(generateRandomID())
+                        val fellBack = synchronized(this@IdentityManager) {
+                            (currentAppUserID == oldAppUserID).also {
+                                if (it) resetAndSaveUserID(generateRandomID())
+                            }
                         }
-                        completion(error)
+                        if (fellBack) {
+                            log(LogIntent.WARNING) {
+                                IdentityStrings.IAM_LOG_OUT_ANONYMOUS_LOGIN_FAILED.format(error)
+                            }
+                            log(LogIntent.USER) { IdentityStrings.LOG_OUT_SUCCESSFUL }
+                            completion(null)
+                        } else {
+                            completion(identityChangedError())
+                        }
                     },
                 )
             },

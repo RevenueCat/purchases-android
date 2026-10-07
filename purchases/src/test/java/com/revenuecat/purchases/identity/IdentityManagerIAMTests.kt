@@ -463,16 +463,16 @@ class IdentityManagerIAMTests {
     }
 
     @Test
-    fun `IAM logOut falls back to a local anonymous user when the anonymous login fails`() = runTest {
+    fun `IAM logOut succeeds as a local anonymous user when the anonymous login fails`() = runTest {
         cachedAppUserID = identifiedID
         createIdentityManager()
         stubRevoke(fail = null)
-        val loginError = PurchasesError(PurchasesErrorCode.NetworkError)
-        stubTokenLogIn(failWith = loginError)
+        stubTokenLogIn(failWith = PurchasesError(PurchasesErrorCode.NetworkError))
 
         val error = logOut()
 
-        assertThat(error).isEqualTo(loginError)
+        // The identity changed, so callers must run their logout handling.
+        assertThat(error).isNull()
         val newAppUserID = identityManager.currentAppUserID
         assertThat(IdentityManager.isUserIDAnonymous(newAppUserID)).isTrue()
         assertThat(tokenManager.hasCurrentAccessToken(newAppUserID)).isFalse()
@@ -592,12 +592,14 @@ class IdentityManagerIAMTests {
         createIdentityManager()
         stubRevoke(fail = null)
         val pending = deferTokenLogIn()
-        identityManager.logOut { }
+        var error: PurchasesError? = null
+        identityManager.logOut { error = it }
 
         identityManager.switchUser("another-user")
         pending.onError(PurchasesError(PurchasesErrorCode.NetworkError))
 
         assertThat(identityManager.currentAppUserID).isEqualTo("another-user")
+        assertThat(error?.code).isEqualTo(PurchasesErrorCode.OperationAlreadyInProgressError)
     }
 
     // endregion
