@@ -1,13 +1,12 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.emerge)
     alias(libs.plugins.compose.compiler)
 }
 
 android {
     namespace = "com.revenuecat.testpurchasesuiandroidcompatibility"
-    compileSdk = 34 // Keeping at this level to test revenuecatui compatibility
+    compileSdk = 35 // Keeping at this level to test revenuecatui compatibility
 
     defaultConfig {
         applicationId = "com.revenuecat.testpurchasesuiandroidcompatibility"
