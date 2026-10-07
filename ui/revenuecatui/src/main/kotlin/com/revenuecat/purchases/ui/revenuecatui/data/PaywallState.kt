@@ -472,7 +472,13 @@ internal sealed interface PaywallState {
                     )
                 }
                 if (!currentRendersVisible) {
-                    val replacement = defaultUniqueIdForCurrentContext(windowDpSize, screenCondition)
+                    // Past the shared defaults, any visible package beats keeping a hidden one
+                    // selected and purchasable.
+                    val replacement = visibleDefaultUniqueId(windowDpSize, screenCondition)
+                        ?: packages.packagesOutsideTabs
+                            .filter { it.rendersWhenSelected(windowDpSize, screenCondition) }
+                            .firstVisible(mergedCustomVariables, windowDpSize, screenCondition)
+                            ?.uniqueId
                     if (replacement != null) {
                         update(selectedPackageUniqueId = replacement)
                     }
@@ -480,33 +486,43 @@ internal sealed interface PaywallState {
             }
 
             /**
-             * The visible default for the current tab / root context, with the same priority as
-             * [peekDefaultPackageUniqueIdAfterSheetDismiss]: the tab's authored default first,
-             * then outside the tabs, then the first package that renders.
+             * The visible default for the current tab / root context: the tab's authored default,
+             * then one authored outside the tabs, then the tab's remembered selection, then the
+             * first package that renders (outside the tabs only when a default is declared there).
+             * Reconcile and [peekDefaultPackageUniqueIdAfterSheetDismiss] both use it, so a resize
+             * and a sheet dismiss land on the same package.
              */
-            private fun defaultUniqueIdForCurrentContext(
+            private fun visibleDefaultUniqueId(
                 windowDpSize: DpSize?,
                 screenCondition: ScreenCondition,
             ): String? {
-                // A candidate must remain visible once selected. Otherwise a `selected` rule can
-                // hide the replacement immediately after reconciliation chooses it.
-                val visibleWhenSelected: (AvailablePackages.Info) -> Boolean = { info ->
-                    info.resolvesVisible(
-                        customVariables = mergedCustomVariables,
-                        windowDpSize = windowDpSize,
-                        screenCondition = screenCondition,
-                        selectedPackageId = info.pkg.identifier,
-                        viewState = ComponentViewState.SELECTED,
-                    )
-                }
-                val tabPackages = packages.packagesByTab[selectedTabIndex]?.filter(visibleWhenSelected)
-                val outside = packages.packagesOutsideTabs.filter(visibleWhenSelected)
+                val tabPackages = packages.packagesByTab[selectedTabIndex]
+                    ?.filter { it.rendersWhenSelected(windowDpSize, screenCondition) }
+                val outside = packages.packagesOutsideTabs
+                    .filter { it.rendersWhenSelected(windowDpSize, screenCondition) }
                 return tabPackages?.authoredDefaultIfVisible(mergedCustomVariables, windowDpSize, screenCondition)
                     ?.uniqueId
                     ?: outside.authoredDefaultIfVisible(mergedCustomVariables, windowDpSize, screenCondition)?.uniqueId
+                    ?: uniqueIdIfVisibleAtBounds(selectedPackageByTab[selectedTabIndex], windowDpSize, screenCondition)
                     ?: tabPackages?.firstVisible(mergedCustomVariables, windowDpSize, screenCondition)?.uniqueId
-                    ?: outside.firstVisible(mergedCustomVariables, windowDpSize, screenCondition)?.uniqueId
+                    ?: outside
+                        .takeIf { packages.packagesOutsideTabs.any { it.isSelectedByDefault } }
+                        ?.firstVisible(mergedCustomVariables, windowDpSize, screenCondition)
+                        ?.uniqueId
             }
+
+            // A candidate must stay visible once selected, or a `selected` rule could hide it
+            // right after it's chosen.
+            private fun AvailablePackages.Info.rendersWhenSelected(
+                windowDpSize: DpSize?,
+                screenCondition: ScreenCondition,
+            ): Boolean = resolvesVisible(
+                customVariables = mergedCustomVariables,
+                windowDpSize = windowDpSize,
+                screenCondition = screenCondition,
+                selectedPackageId = pkg.identifier,
+                viewState = ComponentViewState.SELECTED,
+            )
 
             fun resetToDefaultPackage() {
                 selectedPackageUniqueId = peekDefaultPackageUniqueIdAfterSheetDismiss()
@@ -519,22 +535,11 @@ internal sealed interface PaywallState {
              * see the same package [resetToDefaultPackage] lands on.
              */
             fun peekDefaultPackageUniqueIdAfterSheetDismiss(windowDpSize: DpSize? = paywallBoundsDp): String? {
-                val tabPackages = packages.packagesByTab[selectedTabIndex]
                 val screenCondition = windowScreenCondition
-                // A default authored outside the tabs outranks a tab package that was never authored as
-                // one, so the tab's own default is consulted first and its first visible package last.
-                // Remembered ids are skipped when hidden at the measured bounds. If nothing renders,
-                // keep the current selection, matching reconcile's stay-put behavior. The init-time
-                // fallback remains the last resort when there is no current selection to keep.
-                return tabPackages?.authoredDefaultIfVisible(mergedCustomVariables, windowDpSize, screenCondition)
-                    ?.uniqueId
-                    ?: uniqueIdIfVisibleAtBounds(initialSelectedPackageOutsideTabs, windowDpSize, screenCondition)
-                    ?: uniqueIdIfVisibleAtBounds(selectedPackageByTab[selectedTabIndex], windowDpSize, screenCondition)
-                    ?: tabPackages?.firstVisible(mergedCustomVariables, windowDpSize, screenCondition)?.uniqueId
-                    ?: packages.packagesOutsideTabs
-                        .takeIf { infos -> infos.any { it.isSelectedByDefault } }
-                        ?.firstVisible(mergedCustomVariables, windowDpSize, screenCondition)
-                        ?.uniqueId
+                // If nothing renders, keep the current selection, matching reconcile's stay-put
+                // behavior. The init-time fallback remains the last resort when there is no
+                // current selection to keep.
+                return visibleDefaultUniqueId(windowDpSize, screenCondition)
                     ?: selectedPackageUniqueId.takeIf {
                         windowDpSize != null && !anyPackageRendersVisible(windowDpSize, screenCondition)
                     }
