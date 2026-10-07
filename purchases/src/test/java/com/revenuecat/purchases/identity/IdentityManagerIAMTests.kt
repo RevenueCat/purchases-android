@@ -521,6 +521,28 @@ class IdentityManagerIAMTests {
     }
 
     @Test
+    fun `a CustomerInfo fetch that lands after an identity change has no effect`() = runTest {
+        cachedAppUserID = anonymousID
+        createIdentityManager()
+        stubTokenLogIn(succeedWith = serverID)
+        lateinit var deliverCustomerInfo: () -> Unit
+        every { backend.getCustomerInfo(any(), any(), any(), any()) } answers {
+            deliverCustomerInfo = { thirdArg<(CustomerInfo) -> Unit>()(customerInfo) }
+        }
+        var result: Any? = null
+        identityManager.logIn(googleIdentity, { info, appUserID -> result = info to appUserID }, { result = it })
+
+        identityManager.switchUser(identifiedID)
+        deliverCustomerInfo()
+
+        // The fetch itself went out for the server-assigned user, pinned to that user's token.
+        verify(exactly = 1) { backend.getCustomerInfo(serverID, any(), any(), any()) }
+        verify(exactly = 0) { deviceCache.cacheCustomerInfo(any(), any()) }
+        assertThat((result as PurchasesError).code).isEqualTo(PurchasesErrorCode.OperationAlreadyInProgressError)
+        assertThat(identityManager.currentAppUserID).isEqualTo(identifiedID)
+    }
+
+    @Test
     fun `a late logOut anonymous login does not undo an identity change made meanwhile`() = runTest {
         cachedAppUserID = identifiedID
         createIdentityManager()

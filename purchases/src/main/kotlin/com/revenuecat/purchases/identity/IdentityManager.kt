@@ -367,8 +367,13 @@ internal class IdentityManager(
             appUserID,
             appConfig.isAppBackgrounded,
             onSuccess = { customerInfo ->
-                deviceCache.cacheCustomerInfo(appUserID, customerInfo)
-                onSuccess(customerInfo, appUserID)
+                // Like the switch itself: a result for a user who's no longer current must have no effect.
+                val stillCurrent = synchronized(this@IdentityManager) {
+                    (currentAppUserID == appUserID).also {
+                        if (it) deviceCache.cacheCustomerInfo(appUserID, customerInfo)
+                    }
+                }
+                if (stillCurrent) onSuccess(customerInfo, appUserID) else onError(identityChangedError())
             },
             onError = { error, _ -> onError(error) },
         )
