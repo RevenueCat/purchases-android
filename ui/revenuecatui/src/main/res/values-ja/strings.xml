@@ -22,4 +22,5 @@
     <string name="cannot_open_link">リンクが無効です。開くことができませんでした。</string>
     <string name="revenuecatui_purchase">購入</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">プレビューのワークフローを読み込めませんでした。もう一度お試しください。</string>
 </resources>

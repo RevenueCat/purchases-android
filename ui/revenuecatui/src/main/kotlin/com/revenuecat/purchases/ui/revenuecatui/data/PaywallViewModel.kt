@@ -49,6 +49,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams
 import com.revenuecat.purchases.ui.revenuecatui.ProductChange
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.asRulesDimensionValue
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
@@ -78,6 +79,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -211,6 +213,7 @@ internal class PaywallViewModelImpl(
     private var paywallPresentationData: PaywallEvent.Data? = null
 
     private var workflowNavigator: WorkflowNavigator? = null
+    private var branchResolveJob: Job? = null
     private var currentWorkflow: PublishedWorkflow? = null
     private var currentWorkflowBlobRef: String? = null
     private var currentWorkflowUiConfig: UiConfig = emptyUiConfig()
@@ -273,6 +276,7 @@ internal class PaywallViewModelImpl(
     private var exitOfferData: ExitOfferData = ExitOfferData.Loading()
     private var updateStateJob: Job? = null
     private var shouldReloadStateOnNextPresentation = false
+    private var presentationGeneration = 0
 
     private data class PaywallPresentationFingerprint(
         val paywallIdentifier: String?,
@@ -286,6 +290,29 @@ internal class PaywallViewModelImpl(
     private data class ResolvedOfferingSelection(
         val selectedOffering: Offering?,
         val offeringsForExitOfferLookup: Offerings?,
+    )
+
+    // Declared last: its collector reads the state above as soon as it is created.
+    private val errorReporter = PaywallErrorReporter(
+        presenter = { options.errorPresenter },
+        scope = viewModelScope,
+        state = _state,
+        host = object : PaywallErrorReporter.Host {
+            override fun showErrorDialog(error: PurchasesError) {
+                _actionError.value = error
+            }
+
+            override fun closePaywall(result: PaywallResult?, reason: PaywallDismissReason) =
+                this@PaywallViewModelImpl.closePaywall(result, reason)
+
+            override fun navigateBack(): Boolean = handleBackNavigation()
+
+            override val flowEnded: Boolean
+                get() = shouldReloadStateOnNextPresentation
+
+            override val presentationGeneration: Int
+                get() = this@PaywallViewModelImpl.presentationGeneration
+        },
     )
 
     init {
@@ -396,6 +423,8 @@ internal class PaywallViewModelImpl(
     private fun clearWorkflowState() {
         preWarmJob?.cancel()
         preWarmJob = null
+        branchResolveJob?.cancel()
+        branchResolveJob = null
         workflowNavigator = null
         currentWorkflow = null
         currentWorkflowBlobRef = null
@@ -422,6 +451,7 @@ internal class PaywallViewModelImpl(
         // the paywall enters composition again. Keep the last generic state rendered until then: activity and
         // navigation dismissals can leave InternalPaywall composed while their exit animation finishes.
         shouldReloadStateOnNextPresentation = true
+        presentationGeneration++
     }
 
     private fun updateExitOfferData(data: ExitOfferData) {
@@ -611,7 +641,7 @@ internal class PaywallViewModelImpl(
                             // silently ignore
                         }
                         is PurchaseLogicResult.Error -> {
-                            result.errorDetails?.let { _actionError.value = it }
+                            result.errorDetails?.let { errorReporter.onActionError(it) }
                         }
                     }
                 }
@@ -651,7 +681,7 @@ internal class PaywallViewModelImpl(
         } catch (e: PurchasesException) {
             Logger.e("Error restoring purchases: $e")
             listener?.onRestoreError(e.error)
-            _actionError.value = e.error
+            errorReporter.onActionError(e.error)
         }
     }
 
@@ -762,7 +792,7 @@ internal class PaywallViewModelImpl(
                         is PurchaseLogicResult.Error -> {
                             result.errorDetails?.let {
                                 trackPaywallPurchaseError(packageToPurchase, it)
-                                _actionError.value = it
+                                errorReporter.onActionError(it)
                             }
                         }
                     }
@@ -817,7 +847,7 @@ internal class PaywallViewModelImpl(
             } else {
                 trackPaywallPurchaseError(packageToPurchase, e.error)
                 listener?.onPurchaseError(e.error)
-                _actionError.value = e.error
+                errorReporter.onActionError(e.error)
             }
         }
     }
@@ -841,6 +871,7 @@ internal class PaywallViewModelImpl(
                 updateExitOfferData(ExitOfferData.Unavailable())
                 _state.value = PaywallState.Error(
                     "Error ${e.code.code}: ${e.code.description}",
+                    e.error,
                 )
             }
         }
@@ -1166,6 +1197,8 @@ internal class PaywallViewModelImpl(
             )
         }
 
+        // A rebuild is the same visit, so re-resolving there could route the step somewhere else.
+        if (isNewWorkflowImpression) resolveBranchesFor(currentStep)
         buildStateFromStep(currentStep, workflow, uiConfig, offerings, presentedOfferingContext)
         if (isNewWorkflowImpression && _workflowState.value != null) {
             trackWorkflowStepStarted(
@@ -1175,6 +1208,23 @@ internal class PaywallViewModelImpl(
             )
         }
         preWarmWorkflowStepCache(workflow, uiConfig, offerings, presentedOfferingContext)
+    }
+
+    /** Nothing waits on this: until it lands, a branch takes its fallback. */
+    private fun resolveBranchesFor(step: WorkflowStep) {
+        val navigator = workflowNavigator ?: return
+        // Abandons the previous step's resolve, so every visit routes on its own answer.
+        branchResolveJob?.cancel()
+        if (step.triggerActions.values.none { it is WorkflowTriggerAction.Branch }) return
+        branchResolveJob = viewModelScope.launch {
+            val resolved = purchases.resolveBranches(
+                step,
+                options.customVariables.mapValues { (_, value) -> value.asRulesDimensionValue },
+            )
+            // Cancellation is cooperative, so a cancelled job still reaches this line.
+            ensureActive()
+            navigator.recordResolvedBranches(resolved, step.id)
+        }
     }
 
     private fun buildStateFromStep(
@@ -1352,6 +1402,7 @@ internal class PaywallViewModelImpl(
             Logger.e("triggerAction returned null after peekTriggerStep succeeded — this is a bug")
             return
         }
+        resolveBranchesFor(newStep)
         buildStateFromStep(
             newStep,
             workflow,
@@ -1386,6 +1437,7 @@ internal class PaywallViewModelImpl(
             Logger.e("navigateBack returned null after canNavigateBack was true — this is a bug")
             return false
         }
+        resolveBranchesFor(newStep)
         buildStateFromStep(
             newStep,
             workflow,
@@ -1474,9 +1526,12 @@ internal class PaywallViewModelImpl(
         }
     }
 
+    // A branch navigates too, so it counts here the same way the navigator treats it.
     private fun isTerminalStep(workflow: PublishedWorkflow, stepId: String): Boolean {
         val step = workflow.steps[stepId] ?: return false
-        return step.triggerActions.values.none { it is WorkflowTriggerAction.Step }
+        return step.triggerActions.values.none {
+            it is WorkflowTriggerAction.Step || it is WorkflowTriggerAction.Branch
+        }
     }
 
     private val currentWorkflowStep: WorkflowStep?

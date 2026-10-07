@@ -6,9 +6,12 @@ import com.revenuecat.purchases.EntitlementInfo;
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI;
 import com.revenuecat.purchases.Offering;
 import com.revenuecat.purchases.Purchases;
+import com.revenuecat.purchases.PurchasesError;
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPassedCallback;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams;
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter;
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowResult;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointsExtensionsKt;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ObtainedEntitlement;
@@ -33,14 +36,17 @@ final class CheckpointsAPI {
     }
 
     @OptIn(markerClass = InviteOnlyCheckpointsAPI.class)
-    static void checkParams(PaywallPresenter presenter) {
+    static void checkParams(PaywallPresenter presenter, ErrorPresenter errorPresenter) {
         CheckpointParams params = new CheckpointParams.Builder()
                 .setCustomVariables(Collections.singletonMap("key", new CustomVariableValue.String("value")))
                 .setPaywallPresenter(presenter)
                 .setPaywallPresenter(null)
+                .setErrorPresenter(errorPresenter)
+                .setErrorPresenter(null)
                 .build();
         Map<String, CustomVariableValue> customVariables = params.getCustomVariables();
         PaywallPresenter paywallPresenter = params.getPaywallPresenter();
+        ErrorPresenter currentErrorPresenter = params.getErrorPresenter();
     }
 
     @OptIn(markerClass = InviteOnlyCheckpointsAPI.class)
@@ -54,6 +60,7 @@ final class CheckpointsAPI {
             Offering offering = params.getOffering();
             String checkpointIdentifier = params.getCheckpointIdentifier();
             Map<String, CustomVariableValue> customVariables = params.getCustomVariables();
+            FlowPresentationMode presentationMode = params.getPresentationMode();
             completion.complete(PaywallPresenter.Completion.Result.Continued.INSTANCE);
             completion.complete(PaywallPresenter.Completion.Result.Closed.INSTANCE);
             completion.complete(PaywallPresenter.Completion.Result.NavigatedBack.INSTANCE);
@@ -61,5 +68,21 @@ final class CheckpointsAPI {
         CheckpointsExtensionsKt.setPaywallPresenter(purchases, presenter);
         CheckpointsExtensionsKt.setPaywallPresenter(purchases, null);
         PaywallPresenter current = CheckpointsExtensionsKt.getPaywallPresenter(purchases);
+    }
+
+    @OptIn(markerClass = InviteOnlyCheckpointsAPI.class)
+    static void checkErrorPresenter(Purchases purchases) {
+        ErrorPresenter presenter = (ErrorPresenter.Params params, ErrorPresenter.Completion completion) -> {
+            PurchasesError error = params.getError();
+            String checkpointIdentifier = params.getCheckpointIdentifier();
+            Map<String, CustomVariableValue> customVariables = params.getCustomVariables();
+            boolean flowCanContinue = params.getFlowCanContinue();
+            completion.complete(ErrorPresenter.Completion.Result.Retry.INSTANCE);
+            completion.complete(ErrorPresenter.Completion.Result.Continue.INSTANCE);
+            completion.complete(ErrorPresenter.Completion.Result.NavigateBack.INSTANCE);
+        };
+        CheckpointsExtensionsKt.setErrorPresenter(purchases, presenter);
+        CheckpointsExtensionsKt.setErrorPresenter(purchases, null);
+        ErrorPresenter current = CheckpointsExtensionsKt.getErrorPresenter(purchases);
     }
 }

@@ -932,57 +932,11 @@ class DeviceCacheTest {
     }
 
     @Test
-    fun `caching a customer info with dimensions caches them separately`() {
-        val response = JSONObject(Responses.validFullPurchaserResponse)
-            .put("dimensions", JSONObject("""{"plan":"annual"}"""))
-        val dimensionsSlot = slot<String>()
-        every {
-            mockEditor.putString(cache.subscriberDimensionsCacheKey(appUserID), capture(dimensionsSlot))
-        } returns mockEditor
-
-        cache.cacheCustomerInfo(appUserID, createCustomerInfo(response))
-
-        assertThat(JSONObject(dimensionsSlot.captured).getString("plan")).isEqualTo("annual")
-    }
-
-    @Test
-    fun `caching a customer info without dimensions keeps the previous value`() {
-        cache.cacheCustomerInfo(appUserID, createCustomerInfo(Responses.validFullPurchaserResponse))
-
-        verify(exactly = 0) {
-            mockEditor.putString(cache.subscriberDimensionsCacheKey(appUserID), any())
-        }
-    }
-
-    @Test
-    fun `caching a customer info with empty dimensions keeps the previous value`() {
-        val response = JSONObject(Responses.validFullPurchaserResponse)
-            .put("dimensions", JSONObject())
-
-        cache.cacheCustomerInfo(appUserID, createCustomerInfo(response))
-
-        verify(exactly = 0) {
-            mockEditor.putString(cache.subscriberDimensionsCacheKey(appUserID), any())
-        }
-    }
-
-    @Test
-    fun `caching a cache-loaded customer info never writes the subscriber dimensions`() {
-        // A cache-loaded blob can still hold the dimensions of the response that produced it; re-caching it
-        // must not resurrect them over a value received since.
-        val response = JSONObject(Responses.validFullPurchaserResponse)
-            .put("dimensions", JSONObject("""{"plan":"annual"}"""))
-        val info = CustomerInfoFactory.buildCustomerInfo(
-            response,
-            null,
-            VerificationResult.NOT_REQUESTED,
-            loadedFromCache = true,
-        )
-
-        cache.cacheCustomerInfo(appUserID, info)
-
-        verify(exactly = 0) {
-            mockEditor.putString(cache.subscriberDimensionsCacheKey(appUserID), any())
+    fun `clearing the subscriber dimensions removes the user's key`() {
+        cache.clearSubscriberDimensions(appUserID)
+        verifyAll {
+            mockEditor.remove(cache.subscriberDimensionsCacheKey(appUserID))
+            mockEditor.apply()
         }
     }
 

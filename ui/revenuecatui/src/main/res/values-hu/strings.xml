@@ -22,4 +22,5 @@
     <string name="cannot_open_link">Érvénytelen link. Nem sikerült megnyitni.</string>
     <string name="revenuecatui_purchase">Vásárlás</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">Az előnézeti munkafolyamatot nem sikerült betölteni. Kérjük, próbálja újra.</string>
 </resources>

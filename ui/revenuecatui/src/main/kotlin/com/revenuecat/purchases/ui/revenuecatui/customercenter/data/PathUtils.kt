@@ -70,7 +70,7 @@ internal object PathUtils {
     /**
      * Determines if a path is a subscription-specific action
      */
-    private fun isSubscriptionSpecificPath(path: CustomerCenterConfigData.HelpPath): Boolean {
+    fun isSubscriptionSpecificPath(path: CustomerCenterConfigData.HelpPath): Boolean {
         return when (path.type) {
             CustomerCenterConfigData.HelpPath.PathType.CANCEL,
             CustomerCenterConfigData.HelpPath.PathType.REFUND_REQUEST,

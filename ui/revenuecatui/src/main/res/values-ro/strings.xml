@@ -22,4 +22,5 @@
     <string name="cannot_open_link">Link invalid. Nu a putut fi deschis.</string>
     <string name="revenuecatui_purchase">Cumpără</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">Fluxul de lucru pentru previzualizare nu a putut fi încărcat. Încercați din nou.</string>
 </resources>

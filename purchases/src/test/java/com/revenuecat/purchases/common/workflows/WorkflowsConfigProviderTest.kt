@@ -15,7 +15,10 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -515,6 +518,36 @@ internal class WorkflowsConfigProviderTest {
         providerWithListener.prewarmOfferingAssets()
 
         assertThat(announced).isFalse
+    }
+
+    @Test
+    fun `warm runs at most four onWorkflowLoaded calls at a time`() = runTest {
+        val offeringIds = (1..10).map { "offering_$it" }
+        val announced = mutableListOf<String>()
+        var inFlight = 0
+        var maxInFlight = 0
+        val providerWithListener = WorkflowsConfigProvider(
+            manager,
+            currentOfferingIdProvider = { currentOfferingId },
+            prewarmOfferingIdsProvider = { offeringIds.toSet() },
+            onWorkflowLoaded = { workflowId, _ ->
+                inFlight++
+                maxInFlight = maxOf(maxInFlight, inFlight)
+                delay(10)
+                inFlight--
+                announced += workflowId
+            },
+            scope = CoroutineScope(StandardTestDispatcher(testScheduler)),
+        )
+        coEvery { manager.committedTopicOrNull(RemoteConfigTopic.Workflows) } returns topicWith(
+            *offeringIds.map { "wf_$it" to configItem(prefetch = false, offeringId = it) }.toTypedArray(),
+        )
+
+        providerWithListener.warm(generation = 0)
+        advanceUntilIdle()
+
+        assertThat(maxInFlight).isEqualTo(4)
+        assertThat(announced).containsExactlyInAnyOrderElementsOf(offeringIds.map { "wf_$it" })
     }
 
     @Test

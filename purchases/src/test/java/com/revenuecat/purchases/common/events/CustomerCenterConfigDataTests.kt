@@ -90,7 +90,6 @@ class CustomerCenterConfigDataTest {
             title = "Test Title",
             type = CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE,
             promotionalOffer = CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer(
-                androidOfferId = "offer_id",
                 eligible = true,
                 title = "Offer Title",
                 subtitle = "Offer Subtitle",

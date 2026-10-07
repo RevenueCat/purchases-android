@@ -40,6 +40,7 @@ class DefaultPaywallPresenterTest {
         offering,
         "test_checkpoint",
         mapOf("goal" to CustomVariableValue.String("test")),
+        FlowPresentationMode.MODAL_FULL_SCREEN,
     )
     private val events = mutableListOf<String>()
     private val results = mutableListOf<Result>()
@@ -55,6 +56,7 @@ class DefaultPaywallPresenterTest {
     private lateinit var mockPurchases: Purchases
     private lateinit var mockWindow: CheckpointWorkflowPresenter
     private var windowCallId: String? = null
+    private var windowMode: FlowPresentationMode? = null
     private lateinit var presenter: DefaultPaywallPresenter
 
     @Before
@@ -65,8 +67,9 @@ class DefaultPaywallPresenterTest {
         mockPurchases = mockk { every { currentActivity } returns mockActivity }
         cachedActiveEntitlements()
         mockWindow = mockk(relaxed = true)
-        presenter = DefaultPaywallPresenter(mockPurchases) { callId, host ->
+        presenter = DefaultPaywallPresenter(mockPurchases, errorPresenter = { _, _ -> }) { callId, host, mode ->
             windowCallId = callId
+            windowMode = mode
             assertThat(host).isSameAs(presenter)
             mockWindow
         }
@@ -98,6 +101,47 @@ class DefaultPaywallPresenterTest {
         assertThat(options.listener).isNotNull
         assertThat(options.injectedWorkflow).isNull()
         assertThat(options.injectedWorkflowOfferings).isNull()
+    }
+
+    @Test
+    fun `the paywall hands its errors to the checkpoint's error presenter with the checkpoint's context`() {
+        val presented = mutableListOf<ErrorPresenter.Params>()
+        val completions = mutableListOf<ErrorPresenter.Completion>()
+        presenter = DefaultPaywallPresenter(
+            mockPurchases,
+            errorPresenter = { errorParams, completion ->
+                presented += errorParams
+                completions += completion
+            },
+        ) { callId, _, _ ->
+            windowCallId = callId
+            mockWindow
+        }
+        present()
+        val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "boom")
+        val completion = ErrorPresenter.Completion {}
+
+        options().errorPresenter!!.present(error, flowCanContinue = true, completion)
+
+        assertThat(presented).containsExactly(
+            ErrorPresenter.Params(error, params.checkpointIdentifier, params.customVariables, flowCanContinue = true),
+        )
+        assertThat(completions).containsExactly(completion)
+    }
+
+    @Test
+    fun `the window is presented the way the params ask`() {
+        present()
+        assertThat(windowMode).isEqualTo(FlowPresentationMode.MODAL_FULL_SCREEN)
+
+        val sheetParams = PaywallPresenter.Params(
+            offering,
+            params.checkpointIdentifier,
+            params.customVariables,
+            FlowPresentationMode.MODAL_SHEET,
+        )
+        presenter.present(sheetParams, completion)
+        assertThat(windowMode).isEqualTo(FlowPresentationMode.MODAL_SHEET)
     }
 
     @Test

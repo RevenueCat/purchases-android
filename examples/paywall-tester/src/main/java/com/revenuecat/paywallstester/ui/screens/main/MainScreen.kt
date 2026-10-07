@@ -1,8 +1,10 @@
 package com.revenuecat.paywallstester.ui.screens.main
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -12,18 +14,25 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.revenuecat.paywallstester.ui.screens.checkpoints.AppErrorDialog
+import com.revenuecat.paywallstester.ui.screens.checkpoints.AppPaywall
+import com.revenuecat.paywallstester.ui.screens.checkpoints.CheckpointsScreen
+import com.revenuecat.paywallstester.ui.screens.checkpoints.CheckpointsViewModel
+import com.revenuecat.paywallstester.ui.screens.checkpoints.CheckpointsViewModelImpl
 import com.revenuecat.paywallstester.ui.screens.main.appinfo.AppInfoScreen
 import com.revenuecat.paywallstester.ui.screens.main.locale.LocaleScreen
 import com.revenuecat.paywallstester.ui.screens.main.offerings.OfferingsScreen
 import com.revenuecat.paywallstester.ui.screens.main.paywalls.PaywallsScreen
 import com.revenuecat.purchases.Offering
 
-@SuppressWarnings("LongParameterList")
+@SuppressWarnings("LongParameterList", "ViewModelForwarding")
 @Composable
 fun MainScreen(
     navigateToPaywallScreen: (Offering?) -> Unit,
@@ -31,23 +40,32 @@ fun MainScreen(
     navigateToPaywallCondensedFooterScreen: (Offering?) -> Unit,
     navigateToPaywallByPlacementScreen: (String) -> Unit,
     navigateToCustomerCenterScreen: () -> Unit,
-    navigateToCheckpointsScreen: () -> Unit,
     navController: NavHostController = rememberNavController(),
+    checkpointsViewModel: CheckpointsViewModel = viewModel<CheckpointsViewModelImpl>(
+        factory = CheckpointsViewModelImpl.Factory,
+    ),
 ) {
-    Scaffold(
-        bottomBar = { BottomBarNavigation(navController) },
-    ) { paddingValues ->
-        MainNavHost(
-            navController = navController,
-            navigateToPaywallScreen = navigateToPaywallScreen,
-            navigateToPaywallFooterScreen = navigateToPaywallFooterScreen,
-            navigateToPaywallCondensedFooterScreen = navigateToPaywallCondensedFooterScreen,
-            navigateToPaywallByPlacementScreen = navigateToPaywallByPlacementScreen,
-            navigateToCustomerCenterScreen = navigateToCustomerCenterScreen,
-            navigateToCheckpointsScreen = navigateToCheckpointsScreen,
-            modifier = Modifier.padding(paddingValues)
-                .consumeWindowInsets(paddingValues),
-        )
+    val paywallRequest by checkpointsViewModel.paywallRequest.collectAsStateWithLifecycle()
+    val errorRequest by checkpointsViewModel.errorRequest.collectAsStateWithLifecycle()
+
+    Box {
+        Scaffold(
+            bottomBar = { BottomBarNavigation(navController) },
+        ) { paddingValues ->
+            MainNavHost(
+                navController = navController,
+                navigateToPaywallScreen = navigateToPaywallScreen,
+                navigateToPaywallFooterScreen = navigateToPaywallFooterScreen,
+                navigateToPaywallCondensedFooterScreen = navigateToPaywallCondensedFooterScreen,
+                navigateToPaywallByPlacementScreen = navigateToPaywallByPlacementScreen,
+                navigateToCustomerCenterScreen = navigateToCustomerCenterScreen,
+                checkpointsViewModel = checkpointsViewModel,
+                modifier = Modifier.padding(paddingValues)
+                    .consumeWindowInsets(paddingValues),
+            )
+        }
+        paywallRequest?.let { AppPaywall(request = it) }
+        errorRequest?.let { AppErrorDialog(request = it) }
     }
 }
 
@@ -60,7 +78,6 @@ fun MainScreenPreview() {
         navigateToPaywallCondensedFooterScreen = {},
         navigateToPaywallByPlacementScreen = {},
         navigateToCustomerCenterScreen = {},
-        navigateToCheckpointsScreen = {},
     )
 }
 
@@ -68,10 +85,11 @@ private val bottomNavigationItems = listOf(
     Tab.AppInfo,
     Tab.Paywalls,
     Tab.Offerings,
+    Tab.Checkpoints,
     Tab.Locale,
 )
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "ViewModelForwarding")
 @Composable
 private fun MainNavHost(
     navController: NavHostController,
@@ -80,7 +98,7 @@ private fun MainNavHost(
     navigateToPaywallCondensedFooterScreen: (Offering?) -> Unit,
     navigateToPaywallByPlacementScreen: (String) -> Unit,
     navigateToCustomerCenterScreen: () -> Unit,
-    navigateToCheckpointsScreen: () -> Unit,
+    checkpointsViewModel: CheckpointsViewModel,
     modifier: Modifier = Modifier,
 ) {
     NavHost(
@@ -91,7 +109,6 @@ private fun MainNavHost(
         composable(Tab.AppInfo.route) {
             AppInfoScreen(
                 tappedOnCustomerCenter = navigateToCustomerCenterScreen,
-                tappedOnCheckpoints = navigateToCheckpointsScreen,
             )
         }
         composable(Tab.Paywalls.route) {
@@ -104,6 +121,9 @@ private fun MainNavHost(
                 tappedOnOfferingCondensedFooter = { offering -> navigateToPaywallCondensedFooterScreen(offering) },
                 tappedOnOfferingByPlacement = { placementId -> navigateToPaywallByPlacementScreen(placementId) },
             )
+        }
+        composable(Tab.Checkpoints.route) {
+            CheckpointsScreen(viewModel = checkpointsViewModel)
         }
         composable(Tab.Locale.route) {
             LocaleScreen()
@@ -128,6 +148,9 @@ private fun BottomBarNavigation(
                 label = {
                     Text(
                         screen.title,
+                        style = MaterialTheme.typography.labelSmall,
+                        maxLines = 1,
+                        softWrap = false,
                     )
                 },
                 selected = currentRoute == screen.route,
