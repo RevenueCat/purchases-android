@@ -11,9 +11,15 @@ fun mockOneTimePurchaseOfferDetails(
     price: Double = 4.99,
     priceCurrencyCodeValue: String = "USD",
     offerTokenProvided: String = "mockOfferToken",
+    offerIdProvided: String? = null,
+    offerTagsProvided: List<String>? = emptyList(),
+    discountDisplayInfoProvided: OneTimePurchaseOfferDetails.DiscountDisplayInfo? = null,
 ): OneTimePurchaseOfferDetails = mockk<OneTimePurchaseOfferDetails>().apply {
     every { formattedPrice } returns "${'$'}$price"
     every { priceAmountMicros } returns price.times(1_000_000).toLong()
     every { priceCurrencyCode } returns priceCurrencyCodeValue
     every { offerToken } returns offerTokenProvided
+    every { offerId } returns offerIdProvided
+    every { offerTags } returns offerTagsProvided
+    every { discountDisplayInfo } returns discountDisplayInfoProvided
 }

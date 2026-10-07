@@ -7,6 +7,7 @@ import com.revenuecat.purchases.utils.mockOneTimePurchaseOfferDetails
 import com.revenuecat.purchases.utils.mockPricingPhase
 import com.revenuecat.purchases.utils.mockProductDetails
 import com.revenuecat.purchases.utils.mockSubscriptionOfferDetails
+import io.mockk.every
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -37,6 +38,44 @@ class StoreProductConversionsTest {
 
         val storeProducts = productDetails.toStoreProducts()
         assertThat(storeProducts.size).isEqualTo(1)
+    }
+
+    @Test
+    fun `list of INAPP ProductDetails with oneTimePurchaseOfferDetails maps defaultOneTimeOffer and oneTimePurchaseOfferDetailsList`() {
+        val offerDetails = mockOneTimePurchaseOfferDetails(offerTokenProvided = "mock-offer-token")
+        val productDetail1 = mockProductDetails(
+            productId = "iap_1",
+            type = BillingClient.ProductType.INAPP,
+            oneTimePurchaseOfferDetails = offerDetails,
+            subscriptionOfferDetails = null
+        )
+
+        val storeProducts = listOf(productDetail1).toStoreProducts()
+        assertThat(storeProducts.size).isEqualTo(1)
+        val googleStoreProduct = storeProducts.first().googleProduct
+        assertThat(googleStoreProduct).isNotNull
+        assertThat(googleStoreProduct?.oneTimePurchaseOfferDetailsList).isNotNull
+        assertThat(googleStoreProduct?.defaultOneTimeOffer).isNotNull
+        assertThat(googleStoreProduct?.defaultOneTimeOffer?.offerToken).isEqualTo("mock-offer-token")
+    }
+
+    @Test
+    fun `INAPP ProductDetails with null singular oneTimePurchaseOfferDetails but valid oneTimePurchaseOfferDetailsList maps to StoreProduct`() {
+        val offerDetails = mockOneTimePurchaseOfferDetails(price = 4.99, offerTokenProvided = "list-token")
+        val productDetail1 = mockProductDetails(
+            productId = "iap_1",
+            type = BillingClient.ProductType.INAPP,
+            oneTimePurchaseOfferDetails = null,
+            subscriptionOfferDetails = null
+        ).apply {
+            every { oneTimePurchaseOfferDetailsList } returns listOf(offerDetails)
+        }
+
+        val storeProducts = listOf(productDetail1).toStoreProducts()
+        assertThat(storeProducts.size).isEqualTo(1)
+        val storeProduct = storeProducts.first()
+        assertThat(storeProduct.price.amountMicros).isEqualTo(4990000)
+        assertThat(storeProduct.googleProduct?.defaultOneTimeOffer?.offerToken).isEqualTo("list-token")
     }
 
     @Test
