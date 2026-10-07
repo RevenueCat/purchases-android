@@ -313,9 +313,10 @@ internal class CheckpointsManager(
     fun presentation(callId: String): CheckpointPresentation? =
         slot.with(callId) { it.presentation }
 
-    // Direct dismissals (a completed purchase or restore) carry no reason and count as a close; everything else
-    // reports one, and a paywall that could not load carries the error as its result when its error UI is done.
-    // The exit offering, if any, is not presented for checkpoints.
+    // Direct dismissals (a completed purchase, or a restore that granted an entitlement the user did not hold when
+    // the flow opened) carry no reason and count as a close; everything else reports one, and a paywall that could
+    // not load carries the error as its result when its error UI is done. The exit offering, if any, is not
+    // presented for checkpoints.
     override fun paywallOptions(callId: String, dismiss: (navigatedBack: Boolean) -> Unit): PaywallOptions? =
         presentation(callId)?.let { presentation ->
             PaywallOptions.Builder(dismissRequest = { dismiss(false) })
@@ -324,6 +325,9 @@ internal class CheckpointsManager(
                         recordOutcome(callId, CheckpointFlowOutcome.Error(it.error))
                     }
                     dismiss(reason == PaywallDismissReason.NAVIGATED_BACK)
+                }
+                .setShouldDisplayBlock { customerInfo ->
+                    !customerInfo.grantsNewEntitlements(slot.with(callId) { it.activeEntitlementsBefore })
                 }
                 .setErrorPresenter(presentation.errorPresenter)
                 .setCustomVariables(presentation.customVariables)
