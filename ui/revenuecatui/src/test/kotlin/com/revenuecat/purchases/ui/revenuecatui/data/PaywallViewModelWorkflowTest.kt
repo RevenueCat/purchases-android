@@ -384,6 +384,25 @@ class PaywallViewModelWorkflowTest {
         assertThat(started.isFirstStep).isTrue
     }
 
+    @Test
+    fun `a step routed past the package step still gets its default package`() {
+        val (base, offerings) = makeContextPackageWorkflow()
+        // The package step is also the first step, so nothing else prebuilds it.
+        val wfl = base.copy(
+            initialStepId = "step-2",
+            initialTrigger = WorkflowTriggerAction.Branch(routes = emptyList(), fallbackStepId = "step-2"),
+        )
+        coEvery { purchases.resolveBranch(any(), any()) } returns "step-1"
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, offerings, null, uiConfig)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val routed = vm.workflowState.value?.stepStates?.get("step-1")
+        assertThat(routed?.selectedPackageInfo?.rcPackage?.identifier)
+            .isEqualTo(PackageType.MONTHLY.identifier)
+    }
+
     private fun makeTwoPackageWorkflow(): Pair<PublishedWorkflow, Offerings> {
         val screen1 = makeScreen(screenId1).copy(componentsConfig = twoPackageComponentsConfig)
         val screen2 = makeScreen(screenId2).copy(componentsConfig = twoPackageComponentsConfig)

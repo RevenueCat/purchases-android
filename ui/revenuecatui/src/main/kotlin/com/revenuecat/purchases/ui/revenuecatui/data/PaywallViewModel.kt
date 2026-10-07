@@ -1191,10 +1191,15 @@ internal class PaywallViewModelImpl(
             currentWorkflowStateStore = PaywallStateStore(emptyMap())
         }
 
+        // A rebuild during the wait is still the wait: keep standing in, but do not resolve again.
+        val awaitingInitialStep = isNewWorkflowImpression || initialStepJob?.isActive == true
+        val initialBranch = workflow.initialBranch?.takeIf { awaitingInitialStep }
+
         // Pre-compute the package step so its default package is available in cache
-        // for early packageless steps to use as context.
+        // for early packageless steps to use as context. A stand-in caches nothing, so the step it
+        // stands in for still needs this even when it is the current step.
         val stepWithPackages = workflow.singleStepFallbackId?.let { workflow.steps[it] }
-        if (stepWithPackages != null && stepWithPackages.id != currentStep.id) {
+        if (stepWithPackages != null && (initialBranch != null || stepWithPackages.id != currentStep.id)) {
             buildStateFromStep(
                 stepWithPackages,
                 workflow,
@@ -1204,10 +1209,6 @@ internal class PaywallViewModelImpl(
                 shouldApplyState = false,
             )
         }
-
-        // A rebuild during the wait is still the wait: keep standing in, but do not resolve again.
-        val awaitingInitialStep = isNewWorkflowImpression || initialStepJob?.isActive == true
-        val initialBranch = workflow.initialBranch?.takeIf { awaitingInitialStep }
         // A rebuild is the same visit, so re-resolving there could route the step somewhere else. The
         // stand-in resolves nothing: its answers belong to a step the branch may route away from.
         if (isNewWorkflowImpression && initialBranch == null) resolveBranchesFor(currentStep)
