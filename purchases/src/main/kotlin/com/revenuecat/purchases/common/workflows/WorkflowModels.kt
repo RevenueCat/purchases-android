@@ -139,11 +139,17 @@ public data class WorkflowStep(
             }
         }
 
+    /** Set on khepri's `<id>~f` fallback copies: the id of the step they were copied from. */
+    @InternalRevenueCatAPI
+    public val fallbackOriginalStepId: String?
+        get() = (metadata as? JsonObject)?.get(FALLBACK_ORIGINAL_STEP_ID_KEY).stringOrNull()
+
+    /** `metadata` first, `param_values` for blobs published before khepri moves them to `metadata`. */
     public val experimentId: String?
-        get() = stringParam(EXPERIMENT_ID_PARAM)
+        get() = experimentValueFromMetadataOrParams(EXPERIMENT_ID_PARAM)
 
     public val experimentVariant: String?
-        get() = stringParam(EXPERIMENT_VARIANT_PARAM)
+        get() = experimentValueFromMetadataOrParams(EXPERIMENT_VARIANT_PARAM)
 
     /** A terminal step that resolves to an offering instead of rendering a screen. */
     @InternalRevenueCatAPI
@@ -165,12 +171,16 @@ public data class WorkflowStep(
                 ?.takeIf { it.isNotBlank() }
         }
 
-    private fun stringParam(key: String): String? =
-        (paramValues[key] as? JsonPrimitive)?.takeIf { it.isString }?.content
+    private fun experimentValueFromMetadataOrParams(key: String): String? =
+        (metadata as? JsonObject)?.get(key).stringOrNull() ?: paramValues[key].stringOrNull()
+
+    private fun JsonElement?.stringOrNull(): String? =
+        (this as? JsonPrimitive)?.takeIf { it.isString }?.content
 }
 
 private const val EXPERIMENT_ID_PARAM = "experiment_id"
 private const val EXPERIMENT_VARIANT_PARAM = "experiment_variant"
+private const val FALLBACK_ORIGINAL_STEP_ID_KEY = "fallback_original_step_id"
 private const val OFFERING_STEP_TYPE = "offering"
 private const val OFFERING_PARAM = "offering"
 private const val OFFERING_IDENTIFIER_PARAM = "identifier"
