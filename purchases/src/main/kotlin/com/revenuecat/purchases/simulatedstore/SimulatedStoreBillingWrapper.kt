@@ -74,6 +74,7 @@ internal class SimulatedStoreBillingWrapper(
     override fun queryProductDetailsAsync(
         productType: ProductType,
         productIds: Set<String>,
+        logUnfetchedProducts: Boolean,
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback,
     ) {
