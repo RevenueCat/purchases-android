@@ -37,8 +37,8 @@ internal class AppConfig(
         val fallbackURL = URL("https://api-production.8-lives-cat.io/")
         const val baseUrlString = "https://api.revenuecat.com/"
 
-        /** Flip to true to build with workflow branch routing. */
-        internal const val BRANCHING_ENABLED = false
+        /** Workflow branch routing. Kept as a kill switch while branching rolls out. */
+        internal const val BRANCHING_ENABLED = true
     }
 
     // Should only be used for tests
