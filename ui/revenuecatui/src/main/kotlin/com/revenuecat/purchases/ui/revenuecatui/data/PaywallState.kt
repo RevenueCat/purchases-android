@@ -102,7 +102,7 @@ internal sealed interface PaywallState {
             }
         }
 
-        @Suppress("LongParameterList")
+        @Suppress("LongParameterList", "TooManyFunctions")
         @Stable
         class Components(
             val stack: ComponentStyle,
@@ -159,6 +159,14 @@ internal sealed interface PaywallState {
              * paywall root's measurement; null until first measure, matching iOS.
              */
             var paywallBoundsDp: DpSize? by mutableStateOf(null)
+                @JvmSynthetic internal set
+
+            /**
+             * The screen condition the renderer resolves size-class overrides with — derived from
+             * the app window, not the paywall bounds, which can fall in different size classes in
+             * a sheet or pane. Set alongside [paywallBoundsDp] by the paywall root's measurement.
+             */
+            var windowScreenCondition: ScreenCondition by mutableStateOf(ScreenCondition.COMPACT)
                 @JvmSynthetic internal set
 
             val store: Store get() = purchases.store
@@ -388,10 +396,11 @@ internal sealed interface PaywallState {
                 if (selectedTabIndex != null) {
                     this.selectedTabIndex = selectedTabIndex
                     // If our currently selected package exists outside of tabs, we don't have to change the selected
-                    // package when the tab changes.
+                    // package when the tab changes — but the new tab's context can still change what's visible.
                     if (selectedPackageUniqueId != null &&
                         packagesOutsideTabsUniqueIds.contains(selectedPackageUniqueId)
                     ) {
+                        reconcileSelectionForWindowSize(paywallBoundsDp)
                         return
                     }
 
@@ -410,6 +419,8 @@ internal sealed interface PaywallState {
                             ?.uniqueId
                         // Nothing in the tab renders, so fall back outside it rather than clearing.
                         ?: visibleFallbackForHiddenDefaultOutsideTabs
+
+                    reconcileSelectionForWindowSize(paywallBoundsDp)
                 }
 
                 if (clickScopedActionInProgress != null) {
@@ -428,20 +439,150 @@ internal sealed interface PaywallState {
                 if (currentTabContainsThisPackage) selectedPackageByTab[currentTabIndex] = selectedPackageUniqueId
             }
 
-            fun resetToDefaultPackage() {
-                selectedPackageUniqueId = peekDefaultPackageUniqueIdAfterSheetDismiss()
+            /**
+             * Moves the selection off a package that is hidden at the measured window size, so a
+             * hidden package can't stay selected and purchasable. Initial selection is resolved
+             * before the window size is known, and the window can change later. If nothing
+             * resolves visible the selection stays put (iOS parity). Acts only on this state's
+             * own selection; the workflow-level [defaultPackageInfo] fallback is not owned by
+             * this state and is left as-is.
+             *
+             * The keep-check mirrors what the renderer shows: it evaluates the current package as
+             * selected, in the active tab's context, under the screen condition the measured
+             * width implies. Replacement candidates are still evaluated unselected so the choice
+             * can't depend on its own outcome.
+             */
+            fun reconcileSelectionForWindowSize(windowDpSize: DpSize?) {
+                if (windowDpSize == null) return
+                val screenCondition = windowScreenCondition
+                // Tab-scoped: the same uniqueId can exist in several tabs with different rules,
+                // and only the active tab's copy (or an outside-tabs copy) is on screen. The
+                // selection stays as long as ANY on-screen copy renders visible.
+                val activeContext = packages.packagesOutsideTabs +
+                    packages.packagesByTab[selectedTabIndex].orEmpty()
+                val uid = selectedPackageUniqueId ?: return
+                val copies = activeContext.filter { it.uniqueId == uid }
+                val currentRendersVisible = copies.isEmpty() || copies.any { copy ->
+                    copy.resolvesVisible(
+                        customVariables = mergedCustomVariables,
+                        windowDpSize = windowDpSize,
+                        screenCondition = screenCondition,
+                        selectedPackageId = copy.pkg.identifier,
+                        viewState = ComponentViewState.SELECTED,
+                    )
+                }
+                if (!currentRendersVisible) {
+                    // Past the shared defaults, any visible package beats keeping a hidden one
+                    // selected and purchasable.
+                    val replacement = visibleDefaultUniqueId(windowDpSize, screenCondition)
+                        ?: packages.packagesOutsideTabs
+                            .filter { it.rendersWhenSelected(windowDpSize, screenCondition) }
+                            .firstVisible(mergedCustomVariables, windowDpSize, screenCondition)
+                            ?.uniqueId
+                    if (replacement != null) {
+                        update(selectedPackageUniqueId = replacement)
+                    }
+                }
             }
 
-            /** The package the current tab should fall back to, which is also what a reset restores. */
-            fun peekDefaultPackageUniqueIdAfterSheetDismiss(): String? {
+            /**
+             * The visible default for the current tab / root context: the tab's authored default,
+             * then one authored outside the tabs, then the tab's remembered selection, then the
+             * first package that renders (outside the tabs only when a default is declared there).
+             * Reconcile and [peekDefaultPackageUniqueIdAfterSheetDismiss] both use it, so a resize
+             * and a sheet dismiss land on the same package.
+             */
+            private fun visibleDefaultUniqueId(
+                windowDpSize: DpSize?,
+                screenCondition: ScreenCondition,
+            ): String? {
                 val tabPackages = packages.packagesByTab[selectedTabIndex]
-                // A default authored outside the tabs outranks a tab package that was never authored as
-                // one, so the tab's own default is consulted first and its first visible package last.
-                return tabPackages?.authoredDefaultIfVisible(mergedCustomVariables)?.uniqueId
-                    ?: initialSelectedPackageOutsideTabs
-                    ?: selectedPackageByTab[selectedTabIndex]
-                    ?: tabPackages?.firstVisible(mergedCustomVariables)?.uniqueId
+                    ?.filter { it.rendersWhenSelected(windowDpSize, screenCondition) }
+                val outside = packages.packagesOutsideTabs
+                    .filter { it.rendersWhenSelected(windowDpSize, screenCondition) }
+                return tabPackages?.authoredDefaultIfVisible(mergedCustomVariables, windowDpSize, screenCondition)
+                    ?.uniqueId
+                    ?: outside.authoredDefaultIfVisible(mergedCustomVariables, windowDpSize, screenCondition)?.uniqueId
+                    ?: uniqueIdIfVisibleAtBounds(selectedPackageByTab[selectedTabIndex], windowDpSize, screenCondition)
+                    ?: tabPackages?.firstVisible(mergedCustomVariables, windowDpSize, screenCondition)?.uniqueId
+                    ?: outside
+                        .takeIf { packages.packagesOutsideTabs.any { it.isSelectedByDefault } }
+                        ?.firstVisible(mergedCustomVariables, windowDpSize, screenCondition)
+                        ?.uniqueId
+            }
+
+            // A candidate must stay visible once selected, or a `selected` rule could hide it
+            // right after it's chosen.
+            private fun AvailablePackages.Info.rendersWhenSelected(
+                windowDpSize: DpSize?,
+                screenCondition: ScreenCondition,
+            ): Boolean = resolvesVisible(
+                customVariables = mergedCustomVariables,
+                windowDpSize = windowDpSize,
+                screenCondition = screenCondition,
+                selectedPackageId = pkg.identifier,
+                viewState = ComponentViewState.SELECTED,
+            )
+
+            fun resetToDefaultPackage() {
+                selectedPackageUniqueId = peekDefaultPackageUniqueIdAfterSheetDismiss()
+                reconcileSelectionForWindowSize(paywallBoundsDp)
+            }
+
+            /**
+             * The package the current tab should fall back to, which is also what a reset restores.
+             * Evaluates visibility at the measured bounds so callers (analytics, sheet dismiss)
+             * see the same package [resetToDefaultPackage] lands on.
+             */
+            fun peekDefaultPackageUniqueIdAfterSheetDismiss(windowDpSize: DpSize? = paywallBoundsDp): String? {
+                val screenCondition = windowScreenCondition
+                // If nothing renders, keep the current selection, matching reconcile's stay-put
+                // behavior. The init-time fallback remains the last resort when there is no
+                // current selection to keep.
+                return visibleDefaultUniqueId(windowDpSize, screenCondition)
+                    ?: selectedPackageUniqueId.takeIf {
+                        windowDpSize != null && !anyPackageRendersVisible(windowDpSize, screenCondition)
+                    }
                     ?: visibleFallbackForHiddenDefaultOutsideTabs
+            }
+
+            private fun anyPackageRendersVisible(
+                windowDpSize: DpSize,
+                screenCondition: ScreenCondition,
+            ): Boolean {
+                val selectedId = selectedPackageInfo?.rcPackage?.identifier
+                return (packages.packagesOutsideTabs + packages.packagesByTab[selectedTabIndex].orEmpty()).any { info ->
+                    info.resolvesVisible(
+                        customVariables = mergedCustomVariables,
+                        windowDpSize = windowDpSize,
+                        screenCondition = screenCondition,
+                        selectedPackageId = selectedId,
+                        viewState = if (info.uniqueId == selectedPackageUniqueId) {
+                            ComponentViewState.SELECTED
+                        } else {
+                            ComponentViewState.DEFAULT
+                        },
+                    )
+                }
+            }
+
+            /** [uniqueId] when any of its copies renders at the measured bounds; null when all are hidden. */
+            private fun uniqueIdIfVisibleAtBounds(
+                uniqueId: String?,
+                windowDpSize: DpSize?,
+                screenCondition: ScreenCondition,
+            ): String? = uniqueId?.takeIf { uid ->
+                val copies = (packages.packagesOutsideTabs + packages.packagesByTab[selectedTabIndex].orEmpty())
+                    .filter { it.uniqueId == uid }
+                copies.isEmpty() || copies.any {
+                    it.resolvesVisible(
+                        customVariables = mergedCustomVariables,
+                        windowDpSize = windowDpSize,
+                        screenCondition = screenCondition,
+                        selectedPackageId = it.pkg.identifier,
+                        viewState = ComponentViewState.SELECTED,
+                    )
+                }
             }
 
             fun peekSelectedPackageInfoAfterSheetDismiss(): SelectedPackageInfo? {
@@ -552,22 +693,34 @@ internal val PaywallState.Loaded.Legacy.isInFullScreenMode: Boolean
 /**
  * Whether this package renders, evaluating the same overrides the renderer does.
  *
- * Resolved as unselected with no selected package, because selection is what's being decided: pinning
- * those keeps resolution independent of its own result, so a paywall with `selected` or
- * `selected_package` visibility rules can't oscillate.
+ * By default resolved as unselected with no selected package, because selection is usually what's
+ * being decided: pinning those keeps resolution independent of its own result, so a paywall with
+ * `selected` or `selected_package` visibility rules can't oscillate. The reconcile keep-check passes
+ * the real [selectedPackageId] and [viewState] instead — evaluating an already-selected package as
+ * selected mirrors the renderer and is a stable fixpoint.
  *
  * Note this only covers the package component's own rules. A package hidden solely by an enclosing
- * stack's rule still resolves visible here. The screen condition is pinned to COMPACT and the window
- * size to unknown, so size-class and window-size visibility rules do not influence selection either.
+ * stack's rule still resolves visible here. The screen condition defaults to COMPACT for initial
+ * selection (which happens before any size is known); paths that know the measured bounds pass the
+ * [screenCondition] the renderer would use, plus the measured [windowDpSize].
  */
+@Suppress("LongParameterList")
 private fun PaywallState.Loaded.Components.AvailablePackages.Info.resolvesVisible(
     customVariables: Map<String, CustomVariableValue>,
+    windowDpSize: DpSize? = null,
+    screenCondition: ScreenCondition = ScreenCondition.COMPACT,
+    selectedPackageId: String? = null,
+    viewState: ComponentViewState = ComponentViewState.DEFAULT,
 ): Boolean =
     visibilityOverrides.buildPresentedPartial(
-        windowSize = ScreenCondition.COMPACT,
+        windowSize = screenCondition,
         offerEligibility = { offerEligibility ?: OfferEligibility.Ineligible },
-        state = { ComponentViewState.DEFAULT },
-        conditionContext = ConditionContext(selectedPackageId = { null }, customVariables = customVariables),
+        state = { viewState },
+        conditionContext = ConditionContext(
+            selectedPackageId = { selectedPackageId },
+            customVariables = customVariables,
+            windowDpSize = windowDpSize,
+        ),
     )?.partial?.visible ?: visible
 
 /**
@@ -576,16 +729,25 @@ private fun PaywallState.Loaded.Components.AvailablePackages.Info.resolvesVisibl
  */
 private fun List<PaywallState.Loaded.Components.AvailablePackages.Info>.defaultSelection(
     customVariables: Map<String, CustomVariableValue>,
+    windowDpSize: DpSize? = null,
+    screenCondition: ScreenCondition = ScreenCondition.COMPACT,
 ): PaywallState.Loaded.Components.AvailablePackages.Info? =
-    authoredDefaultIfVisible(customVariables) ?: firstVisible(customVariables)
+    authoredDefaultIfVisible(customVariables, windowDpSize, screenCondition)
+        ?: firstVisible(customVariables, windowDpSize, screenCondition)
 
 /** The package authored as the default, only when it renders. */
 private fun List<PaywallState.Loaded.Components.AvailablePackages.Info>.authoredDefaultIfVisible(
     customVariables: Map<String, CustomVariableValue>,
+    windowDpSize: DpSize? = null,
+    screenCondition: ScreenCondition = ScreenCondition.COMPACT,
 ): PaywallState.Loaded.Components.AvailablePackages.Info? =
-    firstOrNull { it.isSelectedByDefault && it.resolvesVisible(customVariables) }
+    firstOrNull {
+        it.isSelectedByDefault && it.resolvesVisible(customVariables, windowDpSize, screenCondition)
+    }
 
 private fun List<PaywallState.Loaded.Components.AvailablePackages.Info>.firstVisible(
     customVariables: Map<String, CustomVariableValue>,
+    windowDpSize: DpSize? = null,
+    screenCondition: ScreenCondition = ScreenCondition.COMPACT,
 ): PaywallState.Loaded.Components.AvailablePackages.Info? =
-    firstOrNull { it.resolvesVisible(customVariables) }
+    firstOrNull { it.resolvesVisible(customVariables, windowDpSize, screenCondition) }
