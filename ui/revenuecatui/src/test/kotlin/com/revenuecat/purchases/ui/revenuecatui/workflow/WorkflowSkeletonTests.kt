@@ -290,6 +290,40 @@ class WorkflowSkeletonTests {
     }
 
     @Test
+    fun `the wrapper follows the size its stack takes by condition`() {
+        val button = ButtonComponent(
+            stack = StackComponent(
+                components = emptyList(),
+                overrides = listOf(
+                    ComponentOverride(
+                        conditions = listOf(ComponentOverride.Condition.Compact),
+                        properties = PartialStackComponent(
+                            size = Size(SizeConstraint.Fixed(42u), SizeConstraint.Fixed(42u)),
+                        ),
+                    ),
+                ),
+            ),
+            action = ButtonComponent.Action.NavigateBack,
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Medium),
+                    properties = PartialButtonComponent(visible = false),
+                ),
+            ),
+        )
+
+        val card = transformedChildren(button).first() as StackComponent
+
+        // The wrapper has to resize with its stack, or it would hold the base size around it.
+        val sized = card.overrides.single { it.conditions == listOf(ComponentOverride.Condition.Compact) }
+        assertThat(sized.properties.size?.width).isEqualTo(SizeConstraint.Fixed(42u))
+        // visible defaults to true, so a size-only partial must say null or it overrides the rule.
+        assertThat(sized.properties.visible).isNull()
+        val hidden = card.overrides.single { it.conditions == listOf(ComponentOverride.Condition.Medium) }
+        assertThat(hidden.properties.visible).isFalse
+    }
+
+    @Test
     fun `keeps a tabs block's own size override`() {
         val tabs = TabsComponent(
             control = TabsComponent.TabControl.Buttons(stack = StackComponent(components = emptyList())),
