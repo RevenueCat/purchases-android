@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">OK</string>
+    <string name="loading">Загрузка</string>
     <string name="all_plans">Все подписки</string>
     <string name="privacy">Конфиденциальность</string>
     <string name="privacy_policy">Политика конфиденциальности</string>
@@ -22,4 +23,5 @@
     <string name="cannot_open_link">Неверная ссылка. Не удалось открыть.</string>
     <string name="revenuecatui_purchase">Купить</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">Не удалось загрузить рабочий процесс предварительного просмотра. Повторите попытку.</string>
 </resources>

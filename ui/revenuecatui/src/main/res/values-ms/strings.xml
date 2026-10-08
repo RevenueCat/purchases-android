@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">okey</string>
+    <string name="loading">Memuatkan</string>
     <string name="all_plans">Semua langganan</string>
     <string name="privacy">Privasi</string>
     <string name="privacy_policy">Dasar privasi</string>
@@ -22,4 +23,5 @@
     <string name="cannot_open_link">Pautan tidak sah. Tidak dapat dibuka.</string>
     <string name="revenuecatui_purchase">Beli</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">Aliran kerja pratonton tidak dapat dimuatkan. Sila cuba lagi.</string>
 </resources>

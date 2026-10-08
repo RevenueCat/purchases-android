@@ -66,12 +66,19 @@ import com.revenuecat.purchases.common.sdksettings.SdkSettingsConfigProvider
 import com.revenuecat.purchases.common.sdksettings.SdkSettingsListener
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
+import com.revenuecat.purchases.common.subscriberdimensions.SubscriberDimensionsConfigProvider
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.warnLog
+import com.revenuecat.purchases.common.workflows.BranchResolver
+import com.revenuecat.purchases.common.workflows.BranchResolverImpl
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
+import com.revenuecat.purchases.common.workflows.WorkflowActionID
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.common.workflows.WorkflowResolution
+import com.revenuecat.purchases.common.workflows.WorkflowStep
+import com.revenuecat.purchases.common.workflows.WorkflowStepID
+import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.common.workflows.WorkflowsConfigProvider
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.WebPurchaseRedemptionHelper
@@ -192,6 +199,8 @@ internal class PurchasesOrchestrator(
     @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal val sdkSettingsConfigProvider: SdkSettingsConfigProvider,
     @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal val subscriberDimensionsConfigProvider: SubscriberDimensionsConfigProvider,
+    @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal val tokenManager: TokenManager,
     val adTracker: AdTracker = AdTracker(adEventsManager),
     private val currentActivityTracker: CurrentActivityTracker = CurrentActivityTracker(),
@@ -207,6 +216,13 @@ internal class PurchasesOrchestrator(
         audiencesConfigProvider = audiencesConfigProvider,
         localRulesEvaluator = localRulesEvaluator,
         getOfferings = { Purchases.sharedInstance.awaitOfferings() },
+    ),
+    @OptIn(InternalRevenueCatAPI::class)
+    // With remote config off there is no audiences topic to read, so every branch takes its
+    // fallback through the provider. No separate resolver is needed for that.
+    private val branchResolver: BranchResolver = BranchResolverImpl(
+        audiencesConfigProvider = audiencesConfigProvider,
+        localRulesEvaluator = localRulesEvaluator,
     ),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler, SdkSettingsListener {
 
@@ -715,6 +731,18 @@ internal class PurchasesOrchestrator(
     suspend fun resolveWorkflow(offeringId: String): WorkflowResolution =
         workflowManager.resolveWorkflow(offeringId)
 
+    @OptIn(InternalRevenueCatAPI::class)
+    suspend fun resolveBranches(
+        step: WorkflowStep,
+        customVariables: Map<String, RulesDimensionValue>,
+    ): Map<WorkflowActionID, WorkflowStepID> = branchResolver.resolveBranches(step, customVariables)
+
+    @OptIn(InternalRevenueCatAPI::class)
+    suspend fun resolveBranch(
+        branch: WorkflowTriggerAction.Branch,
+        customVariables: Map<String, RulesDimensionValue>,
+    ): WorkflowStepID = branchResolver.resolve(branch, customVariables)
+
     suspend fun workflowBlobRef(workflowId: String): String? =
         workflowManager.workflowBlobRef(workflowId)
 
@@ -982,6 +1010,7 @@ internal class PurchasesOrchestrator(
         this.checkpointsConfigProvider.close()
         this.audiencesConfigProvider.close()
         this.sdkSettingsConfigProvider.close()
+        this.subscriberDimensionsConfigProvider.close()
         this.tokenManager.close()
 
         billing.close()

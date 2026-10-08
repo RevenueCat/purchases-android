@@ -20,6 +20,7 @@ import com.revenuecat.purchases.common.caching.WorkflowMetadata
 import com.revenuecat.purchases.common.networking.PostReceiptProductInfo
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
+import com.revenuecat.purchases.common.subscriberdimensions.SubscriberDimensionsReceiptStore
 import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.StoreReplacementMode
@@ -132,6 +133,7 @@ class PostReceiptHelperTest {
     private lateinit var offlineEntitlementsManager: OfflineEntitlementsManager
     private lateinit var paywallPresentedCache: PaywallPresentedCache
     private lateinit var localTransactionMetadataStore: LocalTransactionMetadataStore
+    private lateinit var subscriberDimensionsReceiptStore: SubscriberDimensionsReceiptStore
 
     private lateinit var postReceiptHelper: PostReceiptHelper
 
@@ -146,6 +148,7 @@ class PostReceiptHelperTest {
         offlineEntitlementsManager = mockk()
         paywallPresentedCache = PaywallPresentedCache()
         localTransactionMetadataStore = mockk()
+        subscriberDimensionsReceiptStore = mockk()
 
         postedReceiptInfoSlot = slot()
 
@@ -159,6 +162,7 @@ class PostReceiptHelperTest {
             offlineEntitlementsManager = offlineEntitlementsManager,
             paywallPresentedCache = paywallPresentedCache,
             localTransactionMetadataStore = localTransactionMetadataStore,
+            subscriberDimensionsReceiptStore = subscriberDimensionsReceiptStore,
         )
 
         mockUnsyncedSubscriberAttributes()
@@ -166,6 +170,7 @@ class PostReceiptHelperTest {
         every { localTransactionMetadataStore.getLocalTransactionMetadata(any()) } returns null
         every { localTransactionMetadataStore.cacheLocalTransactionMetadata(any(), any()) } just Runs
         every { localTransactionMetadataStore.clearLocalTransactionMetadata(any()) } just Runs
+        every { subscriberDimensionsReceiptStore.store(any(), any()) } just Runs
 
         every { appConfig.finishTransactions } returns defaultFinishTransactions
         every { appConfig.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.REVENUECAT
@@ -282,6 +287,43 @@ class PostReceiptHelperTest {
                 attributeErrors = emptyList()
             )
         }
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded stores the response's subscriber dimensions for the posting user`() {
+        val body = JSONObject(Responses.validFullPurchaserResponse)
+        mockPostReceiptSuccess(jsonBody = body)
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+
+        verify(exactly = 1) { subscriberDimensionsReceiptStore.store(appUserID, body) }
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded does not store subscriber dimensions on error`() {
+        mockPostReceiptError(errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_BE_MARKED_SYNCED)
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> fail("Expected error") },
+            onError = { _, _ -> }
+        )
+
+        verify(exactly = 0) { subscriberDimensionsReceiptStore.store(any(), any()) }
     }
 
     @Test

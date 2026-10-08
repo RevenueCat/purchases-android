@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">OK</string>
+    <string name="loading">Ładowanie</string>
     <string name="all_plans">Wszystkie subskrypcje</string>
     <string name="privacy">Prywatność</string>
     <string name="privacy_policy">Polityka prywatności</string>
@@ -22,4 +23,5 @@
     <string name="cannot_open_link">Link jest nieprawidłowy. Nie można go otworzyć.</string>
     <string name="revenuecatui_purchase">Kup</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">Nie udało się wczytać przepływu pracy podglądu. Spróbuj ponownie.</string>
 </resources>

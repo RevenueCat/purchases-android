@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">OK</string>
+    <string name="loading">Wird geladen</string>
     <string name="all_plans">Alle Abonnements</string>
     <string name="privacy">Privatsphäre</string>
     <string name="privacy_policy">Datenschutzrichtlinie</string>
@@ -22,4 +23,5 @@
     <string name="cannot_open_link">Ungültiger Link. Konnte nicht geöffnet werden.</string>
     <string name="revenuecatui_purchase">Kaufen</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">Der Vorschau-Workflow konnte nicht geladen werden. Bitte versuche es erneut.</string>
 </resources>

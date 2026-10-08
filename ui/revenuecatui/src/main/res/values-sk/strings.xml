@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">OK</string>
+    <string name="loading">Načítava sa</string>
     <string name="all_plans">Všetky odbery</string>
     <string name="privacy">Ochrana osobných údajov</string>
     <string name="privacy_policy">Zásady ochrany osobných údajov</string>
@@ -22,4 +23,5 @@
     <string name="cannot_open_link">Neplatný odkaz. Nedalo sa otvoriť.</string>
     <string name="revenuecatui_purchase">Kúpiť</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">Pracovný postup ukážky sa nepodarilo načítať. Skúste to znova.</string>
 </resources>

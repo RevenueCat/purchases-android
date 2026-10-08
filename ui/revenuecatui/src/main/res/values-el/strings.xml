@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">Εντάξει</string>
+    <string name="loading">Φόρτωση</string>
     <string name="all_plans">Όλες οι συνδρομές</string>
     <string name="privacy">Μυστικότητα</string>
     <string name="privacy_policy">Πολιτική απορρήτου</string>
@@ -22,4 +23,5 @@
     <string name="cannot_open_link">Μη έγκυρος σύνδεσμος. Δεν μπόρεσε να ανοιχτεί.</string>
     <string name="revenuecatui_purchase">Αγορά</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">Δεν ήταν δυνατή η φόρτωση της ροής εργασίας προεπισκόπησης. Δοκιμάστε ξανά.</string>
 </resources>

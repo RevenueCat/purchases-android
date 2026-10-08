@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">わかりました</string>
+    <string name="loading">読み込み中</string>
     <string name="all_plans">すべてのサブスクリプション</string>
     <string name="privacy">プライバシー</string>
     <string name="privacy_policy">プライバシーポリシー</string>
@@ -22,4 +23,5 @@
     <string name="cannot_open_link">リンクが無効です。開くことができませんでした。</string>
     <string name="revenuecatui_purchase">購入</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">プレビューのワークフローを読み込めませんでした。もう一度お試しください。</string>
 </resources>

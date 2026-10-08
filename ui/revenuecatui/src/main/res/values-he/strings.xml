@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">בסדר</string>
+    <string name="loading">טוען</string>
     <string name="all_plans">כל המנויים</string>
     <string name="privacy">פְּרָטִיוּת</string>
     <string name="privacy_policy">מדיניות הפרטיות</string>
@@ -22,4 +23,5 @@
     <string name="cannot_open_link">הקישור אינו חוקי. לא ניתן לפתוח.</string>
     <string name="revenuecatui_purchase">לרכוש</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">לא ניתן היה לטעון את תהליך העבודה של התצוגה המקדימה. יש לנסות שוב.</string>
 </resources>

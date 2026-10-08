@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">OK</string>
+    <string name="loading">Carregando</string>
     <string name="privacy">Privacidade</string>
     <string name="privacy_policy">Política de Privacidade</string>
     <string name="restore">Restaurar</string>
@@ -22,4 +23,5 @@
     <string name="cannot_open_link">Link inválido. Não foi possível abrir.</string>
     <string name="revenuecatui_purchase">Comprar</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">Não foi possível carregar o fluxo de trabalho da prévia. Tente novamente.</string>
 </resources>

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">OK</string>
+    <string name="loading">Laden</string>
     <string name="all_plans">Alle abonnementen</string>
     <string name="privacy">Privacy</string>
     <string name="privacy_policy">Privacybeleid</string>
@@ -22,4 +23,5 @@
     <string name="cannot_open_link">Ongeldige link. Kon niet worden geopend.</string>
     <string name="revenuecatui_purchase">Kopen</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">De previewworkflow kon niet worden geladen. Probeer het opnieuw.</string>
 </resources>

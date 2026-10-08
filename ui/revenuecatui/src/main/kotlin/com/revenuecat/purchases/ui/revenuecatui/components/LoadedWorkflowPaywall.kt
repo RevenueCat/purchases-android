@@ -12,10 +12,18 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -75,6 +83,7 @@ internal fun LoadedWorkflowPaywall(
 ) {
     val currentStepId = workflowState.currentStepId
     val stepStates = workflowState.stepStates
+    val isSkeleton = workflowState.isSkeleton
     val currentState = stepStates[currentStepId] ?: run {
         Logger.e("Workflow step '$currentStepId' not found in stepStates — rendering nothing")
         return
@@ -116,7 +125,10 @@ internal fun LoadedWorkflowPaywall(
                 onClick = headerOnClick,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .workflowHeaderFade(headerPresentation.role, transitionState),
+                    .workflowHeaderFade(headerPresentation.role, transitionState)
+                    // The scaffold composes the header outside the body's guard, so it needs its own.
+                    // It stays silent: the body already announces the screen as loading.
+                    .conditional(isSkeleton) { blockInput().clearAndSetSemantics {} },
             )
         }
     }
@@ -136,6 +148,7 @@ internal fun LoadedWorkflowPaywall(
                     WorkflowStepsContent(
                         currentStepId = currentStepId,
                         stepStates = stepStates,
+                        isSkeleton = isSkeleton,
                         transitionState = transitionState,
                         clickHandler = clickHandler,
                         componentInteractionTracker = componentInteractionTracker,
@@ -146,6 +159,7 @@ internal fun LoadedWorkflowPaywall(
                 WorkflowStepsContent(
                     currentStepId = currentStepId,
                     stepStates = stepStates,
+                    isSkeleton = isSkeleton,
                     transitionState = transitionState,
                     clickHandler = clickHandler,
                     componentInteractionTracker = componentInteractionTracker,
@@ -184,20 +198,43 @@ private fun workflowHeaderState(
     )
 }
 
+/**
+ * Consumes every pointer change on the Initial pass, which runs before descendants see it.
+ */
+internal fun Modifier.blockInput(): Modifier = pointerInput(Unit) {
+    awaitPointerEventScope {
+        while (true) {
+            awaitPointerEvent(PointerEventPass.Initial).changes.forEach { it.consume() }
+        }
+    }
+}
+
 @Suppress("LongParameterList")
 @Composable
 private fun WorkflowStepsContent(
     currentStepId: String,
     stepStates: Map<String, PaywallState.Loaded.Components>,
+    isSkeleton: Boolean,
     transitionState: WorkflowTransitionState,
     clickHandler: suspend (PaywallAction.External) -> Unit,
     componentInteractionTracker: PaywallComponentInteractionTracker,
 ) {
+    val loadingDescription = stringResource(R.string.loading)
     // Multi-step container: the current and outgoing steps are stacked and translated by workflowTransition.
     // No clipToBounds here — horizontal overflow is bounded by the window/dialog, and adding
     // a top clip causes the hero image (which renders behind the status bar) to get cropped
     // during the slide transition.
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            // The skeleton takes no touches, and it announces itself instead of the labels below it.
+            .conditional(isSkeleton) {
+                blockInput().clearAndSetSemantics {
+                    contentDescription = loadingDescription
+                    liveRegion = LiveRegionMode.Polite
+                }
+            },
+    ) {
         listOfNotNull(transitionState.animatingFromStepId, transitionState.animatingToStepId)
             .forEach { stepId ->
                 val stepState = stepStates[stepId] ?: return@forEach

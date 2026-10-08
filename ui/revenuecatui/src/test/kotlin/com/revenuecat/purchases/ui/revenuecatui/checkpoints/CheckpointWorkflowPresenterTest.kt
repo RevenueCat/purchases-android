@@ -20,6 +20,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
+import com.revenuecat.purchases.ui.revenuecatui.composables.ModalSheetState
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -52,6 +53,7 @@ class CheckpointWorkflowPresenterTest {
 
     private val presentedCallIds = mutableListOf<String>()
     private var lastOptions: PaywallOptions? = null
+    private var lastSheet: ModalSheetState? = null
     private var result: CheckpointRun? = null
     private var contentFactory: (Activity) -> View = { activity -> View(activity) }
     private val contentViews = mutableListOf<View>()
@@ -69,6 +71,7 @@ class CheckpointWorkflowPresenterTest {
                     mockk(),
                     checkpointRuleId = null,
                     traceId = "trace-id",
+                    workflowBlobRef = null,
                 )
             every { getCustomerInfo(CacheFetchPolicy.CACHE_ONLY, any()) } answers {
                 secondArg<ReceiveCustomerInfoCallback>()
@@ -76,10 +79,11 @@ class CheckpointWorkflowPresenterTest {
             }
         }
         manager = CheckpointsManager(
-            presenterFactory = { callId, manager ->
+            presenterFactory = { callId, manager, mode ->
                 presentedCallIds += callId
-                CheckpointWorkflowPresenter(callId, manager) { activity, options ->
+                CheckpointWorkflowPresenter(callId, manager, mode) { activity, options, sheet ->
                     lastOptions = options
+                    lastSheet = sheet
                     contentFactory(activity).also { contentViews += it }
                 }
             },
@@ -88,6 +92,11 @@ class CheckpointWorkflowPresenterTest {
 
     @After
     fun tearDown() {
+        // A sheet dismissal writes snapshot state outside any composition. Compose's global snapshot manager
+        // reacts by posting to the main looper through AndroidUiDispatcher; if the test ends with that message
+        // still queued, Robolectric drops it and the dispatcher stays marked as scheduled, wedging every Compose
+        // test that runs afterwards in this JVM.
+        shadowOf(Looper.getMainLooper()).idle()
         Dispatchers.resetMain()
     }
 
@@ -109,6 +118,7 @@ class CheckpointWorkflowPresenterTest {
             mockk(),
             checkpointRuleId = null,
             traceId = "trace-id",
+            workflowBlobRef = null,
         )
         coEvery { mockPurchases.internalResolveCp(any(), any()) } returns resolution
 
@@ -124,7 +134,7 @@ class CheckpointWorkflowPresenterTest {
         launchCheckpoint()
         val liveDialog = ShadowDialog.getLatestDialog()
 
-        CheckpointWorkflowPresenter("call-id-from-a-previous-presentation", manager) { activity, _ ->
+        CheckpointWorkflowPresenter("call-id-from-a-previous-presentation", manager) { activity, _, _ ->
             View(activity)
         }.show(controller.get())
 
@@ -360,15 +370,73 @@ class CheckpointWorkflowPresenterTest {
 
     @Test
     fun `a first present fades the workflow window in and out`() {
-        launchCheckpoint()
+        launchFullScreenCheckpoint()
 
         val window = ShadowDialog.getLatestDialog().window!!
         assertThat(window.attributes.windowAnimations).isEqualTo(R.style.RcCheckpointWindowAnimation)
     }
 
     @Test
+    fun `a full-screen presentation renders the paywall without a sheet`() {
+        launchFullScreenCheckpoint()
+
+        assertThat(lastSheet).isNull()
+    }
+
+    @Test
+    fun `a sheet presentation renders the paywall in a sheet and leaves the window animations to it`() {
+        launchSheetCheckpoint()
+
+        assertThat(lastSheet).isNotNull
+        val window = ShadowDialog.getLatestDialog().window!!
+        assertThat(window.attributes.windowAnimations).isEqualTo(R.style.RcCheckpointWindowAnimation_Sheet)
+    }
+
+    @Test
+    fun `a sheet dismissal completes the call only once the sheet is off screen`() {
+        launchSheetCheckpoint()
+        // Stands in for the composition, which is what animates the sheet away.
+        lastSheet!!.attach()
+
+        lastOptions!!.dismissRequestWithExitOffering!!(null, null, PaywallDismissReason.CLOSE)
+
+        assertThat(result).isNull()
+        assertThat(lastSheet!!.visible).isFalse
+        assertThat(ShadowDialog.getLatestDialog().isShowing).isTrue
+
+        lastSheet!!.notifyHidden()
+
+        assertThat(paywallOutcome()).isEqualTo(CheckpointFlowOutcome.Dismissed)
+        assertThat(backedOut()).isFalse
+        assertThat(ShadowDialog.getLatestDialog().isShowing).isTrue
+        finishPresentation()
+        assertThat(ShadowDialog.getLatestDialog().isShowing).isFalse
+    }
+
+    @Test
+    fun `a sheet dismissal with nothing composed completes the call right away`() {
+        launchSheetCheckpoint()
+
+        lastOptions!!.dismissRequest()
+
+        assertThat(paywallOutcome()).isEqualTo(CheckpointFlowOutcome.Dismissed)
+    }
+
+    @Test
+    fun `a configuration change re-presents the same sheet`() {
+        launchSheetCheckpoint()
+        val sheet = lastSheet
+
+        controller.recreate()
+
+        assertThat(lastSheet).isSameAs(sheet)
+        assertThat(ShadowDialog.getLatestDialog().window!!.attributes.windowAnimations)
+            .isEqualTo(R.style.RcCheckpointWindowAnimation_Sheet)
+    }
+
+    @Test
     fun `a re-present after a configuration change only fades out`() {
-        launchCheckpoint()
+        launchFullScreenCheckpoint()
 
         controller.recreate()
 
@@ -376,9 +444,15 @@ class CheckpointWorkflowPresenterTest {
         assertThat(window.attributes.windowAnimations).isEqualTo(R.style.RcCheckpointWindowAnimation_Represent)
     }
 
-    private fun launchCheckpoint(): Job = CoroutineScope(dispatcher).launch {
-        result = manager.runCheckpoint(mockPurchases, "test_checkpoint", null)
+    private fun launchCheckpoint(params: CheckpointParams? = null): Job = CoroutineScope(dispatcher).launch {
+        result = manager.runCheckpoint(mockPurchases, "test_checkpoint", params)
     }
+
+    private fun launchSheetCheckpoint(): Job =
+        launchCheckpoint(CheckpointParams { presentationMode(FlowPresentationMode.MODAL_SHEET) })
+
+    private fun launchFullScreenCheckpoint(): Job =
+        launchCheckpoint(CheckpointParams { presentationMode(FlowPresentationMode.MODAL_FULL_SCREEN) })
 
     private fun currentCallId(): String = presentedCallIds.last()
 

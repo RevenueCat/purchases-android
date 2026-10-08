@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">ตกลง</string>
+    <string name="loading">กำลังโหลด</string>
     <string name="all_plans">การสมัครทั้งหมด</string>
     <string name="privacy">ความเป็นส่วนตัว</string>
     <string name="privacy_policy">นโยบายความเป็นส่วนตัว</string>
@@ -22,4 +23,5 @@
     <string name="cannot_open_link">ลิงก์ไม่ถูกต้อง ไม่สามารถเปิดได้</string>
     <string name="revenuecatui_purchase">ซื้อ</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">ไม่สามารถโหลดเวิร์กโฟลว์ตัวอย่างได้ โปรดลองอีกครั้ง</string>
 </resources>

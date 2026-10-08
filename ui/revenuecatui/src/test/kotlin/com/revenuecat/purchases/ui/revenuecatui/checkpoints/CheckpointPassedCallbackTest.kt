@@ -66,12 +66,12 @@ class CheckpointPassedCallbackTest {
         }
         cachedCustomerInfoHasActive()
         manager = CheckpointsManager(
-            presenterFactory = { callId, _ ->
+            presenterFactory = { callId, _, _ ->
                 presentedCallIds += callId
                 mockPresenter
             },
             defaultPresenterFactory = { purchases, errorPresenter ->
-                DefaultPaywallPresenter(purchases, errorPresenter) { _, _ -> mockPresenter }
+                DefaultPaywallPresenter(purchases, errorPresenter) { _, _, _ -> mockPresenter }
                     .also { defaultPresenter = it }
             },
         )
@@ -276,6 +276,7 @@ class CheckpointPassedCallbackTest {
             mockk(),
             checkpointRuleId = null,
             traceId = "trace-id",
+            workflowBlobRef = null,
         ))
     }
 

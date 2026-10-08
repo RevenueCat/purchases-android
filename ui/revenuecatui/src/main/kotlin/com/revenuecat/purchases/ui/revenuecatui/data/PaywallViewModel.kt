@@ -33,6 +33,7 @@ import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.common.workflows.events.WorkflowEvent
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
+import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
 import com.revenuecat.purchases.paywalls.events.ExitOfferType
 import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
 import com.revenuecat.purchases.paywalls.events.PaywallComponentType
@@ -49,6 +50,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams
 import com.revenuecat.purchases.ui.revenuecatui.ProductChange
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.asRulesDimensionValue
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
@@ -78,6 +80,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -211,10 +214,13 @@ internal class PaywallViewModelImpl(
     private var paywallPresentationData: PaywallEvent.Data? = null
 
     private var workflowNavigator: WorkflowNavigator? = null
+    private var branchResolveJob: Job? = null
+    private var initialStepJob: Job? = null
+    private var resolvedInitialStepId: String? = null
     private var currentWorkflow: PublishedWorkflow? = null
     private var currentWorkflowBlobRef: String? = null
     private var currentWorkflowUiConfig: UiConfig = emptyUiConfig()
-    private var currentWorkflowOfferings: Offerings? = null
+    private var currentWorkflowOfferings: WorkflowOfferings? = null
     private var currentWorkflowPresentedOfferingContext: PresentedOfferingContext? = null
     private var currentWorkflowStepTracksPaywallEvents = true
     private val workflowStepStateCache = mutableMapOf<String, PaywallState.Loaded.Components>()
@@ -257,7 +263,7 @@ internal class PaywallViewModelImpl(
 
         data class Configured(
             val offeringId: String,
-            val offerings: Offerings,
+            val offerings: WorkflowOfferings,
             val triggeringWorkflowStepId: String? = null,
             override val preloadRequested: Boolean = false,
             val preloadedOffering: Offering? = null,
@@ -420,6 +426,11 @@ internal class PaywallViewModelImpl(
     private fun clearWorkflowState() {
         preWarmJob?.cancel()
         preWarmJob = null
+        branchResolveJob?.cancel()
+        branchResolveJob = null
+        initialStepJob?.cancel()
+        initialStepJob = null
+        resolvedInitialStepId = null
         workflowNavigator = null
         currentWorkflow = null
         currentWorkflowBlobRef = null
@@ -467,7 +478,9 @@ internal class PaywallViewModelImpl(
         get() = when (val loadedExitOfferData = exitOfferData) {
             is ExitOfferData.Configured -> {
                 val triggeringWorkflowStepId = loadedExitOfferData.triggeringWorkflowStepId
-                triggeringWorkflowStepId == null || _workflowState.value?.currentStepId == triggeringWorkflowStepId
+                // The skeleton is not a visit, so its step triggers no exit offer.
+                val state = _workflowState.value?.takeUnless { it.isSkeleton }
+                triggeringWorkflowStepId == null || state?.currentStepId == triggeringWorkflowStepId
             }
             is ExitOfferData.Loading,
             is ExitOfferData.Unavailable,
@@ -888,7 +901,13 @@ internal class PaywallViewModelImpl(
         // paywalls move to workflows. We deliberately do NOT gate on `paywallComponents`, which is going away.
         val workflowOffering = selectedOffering
         if (workflowOffering != null && workflowOffering.paywall == null) {
-            when (val outcome = presentWorkflowOrResolveFallback(workflowOffering, offeringsForExitOfferLookup)) {
+            val developerProvidedOffering = (offeringSelection as? OfferingSelection.OfferingType)?.offeringType
+            val outcome = presentWorkflowOrResolveFallback(
+                workflowOffering,
+                offeringsForExitOfferLookup,
+                developerProvidedOffering,
+            )
+            when (outcome) {
                 WorkflowOutcome.Presented -> return
                 is WorkflowOutcome.Fallback -> {
                     selectedOffering = outcome.offering
@@ -904,7 +923,7 @@ internal class PaywallViewModelImpl(
             if (exitOfferingId != null && offerings != null) {
                 ExitOfferData.Configured(
                     offeringId = exitOfferingId,
-                    offerings = offerings,
+                    offerings = WorkflowOfferings(offerings, developerProvidedOffering = null),
                 )
             } else {
                 ExitOfferData.Unavailable()
@@ -921,6 +940,7 @@ internal class PaywallViewModelImpl(
             options.injectedWorkflowUiConfig,
             offerings,
             offeringSelection.offering?.presentedOfferingContext,
+            options.injectedWorkflowBlobRef,
         )
         return true
     }
@@ -943,11 +963,17 @@ internal class PaywallViewModelImpl(
     private suspend fun presentWorkflowOrResolveFallback(
         workflowOffering: Offering,
         preloadedOfferings: Offerings?,
+        developerProvidedOffering: Offering?,
     ): WorkflowOutcome {
         when (val resolution = purchases.resolveWorkflow(workflowOffering.identifier)) {
             is WorkflowResolution.Found -> {
                 try {
-                    return presentWorkflow(resolution.workflowId, workflowOffering, preloadedOfferings)
+                    return presentWorkflow(
+                        resolution.workflowId,
+                        workflowOffering,
+                        preloadedOfferings,
+                        developerProvidedOffering,
+                    )
                 } catch (e: PurchasesException) {
                     // The workflow id resolved but its body or ui config could not be served. Reloading offerings
                     // would only yield the offering's skipped-away components, so surface the error instead of
@@ -984,6 +1010,7 @@ internal class PaywallViewModelImpl(
         workflowId: String,
         offering: Offering,
         preloadedOfferings: Offerings?,
+        developerProvidedOffering: Offering?,
     ): WorkflowOutcome = coroutineScope {
         val workflowDeferred = async { purchases.awaitGetWorkflow(workflowId) }
         val uiConfigDeferred = async { purchases.awaitGetUiConfig() }
@@ -1007,6 +1034,7 @@ internal class PaywallViewModelImpl(
             offeringsDeferred.await(),
             offering.presentedOfferingContext,
             workflowBlobRefDeferred.await(),
+            developerProvidedOffering,
         )
         WorkflowOutcome.Presented
     }
@@ -1082,13 +1110,14 @@ internal class PaywallViewModelImpl(
         startWorkflowPresentation(workflow, uiConfig, offerings, presentedOfferingContext, workflowBlobRef)
     }
 
-    @Suppress("ReturnCount")
+    @Suppress("ReturnCount", "LongParameterList")
     private fun startWorkflowPresentation(
         workflow: PublishedWorkflow,
         uiConfig: UiConfig,
         offerings: Offerings,
         presentedOfferingContext: PresentedOfferingContext?,
-        workflowBlobRef: String? = null,
+        workflowBlobRef: String?,
+        developerProvidedOffering: Offering? = null,
     ) {
         val initialStep = workflow.steps[workflow.initialStepId]
         if (initialStep == null) {
@@ -1103,18 +1132,21 @@ internal class PaywallViewModelImpl(
         // Uses the old currentWorkflow and _workflowState before either is mutated below.
         trackCurrentWorkflowStepCompleted()
 
+        // Built fresh per presentation so a developer instance from a previous one never leaks into a new one.
+        val workflowOfferings = WorkflowOfferings(offerings, developerProvidedOffering)
         currentWorkflow = workflow
         currentWorkflowBlobRef = workflowBlobRef
         currentWorkflowUiConfig = uiConfig
-        currentWorkflowOfferings = offerings
+        currentWorkflowOfferings = workflowOfferings
         currentWorkflowPresentedOfferingContext = presentedOfferingContext
         workflowNavigator = WorkflowNavigator(workflow)
+        resolvedInitialStepId = null
         val dismissExitOffer = workflow.dismissExitOffer
         updateExitOfferData(
             dismissExitOffer?.let {
                 ExitOfferData.Configured(
                     offeringId = it.offeringId,
-                    offerings = offerings,
+                    offerings = workflowOfferings,
                     triggeringWorkflowStepId = it.stepId,
                 )
             } ?: ExitOfferData.Unavailable(),
@@ -1127,7 +1159,7 @@ internal class PaywallViewModelImpl(
         buildWorkflowStates(
             workflow = workflow,
             uiConfig = uiConfig,
-            offerings = offerings,
+            offerings = workflowOfferings,
             presentedOfferingContext = presentedOfferingContext,
             currentStep = initialStep,
             isNewWorkflowImpression = true,
@@ -1162,7 +1194,7 @@ internal class PaywallViewModelImpl(
     private fun buildWorkflowStates(
         workflow: PublishedWorkflow,
         uiConfig: UiConfig,
-        offerings: Offerings,
+        offerings: WorkflowOfferings,
         presentedOfferingContext: PresentedOfferingContext?,
         currentStep: WorkflowStep,
         isNewWorkflowImpression: Boolean,
@@ -1173,15 +1205,21 @@ internal class PaywallViewModelImpl(
         if (isNewWorkflowImpression) {
             workflowTraceId = options.injectedWorkflowTraceId.takeIf { workflow == options.injectedWorkflow }
                 ?: UUID.randomUUID().toString()
-            // Fresh presentation: start the shared store empty; each step registers its declarations as it builds.
+            // Fresh presentation: seed the shared store from every screen, sorted by id, so the build order
+            // never decides which declaration of a key wins.
             // Rebuilds (navigation, color change) reuse the existing store so values persist across screens.
-            currentWorkflowStateStore = PaywallStateStore(emptyMap())
+            currentWorkflowStateStore = PaywallStateStore(workflow.mergedStateDeclarations())
         }
 
+        // A rebuild during the wait is still the wait: keep the skeleton, but do not resolve again.
+        val awaitingInitialStep = isNewWorkflowImpression || initialStepJob?.isActive == true
+        val unresolvedInitialBranch = workflow.initialBranch?.takeIf { awaitingInitialStep }
+
         // Pre-compute the package step so its default package is available in cache
-        // for early packageless steps to use as context.
+        // for early packageless steps to use as context. The skeleton caches nothing, so the step it
+        // replaces still needs this even when it is the current step.
         val stepWithPackages = workflow.singleStepFallbackId?.let { workflow.steps[it] }
-        if (stepWithPackages != null && stepWithPackages.id != currentStep.id) {
+        if (stepWithPackages != null && (unresolvedInitialBranch != null || stepWithPackages.id != currentStep.id)) {
             buildStateFromStep(
                 stepWithPackages,
                 workflow,
@@ -1191,7 +1229,24 @@ internal class PaywallViewModelImpl(
                 shouldApplyState = false,
             )
         }
-
+        // A rebuild is the same visit, so re-resolving there could route the step somewhere else. The
+        // skeleton resolves nothing: its answers belong to a step the branch may route away from.
+        if (isNewWorkflowImpression && unresolvedInitialBranch == null) resolveBranchesFor(currentStep)
+        if (unresolvedInitialBranch != null) {
+            // The step to show is not known yet, so the fallback renders as a skeleton.
+            buildStateFromStep(
+                currentStep,
+                workflow,
+                uiConfig,
+                offerings,
+                presentedOfferingContext,
+                skeleton = true,
+            )
+            if (isNewWorkflowImpression) {
+                resolveInitialStep(unresolvedInitialBranch, workflow, uiConfig, offerings, presentedOfferingContext)
+            }
+            return
+        }
         buildStateFromStep(currentStep, workflow, uiConfig, offerings, presentedOfferingContext)
         if (isNewWorkflowImpression && _workflowState.value != null) {
             trackWorkflowStepStarted(
@@ -1203,17 +1258,85 @@ internal class PaywallViewModelImpl(
         preWarmWorkflowStepCache(workflow, uiConfig, offerings, presentedOfferingContext)
     }
 
+    /**
+     * The one resolve the UI waits on. Nothing renders until the first step is known.
+     */
+    private fun resolveInitialStep(
+        branch: WorkflowTriggerAction.Branch,
+        workflow: PublishedWorkflow,
+        uiConfig: UiConfig,
+        offerings: WorkflowOfferings,
+        presentedOfferingContext: PresentedOfferingContext?,
+    ) {
+        val navigator = workflowNavigator ?: return
+        initialStepJob?.cancel()
+        initialStepJob = viewModelScope.launch {
+            val stepId = purchases.resolveBranch(
+                branch,
+                options.customVariables.mapValues { (_, value) -> value.asRulesDimensionValue },
+            )
+            ensureActive()
+            if (navigator !== workflowNavigator) return@launch
+            navigator.enterInitialStep(stepId)
+            val step = navigator.currentStep ?: return@launch
+            resolvedInitialStepId = step.id
+            resolveBranchesFor(step)
+            buildStateFromStep(step, workflow, uiConfig, offerings, presentedOfferingContext)
+            if (_workflowState.value != null) {
+                trackWorkflowStepStarted(
+                    step = step,
+                    fromStepId = null,
+                    entryReason = WorkflowStepEntryReason.START,
+                )
+            }
+            preWarmWorkflowStepCache(workflow, uiConfig, offerings, presentedOfferingContext)
+        }
+    }
+
+    /** Nothing waits on this: until it lands, a branch takes its fallback. */
+    private fun resolveBranchesFor(step: WorkflowStep) {
+        val navigator = workflowNavigator ?: return
+        // Abandons the previous step's resolve, so every visit routes on its own answer.
+        branchResolveJob?.cancel()
+        if (step.triggerActions.values.none { it is WorkflowTriggerAction.Branch }) return
+        branchResolveJob = viewModelScope.launch {
+            val resolved = purchases.resolveBranches(
+                step,
+                options.customVariables.mapValues { (_, value) -> value.asRulesDimensionValue },
+            )
+            // Cancellation is cooperative, so a cancelled job still reaches this line.
+            ensureActive()
+            navigator.recordResolvedBranches(resolved, step.id)
+        }
+    }
+
+    /**
+     * A step without an offering cannot attribute a paywall event. The skeleton is not a screen the
+     * user reached. Neither records an impression.
+     */
+    private fun tracksPaywallEvents(
+        state: PaywallState,
+        step: WorkflowStep,
+        workflow: PublishedWorkflow,
+        skeleton: Boolean,
+    ): Boolean = !skeleton &&
+        state is PaywallState.Loaded.Components &&
+        state.workflowScreen?.hasOffering != false &&
+        step.tracksPaywallEvents(workflow)
+
     private fun buildStateFromStep(
         step: WorkflowStep,
         workflow: PublishedWorkflow,
         uiConfig: UiConfig,
-        offerings: Offerings,
+        offerings: WorkflowOfferings,
         presentedOfferingContext: PresentedOfferingContext?,
         fromStepId: String? = null,
         navigationDirection: NavigationDirection? = null,
         shouldApplyState: Boolean = true,
+        skeleton: Boolean = false,
     ) {
-        val cached = workflowStepStateCache[step.id]
+        // Never cache the skeleton. The real step reuses this id once the branch resolves.
+        val cached = workflowStepStateCache[step.id].takeUnless { skeleton }
         val newState = cached
             ?: computeStateForStep(
                 step,
@@ -1221,9 +1344,11 @@ internal class PaywallViewModelImpl(
                 uiConfig,
                 offerings,
                 presentedOfferingContext,
-                currentWorkflowStateStore,
+                // The skeleton shares no store: its declarations would shadow the routed screen's.
+                currentWorkflowStateStore.takeUnless { skeleton },
+                skeleton = skeleton,
             )
-        if (cached == null && newState is PaywallState.Loaded.Components) {
+        if (cached == null && !skeleton && newState is PaywallState.Loaded.Components) {
             workflowStepStateCache[step.id] = newState
         }
         // Apply the workflow's default package to all steps. setDefaultPackage is idempotent
@@ -1237,10 +1362,7 @@ internal class PaywallViewModelImpl(
             }
         }
         if (!shouldApplyState) return
-        // A step without an offering has nothing to attribute paywall events to.
-        currentWorkflowStepTracksPaywallEvents = newState is PaywallState.Loaded.Components &&
-            newState.workflowScreen?.hasOffering != false &&
-            step.tracksPaywallEvents(workflow)
+        currentWorkflowStepTracksPaywallEvents = tracksPaywallEvents(newState, step, workflow, skeleton)
         val pendingTransition = if (fromStepId != null && navigationDirection != null) {
             WorkflowPendingTransition(
                 fromStepId = fromStepId,
@@ -1251,14 +1373,16 @@ internal class PaywallViewModelImpl(
             null
         }
         if (newState !is PaywallState.Loaded.Components) {
-            failWorkflowPresentation(newState)
+            // The routed step decides. A broken fallback must not end a flow the audience routes past.
+            if (!skeleton) failWorkflowPresentation(newState)
             return
         }
         // Set workflowState before _state so a recomposition that lands between the two writes
         // sees the workflow branch and the correct step, not the single-page branch.
         _workflowState.value = WorkflowPaywallUiState(
             currentStepId = step.id,
-            stepStates = workflowStepStateCache.toMap(),
+            stepStates = workflowStepStateCache.toMap() + (step.id to newState),
+            isSkeleton = skeleton,
             pendingTransition = pendingTransition,
         )
         _state.value = newState
@@ -1280,13 +1404,21 @@ internal class PaywallViewModelImpl(
         }
     }
 
+    /** Declarations of every screen, so a key two screens declare differently resolves the same way. */
+    private fun PublishedWorkflow.mergedStateDeclarations(): Map<String, StateDeclaration> =
+        screens.toSortedMap().values.fold(mutableMapOf()) { merged, screen ->
+            screen.stateDeclarations?.forEach { (key, declaration) -> merged.putIfAbsent(key, declaration) }
+            merged
+        }
+
     private fun computeStateForStep(
         step: WorkflowStep,
         workflow: PublishedWorkflow,
         uiConfig: UiConfig,
-        offerings: Offerings,
+        offerings: WorkflowOfferings,
         presentedOfferingContext: PresentedOfferingContext?,
         stateStore: PaywallStateStore?,
+        skeleton: Boolean = false,
     ): PaywallState {
         val resolved = when (val resolution = resolveStep(step, workflow, offerings)) {
             is StepResolution.Invalid -> return resolution.toErrorState()
@@ -1295,7 +1427,7 @@ internal class PaywallViewModelImpl(
         val baseOffering = resolved.offering
 
         val paywallComponents =
-            WorkflowScreenMapper.toPaywallComponents(resolved.screen, resolved.screenId, uiConfig)
+            WorkflowScreenMapper.toPaywallComponents(resolved.screen, resolved.screenId, uiConfig, skeleton)
         // A step without an offering renders its screen against a package-less placeholder: the screen can still
         // use the workflow's default package as context, but has no packages of its own.
         val offering = Offering(
@@ -1331,7 +1463,7 @@ internal class PaywallViewModelImpl(
     private fun preWarmWorkflowStepCache(
         workflow: PublishedWorkflow,
         uiConfig: UiConfig,
-        offerings: Offerings,
+        offerings: WorkflowOfferings,
         presentedOfferingContext: PresentedOfferingContext?,
     ) {
         // Capture on the main thread: cancellation is cooperative and can't stop an in-flight
@@ -1378,6 +1510,7 @@ internal class PaywallViewModelImpl(
             Logger.e("triggerAction returned null after peekTriggerStep succeeded — this is a bug")
             return
         }
+        resolveBranchesFor(newStep)
         buildStateFromStep(
             newStep,
             workflow,
@@ -1412,6 +1545,7 @@ internal class PaywallViewModelImpl(
             Logger.e("navigateBack returned null after canNavigateBack was true — this is a bug")
             return false
         }
+        resolveBranchesFor(newStep)
         buildStateFromStep(
             newStep,
             workflow,
@@ -1462,8 +1596,10 @@ internal class PaywallViewModelImpl(
                 traceId = workflowTraceId,
                 fromStepId = fromStepId,
                 entryReason = entryReason.value,
-                isFirstStep = step.id == workflow.initialStepId,
+                isFirstStep = step.id == (resolvedInitialStepId ?: workflow.initialStepId),
                 isLastStep = isTerminalStep(workflow, step.id),
+                workflowBlobRef = currentWorkflowBlobRef,
+                fallbackOriginalStepId = step.fallbackOriginalStepId,
                 experiment = experimentData(step),
             ),
         )
@@ -1478,8 +1614,10 @@ internal class PaywallViewModelImpl(
                 stepId = step.id,
                 traceId = workflowTraceId,
                 toStepId = toStepId,
-                isFirstStep = step.id == workflow.initialStepId,
+                isFirstStep = step.id == (resolvedInitialStepId ?: workflow.initialStepId),
                 isLastStep = isTerminalStep(workflow, step.id),
+                workflowBlobRef = currentWorkflowBlobRef,
+                fallbackOriginalStepId = step.fallbackOriginalStepId,
                 experiment = experimentData(step),
             ),
         )
@@ -1488,27 +1626,26 @@ internal class PaywallViewModelImpl(
     private fun experimentData(step: WorkflowStep): WorkflowEvent.ExperimentData? {
         val experimentId = step.experimentId
         val experimentVariant = step.experimentVariant
-        val workflowBlobRef = currentWorkflowBlobRef
-        return if (experimentId == null || experimentVariant == null || workflowBlobRef == null) {
+        return if (experimentId == null || experimentVariant == null || currentWorkflowBlobRef == null) {
             null
         } else {
-            WorkflowEvent.ExperimentData(
-                experimentId = experimentId,
-                experimentVariant = experimentVariant,
-                workflowBlobRef = workflowBlobRef,
-            )
+            WorkflowEvent.ExperimentData(experimentId = experimentId, experimentVariant = experimentVariant)
         }
     }
 
+    // A branch navigates too, so it counts here the same way the navigator treats it.
     private fun isTerminalStep(workflow: PublishedWorkflow, stepId: String): Boolean {
         val step = workflow.steps[stepId] ?: return false
-        return step.triggerActions.values.none { it is WorkflowTriggerAction.Step }
+        return step.triggerActions.values.none {
+            it is WorkflowTriggerAction.Step || it is WorkflowTriggerAction.Branch
+        }
     }
 
     private val currentWorkflowStep: WorkflowStep?
         get() {
-            val stepId = _workflowState.value?.currentStepId ?: return null
-            return currentWorkflow?.steps?.get(stepId)
+            // The skeleton is not a visit, so no event attributes to the step it shows.
+            val state = _workflowState.value?.takeUnless { it.isSkeleton } ?: return null
+            return currentWorkflow?.steps?.get(state.currentStepId)
         }
 
     /**
@@ -1547,15 +1684,21 @@ internal class PaywallViewModelImpl(
                 workflowId = workflow.id,
                 stepId = step.id,
                 traceId = workflowTraceId,
-                isFirstStep = step.id == workflow.initialStepId,
+                isFirstStep = step.id == (resolvedInitialStepId ?: workflow.initialStepId),
                 isLastStep = isTerminalStep(workflow, step.id),
+                workflowBlobRef = currentWorkflowBlobRef,
+                fallbackOriginalStepId = step.fallbackOriginalStepId,
                 experiment = experimentData(step),
             ),
         )
     }
 
     @Suppress("ReturnCount")
-    private fun resolveStep(step: WorkflowStep, workflow: PublishedWorkflow, offerings: Offerings): StepResolution {
+    private fun resolveStep(
+        step: WorkflowStep,
+        workflow: PublishedWorkflow,
+        offerings: WorkflowOfferings,
+    ): StepResolution {
         val screenId = step.screenId
             ?: return StepResolution.Invalid("Step '${step.id}' has no screen_id in workflow '${workflow.id}'")
         val screen = workflow.screens[screenId]

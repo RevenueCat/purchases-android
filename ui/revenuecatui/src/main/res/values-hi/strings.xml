@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">ठीक है</string>
+    <string name="loading">लोड हो रहा है</string>
     <string name="all_plans">सभी सदस्यताएँ</string>
     <string name="privacy">गोपनीयता</string>
     <string name="privacy_policy">गोपनीयता नीति</string>
@@ -22,4 +23,5 @@
     <string name="cannot_open_link">" लिंक अमान्य है। इसे खोला नहीं जा सका।"</string>
     <string name="revenuecatui_purchase">खरीदें</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">प्रीव्यू वर्कफ़्लो लोड नहीं हो सका। कृपया फिर से कोशिश करें।</string>
 </resources>

@@ -10,6 +10,7 @@ import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPassedCallback
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowResult
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint
@@ -64,6 +65,7 @@ private class CheckpointsAPI {
             val offering: Offering = params.offering
             val checkpointIdentifier: String = params.checkpointIdentifier
             val customVariables: Map<String, CustomVariableValue> = params.customVariables
+            val presentationMode: FlowPresentationMode = params.presentationMode
             completion.complete(PaywallPresenter.Completion.Result.Continued)
             completion.complete(PaywallPresenter.Completion.Result.Closed)
             completion.complete(PaywallPresenter.Completion.Result.NavigatedBack)

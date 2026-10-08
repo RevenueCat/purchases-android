@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">OK</string>
+    <string name="loading">Жүктелуде</string>
     <string name="all_plans">Барлық жазылымдар</string>
     <string name="privacy">Құпиялық</string>
     <string name="privacy_policy">Құпиялық саясаты</string>
@@ -22,4 +23,5 @@
     <string name="cannot_open_link">Сілтеме жарамсыз. Ашылмады.</string>
     <string name="revenuecatui_purchase">Сатып алу</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">Алдын ала қарау жұмыс процесін жүктеу мүмкін болмады. Қайталап көріңіз.</string>
 </resources>

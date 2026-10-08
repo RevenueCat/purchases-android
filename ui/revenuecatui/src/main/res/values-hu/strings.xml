@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">rendben</string>
+    <string name="loading">Betöltés</string>
     <string name="all_plans">Minden előfizetés</string>
     <string name="privacy">Magánélet</string>
     <string name="privacy_policy">Adatvédelmi irányelvek</string>
@@ -22,4 +23,5 @@
     <string name="cannot_open_link">Érvénytelen link. Nem sikerült megnyitni.</string>
     <string name="revenuecatui_purchase">Vásárlás</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">Az előnézeti munkafolyamatot nem sikerült betölteni. Kérjük, próbálja újra.</string>
 </resources>

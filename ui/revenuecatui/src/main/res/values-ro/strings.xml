@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">Bine</string>
+    <string name="loading">Se încarcă</string>
     <string name="all_plans">Toate abonamentele</string>
     <string name="privacy">Confidențialitate</string>
     <string name="privacy_policy">Politica de confidențialitate</string>
@@ -22,4 +23,5 @@
     <string name="cannot_open_link">Link invalid. Nu a putut fi deschis.</string>
     <string name="revenuecatui_purchase">Cumpără</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">Fluxul de lucru pentru previzualizare nu a putut fi încărcat. Încercați din nou.</string>
 </resources>

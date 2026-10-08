@@ -10,8 +10,13 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.common.events.FeatureEvent
+import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
+import com.revenuecat.purchases.common.workflows.WorkflowActionID
 import com.revenuecat.purchases.common.workflows.WorkflowResolution
+import com.revenuecat.purchases.common.workflows.WorkflowStep
+import com.revenuecat.purchases.common.workflows.WorkflowStepID
+import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.StoreProduct
@@ -69,6 +74,11 @@ internal class MockPurchasesType(
         throw NotImplementedError("Mock implementation for previews only")
     }
 
+    override suspend fun resolveBranches(
+        step: WorkflowStep,
+        customVariables: Map<String, RulesDimensionValue>,
+    ): Map<WorkflowActionID, WorkflowStepID> = emptyMap()
+
     override suspend fun awaitGetUiConfig(): UiConfig {
         throw NotImplementedError("Mock implementation for previews only")
     }
@@ -76,4 +86,9 @@ internal class MockPurchasesType(
     override suspend fun awaitWorkflowBlobRef(workflowId: String): String? = null
 
     override suspend fun resolveWorkflow(offeringId: String): WorkflowResolution = WorkflowResolution.NoWorkflow
+
+    override suspend fun resolveBranch(
+        branch: WorkflowTriggerAction.Branch,
+        customVariables: Map<String, RulesDimensionValue>,
+    ): WorkflowStepID = branch.fallbackStepId
 }

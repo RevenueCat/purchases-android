@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">OKE</string>
+    <string name="loading">Memuat</string>
     <string name="all_plans">Semua langganan</string>
     <string name="privacy">Pribadi</string>
     <string name="privacy_policy">Kebijakan pribadi</string>
@@ -22,4 +23,5 @@
     <string name="cannot_open_link">Tautan tidak valid. Tidak dapat dibuka.</string>
     <string name="revenuecatui_purchase">Beli</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">Alur kerja pratinjau tidak dapat dimuat. Silakan coba lagi.</string>
 </resources>

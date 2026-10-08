@@ -24,11 +24,18 @@ internal object WorkflowScreenMapper {
             productChangeConfig = screen.productChangeConfig,
             automaticallyScaleFontSize = screen.automaticallyScaleFontSize,
             stateDeclarations = screen.stateDeclarations,
+            componentsVideoLocalizations = screen.componentsVideoLocalizations,
         )
 
-    fun toPaywallComponents(screen: WorkflowScreen, screenId: String, uiConfig: UiConfig): Offering.PaywallComponents =
+    fun toPaywallComponents(
+        screen: WorkflowScreen,
+        screenId: String,
+        uiConfig: UiConfig,
+        skeleton: Boolean = false,
+    ): Offering.PaywallComponents =
         Offering.PaywallComponents(
             uiConfig = uiConfig,
-            data = toPaywallComponentsData(screen, screenId),
+            data = toPaywallComponentsData(screen, screenId)
+                .let { if (skeleton) WorkflowSkeleton.transform(it, uiConfig.app.colors) else it },
         )
 }

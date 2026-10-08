@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">V redu</string>
+    <string name="loading">Nalaganje</string>
     <string name="all_plans">Vse naročnine</string>
     <string name="privacy">Zasebnost</string>
     <string name="privacy_policy">Pravilnik o zasebnosti</string>
@@ -22,4 +23,5 @@
     <string name="cannot_open_link">Neveljavna povezava. Ni mogoče odpreti.</string>
     <string name="revenuecatui_purchase">Kupi</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">Poteka dela za predogled ni bilo mogoče naložiti. Poskusite znova.</string>
 </resources>

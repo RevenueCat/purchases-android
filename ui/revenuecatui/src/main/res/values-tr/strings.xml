@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">TAMAM</string>
+    <string name="loading">Yükleniyor</string>
     <string name="all_plans">Tüm abonelikler</string>
     <string name="privacy">Gizlilik</string>
     <string name="privacy_policy">Gizlilik Politikası</string>
@@ -22,4 +23,5 @@
     <string name="cannot_open_link">Geçersiz bağlantı. Açılamadı.</string>
     <string name="revenuecatui_purchase">Satın al</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">Önizleme iş akışı yüklenemedi. Lütfen tekrar deneyin.</string>
 </resources>

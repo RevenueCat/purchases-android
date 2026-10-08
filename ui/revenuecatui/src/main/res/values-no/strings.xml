@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">OK</string>
+    <string name="loading">Laster</string>
     <string name="all_plans">Alle abonnementer</string>
     <string name="privacy">Personvern</string>
     <string name="privacy_policy">Personvernerklæring</string>
@@ -22,4 +23,5 @@
     <string name="cannot_open_link">Ugyldig lenke. Kunne ikke åpnes.</string>
     <string name="revenuecatui_purchase">Kjøp</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">Arbeidsflyten for forhåndsvisning kunne ikke lastes inn. Prøv igjen.</string>
 </resources>

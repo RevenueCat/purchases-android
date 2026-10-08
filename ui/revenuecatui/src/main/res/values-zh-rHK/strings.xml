@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">好的</string>
+    <string name="loading">載入中</string>
     <string name="privacy">隱私</string>
     <string name="privacy_policy">隱私權政策</string>
     <string name="restore">恢復</string>
@@ -22,4 +23,5 @@
     <string name="cannot_open_link">連結無效，無法開啟</string>
     <string name="revenuecatui_purchase">購買</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">無法載入預覽工作流程。請重試。</string>
 </resources>

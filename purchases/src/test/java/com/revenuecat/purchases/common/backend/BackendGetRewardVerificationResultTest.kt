@@ -103,6 +103,7 @@ class BackendGetRewardVerificationResultTest {
                 body = null,
                 postFieldsToSign = null,
                 requestHeaders = any(),
+                iamAppUserID = any(),
             )
         }
     }
@@ -126,6 +127,7 @@ class BackendGetRewardVerificationResultTest {
                 body = null,
                 postFieldsToSign = null,
                 requestHeaders = any(),
+                iamAppUserID = any(),
             )
         }
     }
@@ -268,6 +270,7 @@ class BackendGetRewardVerificationResultTest {
                 body = null,
                 postFieldsToSign = null,
                 requestHeaders = any(),
+                iamAppUserID = any(),
             )
         }
     }
@@ -285,6 +288,7 @@ class BackendGetRewardVerificationResultTest {
                 any(),
                 any(),
                 fallbackBaseURLs = any(),
+                iamAppUserID = any(),
             )
         } answers {
             if (delayMs != null) {

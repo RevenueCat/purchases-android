@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">OK</string>
+    <string name="loading">Chargement</string>
     <string name="privacy">Confidentialité</string>
     <string name="privacy_policy">Politique de confidentialité</string>
     <string name="restore">Restaurer</string>
@@ -22,4 +23,5 @@
     <string name="cannot_open_link">Lien invalide. Impossible à ouvrir.</string>
     <string name="revenuecatui_purchase">Acheter</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">Le workflow de prévisualisation n\'a pas pu être chargé. Veuillez réessayer.</string>
 </resources>

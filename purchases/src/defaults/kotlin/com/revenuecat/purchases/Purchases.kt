@@ -33,7 +33,11 @@ import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
+import com.revenuecat.purchases.common.workflows.WorkflowActionID
 import com.revenuecat.purchases.common.workflows.WorkflowResolution
+import com.revenuecat.purchases.common.workflows.WorkflowStep
+import com.revenuecat.purchases.common.workflows.WorkflowStepID
+import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.DeepLinkParser
 import com.revenuecat.purchases.interfaces.Callback
@@ -473,6 +477,21 @@ public class Purchases internal constructor(
     @JvmSynthetic
     public suspend fun resolveWorkflow(offeringId: String): WorkflowResolution =
         purchasesOrchestrator.resolveWorkflow(offeringId)
+
+    @InternalRevenueCatAPI
+    @JvmSynthetic
+    public suspend fun resolveBranches(
+        step: WorkflowStep,
+        customVariables: Map<String, RulesDimensionValue> = emptyMap(),
+    ): Map<WorkflowActionID, WorkflowStepID> = purchasesOrchestrator.resolveBranches(step, customVariables)
+
+    /** Routes one branch to the step its audiences pick, or to the branch's fallback. */
+    @JvmSynthetic
+    @InternalRevenueCatAPI
+    public suspend fun resolveBranch(
+        branch: WorkflowTriggerAction.Branch,
+        customVariables: Map<String, RulesDimensionValue> = emptyMap(),
+    ): WorkflowStepID = purchasesOrchestrator.resolveBranch(branch, customVariables)
 
     @InternalRevenueCatAPI
     @JvmSynthetic

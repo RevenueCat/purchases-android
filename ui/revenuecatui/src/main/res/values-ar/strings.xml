@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">نعم</string>
+    <string name="loading">جارٍ التحميل</string>
     <string name="all_plans">كل الاشتراكات</string>
     <string name="privacy">خصوصية</string>
     <string name="privacy_policy">سياسة الخصوصية</string>
@@ -22,4 +23,5 @@
     <string name="cannot_open_link">الرابط غير صالح. لم يتمكن من الفتح.</string>
     <string name="revenuecatui_purchase">شراء</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">تعذّر تحميل سير العمل الخاص بالمعاينة. يُرجى المحاولة مرة أخرى.</string>
 </resources>

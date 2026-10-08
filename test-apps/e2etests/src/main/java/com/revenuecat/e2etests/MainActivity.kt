@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import com.revenuecat.e2etests.main.DeveloperProvidedOfferingScreen
 import com.revenuecat.e2etests.main.MainPage
 import com.revenuecat.e2etests.main.NoPaywallScreen
 import com.revenuecat.e2etests.ui.theme.PurchasesandroidTheme
@@ -31,17 +32,20 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
         val flow = E2ETestFlow.fromRawValue(intent.getStringExtra(E2ETestFlow.INTENT_EXTRA_KEY))
         val usersCountOverride = intent.getStringExtra(CUSTOM_USERS_COUNT_EXTRA_KEY)?.toIntOrNull()
         val offeringId = intent.getStringExtra(WORKFLOW_OFFERING_EXTRA_KEY)
+        val workflowId = intent.getStringExtra(WORKFLOW_ID_EXTRA_KEY)
         setContent {
             PurchasesandroidTheme {
                 when (flow) {
                     E2ETestFlow.OPEN_WORKFLOW -> WorkflowScreen(
                         usersCountOverride = usersCountOverride,
                         offeringId = offeringId,
+                        workflowId = workflowId,
                     )
                     E2ETestFlow.OPEN_WORKFLOW_PRESENTED -> PresentedWorkflowScreen(
                         onPresentPaywall = { paywallLauncher.launch(it) },
                     )
                     E2ETestFlow.OPEN_NO_PAYWALL -> NoPaywallScreen()
+                    E2ETestFlow.OPEN_DEVELOPER_PROVIDED_OFFERING -> DeveloperProvidedOfferingScreen()
                     null -> MainPage()
                 }
             }
@@ -55,5 +59,6 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
     private companion object {
         const val CUSTOM_USERS_COUNT_EXTRA_KEY = "custom_users_count"
         const val WORKFLOW_OFFERING_EXTRA_KEY = "workflow_offering_identifier"
+        const val WORKFLOW_ID_EXTRA_KEY = "workflow_id"
     }
 }

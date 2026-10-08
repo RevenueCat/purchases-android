@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">OK</string>
+    <string name="loading">Loading</string>
     <string name="restore_purchases">Restore purchases</string>
     <string name="restore">Restore</string>
     <string name="terms_and_conditions">Terms and conditions</string>
@@ -23,4 +24,5 @@
     <!-- Default Paywall -->
     <string name="revenuecatui_purchase">Purchase</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">The preview workflow could not be loaded. Please try again.</string>
 </resources>
