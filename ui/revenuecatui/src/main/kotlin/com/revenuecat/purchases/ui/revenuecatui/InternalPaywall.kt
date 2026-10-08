@@ -341,6 +341,8 @@ private fun LoadedPaywall(
             CloseButton(
                 shouldDisplayDismissButton = state.shouldDisplayDismissButton,
                 color = defaultOnSurface,
+                // Keep dismissal available after backgrounding during Google Play UI.
+                // See https://github.com/RevenueCat/purchases-android/issues/4410.
                 actionInProgress = false,
                 onClick = viewModel::closePaywall,
             )
@@ -368,6 +370,8 @@ private fun LoadedPaywall(
         CloseButton(
             shouldDisplayDismissButton = state.shouldDisplayDismissButton,
             color = state.currentColors.closeButton,
+            // Keep dismissal available after backgrounding during Google Play UI.
+            // See https://github.com/RevenueCat/purchases-android/issues/4410.
             actionInProgress = false,
             onClick = viewModel::closePaywall,
         )

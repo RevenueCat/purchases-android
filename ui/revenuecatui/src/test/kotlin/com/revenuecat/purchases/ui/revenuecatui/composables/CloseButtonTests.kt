@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.composables
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.performClick
@@ -18,14 +19,30 @@ class CloseButtonTests {
     val composeTestRule = createComposeRule()
 
     @Test
-    fun `close button remains enabled while an action is in progress`() {
-        var clicked = false
+    fun `close button is disabled while its action is in progress`() {
         composeTestRule.setContent {
             Box {
                 CloseButton(
                     shouldDisplayDismissButton = true,
                     color = null,
                     actionInProgress = true,
+                    onClick = {},
+                )
+            }
+        }
+
+        composeTestRule.onNode(hasClickAction()).assertIsNotEnabled()
+    }
+
+    @Test
+    fun `close button is enabled while no action is in progress`() {
+        var clicked = false
+        composeTestRule.setContent {
+            Box {
+                CloseButton(
+                    shouldDisplayDismissButton = true,
+                    color = null,
+                    actionInProgress = false,
                     onClick = { clicked = true },
                 )
             }
