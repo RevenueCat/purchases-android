@@ -2165,7 +2165,8 @@ class PaywallViewModelTest {
     @Test
     fun `closing the paywall does not cancel an in-flight purchase`(): Unit = runBlocking {
         // Arrange
-        val model = createComponentsModel()
+        var dismissCount = 0
+        val model = createComponentsModel(dismissRequest = { dismissCount++ })
         val purchaseStarted = CompletableDeferred<Unit>()
         val storeResolved = CompletableDeferred<Unit>()
         val purchaseResult = PurchaseResult(mockk<StoreTransaction>(relaxed = true), customerInfo)
@@ -2181,7 +2182,7 @@ class PaywallViewModelTest {
         model.closePaywall()
 
         // Assert: dismissing the UI must not abandon the purchase observer.
-        assertThat(dismissInvoked).isTrue
+        assertThat(dismissCount).isEqualTo(1)
         assertThat(model.actionInProgress.value).isTrue
 
         storeResolved.complete(Unit)
@@ -2191,6 +2192,7 @@ class PaywallViewModelTest {
         verify(exactly = 1) {
             listener.onPurchaseCompleted(customerInfo, purchaseResult.storeTransaction)
         }
+        assertThat(dismissCount).isEqualTo(1)
         assertThat(model.actionInProgress.value).isFalse
     }
 
@@ -2268,6 +2270,36 @@ class PaywallViewModelTest {
         // Assert
         assertThat(model.actionInProgress.value).isFalse
         coVerify(exactly = 2) { purchases.awaitRestore() }
+    }
+
+    @Test
+    fun `closing the paywall does not let an in-flight restore dismiss again`(): Unit = runBlocking {
+        // Arrange
+        var dismissCount = 0
+        val model = create(
+            dismissRequest = { dismissCount++ },
+            shouldDisplayBlock = { false },
+        )
+        val restoreStarted = CompletableDeferred<Unit>()
+        val storeResolved = CompletableDeferred<Unit>()
+        coEvery { purchases.awaitRestore() } coAnswers {
+            restoreStarted.complete(Unit)
+            storeResolved.await()
+            customerInfo
+        }
+        val restore = launch { model.handleRestorePurchases() }
+        withTimeout(TEST_WAIT_MS) { restoreStarted.await() }
+
+        // Act
+        model.closePaywall()
+        storeResolved.complete(Unit)
+        ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
+        withTimeout(TEST_WAIT_MS) { restore.join() }
+
+        // Assert
+        verify(exactly = 1) { listener.onRestoreCompleted(customerInfo) }
+        assertThat(dismissCount).isEqualTo(1)
+        assertThat(model.actionInProgress.value).isFalse
     }
 
     @Test
@@ -4149,7 +4181,9 @@ class PaywallViewModelTest {
     }
 
     /** A loaded components paywall with the monthly package selected. */
-    private fun createComponentsModel(): PaywallViewModelImpl {
+    private fun createComponentsModel(
+        dismissRequest: () -> Unit = { dismissInvoked = true },
+    ): PaywallViewModelImpl {
         val offeringId = "offering-id"
         val offering = Offering(
             identifier = offeringId,
@@ -4161,7 +4195,7 @@ class PaywallViewModelTest {
             ),
             paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
         )
-        return create(offering = offering).apply {
+        return create(offering = offering, dismissRequest = dismissRequest).apply {
             (state.value as PaywallState.Loaded.Components).update(TestData.Packages.monthly.identifier)
             trackPaywallImpressionIfNeeded()
         }
