@@ -1264,7 +1264,7 @@ internal class PaywallViewModelImpl(
         branch: WorkflowTriggerAction.Branch,
         workflow: PublishedWorkflow,
         uiConfig: UiConfig,
-        offerings: Offerings,
+        offerings: WorkflowOfferings,
         presentedOfferingContext: PresentedOfferingContext?,
     ) {
         val navigator = workflowNavigator ?: return
