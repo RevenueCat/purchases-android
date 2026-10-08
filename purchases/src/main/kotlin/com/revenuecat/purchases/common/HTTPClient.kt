@@ -157,6 +157,7 @@ internal class HTTPClient(
      * @param body The body of the request, for GET must be null
      * @param requestHeaders Map of headers, basic headers are added automatically
      * @param retriedAfterTokenRefresh whether this request is already the retry after an IAM token refresh
+     * @param iamAppUserID the user whose IAM credentials are bound to this logical request and all of its retries
      * @return Result containing the HTTP response code and the parsed JSON body
      * @throws JSONException Thrown for any JSON errors, not thrown for returned HTTP error codes
      * @throws IOException Thrown for any unexpected errors, not thrown for returned HTTP error codes
@@ -173,7 +174,12 @@ internal class HTTPClient(
         fallbackBaseURLs: List<URL> = emptyList(),
         fallbackURLIndex: Int = 0,
         retriedAfterTokenRefresh: Boolean = false,
+        iamAppUserID: String? = null,
     ): HTTPResult {
+        val requestAppUserID = iamAppUserID ?: tokenAuthenticator.appUserIDForRequest()
+        // Snapshot the headers sent by this attempt for the token-refresh check below.
+        val iamHeaders = tokenAuthenticator.authorizationHeaders(endpoint, requestAppUserID)
+
         fun canUseFallback(): Boolean =
             endpoint.supportsFallbackBaseURLs && fallbackURLIndex in fallbackBaseURLs.indices
 
@@ -195,12 +201,11 @@ internal class HTTPClient(
                 fallbackBaseURLs,
                 fallbackURLIndex + 1,
                 retriedAfterTokenRefresh,
+                requestAppUserID,
             )
         }
 
         val isMainBackend = fallbackURLIndex == 0 && !endpoint.targetsFallbackHost
-        // Read once per request, so the refresh check below compares against what was actually sent.
-        val iamHeaders = tokenAuthenticator.authorizationHeaders(endpoint)
 
         var source = apiSourceFailover?.currentSource(endpoint, baseURL, isFallbackAttempt = !isMainBackend)
         var sourceAttempts = 0
@@ -257,6 +262,7 @@ internal class HTTPClient(
                                 fallbackBaseURLs,
                                 fallbackURLIndex,
                                 retriedAfterTokenRefresh,
+                                requestAppUserID,
                             )
                         }
 
@@ -269,10 +275,20 @@ internal class HTTPClient(
                             endpoint,
                             result.responseCode,
                             retriedAfterTokenRefresh,
-                            sentAuthorizationHeaders = iamHeaders,
+                            requestAuthentication = TokenAuthenticator.RequestAuthentication(
+                                requestAppUserID,
+                                iamHeaders,
+                            ),
                         ) { refreshBody ->
                             val apiKeyHeaders = requestHeaders.filterKeys { it == "Authorization" }
-                            performRequest(appConfig.baseURL, Endpoint.TokenRefresh, refreshBody, null, apiKeyHeaders)
+                            performRequest(
+                                appConfig.baseURL,
+                                Endpoint.TokenRefresh,
+                                refreshBody,
+                                null,
+                                apiKeyHeaders,
+                                iamAppUserID = requestAppUserID,
+                            )
                         } ->
                             performRequest(
                                 baseURL,
@@ -284,6 +300,7 @@ internal class HTTPClient(
                                 fallbackBaseURLs,
                                 fallbackURLIndex,
                                 retriedAfterTokenRefresh = true,
+                                iamAppUserID = requestAppUserID,
                             )
 
                         else -> result

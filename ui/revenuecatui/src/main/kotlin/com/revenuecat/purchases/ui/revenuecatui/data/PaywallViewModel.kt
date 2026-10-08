@@ -220,14 +220,7 @@ internal class PaywallViewModelImpl(
     private var currentWorkflow: PublishedWorkflow? = null
     private var currentWorkflowBlobRef: String? = null
     private var currentWorkflowUiConfig: UiConfig = emptyUiConfig()
-    private var currentWorkflowOfferings: Offerings? = null
-
-    /**
-     * The developer-supplied [Offering] from [PaywallOptions.offeringSelection], if any. Wins over the entry in
-     * [currentWorkflowOfferings] for steps that reference its identifier, so modifications made by the developer
-     * (e.g. filtered packages or extra metadata) are what the workflow renders.
-     */
-    private var currentWorkflowDeveloperProvidedOffering: Offering? = null
+    private var currentWorkflowOfferings: WorkflowOfferings? = null
     private var currentWorkflowPresentedOfferingContext: PresentedOfferingContext? = null
     private var currentWorkflowStepTracksPaywallEvents = true
     private val workflowStepStateCache = mutableMapOf<String, PaywallState.Loaded.Components>()
@@ -270,7 +263,7 @@ internal class PaywallViewModelImpl(
 
         data class Configured(
             val offeringId: String,
-            val offerings: Offerings,
+            val offerings: WorkflowOfferings,
             val triggeringWorkflowStepId: String? = null,
             override val preloadRequested: Boolean = false,
             val preloadedOffering: Offering? = null,
@@ -442,7 +435,6 @@ internal class PaywallViewModelImpl(
         currentWorkflow = null
         currentWorkflowBlobRef = null
         currentWorkflowOfferings = null
-        currentWorkflowDeveloperProvidedOffering = null
         currentWorkflowPresentedOfferingContext = null
         currentWorkflowStepTracksPaywallEvents = true
         workflowStepStateCache.clear()
@@ -931,7 +923,7 @@ internal class PaywallViewModelImpl(
             if (exitOfferingId != null && offerings != null) {
                 ExitOfferData.Configured(
                     offeringId = exitOfferingId,
-                    offerings = offerings,
+                    offerings = WorkflowOfferings(offerings, developerProvidedOffering = null),
                 )
             } else {
                 ExitOfferData.Unavailable()
@@ -1139,12 +1131,12 @@ internal class PaywallViewModelImpl(
         // Uses the old currentWorkflow and _workflowState before either is mutated below.
         trackCurrentWorkflowStepCompleted()
 
+        // Built fresh per presentation so a developer instance from a previous one never leaks into a new one.
+        val workflowOfferings = WorkflowOfferings(offerings, developerProvidedOffering)
         currentWorkflow = workflow
         currentWorkflowBlobRef = workflowBlobRef
         currentWorkflowUiConfig = uiConfig
-        currentWorkflowOfferings = offerings
-        // Always overwritten so a developer instance from a previous presentation never leaks into a new one.
-        currentWorkflowDeveloperProvidedOffering = developerProvidedOffering
+        currentWorkflowOfferings = workflowOfferings
         currentWorkflowPresentedOfferingContext = presentedOfferingContext
         workflowNavigator = WorkflowNavigator(workflow)
         resolvedInitialStepId = null
@@ -1153,7 +1145,7 @@ internal class PaywallViewModelImpl(
             dismissExitOffer?.let {
                 ExitOfferData.Configured(
                     offeringId = it.offeringId,
-                    offerings = offerings,
+                    offerings = workflowOfferings,
                     triggeringWorkflowStepId = it.stepId,
                 )
             } ?: ExitOfferData.Unavailable(),
@@ -1166,7 +1158,7 @@ internal class PaywallViewModelImpl(
         buildWorkflowStates(
             workflow = workflow,
             uiConfig = uiConfig,
-            offerings = offerings,
+            offerings = workflowOfferings,
             presentedOfferingContext = presentedOfferingContext,
             currentStep = initialStep,
             isNewWorkflowImpression = true,
@@ -1201,7 +1193,7 @@ internal class PaywallViewModelImpl(
     private fun buildWorkflowStates(
         workflow: PublishedWorkflow,
         uiConfig: UiConfig,
-        offerings: Offerings,
+        offerings: WorkflowOfferings,
         presentedOfferingContext: PresentedOfferingContext?,
         currentStep: WorkflowStep,
         isNewWorkflowImpression: Boolean,
@@ -1335,7 +1327,7 @@ internal class PaywallViewModelImpl(
         step: WorkflowStep,
         workflow: PublishedWorkflow,
         uiConfig: UiConfig,
-        offerings: Offerings,
+        offerings: WorkflowOfferings,
         presentedOfferingContext: PresentedOfferingContext?,
         fromStepId: String? = null,
         navigationDirection: NavigationDirection? = null,
@@ -1422,7 +1414,7 @@ internal class PaywallViewModelImpl(
         step: WorkflowStep,
         workflow: PublishedWorkflow,
         uiConfig: UiConfig,
-        offerings: Offerings,
+        offerings: WorkflowOfferings,
         presentedOfferingContext: PresentedOfferingContext?,
         stateStore: PaywallStateStore?,
         skeleton: Boolean = false,
@@ -1470,7 +1462,7 @@ internal class PaywallViewModelImpl(
     private fun preWarmWorkflowStepCache(
         workflow: PublishedWorkflow,
         uiConfig: UiConfig,
-        offerings: Offerings,
+        offerings: WorkflowOfferings,
         presentedOfferingContext: PresentedOfferingContext?,
     ) {
         // Capture on the main thread: cancellation is cooperative and can't stop an in-flight
@@ -1701,15 +1693,18 @@ internal class PaywallViewModelImpl(
     }
 
     @Suppress("ReturnCount")
-    private fun resolveStep(step: WorkflowStep, workflow: PublishedWorkflow, offerings: Offerings): StepResolution {
+    private fun resolveStep(
+        step: WorkflowStep,
+        workflow: PublishedWorkflow,
+        offerings: WorkflowOfferings,
+    ): StepResolution {
         val screenId = step.screenId
             ?: return StepResolution.Invalid("Step '${step.id}' has no screen_id in workflow '${workflow.id}'")
         val screen = workflow.screens[screenId]
             ?: return StepResolution.Invalid("Screen '$screenId' not found in workflow '${workflow.id}'")
         val offeringId = step.offeringIdentifier
             ?: return StepResolution.Ready(screenId, screen, offering = null)
-        val offering = currentWorkflowDeveloperProvidedOffering?.takeIf { it.identifier == offeringId }
-            ?: offerings[offeringId]
+        val offering = offerings[offeringId]
             ?: return StepResolution.Invalid("Offering '$offeringId' not found for step '${step.id}'")
         return StepResolution.Ready(screenId, screen, offering)
     }

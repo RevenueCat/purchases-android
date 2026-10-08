@@ -1639,6 +1639,27 @@ class PaywallViewModelTest {
             .hasSize(TestData.template2Offering.availablePackages.size)
     }
 
+    @Test
+    fun `exit offer matching the passed offering id resolves to the passed instance`() {
+        val baseWorkflow = workflowForOffering(modifiedTemplate2Offering.identifier)
+        val workflow = baseWorkflow.copy(
+            singleStepFallbackId = "step-1",
+            screens = baseWorkflow.screens.mapValues { (_, screen) ->
+                screen.copy(
+                    exitOffers = ExitOffers(dismiss = ExitOffer(offeringId = modifiedTemplate2Offering.identifier)),
+                )
+            },
+        )
+        val model = createWorkflowModel(passedOffering = modifiedTemplate2Offering, workflow = workflow)
+
+        model.preloadExitOffering()
+
+        val exitOffering = model.preloadedExitOffering
+        assertThat(exitOffering?.availablePackages?.map { it.identifier })
+            .containsExactly(TestData.Packages.monthly.identifier)
+        assertThat(exitOffering?.metadata?.get("custom_key")).isEqualTo("custom_value")
+    }
+
     // endregion
 
     @Test
