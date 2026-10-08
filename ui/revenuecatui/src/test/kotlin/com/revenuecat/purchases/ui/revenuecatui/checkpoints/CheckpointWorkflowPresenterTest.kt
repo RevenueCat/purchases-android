@@ -71,6 +71,7 @@ class CheckpointWorkflowPresenterTest {
                     mockk(),
                     checkpointRuleId = null,
                     traceId = "trace-id",
+                    workflowBlobRef = null,
                 )
             every { getCustomerInfo(CacheFetchPolicy.CACHE_ONLY, any()) } answers {
                 secondArg<ReceiveCustomerInfoCallback>()
@@ -117,6 +118,7 @@ class CheckpointWorkflowPresenterTest {
             mockk(),
             checkpointRuleId = null,
             traceId = "trace-id",
+            workflowBlobRef = null,
         )
         coEvery { mockPurchases.internalResolveCp(any(), any()) } returns resolution
 

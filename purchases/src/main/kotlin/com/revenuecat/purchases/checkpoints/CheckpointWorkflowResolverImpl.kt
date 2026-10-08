@@ -204,6 +204,7 @@ internal class CheckpointWorkflowResolverImpl(
             offerings,
             checkpointRuleId = rule.id,
             traceId = UUID.randomUUID().toString(),
+            workflowBlobRef = workflowManager.workflowBlobRef(rule.workflowId),
         )
     }
 

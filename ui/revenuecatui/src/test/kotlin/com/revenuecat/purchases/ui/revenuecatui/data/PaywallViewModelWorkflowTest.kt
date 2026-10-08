@@ -758,12 +758,16 @@ class PaywallViewModelWorkflowTest {
         )
     }
 
-    private fun TestScope.createInjectedWorkflowVm(traceId: String?): PaywallViewModelImpl {
+    private fun TestScope.createInjectedWorkflowVm(
+        traceId: String?,
+        injectedWorkflow: PublishedWorkflow = workflow,
+        workflowBlobRef: String? = null,
+    ): PaywallViewModelImpl {
         val vm = PaywallViewModelImpl(
             resourceProvider = MockResourceProvider(),
             purchases = purchases,
             options = PaywallOptions.Builder(dismissRequest = {})
-                .injectedWorkflow(workflow, testOfferings, uiConfig, traceId)
+                .injectedWorkflow(injectedWorkflow, testOfferings, uiConfig, traceId, workflowBlobRef)
                 .build(),
             colorScheme = TestData.Constants.currentColorScheme,
             isDarkMode = false,
@@ -2579,6 +2583,43 @@ class PaywallViewModelWorkflowTest {
         val impression = captured.filterIsInstance<PaywallEvent>()
             .single { it.type == PaywallEventType.IMPRESSION }
         assertThat(impression.data.traceId).isEqualTo("checkpoint-trace")
+    }
+
+    @Test
+    fun `an injected workflow's step events carry its blob ref and experiment data`() = runTest {
+        val experimentStep1 = step1.copy(
+            paramValues = mapOf(
+                "experiment_id" to JsonPrimitive("exp_abc"),
+                "experiment_variant" to JsonPrimitive("b"),
+            ),
+        )
+        val experimentWorkflow = workflow.copy(steps = mapOf("step-1" to experimentStep1, "step-2" to step2))
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createInjectedWorkflowVm(
+            traceId = "checkpoint-trace",
+            injectedWorkflow = experimentWorkflow,
+            workflowBlobRef = "blob-ref-1",
+        )
+        vm.closePaywall(result = null)
+
+        val workflowEvents = captured.filterIsInstance<WorkflowEvent>()
+        assertThat(workflowEvents.map { it::class }).containsExactlyInAnyOrder(
+            WorkflowEvent.StepStarted::class,
+            WorkflowEvent.StepCompleted::class,
+            WorkflowEvent.Close::class,
+        )
+        workflowEvents.forEach { event ->
+            val (blobRef, experiment) = when (event) {
+                is WorkflowEvent.StepStarted -> event.workflowBlobRef to event.experiment
+                is WorkflowEvent.StepCompleted -> event.workflowBlobRef to event.experiment
+                is WorkflowEvent.Close -> event.workflowBlobRef to event.experiment
+            }
+            assertThat(blobRef).`as`(event::class.simpleName).isEqualTo("blob-ref-1")
+            assertThat(experiment?.experimentId).`as`(event::class.simpleName).isEqualTo("exp_abc")
+            assertThat(experiment?.experimentVariant).`as`(event::class.simpleName).isEqualTo("b")
+        }
     }
 
     @Test

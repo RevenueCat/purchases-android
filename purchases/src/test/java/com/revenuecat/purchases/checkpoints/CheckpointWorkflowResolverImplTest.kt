@@ -87,6 +87,7 @@ class CheckpointWorkflowResolverImplTest {
         mockOfferings = mockk()
         coEvery { mockWorkflowManager.getWorkflowBody(any()) } answers { uiWorkflow(firstArg()) }
         every { mockWorkflowManager.prewarmWorkflowAssets(any(), any()) } just Runs
+        coEvery { mockWorkflowManager.workflowBlobRef(any()) } returns null
         coEvery { mockUiConfigProvider.getUiConfig() } returns mockUiConfig
         every { mockOfferings.all } returns mapOf("default" to mockOffering)
         configureAudiences(
@@ -178,6 +179,22 @@ class CheckpointWorkflowResolverImplTest {
         assertThat(resolution.offerings).isEqualTo(mockOfferings)
         assertThat(offeringsFetched).isEqualTo(1)
         verify(exactly = 1) { mockWorkflowManager.prewarmWorkflowAssets(mockWorkflow, mockUiConfig) }
+    }
+
+    @Test
+    fun `a matched workflow carries the served workflow's blob ref`() = runTest {
+        coEvery { mockWorkflowManager.workflowBlobRef("wf1234") } returns "blob-ref-1"
+
+        val resolution = resolve() as CheckpointResolution.MatchedWorkflow
+
+        assertThat(resolution.workflowBlobRef).isEqualTo("blob-ref-1")
+    }
+
+    @Test
+    fun `a matched workflow whose blob ref cannot be read still resolves without one`() = runTest {
+        val resolution = resolve() as CheckpointResolution.MatchedWorkflow
+
+        assertThat(resolution.workflowBlobRef).isNull()
     }
 
     @Test
