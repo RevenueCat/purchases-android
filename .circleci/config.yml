@@ -43,7 +43,7 @@ aliases:
 version: 2.1
 orbs:
   android: circleci/android@3.2.0
-  revenuecat: revenuecat/sdks-common-config@4.6.2
+  revenuecat: revenuecat/sdks-common-config@4.7.0
   codecov: codecov/codecov@3.2.4
 
 parameters:
@@ -425,7 +425,7 @@ jobs:
   # Stdlib only, so no bundler. Needs full history: it compares HEAD against HEAD^.
   announce-api-changes:
     docker:
-      - image: cimg/ruby:3.2.0
+      - image: cimg/ruby:3.3.0
     steps:
       - checkout
       - run:
@@ -970,7 +970,7 @@ jobs:
 
   update-paywall-preview-resources-submodule:
     docker:
-      - image: cimg/ruby:3.2.0
+      - image: cimg/ruby:3.3.0
     steps:
       - checkout
       - revenuecat/setup-git-credentials
@@ -1037,7 +1037,7 @@ workflows:
         - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
       - revenuecat/danger:
-          ruby_version: "3.2.0"
+          ruby_version: "3.3.0"
           post-steps:
             - run:
                 name: Run api diff report unit tests
@@ -1301,7 +1301,7 @@ workflows:
         - equal: [ "release-train", << pipeline.schedule.name >> ]
     jobs:
       - revenuecat/automatic-bump:
-          ruby_version: "3.2.0"
+          ruby_version: "3.3.0"
 
   biweekly-baseline-profiles:
     when:
@@ -1318,7 +1318,7 @@ workflows:
       equal: [ bump, << pipeline.parameters.action >> ]
     jobs:
       - revenuecat/automatic-bump:
-          ruby_version: "3.2.0"
+          ruby_version: "3.3.0"
 
   manual-paywall-tester-release:
     when:
