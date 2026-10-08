@@ -28,6 +28,7 @@ import com.revenuecat.purchases.common.workflows.WorkflowActionID
 import com.revenuecat.purchases.common.workflows.WorkflowResolution
 import com.revenuecat.purchases.common.workflows.WorkflowStep
 import com.revenuecat.purchases.common.workflows.WorkflowStepID
+import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.StoreProduct
@@ -94,6 +95,11 @@ internal interface PurchasesType {
         step: WorkflowStep,
         customVariables: Map<String, RulesDimensionValue>,
     ): Map<WorkflowActionID, WorkflowStepID>
+
+    suspend fun resolveBranch(
+        branch: WorkflowTriggerAction.Branch,
+        customVariables: Map<String, RulesDimensionValue>,
+    ): WorkflowStepID
 }
 
 @Suppress("TooManyFunctions")
@@ -186,6 +192,11 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
         step: WorkflowStep,
         customVariables: Map<String, RulesDimensionValue>,
     ): Map<WorkflowActionID, WorkflowStepID> = purchases.resolveBranches(step, customVariables)
+
+    override suspend fun resolveBranch(
+        branch: WorkflowTriggerAction.Branch,
+        customVariables: Map<String, RulesDimensionValue>,
+    ): WorkflowStepID = purchases.resolveBranch(branch, customVariables)
 
     @OptIn(InternalRevenueCatAPI::class)
     override suspend fun awaitWorkflowBlobRef(workflowId: String): String? =

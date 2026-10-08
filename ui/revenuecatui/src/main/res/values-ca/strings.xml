@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">D\'acord</string>
+    <string name="loading">S\'està carregant</string>
     <string name="all_plans">Totes les subscripcions</string>
     <string name="privacy">Privadesa</string>
     <string name="privacy_policy">Política de privacitat</string>

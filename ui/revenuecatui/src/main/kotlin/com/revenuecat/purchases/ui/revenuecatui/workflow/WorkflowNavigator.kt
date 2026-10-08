@@ -18,6 +18,12 @@ internal class WorkflowNavigator(private val workflow: PublishedWorkflow) {
 
     private var currentStepId: String = workflow.initialStepId
 
+    /** A route the workflow does not have is ignored, leaving the fallback that [initialStepId] names. */
+    fun enterInitialStep(stepId: WorkflowStepID) {
+        currentStepBranches = emptyMap()
+        if (workflow.steps.containsKey(stepId)) currentStepId = stepId
+    }
+
     private val backStack = ArrayDeque<String>()
     val backStackSnapshot: List<String> get() = backStack.toList()
 

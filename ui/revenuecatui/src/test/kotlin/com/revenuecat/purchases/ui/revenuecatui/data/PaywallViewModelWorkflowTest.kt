@@ -77,6 +77,7 @@ import io.mockk.verify
 import io.mockk.verifyOrder
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
+import com.revenuecat.purchases.common.workflows.WorkflowStepID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -90,6 +91,7 @@ import kotlinx.coroutines.test.setMain
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
+import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
 import kotlinx.serialization.json.JsonPrimitive
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
@@ -252,6 +254,195 @@ class PaywallViewModelWorkflowTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertThat(resolves).isOne()
+    }
+
+    @Test
+    fun `an audience-routed first step shows a skeleton until the branch resolves`() {
+        val gate = CompletableDeferred<WorkflowStepID>()
+        coEvery { purchases.resolveBranch(any(), any()) } coAnswers { gate.await() }
+        val wfl = workflow.copy(
+            initialTrigger = WorkflowTriggerAction.Branch(routes = emptyList(), fallbackStepId = "step-1"),
+        )
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, testOfferings, null, uiConfig)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Nothing is known yet, so the fallback renders as a skeleton and does not count as a real visit.
+        assertThat(vm.workflowState.value?.isSkeleton).isTrue
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+
+        gate.complete("step-2")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertThat(vm.workflowState.value?.isSkeleton).isFalse
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-2")
+    }
+
+    @Test
+    fun `a first step with no branch renders straight away`() {
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertThat(vm.workflowState.value?.isSkeleton).isFalse
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+        coVerify(exactly = 0) { purchases.resolveBranch(any(), any()) }
+    }
+
+    @Test
+    fun `a skeleton does not record a paywall impression for a step nobody reached`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        val gate = CompletableDeferred<WorkflowStepID>()
+        coEvery { purchases.resolveBranch(any(), any()) } coAnswers { gate.await() }
+        val wfl = workflow.copy(
+            initialTrigger = WorkflowTriggerAction.Branch(routes = emptyList(), fallbackStepId = "step-1"),
+        )
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, testOfferings, null, uiConfig)
+        testDispatcher.scheduler.advanceUntilIdle()
+        vm.trackPaywallImpressionIfNeeded()
+
+        assertThat(captured.filterIsInstance<PaywallEvent>()).isEmpty()
+
+        // The branch lands on its own fallback, which is the usual no-match outcome.
+        gate.complete("step-1")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Composition asks again once the real step is on screen, and that one must land.
+        vm.trackPaywallImpressionIfNeeded()
+        assertThat(captured.filterIsInstance<PaywallEvent>()).hasSize(1)
+    }
+
+    @Test
+    fun `a colour rebuild during the wait keeps the skeleton`() {
+        val gate = CompletableDeferred<WorkflowStepID>()
+        var resolves = 0
+        coEvery { purchases.resolveBranch(any(), any()) } coAnswers { resolves++; gate.await() }
+        val wfl = workflow.copy(
+            initialTrigger = WorkflowTriggerAction.Branch(routes = emptyList(), fallbackStepId = "step-1"),
+        )
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, testOfferings, null, uiConfig)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        vm.refreshStateIfColorsChanged(
+            colorScheme = TestData.Constants.currentColorScheme.copy(primary = Color.Black),
+            isDark = true,
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // The live fallback takes taps on a screen the audience can still route away from.
+        assertThat(vm.workflowState.value?.isSkeleton).isTrue
+        assertThat(resolves).isOne()
+
+        gate.complete("step-1")
+        testDispatcher.scheduler.advanceUntilIdle()
+    }
+
+    @Test
+    fun `a dismiss while the skeleton is up attributes no step to the fallback`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        val gate = CompletableDeferred<WorkflowStepID>()
+        coEvery { purchases.resolveBranch(any(), any()) } coAnswers { gate.await() }
+        val wfl = workflow.copy(
+            initialTrigger = WorkflowTriggerAction.Branch(routes = emptyList(), fallbackStepId = "step-1"),
+        )
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, testOfferings, null, uiConfig)
+        testDispatcher.scheduler.advanceUntilIdle()
+        vm.closePaywall()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Nobody saw step-1, so it completed nothing.
+        assertThat(captured.filterIsInstance<WorkflowEvent.StepCompleted>()).isEmpty()
+
+        gate.complete("step-1")
+        testDispatcher.scheduler.advanceUntilIdle()
+    }
+
+    @Test
+    fun `the step a branch picks reports itself as the first step`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        coEvery { purchases.resolveBranch(any(), any()) } returns "step-2"
+        val wfl = workflow.copy(
+            initialTrigger = WorkflowTriggerAction.Branch(routes = emptyList(), fallbackStepId = "step-1"),
+        )
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, testOfferings, null, uiConfig)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // step-2 is not initialStepId, but it is the first screen the user sees.
+        val started = captured.filterIsInstance<WorkflowEvent.StepStarted>().single()
+        assertThat(started.stepId).isEqualTo("step-2")
+        assertThat(started.isFirstStep).isTrue
+    }
+
+    @Test
+    fun `a step routed past the package step still gets its default package`() {
+        val (base, offerings) = makeContextPackageWorkflow()
+        // The package step is also the first step, so nothing else prebuilds it.
+        val wfl = base.copy(
+            initialStepId = "step-2",
+            initialTrigger = WorkflowTriggerAction.Branch(routes = emptyList(), fallbackStepId = "step-2"),
+        )
+        coEvery { purchases.resolveBranch(any(), any()) } returns "step-1"
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, offerings, null, uiConfig)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val routed = vm.workflowState.value?.stepStates?.get("step-1")
+        assertThat(routed?.selectedPackageInfo?.rcPackage?.identifier)
+            .isEqualTo(PackageType.MONTHLY.identifier)
+    }
+
+    @Test
+    fun `a broken fallback step does not stop the step the branch picks`() {
+        // step-1 has no screen, so it cannot render. The audience routes past it.
+        val wfl = workflow.copy(
+            screens = mapOf(screenId2 to makeScreen(screenId2)),
+            initialTrigger = WorkflowTriggerAction.Branch(routes = emptyList(), fallbackStepId = "step-1"),
+        )
+        coEvery { purchases.resolveBranch(any(), any()) } returns "step-2"
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, testOfferings, null, uiConfig)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-2")
+        assertThat(vm.workflowState.value?.isSkeleton).isFalse
+    }
+
+    @Test
+    fun `a key two screens declare differently resolves by screen id, not by build order`() {
+        // screen-1 sorts first, so its default wins wherever the workflow starts.
+        val declared = { value: String ->
+            mapOf("tier" to StateDeclaration(StateDeclaration.ValueType.STRING, JsonPrimitive(value)))
+        }
+        // Starting on step-2, and it is also the package step, so nothing builds screen-1 first.
+        val wfl = workflow.copy(
+            initialStepId = "step-2",
+            singleStepFallbackId = "step-2",
+            screens = mapOf(
+                screenId1 to makeScreen(screenId1).copy(stateDeclarations = declared("one")),
+                screenId2 to makeScreen(screenId2).copy(stateDeclarations = declared("two")),
+            ),
+        )
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, testOfferings, null, uiConfig)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = vm.workflowState.value?.stepStates?.get("step-2") as PaywallState.Loaded.Components
+        assertThat(state.stateStore.currentValueOrDefault("tier")).isEqualTo(JsonPrimitive("one"))
     }
 
     private fun makeTwoPackageWorkflow(): Pair<PublishedWorkflow, Offerings> {

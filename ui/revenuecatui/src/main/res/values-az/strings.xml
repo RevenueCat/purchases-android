@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">OK</string>
+    <string name="loading">Yüklənir</string>
     <string name="restore_purchases">Satın almaları bərpa et</string>
     <string name="restore">Bərpa et</string>
     <string name="terms_and_conditions">Şərtlər və qaydalar</string>
