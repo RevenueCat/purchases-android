@@ -125,7 +125,10 @@ internal fun LoadedWorkflowPaywall(
                 onClick = headerOnClick,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .workflowHeaderFade(headerPresentation.role, transitionState),
+                    .workflowHeaderFade(headerPresentation.role, transitionState)
+                    // The scaffold composes the header outside the body's guard, so it needs its own.
+                    // It stays silent: the body already announces the screen as loading.
+                    .conditional(isSkeleton) { blockInput().clearAndSetSemantics {} },
             )
         }
     }

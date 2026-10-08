@@ -272,8 +272,12 @@ public class PaywallOptions internal constructor(
          * Injects a pre-built workflow whose steps resolve their offering from [offerings] as they are reached, the
          * way a fetched workflow does. Leaves the offering selection alone, so no presented offering context is
          * stamped on the steps' offerings. A [traceId] replaces the one the workflow run would otherwise create.
+         *
+         * RevenueCat use only. Lets a test open one workflow by id, where the steps reference more than the single
+         * offering the [injectedWorkflow] above takes.
          */
-        internal fun injectedWorkflow(
+        @InternalRevenueCatAPI
+        public fun injectedWorkflow(
             workflow: PublishedWorkflow,
             offerings: Offerings,
             uiConfig: UiConfig,

@@ -283,6 +283,44 @@ class WorkflowSkeletonTests {
         // The rule hides the button on compact, so the skeleton must reserve nothing there either.
         assertThat(card.overrides).hasSize(1)
         assertThat(card.overrides.first().properties.visible).isFalse
+        // The button's rule stays a level above its stack, the way the real tree nests them.
+        val innerStack = card.components.single() as StackComponent
+        assertThat(innerStack.overrides).isEmpty()
+        assertThat(card.size).isEqualTo(innerStack.size)
+    }
+
+    @Test
+    fun `the wrapper follows the size its stack takes by condition`() {
+        val button = ButtonComponent(
+            stack = StackComponent(
+                components = emptyList(),
+                overrides = listOf(
+                    ComponentOverride(
+                        conditions = listOf(ComponentOverride.Condition.Compact),
+                        properties = PartialStackComponent(
+                            size = Size(SizeConstraint.Fixed(42u), SizeConstraint.Fixed(42u)),
+                        ),
+                    ),
+                ),
+            ),
+            action = ButtonComponent.Action.NavigateBack,
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Medium),
+                    properties = PartialButtonComponent(visible = false),
+                ),
+            ),
+        )
+
+        val card = transformedChildren(button).first() as StackComponent
+
+        // The wrapper has to resize with its stack, or it would hold the base size around it.
+        val sized = card.overrides.single { it.conditions == listOf(ComponentOverride.Condition.Compact) }
+        assertThat(sized.properties.size?.width).isEqualTo(SizeConstraint.Fixed(42u))
+        // visible defaults to true, so a size-only partial must say null or it overrides the rule.
+        assertThat(sized.properties.visible).isNull()
+        val hidden = card.overrides.single { it.conditions == listOf(ComponentOverride.Condition.Medium) }
+        assertThat(hidden.properties.visible).isFalse
     }
 
     @Test
