@@ -170,7 +170,7 @@ public class AdTracker internal constructor(
      *
      * @param data The earned reward event data.
      */
-    public fun trackAdRewardEarned(data: AdRewardEarnedUnverifiedData): Unit =
+    public fun trackAdRewardEarnedUnverified(data: AdRewardEarnedUnverifiedData): Unit =
         trackAdRewardEarnedUnverified(data, AdCaptureMethod.MANUAL)
 
     /**

@@ -250,11 +250,11 @@ class AdTrackerTest {
     }
 
     @Test
-    fun `trackAdRewardEarned tracks reward earned unverified event without reward verification`() {
+    fun `trackAdRewardEarnedUnverified tracks public event without reward verification`() {
         val eventSlot = slot<AdEvent.RewardEarnedUnverified>()
         every { eventsManager.track(capture(eventSlot)) } just Runs
 
-        adTracker.trackAdRewardEarned(
+        adTracker.trackAdRewardEarnedUnverified(
             data = AdRewardEarnedUnverifiedData(
                 networkName = "Google AdMob",
                 mediatorName = AdMediatorName.AD_MOB,

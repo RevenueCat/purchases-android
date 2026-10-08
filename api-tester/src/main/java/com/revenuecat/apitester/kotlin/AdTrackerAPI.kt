@@ -25,6 +25,6 @@ private class AdTrackerAPI {
         val impressionId: String = rewardEarned.impressionId
         val rewardVerificationEnabled: Boolean = rewardEarned.rewardVerificationEnabled
 
-        adTracker.trackAdRewardEarned(rewardEarned)
+        adTracker.trackAdRewardEarnedUnverified(rewardEarned)
     }
 }
