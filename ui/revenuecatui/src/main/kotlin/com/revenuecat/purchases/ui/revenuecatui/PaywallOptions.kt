@@ -270,6 +270,8 @@ public class PaywallOptions internal constructor(
                 workflow,
                 Offerings(current = offering, all = offering?.let { mapOf(it.identifier to it) }.orEmpty()),
                 uiConfig,
+                traceId = null,
+                workflowBlobRef = null,
             )
             this.offeringSelection = offering?.let { OfferingSelection.OfferingType(it) }
                 ?: OfferingSelection.None

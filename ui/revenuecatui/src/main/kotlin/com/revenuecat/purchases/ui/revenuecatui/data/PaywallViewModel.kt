@@ -1116,7 +1116,7 @@ internal class PaywallViewModelImpl(
         uiConfig: UiConfig,
         offerings: Offerings,
         presentedOfferingContext: PresentedOfferingContext?,
-        workflowBlobRef: String? = null,
+        workflowBlobRef: String?,
         developerProvidedOffering: Offering? = null,
     ) {
         val initialStep = workflow.steps[workflow.initialStepId]
