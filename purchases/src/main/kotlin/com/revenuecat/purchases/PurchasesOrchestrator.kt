@@ -1996,10 +1996,9 @@ internal class PurchasesOrchestrator(
         return if (diagnosticsTrackerIfEnabled == null) {
             originalCallback
         } else {
-            val cancellableCallback = originalCallback as? CancellablePurchaseCallback
             object : CancellablePurchaseCallback {
                 override val isCancelled: Boolean
-                    get() = cancellableCallback?.isCancelled == true
+                    get() = originalCallback is CancellablePurchaseCallback && originalCallback.isCancelled
 
                 override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {
                     trackPurchaseResultIfNeeded(
@@ -2198,4 +2197,4 @@ internal class PurchasesOrchestrator(
 }
 
 private fun PurchaseCallback?.isAbsentOrCancelled(): Boolean =
-    this == null || this is CancellablePurchaseCallback && isCancelled
+    this == null || (this is CancellablePurchaseCallback && isCancelled)
