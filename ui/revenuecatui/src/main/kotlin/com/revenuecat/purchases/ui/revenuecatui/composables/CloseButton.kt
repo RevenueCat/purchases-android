@@ -16,6 +16,7 @@ import com.revenuecat.purchases.ui.revenuecatui.R
 public fun BoxScope.CloseButton(
     shouldDisplayDismissButton: Boolean,
     color: Color?,
+    @Suppress("UNUSED_PARAMETER")
     actionInProgress: Boolean,
     onClick: () -> Unit,
 ) {
@@ -26,7 +27,6 @@ public fun BoxScope.CloseButton(
             StatusBarSpacer()
             IconButton(
                 onClick = onClick,
-                enabled = actionInProgress.not(),
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.close),

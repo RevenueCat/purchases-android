@@ -2163,6 +2163,38 @@ class PaywallViewModelTest {
     }
 
     @Test
+    fun `closing the paywall does not cancel an in-flight purchase`(): Unit = runBlocking {
+        // Arrange
+        val model = createComponentsModel()
+        val purchaseStarted = CompletableDeferred<Unit>()
+        val storeResolved = CompletableDeferred<Unit>()
+        val purchaseResult = PurchaseResult(mockk<StoreTransaction>(relaxed = true), customerInfo)
+        coEvery { purchases.awaitPurchase(any()) } coAnswers {
+            purchaseStarted.complete(Unit)
+            storeResolved.await()
+            purchaseResult
+        }
+        val purchase = launch { model.handlePackagePurchase(activity, pkg = null) }
+        withTimeout(TEST_WAIT_MS) { purchaseStarted.await() }
+
+        // Act
+        model.closePaywall()
+
+        // Assert: dismissing the UI must not abandon the purchase observer.
+        assertThat(dismissInvoked).isTrue
+        assertThat(model.actionInProgress.value).isTrue
+
+        storeResolved.complete(Unit)
+        ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
+        withTimeout(TEST_WAIT_MS) { purchase.join() }
+
+        verify(exactly = 1) {
+            listener.onPurchaseCompleted(customerInfo, purchaseResult.storeTransaction)
+        }
+        assertThat(model.actionInProgress.value).isFalse
+    }
+
+    @Test
     fun `the components state flag follows the action, not the caller`(): Unit = runBlocking {
         // Arrange
         val model = createComponentsModel()

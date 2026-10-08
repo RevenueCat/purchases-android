@@ -341,7 +341,7 @@ private fun LoadedPaywall(
             CloseButton(
                 shouldDisplayDismissButton = state.shouldDisplayDismissButton,
                 color = defaultOnSurface,
-                actionInProgress = viewModel.actionInProgress.value,
+                actionInProgress = false,
                 onClick = viewModel::closePaywall,
             )
         }
@@ -368,7 +368,7 @@ private fun LoadedPaywall(
         CloseButton(
             shouldDisplayDismissButton = state.shouldDisplayDismissButton,
             color = state.currentColors.closeButton,
-            actionInProgress = viewModel.actionInProgress.value,
+            actionInProgress = false,
             onClick = viewModel::closePaywall,
         )
     }
