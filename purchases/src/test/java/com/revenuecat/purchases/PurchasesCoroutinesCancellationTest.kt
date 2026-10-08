@@ -1,10 +1,14 @@
 package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.utils.STUB_PRODUCT_IDENTIFIER
+import com.revenuecat.purchases.utils.stubStoreProduct
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -17,6 +21,29 @@ import org.robolectric.annotation.Config
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 internal class PurchasesCoroutinesCancellationTest : BasePurchasesTest() {
+
+    @Test
+    fun `cancelled awaitPurchase does not block retrying the same product`() = runTest {
+        val storeProduct = stubStoreProduct(STUB_PRODUCT_IDENTIFIER)
+        val purchaseParams = getPurchaseParams(storeProduct.subscriptionOptions!!.first())
+
+        val firstPurchase = launch {
+            purchases.awaitPurchase(purchaseParams)
+        }
+        advanceUntilIdle()
+        firstPurchase.cancelAndJoin()
+
+        val secondPurchase = launch {
+            purchases.awaitPurchase(purchaseParams)
+        }
+        advanceUntilIdle()
+
+        verify(exactly = 2) {
+            mockBillingAbstract.makePurchaseAsync(any(), any(), any(), any(), any(), any())
+        }
+
+        secondPurchase.cancelAndJoin()
+    }
 
     // region awaitOfferings cancellation
 

@@ -76,6 +76,7 @@ import com.revenuecat.purchases.ui.revenuecatui.workflow.NavigationDirection
 import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowNavigator
 import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowScreenMapper
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -84,12 +85,14 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
+import kotlin.coroutines.coroutineContext
 
 @Suppress("TooManyFunctions")
 @Stable
@@ -214,6 +217,16 @@ internal class PaywallViewModelImpl(
     private var paywallPresentationData: PaywallEvent.Data? = null
 
     private var workflowNavigator: WorkflowNavigator? = null
+
+    /** The single in-flight purchase/restore action, see [runExclusiveAction]. */
+    private var actionJob: Job? = null
+
+    /**
+     * An [actionJob] that was still running when the user closed the paywall. It is left alive so a purchase
+     * that completes after dismissal still reaches the listener, and is cancelled the next time the paywall is
+     * presented or a new action starts, so a store result that never arrives cannot wedge the gate.
+     */
+    private var orphanedActionJob: Job? = null
     private var branchResolveJob: Job? = null
     private var initialStepJob: Job? = null
     private var resolvedInitialStepId: String? = null
@@ -380,6 +393,9 @@ internal class PaywallViewModelImpl(
 
     override fun closePaywall(result: PaywallResult?, reason: PaywallDismissReason) {
         Logger.d("Paywalls: Close paywall initiated")
+        if (!_purchaseCompleted.value) {
+            orphanedActionJob = actionJob
+        }
         trackCurrentWorkflowLeft()
         trackPaywallClose()
         val exitOffering = if (!_purchaseCompleted.value && shouldTriggerExitOfferForCurrentStep) {
@@ -400,6 +416,7 @@ internal class PaywallViewModelImpl(
     }
 
     override fun onPaywallPresented() {
+        cancelActionOrphanedByClose()
         if (!shouldReloadStateOnNextPresentation) return
 
         shouldReloadStateOnNextPresentation = false
@@ -1839,22 +1856,27 @@ internal class PaywallViewModelImpl(
     /**
      * Runs [block] as the paywall's single in-flight action, releasing the gate when it finishes.
      *
-     * Runs on [viewModelScope] and is only joined by the caller: callers are composition-scoped, and
-     * awaitPurchase does not forward their cancellation to the store, so running it on the caller's
-     * scope would abandon a live purchase and strand the gate.
+     * Runs on [viewModelScope] and is only joined by the caller: callers are composition-scoped, so running the
+     * action on their scope would abandon a live purchase when the button leaves composition. Closing the paywall
+     * orphans the action instead of cancelling it (see [orphanedActionJob]); cancellation happens on the next
+     * presentation or action, and frees the store-side purchase slot so the same product can be retried.
      */
     private suspend fun runExclusiveAction(block: suspend (actionPresentationGeneration: Int) -> Unit) {
         if (verifyNoActionInProgressOrStartAction()) {
             return
         }
         val actionPresentationGeneration = presentationGeneration
-        viewModelScope.launch {
+        // Started lazily so actionJob is assigned before the body can run and reach finishActionIfCurrent.
+        val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
             try {
                 block(actionPresentationGeneration)
             } finally {
-                finishAction()
+                finishActionIfCurrent(coroutineContext.job)
             }
-        }.join()
+        }
+        actionJob = job
+        job.start()
+        job.join()
     }
 
     private fun isCurrentPresentation(actionPresentationGeneration: Int): Boolean =
@@ -1864,6 +1886,7 @@ internal class PaywallViewModelImpl(
      * @return true if there already was an action in progress
      */
     private fun verifyNoActionInProgressOrStartAction(): Boolean {
+        cancelActionOrphanedByClose()
         if (_actionInProgress.value) {
             Logger.d("Ignoring purchase or restore because there already is an action in progress")
             return true
@@ -1873,8 +1896,27 @@ internal class PaywallViewModelImpl(
         return false
     }
 
-    private fun finishAction() {
+    /**
+     * Releases the gate only if [job] is still the current action. An orphaned action that was already
+     * cancelled and replaced must not clear the gate held by its successor.
+     */
+    private fun finishActionIfCurrent(job: Job) {
+        if (actionJob !== job) return
+        actionJob = null
+        if (orphanedActionJob === job) {
+            orphanedActionJob = null
+        }
         _actionInProgress.value = false
+    }
+
+    private fun cancelActionOrphanedByClose() {
+        val orphanedJob = orphanedActionJob ?: return
+        orphanedActionJob = null
+        if (actionJob === orphanedJob) {
+            actionJob = null
+            _actionInProgress.value = false
+        }
+        orphanedJob.cancel()
     }
 
     private fun trackPaywallClose() {

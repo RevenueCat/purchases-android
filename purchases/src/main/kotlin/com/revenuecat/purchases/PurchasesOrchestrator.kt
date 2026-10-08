@@ -1802,7 +1802,8 @@ internal class PurchasesOrchestrator(
             if (!appConfig.finishTransactions) {
                 log(LogIntent.WARNING) { PurchaseStrings.PURCHASE_FINISH_TRANSACTION_FALSE }
             }
-            if (!state.purchaseCallbacksByProductId.containsKey(purchasingData.productId)) {
+            val existingCallback = state.purchaseCallbacksByProductId[purchasingData.productId]
+            if (existingCallback.isAbsentOrCancelled()) {
                 val mapOfProductIdToListener = mapOf(purchasingData.productId to listenerWithDiagnostics)
                 state = state.copy(
                     purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener,
@@ -1878,7 +1879,8 @@ internal class PurchasesOrchestrator(
                 log(LogIntent.WARNING) { PurchaseStrings.PURCHASE_FINISH_TRANSACTION_FALSE }
             }
 
-            if (!state.purchaseCallbacksByProductId.containsKey(purchasingData.productId)) {
+            val existingCallback = state.purchaseCallbacksByProductId[purchasingData.productId]
+            if (existingCallback.isAbsentOrCancelled()) {
                 // When using DEFERRED proration mode, callback needs to be associated with the *old* product we are
                 // switching from, because the transaction we receive on successful purchase is for the old product.
                 // We also need to normalize oldProductId by stripping any basePlanId suffix
@@ -1994,7 +1996,11 @@ internal class PurchasesOrchestrator(
         return if (diagnosticsTrackerIfEnabled == null) {
             originalCallback
         } else {
-            object : PurchaseCallback {
+            val cancellableCallback = originalCallback as? CancellablePurchaseCallback
+            object : CancellablePurchaseCallback {
+                override val isCancelled: Boolean
+                    get() = cancellableCallback?.isCancelled == true
+
                 override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {
                     trackPurchaseResultIfNeeded(
                         purchasingData,
@@ -2190,3 +2196,6 @@ internal class PurchasesOrchestrator(
 
     // endregion
 }
+
+private fun PurchaseCallback?.isAbsentOrCancelled(): Boolean =
+    this == null || this is CancellablePurchaseCallback && isCancelled
