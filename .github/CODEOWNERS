@@ -1,13 +1,44 @@
 # CODEOWNERS for purchases-android
+#
+# The last matching pattern takes precedence, so rules go from broadest to most specific.
+# Code owner review is not required to merge: these rules only decide who gets a review request.
 
-# Default owners
+# Fallback for anything not matched below (build config, samples, test apps, CI, release files)
 * @RevenueCat/sdk
+
+# Core SDK
+/purchases/ @RevenueCat/coresdk
+/ui/debugview/ @RevenueCat/coresdk
+
+# Paywalls (V1 templates and V2 components)
+/ui/revenuecatui/ @RevenueCat/paywalls
+/purchases/src/**/com/revenuecat/purchases/paywalls/** @RevenueCat/paywalls
+/examples/paywall-tester/ @RevenueCat/paywalls
+
+# Checkpoints
+/purchases/src/**/com/revenuecat/purchases/checkpoints/** @RevenueCat/coresdk
+/ui/revenuecatui/src/**/com/revenuecat/purchases/ui/revenuecatui/checkpoints/** @RevenueCat/coresdk
+/examples/checkpointtester/ @RevenueCat/coresdk
+
+# Workflows
+/purchases/src/**/com/revenuecat/purchases/common/workflows/** @RevenueCat/workflows
+/ui/revenuecatui/src/**/com/revenuecat/purchases/ui/revenuecatui/workflow/** @RevenueCat/workflows
+/maestro/workflows/ @RevenueCat/workflows
+
+# Ads
+/purchases/src/**/com/revenuecat/purchases/ads/** @RevenueCat/ads
+/feature/admob/ @RevenueCat/ads
+/feature/admob-next-gen/ @RevenueCat/ads
+/examples/admob-sample/ @RevenueCat/ads
+/examples/admob-next-gen-sample/ @RevenueCat/ads
+/examples/vanilla-ad-tracker-sample/ @RevenueCat/ads
+/test-apps/admob-legacy-compatibility/ @RevenueCat/ads
 
 # Customer Center code and related UI tests
 /purchases/src/**/com/revenuecat/purchases/customercenter/** @RevenueCat/customer-center
 /ui/revenuecatui/src/**/com/revenuecat/purchases/ui/revenuecatui/customercenter/** @RevenueCat/customer-center
 
-# Paywalls
-/ui/revenuecatui/src/**/com/revenuecat/purchases/ui/revenuecatui/templates/** @RevenueCat/paywalls
-/ui/revenuecatui/src/**/com/revenuecat/purchases/ui/revenuecatui/views/** @RevenueCat/paywalls
-/purchases/src/**/com/revenuecat/purchases/paywalls/** @RevenueCat/paywalls
+# Public API surface: changes here should stay visible to the whole SDK team
+/purchases/api-*.txt @RevenueCat/sdk
+/**/api.txt @RevenueCat/sdk
+/api-tester/ @RevenueCat/sdk
