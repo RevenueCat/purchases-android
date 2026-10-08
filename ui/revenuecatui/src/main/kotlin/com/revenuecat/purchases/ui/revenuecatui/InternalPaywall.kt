@@ -387,7 +387,7 @@ private fun TemplatePaywall(state: PaywallState.Loaded.Legacy, viewModel: Paywal
 @Composable
 internal fun getPaywallViewModel(
     options: PaywallOptions,
-    shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null,
+    shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = options.shouldDisplayBlock,
 ): PaywallViewModel {
     val applicationContext = LocalContext.current.applicationContext
     val viewModel = viewModel<PaywallViewModelImpl>(
