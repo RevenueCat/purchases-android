@@ -2433,7 +2433,7 @@ class PaywallViewModelWorkflowTest {
             resourceProvider = MockResourceProvider(),
             purchases = purchases,
             options = PaywallOptions.Builder(dismissRequest = {})
-                .injectedWorkflow(twoOfferingWorkflow, offerings, uiConfig)
+                .injectedWorkflow(twoOfferingWorkflow, offerings, uiConfig, traceId = null, workflowBlobRef = null)
                 .build(),
             colorScheme = TestData.Constants.currentColorScheme,
             isDarkMode = false,
