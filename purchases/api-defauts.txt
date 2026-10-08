@@ -746,6 +746,7 @@ package com.revenuecat.purchases.ads.events {
     method public void trackAdLoaded(com.revenuecat.purchases.ads.events.types.AdLoadedData data);
     method public void trackAdOpened(com.revenuecat.purchases.ads.events.types.AdOpenedData data);
     method public void trackAdRevenue(com.revenuecat.purchases.ads.events.types.AdRevenueData data);
+    method public void trackAdRewardEarned(com.revenuecat.purchases.ads.events.types.AdRewardEarnedUnverifiedData data);
     method public void trackRewardedAdPromptAccepted(com.revenuecat.purchases.ads.events.types.AdRewardPromptAcceptedData data);
     method public void trackRewardedAdPromptShown(com.revenuecat.purchases.ads.events.types.AdRewardPromptShownData data);
   }
@@ -862,6 +863,22 @@ package com.revenuecat.purchases.ads.events.types {
     property public com.revenuecat.purchases.ads.events.types.AdRevenuePrecision EXACT;
     property public com.revenuecat.purchases.ads.events.types.AdRevenuePrecision PUBLISHER_DEFINED;
     property public com.revenuecat.purchases.ads.events.types.AdRevenuePrecision UNKNOWN;
+  }
+
+  @dev.drewhamilton.poko.Poko public final class AdRewardEarnedUnverifiedData {
+    ctor @KotlinOnly public AdRewardEarnedUnverifiedData(String? networkName, com.revenuecat.purchases.ads.events.types.AdMediatorName mediatorName, com.revenuecat.purchases.ads.events.types.AdFormat adFormat, String? placement, String adUnitId, String impressionId, optional boolean rewardVerificationEnabled);
+    method @InaccessibleFromKotlin public String getAdUnitId();
+    method @InaccessibleFromKotlin public String getImpressionId();
+    method @InaccessibleFromKotlin public String? getNetworkName();
+    method @InaccessibleFromKotlin public String? getPlacement();
+    method @InaccessibleFromKotlin public boolean getRewardVerificationEnabled();
+    property public com.revenuecat.purchases.ads.events.types.AdFormat adFormat;
+    property public String adUnitId;
+    property public String impressionId;
+    property public com.revenuecat.purchases.ads.events.types.AdMediatorName mediatorName;
+    property public String? networkName;
+    property public String? placement;
+    property public boolean rewardVerificationEnabled;
   }
 
   @dev.drewhamilton.poko.Poko public final class AdRewardPromptAcceptedData {

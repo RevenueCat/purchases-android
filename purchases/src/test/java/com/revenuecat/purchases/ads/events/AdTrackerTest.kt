@@ -250,11 +250,11 @@ class AdTrackerTest {
     }
 
     @Test
-    fun `trackAdRewardEarnedUnverified tracks reward earned unverified event`() {
+    fun `trackAdRewardEarned tracks reward earned unverified event without reward verification`() {
         val eventSlot = slot<AdEvent.RewardEarnedUnverified>()
         every { eventsManager.track(capture(eventSlot)) } just Runs
 
-        adTracker.trackAdRewardEarnedUnverified(
+        adTracker.trackAdRewardEarned(
             data = AdRewardEarnedUnverifiedData(
                 networkName = "Google AdMob",
                 mediatorName = AdMediatorName.AD_MOB,
@@ -262,9 +262,7 @@ class AdTrackerTest {
                 placement = "rewarded_video",
                 adUnitId = "ca-app-pub-123456",
                 impressionId = "impression-123",
-                rewardVerificationEnabled = true,
             ),
-            captureMethod = AdCaptureMethod.MANUAL,
         )
 
         verify(exactly = 1) { eventsManager.track(any<AdEvent.RewardEarnedUnverified>()) }
@@ -275,7 +273,7 @@ class AdTrackerTest {
         assertThat(eventSlot.captured.placement).isEqualTo("rewarded_video")
         assertThat(eventSlot.captured.adUnitId).isEqualTo("ca-app-pub-123456")
         assertThat(eventSlot.captured.impressionId).isEqualTo("impression-123")
-        assertThat(eventSlot.captured.rewardVerificationEnabled).isTrue()
+        assertThat(eventSlot.captured.rewardVerificationEnabled).isFalse()
         assertThat(eventSlot.captured.type).isEqualTo(AdEventType.REWARD_EARNED_UNVERIFIED)
         assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.MANUAL)
     }
