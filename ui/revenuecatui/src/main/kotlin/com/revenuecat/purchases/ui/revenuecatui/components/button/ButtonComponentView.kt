@@ -113,9 +113,12 @@ internal fun ButtonComponentView(
         val anyActionInProgress by state::actionInProgress
         // Whether this button's action is in progress.
         var myActionInProgress by remember { mutableStateOf(false) }
-        val contentAlpha by remember {
-            derivedStateOf { if (myActionInProgress) 0f else if (anyActionInProgress) ALPHA_DISABLED else 1f }
-        }
+        val canRunWhileActionInProgress = style.action.canRunWhileActionInProgress()
+        val contentAlpha = buttonContentAlpha(
+            myActionInProgress,
+            anyActionInProgress,
+            canRunWhileActionInProgress,
+        )
         val progressAlpha by remember { derivedStateOf { if (myActionInProgress) 1f else 0f } }
         val animatedContentAlpha = animateFloatAsState(targetValue = contentAlpha)
         val animatedProgressAlpha by animateFloatAsState(targetValue = progressAlpha)
@@ -154,7 +157,7 @@ internal fun ButtonComponentView(
                     clickHandler = { },
                     componentInteractionTracker = componentInteractionTracker,
                     contentAlpha = contentAlphaProvider,
-                    enabled = !anyActionInProgress,
+                    enabled = !anyActionInProgress || canRunWhileActionInProgress,
                     onStackClick = onStackClick@{
                         val paywallAction = buttonState.action ?: return@onStackClick
                         val actionForClick = if (style.action.isPurchaseRelated()) {
@@ -251,6 +254,19 @@ internal fun ButtonComponentView(
             },
         )
     }
+}
+
+private fun ButtonComponentStyle.Action.canRunWhileActionInProgress(): Boolean =
+    this is ButtonComponentStyle.Action.CloseWorkflow || this is ButtonComponentStyle.Action.NavigateBack
+
+private fun buttonContentAlpha(
+    myActionInProgress: Boolean,
+    anyActionInProgress: Boolean,
+    canRunWhileActionInProgress: Boolean,
+): Float = when {
+    myActionInProgress -> 0f
+    anyActionInProgress && !canRunWhileActionInProgress -> ALPHA_DISABLED
+    else -> 1f
 }
 
 internal fun CoroutineScope.launchButtonAction(

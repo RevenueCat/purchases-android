@@ -248,6 +248,16 @@ class ButtonComponentViewTests {
     }
 
     @Test
+    fun `the gate does not disable navigate back`() {
+        assertDismissActionEnabled(ButtonComponentStyle.Action.NavigateBack)
+    }
+
+    @Test
+    fun `the gate does not disable close workflow`() {
+        assertDismissActionEnabled(ButtonComponentStyle.Action.CloseWorkflow)
+    }
+
+    @Test
     fun `onClick ignores further clicks until processing current click is done`() {
         var actionHandleCalledCount = 0
         val completable = CompletableDeferred<Unit>()
@@ -278,6 +288,20 @@ class ButtonComponentViewTests {
         purchaseButton.performClick()
 
         assertThat(actionHandleCalledCount).isEqualTo(2)
+    }
+
+    private fun assertDismissActionEnabled(action: ButtonComponentStyle.Action) {
+        val state = FakePaywallState(
+            packages = listOf(TestData.Packages.annual),
+            viewModelActionInProgress = mutableStateOf(true),
+        )
+        val navigationButtonStyle = purchaseButtonStyle.copy(action = action)
+
+        composeTestRule.setContent {
+            ButtonComponentView(style = navigationButtonStyle, state = state, onClick = {})
+        }
+
+        composeTestRule.onNodeWithText("Purchase").assertIsEnabled()
     }
 
     @Test

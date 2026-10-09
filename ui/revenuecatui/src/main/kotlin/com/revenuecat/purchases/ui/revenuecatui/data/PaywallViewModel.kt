@@ -76,6 +76,7 @@ import com.revenuecat.purchases.ui.revenuecatui.workflow.NavigationDirection
 import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowNavigator
 import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowScreenMapper
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -84,6 +85,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -214,6 +216,9 @@ internal class PaywallViewModelImpl(
     private var paywallPresentationData: PaywallEvent.Data? = null
 
     private var workflowNavigator: WorkflowNavigator? = null
+
+    /** The single in-flight purchase/restore action, see [runExclusiveAction]. */
+    private var runningAction: RunningAction? = null
     private var branchResolveJob: Job? = null
     private var initialStepJob: Job? = null
     private var resolvedInitialStepId: String? = null
@@ -400,6 +405,7 @@ internal class PaywallViewModelImpl(
     }
 
     override fun onPaywallPresented() {
+        cancelActionOrphanedByClose()
         if (!shouldReloadStateOnNextPresentation) return
 
         shouldReloadStateOnNextPresentation = false
@@ -599,10 +605,12 @@ internal class PaywallViewModelImpl(
         }
     }
 
-    override suspend fun handleRestorePurchases() = runExclusiveAction { performRestore() }
+    override suspend fun handleRestorePurchases() = runExclusiveAction { actionPresentationGeneration ->
+        performRestore(actionPresentationGeneration)
+    }
 
     @Suppress("NestedBlockDepth", "CyclomaticComplexMethod", "LongMethod")
-    private suspend fun performRestore() {
+    private suspend fun performRestore(actionPresentationGeneration: Int) {
         val shouldResume = suspendCancellableCoroutine { continuation ->
             Logger.d("Restore Purchases Initiated… waiting for listener.onRestoreInitiated to proceed.")
             listener?.onRestoreInitiated { shouldResume ->
@@ -630,13 +638,15 @@ internal class PaywallViewModelImpl(
                     when (val result = customRestoreHandler(customerInfo)) {
                         is PurchaseLogicResult.Success -> {
                             val updatedCustomerInfo = purchases.awaitSyncPurchases()
-                            // A successful restore is a natural workflow exit, not an abandonment, even if
-                            // the paywall stays visible (no shouldDisplayBlock). Suppress workflow_close.
-                            workflowCompletedInSession = true
-
-                            shouldDisplayBlock?.let {
-                                if (!it(updatedCustomerInfo)) {
-                                    _purchaseCompleted.value = true
+                            val shouldDismiss = shouldDisplayBlock?.invoke(updatedCustomerInfo) == false
+                            if (shouldDismiss) {
+                                _purchaseCompleted.value = true
+                            }
+                            if (isCurrentPresentation(actionPresentationGeneration)) {
+                                // A successful restore is a natural workflow exit, not an abandonment, even if
+                                // the paywall stays visible (no shouldDisplayBlock). Suppress workflow_close.
+                                workflowCompletedInSession = true
+                                if (shouldDismiss) {
                                     Logger.d(
                                         "Dismissing paywall after restore since display " +
                                             "condition has not been met",
@@ -665,14 +675,17 @@ internal class PaywallViewModelImpl(
                     }
                     val customerInfo = purchases.awaitRestore()
                     Logger.i("Restore purchases successful: $customerInfo")
-                    // A successful restore is a natural workflow exit, not an abandonment, even if the
-                    // paywall stays visible (no shouldDisplayBlock). Suppress workflow_close on dismiss.
-                    workflowCompletedInSession = true
                     listener?.onRestoreCompleted(customerInfo)
 
-                    shouldDisplayBlock?.let {
-                        if (!it(customerInfo)) {
-                            _purchaseCompleted.value = true
+                    val shouldDismiss = shouldDisplayBlock?.invoke(customerInfo) == false
+                    if (shouldDismiss) {
+                        _purchaseCompleted.value = true
+                    }
+                    if (isCurrentPresentation(actionPresentationGeneration)) {
+                        // A successful restore is a natural workflow exit, not an abandonment, even if
+                        // the paywall stays visible (no shouldDisplayBlock). Suppress workflow_close on dismiss.
+                        workflowCompletedInSession = true
+                        if (shouldDismiss) {
                             Logger.d("Dismissing paywall after restore since display condition has not been met")
                             trackCurrentWorkflowStepCompleted()
                             // Bypasses closePaywall, so end the retained ViewModel's presentation session here.
@@ -694,9 +707,16 @@ internal class PaywallViewModelImpl(
     }
 
     override suspend fun handlePackagePurchase(activity: Activity, pkg: Package?, resolvedOffer: ResolvedOffer?) =
-        runExclusiveAction { performPackagePurchase(activity, pkg, resolvedOffer) }
+        runExclusiveAction { actionPresentationGeneration ->
+            performPackagePurchase(activity, pkg, resolvedOffer, actionPresentationGeneration)
+        }
 
-    private suspend fun performPackagePurchase(activity: Activity, pkg: Package?, resolvedOffer: ResolvedOffer?) {
+    private suspend fun performPackagePurchase(
+        activity: Activity,
+        pkg: Package?,
+        resolvedOffer: ResolvedOffer?,
+        actionPresentationGeneration: Int,
+    ) {
         when (val currentState = _state.value) {
             is PaywallState.Loaded.Legacy -> {
                 val selectedPackage = currentState.selectedPackage.value
@@ -704,6 +724,7 @@ internal class PaywallViewModelImpl(
                     activity = activity,
                     packageToPurchase = selectedPackage.rcPackage,
                     subscriptionOption = null,
+                    actionPresentationGeneration = actionPresentationGeneration,
                 )
             }
             is PaywallState.Loaded.Components -> {
@@ -716,7 +737,12 @@ internal class PaywallViewModelImpl(
                     )
                 } ?: currentState.selectedPackageInfo
                 val productChangeConfig = currentState.offering.paywallComponents?.dataOrNull?.productChangeConfig
-                performPurchaseIfNecessary(activity, selectedPackageInfo, productChangeConfig)
+                performPurchaseIfNecessary(
+                    activity,
+                    selectedPackageInfo,
+                    productChangeConfig,
+                    actionPresentationGeneration,
+                )
             }
             is PaywallState.Error,
             is PaywallState.Loading,
@@ -728,6 +754,7 @@ internal class PaywallViewModelImpl(
         activity: Activity,
         packageInfo: PaywallState.Loaded.Components.SelectedPackageInfo?,
         productChangeConfig: ProductChangeConfig?,
+        actionPresentationGeneration: Int,
     ) {
         if (packageInfo == null) {
             Logger.w("Ignoring purchase request as no package is selected")
@@ -737,6 +764,7 @@ internal class PaywallViewModelImpl(
                 packageToPurchase = packageInfo.rcPackage,
                 productChangeConfig = productChangeConfig,
                 subscriptionOption = packageInfo.resolvedOffer?.subscriptionOption,
+                actionPresentationGeneration = actionPresentationGeneration,
             )
         }
     }
@@ -747,6 +775,7 @@ internal class PaywallViewModelImpl(
         packageToPurchase: Package,
         productChangeConfig: ProductChangeConfig? = null,
         subscriptionOption: SubscriptionOption?,
+        actionPresentationGeneration: Int,
     ) {
         // Call onPurchasePackageInitiated and wait for resume() to be called
 
@@ -789,10 +818,12 @@ internal class PaywallViewModelImpl(
                         is PurchaseLogicResult.Success -> {
                             val customerInfo = purchases.awaitSyncPurchases()
                             _purchaseCompleted.value = true
-                            // Set before closePaywall so the abandonment gate sees this as a completion.
-                            workflowCompletedInSession = true
-                            Logger.d("Dismissing paywall after purchase")
-                            closePaywall(PaywallResult.Purchased(customerInfo))
+                            if (isCurrentPresentation(actionPresentationGeneration)) {
+                                // Set before closePaywall so the abandonment gate sees this as a completion.
+                                workflowCompletedInSession = true
+                                Logger.d("Dismissing paywall after purchase")
+                                closePaywall(PaywallResult.Purchased(customerInfo))
+                            }
                         }
                         is PurchaseLogicResult.Cancellation -> {
                             trackPaywallCancel()
@@ -835,14 +866,16 @@ internal class PaywallViewModelImpl(
 
                     val purchaseResult = purchases.awaitPurchase(purchaseParamsBuilder)
                     _purchaseCompleted.value = true
-                    workflowCompletedInSession = true
                     listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
-                    Logger.d("Dismissing paywall after purchase")
-                    trackCurrentWorkflowStepCompleted()
-                    // This direct-dismiss completion bypasses closePaywall, so end the retained ViewModel's
-                    // presentation session here.
-                    endPresentationSession()
-                    options.dismissRequest()
+                    if (isCurrentPresentation(actionPresentationGeneration)) {
+                        workflowCompletedInSession = true
+                        Logger.d("Dismissing paywall after purchase")
+                        trackCurrentWorkflowStepCompleted()
+                        // This direct-dismiss completion bypasses closePaywall, so end the retained ViewModel's
+                        // presentation session here.
+                        endPresentationSession()
+                        options.dismissRequest()
+                    }
                 }
                 else -> {
                     Logger.e("Unsupported purchase completion type: ${purchases.purchasesAreCompletedBy}")
@@ -1812,39 +1845,62 @@ internal class PaywallViewModelImpl(
     /**
      * Runs [block] as the paywall's single in-flight action, releasing the gate when it finishes.
      *
-     * Runs on [viewModelScope] and is only joined by the caller: callers are composition-scoped, and
-     * awaitPurchase does not forward their cancellation to the store, so running it on the caller's
-     * scope would abandon a live purchase and strand the gate.
+     * Runs on [viewModelScope] and is only joined by the caller: callers are composition-scoped, so running the
+     * action on their scope would abandon a live purchase when the button leaves composition. Closing the paywall
+     * does not cancel the action either (see [cancelActionOrphanedByClose]).
      */
-    private suspend fun runExclusiveAction(block: suspend () -> Unit) {
-        if (verifyNoActionInProgressOrStartAction()) {
+    private suspend fun runExclusiveAction(block: suspend (actionPresentationGeneration: Int) -> Unit) {
+        cancelActionOrphanedByClose()
+        if (runningAction != null) {
+            Logger.d("Ignoring purchase or restore because there already is an action in progress")
             return
         }
-        viewModelScope.launch {
+        val actionPresentationGeneration = presentationGeneration
+        // Started lazily so runningAction is assigned before the body can run and reach finishActionIfCurrent.
+        val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
             try {
-                block()
+                block(actionPresentationGeneration)
             } finally {
-                finishAction()
+                finishActionIfCurrent(coroutineContext.job)
             }
-        }.join()
+        }
+        runningAction = RunningAction(job, actionPresentationGeneration)
+        _actionInProgress.value = true
+        job.start()
+        job.join()
+    }
+
+    private fun isCurrentPresentation(actionPresentationGeneration: Int): Boolean =
+        presentationGeneration == actionPresentationGeneration
+
+    /**
+     * Releases the gate only if [job] is still the current action. An orphaned action that was already
+     * cancelled and replaced must not clear the gate held by its successor.
+     */
+    private fun finishActionIfCurrent(job: Job) {
+        if (runningAction?.job === job) clearRunningAction()
     }
 
     /**
-     * @return true if there already was an action in progress
+     * An action still running when its presentation ended is left alive so a late store result still reaches the
+     * listener, but is cancelled on the next presentation or action: a result that never arrives (e.g. Google Play
+     * UI dismissed by backgrounding) must not wedge the gate, and cancelling frees the store-side purchase slot so
+     * the same product can be retried.
      */
-    private fun verifyNoActionInProgressOrStartAction(): Boolean {
-        if (_actionInProgress.value) {
-            Logger.d("Ignoring purchase or restore because there already is an action in progress")
-            return true
-        }
-
-        _actionInProgress.value = true
-        return false
+    private fun cancelActionOrphanedByClose() {
+        val action = runningAction ?: return
+        if (isCurrentPresentation(action.presentationGeneration)) return
+        // Clear before cancel(): on Main.immediate the orphan's finally can run synchronously.
+        clearRunningAction()
+        action.job.cancel()
     }
 
-    private fun finishAction() {
+    private fun clearRunningAction() {
+        runningAction = null
         _actionInProgress.value = false
     }
+
+    private class RunningAction(val job: Job, val presentationGeneration: Int)
 
     private fun trackPaywallClose() {
         if (paywallPresentationData != null) {

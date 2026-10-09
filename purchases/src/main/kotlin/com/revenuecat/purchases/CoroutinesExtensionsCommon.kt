@@ -74,18 +74,19 @@ public suspend fun Purchases.awaitOfferingsResult(): Result<Offerings> =
 @Throws(PurchasesTransactionException::class)
 public suspend fun Purchases.awaitPurchase(purchaseParams: PurchaseParams): PurchaseResult {
     return suspendCancellableCoroutine { continuation ->
+        val callback = purchaseCompletedCallback(
+            onSuccess = { storeTransaction, customerInfo ->
+                continuation.safeResume(PurchaseResult(storeTransaction, customerInfo))
+            },
+            onError = { purchasesError, userCancelled ->
+                continuation.safeResumeWithException(
+                    PurchasesTransactionException(purchasesError, userCancelled),
+                )
+            },
+        ).asCancellable { continuation.isCancelled }
         purchase(
             purchaseParams = purchaseParams,
-            callback = purchaseCompletedCallback(
-                onSuccess = { storeTransaction, customerInfo ->
-                    continuation.safeResume(PurchaseResult(storeTransaction, customerInfo))
-                },
-                onError = { purchasesError, userCancelled ->
-                    continuation.safeResumeWithException(
-                        PurchasesTransactionException(purchasesError, userCancelled),
-                    )
-                },
-            ),
+            callback = callback,
         )
     }
 }
@@ -108,20 +109,10 @@ public suspend fun Purchases.awaitPurchase(purchaseParams: PurchaseParams): Purc
  */
 @JvmSynthetic
 public suspend fun Purchases.awaitPurchaseResult(purchaseParams: PurchaseParams): Result<PurchaseResult> {
-    return suspendCancellableCoroutine { continuation ->
-        purchase(
-            purchaseParams = purchaseParams,
-            callback = purchaseCompletedCallback(
-                onSuccess = { storeTransaction, customerInfo ->
-                    continuation.safeResume(Result.success(PurchaseResult(storeTransaction, customerInfo)))
-                },
-                onError = { purchasesError, userCancelled ->
-                    continuation.safeResume(
-                        Result.failure(PurchasesTransactionException(purchasesError, userCancelled)),
-                    )
-                },
-            ),
-        )
+    return try {
+        Result.success(awaitPurchase(purchaseParams))
+    } catch (exception: PurchasesTransactionException) {
+        Result.failure(exception)
     }
 }
 
