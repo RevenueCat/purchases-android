@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">в порядку</string>
+    <string name="loading">Завантаження</string>
     <string name="all_plans">Всі підписки</string>
     <string name="privacy">Конфіденційність</string>
     <string name="privacy_policy">Політика конфіденційності</string>

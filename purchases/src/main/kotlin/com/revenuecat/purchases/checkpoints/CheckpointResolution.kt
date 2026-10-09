@@ -32,6 +32,9 @@ public sealed class CheckpointResolution {
      * the rules topic did not carry an id for that rule.
      *
      * [traceId] is shared by the hit event and every event of the workflow run, so they can be joined.
+     *
+     * [workflowBlobRef] identifies the exact workflow blob that was served, for the workflow run's events to
+     * attribute fallback steps and experiments against. It is null when it could not be read.
      */
     public data class MatchedWorkflow(
         val workflow: PublishedWorkflow,
@@ -39,6 +42,7 @@ public sealed class CheckpointResolution {
         val offerings: Offerings,
         val checkpointRuleId: String?,
         val traceId: String,
+        val workflowBlobRef: String?,
     ) : CheckpointResolution()
 
     /** Nothing should be served for this checkpoint; the user continues uninterrupted. */

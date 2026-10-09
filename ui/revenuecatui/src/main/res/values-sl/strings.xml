@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">V redu</string>
+    <string name="loading">Nalaganje</string>
     <string name="all_plans">Vse naročnine</string>
     <string name="privacy">Zasebnost</string>
     <string name="privacy_policy">Pravilnik o zasebnosti</string>

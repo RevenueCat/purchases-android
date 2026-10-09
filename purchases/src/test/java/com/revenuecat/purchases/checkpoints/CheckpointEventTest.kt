@@ -99,6 +99,7 @@ class CheckpointEventTest {
         offerings = mockk(),
         checkpointRuleId = checkpointRuleId,
         traceId = "trace_wf1234",
+        workflowBlobRef = null,
     )
 
     private fun matchedOffering(checkpointRuleId: String?) = CheckpointResolution.MatchedOffering(

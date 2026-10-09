@@ -68,6 +68,7 @@ public class PaywallOptions internal constructor(
     internal val injectedWorkflowUiConfig: UiConfig = emptyUiConfig(),
     internal val injectedWorkflowOfferings: Offerings? = null,
     internal val injectedWorkflowTraceId: String? = null,
+    internal val injectedWorkflowBlobRef: String? = null,
     internal val errorPresenter: PaywallErrorPresenter? = null,
 ) {
     public companion object {
@@ -88,6 +89,7 @@ public class PaywallOptions internal constructor(
         injectedWorkflowUiConfig = builder.injectedWorkflowUiConfig,
         injectedWorkflowOfferings = builder.injectedWorkflowOfferings,
         injectedWorkflowTraceId = builder.injectedWorkflowTraceId,
+        injectedWorkflowBlobRef = builder.injectedWorkflowBlobRef,
         errorPresenter = builder.errorPresenter,
     )
 
@@ -103,6 +105,7 @@ public class PaywallOptions internal constructor(
         result = hashMultiplier * result + injectedWorkflowUiConfig.hashCode()
         result = hashMultiplier * result + injectedWorkflowOfferings.hashCode()
         result = hashMultiplier * result + injectedWorkflowTraceId.hashCode()
+        result = hashMultiplier * result + injectedWorkflowBlobRef.hashCode()
         return result
     }
 
@@ -123,6 +126,7 @@ public class PaywallOptions internal constructor(
             this.injectedWorkflowUiConfig != other.injectedWorkflowUiConfig -> false
             this.injectedWorkflowOfferings != other.injectedWorkflowOfferings -> false
             this.injectedWorkflowTraceId != other.injectedWorkflowTraceId -> false
+            this.injectedWorkflowBlobRef != other.injectedWorkflowBlobRef -> false
             else -> this.dismissRequest == other.dismissRequest
         }
     }
@@ -141,6 +145,7 @@ public class PaywallOptions internal constructor(
         injectedWorkflowUiConfig: UiConfig = this.injectedWorkflowUiConfig,
         injectedWorkflowOfferings: Offerings? = this.injectedWorkflowOfferings,
         injectedWorkflowTraceId: String? = this.injectedWorkflowTraceId,
+        injectedWorkflowBlobRef: String? = this.injectedWorkflowBlobRef,
         errorPresenter: PaywallErrorPresenter? = this.errorPresenter,
     ): PaywallOptions = PaywallOptions(
         offeringSelection = offeringSelection,
@@ -156,6 +161,7 @@ public class PaywallOptions internal constructor(
         injectedWorkflowUiConfig = injectedWorkflowUiConfig,
         injectedWorkflowOfferings = injectedWorkflowOfferings,
         injectedWorkflowTraceId = injectedWorkflowTraceId,
+        injectedWorkflowBlobRef = injectedWorkflowBlobRef,
         errorPresenter = errorPresenter,
     )
 
@@ -175,6 +181,7 @@ public class PaywallOptions internal constructor(
         internal var injectedWorkflowUiConfig: UiConfig = emptyUiConfig()
         internal var injectedWorkflowOfferings: Offerings? = null
         internal var injectedWorkflowTraceId: String? = null
+        internal var injectedWorkflowBlobRef: String? = null
         internal var errorPresenter: PaywallErrorPresenter? = null
 
         public fun setOffering(offering: Offering?): Builder = apply {
@@ -263,6 +270,8 @@ public class PaywallOptions internal constructor(
                 workflow,
                 Offerings(current = offering, all = offering?.let { mapOf(it.identifier to it) }.orEmpty()),
                 uiConfig,
+                traceId = null,
+                workflowBlobRef = null,
             )
             this.offeringSelection = offering?.let { OfferingSelection.OfferingType(it) }
                 ?: OfferingSelection.None
@@ -272,17 +281,34 @@ public class PaywallOptions internal constructor(
          * Injects a pre-built workflow whose steps resolve their offering from [offerings] as they are reached, the
          * way a fetched workflow does. Leaves the offering selection alone, so no presented offering context is
          * stamped on the steps' offerings. A [traceId] replaces the one the workflow run would otherwise create.
+         *
+         * RevenueCat use only. Lets a test open one workflow by id, where the steps reference more than the single
+         * offering the [injectedWorkflow] above takes.
+         */
+        @InternalRevenueCatAPI
+        public fun injectedWorkflow(
+            workflow: PublishedWorkflow,
+            offerings: Offerings,
+            uiConfig: UiConfig,
+            traceId: String? = null,
+        ): Builder = injectedWorkflow(workflow, offerings, uiConfig, traceId, workflowBlobRef = null)
+
+        /**
+         * Same as the [injectedWorkflow] above, plus the [workflowBlobRef] identifying the served workflow blob on
+         * the run's events. Checkpoints use it, since their workflow is resolved before the paywall is presented.
          */
         internal fun injectedWorkflow(
             workflow: PublishedWorkflow,
             offerings: Offerings,
             uiConfig: UiConfig,
-            traceId: String? = null,
+            traceId: String?,
+            workflowBlobRef: String?,
         ): Builder = apply {
             this.injectedWorkflow = workflow
             this.injectedWorkflowOfferings = offerings
             this.injectedWorkflowUiConfig = uiConfig
             this.injectedWorkflowTraceId = traceId
+            this.injectedWorkflowBlobRef = workflowBlobRef
         }
 
         public fun build(): PaywallOptions {

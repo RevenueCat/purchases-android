@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">OK</string>
+    <string name="loading">Жүктелуде</string>
     <string name="all_plans">Барлық жазылымдар</string>
     <string name="privacy">Құпиялық</string>
     <string name="privacy_policy">Құпиялық саясаты</string>

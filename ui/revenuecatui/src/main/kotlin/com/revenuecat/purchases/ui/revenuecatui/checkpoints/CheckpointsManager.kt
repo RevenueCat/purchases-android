@@ -199,6 +199,7 @@ internal class CheckpointsManager(
                     presentation.workflow.offerings,
                     presentation.workflow.uiConfig,
                     presentation.workflow.traceId,
+                    presentation.workflow.workflowBlobRef,
                 )
                 .build()
         }
