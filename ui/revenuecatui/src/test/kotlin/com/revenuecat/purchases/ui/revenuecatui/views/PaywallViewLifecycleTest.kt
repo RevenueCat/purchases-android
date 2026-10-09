@@ -1,9 +1,13 @@
 package com.revenuecat.purchases.ui.revenuecatui.views
 
 import android.os.Looper
+import android.view.View
+import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.activity.ComponentActivity
 import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Purchases
@@ -28,6 +32,7 @@ import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
+import java.time.Duration
 
 @RunWith(RobolectricTestRunner::class)
 class PaywallViewLifecycleTest {
@@ -87,6 +92,75 @@ class PaywallViewLifecycleTest {
 
         assertThat(viewModel.state.value).isEqualTo(PaywallState.Loading)
     }
+
+    @Test
+    fun `PaywallView does not crash when recomposing while cached by a RecyclerView`() {
+        val activity = Robolectric.buildActivity(PaywallViewHostActivity::class.java).setup().get()
+        val paywallView = PaywallView(
+            context = activity,
+            offering = TestData.template1Offering,
+            listener = null,
+            fontProvider = null,
+            shouldDisplayDismissButton = true,
+            dismissHandler = {},
+        )
+        val recyclerView = RecyclerView(activity).apply {
+            layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
+            adapter = PaywallFirstAdapter(paywallView, itemCount = 3)
+        }
+        activity.setContentView(recyclerView)
+        shadowOf(Looper.getMainLooper()).idle()
+        assertThat(paywallView.isAttachedToWindow).isTrue()
+
+        // Like ViewPager2 moving one page: scrolling puts the paywall's item in the RecyclerView's view cache. It's
+        // detached from the window but not released to the pool, so the default composition strategy keeps its
+        // composition. This needs a scroll: jumping with scrollToPosition re-lays out the list, and that path detaches
+        // the item from its parent first, so its composition is disposed and the bug doesn't reproduce.
+        recyclerView.scrollBy(recyclerView.width, 0)
+        shadowOf(Looper.getMainLooper()).idle()
+        assertThat(paywallView.isAttachedToWindow).isFalse()
+
+        // Recomposition runs on a frame, outside of the test's call stack.
+        val exceptions = mutableListOf<Throwable>()
+        val previousHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { _, throwable -> exceptions.add(throwable) }
+        try {
+            paywallView.setDisplayDismissButton(false)
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(1))
+        } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
+            exceptions.add(e)
+        } finally {
+            Thread.setDefaultUncaughtExceptionHandler(previousHandler)
+        }
+
+        assertThat(exceptions).isEmpty()
+    }
 }
 
 class PaywallViewHostActivity : ComponentActivity()
+
+private class PaywallFirstAdapter(
+    private val paywallView: PaywallView,
+    private val itemCount: Int,
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+
+    override fun getItemCount(): Int = itemCount
+
+    override fun getItemViewType(position: Int): Int = if (position == 0) PAYWALL_TYPE else FILLER_TYPE
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        val view = if (viewType == PAYWALL_TYPE) paywallView else View(parent.context)
+        view.layoutParams = RecyclerView.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT,
+        )
+        return object : RecyclerView.ViewHolder(view) {}
+    }
+
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) = Unit
+
+    private companion object {
+        const val PAYWALL_TYPE = 0
+        const val FILLER_TYPE = 1
+    }
+}
