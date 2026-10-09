@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -33,6 +34,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,14 +57,19 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.UiConfig
+import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialog
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
+import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import com.revenuecat.purchases.Package as RCPackage
 
 @SuppressWarnings("LongParameterList")
@@ -147,11 +154,32 @@ private fun OfferingsListScreen(
 
     val showDialog = remember { mutableStateOf(false) }
     var showCustomVariablesEditor by remember { mutableStateOf(false) }
+    var presentedFlow by remember { mutableStateOf<Pair<PublishedWorkflow, UiConfig>?>(null) }
+    var presentedUiLessOffering by remember { mutableStateOf<Offering?>(null) }
+    var flowError by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+    val openFlow: (String) -> Unit = { workflowId ->
+        scope.launch {
+            runCatching {
+                Purchases.sharedInstance.awaitGetWorkflow(workflowId) to Purchases.sharedInstance.awaitGetUiConfig()
+            }
+                .onSuccess { presentedFlow = it }
+                .onFailure { flowError = it.message ?: it.toString() }
+        }
+    }
+    val openUiLessFlow: (String) -> Unit = { offeringId ->
+        offeringsState.offerings.all[offeringId]
+            ?.let { presentedUiLessOffering = it }
+            ?: run { flowError = "Offering '$offeringId' is not in the offerings." }
+    }
+    val query = offeringsState.searchQuery.lowercase().trim()
+    val flows = offeringsState.flows.filter { query.isEmpty() || it.matches(query) }
 
     // Filter and group offerings by template
-    val groupedOfferings = remember(offeringsState.offerings, offeringsState.searchQuery) {
-        val query = offeringsState.searchQuery.lowercase().trim()
-        val allOfferings = offeringsState.offerings.all.values
+    val groupedOfferings = remember(offeringsState.offerings, offeringsState.searchQuery, offeringsState.flows) {
+        // A claimed offering is opened through its flow in the Flows section.
+        val claimed = offeringsState.flows.mapNotNull { it.claimedOfferingId }.toSet()
+        val allOfferings = offeringsState.offerings.all.values.filterNot { it.identifier in claimed }
         val filtered = if (query.isEmpty()) {
             allOfferings.toList()
         } else {
@@ -164,7 +192,7 @@ private fun OfferingsListScreen(
         filtered.groupBy { offering ->
             offering.paywallComponents?.dataOrNull?.templateName?.let { "V2 — $it" }
                 ?: offering.paywall?.templateName?.let { "Template $it" }
-                ?: "No paywall"
+                ?: UNCLAIMED_OFFERINGS
         }.toSortedMap(
             compareBy {
                 // Sort: templates first, then V2, then no paywall last
@@ -215,6 +243,26 @@ private fun OfferingsListScreen(
                 HorizontalDivider()
             }
 
+            val screenFlows = flows.filter { it.uiLessOfferingId == null }
+            if (screenFlows.isNotEmpty()) {
+                item { SectionHeader("Flows", "Opened by id. Shows the offering each flow is attached to.") }
+                items(screenFlows, key = { "flow_${it.id}" }) { flow ->
+                    FlowListItem(flow.name ?: flow.id, flow.subtitle, isError = flow.error != null) {
+                        openFlow(flow.id)
+                    }
+                }
+            }
+            val uiLessFlows = flows.filter { it.uiLessOfferingId != null }
+            if (uiLessFlows.isNotEmpty()) {
+                item { SectionHeader("UI-less flows", "Return only an offering. Opens that offering, like an app.") }
+                items(uiLessFlows, key = { "uiless_${it.id}" }) { flow ->
+                    val offeringId = flow.uiLessOfferingId.orEmpty()
+                    FlowListItem(flow.name ?: flow.id, "Offering: $offeringId", isError = false) {
+                        openUiLessFlow(offeringId)
+                    }
+                }
+            }
+
             // Recents section
             val recentOfferings = offeringsState.recentOfferingIds.mapNotNull { id ->
                 offeringsState.offerings.all[id]
@@ -246,14 +294,24 @@ private fun OfferingsListScreen(
                 item { HorizontalDivider() }
             }
 
+            val firstPaywallSection = groupedOfferings.keys.firstOrNull { it != UNCLAIMED_OFFERINGS }
             groupedOfferings.forEach { (sectionTitle, offerings) ->
                 item(key = "header_$sectionTitle") {
-                    SectionHeader(sectionTitle)
+                    when (sectionTitle) {
+                        UNCLAIMED_OFFERINGS -> SectionHeader(
+                            sectionTitle,
+                            "No paywall or flow attached. Opens the fallback.",
+                        )
+                        firstPaywallSection -> SectionHeader(sectionTitle, "Paywalls attached directly to an offering.")
+                        else -> SectionHeader(sectionTitle)
+                    }
                 }
                 items(offerings, key = { it.identifier }) { offering ->
                     val rowKey = offering.identifier
+                    val usedBy = offeringsState.flows.filter { it.uses(offering.identifier) }.map { it.name ?: it.id }
                     OfferingRow(
                         offering = offering,
+                        subtitleOverride = usedBy.takeIf { it.isNotEmpty() }?.joinToString(prefix = "Used by: "),
                         isMenuExpanded = dropdownExpandedKey == rowKey,
                         onTap = {
                             tappedOnNavigateToOffering(offering)
@@ -347,7 +405,58 @@ private fun OfferingsListScreen(
     if (showDialog.value) {
         PlacementDialog(tappedOnNavigateToOfferingByPlacement = tappedOnNavigateToOfferingByPlacement)
     }
+
+    presentedFlow?.let { (workflow, uiConfig) ->
+        FullScreenPaywall(
+            PaywallOptions.Builder(dismissRequest = { presentedFlow = null })
+                .injectedWorkflow(workflow, offeringsState.offerings, uiConfig)
+                .setCustomVariables(CustomVariablesHolder.customVariables)
+                .build(),
+            onDismiss = { presentedFlow = null },
+        )
+    }
+
+    // The options the SDK's default checkpoint presenter uses: the offering's paywall, or the fallback paywall.
+    presentedUiLessOffering?.let { offering ->
+        FullScreenPaywall(
+            PaywallOptions.Builder(dismissRequest = { presentedUiLessOffering = null })
+                .setOffering(offering)
+                .setShouldDisplayDismissButton(true)
+                .setCustomVariables(CustomVariablesHolder.customVariables)
+                .build(),
+            onDismiss = { presentedUiLessOffering = null },
+        )
+    }
+
+    flowError?.let { message ->
+        AlertDialog(
+            onDismissRequest = { flowError = null },
+            confirmButton = { Button(onClick = { flowError = null }) { Text("OK") } },
+            title = { Text("Couldn't open flow") },
+            text = { Text(message) },
+        )
+    }
 }
+
+@Composable
+private fun FullScreenPaywall(options: PaywallOptions, onDismiss: () -> Unit) {
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Paywall(options)
+    }
+}
+
+@Composable
+private fun FlowListItem(title: String, subtitle: String, isError: Boolean, onClick: () -> Unit) {
+    ListItem(
+        headlineContent = { Text(text = title) },
+        supportingContent = {
+            Text(text = subtitle, color = if (isError) MaterialTheme.colorScheme.error else Color.Unspecified)
+        },
+        modifier = Modifier.clickable(onClick = onClick),
+    )
+}
+
+private const val UNCLAIMED_OFFERINGS = "Unclaimed offerings"
 
 @Composable
 private fun PlacementDialog(
@@ -423,8 +532,9 @@ private fun OfferingRow(
     onDisplayAsCondensedFooter: (Offering) -> Unit,
     onDismissMenu: () -> Unit,
     showSubtitle: Boolean = false,
+    subtitleOverride: String? = null,
 ) {
-    val subtitle = if (showSubtitle) {
+    val subtitle = subtitleOverride ?: if (showSubtitle) {
         offering.paywall?.let { "Template ${it.templateName}" }
             ?: offering.paywallComponents?.dataOrNull?.templateName?.let { "Components $it" }
             ?: "No paywall"
@@ -455,13 +565,17 @@ private fun OfferingRow(
 }
 
 @Composable
-private fun SectionHeader(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp),
-    )
+private fun SectionHeader(title: String, caption: String? = null) {
+    Column(modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 4.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        caption?.let {
+            Text(text = it, style = MaterialTheme.typography.bodySmall)
+        }
+    }
 }
 
 @Suppress("LongParameterList")

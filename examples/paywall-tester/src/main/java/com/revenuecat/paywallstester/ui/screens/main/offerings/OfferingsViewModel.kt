@@ -38,11 +38,13 @@ class OfferingsViewModelImpl : OfferingsViewModel() {
         _offeringsState.update { OfferingsState.Loading }
         viewModelScope.launch {
             val offerings = Purchases.sharedInstance.awaitSyncAttributesAndOfferingsIfNeeded()
+            val flows = loadFlows()
             _offeringsState.update {
                 OfferingsState.Loaded(
                     offerings,
                     searchQuery = previousState?.searchQuery ?: "",
                     recentOfferingIds = previousState?.recentOfferingIds ?: emptyList(),
+                    flows = flows,
                 )
             }
         }
@@ -75,7 +77,16 @@ class OfferingsViewModelImpl : OfferingsViewModel() {
             },
             onSuccess = { offerings ->
                 _offeringsState.update { OfferingsState.Loaded(offerings) }
+                viewModelScope.launch {
+                    val flows = loadFlows()
+                    _offeringsState.update { (it as? OfferingsState.Loaded)?.copy(flows = flows) ?: it }
+                }
             },
         )
     }
+
+    private suspend fun loadFlows(): List<FlowRow> =
+        runCatching { FlowRow.loadAll() }
+            .onFailure { Log.e("PaywallsTester", "Error loading flows: $it") }
+            .getOrDefault(emptyList())
 }

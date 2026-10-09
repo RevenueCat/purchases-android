@@ -84,6 +84,8 @@ internal class WorkflowManager(
         return workflow
     }
 
+    suspend fun workflowListings(): List<WorkflowListing> = workflowsConfigProvider.workflowListings()
+
     /** A failure returns null rather than failing the caller's render: this only feeds experiment events. */
     suspend fun workflowBlobRef(workflowId: String): String? =
         try {

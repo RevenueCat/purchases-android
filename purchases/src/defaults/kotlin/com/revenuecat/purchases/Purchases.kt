@@ -34,6 +34,7 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowActionID
+import com.revenuecat.purchases.common.workflows.WorkflowListing
 import com.revenuecat.purchases.common.workflows.WorkflowResolution
 import com.revenuecat.purchases.common.workflows.WorkflowStep
 import com.revenuecat.purchases.common.workflows.WorkflowStepID
@@ -472,6 +473,11 @@ public class Purchases internal constructor(
     @JvmSynthetic
     @Throws(PurchasesException::class)
     public suspend fun awaitGetUiConfig(): UiConfig = purchasesOrchestrator.getUiConfig()
+
+    /** Every workflow in the synced config, including ones that claim no offering. For internal test apps. */
+    @InternalRevenueCatAPI
+    @JvmSynthetic
+    public suspend fun awaitWorkflowListings(): List<WorkflowListing> = purchasesOrchestrator.workflowListings()
 
     @InternalRevenueCatAPI
     @JvmSynthetic
