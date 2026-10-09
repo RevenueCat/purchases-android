@@ -572,7 +572,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         val mockCreated = Random.nextBoolean()
         every { mockIdentityManager.currentAppUserID } returns "oldAppUserID"
         every {
-            mockIdentityManager.logIn(any(), onSuccess = captureLambda(), any())
+            mockIdentityManager.logIn(any<String>(), onSuccess = captureLambda(), any())
         } answers {
             lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
         }
@@ -594,7 +594,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         val purchasesError = PurchasesError(PurchasesErrorCode.InvalidCredentialsError)
 
         every {
-            mockIdentityManager.logIn(any(), any(), onError = captureLambda())
+            mockIdentityManager.logIn(any<String>(), any(), onError = captureLambda())
         } answers {
             lambda<(PurchasesError) -> Unit>().captured.invoke(purchasesError)
         }
@@ -614,7 +614,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         every { mockIdentityManager.currentAppUserID } returns "oldAppUserID"
 
         every {
-            mockIdentityManager.logIn(any(), onSuccess = captureLambda(), any())
+            mockIdentityManager.logIn(any<String>(), onSuccess = captureLambda(), any())
         } answers {
             lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
         }
@@ -636,7 +636,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         every { mockIdentityManager.currentAppUserID } returns "oldAppUserID"
 
         every {
-            mockIdentityManager.logIn(any(), onSuccess = captureLambda(), any())
+            mockIdentityManager.logIn(any<String>(), onSuccess = captureLambda(), any())
         } answers {
             lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
         }
@@ -660,7 +660,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         every { mockIdentityManager.currentAppUserID } returns "oldAppUserID"
 
         every {
-            mockIdentityManager.logIn(any(), onSuccess = captureLambda(), any())
+            mockIdentityManager.logIn(any<String>(), onSuccess = captureLambda(), any())
         } answers {
             lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
         }
@@ -682,7 +682,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         every { mockIdentityManager.currentAppUserID } returns "oldAppUserID"
 
         every {
-            mockIdentityManager.logIn(any(), onSuccess = captureLambda(), any())
+            mockIdentityManager.logIn(any<String>(), onSuccess = captureLambda(), any())
         } answers {
             lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
         }
@@ -704,7 +704,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         every { mockIdentityManager.currentAppUserID } returns "oldAppUserID"
 
         every {
-            mockIdentityManager.logIn(any(), onSuccess = captureLambda(), any())
+            mockIdentityManager.logIn(any<String>(), onSuccess = captureLambda(), any())
         } answers {
             lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
         }

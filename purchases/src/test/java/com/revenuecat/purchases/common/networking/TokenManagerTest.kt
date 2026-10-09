@@ -516,6 +516,76 @@ class TokenManagerTest {
 
     // endregion
 
+    // region onLoaded
+
+    @Test
+    fun `onLoaded runs the callback once, after the load`() = runTest {
+        val manager = unloadedManager()
+        var calls = 0
+        var tokenSeenByCallback: String? = null
+        manager.saveTokens("user", accessToken = "access", refreshToken = null, idToken = null)
+
+        manager.onLoaded {
+            calls++
+            tokenSeenByCallback = manager.currentAccessToken("user")
+        }
+        assertThat(calls).isZero()
+
+        advanceUntilIdle()
+        assertThat(calls).isEqualTo(1)
+        assertThat(tokenSeenByCallback).isEqualTo("access")
+
+        manager.saveTokens("user", accessToken = "other", refreshToken = null, idToken = null)
+        advanceUntilIdle()
+        assertThat(calls).isEqualTo(1)
+    }
+
+    @Test
+    fun `onLoaded runs the callback immediately when already loaded`() = runTest {
+        val manager = manager()
+        var calls = 0
+
+        manager.onLoaded { calls++ }
+
+        assertThat(calls).isEqualTo(1)
+    }
+
+    @Test
+    fun `onLoaded runs every callback registered before the load`() = runTest {
+        val manager = unloadedManager()
+        val calls = mutableListOf<Int>()
+
+        manager.onLoaded { calls.add(1) }
+        manager.onLoaded { calls.add(2) }
+        advanceUntilIdle()
+
+        assertThat(calls).containsExactly(1, 2)
+    }
+
+    @Test
+    fun `onLoaded never runs the callback when disabled`() = runTest {
+        val manager = TokenManager(context, "test_api_key", enabled = false, scope = testScope())
+        var calls = 0
+
+        manager.onLoaded { calls++ }
+        advanceUntilIdle()
+
+        assertThat(calls).isZero()
+    }
+
+    @Test
+    fun `onLoaded never runs the callback when storage is unavailable`() = runTest {
+        val manager = unloadedManager(apiKey = "   ")
+        var calls = 0
+
+        manager.onLoaded { calls++ }
+        advanceUntilIdle()
+
+        assertThat(calls).isZero()
+    }
+
+    // endregion
+
     // region close
 
     @Test
