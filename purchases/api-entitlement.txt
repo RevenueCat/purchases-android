@@ -706,6 +706,7 @@ package com.revenuecat.purchases.ads.events.types {
     method @KotlinOnly public com.revenuecat.purchases.ads.events.types.AdMediatorName fromString(String value);
     property public com.revenuecat.purchases.ads.events.types.AdMediatorName AD_MOB;
     property public com.revenuecat.purchases.ads.events.types.AdMediatorName APP_LOVIN;
+    property public com.revenuecat.purchases.ads.events.types.AdMediatorName LEVEL_PLAY;
   }
 
   @dev.drewhamilton.poko.Poko public final class AdOpenedData {

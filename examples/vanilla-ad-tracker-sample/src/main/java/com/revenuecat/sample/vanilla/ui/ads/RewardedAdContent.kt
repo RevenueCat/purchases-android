@@ -19,12 +19,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.google.android.gms.ads.AdError
-import com.google.android.gms.ads.AdRequest
-import com.google.android.gms.ads.FullScreenContentCallback
-import com.google.android.gms.ads.LoadAdError
-import com.google.android.gms.ads.rewarded.RewardedAd
-import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.ads.events.types.AdDisplayedData
 import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
@@ -36,20 +30,118 @@ import com.revenuecat.purchases.ads.events.types.AdRevenueData
 import com.revenuecat.purchases.ads.events.types.AdRewardPromptAcceptedData
 import com.revenuecat.purchases.ads.events.types.AdRewardPromptShownData
 import com.revenuecat.sample.vanilla.data.Constants
+import com.unity3d.mediation.LevelPlayAdError
+import com.unity3d.mediation.LevelPlayAdInfo
+import com.unity3d.mediation.rewarded.LevelPlayReward
+import com.unity3d.mediation.rewarded.LevelPlayRewardedAd
+import com.unity3d.mediation.rewarded.LevelPlayRewardedAdListener
+import kotlin.math.roundToLong
+
+private const val REWARDED_PLACEMENT = "home_rewarded"
 
 @Suppress("MultipleEmitters")
 @Composable
 internal fun RewardedAdContent(activity: Activity) {
     val context = LocalContext.current
-    var status by remember { mutableStateOf("Not Loaded") }
-    var rewardedAd by remember { mutableStateOf<RewardedAd?>(null) }
+    var status by remember { mutableStateOf("Not loaded") }
+    val rewardedAd = remember {
+        LevelPlayRewardedAd(Constants.LevelPlay.REWARDED_AD_UNIT_ID).apply {
+            setListener(object : LevelPlayRewardedAdListener {
+                override fun onAdLoaded(adInfo: LevelPlayAdInfo) {
+                    Purchases.sharedInstance.adTracker.trackAdLoaded(
+                        AdLoadedData(
+                            networkName = adInfo.adNetwork.takeIf { it.isNotBlank() },
+                            mediatorName = AdMediatorName.LEVEL_PLAY,
+                            adFormat = AdFormat.REWARDED,
+                            placement = REWARDED_PLACEMENT,
+                            adUnitId = Constants.LevelPlay.REWARDED_AD_UNIT_ID,
+                            impressionId = adInfo.auctionId.orEmpty(),
+                        ),
+                    )
+                    status = "Loaded - ready to show"
+                }
+
+                override fun onAdLoadFailed(error: LevelPlayAdError) {
+                    Purchases.sharedInstance.adTracker.trackAdFailedToLoad(
+                        AdFailedToLoadData(
+                            mediatorName = AdMediatorName.LEVEL_PLAY,
+                            adFormat = AdFormat.REWARDED,
+                            placement = REWARDED_PLACEMENT,
+                            adUnitId = Constants.LevelPlay.REWARDED_AD_UNIT_ID,
+                            mediatorErrorCode = error.errorCode,
+                        ),
+                    )
+                    status = "Failed: ${error.errorMessage}"
+                }
+
+                override fun onAdDisplayed(adInfo: LevelPlayAdInfo) {
+                    val adTracker = Purchases.sharedInstance.adTracker
+                    adTracker.trackAdDisplayed(
+                        AdDisplayedData(
+                            networkName = adInfo.adNetwork.takeIf { it.isNotBlank() },
+                            mediatorName = AdMediatorName.LEVEL_PLAY,
+                            adFormat = AdFormat.REWARDED,
+                            placement = REWARDED_PLACEMENT,
+                            adUnitId = Constants.LevelPlay.REWARDED_AD_UNIT_ID,
+                            impressionId = adInfo.auctionId.orEmpty(),
+                        ),
+                    )
+                    adTracker.trackAdRevenue(
+                        AdRevenueData(
+                            networkName = adInfo.adNetwork.takeIf { it.isNotBlank() },
+                            mediatorName = AdMediatorName.LEVEL_PLAY,
+                            adFormat = AdFormat.REWARDED,
+                            placement = REWARDED_PLACEMENT,
+                            adUnitId = Constants.LevelPlay.REWARDED_AD_UNIT_ID,
+                            impressionId = adInfo.auctionId.orEmpty(),
+                            revenueMicros = (adInfo.revenue * 1_000_000).roundToLong(),
+                            currency = "USD",
+                            precision = adInfo.precision.toAdRevenuePrecision(),
+                        ),
+                    )
+                    status = "Displayed"
+                }
+
+                override fun onAdDisplayFailed(error: LevelPlayAdError, adInfo: LevelPlayAdInfo) {
+                    status = "Display failed: ${error.errorMessage}"
+                }
+
+                override fun onAdClicked(adInfo: LevelPlayAdInfo) {
+                    Purchases.sharedInstance.adTracker.trackAdOpened(
+                        AdOpenedData(
+                            networkName = adInfo.adNetwork.takeIf { it.isNotBlank() },
+                            mediatorName = AdMediatorName.LEVEL_PLAY,
+                            adFormat = AdFormat.REWARDED,
+                            placement = REWARDED_PLACEMENT,
+                            adUnitId = Constants.LevelPlay.REWARDED_AD_UNIT_ID,
+                            impressionId = adInfo.auctionId.orEmpty(),
+                        ),
+                    )
+                }
+
+                override fun onAdRewarded(reward: LevelPlayReward, adInfo: LevelPlayAdInfo) {
+                    Toast.makeText(
+                        context,
+                        "Earned reward: ${reward.amount} ${reward.name}",
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                }
+
+                override fun onAdClosed(adInfo: LevelPlayAdInfo) {
+                    status = "Closed - load again"
+                }
+
+                override fun onAdInfoChanged(adInfo: LevelPlayAdInfo) = Unit
+            })
+        }
+    }
 
     LaunchedEffect(Unit) {
         Purchases.sharedInstance.adTracker.trackRewardedAdPromptShown(
             AdRewardPromptShownData(
-                mediatorName = AdMediatorName.AD_MOB,
-                placement = "home_rewarded",
-                adUnitId = Constants.AdMob.REWARDED_AD_UNIT_ID,
+                mediatorName = AdMediatorName.LEVEL_PLAY,
+                placement = REWARDED_PLACEMENT,
+                adUnitId = Constants.LevelPlay.REWARDED_AD_UNIT_ID,
             ),
         )
     }
@@ -59,133 +151,37 @@ internal fun RewardedAdContent(activity: Activity) {
             "Tracks: Prompt Shown, Prompt Accepted, Loaded, Displayed, Opened (on click), Revenue.",
         style = MaterialTheme.typography.bodySmall,
     )
-
     Text(
         text = "Status: $status",
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
-
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Button(
             onClick = {
-                status = "Loading..."
-                RewardedAd.load(
-                    context,
-                    Constants.AdMob.REWARDED_AD_UNIT_ID,
-                    AdRequest.Builder().build(),
-                    object : RewardedAdLoadCallback() {
-                        @Suppress("LongMethod")
-                        override fun onAdLoaded(ad: RewardedAd) {
-                            val responseInfo = ad.responseInfo
-                            val adTracker = Purchases.sharedInstance.adTracker
-                            adTracker.trackAdLoaded(
-                                AdLoadedData(
-                                    networkName = responseInfo.mediationAdapterClassName,
-                                    mediatorName = AdMediatorName.AD_MOB,
-                                    adFormat = AdFormat.REWARDED,
-                                    placement = "home_rewarded",
-                                    adUnitId = Constants.AdMob.REWARDED_AD_UNIT_ID,
-                                    impressionId = responseInfo.responseId.orEmpty(),
-                                ),
-                            )
-                            ad.setOnPaidEventListener { adValue ->
-                                adTracker.trackAdRevenue(
-                                    AdRevenueData(
-                                        networkName = responseInfo.mediationAdapterClassName,
-                                        mediatorName = AdMediatorName.AD_MOB,
-                                        adFormat = AdFormat.REWARDED,
-                                        placement = "home_rewarded",
-                                        adUnitId = Constants.AdMob.REWARDED_AD_UNIT_ID,
-                                        impressionId = responseInfo.responseId.orEmpty(),
-                                        revenueMicros = adValue.valueMicros,
-                                        currency = adValue.currencyCode,
-                                        precision = adValue.precisionType.toAdRevenuePrecision(),
-                                    ),
-                                )
-                            }
-                            ad.fullScreenContentCallback = object : FullScreenContentCallback() {
-                                override fun onAdShowedFullScreenContent() {
-                                    adTracker.trackAdDisplayed(
-                                        AdDisplayedData(
-                                            networkName = responseInfo.mediationAdapterClassName,
-                                            mediatorName = AdMediatorName.AD_MOB,
-                                            adFormat = AdFormat.REWARDED,
-                                            placement = "home_rewarded",
-                                            adUnitId = Constants.AdMob.REWARDED_AD_UNIT_ID,
-                                            impressionId = responseInfo.responseId.orEmpty(),
-                                        ),
-                                    )
-                                }
-
-                                override fun onAdClicked() {
-                                    adTracker.trackAdOpened(
-                                        AdOpenedData(
-                                            networkName = responseInfo.mediationAdapterClassName,
-                                            mediatorName = AdMediatorName.AD_MOB,
-                                            adFormat = AdFormat.REWARDED,
-                                            placement = "home_rewarded",
-                                            adUnitId = Constants.AdMob.REWARDED_AD_UNIT_ID,
-                                            impressionId = responseInfo.responseId.orEmpty(),
-                                        ),
-                                    )
-                                }
-
-                                override fun onAdFailedToShowFullScreenContent(error: AdError) {
-                                    status = "Not Loaded"
-                                }
-
-                                override fun onAdDismissedFullScreenContent() {
-                                    rewardedAd = null
-                                    status = "Shown - Load Again"
-                                }
-                            }
-                            rewardedAd = ad
-                            status = "Loaded - Ready to Show"
-                            Toast.makeText(context, "Rewarded ad loaded!", Toast.LENGTH_SHORT).show()
-                        }
-
-                        override fun onAdFailedToLoad(error: LoadAdError) {
-                            Purchases.sharedInstance.adTracker.trackAdFailedToLoad(
-                                AdFailedToLoadData(
-                                    mediatorName = AdMediatorName.AD_MOB,
-                                    adFormat = AdFormat.REWARDED,
-                                    placement = "home_rewarded",
-                                    adUnitId = Constants.AdMob.REWARDED_AD_UNIT_ID,
-                                    mediatorErrorCode = error.code,
-                                ),
-                            )
-                            rewardedAd = null
-                            status = "Failed: ${error.message}"
-                            Toast.makeText(context, "Failed to load", Toast.LENGTH_SHORT).show()
-                        }
-                    },
-                )
+                status = "Loading…"
+                rewardedAd.loadAd()
             },
             modifier = Modifier.weight(1f),
-            enabled = !status.contains("Loading"),
         ) {
             Text("Load")
         }
-
         Button(
             onClick = {
                 Purchases.sharedInstance.adTracker.trackRewardedAdPromptAccepted(
                     AdRewardPromptAcceptedData(
-                        mediatorName = AdMediatorName.AD_MOB,
-                        placement = "home_rewarded",
-                        adUnitId = Constants.AdMob.REWARDED_AD_UNIT_ID,
+                        mediatorName = AdMediatorName.LEVEL_PLAY,
+                        placement = REWARDED_PLACEMENT,
+                        adUnitId = Constants.LevelPlay.REWARDED_AD_UNIT_ID,
                     ),
                 )
-                rewardedAd?.show(activity) { reward ->
-                    Toast.makeText(context, "Earned reward: ${reward.amount} ${reward.type}", Toast.LENGTH_SHORT).show()
-                }
+                rewardedAd.showAd(activity)
             },
             modifier = Modifier.weight(1f),
-            enabled = rewardedAd != null,
+            enabled = rewardedAd.isAdReady,
         ) {
             Text("Show")
         }

@@ -2,19 +2,34 @@ package com.revenuecat.sample.vanilla
 
 import android.app.Application
 import android.util.Log
-import com.google.android.gms.ads.MobileAds
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.sample.vanilla.data.Constants
+import com.unity3d.mediation.LevelPlay
+import com.unity3d.mediation.LevelPlayConfiguration
+import com.unity3d.mediation.LevelPlayInitError
+import com.unity3d.mediation.LevelPlayInitListener
+import com.unity3d.mediation.LevelPlayInitRequest
+
+internal sealed interface LevelPlayInitializationState {
+    data object Initializing : LevelPlayInitializationState
+    data object Initialized : LevelPlayInitializationState
+    data class Failed(val message: String) : LevelPlayInitializationState
+}
 
 class MainApplication : Application() {
+
+    internal val levelPlayInitializationState: MutableState<LevelPlayInitializationState> =
+        mutableStateOf(LevelPlayInitializationState.Initializing)
 
     override fun onCreate() {
         super.onCreate()
 
         initializeRevenueCat()
-        initializeAdMob()
+        initializeLevelPlay()
     }
 
     private fun initializeRevenueCat() {
@@ -30,15 +45,23 @@ class MainApplication : Application() {
         Log.d(TAG, "RevenueCat SDK initialized. App user ID: ${Purchases.sharedInstance.appUserID}")
     }
 
-    private fun initializeAdMob() {
-        MobileAds.initialize(this) { initializationStatus ->
-            val statusMap = initializationStatus.adapterStatusMap
-            for (adapterClass in statusMap.keys) {
-                val status = statusMap[adapterClass]
-                Log.d(TAG, "AdMob adapter $adapterClass: ${status?.description}")
-            }
-            Log.d(TAG, "AdMob SDK initialized successfully")
-        }
+    private fun initializeLevelPlay() {
+        val request = LevelPlayInitRequest.Builder(Constants.LevelPlay.APP_KEY).build()
+        LevelPlay.init(
+            this,
+            request,
+            object : LevelPlayInitListener {
+                override fun onInitSuccess(configuration: LevelPlayConfiguration) {
+                    levelPlayInitializationState.value = LevelPlayInitializationState.Initialized
+                    Log.d(TAG, "LevelPlay SDK initialized successfully")
+                }
+
+                override fun onInitFailed(error: LevelPlayInitError) {
+                    levelPlayInitializationState.value = LevelPlayInitializationState.Failed(error.toString())
+                    Log.e(TAG, "LevelPlay SDK initialization failed: $error")
+                }
+            },
+        )
     }
 
     companion object {
