@@ -24,6 +24,7 @@ internal class BackendHelper(
         delay: Delay,
         onError: (PurchasesError) -> Unit,
         onCompleted: (PurchasesError?, Int, JSONObject) -> Unit,
+        iamAppUserID: String? = null,
     ) {
         enqueue(
             object : Dispatcher.AsyncCall() {
@@ -35,6 +36,7 @@ internal class BackendHelper(
                         postFieldsToSign,
                         authenticationHeaders,
                         fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                        iamAppUserID = iamAppUserID,
                     )
                 }
 

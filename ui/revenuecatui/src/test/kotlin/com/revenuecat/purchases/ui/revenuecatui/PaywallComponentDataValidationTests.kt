@@ -50,7 +50,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.variableLocalizationK
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
-import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.AllLocalizationsMissing
 import com.revenuecat.purchases.ui.revenuecatui.extensions.validatePaywallComponentsDataOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallValidationResult
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
@@ -152,40 +151,78 @@ class PaywallComponentDataValidationTests {
     }
 
     @Test
-    fun `Should return AllLocalizationsMissing with Legacy fallback if all locales are missing`() {
+    fun `Should validate as Components if there are no localizations at all`() {
         // Arrange
         val defaultLocale = LocaleId("en_US")
-        val data = PaywallComponentsData(
-            id = "paywall_id",
-            templateName = "template",
-            assetBaseURL = URL("https://assets.pawwalls.com"),
-            componentsConfig = ComponentsConfig(
-                base = PaywallComponentsConfig(
-                    stack = StackComponent(components = emptyList()),
-                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
-                    stickyFooter = null,
-                ),
-            ),
-            // We have no localizations.
-            componentsLocalizations = emptyMap(),
-            defaultLocaleIdentifier = defaultLocale,
-        )
-        val offering = Offering(
-            identifier = "identifier",
-            serverDescription = "serverDescription",
-            metadata = emptyMap(),
-            availablePackages = listOf(TestData.Packages.monthly),
-            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        val offering = offeringWithoutText(componentsLocalizations = emptyMap(), defaultLocale = defaultLocale)
+
+        // Act
+        val validated = offering.validatedPaywall(TestData.Constants.currentColorScheme, MockResourceProvider())
+
+        // Assert
+        check(validated is PaywallValidationResult.Components)
+        assertNull(validated.errors)
+        assertEquals(defaultLocale, validated.locales.head)
+    }
+
+    @Test
+    fun `Should validate as Components if the default locale has an empty localization table`() {
+        // Arrange
+        val defaultLocale = LocaleId("en_US")
+        // A screen without text components is published with an empty table for its locale.
+        val offering = offeringWithoutText(
+            componentsLocalizations = mapOf(defaultLocale to emptyMap()),
+            defaultLocale = defaultLocale,
         )
 
         // Act
         val validated = offering.validatedPaywall(TestData.Constants.currentColorScheme, MockResourceProvider())
 
         // Assert
-        check(validated is PaywallValidationResult.Legacy)
-        assertNotNull(validated.errors)
-        assertEquals(validated.errors?.size, 1)
-        assertEquals(validated.errors?.first(), AllLocalizationsMissing(defaultLocale))
+        check(validated is PaywallValidationResult.Components)
+        assertNull(validated.errors)
+        assertEquals(defaultLocale, validated.locales.head)
+    }
+
+    private fun offeringWithoutText(
+        componentsLocalizations: Map<LocaleId, Map<LocalizationKey, LocalizationData>>,
+        defaultLocale: LocaleId,
+    ): Offering {
+        val data = PaywallComponentsData(
+            id = "paywall_id",
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(
+                        components = listOf(
+                            ImageComponent(
+                                source = ThemeImageUrls(
+                                    light = ImageUrls(
+                                        original = URL("https://preview"),
+                                        webp = URL("https://preview"),
+                                        webpLowRes = URL("https://preview"),
+                                        width = 100u,
+                                        height = 100u,
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = componentsLocalizations,
+            defaultLocaleIdentifier = defaultLocale,
+        )
+        return Offering(
+            identifier = "identifier",
+            serverDescription = "serverDescription",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        )
     }
 
     @Test

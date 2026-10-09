@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/RevenueCat/fastlane-plugin-revenuecat_internal
-  revision: c3e3afe9b0d94f44ad45f18d546571508d10ce7c
+  revision: 996879cd7f55483edc1ffb9e0cf10a45985abd66
   branch: main
   specs:
     fastlane-plugin-revenuecat_internal (0.1.0)
@@ -164,7 +164,7 @@ GEM
       xcodeproj (>= 1.13.0, < 2.0.0)
       xcpretty (~> 0.4.1)
       xcpretty-travis-formatter (>= 0.0.3, < 2.0.0)
-    fastlane-plugin-sentry (2.6.1)
+    fastlane-plugin-sentry (2.8.0)
       os (~> 1.1, >= 1.1.4)
     fastlane-plugin-versioning_android (0.1.1)
     fastlane-sirp (1.1.0)

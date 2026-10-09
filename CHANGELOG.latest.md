@@ -1,16 +1,15 @@
 ## RevenueCat SDK
-### 🐞 Bugfixes
-* [EXTERNAL] Fix backend prices losing a micro when converted to amountMicros (#4349) by @AndroidPoet (#4350) via Toni Rico (@tonidero)
+### ✨ New Features
+* feat(paywalls): introduce video localization support for Android (#4389) via Sufi Gaffar (@sufigaffar)
 
 ## RevenueCatUI SDK
 ### 🐞 Bugfixes
-* fix(paywalls): avoid locking buttons when click scope is cancelled (#4380) via Cesar de la Vega (@vegaro)
-* Fix PaywallListener leak when the launching Activity is recreated or finishes (#4373) via Toni Rico (@tonidero)
+* Render the developer-passed Offering instance in workflow paywalls (#4401) via Toni Rico (@tonidero)
 ### Paywallsv2
 #### 🐞 Bugfixes
-* Reduce recomposition work when selecting a package in Paywalls (#4383) via Toni Rico (@tonidero)
+* PWENG-243 | Render paywall screens without text instead of the fallback paywall (#4370) via Facundo Menzella (@facumenzella)
 
 ### 🔄 Other Changes
-* Update baseline profiles (#4382) via RevenueCat Git Bot (@RCGitBot)
-* Adds Checkpoint ErrorPresenter API (#4274) via Toni Rico (@tonidero)
-* other(workflows): pin each user to a variant in the experiment maestro flow (#4362) via Facundo Menzella (@facumenzella)
+* Resolve workflow offerings through a single WorkflowOfferings wrapper (#4404) via Toni Rico (@tonidero)
+* Add Maestro flow for developer-provided offering filtering packages (#4403) via Toni Rico (@tonidero)
+* other: send fallback_original_step_id and always send blob_ref on workflow events (#4351) via Facundo Menzella (@facumenzella)

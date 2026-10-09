@@ -18,6 +18,7 @@ import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 
 /**
@@ -46,10 +47,6 @@ public sealed interface LocalizationData {
     @Serializable
     @JvmInline
     public value class Image(@get:JvmSynthetic public val value: ThemeImageUrls) : LocalizationData
-
-    @Serializable
-    @JvmInline
-    public value class Video(@get:JvmSynthetic public val value: ThemeVideoUrls) : LocalizationData
 }
 
 @OptIn(InternalRevenueCatAPI::class)
@@ -76,6 +73,28 @@ private object LocalizationDataSerializer : KSerializer<LocalizationData> {
         } else {
             jsonDecoder.json.decodeFromJsonElement(LocalizationData.Image.serializer(), element)
         }
+    }
+}
+
+/**
+ * Deserializes a map of [LocaleId] to localized videos, treating `null` as having no localized videos.
+ */
+@InternalRevenueCatAPI
+internal object LocalizedVideoMapSerializer : KSerializer<Map<LocaleId, Map<LocalizationKey, ThemeVideoUrls>>> {
+    private val delegate = MapSerializer(
+        keySerializer = LocaleId.serializer(),
+        valueSerializer = MapSerializer(LocalizationKey.serializer(), ThemeVideoUrls.serializer()),
+    )
+    override val descriptor: SerialDescriptor = delegate.descriptor
+
+    override fun serialize(encoder: Encoder, value: Map<LocaleId, Map<LocalizationKey, ThemeVideoUrls>>) {
+        // Serialization is not implemented as it is not needed.
+    }
+
+    override fun deserialize(decoder: Decoder): Map<LocaleId, Map<LocalizationKey, ThemeVideoUrls>> {
+        val jsonDecoder = decoder as? JsonDecoder ?: return delegate.deserialize(decoder)
+        val element = jsonDecoder.decodeJsonElement()
+        return if (element is JsonNull) emptyMap() else jsonDecoder.json.decodeFromJsonElement(delegate, element)
     }
 }
 

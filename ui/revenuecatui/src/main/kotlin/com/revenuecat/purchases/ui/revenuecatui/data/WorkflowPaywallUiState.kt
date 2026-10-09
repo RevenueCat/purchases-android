@@ -15,6 +15,10 @@ internal data class WorkflowPaywallUiState(
     val currentStepId: String,
     val stepStates: Map<String, PaywallState.Loaded.Components>,
     /**
+     * True while the screen shows a skeleton for a step the SDK did not resolve yet.
+     */
+    val isSkeleton: Boolean = false,
+    /**
      * Describes a navigation that should be animated. Set atomically with [currentStepId] so
      * the first recomposition after navigation already knows both surfaces and can position them
      * correctly — no gap-detection or [androidx.compose.animation.core.Animatable.snapTo] needed.

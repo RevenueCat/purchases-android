@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">확인</string>
+    <string name="loading">로드 중</string>
     <string name="all_plans">모든 구독</string>
     <string name="privacy">개인정보 방침</string>
     <string name="privacy_policy">개인정보 처리방침</string>

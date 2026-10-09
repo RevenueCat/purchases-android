@@ -107,6 +107,28 @@ class WorkflowEventsRequestSerializationTest {
         assertThat(requestString).doesNotContain("experiment_id")
         assertThat(requestString).doesNotContain("experiment_variant")
         assertThat(requestString).doesNotContain("blob_ref")
+        assertThat(requestString).doesNotContain("fallback_original_step_id")
+    }
+
+    @Test
+    fun `fallback_original_step_id uses its khepri wire name next to the raw step id`() {
+        val fromFallbackCopy = EventsRequest(
+            listOf(
+                (request.events.first() as BackendEvent.Workflows).let { event ->
+                    event.copy(
+                        properties = event.properties.copy(
+                            stepId = "paywall_a~f",
+                            fallbackOriginalStepId = "paywall_a",
+                        ),
+                    )
+                },
+            ),
+        )
+
+        val requestString = JsonProvider.defaultJson.encodeToString(fromFallbackCopy)
+
+        assertThat(requestString).contains("\"step_id\":\"paywall_a~f\"")
+        assertThat(requestString).contains("\"fallback_original_step_id\":\"paywall_a\"")
     }
 
     @Test

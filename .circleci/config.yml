@@ -43,7 +43,7 @@ aliases:
 version: 2.1
 orbs:
   android: circleci/android@3.2.0
-  revenuecat: revenuecat/sdks-common-config@4.6.2
+  revenuecat: revenuecat/sdks-common-config@4.7.0
   codecov: codecov/codecov@3.2.4
 
 parameters:
@@ -172,7 +172,7 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - accept-android-licenses
       - android-dependencies
       - android/restore_build_cache
@@ -189,7 +189,7 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - accept-android-licenses
       - android-dependencies
       - android/restore_build_cache
@@ -206,7 +206,7 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - accept-android-licenses
       - android-dependencies
       - android/restore_build_cache
@@ -223,7 +223,7 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - accept-android-licenses
       - android-dependencies
       - android/restore_build_cache
@@ -425,7 +425,7 @@ jobs:
   # Stdlib only, so no bundler. Needs full history: it compares HEAD against HEAD^.
   announce-api-changes:
     docker:
-      - image: cimg/ruby:3.2.0
+      - image: cimg/ruby:3.3
     steps:
       - checkout
       - run:
@@ -448,7 +448,7 @@ jobs:
       - install-awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/10.25.0-SNAPSHOT s3://purchases-docs/android/10.25.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/10.27.0-SNAPSHOT s3://purchases-docs/android/10.27.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -465,7 +465,7 @@ jobs:
       - revenuecat/setup-git-credentials
       - revenuecat/trust-github-key
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - prepare-signing-key
       - android/restore_gradle_cache
       - android/restore_build_cache
@@ -483,7 +483,7 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - revenuecat/setup-git-credentials
       - revenuecat/trust-github-key
       - run:
@@ -497,7 +497,7 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - android/restore_gradle_cache:
           cache_prefix: v1a
       - android/restore_build_cache:
@@ -545,7 +545,7 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - accept-android-licenses
       - android/restore_gradle_cache
       - android/restore_build_cache
@@ -573,7 +573,7 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - build-paywall-tester
 
   publish-paywall-tester-release:
@@ -586,7 +586,7 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - build-paywall-tester
       - run:
           name: Publish aab
@@ -600,7 +600,7 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - build-rct-tester
 
   publish-rct-tester-release:
@@ -613,7 +613,7 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - build-rct-tester
       - run:
           name: Publish aab
@@ -637,7 +637,7 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - android/create_avd:
           avd_name: test-purchases-integration
           system_image: system-images;android-33;google_apis;x86_64
@@ -664,7 +664,7 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - android/create_avd:
           avd_name: test-cec-integration
           system_image: system-images;android-33;google_apis;x86_64
@@ -693,14 +693,14 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - android/restore_build_cache
       - attach_workspace:
           at: .
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - android/restore_gradle_cache
       - run:
           name: Build and run purchases ui snapshot tests
@@ -718,7 +718,7 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - prepare-signing-key
       - android/restore_gradle_cache
       - run:
@@ -775,7 +775,7 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - android/restore_gradle_cache
       - run:
           name: Run backend integration tests
@@ -806,7 +806,7 @@ jobs:
             gem install emerge
             mise reshim
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - android/restore_gradle_cache
       - run:
           name: Records new RevenueCat UI snapshots to become the new golden
@@ -860,7 +860,7 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - android/restore_build_cache
       - run:
           name: Set GitHub token environment variable
@@ -954,7 +954,7 @@ jobs:
       - revenuecat/setup-git-credentials
       - revenuecat/trust-github-key
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - android/restore_gradle_cache
       - android/restore_build_cache
       - run:
@@ -970,7 +970,7 @@ jobs:
 
   update-paywall-preview-resources-submodule:
     docker:
-      - image: cimg/ruby:3.2.0
+      - image: cimg/ruby:3.3
     steps:
       - checkout
       - revenuecat/setup-git-credentials
@@ -978,7 +978,7 @@ jobs:
       - checkout-submodule:
           path: upstream/paywall-preview-resources
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - run:
           name: Update paywall templates
           command: bundle exec fastlane android update_paywall_preview_resources_submodule
@@ -1037,7 +1037,7 @@ workflows:
         - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
       - revenuecat/danger:
-          ruby_version: "3.2.0"
+          ruby_version: "3.3"
           post-steps:
             - run:
                 name: Run api diff report unit tests
@@ -1214,6 +1214,7 @@ workflows:
           type: approval
           <<: *release-branches
       - revenuecat/tag-current-branch:
+          ruby_version: "3.3"
           requires:
             - wait-for-pr-approval
             - test_defaults_debug
@@ -1252,6 +1253,7 @@ workflows:
               - docs-deploy
           <<: *release-tags
       - revenuecat/merge-release-pr:
+          ruby_version: "3.3"
           repo_name: purchases-android
           use_merge_queue: true
           requires:
@@ -1301,7 +1303,7 @@ workflows:
         - equal: [ "release-train", << pipeline.schedule.name >> ]
     jobs:
       - revenuecat/automatic-bump:
-          ruby_version: "3.2.0"
+          ruby_version: "3.3"
 
   biweekly-baseline-profiles:
     when:
@@ -1318,7 +1320,7 @@ workflows:
       equal: [ bump, << pipeline.parameters.action >> ]
     jobs:
       - revenuecat/automatic-bump:
-          ruby_version: "3.2.0"
+          ruby_version: "3.3"
 
   manual-paywall-tester-release:
     when:
@@ -1361,7 +1363,7 @@ workflows:
             - revenuecat/install-mise-tools:
                 tools: java,ruby
             - revenuecat/install-gem-unix-dependencies:
-                cache-version: v1
+                cache-version: v2
             - android/restore_gradle_cache
             - run:
                 name: Update API

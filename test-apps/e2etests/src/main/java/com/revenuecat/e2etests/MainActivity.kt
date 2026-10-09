@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import com.revenuecat.e2etests.main.DeveloperProvidedOfferingScreen
 import com.revenuecat.e2etests.main.MainPage
 import com.revenuecat.e2etests.main.NoPaywallScreen
 import com.revenuecat.e2etests.ui.theme.PurchasesandroidTheme
@@ -34,6 +35,7 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
         val logInAppUserIds = intent.getStringExtra(LOG_IN_APP_USER_IDS_EXTRA_KEY)
             ?.split(",")
             .orEmpty()
+        val workflowId = intent.getStringExtra(WORKFLOW_ID_EXTRA_KEY)
         setContent {
             PurchasesandroidTheme {
                 when (flow) {
@@ -41,11 +43,13 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
                         usersCountOverride = usersCountOverride,
                         offeringId = offeringId,
                         logInAppUserIds = logInAppUserIds,
+                        workflowId = workflowId,
                     )
                     E2ETestFlow.OPEN_WORKFLOW_PRESENTED -> PresentedWorkflowScreen(
                         onPresentPaywall = { paywallLauncher.launch(it) },
                     )
                     E2ETestFlow.OPEN_NO_PAYWALL -> NoPaywallScreen()
+                    E2ETestFlow.OPEN_DEVELOPER_PROVIDED_OFFERING -> DeveloperProvidedOfferingScreen()
                     null -> MainPage()
                 }
             }
@@ -59,6 +63,7 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
     private companion object {
         const val CUSTOM_USERS_COUNT_EXTRA_KEY = "custom_users_count"
         const val WORKFLOW_OFFERING_EXTRA_KEY = "workflow_offering_identifier"
+        const val WORKFLOW_ID_EXTRA_KEY = "workflow_id"
 
         // Comma-separated app user ids. Each one gets a button that logs in as it.
         const val LOG_IN_APP_USER_IDS_EXTRA_KEY = "log_in_app_user_ids"

@@ -20,7 +20,6 @@ public sealed class WorkflowEvent : FeatureEvent {
     public data class ExperimentData(
         public val experimentId: String,
         public val experimentVariant: String,
-        public val workflowBlobRef: String,
     )
 
     public abstract val creationData: CreationData
@@ -47,6 +46,8 @@ public sealed class WorkflowEvent : FeatureEvent {
         public val entryReason: String? = null,
         public val isFirstStep: Boolean? = null,
         public val isLastStep: Boolean? = null,
+        public val workflowBlobRef: String? = null,
+        public val fallbackOriginalStepId: String? = null,
         public val experiment: ExperimentData? = null,
     ) : WorkflowEvent()
 
@@ -60,6 +61,8 @@ public sealed class WorkflowEvent : FeatureEvent {
         public val toStepId: String? = null,
         public val isFirstStep: Boolean? = null,
         public val isLastStep: Boolean? = null,
+        public val workflowBlobRef: String? = null,
+        public val fallbackOriginalStepId: String? = null,
         public val experiment: ExperimentData? = null,
     ) : WorkflowEvent()
 
@@ -77,6 +80,8 @@ public sealed class WorkflowEvent : FeatureEvent {
         override val traceId: String,
         public val isFirstStep: Boolean? = null,
         public val isLastStep: Boolean? = null,
+        public val workflowBlobRef: String? = null,
+        public val fallbackOriginalStepId: String? = null,
         public val experiment: ExperimentData? = null,
     ) : WorkflowEvent()
 }

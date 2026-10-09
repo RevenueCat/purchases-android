@@ -15,6 +15,7 @@ import com.revenuecat.purchases.common.checkpoints.CheckpointRulesResolution
 import com.revenuecat.purchases.common.checkpoints.CheckpointsConfigProvider
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.localrules.LocalRulesEvaluator
 import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
@@ -204,6 +205,7 @@ internal class CheckpointWorkflowResolverImpl(
             offerings,
             checkpointRuleId = rule.id,
             traceId = UUID.randomUUID().toString(),
+            workflowBlobRef = workflowManager.workflowBlobRef(rule.workflowId),
         )
     }
 
@@ -226,7 +228,7 @@ internal class CheckpointWorkflowResolverImpl(
     }
 
     private fun unknownCheckpoint(identifier: String): CheckpointResolution.NoAction {
-        errorLog { "Checkpoint '$identifier' is not configured in the dashboard." }
+        infoLog { "Checkpoint '$identifier' is not configured in the dashboard." }
         return CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.UNKNOWN_CHECKPOINT)
     }
 

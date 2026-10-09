@@ -16,6 +16,7 @@ import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
+import com.revenuecat.purchases.paywalls.components.PartialVideoComponent
 import com.revenuecat.purchases.paywalls.components.PaywallComponent
 import com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
@@ -95,10 +96,11 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.toNonEmptyListOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.zipOrAccumulate
 import java.util.Date
 
-@Suppress("TooManyFunctions", "LargeClass")
+@Suppress("TooManyFunctions", "LargeClass", "LongParameterList")
 @Immutable
 internal class StyleFactory(
     private val localizations: NonEmptyMap<LocaleId, LocalizationDictionary>,
+    private val videoLocalizations: Map<LocaleId, Map<LocalizationKey, ThemeVideoUrls>> = emptyMap(),
     private val colorAliases: Map<ColorAlias, ColorScheme>,
     private val fontAliases: Map<FontAlias, FontSpec>,
     private val variableLocalizations: NonEmptyMap<LocaleId, NonEmptyMap<VariableLocalizationKey, String>>,
@@ -1051,37 +1053,28 @@ internal class StyleFactory(
     private fun StyleFactoryScope.createVideoComponentStyle(
         component: VideoComponent,
     ): Result<VideoComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
-        first = component.source.withLocalizedOverrides(component.overrideSourceLid),
-        second = component.fallbackSource?.withLocalizedOverrides(component.overrideSourceLid).orSuccessfullyNull(),
-        third = component.overrides?.toPresentedOverrides(stripRules) { videoPartial ->
-            videoPartial.source
-                ?.withLocalizedOverrides(videoPartial.overrideSourceLid)
-                .orSuccessfullyNull()
-                .flatMap { sources ->
-                    PresentedVideoPartial(
-                        from = videoPartial,
-                        sources = sources,
-                        fallbackSources = videoPartial.fallbackSource
-                            ?.withLocalizedOverrides(videoPartial.overrideSourceLid)
-                            ?.let {
-                                when (it) {
-                                    is Result.Success -> it.value
-                                    else -> null
-                                }
-                            },
-                        aliases = colorAliases,
-                    )
-                }
+        first = component.overrideVideoLid
+            ?.let { key -> localizations.videoForAllLocales(key, videoLocalizations) }
+            ?: Result.Success(component.source.forDefaultLocaleOnly()),
+        second = component.overrides?.toPresentedOverrides(stripRules) { videoPartial ->
+            videoPartial.localizedVideoSources().flatMap { sources ->
+                PresentedVideoPartial(
+                    from = videoPartial,
+                    sources = sources,
+                    fallbackSources = videoPartial.fallbackSource?.forDefaultLocaleOnly(),
+                    aliases = colorAliases,
+                )
+            }
         }
             ?.mapError { nonEmptyListOf(it) }
             .orSuccessfullyNull(),
-        fourth = component.colorOverlay?.toColorStyles(aliases = colorAliases).orSuccessfullyNull(),
-        fifth = component.border?.toBorderStyles(aliases = colorAliases).orSuccessfullyNull(),
-        sixth = component.shadow?.toShadowStyles(aliases = colorAliases).orSuccessfullyNull(),
-    ) { sources, fallbackSources, presentedOverrides, overlay, border, shadow ->
+        third = component.colorOverlay?.toColorStyles(aliases = colorAliases).orSuccessfullyNull(),
+        fourth = component.border?.toBorderStyles(aliases = colorAliases).orSuccessfullyNull(),
+        fifth = component.shadow?.toShadowStyles(aliases = colorAliases).orSuccessfullyNull(),
+    ) { sources, presentedOverrides, overlay, border, shadow ->
         VideoComponentStyle(
             sources = sources,
-            fallbackSources = fallbackSources,
+            fallbackSources = component.fallbackSource?.forDefaultLocaleOnly(),
             overlay = overlay,
             border = border,
             shadow = shadow,
@@ -1389,14 +1382,19 @@ internal class StyleFactory(
             // Ensure the default source keyed by the default locale is present in the result.
             .map { nonEmptyMapOf(localizations.entry.key to this, it.orEmpty()) }
 
-    private fun ThemeVideoUrls.withLocalizedOverrides(
-        overrideSourceLid: LocalizationKey?,
-    ): Result<NonEmptyMap<LocaleId, ThemeVideoUrls>, NonEmptyList<PaywallValidationError.MissingVideoLocalization>> =
-        overrideSourceLid
-            ?.let { key -> localizations.videoForAllLocales(key) }
-            .orSuccessfullyNull()
-            // Ensure the default source keyed by the default locale is present in the result.
-            .map { nonEmptyMapOf(localizations.entry.key to this, it.orEmpty()) }
+    private fun <T> T.forDefaultLocaleOnly(): NonEmptyMap<LocaleId, T> =
+        nonEmptyMapOf(localizations.entry.key to this)
+
+    /**
+     * The override's [PartialVideoComponent.overrideVideoLid] takes precedence over its
+     * [PartialVideoComponent.source], and must be localized for every locale. Null when the override sets neither, so
+     * the component's sources apply.
+     */
+    private fun PartialVideoComponent.localizedVideoSources():
+        Result<NonEmptyMap<LocaleId, ThemeVideoUrls>?, NonEmptyList<PaywallValidationError.MissingVideoLocalization>> =
+        overrideVideoLid
+            ?.let { key -> localizations.videoForAllLocales(key, videoLocalizations) }
+            ?: Result.Success(source?.forDefaultLocaleOnly())
 
     private fun Offering.getPackageOrNull(identifier: String): Package? =
         try {

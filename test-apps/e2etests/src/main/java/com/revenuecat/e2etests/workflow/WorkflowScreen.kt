@@ -20,12 +20,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.awaitLogIn
 import com.revenuecat.purchases.awaitOfferings
+import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
@@ -37,9 +41,15 @@ import kotlinx.coroutines.launch
 private const val WORKFLOW_OFFERING_ID = "default_workflows"
 private const val ENTITLEMENT_ID = "pro"
 
+@OptIn(InternalRevenueCatAPI::class)
 private sealed interface OfferingState {
     data object Loading : OfferingState
     data class Loaded(val offering: Offering) : OfferingState
+    data class LoadedWorkflow(
+        val workflow: PublishedWorkflow,
+        val offerings: Offerings,
+        val uiConfig: UiConfig,
+    ) : OfferingState
     data class Failed(val message: String) : OfferingState
 }
 
@@ -49,6 +59,7 @@ fun WorkflowScreen(
     usersCountOverride: Int? = null,
     offeringId: String? = null,
     logInAppUserIds: List<String> = emptyList(),
+    workflowId: String? = null,
 ) {
     var offeringState by remember { mutableStateOf<OfferingState>(OfferingState.Loading) }
     var showPaywall by remember { mutableStateOf(false) }
@@ -58,7 +69,7 @@ fun WorkflowScreen(
 
     LaunchedEffect(Unit) {
         customerInfo = loadCustomerInfo()
-        offeringState = loadWorkflowOffering(offeringId ?: WORKFLOW_OFFERING_ID)
+        offeringState = loadWorkflow(workflowId, offeringId)
     }
 
     // Keep the entitlement surface live so it flips to "active" after a purchase.
@@ -78,30 +89,31 @@ fun WorkflowScreen(
         )
         return
     }
+    if (showPaywall && loaded is OfferingState.LoadedWorkflow) {
+        InjectedWorkflowPaywall(
+            loaded = loaded,
+            usersCountOverride = usersCountOverride,
+            onDismiss = { showPaywall = false },
+        )
+        return
+    }
 
     WorkflowLauncher(
         offeringState = loaded,
         customerInfo = customerInfo,
         onPresentPaywall = { showPaywall = true },
         logInButtons = {
-            logInAppUserIds.forEach { appUserId ->
-                Button(
-                    onClick = {
-                        scope.launch {
-                            try {
-                                customerInfo = Purchases.sharedInstance.awaitLogIn(appUserId).customerInfo
-                            } catch (@Suppress("SwallowedException") e: PurchasesException) {
-                                customerInfo = null
-                            }
-                            offeringState = loadWorkflowOffering(offeringId ?: WORKFLOW_OFFERING_ID)
-                            loggedInAppUserId = appUserId
-                        }
-                    },
-                ) {
-                    Text("Log In as $appUserId")
+            LogInButtons(logInAppUserIds, loggedInAppUserId) { appUserId ->
+                scope.launch {
+                    customerInfo = try {
+                        Purchases.sharedInstance.awaitLogIn(appUserId).customerInfo
+                    } catch (@Suppress("SwallowedException") e: PurchasesException) {
+                        null
+                    }
+                    offeringState = loadWorkflow(workflowId, offeringId)
+                    loggedInAppUserId = appUserId
                 }
             }
-            loggedInAppUserId?.let { Text("Logged in as $it") }
         },
         modifier = modifier,
     )
@@ -133,6 +145,48 @@ private fun WorkflowPaywall(
     )
 }
 
+/** Opens one workflow by id, bypassing the offering to workflow map. */
+@OptIn(InternalRevenueCatAPI::class)
+@Composable
+private fun InjectedWorkflowPaywall(
+    loaded: OfferingState.LoadedWorkflow,
+    usersCountOverride: Int?,
+    onDismiss: () -> Unit,
+) {
+    Paywall(
+        options = PaywallOptions.Builder(dismissRequest = onDismiss)
+            .injectedWorkflow(loaded.workflow, loaded.offerings, loaded.uiConfig)
+            .apply {
+                if (usersCountOverride != null) {
+                    setCustomVariables(
+                        mapOf("users_count" to CustomVariableValue.Number(usersCountOverride.toDouble())),
+                    )
+                }
+            }
+            .setListener(object : PaywallListener {
+                override fun onPurchaseCompleted(
+                    customerInfo: CustomerInfo,
+                    storeTransaction: StoreTransaction,
+                ) = onDismiss()
+            })
+            .build(),
+    )
+}
+
+@Composable
+private fun LogInButtons(
+    appUserIds: List<String>,
+    loggedInAppUserId: String?,
+    onLogIn: (String) -> Unit,
+) {
+    appUserIds.forEach { appUserId ->
+        Button(onClick = { onLogIn(appUserId) }) {
+            Text("Log In as $appUserId")
+        }
+    }
+    loggedInAppUserId?.let { Text("Logged in as $it") }
+}
+
 @Composable
 private fun WorkflowLauncher(
     offeringState: OfferingState,
@@ -152,7 +206,9 @@ private fun WorkflowLauncher(
 
         when (offeringState) {
             is OfferingState.Loading -> CircularProgressIndicator()
-            is OfferingState.Loaded -> Button(onClick = onPresentPaywall) {
+            is OfferingState.Loaded,
+            is OfferingState.LoadedWorkflow,
+            -> Button(onClick = onPresentPaywall) {
                 Text("Present Paywall")
             }
             is OfferingState.Failed -> Text(
@@ -167,6 +223,14 @@ private fun WorkflowLauncher(
     }
 }
 
+/** The one load path, so logging in reloads whatever the flow opened with. */
+private suspend fun loadWorkflow(workflowId: String?, offeringId: String?): OfferingState =
+    if (workflowId != null) {
+        loadWorkflowById(workflowId)
+    } else {
+        loadWorkflowOffering(offeringId ?: WORKFLOW_OFFERING_ID)
+    }
+
 private suspend fun loadCustomerInfo(): CustomerInfo? = try {
     Purchases.sharedInstance.awaitCustomerInfo()
 } catch (@Suppress("SwallowedException") e: PurchasesException) {
@@ -178,6 +242,17 @@ private suspend fun loadWorkflowOffering(offeringId: String): OfferingState = tr
         ?: OfferingState.Failed("Offering '$offeringId' not found")
 } catch (e: PurchasesException) {
     OfferingState.Failed(e.message ?: "Failed to load offerings")
+}
+
+@OptIn(InternalRevenueCatAPI::class)
+private suspend fun loadWorkflowById(workflowId: String): OfferingState = try {
+    OfferingState.LoadedWorkflow(
+        workflow = Purchases.sharedInstance.awaitGetWorkflow(workflowId),
+        offerings = Purchases.sharedInstance.awaitOfferings(),
+        uiConfig = Purchases.sharedInstance.awaitGetUiConfig(),
+    )
+} catch (e: PurchasesException) {
+    OfferingState.Failed(e.message ?: "Failed to load workflow '$workflowId'")
 }
 
 private fun entitlementStatus(customerInfo: CustomerInfo?): String {

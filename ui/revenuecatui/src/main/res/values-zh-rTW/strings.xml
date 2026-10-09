@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">好的</string>
+    <string name="loading">載入中</string>
     <string name="privacy">隱私</string>
     <string name="privacy_policy">隱私權政策</string>
     <string name="restore">恢復</string>
