@@ -28,6 +28,7 @@ import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
+import java.time.Duration
 
 @RunWith(RobolectricTestRunner::class)
 class PaywallViewLifecycleTest {
@@ -86,6 +87,44 @@ class PaywallViewLifecycleTest {
         shadowOf(Looper.getMainLooper()).idle()
 
         assertThat(viewModel.state.value).isEqualTo(PaywallState.Loading)
+    }
+
+    @Test
+    fun `PaywallView does not crash when recomposing after detaching inside a pooling container`() {
+        val activity = Robolectric.buildActivity(PaywallViewHostActivity::class.java).setup().get()
+        // RecyclerView and ViewPager2 are pooling containers. They detach their children without releasing them.
+        // The tag is what androidx.customview.poolingcontainer.isPoolingContainer sets, which is not on our classpath.
+        val poolingContainerTag = activity.resources.getIdentifier(
+            "is_pooling_container_tag",
+            "id",
+            activity.packageName,
+        )
+        val container = FrameLayout(activity).apply { setTag(poolingContainerTag, true) }
+        activity.setContentView(container)
+        val paywallView = PaywallView(
+            context = activity,
+            offering = TestData.template1Offering,
+            listener = null,
+            fontProvider = null,
+            shouldDisplayDismissButton = true,
+            dismissHandler = {},
+        )
+        container.addView(paywallView)
+        shadowOf(Looper.getMainLooper()).idle()
+
+        // Recomposition runs on a frame, outside of the test's call stack.
+        val uncaughtExceptions = mutableListOf<Throwable>()
+        val previousHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { _, throwable -> uncaughtExceptions.add(throwable) }
+        try {
+            container.removeAllViews()
+            paywallView.setDisplayDismissButton(false)
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(1))
+        } finally {
+            Thread.setDefaultUncaughtExceptionHandler(previousHandler)
+        }
+
+        assertThat(uncaughtExceptions).isEmpty()
     }
 }
 

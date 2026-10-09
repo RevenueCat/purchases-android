@@ -10,6 +10,7 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.ui.platform.AbstractComposeView
+import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
@@ -161,6 +162,12 @@ public abstract class CompatComposeView @JvmOverloads internal constructor(
             }
     override val savedStateRegistry: SavedStateRegistry = savedStateRegistryController.savedStateRegistry
     override val viewModelStore: ViewModelStore = ViewModelStore()
+
+    init {
+        // The default strategy keeps the composition when detaching inside a pooling container, such as RecyclerView
+        // or ViewPager2. The view tree owners can't be found from a detached view, so recomposing it would crash.
+        setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
+    }
 
     public open fun onBackPressed() {
         (parent as? ViewGroup)?.removeView(this)
