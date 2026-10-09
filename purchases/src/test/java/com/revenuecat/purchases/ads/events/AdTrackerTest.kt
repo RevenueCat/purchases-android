@@ -279,7 +279,7 @@ class AdTrackerTest {
     }
 
     @Test
-    fun `trackAdRewardEarnedUnverified stamps the given capture method`() {
+    fun `internal trackAdRewardEarnedUnverified preserves verification and stamps capture method`() {
         val eventSlot = slot<AdEvent.RewardEarnedUnverified>()
         every { eventsManager.track(capture(eventSlot)) } just Runs
 
@@ -296,6 +296,7 @@ class AdTrackerTest {
             captureMethod = AdCaptureMethod.ANDROID_ADMOB_LEGACY_ADAPTER,
         )
 
+        assertThat(eventSlot.captured.rewardVerificationEnabled).isTrue()
         assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.ANDROID_ADMOB_LEGACY_ADAPTER)
     }
 
