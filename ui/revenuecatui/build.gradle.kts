@@ -133,6 +133,8 @@ dependencies {
     testImplementation(libs.androidx.test.compose)
     testImplementation(libs.androidx.test.compose.manifest)
     testImplementation(libs.hamcrest.core)
+    // RecyclerView 1.3.0+ is a pooling container, which tests use to reproduce views detached into its cache.
+    testImplementation(libs.androidx.recyclerview)
 
     androidTestImplementation(libs.assertJ)
     androidTestImplementation(libs.mockk.android)
