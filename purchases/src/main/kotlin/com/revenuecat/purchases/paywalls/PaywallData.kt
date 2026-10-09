@@ -1,3 +1,5 @@
+@file:Suppress("RedundantInternalApiAnnotation")
+
 package com.revenuecat.purchases.paywalls
 
 import androidx.annotation.VisibleForTesting

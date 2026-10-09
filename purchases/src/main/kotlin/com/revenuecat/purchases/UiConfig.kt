@@ -1,3 +1,5 @@
+@file:Suppress("RedundantInternalApiAnnotation")
+
 package com.revenuecat.purchases
 
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
