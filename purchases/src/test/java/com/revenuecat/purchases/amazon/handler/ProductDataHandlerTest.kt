@@ -7,12 +7,15 @@ import com.amazon.device.iap.model.Product
 import com.amazon.device.iap.model.ProductDataResponse
 import com.amazon.device.iap.model.RequestId
 import com.revenuecat.purchases.LogHandler
+import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.amazon.helpers.MockDeviceCache
 import com.revenuecat.purchases.amazon.helpers.PurchasingServiceProviderForTest
 import com.revenuecat.purchases.amazon.helpers.dummyAmazonProduct
+import com.revenuecat.purchases.common.Config
+import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.models.StoreProduct
 import io.mockk.every
 import io.mockk.mockk
@@ -66,6 +69,7 @@ class ProductDataHandlerTest {
         underTest.getProductData(
             expectedSkus,
             "US",
+            true,
             onReceive = {
                 receivedStoreProducts = it
             },
@@ -98,6 +102,7 @@ class ProductDataHandlerTest {
         underTest.getProductData(
             expectedProductData.keys,
             "US",
+            true,
             onReceive = {
                 receivedStoreProducts = it
             },
@@ -137,6 +142,7 @@ class ProductDataHandlerTest {
         underTest.getProductData(
             expectedProductData.keys,
             "US",
+            true,
             onReceive = {
                 receivedStoreProducts = it
             },
@@ -176,6 +182,7 @@ class ProductDataHandlerTest {
 //        underTest.getProductData(
 //            expectedProductData.keys,
 //            "US",
+//            true,
 //            onReceive = {
 //                receivedStoreProducts = it
 //            },
@@ -231,6 +238,7 @@ class ProductDataHandlerTest {
 //        underTest.getProductData(
 //            expectedProductData.keys,
 //            marketPlace,
+//            true,
 //            onReceive = {
 //                receivedStoreProducts = it
 //            },
@@ -265,6 +273,7 @@ class ProductDataHandlerTest {
         underTest.getProductData(
             expectedProductData.keys,
             "US",
+            true,
             unexpectedOnSuccess,
             onError = {
                 receivedError = it
@@ -301,6 +310,7 @@ class ProductDataHandlerTest {
         underTest.getProductData(
             expectedProductData.keys,
             marketPlace,
+            true,
             onReceive = {
                 receivedCount++
             },
@@ -353,6 +363,7 @@ class ProductDataHandlerTest {
         underTest.getProductData(
             expectedProductData.keys,
             marketPlace,
+            true,
             onReceive = { throw expectedException },
             unexpectedOnError
         )
@@ -382,6 +393,7 @@ class ProductDataHandlerTest {
         underTest.getProductData(
             setOf("sku_a", "sku_b"),
             "US",
+            true,
             unexpectedOnSuccess,
             unexpectedOnError
         )
@@ -403,6 +415,7 @@ class ProductDataHandlerTest {
         underTest.getProductData(
             expectedProductData.keys,
             "US",
+            true,
             unexpectedOnSuccess
         ) { resultError = it }
 
@@ -431,6 +444,7 @@ class ProductDataHandlerTest {
         underTest.getProductData(
             expectedProductData.keys,
             "US",
+            true,
             unexpectedOnSuccess
         ) { resultError = it }
 
@@ -460,6 +474,7 @@ class ProductDataHandlerTest {
         underTest.getProductData(
             expectedProductData.keys,
             "US",
+            true,
             { resultProducts = it },
             unexpectedOnError
         )
@@ -477,6 +492,56 @@ class ProductDataHandlerTest {
 
         assertThat(resultProducts).isNotNull
         assertThat(resultProducts?.size).isEqualTo(1)
+    }
+
+    @Test
+    fun `logUnfetchedProducts works`() {
+        val previousLogHandler = currentLogHandler
+        val previousLogLevel = Config.logLevel
+        val loggedMessages = mutableListOf<String>()
+        currentLogHandler = object : LogHandler {
+            override fun v(tag: String, msg: String) = Unit
+            override fun d(tag: String, msg: String) { loggedMessages.add(msg) }
+            override fun i(tag: String, msg: String) = Unit
+            override fun w(tag: String, msg: String) = Unit
+            override fun e(tag: String, msg: String, throwable: Throwable?) = Unit
+        }
+        Config.logLevel = LogLevel.VERBOSE
+
+        try {
+            listOf(false, true).forEach { logUnfetchedProducts ->
+                val unavailableSku = "missing_sku"
+                val requestId = "request_$logUnfetchedProducts"
+                purchasingServiceProvider.getProductDataRequestId = requestId
+                val loggedMessagesBeforeRequest = loggedMessages.size
+
+                underTest.getProductData(
+                    skus = setOf(unavailableSku),
+                    marketplace = "US",
+                    logUnfetchedProducts = logUnfetchedProducts,
+                    onReceive = {},
+                    onError = unexpectedOnError,
+                )
+                underTest.onProductDataResponse(
+                    getDummyProductDataResponse(
+                        requestId = requestId,
+                        unavailableSkus = setOf(unavailableSku),
+                        productData = emptyMap(),
+                    ),
+                )
+
+                val requestLogs = loggedMessages.drop(loggedMessagesBeforeRequest)
+                val expectedLog = "ℹ️ Unavailable products: [missing_sku]"
+                if (logUnfetchedProducts) {
+                    assertThat(requestLogs).contains(expectedLog)
+                } else {
+                    assertThat(requestLogs).doesNotContain(expectedLog)
+                }
+            }
+        } finally {
+            currentLogHandler = previousLogHandler
+            Config.logLevel = previousLogLevel
+        }
     }
 
     private fun setupMainHandler() {

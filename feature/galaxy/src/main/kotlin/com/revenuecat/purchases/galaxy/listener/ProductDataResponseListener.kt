@@ -18,6 +18,7 @@ internal interface ProductDataResponseListener : OnGetProductsDetailsListener {
     fun getProductDetails(
         productIds: Set<String>,
         productType: ProductType,
+        logUnfetchedProducts: Boolean,
         onReceive: (List<StoreProduct>) -> Unit,
         onError: (PurchasesError) -> Unit,
     )
