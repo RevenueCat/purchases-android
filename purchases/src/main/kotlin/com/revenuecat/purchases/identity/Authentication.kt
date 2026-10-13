@@ -4,8 +4,13 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.common.networking.TokenManager
+import com.revenuecat.purchases.common.safeResume
+import com.revenuecat.purchases.common.safeResumeWithException
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
+import kotlinx.coroutines.CancellableContinuation
+import kotlinx.coroutines.suspendCancellableCoroutine
 
 /**
  * IAM login and logout for other RevenueCat SDKs, reached through `Purchases.sharedInstance.authentication`.
@@ -58,6 +63,34 @@ public class Authentication internal constructor(
         reporter.userInitiatedStarted()
         flows.logOut(finishing(callback))
     }
+
+    /**
+     * Coroutine version of [logIn]. Cancelling stops the wait, not the login: it still completes, and the
+     * identity still changes.
+     *
+     * @throws PurchasesException with the login's error.
+     */
+    @JvmSynthetic
+    @Throws(PurchasesException::class)
+    public suspend fun awaitLogIn(identity: Identity): CustomerInfo =
+        suspendCancellableCoroutine { continuation -> logIn(identity, resuming(continuation)) }
+
+    /**
+     * Coroutine version of [logOut]. Cancelling stops the wait, not the logout.
+     *
+     * @throws PurchasesException with the logout's error.
+     */
+    @JvmSynthetic
+    @Throws(PurchasesException::class)
+    public suspend fun awaitLogOut(): CustomerInfo =
+        suspendCancellableCoroutine { continuation -> logOut(resuming(continuation)) }
+
+    private fun resuming(continuation: CancellableContinuation<CustomerInfo>) =
+        object : ReceiveCustomerInfoCallback {
+            override fun onReceived(customerInfo: CustomerInfo) = continuation.safeResume(customerInfo)
+            override fun onError(error: PurchasesError) =
+                continuation.safeResumeWithException(PurchasesException(error))
+        }
 
     private fun finishing(callback: ReceiveCustomerInfoCallback?) = object : ReceiveCustomerInfoCallback {
         override fun onReceived(customerInfo: CustomerInfo) {

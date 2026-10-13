@@ -8,14 +8,19 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.common.networking.TokenManager
 import com.revenuecat.purchases.common.networking.TokenManager.TokenUpdate
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
@@ -158,6 +163,61 @@ class AuthenticationTest {
         assertThat(authentication.currentAccessToken).isEqualTo("other-access")
         currentUser = "nobody"
         assertThat(authentication.currentAccessToken).isNull()
+    }
+
+    // endregion
+
+    // region coroutines
+
+    @Test
+    fun `awaitLogIn returns the CustomerInfo`() = runTest {
+        val authentication = authentication(tokenManager())
+        val result = async { authentication.awaitLogIn(Identity.anonymous) }
+        runCurrent()
+
+        flows.pendingLogIn!!.onReceived(customerInfo)
+
+        assertThat(result.await()).isEqualTo(customerInfo)
+    }
+
+    @Test
+    fun `awaitLogIn throws the login error`() = runTest {
+        val authentication = authentication(tokenManager())
+        val result = async { runCatching { authentication.awaitLogIn(Identity.anonymous) } }
+        runCurrent()
+
+        flows.pendingLogIn!!.onError(networkError)
+
+        assertThat((result.await().exceptionOrNull() as PurchasesException).error).isEqualTo(networkError)
+    }
+
+    @Test
+    fun `awaitLogOut returns the anonymous user's CustomerInfo, or throws its error`() = runTest {
+        val authentication = authentication(tokenManager())
+        val success = async { authentication.awaitLogOut() }
+        runCurrent()
+        flows.pendingLogOut!!.onReceived(customerInfo)
+        assertThat(success.await()).isEqualTo(customerInfo)
+
+        val failure = async { runCatching { authentication.awaitLogOut() } }
+        runCurrent()
+        flows.pendingLogOut!!.onError(networkError)
+        assertThat((failure.await().exceptionOrNull() as PurchasesException).error).isEqualTo(networkError)
+    }
+
+    @Test
+    fun `cancelling awaitLogIn leaves the login to finish and passive reporting intact`() = runTest {
+        val tokenManager = tokenManager()
+        val authentication = authentication(tokenManager).apply { delegate = this@AuthenticationTest.delegate }
+        val job = launch { authentication.awaitLogIn(Identity.anonymous) }
+        runCurrent()
+
+        job.cancelAndJoin()
+        flows.pendingLogIn!!.onReceived(customerInfo)
+
+        assertThat(job.isCancelled).isTrue()
+        tokenManager.reportRefreshFailure(networkError)
+        assertThat(delegate.errors).containsExactly(networkError)
     }
 
     // endregion
