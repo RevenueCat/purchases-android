@@ -138,6 +138,8 @@ dependencies {
     androidTestImplementation(libs.mockk.android)
     androidTestImplementation(libs.mockk.agent)
     androidTestImplementation(libs.androidx.test.compose)
+    // RecyclerView 1.3.0+ is a pooling container, which tests use to reproduce views detached into its cache.
+    androidTestImplementation(libs.androidx.recyclerview)
 
     baselineProfile(project(":baselineprofile"))
 }
