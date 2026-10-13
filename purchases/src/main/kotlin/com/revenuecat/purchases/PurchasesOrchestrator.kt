@@ -326,7 +326,13 @@ internal class PurchasesOrchestrator(
     val preferredUILocaleOverride: String?
         get() = _preferredUILocaleOverride
 
-    private val iamBootstrapInFlight = AtomicBoolean(false)
+    // Bootstrap state, guarded by identityLock: whether one is in flight, and the work waiting for it to finish.
+    private val identityLock = Any()
+    private var iamBootstrapInFlight = false
+    private val awaitingIdentity = mutableListOf<(bootstrapped: Boolean) -> Unit>()
+
+    // Set while a foreground pass waits for the bootstrap, so later foregrounds don't queue another one.
+    private val foregroundPassAwaitingIdentity = AtomicBoolean(false)
 
     init {
         // Initialize locale provider with the initial preferred locale override
@@ -401,17 +407,11 @@ internal class PurchasesOrchestrator(
         enqueue {
             if (appConfig.uiPreviewMode) return@enqueue
 
-            // The IAM bootstrap replaces the current user, so this foreground's per-user work waits for it and then
-            // runs for the user it switched to.
-            identityManager.checkIAMLoginNeeded { needed ->
-                if (needed) {
-                    logInThroughIAM { loggedIn ->
-                        // A successful bootstrap already fetched the new user's CustomerInfo.
-                        enqueue { runForegroundWork(firstTimeInForeground, refreshCustomerInfo = !loggedIn) }
-                    }
-                } else {
-                    enqueue { runForegroundWork(firstTimeInForeground, refreshCustomerInfo = true) }
-                }
+            if (!foregroundPassAwaitingIdentity.compareAndSet(false, true)) return@enqueue
+            whenIdentitySettled { bootstrapped ->
+                foregroundPassAwaitingIdentity.set(false)
+                // A successful bootstrap already fetched the new user's CustomerInfo.
+                enqueue { runForegroundWork(firstTimeInForeground, refreshCustomerInfo = !bootstrapped) }
             }
         }
     }
@@ -478,7 +478,7 @@ internal class PurchasesOrchestrator(
         webPurchaseRedemption: WebPurchaseRedemption,
         listener: RedeemWebPurchaseListener,
     ) {
-        webPurchaseRedemptionHelper.handleRedeemWebPurchase(webPurchaseRedemption, listener)
+        whenIdentitySettled { webPurchaseRedemptionHelper.handleRedeemWebPurchase(webPurchaseRedemption, listener) }
     }
 
     // region Public Methods
@@ -604,12 +604,14 @@ internal class PurchasesOrchestrator(
             })
             return
         }
-        syncPurchasesHelper.syncPurchases(
-            isRestore = this.allowSharingPlayStoreAccount,
-            appInBackground = this.state.appInBackground,
-            onSuccess = { listener?.onSuccess(it) },
-            onError = { listener?.onError(it) },
-        )
+        whenIdentitySettled {
+            syncPurchasesHelper.syncPurchases(
+                isRestore = this.allowSharingPlayStoreAccount,
+                appInBackground = this.state.appInBackground,
+                onSuccess = { listener?.onSuccess(it) },
+                onError = { listener?.onError(it) },
+            )
+        }
     }
 
     fun syncAmazonPurchase(
@@ -627,6 +629,20 @@ internal class PurchasesOrchestrator(
             return
         }
 
+        whenIdentitySettled {
+            postAmazonPurchase(productID, receiptID, amazonUserID, isoCurrencyCode, price, purchaseTime)
+        }
+    }
+
+    @Suppress("LongParameterList")
+    private fun postAmazonPurchase(
+        productID: String,
+        receiptID: String,
+        amazonUserID: String,
+        isoCurrencyCode: String?,
+        price: Double?,
+        purchaseTime: Long?,
+    ) {
         val appUserID = identityManager.currentAppUserID
         billing.normalizePurchaseData(
             productID,
@@ -887,8 +903,6 @@ internal class PurchasesOrchestrator(
         val startTime = dateProvider.now
         diagnosticsTrackerIfEnabled?.trackRestorePurchasesStarted()
 
-        val appUserID = identityManager.currentAppUserID
-
         val callbackWithTracking = if (diagnosticsTrackerIfEnabled == null) {
             callback
         } else {
@@ -913,6 +927,11 @@ internal class PurchasesOrchestrator(
             }
         }
 
+        whenIdentitySettled { restorePurchasesForCurrentUser(callbackWithTracking) }
+    }
+
+    private fun restorePurchasesForCurrentUser(callbackWithTracking: ReceiveCustomerInfoCallback) {
+        val appUserID = identityManager.currentAppUserID
         blockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded {
             billing.queryAllPurchases(
                 appUserID,
@@ -1629,24 +1648,52 @@ internal class PurchasesOrchestrator(
         }
     }
 
-    // Silent bootstrap: an anonymous user without tokens gets them. Started from foreground, never configure,
-    // which also runs on background wake-ups (pushes, jobs). If one is already in flight, this does nothing and
-    // [onFinished] doesn't run: the in-flight login's own [onFinished] covers it.
-    private fun logInThroughIAM(onFinished: (loggedIn: Boolean) -> Unit) {
-        if (!iamBootstrapInFlight.compareAndSet(false, true)) return
+    /**
+     * Runs [action] once the current user is final, for user-scoped work that must not land on a user the IAM
+     * bootstrap is about to replace: right away when no bootstrap is needed or in flight, otherwise after the
+     * bootstrap finishes, starting it if needed. [action] gets whether that bootstrap succeeded.
+     *
+     * Only for foreground or user-initiated work: it can start the bootstrap, which configure must never do.
+     */
+    private fun whenIdentitySettled(action: (bootstrapped: Boolean) -> Unit) {
+        identityManager.checkIAMLoginNeeded { needed ->
+            val runNow: Boolean
+            val startBootstrap: Boolean
+            synchronized(identityLock) {
+                runNow = !needed && !iamBootstrapInFlight
+                startBootstrap = needed && !iamBootstrapInFlight
+                if (!runNow) awaitingIdentity.add(action)
+                if (startBootstrap) iamBootstrapInFlight = true
+            }
+            when {
+                runNow -> action(false)
+                startBootstrap -> logInThroughIAM()
+            }
+        }
+    }
+
+    // Silent bootstrap: an anonymous user without tokens gets them. Started only through whenIdentitySettled.
+    private fun logInThroughIAM() {
         identityManager.logIn(
             Identity.anonymous,
             onSuccess = { customerInfo, appUserID ->
-                iamBootstrapInFlight.set(false)
                 handleIdentityChange(customerInfo, appUserID)
-                onFinished(true)
+                finishBootstrap(bootstrapped = true)
             },
             onError = { error ->
-                iamBootstrapInFlight.set(false)
                 errorLog(error)
-                onFinished(false)
+                finishBootstrap(bootstrapped = false)
             },
         )
+    }
+
+    // A failed bootstrap still releases the waiting work, which then runs for the local anonymous user.
+    private fun finishBootstrap(bootstrapped: Boolean) {
+        val actions = synchronized(identityLock) {
+            iamBootstrapInFlight = false
+            awaitingIdentity.toList().also { awaitingIdentity.clear() }
+        }
+        actions.forEach { it(bootstrapped) }
     }
 
     // Everything a login does after IdentityManager has switched users and fetched their CustomerInfo.
@@ -1726,15 +1773,18 @@ internal class PurchasesOrchestrator(
                     }
                 }
 
-                postTransactionWithProductDetailsHelper.postTransactions(
-                    purchases,
-                    allowSharingPlayStoreAccount,
-                    appUserID,
-                    PostReceiptInitiationSource.PURCHASE,
-                    sdkOriginated = sdkOriginated,
-                    transactionPostSuccess = callbackPair.first,
-                    transactionPostError = callbackPair.second,
-                )
+                // appUserID is read once the identity has settled, not before.
+                whenIdentitySettled {
+                    postTransactionWithProductDetailsHelper.postTransactions(
+                        purchases,
+                        allowSharingPlayStoreAccount,
+                        appUserID,
+                        PostReceiptInitiationSource.PURCHASE,
+                        sdkOriginated = sdkOriginated,
+                        transactionPostSuccess = callbackPair.first,
+                        transactionPostError = callbackPair.second,
+                    )
+                }
 
                 // Synchronize paywall events after a new purchase
                 flushEvents(Delay.NONE)

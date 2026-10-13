@@ -5,6 +5,7 @@ import com.revenuecat.purchases.identity.Identity
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
+import io.mockk.mockk
 import io.mockk.verify
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -136,6 +137,77 @@ internal class PurchasesIAMBootstrapTest : BasePurchasesTest() {
         verify(exactly = 1) { mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any(), any()) }
     }
 
+    @Test
+    fun `a purchase that completes while the bootstrap is in flight posts for the user it switches to`() {
+        configure()
+        mockOfferingsManagerFetchOfferings(serverID)
+        foreground()
+        needChecks.single().invoke(true)
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(purchase()))
+        needChecks.last().invoke(true)
+        verify(exactly = 0) { mockBillingAbstract.queryProductDetailsAsync(any(), any(), any(), any()) }
+
+        bootstrapSuccess!!.invoke(mockInfo, serverID)
+
+        verify(exactly = 1) { mockIdentityManager.logIn(Identity.anonymous, any(), any()) }
+        verify(exactly = 1) { mockBillingAbstract.queryProductDetailsAsync(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `a purchase starts the bootstrap when one is needed and none is in flight`() {
+        configure()
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(purchase()))
+        needChecks.single().invoke(true)
+
+        verify(exactly = 1) { mockIdentityManager.logIn(Identity.anonymous, any(), any()) }
+        verify(exactly = 0) { mockBillingAbstract.queryProductDetailsAsync(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `restorePurchases waits for the bootstrap, and still runs if it fails`() {
+        configure()
+        every { mockBillingAbstract.queryAllPurchases(any(), any(), any()) } just Runs
+
+        purchases.purchasesOrchestrator.restorePurchases(mockk(relaxed = true))
+        needChecks.single().invoke(true)
+        verify(exactly = 0) { mockBillingAbstract.queryAllPurchases(any(), any(), any()) }
+
+        bootstrapError!!.invoke(PurchasesError(PurchasesErrorCode.NetworkError))
+
+        verify(exactly = 1) { mockBillingAbstract.queryAllPurchases(appUserId, any(), any()) }
+    }
+
+    @Test
+    fun `syncPurchases waits for the bootstrap`() {
+        configure()
+        mockOfferingsManagerFetchOfferings(serverID)
+        every { mockSyncPurchasesHelper.syncPurchases(any(), any(), any(), any()) } just Runs
+
+        purchases.purchasesOrchestrator.syncPurchases()
+        needChecks.single().invoke(true)
+        verify(exactly = 0) { mockSyncPurchasesHelper.syncPurchases(any(), any(), any(), any()) }
+
+        bootstrapSuccess!!.invoke(mockInfo, serverID)
+
+        verify(exactly = 1) { mockSyncPurchasesHelper.syncPurchases(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `syncPurchases runs right away when no bootstrap is needed`() {
+        configure()
+        every { mockSyncPurchasesHelper.syncPurchases(any(), any(), any(), any()) } just Runs
+
+        purchases.purchasesOrchestrator.syncPurchases()
+        needChecks.single().invoke(false)
+
+        verify(exactly = 1) { mockSyncPurchasesHelper.syncPurchases(any(), any(), any(), any()) }
+        verify(exactly = 0) { mockIdentityManager.logIn(any<Identity>(), any(), any()) }
+    }
+
+    private fun purchase() = getMockedStoreTransaction("product", "token", ProductType.SUBS)
+
     private fun configure() {
         // Whether a login is needed is IdentityManager's call; the base fixtures' user stubs the foreground work.
         anonymousSetup(anonymous = false)
@@ -146,6 +218,7 @@ internal class PurchasesIAMBootstrapTest : BasePurchasesTest() {
         }
         mockOfferingsManagerAppForeground()
         every { mockCustomerInfoHelper.retrieveCustomerInfo(any(), any(), any(), any(), any(), any()) } just Runs
+        every { mockBillingAbstract.queryProductDetailsAsync(any(), any(), any(), any()) } just Runs
     }
 
     private fun foreground() {
