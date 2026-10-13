@@ -44,6 +44,18 @@
                 app:layout_constraintTop_toBottomOf="@+id/login_username_input_layout"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintBottom_toTopOf="@+id/iam_login_button"/>
+
+        <com.google.android.material.button.MaterialButton
+                android:id="@+id/iam_login_button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/iam_login_with_oidc_token"
+                android:visibility="gone"
+                tools:visibility="visible"
+                app:layout_constraintTop_toBottomOf="@+id/login_button"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintBottom_toTopOf="@+id/anonymous_user_button"/>
 
         <com.google.android.material.button.MaterialButton
@@ -51,7 +63,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Continue as random user"
-                app:layout_constraintTop_toBottomOf="@+id/login_button"
+                app:layout_constraintTop_toBottomOf="@+id/iam_login_button"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent" />
 
