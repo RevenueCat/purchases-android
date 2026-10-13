@@ -162,10 +162,19 @@ public class AdTracker internal constructor(
     }
 
     /**
-     * Tracks the start of a reward-verification poll, stamping the capture method that emitted it.
+     * Tracks when an ad SDK reports that the user earned a reward.
      *
-     * Unlike this class's other tracking methods, reward events have no manual-integration entry point:
-     * they're only ever emitted by the SDK's own reward-verification poll.
+     * Use this method for manual rewarded ad integrations that don't use RevenueCat reward verification.
+     * If you use RevenueCat reward verification, the SDK tracks this event automatically when
+     * `Purchases.pollRewardVerification` starts.
+     *
+     * @param data The earned reward event data.
+     */
+    public fun trackAdRewardEarnedUnverified(data: AdRewardEarnedUnverifiedData): Unit =
+        trackAdRewardEarnedUnverified(data, AdCaptureMethod.MANUAL)
+
+    /**
+     * Tracks the start of a reward-verification poll, stamping the capture method that emitted it.
      */
     @InternalRevenueCatAPI
     public fun trackAdRewardEarnedUnverified(data: AdRewardEarnedUnverifiedData, captureMethod: AdCaptureMethod) {

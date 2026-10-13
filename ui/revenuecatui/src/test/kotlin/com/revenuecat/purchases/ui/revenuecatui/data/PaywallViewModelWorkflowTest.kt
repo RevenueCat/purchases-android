@@ -470,7 +470,10 @@ class PaywallViewModelWorkflowTest {
         JsonObject(mapOf(WorkflowScreenType.METADATA_KEY to JsonArray(types.map { JsonPrimitive(it) })))
 
     private fun makeContextPackageWorkflow(): Pair<PublishedWorkflow, Offerings> {
-        val earlyScreen = makeScreen(screenId1).copy(componentsConfig = noPackagesComponentsConfig)
+        val earlyScreen = makeScreen(screenId1).copy(
+            componentsConfig = noPackagesComponentsConfig,
+            offeringIdentifier = null,
+        )
         val terminalScreen = makeScreen(screenId2).copy(componentsConfig = twoPackageComponentsConfig)
 
         val earlyStep = WorkflowStep(
@@ -486,7 +489,7 @@ class PaywallViewModelWorkflowTest {
                 ),
             ),
             triggerActions = mapOf("action-next" to WorkflowTriggerAction.Step(stepId = "step-2")),
-            // Like the backend, only the paywall step carries an offering; this one renders without one.
+            // Neither this step nor its screen names an offering, so it renders without one.
             paramValues = emptyMap(),
             // Context (non-paywall) step: tagged with an empty screen_type so it suppresses paywall events.
             metadata = screenTypeMetadata(),
@@ -2343,12 +2346,41 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
-    fun `initial step without an offering renders without one even when its screen names one`() {
+    fun `initial step without an offering uses its screen's offering`() {
         val stepWithoutOffering = step1.copy(paramValues = emptyMap())
         val workflowWithoutOffering = workflow.copy(steps = mapOf("step-1" to stepWithoutOffering, "step-2" to step2))
 
         val vm = createVm()
         vm.startWorkflowPresentationFromResult(workflowWithoutOffering, testOfferings, null, uiConfig)
+
+        val loaded = vm.state.value as PaywallState.Loaded.Components
+        assertThat(loaded.workflowScreen?.hasOffering).isTrue
+        assertThat(loaded.offering.identifier).isEqualTo(offeringId)
+        assertThat(loaded.offering.availablePackages).isEqualTo(testOffering.availablePackages)
+    }
+
+    @Test
+    fun `step's own offering takes precedence over its screen's offering`() {
+        val stepWithOwnOffering = step1.copy(paramValues = offeringParams(exitOfferingId))
+        val wfl = workflow.copy(steps = mapOf("step-1" to stepWithOwnOffering, "step-2" to step2))
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, testOfferingsWithExitOffer, null, uiConfig)
+
+        val loaded = vm.state.value as PaywallState.Loaded.Components
+        assertThat(loaded.offering.identifier).isEqualTo(exitOfferingId)
+    }
+
+    @Test
+    fun `initial step renders without an offering when neither the step nor its screen names one`() {
+        val stepWithoutOffering = step1.copy(paramValues = emptyMap())
+        val wfl = workflow.copy(
+            steps = mapOf("step-1" to stepWithoutOffering, "step-2" to step2),
+            screens = workflow.screens + (screenId1 to makeScreen(screenId1).copy(offeringIdentifier = null)),
+        )
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, testOfferings, null, uiConfig)
 
         assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
         val loaded = vm.state.value as PaywallState.Loaded.Components
