@@ -571,6 +571,29 @@ class IdentityManagerIAMTests {
     }
 
     @Test
+    fun `IAM logOut leaves alone a user who became current during the attribute sync`() = runTest {
+        cachedAppUserID = identifiedID
+        createIdentityManager()
+        lateinit var finishSync: () -> Unit
+        every { subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), any(), any()) } answers {
+            finishSync = { thirdArg<(() -> Unit)?>()?.invoke() }
+        }
+        var error: PurchasesError? = null
+        identityManager.logOut { error = it }
+
+        identityManager.switchUser("another-user")
+        finishSync()
+
+        assertThat(identityManager.currentAppUserID).isEqualTo("another-user")
+        assertThat(error?.code).isEqualTo(PurchasesErrorCode.OperationAlreadyInProgressError)
+        verify(exactly = 1) {
+            subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(identifiedID, any(), any())
+        }
+        verify(exactly = 0) { tokenAPI.revokeTokens(any(), any(), any()) }
+        verify(exactly = 0) { tokenAPI.logIn(any(), any(), any(), any()) }
+    }
+
+    @Test
     fun `a late logOut anonymous login does not undo an identity change made meanwhile`() = runTest {
         cachedAppUserID = identifiedID
         createIdentityManager()

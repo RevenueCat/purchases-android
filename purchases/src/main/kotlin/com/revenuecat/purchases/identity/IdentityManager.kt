@@ -265,12 +265,13 @@ internal class IdentityManager(
             completion(PurchasesError(PurchasesErrorCode.LogOutWithAnonymousUserError))
             return
         }
+        val oldAppUserID = currentAppUserID
         subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
-            currentAppUserID,
+            oldAppUserID,
             Delay.jitterOnlyIfInBackground(appConfig.isAppBackgrounded),
         ) {
             if (tokenManager.enabled) {
-                logOutThroughIAM(completion)
+                logOutThroughIAM(oldAppUserID, completion)
             } else {
                 resetAndSaveUserID(generateRandomID())
                 log(LogIntent.USER) { IdentityStrings.LOG_OUT_SUCCESSFUL }
@@ -323,8 +324,12 @@ internal class IdentityManager(
      * as a successful logout, since the identity did change. Neither happens if the identity changed while the
      * requests were in flight.
      */
-    private fun logOutThroughIAM(completion: (PurchasesError?) -> Unit) {
-        val oldAppUserID = currentAppUserID
+    private fun logOutThroughIAM(oldAppUserID: String, completion: (PurchasesError?) -> Unit) {
+        // A login or switchUser finished during the attribute sync: that user isn't the one logging out.
+        if (currentAppUserID != oldAppUserID) {
+            completion(identityChangedError())
+            return
+        }
         tokenAPI.revokeTokens(
             oldAppUserID,
             onSuccess = {
