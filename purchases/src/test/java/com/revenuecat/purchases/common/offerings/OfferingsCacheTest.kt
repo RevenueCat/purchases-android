@@ -79,6 +79,31 @@ class OfferingsCacheTest {
     }
 
     @Test
+    fun `offerings fetched before a clearCache are not cached`() {
+        every { deviceCache.clearOfferingsResponseCache() } just Runs
+        every { deviceCache.cacheOfferingsResponse(any()) } just Runs
+        val requestEpoch = offeringsCache.epoch
+
+        offeringsCache.clearCache()
+        offeringsCache.cacheOfferings(mockk(), ONE_OFFERINGS_RESPONSE, requestEpoch)
+
+        assertThat(offeringsCache.cachedOfferings).isNull()
+        verify(exactly = 0) { deviceCache.cacheOfferingsResponse(any()) }
+    }
+
+    @Test
+    fun `offerings fetched after a clearCache are cached`() {
+        every { deviceCache.clearOfferingsResponseCache() } just Runs
+        every { deviceCache.cacheOfferingsResponse(any()) } just Runs
+        offeringsCache.clearCache()
+        val offerings = mockk<Offerings>()
+
+        offeringsCache.cacheOfferings(offerings, ONE_OFFERINGS_RESPONSE, offeringsCache.epoch)
+
+        assertThat(offeringsCache.cachedOfferings).isEqualTo(offerings)
+    }
+
+    @Test
     fun `caching offerings from the disk cache does not write the response back to disk`() {
         // The response is already on disk, so re-writing it re-serializes a multi-MB payload on
         // every failed fetch.
