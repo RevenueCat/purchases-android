@@ -283,6 +283,15 @@ internal class PurchasesIAMBootstrapTest : BasePurchasesTest() {
         verify(exactly = 1) { mockOfferingsManager.fetchAndCacheOfferings(serverID, false, any(), any()) }
     }
 
+    @Test
+    fun `Purchases exposes the orchestrator's Authentication`() {
+        configure()
+
+        assertThat(Purchases.sharedInstance.authentication)
+            .isSameAs(purchases.authentication)
+            .isSameAs(purchases.purchasesOrchestrator.authentication)
+    }
+
     private class RecordingDelegate : AuthenticationDelegate {
         val errors = mutableListOf<PurchasesError>()
 
