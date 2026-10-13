@@ -22,6 +22,9 @@ internal class PurchasesIAMBootstrapTest : BasePurchasesTest() {
     private var bootstrapSuccess: ((CustomerInfo, String) -> Unit)? = null
     private var bootstrapError: ((PurchasesError) -> Unit)? = null
 
+    // What IdentityManager.needsIAMLogin reports when the orchestrator re-checks a "needed" answer.
+    private var loginStillNeeded = true
+
     override val shouldConfigureOnSetUp: Boolean
         get() = false
 
@@ -206,12 +209,30 @@ internal class PurchasesIAMBootstrapTest : BasePurchasesTest() {
         verify(exactly = 0) { mockIdentityManager.logIn(any<Identity>(), any(), any()) }
     }
 
+    @Test
+    fun `a stale needed answer after the bootstrap finished does not start a second one`() {
+        configure()
+        mockOfferingsManagerFetchOfferings(serverID)
+        foreground()
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(purchase()))
+        needChecks.first().invoke(true)
+        bootstrapSuccess!!.invoke(mockInfo, serverID)
+        loginStillNeeded = false
+
+        // Evaluated before the bootstrap finished, this check still says "needed".
+        needChecks.last().invoke(true)
+
+        verify(exactly = 1) { mockIdentityManager.logIn(Identity.anonymous, any(), any()) }
+        verify(exactly = 1) { mockBillingAbstract.queryProductDetailsAsync(any(), any(), any(), any()) }
+    }
+
     private fun purchase() = getMockedStoreTransaction("product", "token", ProductType.SUBS)
 
     private fun configure() {
         // Whether a login is needed is IdentityManager's call; the base fixtures' user stubs the foreground work.
         anonymousSetup(anonymous = false)
         every { mockIdentityManager.checkIAMLoginNeeded(capture(needChecks)) } just Runs
+        every { mockIdentityManager.needsIAMLogin() } answers { loginStillNeeded }
         every { mockIdentityManager.logIn(Identity.anonymous, any<(CustomerInfo, String) -> Unit>(), any()) } answers {
             bootstrapSuccess = secondArg()
             bootstrapError = thirdArg()

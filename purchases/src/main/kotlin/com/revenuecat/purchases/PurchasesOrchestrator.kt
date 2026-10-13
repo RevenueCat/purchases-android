@@ -1656,10 +1656,12 @@ internal class PurchasesOrchestrator(
      * Only for foreground or user-initiated work: it can start the bootstrap, which configure must never do.
      */
     private fun whenIdentitySettled(action: (bootstrapped: Boolean) -> Unit) {
-        identityManager.checkIAMLoginNeeded { needed ->
+        identityManager.checkIAMLoginNeeded { neededWhenChecked ->
             val runNow: Boolean
             val startBootstrap: Boolean
             synchronized(identityLock) {
+                // A bootstrap may have finished since the check; a stale "needed" would start a second one.
+                val needed = neededWhenChecked && (iamBootstrapInFlight || identityManager.needsIAMLogin())
                 runNow = !needed && !iamBootstrapInFlight
                 startBootstrap = needed && !iamBootstrapInFlight
                 if (!runNow) awaitingIdentity.add(action)

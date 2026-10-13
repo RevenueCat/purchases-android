@@ -313,6 +313,13 @@ internal class IdentityManager(
         tokenManager.onLoadFinished { loaded -> callback(loaded && needsIAMLogin()) }
     }
 
+    /**
+     * Whether the current user needs an IAM login, from the tokens as they are now. Only meaningful once
+     * [checkIAMLoginNeeded] has answered, for re-checking that answer when acting on it later.
+     */
+    fun needsIAMLogin(): Boolean =
+        tokenManager.enabled && currentUserIsAnonymous() && !tokenManager.hasCurrentAccessToken(currentAppUserID)
+
     // endregion
 
     // region Private functions
@@ -431,9 +438,6 @@ internal class IdentityManager(
             onError = { error, _ -> onError(error) },
         )
     }
-
-    private fun needsIAMLogin(): Boolean =
-        tokenManager.enabled && currentUserIsAnonymous() && !tokenManager.hasCurrentAccessToken(currentAppUserID)
 
     /**
      * Clears the remote-config caches and then the offerings cache on an identity change, always in this
