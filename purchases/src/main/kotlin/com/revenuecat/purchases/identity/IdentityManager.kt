@@ -210,7 +210,15 @@ internal class IdentityManager(
             onError(PurchasesError(PurchasesErrorCode.ConfigurationError, "IAM login is not enabled."))
             return
         }
+        // Linking and the anonymous checks read the current user's ID token.
+        afterTokensLoad(onError) { logInThroughIAM(identity, onSuccess, onError) }
+    }
 
+    private fun logInThroughIAM(
+        identity: Identity,
+        onSuccess: (customerInfo: CustomerInfo, appUserID: String) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
         val oldAppUserID = currentAppUserID
         log(LogIntent.USER) { IdentityStrings.IAM_LOGGING_IN.format(oldAppUserID, identity.identitySource) }
         subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
@@ -249,7 +257,6 @@ internal class IdentityManager(
         resetAndSaveUserID(newAppUserID)
     }
 
-    @Synchronized
     fun logOut(completion: ((PurchasesError?) -> Unit)) {
         if (currentAppUserID == UI_PREVIEW_MODE_APP_USER_ID) {
             completion(
@@ -260,6 +267,12 @@ internal class IdentityManager(
             )
             return
         }
+        // The anonymous check and the revoke both read tokens; before the load they'd see none.
+        afterTokensLoad(completion) { logOutAfterTokensLoad(completion) }
+    }
+
+    @Synchronized
+    private fun logOutAfterTokensLoad(completion: (PurchasesError?) -> Unit) {
         if (currentUserIsAnonymous()) {
             log(LogIntent.RC_ERROR) { IdentityStrings.LOG_OUT_CALLED_ON_ANONYMOUS_USER }
             completion(PurchasesError(PurchasesErrorCode.LogOutWithAnonymousUserError))
@@ -292,7 +305,7 @@ internal class IdentityManager(
      * Evaluated only after the load, since a missing token is indistinguishable from an unloaded cache.
      */
     fun whenIAMLoginNeeded(action: () -> Unit) {
-        tokenManager.onLoaded { if (needsIAMLogin()) action() }
+        tokenManager.onLoadFinished { loaded -> if (loaded && needsIAMLogin()) action() }
     }
 
     // endregion
@@ -364,6 +377,28 @@ internal class IdentityManager(
             },
             onError = completion,
         )
+    }
+
+    /**
+     * Runs [action] once the token cache has loaded, since IAM state read before then looks empty: a missing
+     * token or ID token would be mistaken for none stored. Runs it right away when IAM is disabled, and fails
+     * through [onError] if token storage is unavailable.
+     */
+    private fun afterTokensLoad(onError: (PurchasesError) -> Unit, action: () -> Unit) {
+        if (!tokenManager.enabled) {
+            action()
+            return
+        }
+        tokenManager.onLoadFinished { loaded ->
+            if (loaded) {
+                action()
+            } else {
+                onError(
+                    PurchasesError(PurchasesErrorCode.UnknownError, IdentityStrings.IAM_TOKEN_STORAGE_UNAVAILABLE)
+                        .also { errorLog(it) },
+                )
+            }
+        }
     }
 
     private fun identityChangedError() = PurchasesError(

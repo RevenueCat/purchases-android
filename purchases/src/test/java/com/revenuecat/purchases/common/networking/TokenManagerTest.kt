@@ -516,72 +516,75 @@ class TokenManagerTest {
 
     // endregion
 
-    // region onLoaded
+    // region onLoadFinished
 
     @Test
-    fun `onLoaded runs the callback once, after the load`() = runTest {
+    fun `onLoadFinished runs the callback once, after the load`() = runTest {
         val manager = unloadedManager()
-        var calls = 0
+        val results = mutableListOf<Boolean>()
         var tokenSeenByCallback: String? = null
         manager.saveTokens("user", accessToken = "access", refreshToken = null, idToken = null)
 
-        manager.onLoaded {
-            calls++
+        manager.onLoadFinished {
+            results.add(it)
             tokenSeenByCallback = manager.currentAccessToken("user")
         }
-        assertThat(calls).isZero()
+        assertThat(results).isEmpty()
 
         advanceUntilIdle()
-        assertThat(calls).isEqualTo(1)
+        assertThat(results).containsExactly(true)
         assertThat(tokenSeenByCallback).isEqualTo("access")
 
         manager.saveTokens("user", accessToken = "other", refreshToken = null, idToken = null)
         advanceUntilIdle()
-        assertThat(calls).isEqualTo(1)
+        assertThat(results).containsExactly(true)
     }
 
     @Test
-    fun `onLoaded runs the callback immediately when already loaded`() = runTest {
+    fun `onLoadFinished runs the callback immediately when already loaded`() = runTest {
         val manager = manager()
-        var calls = 0
+        val results = mutableListOf<Boolean>()
 
-        manager.onLoaded { calls++ }
+        manager.onLoadFinished { results.add(it) }
 
-        assertThat(calls).isEqualTo(1)
+        assertThat(results).containsExactly(true)
     }
 
     @Test
-    fun `onLoaded runs every callback registered before the load`() = runTest {
+    fun `onLoadFinished runs every callback registered before the load`() = runTest {
         val manager = unloadedManager()
         val calls = mutableListOf<Int>()
 
-        manager.onLoaded { calls.add(1) }
-        manager.onLoaded { calls.add(2) }
+        manager.onLoadFinished { calls.add(1) }
+        manager.onLoadFinished { calls.add(2) }
         advanceUntilIdle()
 
         assertThat(calls).containsExactly(1, 2)
     }
 
     @Test
-    fun `onLoaded never runs the callback when disabled`() = runTest {
+    fun `onLoadFinished never runs the callback when disabled`() = runTest {
         val manager = TokenManager(context, "test_api_key", enabled = false, scope = testScope())
         var calls = 0
 
-        manager.onLoaded { calls++ }
+        manager.onLoadFinished { calls++ }
         advanceUntilIdle()
 
         assertThat(calls).isZero()
     }
 
     @Test
-    fun `onLoaded never runs the callback when storage is unavailable`() = runTest {
+    fun `onLoadFinished reports false when storage is unavailable, and the cache stays unloaded`() = runTest {
         val manager = unloadedManager(apiKey = "   ")
-        var calls = 0
+        val results = mutableListOf<Boolean>()
 
-        manager.onLoaded { calls++ }
+        manager.onLoadFinished { results.add(it) }
         advanceUntilIdle()
+        manager.onLoadFinished { results.add(it) }
+        manager.saveTokens("user", accessToken = "access", refreshToken = null, idToken = null)
 
-        assertThat(calls).isZero()
+        assertThat(results).containsExactly(false, false)
+        assertThat(manager.currentAccessToken("user")).isNull()
     }
 
     // endregion

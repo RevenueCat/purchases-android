@@ -511,6 +511,74 @@ class IdentityManagerIAMTests {
 
     // endregion
 
+    // region before the token cache loads
+
+    @Test
+    fun `logOut waits for the token cache, so a server-assigned anonymous user is still rejected`() = runTest {
+        val anonymousIDToken = fakeIDToken(listOf("anonymous"))
+        newTokenManager(iamEnabled = true).saveTokens(serverID, "access", "refresh", anonymousIDToken)
+        advanceUntilIdle()
+        cachedAppUserID = serverID
+        createIdentityManager(loaded = false)
+        var error: PurchasesError? = null
+
+        identityManager.logOut { error = it }
+        assertThat(error).isNull()
+        advanceUntilIdle()
+
+        assertThat(error?.code).isEqualTo(PurchasesErrorCode.LogOutWithAnonymousUserError)
+        verify(exactly = 0) { tokenAPI.revokeTokens(any(), any(), any()) }
+        // The stored tokens were restored, not shadowed by deletions made before the load.
+        assertThat(tokenManager.currentAccessToken(serverID)).isEqualTo("access")
+        assertThat(tokenManager.currentRefreshToken(serverID)).isEqualTo("refresh")
+    }
+
+    @Test
+    fun `logOut revokes only once the token cache has loaded`() = runTest {
+        newTokenManager(iamEnabled = true).saveTokens(identifiedID, "access", "refresh", null)
+        advanceUntilIdle()
+        cachedAppUserID = identifiedID
+        createIdentityManager(loaded = false)
+        stubRevoke(fail = null)
+        stubTokenLogIn(succeedWith = serverID)
+
+        identityManager.logOut { }
+        verify(exactly = 0) { tokenAPI.revokeTokens(any(), any(), any()) }
+        advanceUntilIdle()
+
+        verify(exactly = 1) { tokenAPI.revokeTokens(identifiedID, any(), any()) }
+    }
+
+    @Test
+    fun `IAM logIn waits for the token cache before calling TokenAPI`() = runTest {
+        cachedAppUserID = anonymousID
+        createIdentityManager(loaded = false)
+        stubTokenLogIn(succeedWith = serverID)
+
+        logIn(googleIdentity)
+        verify(exactly = 0) { tokenAPI.logIn(any(), any(), any(), any()) }
+        advanceUntilIdle()
+
+        verify(exactly = 1) { tokenAPI.logIn(anonymousID, googleIdentity, any(), any()) }
+    }
+
+    @Test
+    fun `logOut and IAM logIn fail when token storage is unavailable`() = runTest {
+        cachedAppUserID = identifiedID
+        createIdentityManager(apiKey = "   ")
+
+        val logOutError = logOut()
+        val logInResult = logIn(googleIdentity)
+
+        assertThat(logOutError?.code).isEqualTo(PurchasesErrorCode.UnknownError)
+        assertThat((logInResult as PurchasesError).code).isEqualTo(PurchasesErrorCode.UnknownError)
+        assertThat(identityManager.currentAppUserID).isEqualTo(identifiedID)
+        verify(exactly = 0) { tokenAPI.revokeTokens(any(), any(), any()) }
+        verify(exactly = 0) { tokenAPI.logIn(any(), any(), any(), any()) }
+    }
+
+    // endregion
+
     // region identity changes while a request is in flight
 
     @Test
@@ -698,8 +766,12 @@ class IdentityManagerIAMTests {
         return needed
     }
 
-    private fun TestScope.createIdentityManager(iamEnabled: Boolean = true, loaded: Boolean = true) {
-        tokenManager = newTokenManager(iamEnabled)
+    private fun TestScope.createIdentityManager(
+        iamEnabled: Boolean = true,
+        loaded: Boolean = true,
+        apiKey: String = API_KEY,
+    ) {
+        tokenManager = newTokenManager(iamEnabled, apiKey)
         if (loaded) advanceUntilIdle()
         identityManager = IdentityManager(
             appConfig,
@@ -717,11 +789,11 @@ class IdentityManagerIAMTests {
         )
     }
 
-    private fun TestScope.newTokenManager(iamEnabled: Boolean): TokenManager {
+    private fun TestScope.newTokenManager(iamEnabled: Boolean, apiKey: String = API_KEY): TokenManager {
         val dispatcher = StandardTestDispatcher(testScheduler)
         return TokenManager(
             ApplicationProvider.getApplicationContext(),
-            API_KEY,
+            apiKey,
             enabled = iamEnabled,
             computationDispatcher = dispatcher,
             ioDispatcher = dispatcher,

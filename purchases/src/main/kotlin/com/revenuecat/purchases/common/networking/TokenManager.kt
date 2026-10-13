@@ -48,10 +48,11 @@ internal class TokenManager(
 ) {
 
     // Identifier -> value. A null value is a deletion made before the load finished, so the load doesn't
-    // resurrect it. Guarded by `this`, along with isLoaded and loadedCallbacks.
+    // resurrect it. Guarded by `this`, along with the load state and loadCallbacks.
     private val cache = mutableMapOf<String, String?>()
     private var isLoaded = false
-    private val loadedCallbacks = mutableListOf<() -> Unit>()
+    private var isLoadFinished = false
+    private val loadCallbacks = mutableListOf<(Boolean) -> Unit>()
 
     // Drained in order by a single coroutine, once storage is built and loaded.
     private val pendingWrites = Channel<PendingWrite>(Channel.UNLIMITED)
@@ -60,7 +61,7 @@ internal class TokenManager(
         if (enabled) {
             scope.launch {
                 val storage = createStorage(context, apiKey, computationDispatcher, ioDispatcher)
-                if (storage != null) load(storage)
+                finishLoad(storage?.let { readStoredTokens(it) })
                 for (write in pendingWrites) {
                     if (storage != null) persist(storage, write)
                 }
@@ -69,16 +70,17 @@ internal class TokenManager(
     }
 
     /**
-     * Runs [callback] once the cache has loaded: immediately on the calling thread if it already has, otherwise
-     * on [scope] when the load finishes. Never runs when disabled or when storage is unavailable.
+     * Runs [callback] once loading has finished, with whether the cache loaded (`false` when storage is
+     * unavailable): immediately on the calling thread if it already has, otherwise on [scope]. Never runs when
+     * disabled.
      */
-    fun onLoaded(callback: () -> Unit) {
+    fun onLoadFinished(callback: (loaded: Boolean) -> Unit) {
         if (!enabled) return
         val loaded = synchronized(this) {
-            if (!isLoaded) loadedCallbacks.add(callback)
-            isLoaded
+            if (!isLoadFinished) loadCallbacks.add(callback)
+            isLoaded.takeIf { isLoadFinished }
         }
-        if (loaded) callback()
+        loaded?.let(callback)
     }
 
     // region Read access
@@ -195,14 +197,14 @@ internal class TokenManager(
         }
     }
 
-    private fun load(storage: SecureItemStorage) {
+    private fun readStoredTokens(storage: SecureItemStorage): List<Pair<String, String>> {
         val identifiers = try {
             storage.allItemIdentifiers()
         } catch (e: SecureStorageException) {
             errorLog(e) { "Failed to list IAM tokens; treating storage as empty." }
             emptyList()
         }
-        val stored = identifiers.mapNotNull { identifier ->
+        return identifiers.mapNotNull { identifier ->
             try {
                 storage.readItem(identifier)?.let { identifier to it.toString(Charsets.UTF_8) }
             } catch (e: SecureStorageException) {
@@ -210,13 +212,18 @@ internal class TokenManager(
                 null
             }
         }
+    }
+
+    // [stored] is null when storage is unavailable: the cache stays unloaded, but waiters are released.
+    private fun finishLoad(stored: List<Pair<String, String>>?) {
         val callbacks = synchronized(this) {
             // Writes made while loading are newer than what's on disk.
-            stored.forEach { (identifier, value) -> if (!cache.containsKey(identifier)) cache[identifier] = value }
-            isLoaded = true
-            loadedCallbacks.toList().also { loadedCallbacks.clear() }
+            stored?.forEach { (identifier, value) -> if (!cache.containsKey(identifier)) cache[identifier] = value }
+            isLoaded = stored != null
+            isLoadFinished = true
+            loadCallbacks.toList().also { loadCallbacks.clear() }
         }
-        callbacks.forEach { it() }
+        callbacks.forEach { it(stored != null) }
     }
 
     private fun persist(storage: SecureItemStorage, write: PendingWrite) {

@@ -7,6 +7,7 @@ internal object IdentityStrings {
     const val IAM_LOG_IN_SUCCESSFUL = "Logged in successfully as %s"
     const val IAM_LOG_OUT_ANONYMOUS_LOGIN_FAILED =
         "Logged out locally, but the anonymous IAM login failed; it will be retried on the next foreground: %s"
+    const val IAM_TOKEN_STORAGE_UNAVAILABLE = "IAM token storage is unavailable, so IAM login and logout can't run"
     const val IAM_IDENTITY_CHANGED_DURING_REQUEST =
         "The current user changed while this request was in flight; its result was discarded"
     const val ALIAS_OLD_USER_ID_TO_CURRENT_SUCCESSFUL = "Successfully aliased old user ID %s to current user ID %s."
