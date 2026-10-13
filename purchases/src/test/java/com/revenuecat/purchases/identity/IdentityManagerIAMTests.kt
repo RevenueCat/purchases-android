@@ -12,6 +12,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.createCustomerInfo
 import com.revenuecat.purchases.common.networking.TokenAPI
 import com.revenuecat.purchases.common.networking.TokenManager
 import com.revenuecat.purchases.common.offerings.OfferingsCache
@@ -21,6 +22,7 @@ import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.paywalls.PaywallAssetWarming
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
+import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.SyncDispatcher
 import io.mockk.Runs
 import io.mockk.every
@@ -79,6 +81,7 @@ class IdentityManagerIAMTests {
             every { cacheAppUserID(any()) } answers { cachedAppUserID = firstArg() }
             every { clearCachesForAppUserID(any()) } just Runs
             every { cacheCustomerInfo(any(), any()) } just Runs
+            every { getCachedCustomerInfo(any()) } returns null
             every { startEditing() } returns editor
             every { cacheAppUserID(any(), editor) } answers {
                 cachedAppUserID = firstArg()
@@ -403,6 +406,36 @@ class IdentityManagerIAMTests {
         saveIDToken(serverID, amr = listOf("anonymous", "google"))
 
         assertThat(identityManager.currentUserIsAnonymous()).isFalse()
+    }
+
+    @Test
+    fun `a cached CustomerInfo with only anonymous identities makes a server-assigned app user ID anonymous`() =
+        runTest {
+            cachedAppUserID = serverID
+            every { deviceCache.getCachedCustomerInfo(serverID) } returns customerInfoWithAmr("anonymous")
+            createIdentityManager()
+
+            assertThat(identityManager.currentUserIsAnonymous()).isTrue()
+        }
+
+    @Test
+    fun `a cached CustomerInfo with a non-anonymous identity leaves a server-assigned app user ID identified`() =
+        runTest {
+            cachedAppUserID = serverID
+            every { deviceCache.getCachedCustomerInfo(serverID) } returns customerInfoWithAmr("anonymous", "google")
+            createIdentityManager()
+
+            assertThat(identityManager.currentUserIsAnonymous()).isFalse()
+        }
+
+    @Test
+    fun `the cached CustomerInfo is not consulted when IAM is disabled`() = runTest {
+        cachedAppUserID = serverID
+        every { deviceCache.getCachedCustomerInfo(serverID) } returns customerInfoWithAmr("anonymous")
+        createIdentityManager(iamEnabled = false)
+
+        assertThat(identityManager.currentUserIsAnonymous()).isFalse()
+        verify(exactly = 0) { deviceCache.getCachedCustomerInfo(any()) }
     }
 
     @Test
@@ -835,6 +868,12 @@ class IdentityManagerIAMTests {
         advanceUntilIdle()
         return needed
     }
+
+    private fun customerInfoWithAmr(vararg amr: String): CustomerInfo =
+        createCustomerInfo(
+            JSONObject(Responses.validEmptyPurchaserResponse)
+                .put("user", JSONObject().put("id", serverID).put("amr", JSONArray(amr.toList()))),
+        )
 
     private fun TestScope.createIdentityManager(
         iamEnabled: Boolean = true,
