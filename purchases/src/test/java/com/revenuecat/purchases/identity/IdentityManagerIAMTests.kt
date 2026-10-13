@@ -44,6 +44,7 @@ import org.robolectric.annotation.Config
 /** [IdentityManager]'s IAM behavior, against a real [TokenManager] and a mocked [TokenAPI]. */
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
+@Suppress("LargeClass")
 class IdentityManagerIAMTests {
 
     private val anonymousID = "\$RCAnonymousID:ff68f26e432648369a713849a9f93b58"
@@ -117,7 +118,7 @@ class IdentityManagerIAMTests {
         tokenAPI = mockk()
     }
 
-    // region whenIAMLoginNeeded
+    // region checkIAMLoginNeeded
 
     @Test
     fun `IAM login is needed for an anonymous user without an access token`() = runTest {
@@ -154,9 +155,20 @@ class IdentityManagerIAMTests {
     }
 
     @Test
-    fun `IAM login is never needed when IAM is disabled`() = runTest {
+    fun `IAM login is never needed when IAM is disabled, and that's reported right away`() = runTest {
         cachedAppUserID = anonymousID
-        createIdentityManager(iamEnabled = false)
+        createIdentityManager(iamEnabled = false, loaded = false)
+        var needed: Boolean? = null
+
+        identityManager.checkIAMLoginNeeded { needed = it }
+
+        assertThat(needed).isFalse()
+    }
+
+    @Test
+    fun `IAM login is not needed when token storage is unavailable`() = runTest {
+        cachedAppUserID = anonymousID
+        createIdentityManager(apiKey = "   ")
 
         assertThat(iamLoginNeeded()).isFalse()
     }
@@ -168,13 +180,14 @@ class IdentityManagerIAMTests {
         advanceUntilIdle()
         cachedAppUserID = anonymousID
         createIdentityManager(loaded = false)
-        var calls = 0
+        val results = mutableListOf<Boolean>()
 
-        identityManager.whenIAMLoginNeeded { calls++ }
+        identityManager.checkIAMLoginNeeded { results.add(it) }
+        assertThat(results).isEmpty()
         advanceUntilIdle()
 
         // Evaluated before the load, the stored token would have been invisible.
-        assertThat(calls).isZero()
+        assertThat(results).containsExactly(false)
     }
 
     // endregion
@@ -759,9 +772,10 @@ class IdentityManagerIAMTests {
         }
     }
 
-    private fun TestScope.iamLoginNeeded(): Boolean {
-        var needed = false
-        identityManager.whenIAMLoginNeeded { needed = true }
+    // Null if the check never answered.
+    private fun TestScope.iamLoginNeeded(): Boolean? {
+        var needed: Boolean? = null
+        identityManager.checkIAMLoginNeeded { needed = it }
         advanceUntilIdle()
         return needed
     }

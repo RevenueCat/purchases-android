@@ -1,7 +1,6 @@
 package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.identity.Identity
 import io.mockk.Runs
 import io.mockk.every
@@ -16,7 +15,11 @@ import org.robolectric.annotation.Config
 internal class PurchasesIAMBootstrapTest : BasePurchasesTest() {
 
     private val serverID = "server-assigned-user"
-    private val whenNeeded = mutableListOf<() -> Unit>()
+
+    // Pending checkIAMLoginNeeded calls; a test answers them to stand in for the token cache load.
+    private val needChecks = mutableListOf<(Boolean) -> Unit>()
+    private var bootstrapSuccess: ((CustomerInfo, String) -> Unit)? = null
+    private var bootstrapError: ((PurchasesError) -> Unit)? = null
 
     override val shouldConfigureOnSetUp: Boolean
         get() = false
@@ -25,117 +28,122 @@ internal class PurchasesIAMBootstrapTest : BasePurchasesTest() {
     fun `configure alone does not start the bootstrap login`() {
         configure()
 
-        verify(exactly = 0) { mockIdentityManager.whenIAMLoginNeeded(any()) }
         verify(exactly = 0) { mockIdentityManager.logIn(any<Identity>(), any(), any()) }
     }
 
     @Test
-    fun `foregrounding registers the bootstrap login`() {
+    fun `a foreground does no per-user work until the token cache has loaded`() {
         configure()
 
         foreground()
 
-        verify(exactly = 1) { mockIdentityManager.whenIAMLoginNeeded(any()) }
+        assertNoForegroundWork()
     }
 
     @Test
-    fun `a successful bootstrap login refreshes everything for the server-assigned user`() {
+    fun `a foreground that needs no bootstrap login does its usual work`() {
         configure()
+
         foreground()
-        mockOfferingsManagerFetchOfferings(serverID)
-        every { mockIdentityManager.logIn(Identity.anonymous, captureLambda(), any()) } answers {
-            lambda<(CustomerInfo, String) -> Unit>().captured.invoke(mockInfo, serverID)
-        }
+        needChecks.single().invoke(false)
 
-        whenNeeded.single().invoke()
-
-        verify(exactly = 1) { mockCustomerInfoUpdateHandler.notifyListeners(mockInfo, serverID) }
-        verify(exactly = 1) {
-            mockRemoteConfigManager.refreshRemoteConfig(false, serverID, RemoteConfigFetchContext.IdentityChange)
-        }
-        verify(exactly = 1) { mockOfferingsManager.fetchAndCacheOfferings(serverID, false, any(), any()) }
-        verify(exactly = 1) { mockBackupManager.dataChanged() }
+        verify(exactly = 0) { mockIdentityManager.logIn(any<Identity>(), any(), any()) }
+        assertForegroundWork(refreshedCustomerInfo = true)
     }
 
     @Test
-    fun `a failed bootstrap login refreshes nothing`() {
+    fun `a foreground that needs a bootstrap login waits for it`() {
         configure()
-        foreground()
-        failBootstrapLogIn()
-
-        whenNeeded.single().invoke()
-
-        verify(exactly = 0) { mockCustomerInfoUpdateHandler.notifyListeners(any(), any()) }
-        verify(exactly = 0) {
-            mockRemoteConfigManager.refreshRemoteConfig(any(), any(), RemoteConfigFetchContext.IdentityChange)
-        }
-        verify(exactly = 0) { mockOfferingsManager.fetchAndCacheOfferings(any(), any(), any(), any()) }
-        verify(exactly = 0) { mockBackupManager.dataChanged() }
-    }
-
-    @Test
-    fun `repeated foregrounds start one bootstrap login while it is in flight`() {
-        configure()
-        every {
-            mockIdentityManager.logIn(Identity.anonymous, any<(CustomerInfo, String) -> Unit>(), any())
-        } just Runs
 
         foreground()
-        foreground()
-        whenNeeded.forEach { it() }
+        needChecks.single().invoke(true)
 
         verify(exactly = 1) { mockIdentityManager.logIn(Identity.anonymous, any(), any()) }
+        assertNoForegroundWork()
+    }
+
+    @Test
+    fun `after a successful bootstrap login, the foreground work runs without refetching CustomerInfo`() {
+        configure()
+        mockOfferingsManagerFetchOfferings(serverID)
+        foreground()
+        needChecks.single().invoke(true)
+
+        bootstrapSuccess!!.invoke(mockInfo, serverID)
+
+        verify(exactly = 1) { mockCustomerInfoUpdateHandler.notifyListeners(mockInfo, serverID) }
+        verify(exactly = 1) { mockOfferingsManager.fetchAndCacheOfferings(serverID, false, any(), any()) }
+        assertForegroundWork(refreshedCustomerInfo = false)
+    }
+
+    @Test
+    fun `after a failed bootstrap login, the foreground work runs as usual`() {
+        configure()
+        foreground()
+        needChecks.single().invoke(true)
+
+        bootstrapError!!.invoke(PurchasesError(PurchasesErrorCode.NetworkError))
+
+        verify(exactly = 0) { mockCustomerInfoUpdateHandler.notifyListeners(any(), any()) }
+        assertForegroundWork(refreshedCustomerInfo = true)
+    }
+
+    @Test
+    fun `repeated foregrounds start one bootstrap login and run the foreground work once`() {
+        configure()
+        foreground()
+        foreground()
+        needChecks.forEach { it(true) }
+
+        bootstrapError!!.invoke(PurchasesError(PurchasesErrorCode.NetworkError))
+
+        verify(exactly = 1) { mockIdentityManager.logIn(Identity.anonymous, any(), any()) }
+        assertForegroundWork(refreshedCustomerInfo = true)
     }
 
     @Test
     fun `a later foreground retries after a failed bootstrap login`() {
         configure()
-        failBootstrapLogIn()
+        foreground()
+        needChecks.last().invoke(true)
+        bootstrapError!!.invoke(PurchasesError(PurchasesErrorCode.NetworkError))
 
         foreground()
-        whenNeeded.last().invoke()
-        foreground()
-        whenNeeded.last().invoke()
+        needChecks.last().invoke(true)
 
         verify(exactly = 2) { mockIdentityManager.logIn(Identity.anonymous, any(), any()) }
     }
 
     @Test
-    fun `a foreground that starts the bootstrap login skips the CustomerInfo refresh for the user it replaces`() {
+    fun `billing connecting does not sync pending purchases for a user the bootstrap will replace`() {
         configure()
-        every { mockIdentityManager.whenIAMLoginNeeded(any()) } answers { firstArg<() -> Unit>().invoke() }
-        every {
-            mockIdentityManager.logIn(Identity.anonymous, any<(CustomerInfo, String) -> Unit>(), any())
-        } just Runs
+        mockGetStorefront()
 
-        foreground()
+        capturedBillingWrapperStateListener.captured.onConnected()
+        needChecks.single().invoke(true)
 
-        verify(exactly = 1) { mockIdentityManager.logIn(Identity.anonymous, any(), any()) }
-        verify(exactly = 0) { mockCustomerInfoHelper.retrieveCustomerInfo(any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 0) { mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any(), any()) }
     }
 
     @Test
-    fun `a foreground that needs no bootstrap login still refreshes CustomerInfo`() {
+    fun `billing connecting syncs pending purchases when no bootstrap login is needed`() {
         configure()
+        mockGetStorefront()
 
-        foreground()
+        capturedBillingWrapperStateListener.captured.onConnected()
+        needChecks.single().invoke(false)
 
-        verify(exactly = 1) {
-            mockCustomerInfoHelper.retrieveCustomerInfo(
-                appUserId,
-                CacheFetchPolicy.FETCH_CURRENT,
-                false,
-                any(),
-                any(),
-                any(),
-            )
-        }
+        verify(exactly = 1) { mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any(), any()) }
     }
 
     private fun configure() {
-        every { mockIdentityManager.whenIAMLoginNeeded(capture(whenNeeded)) } just Runs
         // Whether a login is needed is IdentityManager's call; the base fixtures' user stubs the foreground work.
         anonymousSetup(anonymous = false)
+        every { mockIdentityManager.checkIAMLoginNeeded(capture(needChecks)) } just Runs
+        every { mockIdentityManager.logIn(Identity.anonymous, any<(CustomerInfo, String) -> Unit>(), any()) } answers {
+            bootstrapSuccess = secondArg()
+            bootstrapError = thirdArg()
+        }
         mockOfferingsManagerAppForeground()
         every { mockCustomerInfoHelper.retrieveCustomerInfo(any(), any(), any(), any(), any(), any()) } just Runs
     }
@@ -144,9 +152,21 @@ internal class PurchasesIAMBootstrapTest : BasePurchasesTest() {
         purchases.purchasesOrchestrator.onAppForegrounded()
     }
 
-    private fun failBootstrapLogIn() {
-        every { mockIdentityManager.logIn(Identity.anonymous, any(), captureLambda()) } answers {
-            lambda<(PurchasesError) -> Unit>().captured.invoke(PurchasesError(PurchasesErrorCode.NetworkError))
+    private fun assertNoForegroundWork() {
+        verify(exactly = 0) { mockCustomerInfoHelper.retrieveCustomerInfo(any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 0) { mockOfferingsManager.onAppForeground(any()) }
+        verify(exactly = 0) { mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any(), any()) }
+    }
+
+    private fun assertForegroundWork(refreshedCustomerInfo: Boolean) {
+        verify(exactly = if (refreshedCustomerInfo) 1 else 0) {
+            mockCustomerInfoHelper.retrieveCustomerInfo(any(), any(), any(), any(), any(), any())
         }
+        verify(exactly = 1) { mockOfferingsManager.onAppForeground(any()) }
+        verify(exactly = 1) { mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any(), any()) }
+    }
+
+    private fun mockGetStorefront() {
+        every { mockBillingAbstract.getStorefront(onSuccess = any(), onError = any()) } just Runs
     }
 }

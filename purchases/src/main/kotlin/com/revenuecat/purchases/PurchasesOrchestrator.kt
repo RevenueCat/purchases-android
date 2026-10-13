@@ -337,9 +337,11 @@ internal class PurchasesOrchestrator(
 
         billing.stateListener = object : BillingAbstract.StateListener {
             override fun onConnected() {
-                postPendingTransactionsHelper.syncPendingPurchaseQueue(
-                    allowSharingPlayStoreAccount,
-                )
+                // A user about to be replaced by the IAM bootstrap mustn't get these purchases; the foreground
+                // pass after the bootstrap syncs them for the new user.
+                identityManager.checkIAMLoginNeeded { needed ->
+                    if (!needed) postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
+                }
                 billing.getStorefront(
                     onSuccess = { countryCode ->
                         storefrontCountryCode = countryCode
@@ -399,48 +401,61 @@ internal class PurchasesOrchestrator(
         enqueue {
             if (appConfig.uiPreviewMode) return@enqueue
 
-            logInThroughIAMIfNeeded()
-            remoteConfigManager.refreshRemoteConfigIfStale(
-                appInBackground = false,
-                appUserID = identityManager.currentAppUserID,
-                fetchContext = if (firstTimeInForeground) {
-                    RemoteConfigFetchContext.AppStart
+            // The IAM bootstrap replaces the current user, so this foreground's per-user work waits for it and then
+            // runs for the user it switched to.
+            identityManager.checkIAMLoginNeeded { needed ->
+                if (needed) {
+                    logInThroughIAM { loggedIn ->
+                        // A successful bootstrap already fetched the new user's CustomerInfo.
+                        enqueue { runForegroundWork(firstTimeInForeground, refreshCustomerInfo = !loggedIn) }
+                    }
                 } else {
-                    RemoteConfigFetchContext.Foreground
+                    enqueue { runForegroundWork(firstTimeInForeground, refreshCustomerInfo = true) }
+                }
+            }
+        }
+    }
+
+    private fun runForegroundWork(firstTimeInForeground: Boolean, refreshCustomerInfo: Boolean) {
+        remoteConfigManager.refreshRemoteConfigIfStale(
+            appInBackground = false,
+            appUserID = identityManager.currentAppUserID,
+            fetchContext = if (firstTimeInForeground) {
+                RemoteConfigFetchContext.AppStart
+            } else {
+                RemoteConfigFetchContext.Foreground
+            },
+        )
+        if (firstTimeInForeground) {
+            // After the refresh above so the resolution joins that request instead of priming its own.
+            sdkSettingsConfigProvider.ensureSettingsDelivered()
+        }
+
+        if (refreshCustomerInfo && shouldRefreshCustomerInfo(firstTimeInForeground)) {
+            log(LogIntent.DEBUG) { CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND }
+            customerInfoHelper.retrieveCustomerInfo(
+                identityManager.currentAppUserID,
+                fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
+                appInBackground = false,
+                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                callback = object : ReceiveCustomerInfoCallback {
+                    override fun onReceived(customerInfo: CustomerInfo) {
+                        blockstoreHelper.storeUserIdIfNeeded(customerInfo)
+                    }
+
+                    override fun onError(error: PurchasesError) {
+                        // no-op
+                    }
                 },
             )
-            if (firstTimeInForeground) {
-                // After the refresh above so the resolution joins that request instead of priming its own.
-                sdkSettingsConfigProvider.ensureSettingsDelivered()
-            }
-
-            // A bootstrap login fetches CustomerInfo for the user it switches to; skip the user it replaces.
-            if (!iamBootstrapInFlight.get() && shouldRefreshCustomerInfo(firstTimeInForeground)) {
-                log(LogIntent.DEBUG) { CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND }
-                customerInfoHelper.retrieveCustomerInfo(
-                    identityManager.currentAppUserID,
-                    fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
-                    appInBackground = false,
-                    allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-                    callback = object : ReceiveCustomerInfoCallback {
-                        override fun onReceived(customerInfo: CustomerInfo) {
-                            blockstoreHelper.storeUserIdIfNeeded(customerInfo)
-                        }
-
-                        override fun onError(error: PurchasesError) {
-                            // no-op
-                        }
-                    },
-                )
-            }
-            offeringsManager.onAppForeground(identityManager.currentAppUserID)
-            postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
-            synchronizeSubscriberAttributesIfNeeded(Delay.DEFAULT)
-            offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
-            flushEvents(Delay.DEFAULT)
-            if (firstTimeInForeground && isAndroidNOrNewer()) {
-                diagnosticsSynchronizer?.syncDiagnosticsFileIfNeeded()
-            }
+        }
+        offeringsManager.onAppForeground(identityManager.currentAppUserID)
+        postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
+        synchronizeSubscriberAttributesIfNeeded(Delay.DEFAULT)
+        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
+        flushEvents(Delay.DEFAULT)
+        if (firstTimeInForeground && isAndroidNOrNewer()) {
+            diagnosticsSynchronizer?.syncDiagnosticsFileIfNeeded()
         }
     }
 
@@ -1614,24 +1629,24 @@ internal class PurchasesOrchestrator(
         }
     }
 
-    // Silent bootstrap: an anonymous user without tokens gets them once the token cache has loaded. Runs on
-    // foreground, never on configure, which also runs on background wake-ups (pushes, jobs).
-    private fun logInThroughIAMIfNeeded() {
-        identityManager.whenIAMLoginNeeded {
-            // Foregrounds before the first login finishes would otherwise each start one.
-            if (!iamBootstrapInFlight.compareAndSet(false, true)) return@whenIAMLoginNeeded
-            identityManager.logIn(
-                Identity.anonymous,
-                onSuccess = { customerInfo, appUserID ->
-                    iamBootstrapInFlight.set(false)
-                    handleIdentityChange(customerInfo, appUserID)
-                },
-                onError = { error ->
-                    iamBootstrapInFlight.set(false)
-                    errorLog(error)
-                },
-            )
-        }
+    // Silent bootstrap: an anonymous user without tokens gets them. Started from foreground, never configure,
+    // which also runs on background wake-ups (pushes, jobs). If one is already in flight, this does nothing and
+    // [onFinished] doesn't run: the in-flight login's own [onFinished] covers it.
+    private fun logInThroughIAM(onFinished: (loggedIn: Boolean) -> Unit) {
+        if (!iamBootstrapInFlight.compareAndSet(false, true)) return
+        identityManager.logIn(
+            Identity.anonymous,
+            onSuccess = { customerInfo, appUserID ->
+                iamBootstrapInFlight.set(false)
+                handleIdentityChange(customerInfo, appUserID)
+                onFinished(true)
+            },
+            onError = { error ->
+                iamBootstrapInFlight.set(false)
+                errorLog(error)
+                onFinished(false)
+            },
+        )
     }
 
     // Everything a login does after IdentityManager has switched users and fetched their CustomerInfo.

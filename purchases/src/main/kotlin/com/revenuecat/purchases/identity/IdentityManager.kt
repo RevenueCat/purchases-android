@@ -301,11 +301,16 @@ internal class IdentityManager(
     }
 
     /**
-     * Runs [action] once the token cache has loaded, if the current user needs an IAM login at that point.
-     * Evaluated only after the load, since a missing token is indistinguishable from an unloaded cache.
+     * Calls [callback] with whether the current user needs an IAM login, once that can be known: right away when
+     * IAM is disabled, otherwise after the token cache load (`false` if storage is unavailable). Never evaluated
+     * before the load, since a missing token is indistinguishable from an unloaded cache.
      */
-    fun whenIAMLoginNeeded(action: () -> Unit) {
-        tokenManager.onLoadFinished { loaded -> if (loaded && needsIAMLogin()) action() }
+    fun checkIAMLoginNeeded(callback: (needed: Boolean) -> Unit) {
+        if (!tokenManager.enabled) {
+            callback(false)
+            return
+        }
+        tokenManager.onLoadFinished { loaded -> callback(loaded && needsIAMLogin()) }
     }
 
     // endregion
@@ -333,7 +338,7 @@ internal class IdentityManager(
     /**
      * Revokes the current user's tokens, then logs in anonymously; the server assigns the new app user ID.
      * A revocation failure changes nothing. If the anonymous login then fails, the user falls back to a local
-     * anonymous ID with no tokens, which [whenIAMLoginNeeded] picks up on the next foreground; that still counts
+     * anonymous ID with no tokens, which [checkIAMLoginNeeded] reports on the next foreground; that still counts
      * as a successful logout, since the identity did change. Neither happens if the identity changed while the
      * requests were in flight.
      */
