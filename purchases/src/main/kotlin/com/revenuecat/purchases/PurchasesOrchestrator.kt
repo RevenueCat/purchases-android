@@ -83,6 +83,8 @@ import com.revenuecat.purchases.common.workflows.WorkflowsConfigProvider
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.WebPurchaseRedemptionHelper
 import com.revenuecat.purchases.google.isSuccessful
+import com.revenuecat.purchases.identity.Authentication
+import com.revenuecat.purchases.identity.AuthenticationReporter
 import com.revenuecat.purchases.identity.Identity
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
@@ -334,11 +336,32 @@ internal class PurchasesOrchestrator(
     // Set while a foreground pass waits for the bootstrap, so later foregrounds don't queue another one.
     private val foregroundPassAwaitingIdentity = AtomicBoolean(false)
 
+    private val authenticationReporter = AuthenticationReporter(::dispatch)
+
+    /** IAM login and logout for other RevenueCat SDKs; see [Authentication]. */
+    val authentication: Authentication by lazy {
+        Authentication(
+            authenticationReporter,
+            tokenManager,
+            currentAppUserID = { identityManager.currentAppUserID },
+            flows = object : Authentication.IdentityFlows {
+                override fun logIn(identity: Identity, callback: ReceiveCustomerInfoCallback) =
+                    this@PurchasesOrchestrator.logIn(identity, callback)
+
+                override fun logOut(callback: ReceiveCustomerInfoCallback) =
+                    this@PurchasesOrchestrator.logOut(callback)
+            },
+            customEntitlementComputation = appConfig.customEntitlementComputation,
+            mainDispatch = ::dispatch,
+        )
+    }
+
     init {
         // Initialize locale provider with the initial preferred locale override
         localeProvider.setPreferredLocaleOverride(_preferredUILocaleOverride)
 
         identityManager.configure(backingFieldAppUserID)
+        tokenManager.setTokenUpdateListener(authenticationReporter::report)
         sdkSettingsConfigProvider.listener = this
 
         billing.stateListener = object : BillingAbstract.StateListener {
@@ -1008,6 +1031,18 @@ internal class PurchasesOrchestrator(
                     },
                 ),
             )
+    }
+
+    /** IAM login with [identity]. Success runs the same follow-up as a login by app user ID. */
+    fun logIn(identity: Identity, callback: ReceiveCustomerInfoCallback) {
+        identityManager.logIn(
+            identity,
+            onSuccess = { customerInfo, appUserID ->
+                dispatch { callback.onReceived(customerInfo) }
+                handleIdentityChange(customerInfo, appUserID)
+            },
+            onError = { error -> dispatch { callback.onError(error) } },
+        )
     }
 
     fun logOut(callback: ReceiveCustomerInfoCallback? = null) {
@@ -1684,6 +1719,11 @@ internal class PurchasesOrchestrator(
             },
             onError = { error ->
                 errorLog(error)
+                // Nobody asked for this login, so the delegate is the only one who can hear it failed. A result
+                // dropped because the identity changed meanwhile isn't an authentication failure.
+                if (error.code != PurchasesErrorCode.OperationAlreadyInProgressError) {
+                    authenticationReporter.reportError(error)
+                }
                 finishBootstrap(bootstrapped = false)
             },
         )

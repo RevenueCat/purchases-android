@@ -4,6 +4,7 @@ package com.revenuecat.purchases.common.networking
 
 import android.content.Context
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.JWT
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.security.EncryptedItemStorage
@@ -53,6 +54,9 @@ internal class TokenManager(
     private var isLoaded = false
     private var isLoadFinished = false
     private val loadCallbacks = mutableListOf<(Boolean) -> Unit>()
+
+    @Volatile
+    private var updateListener: ((TokenUpdate) -> Unit)? = null
 
     // Drained in order by a single coroutine, once storage is built and loaded.
     private val pendingWrites = Channel<PendingWrite>(Channel.UNLIMITED)
@@ -157,6 +161,7 @@ internal class TokenManager(
         write(accessTokenKey(appUserID), accessToken)
         write(refreshTokenKey(appUserID), refreshToken)
         write(idTokenKey(appUserID), idToken)
+        report(TokenUpdate.AccessToken(accessToken))
     }
 
     /** Clears all three token slots for [appUserID], e.g. for a full logout. */
@@ -164,6 +169,7 @@ internal class TokenManager(
         write(accessTokenKey(appUserID), null)
         write(refreshTokenKey(appUserID), null)
         write(idTokenKey(appUserID), null)
+        report(TokenUpdate.AccessToken(null))
     }
 
     /**
@@ -176,6 +182,29 @@ internal class TokenManager(
 
     // endregion
 
+    // region Updates
+
+    /** What the update listener hears: a new access token (`null` = cleared), or a refresh that failed. */
+    sealed interface TokenUpdate {
+        data class AccessToken(val accessToken: String?) : TokenUpdate
+        data class RefreshFailed(val error: PurchasesError) : TokenUpdate
+    }
+
+    /**
+     * Sets the one listener told about every save and delete, mirroring iOS's `reportTokenUpdate`. Called on
+     * the writing thread; `null` removes it. Never called when disabled.
+     */
+    fun setTokenUpdateListener(listener: ((TokenUpdate) -> Unit)?) {
+        updateListener = listener
+    }
+
+    /** Tells the listener a refresh failed; the refresh itself lives in `TokenAuthenticator`. */
+    fun reportRefreshFailure(error: PurchasesError) {
+        report(TokenUpdate.RefreshFailed(error))
+    }
+
+    // endregion
+
     /** The tokens a successful `/auth/login` or `/auth/token` call produced. */
     data class TokenSet(val accessToken: String, val refreshToken: String?, val idToken: String?)
 
@@ -183,6 +212,10 @@ internal class TokenManager(
     fun close() {
         pendingWrites.close()
         scope.cancel()
+    }
+
+    private fun report(update: TokenUpdate) {
+        if (enabled) updateListener?.invoke(update)
     }
 
     private fun read(identifier: String): String? =
