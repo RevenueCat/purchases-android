@@ -328,10 +328,16 @@ internal class PurchasesOrchestrator(
     val preferredUILocaleOverride: String?
         get() = _preferredUILocaleOverride
 
-    // Bootstrap state, guarded by identityLock: whether one is in flight, and the work waiting for it to finish.
+    // Identity-operation state, guarded by identityLock: whether a bootstrap or an explicit IAM identity change is
+    // in flight, and what waits for it, in arrival order.
     private val identityLock = Any()
-    private var iamBootstrapInFlight = false
-    private val awaitingIdentity = mutableListOf<(bootstrapped: Boolean) -> Unit>()
+    private var identityOperationInFlight = false
+    private val awaitingIdentity = mutableListOf<AwaitingIdentity>()
+
+    private sealed interface AwaitingIdentity {
+        class Write(val action: (bootstrapped: Boolean) -> Unit) : AwaitingIdentity
+        class Operation(val run: () -> Unit) : AwaitingIdentity
+    }
 
     // Set while a foreground pass waits for the bootstrap, so later foregrounds don't queue another one.
     private val foregroundPassAwaitingIdentity = AtomicBoolean(false)
@@ -1012,17 +1018,21 @@ internal class PurchasesOrchestrator(
         callback: LogInCallback? = null,
     ) {
         identityManager.currentAppUserID.takeUnless { it == newAppUserID }?.let {
-            blockstoreHelper.clearUserIdBackupIfNeeded {
-                identityManager.logIn(
-                    newAppUserID,
-                    onSuccess = { customerInfo, created ->
-                        dispatch { callback?.onReceived(customerInfo, created) }
-                        handleIdentityChange(customerInfo, newAppUserID)
-                    },
-                    onError = { error ->
-                        dispatch { callback?.onError(error) }
-                    },
-                )
+            runIdentityOperation { finish ->
+                blockstoreHelper.clearUserIdBackupIfNeeded {
+                    identityManager.logIn(
+                        newAppUserID,
+                        onSuccess = { customerInfo, created ->
+                            dispatch { callback?.onReceived(customerInfo, created) }
+                            handleIdentityChange(customerInfo, newAppUserID)
+                            finish()
+                        },
+                        onError = { error ->
+                            dispatch { callback?.onError(error) }
+                            finish()
+                        },
+                    )
+                }
             }
         }
             ?: customerInfoHelper.retrieveCustomerInfo(
@@ -1042,22 +1052,27 @@ internal class PurchasesOrchestrator(
     }
 
     /** IAM login with [identity]. Success runs the same follow-up as a login by app user ID. */
-    fun logIn(identity: Identity, callback: ReceiveCustomerInfoCallback) {
+    fun logIn(identity: Identity, callback: ReceiveCustomerInfoCallback) = runIdentityOperation { finish ->
         identityManager.logIn(
             identity,
             onSuccess = { customerInfo, appUserID ->
                 dispatch { callback.onReceived(customerInfo) }
                 handleIdentityChange(customerInfo, appUserID)
+                finish()
             },
-            onError = { error -> dispatch { callback.onError(error) } },
+            onError = { error ->
+                dispatch { callback.onError(error) }
+                finish()
+            },
         )
     }
 
-    fun logOut(callback: ReceiveCustomerInfoCallback? = null) {
+    fun logOut(callback: ReceiveCustomerInfoCallback? = null) = runIdentityOperation { finish ->
         identityManager.logOut { error ->
             if (error != null) {
                 // IAM revoke and anonymous-login failures arrive on a background thread.
                 dispatch { callback?.onError(error) }
+                finish()
             } else {
                 synchronized(this@PurchasesOrchestrator) {
                     state = state.copy(purchaseCallbacksByProductId = Collections.emptyMap())
@@ -1068,6 +1083,7 @@ internal class PurchasesOrchestrator(
                     callback,
                 )
                 backupManager.dataChanged()
+                finish()
             }
         }
     }
@@ -1693,9 +1709,9 @@ internal class PurchasesOrchestrator(
     }
 
     /**
-     * Runs [action] once the current user is final, for user-scoped work that must not land on a user the IAM
-     * bootstrap is about to replace: right away when no bootstrap is needed or in flight, otherwise after the
-     * bootstrap finishes, starting it if needed. [action] gets whether that bootstrap succeeded.
+     * Runs [action] once the current user is final, for user-scoped work that must not land on a user about to be
+     * replaced: right away when no bootstrap is needed and no identity operation is in flight, otherwise after
+     * it finishes, starting the bootstrap if needed. [action] gets whether a bootstrap just succeeded.
      *
      * Only for foreground or user-initiated work: it can start the bootstrap, which configure must never do.
      */
@@ -1705,11 +1721,11 @@ internal class PurchasesOrchestrator(
             val startBootstrap: Boolean
             synchronized(identityLock) {
                 // A bootstrap may have finished since the check; a stale "needed" would start a second one.
-                val needed = neededWhenChecked && (iamBootstrapInFlight || identityManager.needsIAMLogin())
-                runNow = !needed && !iamBootstrapInFlight
-                startBootstrap = needed && !iamBootstrapInFlight
-                if (!runNow) awaitingIdentity.add(action)
-                if (startBootstrap) iamBootstrapInFlight = true
+                val needed = neededWhenChecked && (identityOperationInFlight || identityManager.needsIAMLogin())
+                runNow = !needed && !identityOperationInFlight
+                startBootstrap = needed && !identityOperationInFlight
+                if (!runNow) awaitingIdentity.add(AwaitingIdentity.Write(action))
+                if (startBootstrap) identityOperationInFlight = true
             }
             when {
                 runNow -> action(false)
@@ -1724,7 +1740,7 @@ internal class PurchasesOrchestrator(
             Identity.anonymous,
             onSuccess = { customerInfo, appUserID ->
                 handleIdentityChange(customerInfo, appUserID)
-                finishBootstrap(bootstrapped = true)
+                finishIdentityOperation(bootstrapped = true)
             },
             onError = { error ->
                 errorLog(error)
@@ -1733,18 +1749,46 @@ internal class PurchasesOrchestrator(
                 if (!IdentityManager.isIdentityChangedError(error)) {
                     authenticationReporter.reportError(error)
                 }
-                finishBootstrap(bootstrapped = false)
+                finishIdentityOperation(bootstrapped = false)
             },
         )
     }
 
-    // A failed bootstrap still releases the waiting work, which then runs for the local anonymous user.
-    private fun finishBootstrap(bootstrapped: Boolean) {
-        val actions = synchronized(identityLock) {
-            iamBootstrapInFlight = false
-            awaitingIdentity.toList().also { awaitingIdentity.clear() }
+    /**
+     * Runs an explicit IAM identity change in turn with the bootstrap and other identity changes, so user-scoped
+     * writes never land on the user it replaces: [operation] starts once nothing else is in flight, and calls
+     * `finish` when its switch is done. With IAM disabled it just runs, as identity changes always have.
+     */
+    private fun runIdentityOperation(operation: (finish: () -> Unit) -> Unit) {
+        if (!tokenManager.enabled) {
+            operation {}
+            return
         }
-        actions.forEach { it(bootstrapped) }
+        val start = { operation { finishIdentityOperation(bootstrapped = false) } }
+        val runNow = synchronized(identityLock) {
+            if (identityOperationInFlight) awaitingIdentity.add(AwaitingIdentity.Operation(start))
+            (!identityOperationInFlight).also { if (it) identityOperationInFlight = true }
+        }
+        if (runNow) start()
+    }
+
+    // Releases waiting work in arrival order, up to the next identity operation, which then starts. A failed
+    // bootstrap still releases it; that work then runs for the local anonymous user.
+    private fun finishIdentityOperation(bootstrapped: Boolean) {
+        val writes = mutableListOf<AwaitingIdentity.Write>()
+        val next = synchronized(identityLock) {
+            identityOperationInFlight = false
+            var operation: AwaitingIdentity.Operation? = null
+            while (operation == null && awaitingIdentity.isNotEmpty()) {
+                when (val waiting = awaitingIdentity.removeAt(0)) {
+                    is AwaitingIdentity.Write -> writes.add(waiting)
+                    is AwaitingIdentity.Operation -> operation = waiting
+                }
+            }
+            operation?.also { identityOperationInFlight = true }
+        }
+        writes.forEach { it.action(bootstrapped) }
+        next?.run?.invoke()
     }
 
     // Everything a login does after IdentityManager has switched users and fetched their CustomerInfo.
