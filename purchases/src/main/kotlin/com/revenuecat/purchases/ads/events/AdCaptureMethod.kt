@@ -11,8 +11,10 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
  *   Google Mobile Ads SDK.
  * - [ANDROID_ADMOB_NEXT_GEN_ADAPTER]: auto-captured by the RevenueCat adapter for the Next-Gen
  *   Google Mobile Ads SDK.
+ * - [FLUTTER_ADMOB_ADAPTER], [REACT_NATIVE_ADMOB_ADAPTER], [UNITY_ADMOB_ADAPTER]: auto-captured by
+ *   the RevenueCat AdMob adapters for the hybrid SDKs, which bridge through purchases-hybrid-common.
  * - [MANUAL]: reported via the public `trackAd*` tracking API (native custom
- *   integrations and all hybrid SDKs, which bridge through it).
+ *   integrations and hybrid SDK integrations that do not use an adapter).
  *
  * SDK versions predating capture methods send nothing, so the backend defaults to `unknown`.
  */
@@ -22,5 +24,8 @@ public enum class AdCaptureMethod(public val value: String) {
     ADAPTER("adapter"),
     ANDROID_ADMOB_LEGACY_ADAPTER("android_admob_legacy_adapter"),
     ANDROID_ADMOB_NEXT_GEN_ADAPTER("android_admob_next_gen_adapter"),
+    FLUTTER_ADMOB_ADAPTER("flutter_admob_adapter"),
+    REACT_NATIVE_ADMOB_ADAPTER("react_native_admob_adapter"),
+    UNITY_ADMOB_ADAPTER("unity_admob_adapter"),
     MANUAL("manual"),
 }
