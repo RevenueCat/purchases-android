@@ -907,6 +907,23 @@ public class Purchases internal constructor(
         )
     }
 
+    /**
+     * [pollRewardVerification] overload that stamps the capture method that initiated the poll. Used by
+     * purchases-hybrid-common on behalf of the official RevenueCat hybrid AdMob adapters.
+     */
+    @InternalRevenueCatAPI
+    public fun pollRewardVerification(
+        clientTransactionId: String,
+        callback: PollRewardVerificationCallback,
+        trackingMetadata: RewardedAdTrackingMetadata?,
+        captureMethod: AdCaptureMethod,
+    ) {
+        rewardVerificationPollLauncher.launch(
+            poll = { awaitPollRewardVerification(clientTransactionId, trackingMetadata, captureMethod) },
+            onCompleted = { callback.onCompleted(it) },
+        )
+    }
+
     @OptIn(InternalRevenueCatAPI::class)
     internal suspend fun pollRewardVerification(
         clientTransactionId: String,
