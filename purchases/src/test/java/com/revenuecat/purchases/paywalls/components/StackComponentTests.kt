@@ -431,6 +431,41 @@ internal class StackComponentTests {
     }
 
     @RunWith(Parameterized::class)
+    internal class DeserializeStackOverflowPropertyTests(
+        private val serialized: String?,
+        private val expected: StackComponent.Overflow?,
+    ) {
+        @Test
+        fun `Stack overflow distinguishes explicit no scroll from unknown and absent values`() {
+            val property = serialized?.let { ", \"overflow\": $it" }.orEmpty()
+            val actual = JsonTools.json.decodeFromString<StackComponent>("{\"components\": []$property}")
+
+            assert(actual.overflow == expected)
+        }
+
+        @Test
+        fun `Partial overflow distinguishes explicit no scroll from unknown and absent values`() {
+            val property = serialized?.let { "\"overflow\": $it" }.orEmpty()
+            val actual = JsonTools.json.decodeFromString<PartialStackComponent>("{$property}")
+
+            assert(actual.overflow == expected)
+        }
+
+        companion object {
+            @JvmStatic
+            @Parameterized.Parameters(name = "{0}")
+            fun parameters(): Collection<Array<Any?>> = listOf(
+                arrayOf<Any?>(null, null),
+                arrayOf<Any?>("null", null),
+                arrayOf<Any?>("\"unknown_future_overflow\"", null),
+                arrayOf<Any?>("\"none\"", StackComponent.Overflow.NONE),
+                arrayOf<Any?>("\"default\"", StackComponent.Overflow.NONE),
+                arrayOf<Any?>("\"scroll\"", StackComponent.Overflow.SCROLL),
+            )
+        }
+    }
+
+    @RunWith(Parameterized::class)
     internal class DeserializeStackOverflowTests(
         private val serialized: String,
         private val expected: StackComponent.Overflow,
@@ -447,6 +482,7 @@ internal class StackComponentTests {
                 }
                 arrayOf(serialized, expected)
             } + listOf(
+                arrayOf("\"default\"", StackComponent.Overflow.NONE),
                 arrayOf("\"some_unknown_overflow\"", StackComponent.Overflow.NONE),
             )
         }

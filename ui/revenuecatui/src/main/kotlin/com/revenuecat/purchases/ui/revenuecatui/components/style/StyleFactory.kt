@@ -949,6 +949,7 @@ internal class StyleFactory(
             shadow = shadowStyles,
             badge = badge,
             scrollOrientation = component.overflow?.toOrientation(component.dimension),
+            scrollExplicitlyDisabled = component.overflow == StackComponent.Overflow.NONE,
             rcPackage = rcPackage,
             resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
