@@ -31,8 +31,10 @@ public class ErrorPresentationStage private constructor(private val name: String
         public val DURING_FLOW_PRESENTATION: ErrorPresentationStage = ErrorPresentationStage("DURING_FLOW_PRESENTATION")
 
         /**
-         * The flow ended, and the SDK could not sync what the customer obtained during it. Completing lets them go
-         * on: the checkpoint is passed and its callback receives an empty result.
+         * The flow ended, and the SDK could not sync what the customer obtained during it. Only a flow presented
+         * through a [PaywallPresenter] is synced afterwards, the app's own or the SDK's paywall for an offering; a
+         * workflow reports its purchases and restores as they happen and never reaches this stage. Completing lets
+         * the customer go on: the checkpoint is passed and its callback receives an empty result.
          */
         @JvmField
         public val AFTER_FLOW_PRESENTATION: ErrorPresentationStage = ErrorPresentationStage("AFTER_FLOW_PRESENTATION")
