@@ -4,6 +4,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -209,10 +210,12 @@ internal fun previewHiddenLeadingStackHeroState(includeSide: Boolean): PaywallSt
         paywallComponents = Offering.PaywallComponents(previewUiConfig(), data),
     )
     val validated = offering.validatePaywallComponentsDataOrNullForPreviews()?.getOrThrow()!!
-    return offering.toComponentsPaywallState(
-        validationResult = validated,
-        storefrontCountryCode = "US",
-        dateProvider = { Date(MILLIS_2025_01_25) },
-        purchases = MockPurchasesType(),
-    )
+    return remember(includeSide) {
+        offering.toComponentsPaywallState(
+            validationResult = validated,
+            storefrontCountryCode = "US",
+            dateProvider = { Date(MILLIS_2025_01_25) },
+            purchases = MockPurchasesType(),
+        )
+    }
 }
