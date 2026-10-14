@@ -1,0 +1,62 @@
+# A purchase that fails inside the flow a checkpoint presents (`donottouch_sdk_entitlement` presents its paywall to
+# a user without the entitlement): the SDK presents its error dialog (DURING_FLOW_PRESENTATION; the Test Store's
+# simulated failure keeps its own description), acknowledging it leaves the paywall on screen and the callback
+# uninvoked, and closing the paywall afterwards passes the checkpoint with an empty result.
+#
+# Run locally against the test store:
+#   maestro test -e MAESTRO_STORE=test_store maestro/checkpoints/checkpoint_purchase_error_during_flow.yaml
+
+appId: com.revenuecat.e2etests
+name: Checkpoint purchase failure shows the SDK error dialog, keeps the flow, and a later close passes empty
+env:
+  MAESTRO_STORE: ${MAESTRO_STORE || 'test_store'}
+
+---
+- launchApp:
+    clearState: true
+    arguments:
+      e2e_test_flow: open_checkpoint
+      checkpoint_identifier: donottouch_sdk_entitlement
+- extendedWaitUntil:
+    visible: "Hit checkpoint"
+    timeout: 15000
+- tapOn:
+    text: "Hit checkpoint"
+
+# The checkpoint's paywall, presented as a sheet, with the monthly package preselected.
+- extendedWaitUntil:
+    visible: "Continue"
+    timeout: 20000
+- takeScreenshot: "checkpoint_purchase_error_during_flow - paywall"
+- tapOn:
+    text: "Continue"
+
+# Test store purchase confirmation: simulate a failure.
+- extendedWaitUntil:
+    visible: "TEST FAILED PURCHASE"
+    timeout: 15000
+- tapOn:
+    text: "TEST FAILED PURCHASE"
+
+# The SDK's own error dialog over the paywall.
+- extendedWaitUntil:
+    visible: "Purchase failure simulated successfully in Test Store."
+    timeout: 15000
+- takeScreenshot: "checkpoint_purchase_error_during_flow - error dialog"
+- tapOn:
+    text: "OK"
+- assertNotVisible: "Purchase failure simulated successfully in Test Store."
+
+# Acknowledging resumes the flow where it was: the paywall is still up and the callback has not fired.
+- assertVisible: "Continue"
+- assertNotVisible: "Callback:.*"
+
+# Swiping the sheet down closes the flow like a close action: the checkpoint passes with nothing obtained.
+- swipe:
+    start: "50%,10%"
+    end: "50%,90%"
+    duration: 600
+- extendedWaitUntil:
+    visible: "Callback: passed, entitlements: none"
+    timeout: 15000
+- takeScreenshot: "checkpoint_purchase_error_during_flow - passed empty"
