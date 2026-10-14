@@ -25,6 +25,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Everything the manager's [CheckpointWorkflowPresenter] needs to build a workflow paywall, read in a single pass
@@ -132,6 +133,7 @@ internal class CheckpointsManager(
                     purchases,
                     PaywallPresenter.Params(resolution.offering, identifier, customVariables, presentationMode),
                     presenter ?: defaultPresenterFactory(purchases, errorPresenter()),
+                    errorPresenter,
                 )
                 is CheckpointResolution.MatchedWorkflow ->
                     present(purchases, identifier, resolution, customVariables, errorPresenter(), presentationMode)
@@ -279,12 +281,13 @@ internal class CheckpointsManager(
      * [presenter]: the call's own, else the registered [paywallPresenter], else the SDK's own
      * [DefaultPaywallPresenter]. Either way the presentation claims the same one-presentation-at-a-time slot as
      * workflows and resolves through its completion's first report, after the SDK has synced the store purchases
-     * made during it.
+     * made during it. A sync that fails is handed to [errorPresenter]: that step is the SDK's, whoever presented.
      */
     private suspend fun presentOffering(
         purchases: Purchases,
         params: PaywallPresenter.Params,
         presenter: PaywallPresenter,
+        errorPresenter: () -> ErrorPresenter,
     ): CheckpointRun {
         val call = PendingCall(
             UUID.randomUUID().toString(),
@@ -298,7 +301,7 @@ internal class CheckpointsManager(
         try {
             presenter.present(
                 params,
-                PresenterCompletion(call.callId, purchases),
+                PresenterCompletion(call.callId, purchases, params, errorPresenter),
             )
             return call.flowFinished.await()
         } catch (e: CancellationException) {
@@ -319,6 +322,8 @@ internal class CheckpointsManager(
     private inner class PresenterCompletion(
         private val callId: String,
         private val purchases: Purchases,
+        private val params: PaywallPresenter.Params,
+        private val errorPresenter: () -> ErrorPresenter,
     ) : PaywallPresenter.Completion {
 
         override fun complete(result: PaywallPresenter.Completion.Result) {
@@ -361,12 +366,39 @@ internal class CheckpointsManager(
                     }
 
                     override fun onError(error: PurchasesError) {
-                        call.flowFinished.complete(
-                            CheckpointRun(CheckpointFlowOutcome.Error(error), backedOut = false),
+                        Logger.e(
+                            "Checkpoint '${params.checkpointIdentifier}': the purchases made during the flow " +
+                                "could not be synced: $error",
                         )
+                        presentSyncFailure(error) {
+                            call.flowFinished.complete(
+                                CheckpointRun(CheckpointFlowOutcome.SyncFailed, backedOut = false),
+                            )
+                        }
                     }
                 },
             )
+        }
+
+        // The user has left the flow and goes on either way: once the app's error UI is done, or right away when
+        // the presenter cannot show it (the SDK's own needs a started activity). Only the first completion counts.
+        private fun presentSyncFailure(error: PurchasesError, onComplete: () -> Unit) {
+            val completed = AtomicBoolean(false)
+            val completion = ErrorPresenter.Completion { if (completed.compareAndSet(false, true)) onComplete() }
+            try {
+                errorPresenter().present(
+                    ErrorPresenter.Params(
+                        error,
+                        params.checkpointIdentifier,
+                        params.customVariables,
+                        ErrorPresentationStage.AFTER_FLOW_PRESENTATION,
+                    ),
+                    completion,
+                )
+            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                Logger.e("Error presenter failed: $e")
+                completion.complete()
+            }
         }
     }
 

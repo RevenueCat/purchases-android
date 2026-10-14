@@ -444,38 +444,36 @@ package com.revenuecat.purchases.ui.revenuecatui.checkpoints {
     property @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI public static com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter? com.revenuecat.purchases.Purchases.paywallPresenter;
   }
 
+  @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI public final class ErrorPresentationStage {
+    field public static final com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresentationStage AFTER_FLOW_PRESENTATION;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresentationStage BEFORE_FLOW_PRESENTATION;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresentationStage.Companion Companion;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresentationStage DURING_FLOW_PRESENTATION;
+  }
+
+  public static final class ErrorPresentationStage.Companion {
+    property public com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresentationStage AFTER_FLOW_PRESENTATION;
+    property public com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresentationStage BEFORE_FLOW_PRESENTATION;
+    property public com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresentationStage DURING_FLOW_PRESENTATION;
+  }
+
   @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI public fun interface ErrorPresenter {
     method public void present(com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter.Params params, com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter.Completion completion);
   }
 
   @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI public static fun interface ErrorPresenter.Completion {
-    method public void complete(com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter.Completion.Result result);
-  }
-
-  @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI public abstract static class ErrorPresenter.Completion.Result {
-  }
-
-  public static final class ErrorPresenter.Completion.Result.Continue extends com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter.Completion.Result {
-    field public static final com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter.Completion.Result.Continue INSTANCE;
-  }
-
-  public static final class ErrorPresenter.Completion.Result.NavigateBack extends com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter.Completion.Result {
-    field public static final com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter.Completion.Result.NavigateBack INSTANCE;
-  }
-
-  public static final class ErrorPresenter.Completion.Result.Retry extends com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter.Completion.Result {
-    field public static final com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter.Completion.Result.Retry INSTANCE;
+    method public void complete();
   }
 
   @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI @dev.drewhamilton.poko.Poko public static final class ErrorPresenter.Params {
     method @InaccessibleFromKotlin public String getCheckpointIdentifier();
     method @InaccessibleFromKotlin public java.util.Map<java.lang.String,com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue> getCustomVariables();
     method @InaccessibleFromKotlin public com.revenuecat.purchases.PurchasesError getError();
-    method @InaccessibleFromKotlin public boolean getFlowCanContinue();
+    method @InaccessibleFromKotlin public com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresentationStage getStage();
     property public String checkpointIdentifier;
     property public java.util.Map<java.lang.String,com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue> customVariables;
     property public com.revenuecat.purchases.PurchasesError error;
-    property public boolean flowCanContinue;
+    property public com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresentationStage stage;
   }
 
   @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI public final class FlowPresentationMode {

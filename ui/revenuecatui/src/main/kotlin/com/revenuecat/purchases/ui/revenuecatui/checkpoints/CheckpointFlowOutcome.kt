@@ -39,6 +39,15 @@ internal abstract class CheckpointFlowOutcome {
     ) : CheckpointFlowOutcome()
 
     /**
+     * An app-owned presentation through [PaywallPresenter] finished with the user going through it, but the sync
+     * of the store purchases made during it failed. The error was presented, and the user goes on with nothing
+     * known to have been obtained.
+     */
+    object SyncFailed : CheckpointFlowOutcome() {
+        override fun toString(): String = "SyncFailed"
+    }
+
+    /**
      * A purchase or restore failed with [error], or the flow could not be kept on screen (e.g. a failed
      * re-present after a configuration change). Cancellations are reported as [Dismissed] instead.
      */

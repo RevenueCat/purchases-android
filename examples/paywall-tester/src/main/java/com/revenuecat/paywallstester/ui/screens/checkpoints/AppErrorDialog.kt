@@ -2,7 +2,6 @@ package com.revenuecat.paywallstester.ui.screens.checkpoints
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -10,13 +9,12 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter.Completion.Result
 
 /**
- * The dialog this app draws for an error of an SDK-presented flow when the checkpoints screen is set to present
- * errors itself. Says where the error came from and lets the tester pick how the flow goes on. Dismissing it
- * (outside tap or system back) does what the SDK's own dialog does: retry when the flow can go on, continue
- * otherwise.
+ * The dialog this app draws for an error of a checkpoint when the checkpoints screen is set to present errors
+ * itself. Says where the error came from and at which stage of the flow. Acknowledging it, or dismissing it with
+ * an outside tap or system back, completes the presentation; the SDK decides what the flow does next from the
+ * stage.
  */
 @OptIn(InviteOnlyCheckpointsAPI::class)
 @Composable
@@ -24,7 +22,7 @@ internal fun AppErrorDialog(request: AppErrorPresenter.Request) {
     val params = request.params
     val error = params.error
     AlertDialog(
-        onDismissRequest = { request.finish(if (params.flowCanContinue) Result.Retry else Result.Continue) },
+        onDismissRequest = { request.finish() },
         title = { Text(text = "Handled by this app's ErrorPresenter") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -33,19 +31,11 @@ internal fun AppErrorDialog(request: AppErrorPresenter.Request) {
                     label = "Error",
                     value = "${error.code.name}: ${error.underlyingErrorMessage ?: error.message}",
                 )
-                DetailLine(label = "Flow can continue", value = if (params.flowCanContinue) "yes" else "no")
+                DetailLine(label = "Stage", value = params.stage.toString())
             }
         },
         confirmButton = {
-            Row {
-                if (params.flowCanContinue) {
-                    TextButton(onClick = { request.finish(Result.Retry) }) { Text(text = "Retry") }
-                }
-                TextButton(onClick = { request.finish(Result.Continue) }) { Text(text = "Continue") }
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = { request.finish(Result.NavigateBack) }) { Text(text = "Back") }
+            TextButton(onClick = { request.finish() }) { Text(text = "OK") }
         },
     )
 }

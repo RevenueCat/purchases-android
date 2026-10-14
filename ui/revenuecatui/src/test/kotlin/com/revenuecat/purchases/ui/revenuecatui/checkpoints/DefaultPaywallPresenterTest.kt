@@ -121,10 +121,15 @@ class DefaultPaywallPresenterTest {
         val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "boom")
         val completion = ErrorPresenter.Completion {}
 
-        options().errorPresenter!!.present(error, flowCanContinue = true, completion)
+        options().errorPresenter!!.present(error, ErrorPresentationStage.DURING_FLOW_PRESENTATION, completion)
 
         assertThat(presented).containsExactly(
-            ErrorPresenter.Params(error, params.checkpointIdentifier, params.customVariables, flowCanContinue = true),
+            ErrorPresenter.Params(
+                error,
+                params.checkpointIdentifier,
+                params.customVariables,
+                ErrorPresentationStage.DURING_FLOW_PRESENTATION,
+            ),
         )
         assertThat(completions).containsExactly(completion)
     }

@@ -9,6 +9,7 @@ import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPassedCallback
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresentationStage
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowResult
@@ -48,7 +49,7 @@ private class CheckpointsAPI {
             }
             errorPresenter(errorPresenter)
             errorPresenter { params: ErrorPresenter.Params, completion: ErrorPresenter.Completion ->
-                completion.complete(ErrorPresenter.Completion.Result.Retry)
+                completion.complete()
             }
         }
         val customVariables: Map<String, CustomVariableValue> = fromDsl.customVariables
@@ -91,19 +92,17 @@ private class CheckpointsAPI {
             val error: PurchasesError = params.error
             val checkpointIdentifier: String = params.checkpointIdentifier
             val customVariables: Map<String, CustomVariableValue> = params.customVariables
-            val flowCanContinue: Boolean = params.flowCanContinue
-            completion.complete(ErrorPresenter.Completion.Result.Retry)
-            completion.complete(ErrorPresenter.Completion.Result.Continue)
-            completion.complete(ErrorPresenter.Completion.Result.NavigateBack)
+            val stage: ErrorPresentationStage = params.stage
+            completion.complete()
         }
     }
 
-    fun checkErrorCompletionResult(result: ErrorPresenter.Completion.Result) {
-        when (result) {
-            ErrorPresenter.Completion.Result.Retry -> {}
-            ErrorPresenter.Completion.Result.Continue -> {}
-            ErrorPresenter.Completion.Result.NavigateBack -> {}
-            // The hierarchy is closed but not sealed, so consumers must handle cases added later.
+    fun checkErrorPresentationStage(stage: ErrorPresentationStage) {
+        when (stage) {
+            ErrorPresentationStage.BEFORE_FLOW_PRESENTATION -> {}
+            ErrorPresentationStage.DURING_FLOW_PRESENTATION -> {}
+            ErrorPresentationStage.AFTER_FLOW_PRESENTATION -> {}
+            // Not an enum, so values added later must be handled too.
             else -> {}
         }
     }

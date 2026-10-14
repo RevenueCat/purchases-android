@@ -12,6 +12,7 @@ import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.common.CustomVariableKeyValidator
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresentationStage
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 import dev.drewhamilton.poko.Poko
@@ -327,10 +328,10 @@ internal typealias DismissRequestWithExitOffering =
 /**
  * Internal channel through which a paywall presented for a checkpoint hands its errors to the app's
  * [ErrorPresenter] instead of showing its own dialog. The checkpoint host adds the checkpoint's context; the
- * paywall knows what failed and whether it can go on, and acts on the completion's first report.
+ * paywall knows what failed and at which stage, and acts on the completion's first report.
  */
 internal fun interface PaywallErrorPresenter {
-    fun present(error: PurchasesError, flowCanContinue: Boolean, completion: ErrorPresenter.Completion)
+    fun present(error: PurchasesError, stage: ErrorPresentationStage, completion: ErrorPresenter.Completion)
 }
 
 /** How a paywall was dismissed, reported through [DismissRequestWithExitOffering]. */

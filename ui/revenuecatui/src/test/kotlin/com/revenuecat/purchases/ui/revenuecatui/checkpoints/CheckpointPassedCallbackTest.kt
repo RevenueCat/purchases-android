@@ -245,6 +245,46 @@ class CheckpointPassedCallbackTest {
         assertThat(results).containsExactly(null)
     }
 
+    @Test
+    fun `a sync failure after an app-owned presentation presents the error and then passes with an empty result`() =
+        runTest(dispatcher) {
+            syncFails()
+            val stages = mutableListOf<ErrorPresentationStage>()
+            var errorCompletion: ErrorPresenter.Completion? = null
+            manager.errorPresenter = ErrorPresenter { params, completion ->
+                stages += params.stage
+                errorCompletion = completion
+            }
+            val completion = presentThroughRegisteredPresenter()
+
+            checkpoint()
+            completion()!!.complete(PaywallPresenter.Completion.Result.Closed)
+
+            assertThat(stages).containsExactly(ErrorPresentationStage.AFTER_FLOW_PRESENTATION)
+            assertThat(results).isEmpty()
+            errorCompletion!!.complete()
+            assertThat(results.obtained).containsExactly(emptySet<String>())
+        }
+
+    @Test
+    fun `a sync failure the SDK's own dialog cannot show still passes with an empty result`() = runTest(dispatcher) {
+        syncFails()
+        every { mockPurchases.currentActivity } returns null
+        val completion = presentThroughRegisteredPresenter()
+
+        checkpoint()
+        completion()!!.complete(PaywallPresenter.Completion.Result.Closed)
+
+        assertThat(results.obtained).containsExactly(emptySet<String>())
+    }
+
+    private fun syncFails() {
+        every { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) } answers {
+            secondArg<ReceiveCustomerInfoCallback>()
+                .onError(PurchasesError(PurchasesErrorCode.NetworkError, "Simulated."))
+        }
+    }
+
     private fun checkpoint(identifier: String = checkpointId) {
         manager.checkpoint(mockPurchases, identifier, null) { results += it }
     }

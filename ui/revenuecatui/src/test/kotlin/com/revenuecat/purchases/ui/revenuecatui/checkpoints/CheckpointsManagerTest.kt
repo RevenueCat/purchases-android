@@ -890,9 +890,36 @@ class CheckpointsManagerTest {
     }
 
     @Test
-    fun `a sync failure after a closed report resolves with that error`() = runTest(dispatcher) {
-        val error = PurchasesError(PurchasesErrorCode.NetworkError, "Simulated.")
-        syncFailsWith(error)
+    fun `a sync failure after a closed report is presented and resolves as unsynced once completed`() =
+        runTest(dispatcher) {
+            val error = PurchasesError(PurchasesErrorCode.NetworkError, "Simulated.")
+            syncFailsWith(error)
+            val presented = mutableListOf<ErrorPresenter.Params>()
+            var errorCompletion: ErrorPresenter.Completion? = null
+            manager.errorPresenter = ErrorPresenter { params, completion ->
+                presented += params
+                errorCompletion = completion
+            }
+            val completion = presentThroughRegisteredPresenter()
+            var run: CheckpointRun? = null
+            val call = launch { run = runCheckpoint() }
+
+            completion()!!.complete(PaywallPresenter.Completion.Result.Closed)
+
+            assertThat(presented).containsExactly(
+                ErrorPresenter.Params(error, checkpointId, emptyMap(), ErrorPresentationStage.AFTER_FLOW_PRESENTATION),
+            )
+            assertThat(run).isNull()
+            errorCompletion!!.complete()
+            errorCompletion!!.complete()
+            call.join()
+            assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.SyncFailed)
+        }
+
+    @Test
+    fun `a sync failure the error presenter cannot show resolves as unsynced right away`() = runTest(dispatcher) {
+        syncFailsWith(PurchasesError(PurchasesErrorCode.NetworkError, "Simulated."))
+        manager.errorPresenter = ErrorPresenter { _, _ -> error("Simulated.") }
         val completion = presentThroughRegisteredPresenter()
         var run: CheckpointRun? = null
         val call = launch { run = runCheckpoint() }
@@ -900,7 +927,8 @@ class CheckpointsManagerTest {
         completion()!!.complete(PaywallPresenter.Completion.Result.Closed)
         call.join()
 
-        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Error(error))
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.SyncFailed)
+        verify(exactly = 1) { Logger.e(match { it.startsWith("Error presenter failed") }) }
     }
 
     @Test
@@ -1054,10 +1082,15 @@ class CheckpointsManagerTest {
             val call = launch { runCheckpoint(params) }
 
             val options = manager.paywallOptions(currentCallId()) {}!!
-            options.errorPresenter!!.present(error, flowCanContinue = true) {}
+            options.errorPresenter!!.present(error, ErrorPresentationStage.DURING_FLOW_PRESENTATION) {}
 
             assertThat(presented).containsExactly(
-                ErrorPresenter.Params(error, checkpointId, params.customVariables, flowCanContinue = true),
+                ErrorPresenter.Params(
+                    error,
+                    checkpointId,
+                    params.customVariables,
+                    ErrorPresentationStage.DURING_FLOW_PRESENTATION,
+                ),
             )
             finishPaywall(outcome = null)
             call.join()
@@ -1120,7 +1153,7 @@ class CheckpointsManagerTest {
         val call = launch { runCheckpoint(params) }
 
         manager.paywallOptions(currentCallId()) {}!!.errorPresenter!!
-            .present(PurchasesError(PurchasesErrorCode.StoreProblemError), flowCanContinue = true) {}
+            .present(PurchasesError(PurchasesErrorCode.StoreProblemError), ErrorPresentationStage.DURING_FLOW_PRESENTATION) {}
 
         assertThat(perCallAsked).isTrue
         assertThat(registeredAsked).isFalse
@@ -1136,10 +1169,11 @@ class CheckpointsManagerTest {
         val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "boom")
         val call = launch { runCheckpoint() }
 
-        defaultPresenter!!.paywallOptions("") {}!!.errorPresenter!!.present(error, flowCanContinue = false) {}
+        defaultPresenter!!.paywallOptions("") {}!!.errorPresenter!!
+            .present(error, ErrorPresentationStage.BEFORE_FLOW_PRESENTATION) {}
 
         assertThat(presented).containsExactly(
-            ErrorPresenter.Params(error, checkpointId, emptyMap(), flowCanContinue = false),
+            ErrorPresenter.Params(error, checkpointId, emptyMap(), ErrorPresentationStage.BEFORE_FLOW_PRESENTATION),
         )
         finishDefaultPaywall(navigatedBack = true)
         call.join()
