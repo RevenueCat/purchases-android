@@ -100,7 +100,9 @@ internal fun LoadedWorkflowPaywall(
 
     // Resolve hero ownership after measuring bounds, before selecting and composing the header.
     MeasurePaywallBounds(states = stepStates.values.toList(), modifier = modifier) {
-        stepStates.values.forEach { resolveHeroInsets(it.stack, it) }
+        stepStates.forEach { (stepId, state) ->
+            key(stepId) { resolveHeroInsets(state.stack, state) }
+        }
         val headerPresentation = workflowHeaderState(
             currentStepId = currentStepId,
             stepStates = stepStates,

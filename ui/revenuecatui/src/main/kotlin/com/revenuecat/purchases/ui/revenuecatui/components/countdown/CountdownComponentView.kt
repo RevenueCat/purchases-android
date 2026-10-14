@@ -27,13 +27,7 @@ internal fun CountdownComponentView(
     modifier: Modifier = Modifier,
     componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
-    val countdownState = rememberCountdownState(style.date)
-
-    val stackStyle = if (countdownState.hasEnded && style.endStackComponentStyle != null) {
-        style.endStackComponentStyle
-    } else {
-        style.countdownStackComponentStyle
-    }
+    val stackStyle = rememberActiveCountdownStack(style)
     StackComponentView(
         style = stackStyle,
         state = state,

@@ -345,6 +345,7 @@ private fun StackWithLongEdgeToEdgeBadge(
                     size = Size(width = Fill(), height = badgeStack.size.height),
                     border = null,
                     margin = PaddingValues(0.dp),
+                    applyTopWindowInsets = badgeStack.applyTopWindowInsets && state.heroInsetsFor(badgeStack) == null,
                 ),
                 state,
                 clickHandler,
@@ -568,7 +569,10 @@ private fun StackWithShortEdgeToEdgeBadge(
         interactionSource = interactionSource,
     ) {
         StackComponentView(
-            badgeStack.copy(shape = Shape.Rectangle(adjustedCornerRadiuses)),
+            badgeStack.copy(
+                shape = Shape.Rectangle(adjustedCornerRadiuses),
+                applyTopWindowInsets = badgeStack.applyTopWindowInsets && state.heroInsetsFor(badgeStack) == null,
+            ),
             state,
             clickHandler,
             componentInteractionTracker = componentInteractionTracker,

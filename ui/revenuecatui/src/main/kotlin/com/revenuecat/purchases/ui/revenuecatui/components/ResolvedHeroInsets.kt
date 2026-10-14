@@ -7,6 +7,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.ui.revenuecatui.components.button.rememberUpdatedButtonVisibilityState
 import com.revenuecat.purchases.ui.revenuecatui.components.carousel.rememberUpdatedCarouselComponentState
+import com.revenuecat.purchases.ui.revenuecatui.components.countdown.rememberActiveCountdownStack
 import com.revenuecat.purchases.ui.revenuecatui.components.iconcomponent.rememberUpdatedIconComponentState
 import com.revenuecat.purchases.ui.revenuecatui.components.image.rememberUpdatedImageComponentState
 import com.revenuecat.purchases.ui.revenuecatui.components.pkg.rememberUpdatedPackageComponentState
@@ -14,10 +15,13 @@ import com.revenuecat.purchases.ui.revenuecatui.components.stack.rememberUpdated
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.CarouselComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.CountdownComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.IconComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.TabControlButtonComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.TabControlStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TabsComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TimelineComponentStyle
@@ -89,7 +93,25 @@ private fun recordInsets(
     entries: MutableMap<ComponentStyleIdentity, ResolvedHeroInsets>,
 ) {
     entries[ComponentStyleIdentity(style)] = insets
-    if (style is StackComponentStyle) style.children.forEach { recordInsets(it, insets, entries) }
+    // Wrapper stacks render in this same tree and must not fall back to stale factory inset hints.
+    val children = when (style) {
+        is StackComponentStyle -> style.children + listOfNotNull(style.badge?.stackStyle) +
+            style.overrides.mapNotNull { it.properties.badgeStyle?.stackStyle }
+        is ButtonComponentStyle -> listOf(style.stackComponentStyle)
+        is PackageComponentStyle -> listOf(style.stackComponentStyle)
+        is CountdownComponentStyle -> listOfNotNull(
+            style.countdownStackComponentStyle,
+            style.endStackComponentStyle,
+            style.fallbackStackComponentStyle,
+        )
+        is CarouselComponentStyle -> style.pages
+        is TabsComponentStyle -> listOf(style.control) + style.tabs.map { it.stack }
+        is TabControlButtonComponentStyle -> listOf(style.stack)
+        is TabControlStyle.Buttons -> listOf(style.stack)
+        is TabControlStyle.Toggle -> listOf(style.stack)
+        else -> emptyList()
+    }
+    children.forEach { recordInsets(it, insets, entries) }
 }
 
 @Composable
@@ -129,7 +151,7 @@ private fun firstVisibleLeaf(
             if (it.visible) FirstVisibleLeaf(style, false) else null
         }
         is ButtonComponentStyle -> rememberUpdatedButtonVisibilityState(style, state).let {
-            if (it.visible) FirstVisibleLeaf(style, false) else null
+            if (it.visible) firstVisibleWrapperLeaf(style, style.stackComponentStyle, state) else null
         }
         is CarouselComponentStyle -> rememberUpdatedCarouselComponentState(style, state).let {
             if (it.visible) FirstVisibleLeaf(style, false) else null
@@ -138,8 +160,9 @@ private fun firstVisibleLeaf(
             if (it.visible) FirstVisibleLeaf(style, false) else null
         }
         is PackageComponentStyle -> rememberUpdatedPackageComponentState(style, state).let {
-            if (it.visible) FirstVisibleLeaf(style, false) else null
+            if (it.visible) firstVisibleWrapperLeaf(style, style.stackComponentStyle, state) else null
         }
+        is CountdownComponentStyle -> firstVisibleWrapperLeaf(style, rememberActiveCountdownStack(style), state)
         is TabsComponentStyle -> rememberUpdatedTabsComponentState(style, state).let {
             if (it.visible) FirstVisibleLeaf(style, false) else null
         }
@@ -149,3 +172,11 @@ private fun firstVisibleLeaf(
         else -> if (style.visible) FirstVisibleLeaf(style, false) else null
     }
 }
+
+@Composable
+private fun firstVisibleWrapperLeaf(
+    style: ComponentStyle,
+    stack: StackComponentStyle,
+    state: PaywallState.Loaded.Components,
+): FirstVisibleLeaf? =
+    if (rememberUpdatedStackComponentState(stack, state).visible) FirstVisibleLeaf(style, false) else null

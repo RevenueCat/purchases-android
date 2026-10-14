@@ -6,6 +6,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.paywalls.components.ButtonComponent
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
@@ -24,6 +26,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import org.assertj.core.api.Assertions.assertThat
 import java.net.URL
+import java.util.Date
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -131,6 +134,87 @@ internal class HiddenHeroRuntimeTest {
         assertOwner(second)
         composeTestRule.runOnIdle { width.value = 500.dp }
         assertOwner(first)
+    }
+
+    @Test
+    fun `hero ZLayer does not apply another top inset inside its button`() {
+        val root = StyleFactory().create(StackComponent(
+            components = listOf(media(), ButtonComponent(
+                action = ButtonComponent.Action.NavigateBack,
+                stack = StackComponent(components = emptyList()),
+            )),
+            dimension = Dimension.ZLayer(TwoDimensionalAlignment.TOP),
+        )).getOrThrow().componentStyle as StackComponentStyle
+        val button = root.children[1] as ButtonComponentStyle
+        // The old factory hint leaks into wrapper stacks; resolved ownership must override it.
+        assertThat(button.stackComponentStyle.applyTopWindowInsets).isTrue()
+        val state = FakePaywallState()
+        composeTestRule.setContent { resolveHeroInsets(root, state) }
+        composeTestRule.runOnIdle {
+            val buttonInsets = state.heroInsetsFor(button.stackComponentStyle)
+            assertThat(buttonInsets).isNotNull()
+            assertThat(buttonInsets!!.appliesTo(button.stackComponentStyle)).isFalse()
+            assertThat(state.heroInsetsFor(root)!!.appliesTo(root)).isTrue()
+        }
+    }
+
+    @Test
+    fun `countdown visibility follows width rules before choosing a hero`() {
+        val countdown = CountdownComponent(
+            style = CountdownComponent.CountdownStyle(type = "fixed", date = Date(Long.MAX_VALUE)),
+            countdownStack = StackComponent(
+                visible = false, components = emptyList(),
+                overrides = listOf(ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.WindowWidthRule(
+                        ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL, 800.0,
+                    )),
+                    properties = PartialStackComponent(visible = true),
+                )),
+            ),
+        )
+        val state = FakePaywallState(components = listOf(countdown, heroStack()))
+        val root = state.stack as StackComponentStyle
+        val width = mutableStateOf(500.dp)
+        composeTestRule.setContent {
+            MeasurePaywallBounds(state, Modifier.requiredSize(width.value, 1000.dp)) {
+                resolveHeroInsets(root, state)
+            }
+        }
+        fun assertHero(expected: Boolean) = composeTestRule.runOnIdle {
+            assertThat(state.heroInsetsFor(root)!!.hero != null).isEqualTo(expected)
+        }
+        assertHero(true)
+        composeTestRule.runOnIdle { width.value = 1000.dp }
+        assertHero(false)
+        composeTestRule.runOnIdle { width.value = 500.dp }
+        assertHero(true)
+    }
+
+    @Test
+    fun `ended countdown uses its end stack visibility`() {
+        val countdown = CountdownComponent(
+            style = CountdownComponent.CountdownStyle(type = "fixed", date = Date(0)),
+            countdownStack = StackComponent(components = emptyList()),
+            endStack = StackComponent(visible = false, components = emptyList()),
+        )
+        assertRootInsets(
+            StackComponent(components = listOf(countdown, heroStack())),
+            expectedHero = true,
+            expectedRootInsets = false,
+        )
+    }
+
+    @Test
+    fun `button with a hidden inner stack does not block the hero`() {
+        val button = ButtonComponent(
+            action = ButtonComponent.Action.NavigateBack, visible = true,
+            stack = StackComponent(visible = false, components = emptyList()),
+        )
+        assertRootInsets(
+            StackComponent(components = listOf(button, heroStack())),
+            expectedHero = true,
+            expectedRootInsets = false,
+        )
     }
 
     private fun heroStack() = StackComponent(
