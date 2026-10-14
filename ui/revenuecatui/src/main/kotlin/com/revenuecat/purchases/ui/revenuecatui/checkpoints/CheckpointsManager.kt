@@ -72,7 +72,9 @@ internal class CheckpointRun(
 @Suppress("TooManyFunctions")
 internal class CheckpointsManager(
     // Owns the coroutines behind the callback-based gate API, so an un-awaited checkpoint lives and dies with
-    // the Purchases instance holding this manager rather than with any caller scope.
+    // the Purchases instance holding this manager rather than with any caller scope. The plain main dispatcher,
+    // not the immediate one: the error presentation queue relies on launch posting, so a presenter is never asked
+    // to present again from inside its own completion.
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main),
     private val presenterFactory: (
         callId: String,

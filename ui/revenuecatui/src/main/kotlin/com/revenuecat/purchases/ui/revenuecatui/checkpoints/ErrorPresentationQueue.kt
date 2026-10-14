@@ -53,6 +53,8 @@ internal class ErrorPresentationQueue(private val scope: CoroutineScope) {
         val completion = ErrorPresenter.Completion {
             if (completed.compareAndSet(false, true)) {
                 entry.completion.complete()
+                // Posted, never inline: the scope's main dispatcher is the non-immediate one, so the next error is
+                // presented on a later message and not from inside the presenter's own complete().
                 scope.launch { finished(entry) }
             }
         }

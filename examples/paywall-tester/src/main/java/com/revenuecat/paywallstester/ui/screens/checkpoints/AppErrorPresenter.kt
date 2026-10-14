@@ -18,8 +18,8 @@ class AppErrorPresenter : ErrorPresenter {
         private val completion: ErrorPresenter.Completion,
     ) {
         fun finish() {
-            completion.complete()
             _request.value = null
+            completion.complete()
         }
     }
 
