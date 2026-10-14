@@ -94,6 +94,8 @@ internal data class StackComponentStyle(
      */
     @get:JvmSynthetic
     val applyTopWindowInsets: Boolean = false,
+    /** Whether this is a factory root, and whether that root requests top insets. */
+    val windowInsetsRoot: Boolean? = null,
     /**
      * When true, this ZLayer stack will always use window insets for top padding instead of
      * [PaywallState.Loaded.Components.headerHeightPx]. Set on the header's inner stack to prevent it from

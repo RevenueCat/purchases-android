@@ -100,6 +100,7 @@ internal fun LoadedPaywallComponents(
 
     CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
         MeasurePaywallBounds(state, modifier) {
+            resolveHeroInsets(state.stack, state)
             val shouldWrapMainContentInVerticalScroll = shouldWrapMainContentInVerticalScroll(state.stack, state)
             PaywallComponentsScaffold(
                 state = state,

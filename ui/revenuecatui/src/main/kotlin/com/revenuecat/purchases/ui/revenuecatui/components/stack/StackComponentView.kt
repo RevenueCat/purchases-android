@@ -73,6 +73,7 @@ import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.WithOptionalBackgroundOverlay
+import com.revenuecat.purchases.ui.revenuecatui.components.heroInsetsFor
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toHorizontalAlignmentOrNull
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
@@ -97,6 +98,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBa
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBorderStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberShadowStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.resolveHeroInsets
 import com.revenuecat.purchases.ui.revenuecatui.components.style.BadgeStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
@@ -148,6 +150,7 @@ internal fun StackComponentView(
     contentAlpha: (() -> Float)? = null,
     componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
+    if (style.windowInsetsRoot != null) resolveHeroInsets(style, state)
     // Get a StackComponentState that calculates the overridden properties we should use.
     val stackState = rememberUpdatedStackComponentState(
         style = style,
@@ -668,7 +671,7 @@ private fun MainStackComponent(
                             componentInteractionTracker = componentInteractionTracker,
                             modifier = childModifier
                                 .conditional(
-                                    stackState.applyTopWindowInsets && !child.shouldIgnoreTopWindowInsets,
+                                    stackState.appliesTopInsets(state) && !child.ignoresTopInsets(state),
                                 ) {
                                     windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
                                 }
@@ -706,9 +709,9 @@ private fun MainStackComponent(
                                 .conditional(
                                     // In a Vertical container, we only want to apply topSystemBarsPadding to the
                                     // first child, except when that child has `ignoreTopWindowInsets` set to true.
-                                    stackState.applyTopWindowInsets &&
-                                        index == 0 &&
-                                        !child.shouldIgnoreTopWindowInsets,
+                                    stackState.appliesTopInsets(state) &&
+                                        stackState.isFirstVisibleChild(child, index, state) &&
+                                        !child.ignoresTopInsets(state),
                                 ) {
                                     windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
                                 }
@@ -741,7 +744,7 @@ private fun MainStackComponent(
                     ) {
                         stackState.children.forEach { child ->
                             val applyTopInsets =
-                                stackState.applyTopWindowInsets && !child.shouldIgnoreTopWindowInsets
+                                stackState.appliesTopInsets(state) && !child.ignoresTopInsets(state)
                             ComponentView(
                                 style = child,
                                 state = state,
@@ -992,6 +995,18 @@ internal val FlexDistribution.usesAllAvailableSpace: Boolean
         FlexDistribution.CENTER,
         -> false
     }
+
+private fun StackComponentState.appliesTopInsets(state: PaywallState.Loaded.Components): Boolean =
+    state.heroInsetsFor(style)?.appliesTo(style) ?: applyTopWindowInsets
+
+private fun ComponentStyle.ignoresTopInsets(state: PaywallState.Loaded.Components): Boolean =
+    state.heroInsetsFor(this)?.let { it.hero === this } ?: shouldIgnoreTopWindowInsets
+
+private fun StackComponentState.isFirstVisibleChild(
+    child: ComponentStyle,
+    index: Int,
+    state: PaywallState.Loaded.Components,
+): Boolean = state.heroInsetsFor(style)?.firstVisibleChildFor(style)?.let { it === child } ?: (index == 0)
 
 private val ComponentStyle.shouldIgnoreTopWindowInsets: Boolean
     get() = when (this) {
