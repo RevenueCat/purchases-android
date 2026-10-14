@@ -189,10 +189,11 @@ class CheckpointPassedCallbackTest {
         runTest(dispatcher) {
             val controller = Robolectric.buildActivity(Activity::class.java).setup()
             every { mockPurchases.currentActivity } returns controller.get()
+            every { mockPurchases.preferredUILocaleOverride } returns null
             val messages = mutableListOf<String>()
             var acknowledge: (() -> Unit)? = null
             defaultErrorPresenterFactory = { purchases ->
-                DefaultErrorPresenter(purchases) { activity, message, onAcknowledged ->
+                DefaultErrorPresenter(purchases) { activity, _, message, onAcknowledged ->
                     messages += message
                     acknowledge = onAcknowledged
                     View(activity)

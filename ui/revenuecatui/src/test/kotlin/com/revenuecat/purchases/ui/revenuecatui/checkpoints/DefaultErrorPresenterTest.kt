@@ -1,6 +1,8 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
 import android.app.Activity
+import android.content.Context
+import android.content.res.Configuration
 import android.os.Looper
 import android.view.View
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -20,6 +22,7 @@ import org.robolectric.Robolectric
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.android.controller.ActivityController
 import org.robolectric.shadows.ShadowDialog
+import java.util.Locale
 
 @RunWith(AndroidJUnit4::class)
 class DefaultErrorPresenterTest {
@@ -29,16 +32,22 @@ class DefaultErrorPresenterTest {
     private lateinit var presenter: DefaultErrorPresenter
 
     private val messages = mutableListOf<String>()
+    private val resourceContexts = mutableListOf<Context>()
     private var acknowledge: (() -> Unit)? = null
+    private var localeOverride: String? = null
     private var completions = 0
     private val completion = ErrorPresenter.Completion { completions++ }
 
     @Before
     fun setup() {
         controller = Robolectric.buildActivity(Activity::class.java).setup()
-        mockPurchases = mockk { every { currentActivity } answers { controller.get() } }
-        presenter = DefaultErrorPresenter(mockPurchases) { activity, message, onAcknowledged ->
+        mockPurchases = mockk {
+            every { currentActivity } answers { controller.get() }
+            every { preferredUILocaleOverride } answers { localeOverride }
+        }
+        presenter = DefaultErrorPresenter(mockPurchases) { activity, resources, message, onAcknowledged ->
             messages += message
+            resourceContexts += resources
             acknowledge = onAcknowledged
             View(activity)
         }
@@ -116,6 +125,25 @@ class DefaultErrorPresenterTest {
 
         assertThat(messages.single()).doesNotContain("raw store detail")
         assertThat(messages.single()).isNotEqualTo(PurchasesErrorCode.StoreProblemError.description)
+    }
+
+    @Test
+    fun `the copy follows the preferred UI locale override`() {
+        localeOverride = "es"
+
+        present(params(stage = ErrorPresentationStage.BEFORE_FLOW_PRESENTATION))
+
+        assertThat(messages).containsExactly(string(R.string.revenuecatui_checkpoint_error_load, Locale("es")))
+        assertThat(messages.single()).isNotEqualTo(string(R.string.revenuecatui_checkpoint_error_load))
+        assertThat(resourceContexts.single().resources.configuration.locales[0]).isEqualTo(Locale("es"))
+    }
+
+    @Test
+    fun `without an override the copy and resources are the activity's`() {
+        present(params(stage = ErrorPresentationStage.BEFORE_FLOW_PRESENTATION))
+
+        assertThat(messages).containsExactly(string(R.string.revenuecatui_checkpoint_error_load))
+        assertThat(resourceContexts.single()).isSameAs(controller.get())
     }
 
     @Test
@@ -221,7 +249,12 @@ class DefaultErrorPresenterTest {
 
     private fun present(params: ErrorPresenter.Params = params()) = presenter.present(params, completion)
 
-    private fun string(id: Int): String = controller.get().getString(id)
+    private fun string(id: Int, locale: Locale? = null): String {
+        val activity = controller.get()
+        if (locale == null) return activity.getString(id)
+        val configuration = Configuration(activity.resources.configuration).apply { setLocale(locale) }
+        return activity.createConfigurationContext(configuration).getString(id)
+    }
 
     private fun params(
         kind: CheckpointFailureKind = CheckpointFailureKind.FLOW_ACTION_FAILED,

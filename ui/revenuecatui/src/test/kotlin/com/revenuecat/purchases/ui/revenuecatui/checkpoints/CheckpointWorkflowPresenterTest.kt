@@ -65,6 +65,7 @@ class CheckpointWorkflowPresenterTest {
         controller = Robolectric.buildActivity(Activity::class.java).setup()
         mockPurchases = mockk {
             every { currentActivity } answers { controller.get() }
+            every { preferredUILocaleOverride } returns null
             coEvery { internalResolveCp(any(), any()) } returns
                 CheckpointResolution.MatchedWorkflow(
                     mockk(),
