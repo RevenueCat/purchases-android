@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
 import android.view.View
 import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -15,9 +16,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.helpers.ProvidePreviewImageLoader
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -42,15 +41,13 @@ internal class HiddenLeadingStackHeroPreviewTests {
             view = LocalView.current
             state = previewHiddenLeadingStackHeroState(includeSide = false)
             CompositionLocalProvider(LocalInspectionMode provides true) {
-                ProvidePreviewImageLoader(previewImageLoader(R.drawable.default_background)) {
-                    LoadedPaywallComponents(state, { }, modifier = Modifier.requiredWidth(411.dp).fillMaxHeight())
-                }
+                HiddenLeadingStackHeroPreview(state, Modifier.requiredWidth(411.dp).fillMaxHeight())
             }
         }
         composeTestRule.onNodeWithText("Find your next escape").assertIsDisplayed()
         composeTestRule.onNodeWithText("Start exploring").assertIsDisplayed()
         composeTestRule.runOnIdle { assertThat(state.mainStackHasHeroImage).isTrue() }
-        capturePreview(view, "phone-control.png")
+        capturePreview(view, "phone-control.png", expectedPhotoTop = 0)
     }
 
     @Test
@@ -62,14 +59,12 @@ internal class HiddenLeadingStackHeroPreviewTests {
             view = LocalView.current
             state = previewHiddenLeadingStackHeroState(includeSide = true)
             CompositionLocalProvider(LocalInspectionMode provides true) {
-                ProvidePreviewImageLoader(previewImageLoader(R.drawable.default_background)) {
-                    LoadedPaywallComponents(state, { }, modifier = Modifier.requiredWidth(width.value).fillMaxHeight())
-                }
+                HiddenLeadingStackHeroPreview(state, Modifier.requiredWidth(width.value).fillMaxHeight())
             }
         }
         composeTestRule.onNodeWithText("Find your next escape").assertIsDisplayed()
         composeTestRule.runOnIdle { assertThat(state.mainStackHasHeroImage).isTrue() }
-        capturePreview(view, "phone-hidden-side.png")
+        capturePreview(view, "phone-hidden-side.png", expectedPhotoTop = 0)
         composeTestRule.runOnIdle { width.value = 1000.dp }
         composeTestRule.onNodeWithText("A little further from ordinary").assertExists()
         composeTestRule.runOnIdle { assertThat(state.mainStackHasHeroImage).isFalse() }
@@ -87,22 +82,26 @@ internal class HiddenLeadingStackHeroPreviewTests {
             view = LocalView.current
             state = previewHiddenLeadingStackHeroState(includeSide = true)
             CompositionLocalProvider(LocalInspectionMode provides true) {
-                ProvidePreviewImageLoader(previewImageLoader(R.drawable.default_background)) {
-                    LoadedPaywallComponents(state, { }, modifier = Modifier.requiredWidth(1000.dp).fillMaxHeight())
-                }
+                HiddenLeadingStackHeroPreview(state, Modifier.requiredWidth(1000.dp).fillMaxHeight())
             }
         }
         composeTestRule.onNodeWithText("A little further from ordinary").assertIsDisplayed()
         composeTestRule.onNodeWithText("Find your next escape").assertIsDisplayed()
         composeTestRule.runOnIdle { assertThat(state.mainStackHasHeroImage).isFalse() }
-        capturePreview(view, "wide-visible-side.png")
+        capturePreview(view, "wide-visible-side.png", expectedPhotoTop = 60)
     }
 
-    private fun capturePreview(view: View, name: String) {
+    private fun capturePreview(view: View, name: String, expectedPhotoTop: Int) {
+        val brandTop = composeTestRule.onNodeWithText("FIELD NOTES").fetchSemanticsNode().boundsInRoot.top
+        assertThat(brandTop).isGreaterThanOrEqualTo(60f)
         composeTestRule.waitForIdle()
         composeTestRule.runOnUiThread {
             val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
             view.draw(Canvas(bitmap))
+            val photoTop = (0 until bitmap.height).first { y ->
+                bitmap.getPixel(bitmap.width / 2, y) != Color.WHITE
+            }
+            assertThat(photoTop).isEqualTo(expectedPhotoTop)
             val file = File("build/hidden-hero-preview-evidence", name)
             requireNotNull(file.parentFile).mkdirs()
             file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }

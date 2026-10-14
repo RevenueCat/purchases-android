@@ -2,13 +2,22 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components
 
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.core.graphics.Insets
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
@@ -60,9 +69,29 @@ private fun HiddenLeadingStackHero_ResponsiveSide() = HiddenLeadingStackHeroPrev
 /** Emerge discovers these previews, keeping the hidden-leading-stack regression in the snapshot job. */
 @Composable
 internal fun HiddenLeadingStackHeroPreview(includeSide: Boolean) {
-    val state = previewHiddenLeadingStackHeroState(includeSide)
+    HiddenLeadingStackHeroPreview(previewHiddenLeadingStackHeroState(includeSide))
+}
+
+/** showSystemUi is not supported by Emerge, so the fixture supplies a real nonzero window inset. */
+@Composable
+internal fun HiddenLeadingStackHeroPreview(
+    state: PaywallState.Loaded.Components,
+    modifier: Modifier = Modifier.fillMaxSize(),
+) {
+    val view = LocalView.current
+    val topInsetPx = with(LocalDensity.current) { 60.dp.roundToPx() }
+    WindowInsets.safeDrawing
+    DisposableEffect(view, topInsetPx) {
+        val previous = ViewCompat.getRootWindowInsets(view) ?: WindowInsetsCompat.Builder().build()
+        val insets = WindowInsetsCompat.Builder(previous)
+            .setInsets(WindowInsetsCompat.Type.statusBars(), Insets.of(0, topInsetPx, 0, 0))
+            .setVisible(WindowInsetsCompat.Type.statusBars(), true)
+            .build()
+        ViewCompat.dispatchApplyWindowInsets(view, insets)
+        onDispose { ViewCompat.dispatchApplyWindowInsets(view, previous) }
+    }
     ProvidePreviewImageLoader(previewImageLoader(R.drawable.default_background)) {
-        LoadedPaywallComponents(state = state, clickHandler = { }, modifier = Modifier.fillMaxSize())
+        LoadedPaywallComponents(state = state, clickHandler = { }, modifier = modifier)
     }
 }
 
@@ -173,6 +202,7 @@ internal fun previewHiddenLeadingStackHeroState(includeSide: Boolean): PaywallSt
             base = PaywallComponentsConfig(
                 stack = StackComponent(
                     components = if (includeSide) listOf(side, main) else listOf(main),
+                    dimension = Dimension.ZLayer(TwoDimensionalAlignment.TOP_LEADING),
                     overrides = listOf(
                         ComponentOverride(
                             conditions = wideCondition,
