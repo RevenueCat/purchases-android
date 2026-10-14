@@ -336,7 +336,11 @@ internal class PurchasesOrchestrator(
     // Set while a foreground pass waits for the bootstrap, so later foregrounds don't queue another one.
     private val foregroundPassAwaitingIdentity = AtomicBoolean(false)
 
-    private val authenticationReporter = AuthenticationReporter(::dispatch)
+    private val authenticationReporter = AuthenticationReporter(
+        ::dispatch,
+        currentAppUserID = { identityManager.currentAppUserID },
+        currentAccessToken = tokenManager::currentAccessToken,
+    )
 
     /** IAM login and logout for other RevenueCat SDKs; see [Authentication]. */
     val authentication: Authentication by lazy {
@@ -1053,6 +1057,7 @@ internal class PurchasesOrchestrator(
                 synchronized(this@PurchasesOrchestrator) {
                     state = state.copy(purchaseCallbacksByProductId = Collections.emptyMap())
                 }
+                publishCurrentAccessToken()
                 updateAllCaches(
                     identityManager.currentAppUserID,
                     RemoteConfigFetchContext.IdentityChange,
@@ -1606,6 +1611,7 @@ internal class PurchasesOrchestrator(
         }
 
         identityManager.switchUser(newAppUserID)
+        publishCurrentAccessToken()
 
         offeringsManager.fetchAndCacheOfferings(newAppUserID, state.appInBackground)
         remoteConfigManager.refreshRemoteConfig(
@@ -1740,6 +1746,7 @@ internal class PurchasesOrchestrator(
 
     // Everything a login does after IdentityManager has switched users and fetched their CustomerInfo.
     private fun handleIdentityChange(customerInfo: CustomerInfo, appUserID: String) {
+        publishCurrentAccessToken()
         dispatch { customerInfoUpdateHandler.notifyListeners(customerInfo, appUserID) }
         remoteConfigManager.refreshRemoteConfig(
             state.appInBackground,
@@ -1748,6 +1755,11 @@ internal class PurchasesOrchestrator(
         )
         offeringsManager.fetchAndCacheOfferings(appUserID, state.appInBackground)
         backupManager.dataChanged()
+    }
+
+    // Token updates are only published for the current user, so the delegate learns of a switch here.
+    private fun publishCurrentAccessToken() {
+        if (tokenManager.enabled) authenticationReporter.currentUserChanged()
     }
 
     private fun updateAllCaches(

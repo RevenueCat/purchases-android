@@ -161,7 +161,7 @@ internal class TokenManager(
         write(accessTokenKey(appUserID), accessToken)
         write(refreshTokenKey(appUserID), refreshToken)
         write(idTokenKey(appUserID), idToken)
-        report(TokenUpdate.AccessToken(accessToken))
+        report(TokenUpdate.AccessToken(appUserID, accessToken))
     }
 
     /** Clears all three token slots for [appUserID], e.g. for a full logout. */
@@ -169,7 +169,7 @@ internal class TokenManager(
         write(accessTokenKey(appUserID), null)
         write(refreshTokenKey(appUserID), null)
         write(idTokenKey(appUserID), null)
-        report(TokenUpdate.AccessToken(null))
+        report(TokenUpdate.AccessToken(appUserID, null))
     }
 
     /**
@@ -185,9 +185,12 @@ internal class TokenManager(
     // region Updates
 
     /** What the update listener hears: a new access token (`null` = cleared), or a refresh that failed. */
+    /** A change to [appUserID]'s tokens, who may no longer be (or not yet be) the current user. */
     sealed interface TokenUpdate {
-        data class AccessToken(val accessToken: String?) : TokenUpdate
-        data class RefreshFailed(val error: PurchasesError) : TokenUpdate
+        val appUserID: String
+
+        data class AccessToken(override val appUserID: String, val accessToken: String?) : TokenUpdate
+        data class RefreshFailed(override val appUserID: String, val error: PurchasesError) : TokenUpdate
     }
 
     /**
@@ -198,9 +201,9 @@ internal class TokenManager(
         updateListener = listener
     }
 
-    /** Tells the listener a refresh failed; the refresh itself lives in `TokenAuthenticator`. */
-    fun reportRefreshFailure(error: PurchasesError) {
-        report(TokenUpdate.RefreshFailed(error))
+    /** Tells the listener [appUserID]'s refresh failed; the refresh itself lives in `TokenAuthenticator`. */
+    fun reportRefreshFailure(appUserID: String, error: PurchasesError) {
+        report(TokenUpdate.RefreshFailed(appUserID, error))
     }
 
     // endregion

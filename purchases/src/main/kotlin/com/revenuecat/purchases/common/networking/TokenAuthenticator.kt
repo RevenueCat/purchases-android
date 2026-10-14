@@ -85,7 +85,7 @@ internal class TokenAuthenticator(
                 when (val tokens = refreshToken?.let { refresh(it, postTokenRefresh) }) {
                     null -> false
                     is RefreshResult.Failure -> {
-                        tokenManager.reportRefreshFailure(tokens.error)
+                        tokenManager.reportRefreshFailure(requestAuthentication.appUserID, tokens.error)
                         false
                     }
                     is RefreshResult.Success -> {

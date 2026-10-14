@@ -601,12 +601,12 @@ class TokenManagerTest {
 
         manager.saveTokens("user", accessToken = "access", refreshToken = "refresh", idToken = null)
         manager.deleteTokens("user")
-        manager.reportRefreshFailure(PurchasesError(PurchasesErrorCode.NetworkError))
+        manager.reportRefreshFailure("user", PurchasesError(PurchasesErrorCode.NetworkError))
 
         assertThat(updates).containsExactly(
-            TokenManager.TokenUpdate.AccessToken("access"),
-            TokenManager.TokenUpdate.AccessToken(null),
-            TokenManager.TokenUpdate.RefreshFailed(PurchasesError(PurchasesErrorCode.NetworkError)),
+            TokenManager.TokenUpdate.AccessToken("user", "access"),
+            TokenManager.TokenUpdate.AccessToken("user", null),
+            TokenManager.TokenUpdate.RefreshFailed("user", PurchasesError(PurchasesErrorCode.NetworkError)),
         )
     }
 
@@ -630,7 +630,7 @@ class TokenManagerTest {
 
         manager.saveTokens("user", accessToken = "access", refreshToken = null, idToken = null)
         manager.deleteTokens("user")
-        manager.reportRefreshFailure(PurchasesError(PurchasesErrorCode.NetworkError))
+        manager.reportRefreshFailure("user", PurchasesError(PurchasesErrorCode.NetworkError))
 
         assertThat(updates).isEmpty()
     }

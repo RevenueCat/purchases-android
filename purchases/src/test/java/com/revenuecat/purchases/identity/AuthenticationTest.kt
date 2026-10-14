@@ -34,8 +34,15 @@ class AuthenticationTest {
     private val customerInfo = mockk<CustomerInfo>()
     private val flows = FakeFlows()
     private val delegate = RecordingDelegate()
-    private val reporter = AuthenticationReporter(mainDispatch = { it() })
+    private val mainQueue = ArrayDeque<() -> Unit>()
+    private var deferMain = false
     private var currentUser = "user"
+    private var tokens: TokenManager? = null
+    private val reporter = AuthenticationReporter(
+        mainDispatch = { if (deferMain) mainQueue.add(it) else it() },
+        currentAppUserID = { currentUser },
+        currentAccessToken = { tokens?.currentAccessToken(it) },
+    )
 
     // region delegate reporting
 
@@ -51,11 +58,67 @@ class AuthenticationTest {
     }
 
     @Test
+    fun `tokens saved or deleted for another user are not published`() = runTest {
+        val tokenManager = tokenManager()
+        authentication(tokenManager).delegate = delegate
+
+        tokenManager.saveTokens("incoming-user", "incoming-access", "refresh", null)
+        tokenManager.deleteTokens("previous-user")
+
+        assertThat(delegate.tokens).isEmpty()
+    }
+
+    @Test
+    fun `a token whose user stopped being current before delivery is not published`() = runTest {
+        val tokenManager = tokenManager()
+        authentication(tokenManager).delegate = delegate
+        deferMain = true
+
+        tokenManager.saveTokens("user", "stale-access", "refresh", null)
+        currentUser = "next-user"
+        mainQueue.forEach { it() }
+
+        assertThat(delegate.tokens).isEmpty()
+    }
+
+    @Test
+    fun `a committed user change publishes the new user's token`() = runTest {
+        val tokenManager = tokenManager()
+        authentication(tokenManager).delegate = delegate
+        tokenManager.saveTokens("next-user", "next-access", "refresh", null)
+
+        currentUser = "next-user"
+        reporter.currentUserChanged()
+
+        assertThat(delegate.tokens).containsExactly("next-access")
+    }
+
+    @Test
+    fun `a committed change to a user without tokens publishes null`() = runTest {
+        authentication(tokenManager()).delegate = delegate
+
+        currentUser = "tokenless-user"
+        reporter.currentUserChanged()
+
+        assertThat(delegate.tokens).containsExactly(null)
+    }
+
+    @Test
+    fun `a refresh failure for another user is not reported`() = runTest {
+        val tokenManager = tokenManager()
+        authentication(tokenManager).delegate = delegate
+
+        tokenManager.reportRefreshFailure("previous-user", networkError)
+
+        assertThat(delegate.errors).isEmpty()
+    }
+
+    @Test
     fun `a refresh failure during passive use reaches the delegate`() = runTest {
         val tokenManager = tokenManager()
         authentication(tokenManager).delegate = delegate
 
-        tokenManager.reportRefreshFailure(networkError)
+        tokenManager.reportRefreshFailure("user", networkError)
 
         assertThat(delegate.errors).containsExactly(networkError)
     }
@@ -67,14 +130,14 @@ class AuthenticationTest {
         val callback = RecordingCallback()
 
         authentication.logIn(Identity.anonymous, callback)
-        tokenManager.reportRefreshFailure(networkError)
+        tokenManager.reportRefreshFailure("user", networkError)
         flows.pendingLogIn!!.onError(networkError)
 
         assertThat(delegate.errors).isEmpty()
         assertThat(callback.errors).containsExactly(networkError)
 
         // Once the explicit call has finished, passive failures are reported again.
-        tokenManager.reportRefreshFailure(networkError)
+        tokenManager.reportRefreshFailure("user", networkError)
         assertThat(delegate.errors).containsExactly(networkError)
     }
 
@@ -84,7 +147,7 @@ class AuthenticationTest {
         val authentication = authentication(tokenManager).apply { delegate = this@AuthenticationTest.delegate }
 
         authentication.logOut(RecordingCallback())
-        tokenManager.reportRefreshFailure(networkError)
+        tokenManager.reportRefreshFailure("user", networkError)
         flows.pendingLogOut!!.onReceived(customerInfo)
 
         assertThat(delegate.errors).isEmpty()
@@ -110,7 +173,7 @@ class AuthenticationTest {
         authentication(tokenManager)
 
         tokenManager.saveTokens("user", "access", null, null)
-        tokenManager.reportRefreshFailure(networkError)
+        tokenManager.reportRefreshFailure("user", networkError)
 
         assertThat(delegate.tokens).isEmpty()
         assertThat(delegate.errors).isEmpty()
@@ -216,7 +279,7 @@ class AuthenticationTest {
         flows.pendingLogIn!!.onReceived(customerInfo)
 
         assertThat(job.isCancelled).isTrue()
-        tokenManager.reportRefreshFailure(networkError)
+        tokenManager.reportRefreshFailure("user", networkError)
         assertThat(delegate.errors).containsExactly(networkError)
     }
 
@@ -232,7 +295,10 @@ class AuthenticationTest {
             flows = flows,
             customEntitlementComputation = customEntitlementComputation,
             mainDispatch = { it() },
-        ).also { tokenManager.setTokenUpdateListener { update: TokenUpdate -> reporter.report(update) } }
+        ).also {
+            tokens = tokenManager
+            tokenManager.setTokenUpdateListener { update: TokenUpdate -> reporter.report(update) }
+        }
 
     private fun TestScope.tokenManager(): TokenManager {
         val dispatcher = StandardTestDispatcher(testScheduler)

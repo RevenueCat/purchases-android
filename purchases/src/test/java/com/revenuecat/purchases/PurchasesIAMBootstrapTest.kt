@@ -284,6 +284,38 @@ internal class PurchasesIAMBootstrapTest : BasePurchasesTest() {
     }
 
     @Test
+    fun `a committed IAM login publishes the new user's access token`() {
+        configure()
+        every { mockTokenManager.enabled } returns true
+        every { mockTokenManager.currentAccessToken(serverID) } returns "server-access"
+        every { mockOfferingsManager.fetchAndCacheOfferings(any(), any(), any(), any()) } just Runs
+        val identity = Identity.google("google-token".toByteArray())
+        every { mockIdentityManager.logIn(identity, captureLambda(), any()) } answers {
+            every { mockIdentityManager.currentAppUserID } returns serverID
+            lambda<(CustomerInfo, String) -> Unit>().captured.invoke(mockInfo, serverID)
+        }
+        val delegate = RecordingDelegate()
+        purchases.purchasesOrchestrator.authentication.delegate = delegate
+
+        purchases.purchasesOrchestrator.authentication.logIn(identity, mockk(relaxed = true))
+
+        assertThat(delegate.tokens).containsExactly("server-access")
+    }
+
+    @Test
+    fun `with IAM disabled, an identity change publishes nothing`() {
+        configure()
+        every { mockIdentityManager.switchUser("other-user") } just Runs
+        every { mockOfferingsManager.fetchAndCacheOfferings(any(), any(), any(), any()) } just Runs
+        val delegate = RecordingDelegate()
+        purchases.purchasesOrchestrator.authentication.delegate = delegate
+
+        purchases.purchasesOrchestrator.switchUser("other-user")
+
+        assertThat(delegate.tokens).isEmpty()
+    }
+
+    @Test
     fun `Purchases exposes the orchestrator's Authentication`() {
         configure()
 
@@ -294,9 +326,14 @@ internal class PurchasesIAMBootstrapTest : BasePurchasesTest() {
 
     private class RecordingDelegate : AuthenticationDelegate {
         val errors = mutableListOf<PurchasesError>()
+        val tokens = mutableListOf<String?>()
 
         override fun authenticatorDidEncounterError(error: PurchasesError) {
             errors.add(error)
+        }
+
+        override fun authenticatorDidUpdateAccessToken(newAccessToken: String?) {
+            tokens.add(newAccessToken)
         }
     }
 

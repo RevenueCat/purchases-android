@@ -160,7 +160,19 @@ class TokenAuthenticatorTest {
             tokenResponse("new-access")
         }
 
-        assertThat(updates).containsExactly(TokenManager.TokenUpdate.AccessToken("new-access"))
+        assertThat(updates).containsExactly(TokenManager.TokenUpdate.AccessToken("user", "new-access"))
+    }
+
+    @Test
+    fun `a refresh failure is reported for the user who made the request`() = runTest {
+        val tokenManager = tokenManager()
+        val updates = updatesOf(tokenManager)
+
+        authenticator(tokenManager).refreshTokensIfNeeded(endpoint, unauthorized, false, bearer("access")) {
+            throw IOException("offline")
+        }
+
+        assertThat(updates.single().appUserID).isEqualTo("user")
     }
 
     @Test
