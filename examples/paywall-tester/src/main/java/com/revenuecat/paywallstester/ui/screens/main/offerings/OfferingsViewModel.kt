@@ -3,6 +3,7 @@ package com.revenuecat.paywallstester.ui.screens.main.offerings
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.awaitSyncAttributesAndOfferingsIfNeeded
 import com.revenuecat.purchases.getOfferingsWith
@@ -38,7 +39,7 @@ class OfferingsViewModelImpl : OfferingsViewModel() {
         _offeringsState.update { OfferingsState.Loading }
         viewModelScope.launch {
             val offerings = Purchases.sharedInstance.awaitSyncAttributesAndOfferingsIfNeeded()
-            val flows = loadFlows()
+            val flows = loadFlows(offerings)
             _offeringsState.update {
                 OfferingsState.Loaded(
                     offerings,
@@ -78,15 +79,15 @@ class OfferingsViewModelImpl : OfferingsViewModel() {
             onSuccess = { offerings ->
                 _offeringsState.update { OfferingsState.Loaded(offerings) }
                 viewModelScope.launch {
-                    val flows = loadFlows()
+                    val flows = loadFlows(offerings)
                     _offeringsState.update { (it as? OfferingsState.Loaded)?.copy(flows = flows) ?: it }
                 }
             },
         )
     }
 
-    private suspend fun loadFlows(): List<FlowRow> =
-        runCatching { FlowRow.loadAll() }
+    private suspend fun loadFlows(offerings: Offerings): List<FlowRow> =
+        runCatching { FlowRow.loadAll(offerings) }
             .onFailure { Log.e("PaywallsTester", "Error loading flows: $it") }
             .getOrDefault(emptyList())
 }

@@ -144,14 +144,8 @@ internal class WorkflowsConfigProvider(
      * Every workflow in the `workflows` topic, including ones that claim no offering and so are unreachable
      * through [workflowIdForOfferingId]. Empty when the topic is unavailable.
      */
-    suspend fun workflowListings(): List<WorkflowListing> =
-        manager.topic(RemoteConfigTopic.Workflows)
-            ?.entries
-            ?.sortedBy { it.key }
-            ?.map { (workflowId, item) ->
-                WorkflowListing(workflowId, item.metadata.stringOrNull(KEY_OFFERING_IDENTIFIER))
-            }
-            .orEmpty()
+    suspend fun workflowIds(): List<String> =
+        manager.topic(RemoteConfigTopic.Workflows)?.keys?.sorted().orEmpty()
 
     suspend fun workflowBlobRef(workflowId: String): String? =
         cache.cached?.workflowBlobRefs?.get(workflowId)

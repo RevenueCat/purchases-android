@@ -1,9 +1,10 @@
 package com.revenuecat.paywallstester.ui.screens.main.offerings
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
-import com.revenuecat.purchases.common.workflows.WorkflowListing
+import com.revenuecat.purchases.common.workflows.WorkflowResolution
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -15,8 +16,8 @@ data class FlowRow(
     val id: String,
     val name: String?,
     val error: String?,
-    /** The offering the flow is attached to in the dashboard, if any. */
-    val claimedOfferingId: String?,
+    /** Offerings that route to this flow, resolved the same way the SDK resolves an offering entry point. */
+    val claimedOfferingIds: Set<String>,
     /** Offerings this flow's steps use, claimed or not. */
     val offeringIds: Set<String>,
     /** Set when the first step is an offering step: the flow shows no UI and only returns this offering. */
@@ -24,50 +25,56 @@ data class FlowRow(
 ) {
     val subtitle: String
         get() = error
-            ?: claimedOfferingId?.let { "Offering: $it" }
+            ?: claimedOfferingIds.takeIf { it.isNotEmpty() }?.sorted()?.joinToString(prefix = "Offering: ")
             ?: offeringIds.takeIf { it.isNotEmpty() }?.sorted()?.joinToString(prefix = "Uses: ")
             ?: "No offering"
 
-    fun uses(offeringId: String): Boolean = claimedOfferingId == offeringId || offeringId in offeringIds
+    fun uses(offeringId: String): Boolean = offeringId in claimedOfferingIds || offeringId in offeringIds
 
     fun matches(query: String): Boolean =
-        listOfNotNull(id, name, claimedOfferingId).any { it.lowercase().contains(query) }
+        (listOfNotNull(id, name) + claimedOfferingIds).any { it.lowercase().contains(query) }
 
     companion object {
         @OptIn(InternalRevenueCatAPI::class)
         // Off the main thread: reading a workflow decodes its JSON body.
-        suspend fun loadAll(): List<FlowRow> = withContext(Dispatchers.Default) {
+        suspend fun loadAll(offerings: Offerings): List<FlowRow> = withContext(Dispatchers.Default) {
+            val claims = offerings.all.keys
+                .mapNotNull { offeringId ->
+                    (Purchases.sharedInstance.resolveWorkflow(offeringId) as? WorkflowResolution.Found)
+                        ?.let { it.workflowId to offeringId }
+                }
+                .groupBy({ it.first }, { it.second })
             coroutineScope {
-                Purchases.sharedInstance.awaitWorkflowListings()
-                    .map { listing -> async { load(listing) } }
+                Purchases.sharedInstance.awaitGetWorkflowIds()
+                    .map { workflowId -> async { load(workflowId, claims[workflowId].orEmpty().toSet()) } }
                     .awaitAll()
                     .sortedBy { (it.name ?: it.id).lowercase() }
             }
         }
 
         @OptIn(InternalRevenueCatAPI::class)
-        private suspend fun load(listing: WorkflowListing): FlowRow =
-            runCatching { Purchases.sharedInstance.awaitGetWorkflow(listing.workflowId) }.fold(
+        private suspend fun load(workflowId: String, claimedOfferingIds: Set<String>): FlowRow =
+            runCatching { Purchases.sharedInstance.awaitGetWorkflow(workflowId) }.fold(
                 onSuccess = { workflow ->
                     val initialStep = workflow.steps[workflow.initialStepId]
                     // Same rule as checkpoints: an offering step must be the flow's only step.
                     val isUiLess = initialStep?.isOfferingStep == true
                     val uiLessOfferingId = initialStep?.offeringIdentifier?.takeIf { workflow.steps.size == 1 }
                     FlowRow(
-                        id = listing.workflowId,
+                        id = workflowId,
                         name = workflow.displayName,
                         error = NOT_SERVABLE.takeIf { isUiLess && uiLessOfferingId == null },
-                        claimedOfferingId = listing.offeringIdentifier,
+                        claimedOfferingIds = claimedOfferingIds,
                         offeringIds = workflow.stepOfferingIds(),
                         uiLessOfferingId = uiLessOfferingId.takeIf { isUiLess },
                     )
                 },
                 onFailure = { error ->
                     FlowRow(
-                        id = listing.workflowId,
+                        id = workflowId,
                         name = null,
                         error = error.message ?: error.toString(),
-                        claimedOfferingId = listing.offeringIdentifier,
+                        claimedOfferingIds = claimedOfferingIds,
                         offeringIds = emptySet(),
                         uiLessOfferingId = null,
                     )

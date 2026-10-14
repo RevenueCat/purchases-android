@@ -255,10 +255,3 @@ public data class WorkflowExitOffer(
     val offeringId: String,
     val stepId: String,
 )
-
-/** A workflow in the synced `workflows` topic, with the offering it claims, if any. */
-@InternalRevenueCatAPI
-public data class WorkflowListing(
-    val workflowId: String,
-    val offeringIdentifier: String?,
-)

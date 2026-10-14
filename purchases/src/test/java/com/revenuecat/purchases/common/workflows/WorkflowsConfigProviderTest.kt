@@ -88,16 +88,13 @@ internal class WorkflowsConfigProviderTest {
     }
 
     @Test
-    fun `workflowListings include workflows that claim no offering`() = runTest {
+    fun `workflowIds include workflows that claim no offering`() = runTest {
         coEvery { manager.topic(RemoteConfigTopic.Workflows) } returns topicWith(
             WF_CURRENT to configItem(prefetch = false, offeringId = CURRENT_OFFERING),
             WF_PREFETCH to configItem(prefetch = true, offeringId = null),
         )
 
-        assertThat(provider.workflowListings()).containsExactly(
-            WorkflowListing(WF_CURRENT, CURRENT_OFFERING),
-            WorkflowListing(WF_PREFETCH, null),
-        )
+        assertThat(provider.workflowIds()).containsExactlyInAnyOrder(WF_CURRENT, WF_PREFETCH)
     }
 
     @Test

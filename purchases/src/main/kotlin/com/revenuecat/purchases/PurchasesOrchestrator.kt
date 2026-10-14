@@ -74,7 +74,6 @@ import com.revenuecat.purchases.common.workflows.BranchResolver
 import com.revenuecat.purchases.common.workflows.BranchResolverImpl
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowActionID
-import com.revenuecat.purchases.common.workflows.WorkflowListing
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.common.workflows.WorkflowResolution
 import com.revenuecat.purchases.common.workflows.WorkflowStep
@@ -732,7 +731,7 @@ internal class PurchasesOrchestrator(
     suspend fun resolveWorkflow(offeringId: String): WorkflowResolution =
         workflowManager.resolveWorkflow(offeringId)
 
-    suspend fun workflowListings(): List<WorkflowListing> = workflowManager.workflowListings()
+    suspend fun workflowIds(): List<String> = workflowManager.workflowIds()
 
     @OptIn(InternalRevenueCatAPI::class)
     suspend fun resolveBranches(

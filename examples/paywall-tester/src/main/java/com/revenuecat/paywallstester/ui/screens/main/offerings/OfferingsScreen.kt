@@ -178,7 +178,7 @@ private fun OfferingsListScreen(
     // Filter and group offerings by template
     val groupedOfferings = remember(offeringsState.offerings, offeringsState.searchQuery, offeringsState.flows) {
         // A claimed offering is opened through its flow in the Flows section.
-        val claimed = offeringsState.flows.mapNotNull { it.claimedOfferingId }.toSet()
+        val claimed = offeringsState.flows.flatMap { it.claimedOfferingIds }.toSet()
         val allOfferings = offeringsState.offerings.all.values.filterNot { it.identifier in claimed }
         val filtered = if (query.isEmpty()) {
             allOfferings.toList()
