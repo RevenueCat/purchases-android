@@ -302,13 +302,18 @@ private fun OfferingsListScreen(
                             sectionTitle,
                             "No paywall or flow attached. Opens the fallback.",
                         )
-                        firstPaywallSection -> SectionHeader(sectionTitle, "Paywalls attached directly to an offering.")
-                        else -> SectionHeader(sectionTitle)
+                        firstPaywallSection -> SectionHeader(
+                            "Paywalls · $sectionTitle",
+                            "Paywalls attached directly to an offering.",
+                        )
+                        else -> SectionHeader("Paywalls · $sectionTitle")
                     }
                 }
                 items(offerings, key = { it.identifier }) { offering ->
                     val rowKey = offering.identifier
-                    val usedBy = offeringsState.flows.filter { it.uses(offering.identifier) }.map { it.name ?: it.id }
+                    val usedBy = offeringsState.flows
+                        .filter { sectionTitle == UNCLAIMED_OFFERINGS && it.uses(offering.identifier) }
+                        .map { it.name ?: it.id }
                     OfferingRow(
                         offering = offering,
                         subtitleOverride = usedBy.takeIf { it.isNotEmpty() }?.joinToString(prefix = "Used by: "),
