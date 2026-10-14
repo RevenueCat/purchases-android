@@ -4,9 +4,11 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowListing
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.withContext
 
 /** A workflow synced through remote config, listed by id so workflows that claim no offering can be opened too. */
 data class FlowRow(
@@ -33,11 +35,14 @@ data class FlowRow(
 
     companion object {
         @OptIn(InternalRevenueCatAPI::class)
-        suspend fun loadAll(): List<FlowRow> = coroutineScope {
-            Purchases.sharedInstance.awaitWorkflowListings()
-                .map { listing -> async { load(listing) } }
-                .awaitAll()
-                .sortedBy { (it.name ?: it.id).lowercase() }
+        // Off the main thread: reading a workflow decodes its JSON body.
+        suspend fun loadAll(): List<FlowRow> = withContext(Dispatchers.Default) {
+            coroutineScope {
+                Purchases.sharedInstance.awaitWorkflowListings()
+                    .map { listing -> async { load(listing) } }
+                    .awaitAll()
+                    .sortedBy { (it.name ?: it.id).lowercase() }
+            }
         }
 
         @OptIn(InternalRevenueCatAPI::class)
@@ -45,15 +50,16 @@ data class FlowRow(
             runCatching { Purchases.sharedInstance.awaitGetWorkflow(listing.workflowId) }.fold(
                 onSuccess = { workflow ->
                     val initialStep = workflow.steps[workflow.initialStepId]
+                    // Same rule as checkpoints: an offering step must be the flow's only step.
+                    val isUiLess = initialStep?.isOfferingStep == true
+                    val uiLessOfferingId = initialStep?.offeringIdentifier?.takeIf { workflow.steps.size == 1 }
                     FlowRow(
                         id = listing.workflowId,
                         name = workflow.displayName,
-                        error = null,
+                        error = NOT_SERVABLE.takeIf { isUiLess && uiLessOfferingId == null },
                         claimedOfferingId = listing.offeringIdentifier,
                         offeringIds = workflow.stepOfferingIds(),
-                        uiLessOfferingId = initialStep
-                            ?.takeIf { it.isOfferingStep }
-                            ?.let { it.offeringIdentifier ?: listing.offeringIdentifier },
+                        uiLessOfferingId = uiLessOfferingId.takeIf { isUiLess },
                     )
                 },
                 onFailure = { error ->
@@ -67,6 +73,8 @@ data class FlowRow(
                     )
                 },
             )
+
+        private const val NOT_SERVABLE = "Not servable: an offering step must be the only step and name an offering."
 
         // A step's own offering wins over the offering configured on its screen.
         @OptIn(InternalRevenueCatAPI::class)
