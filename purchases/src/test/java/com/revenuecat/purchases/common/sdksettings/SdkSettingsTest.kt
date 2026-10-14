@@ -67,6 +67,9 @@ internal class SdkSettingsTest {
         assertThat(parse("""{"diagnostics":{"enabled":"true"}}""")).isEqualTo(SdkSettings.DEFAULT)
         assertThat(parse("""{"diagnostics":{"enabled":1}}""")).isEqualTo(SdkSettings.DEFAULT)
         assertThat(parse("""{"diagnostics":{"enabled":{}}}""")).isEqualTo(SdkSettings.DEFAULT)
+        assertThat(parse("""{"diagnostics":{"enabled":{"value":true}}}""")).isEqualTo(SdkSettings.DEFAULT)
+        assertThat(parse("""{"diagnostics":{"enabled":[]}}""")).isEqualTo(SdkSettings.DEFAULT)
+        assertThat(parse("""{"diagnostics":{"enabled":[true]}}""")).isEqualTo(SdkSettings.DEFAULT)
     }
 
     private fun parse(json: String): SdkSettings = SdkSettings.parse(Json.parseToJsonElement(json).jsonObject)
