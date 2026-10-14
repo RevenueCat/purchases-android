@@ -47,7 +47,11 @@ public fun interface ErrorPresenter {
     @InviteOnlyCheckpointsAPI
     public fun interface Completion {
 
-        /** Tells the SDK that the app's error UI is done; what the flow does next depends on [Params.stage]. */
+        /**
+         * Tells the SDK that the app's error UI is done. What happens next depends on [Params.stage]: before or
+         * during a flow the user stays where they were, back in the app or on the flow still on screen; after a
+         * flow the checkpoint is passed and its callback receives an empty result.
+         */
         public fun complete()
     }
 }
