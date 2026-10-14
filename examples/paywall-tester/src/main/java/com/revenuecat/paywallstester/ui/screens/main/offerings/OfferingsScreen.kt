@@ -245,10 +245,43 @@ private fun OfferingsListScreen(
 
             val screenFlows = flows.filter { it.uiLessOfferingId == null }
             if (screenFlows.isNotEmpty()) {
-                item { SectionHeader("Flows", "Opened by id. Shows the offering each flow is attached to.") }
+                item {
+                    SectionHeader("Flows", "Opened by id. Long press a flow with an offering to open it by offering.")
+                }
                 items(screenFlows, key = { "flow_${it.id}" }) { flow ->
-                    FlowListItem(flow.name ?: flow.id, flow.subtitle, isError = flow.error != null) {
-                        openFlow(flow.id)
+                    val rowKey = "flow_${flow.id}"
+                    val claimedOfferings = flow.claimedOfferingIds.sorted()
+                        .mapNotNull { offeringsState.offerings.all[it] }
+                    Box {
+                        if (dropdownExpandedKey == rowKey) {
+                            // Opens like an app does, so the SDK resolves the flow from the offering.
+                            DropdownMenu(expanded = true, onDismissRequest = { dropdownExpandedKey = null }) {
+                                claimedOfferings.forEach { offering ->
+                                    DropdownMenuItem(
+                                        text = { Text("By offering ${offering.identifier}: navigate") },
+                                        onClick = {
+                                            dropdownExpandedKey = null
+                                            tappedOnNavigateToOffering(offering)
+                                        },
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("By offering ${offering.identifier}: dialog") },
+                                        onClick = {
+                                            dropdownExpandedKey = null
+                                            displayPaywallDialogOffering = offering
+                                        },
+                                    )
+                                }
+                            }
+                        }
+                        FlowListItem(
+                            flow.name ?: flow.id,
+                            flow.subtitle,
+                            isError = flow.error != null,
+                            onLongClick = { dropdownExpandedKey = rowKey }.takeIf { claimedOfferings.isNotEmpty() },
+                        ) {
+                            openFlow(flow.id)
+                        }
                     }
                 }
             }
@@ -450,14 +483,21 @@ private fun FullScreenPaywall(options: PaywallOptions, onDismiss: () -> Unit) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun FlowListItem(title: String, subtitle: String, isError: Boolean, onClick: () -> Unit) {
+private fun FlowListItem(
+    title: String,
+    subtitle: String,
+    isError: Boolean,
+    onLongClick: (() -> Unit)? = null,
+    onClick: () -> Unit,
+) {
     ListItem(
         headlineContent = { Text(text = title) },
         supportingContent = {
             Text(text = subtitle, color = if (isError) MaterialTheme.colorScheme.error else Color.Unspecified)
         },
-        modifier = Modifier.clickable(onClick = onClick),
+        modifier = Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick),
     )
 }
 
