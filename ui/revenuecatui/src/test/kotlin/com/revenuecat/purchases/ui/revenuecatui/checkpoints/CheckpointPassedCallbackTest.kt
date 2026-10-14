@@ -13,6 +13,8 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
+import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import io.mockk.coEvery
 import io.mockk.every
@@ -276,6 +278,22 @@ class CheckpointPassedCallbackTest {
         completion()!!.complete(PaywallPresenter.Completion.Result.Closed)
 
         assertThat(results.obtained).containsExactly(emptySet<String>())
+    }
+
+    @Test
+    fun `the SDK's own paywall that cannot load delivers null and never syncs`() = runTest(dispatcher) {
+        resolvesTo(CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null))
+
+        checkpoint()
+        defaultPresenter!!.paywallOptions("") {}!!.dismissRequestWithExitOffering!!(
+            null,
+            PaywallResult.Error(PurchasesError(PurchasesErrorCode.ConfigurationError, "No packages available")),
+            PaywallDismissReason.CLOSE,
+        )
+        defaultPresenter!!.onPresentationFinished("")
+
+        assertThat(results).containsExactly(null)
+        verify(exactly = 0) { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) }
     }
 
     private fun syncFails() {

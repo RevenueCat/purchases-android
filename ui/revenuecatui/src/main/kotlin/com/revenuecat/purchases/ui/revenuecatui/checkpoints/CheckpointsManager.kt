@@ -332,6 +332,7 @@ internal class CheckpointsManager(
                 PaywallPresenter.Completion.Result.Closed,
                 -> finished()
                 PaywallPresenter.Completion.Result.NavigatedBack -> navigatedBack()
+                is PaywallPresenter.Completion.Result.Failed -> failed(result.error)
                 // The hierarchy is closed but not sealed; a result this code doesn't know is the safest thing it
                 // can be: the user left without purchasing and passes the checkpoint.
                 else -> {
@@ -345,6 +346,15 @@ internal class CheckpointsManager(
             slot.take(callId)?.let { call ->
                 call.flowFinished.complete(
                     CheckpointRun(CheckpointFlowOutcome.Dismissed, backedOut = true),
+                )
+            }
+        }
+
+        // The SDK's own paywall already presented the error; nothing to sync.
+        private fun failed(error: PurchasesError) {
+            slot.take(callId)?.let { call ->
+                call.flowFinished.complete(
+                    CheckpointRun(CheckpointFlowOutcome.Error(error), backedOut = false),
                 )
             }
         }

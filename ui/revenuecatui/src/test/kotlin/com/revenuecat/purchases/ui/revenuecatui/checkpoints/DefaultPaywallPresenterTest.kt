@@ -14,6 +14,7 @@ import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter.Completion.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import io.mockk.every
@@ -265,6 +266,33 @@ class DefaultPaywallPresenterTest {
         options().listener!!.onPurchaseError(PurchasesError(PurchasesErrorCode.StoreProblemError, "boom"))
 
         finished(navigatedBack = true)
+
+        assertThat(results).containsExactly(Result.Continued)
+    }
+
+    @Test
+    fun `a paywall that could not load reports Failed with its error`() {
+        present()
+        val error = PurchasesError(PurchasesErrorCode.ConfigurationError, "No packages available")
+
+        options().dismissRequestWithExitOffering!!(null, PaywallResult.Error(error), PaywallDismissReason.CLOSE)
+        assertThat(dismissals).containsExactly(false)
+        finished(navigatedBack = false)
+
+        assertThat((results.single() as Result.Failed).error).isEqualTo(error)
+    }
+
+    @Test
+    fun `a paywall that could not load after a purchase still reports Continued`() {
+        present()
+        options().listener!!.onPurchaseCompleted(customerInfoWithActive("pro"), mockk())
+
+        options().dismissRequestWithExitOffering!!(
+            null,
+            PaywallResult.Error(PurchasesError(PurchasesErrorCode.ConfigurationError, "boom")),
+            PaywallDismissReason.CLOSE,
+        )
+        finished(navigatedBack = false)
 
         assertThat(results).containsExactly(Result.Continued)
     }
