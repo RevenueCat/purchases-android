@@ -92,9 +92,7 @@ internal class DefaultErrorPresenter(
         dialog.setOnCancelListener { acknowledged(current) }
         val resources = activity.localizedTo(purchases.preferredUILocaleOverride)
         dialog.setContentView(
-            createContent(activity, resources, resources.getString(current.params.messageResource)) {
-                acknowledged(current)
-            },
+            createContent(activity, resources, current.params.message(resources)) { acknowledged(current) },
             ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
         )
         current.dialog = dialog
@@ -162,6 +160,15 @@ internal class DefaultErrorPresenter(
         override fun onActivityStopped(activity: Activity) = Unit
         override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
     }
+
+    // A simulated Test Store failure only happens with a test API key, so the developer reads it: the code's own
+    // description says what it is.
+    private fun ErrorPresenter.Params.message(resources: Context): String =
+        if (error.code == PurchasesErrorCode.TestStoreSimulatedPurchaseError) {
+            error.message
+        } else {
+            resources.getString(messageResource)
+        }
 
     // Before the flow nothing could be loaded and after it nothing could be verified, whatever the code; during
     // it the code says what the customer can do about it. A stage this code doesn't know reads as "during".

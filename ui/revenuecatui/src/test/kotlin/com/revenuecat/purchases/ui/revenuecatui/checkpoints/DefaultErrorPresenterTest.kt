@@ -120,6 +120,13 @@ class DefaultErrorPresenterTest {
     }
 
     @Test
+    fun `a simulated Test Store failure shows its own description`() {
+        present(params(error = PurchasesError(PurchasesErrorCode.TestStoreSimulatedPurchaseError, "Simulated.")))
+
+        assertThat(messages).containsExactly(PurchasesErrorCode.TestStoreSimulatedPurchaseError.description)
+    }
+
+    @Test
     fun `the copy never shows the developer's reason`() {
         present(params(error = PurchasesError(PurchasesErrorCode.StoreProblemError, "raw store detail")))
 
