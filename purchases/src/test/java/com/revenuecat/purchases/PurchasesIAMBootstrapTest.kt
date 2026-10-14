@@ -6,6 +6,7 @@ import android.os.Looper
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.identity.AuthenticationDelegate
 import com.revenuecat.purchases.identity.Identity
+import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import io.mockk.Runs
 import io.mockk.every
@@ -255,9 +256,22 @@ internal class PurchasesIAMBootstrapTest : BasePurchasesTest() {
         foreground()
         needChecks.single().invoke(true)
 
-        bootstrapError!!.invoke(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError))
+        bootstrapError!!.invoke(IdentityManager.identityChangedError)
 
         assertThat(delegate.errors).isEmpty()
+    }
+
+    @Test
+    fun `a bootstrap failing because a backend request was already in progress is reported`() {
+        configure()
+        val delegate = RecordingDelegate()
+        purchases.purchasesOrchestrator.authentication.delegate = delegate
+        foreground()
+        needChecks.single().invoke(true)
+
+        bootstrapError!!.invoke(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError))
+
+        assertThat(delegate.errors.map { it.code }).containsExactly(PurchasesErrorCode.OperationAlreadyInProgressError)
     }
 
     @Test

@@ -1728,7 +1728,7 @@ internal class PurchasesOrchestrator(
                 errorLog(error)
                 // Nobody asked for this login, so the delegate is the only one who can hear it failed. A result
                 // dropped because the identity changed meanwhile isn't an authentication failure.
-                if (error.code != PurchasesErrorCode.OperationAlreadyInProgressError) {
+                if (!IdentityManager.isIdentityChangedError(error)) {
                     authenticationReporter.reportError(error)
                 }
                 finishBootstrap(bootstrapped = false)
