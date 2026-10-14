@@ -111,8 +111,8 @@ internal class PaywallErrorReporter(
                 if (host.presentationGeneration == generation && current === sender) onComplete()
             }
         }
-        // Like the SDK's own presenter, a new error replaces the one before it: whatever the app still shows for
-        // the earlier one can no longer act on the flow.
+        // A new error supersedes the one before it: whatever the app still shows for the earlier one (the
+        // checkpoint queue hands it the newer error only once that is done) can no longer act on the flow.
         current?.discard()
         current = completion
         try {

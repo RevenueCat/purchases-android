@@ -932,6 +932,40 @@ class CheckpointsManagerTest {
         }
 
     @Test
+    fun `overlapping sync failures reach the error presenter one at a time`() = runTest(dispatcher) {
+        syncFailsWith(PurchasesError(PurchasesErrorCode.NetworkError, "Simulated."))
+        val presented = mutableListOf<ErrorPresenter.Params>()
+        val errorCompletions = mutableListOf<ErrorPresenter.Completion>()
+        manager.errorPresenter = ErrorPresenter { params, completion ->
+            presented += params
+            errorCompletions += completion
+        }
+        val completion = presentThroughRegisteredPresenter()
+        var first: CheckpointRun? = null
+        val firstCall = launch { first = runCheckpoint() }
+        completion()!!.complete(PaywallPresenter.Completion.Result.Closed)
+        var second: CheckpointRun? = null
+        val secondCall = launch { second = runCheckpoint() }
+        completion()!!.complete(PaywallPresenter.Completion.Result.Closed)
+
+        assertThat(presented).hasSize(1)
+        assertThat(first).isNull()
+        assertThat(second).isNull()
+
+        errorCompletions[0].complete()
+        firstCall.join()
+
+        assertThat(first!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.SyncFailed)
+        assertThat(presented).hasSize(2)
+        assertThat(second).isNull()
+
+        errorCompletions[1].complete()
+        secondCall.join()
+
+        assertThat(second!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.SyncFailed)
+    }
+
+    @Test
     fun `a sync failure the error presenter cannot show resolves as unsynced right away`() = runTest(dispatcher) {
         syncFailsWith(PurchasesError(PurchasesErrorCode.NetworkError, "Simulated."))
         manager.errorPresenter = ErrorPresenter { _, _ -> error("Simulated.") }

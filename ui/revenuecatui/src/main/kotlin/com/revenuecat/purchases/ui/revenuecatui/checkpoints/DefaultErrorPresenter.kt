@@ -48,7 +48,8 @@ internal class DefaultErrorPresenter(
                 "Cannot present checkpoint error: no started Activity found.",
             ),
         )
-        // A new error while the previous one is still up replaces it: the flow went on past that one.
+        // A new error while the previous one is still up replaces it: the flow went on past that one. Through the
+        // checkpoint queue this never happens, errors arrive one at a time; the contract still allows it.
         presentation?.let { finish(it) }
         val current = Presentation(params, completion)
         presentation = current

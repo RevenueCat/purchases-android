@@ -296,6 +296,49 @@ class CheckpointPassedCallbackTest {
         verify(exactly = 0) { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) }
     }
 
+    @Test
+    fun `a presenter holding a single pending request sees overlapping failures one at a time`() =
+        runTest(dispatcher) {
+            syncFails()
+            val presenter = SingleRequestErrorPresenter()
+            manager.errorPresenter = presenter
+            val completion = presentThroughRegisteredPresenter()
+
+            checkpoint()
+            completion()!!.complete(PaywallPresenter.Completion.Result.Closed)
+            checkpoint()
+            completion()!!.complete(PaywallPresenter.Completion.Result.Closed)
+
+            assertThat(presenter.calls).isEqualTo(1)
+            assertThat(results).isEmpty()
+
+            presenter.finish()
+
+            assertThat(results.obtained).containsExactly(emptySet<String>())
+            assertThat(presenter.calls).isEqualTo(2)
+
+            presenter.finish()
+
+            assertThat(results.obtained).containsExactly(emptySet<String>(), emptySet<String>())
+        }
+
+    // The shape of the sample apps' presenters: a new request overwrites the pending one without completing it.
+    private class SingleRequestErrorPresenter : ErrorPresenter {
+        var calls = 0
+        private var request: ErrorPresenter.Completion? = null
+
+        override fun present(params: ErrorPresenter.Params, completion: ErrorPresenter.Completion) {
+            calls++
+            request = completion
+        }
+
+        fun finish() {
+            val pending = request
+            request = null
+            pending?.complete()
+        }
+    }
+
     private fun syncFails() {
         every { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) } answers {
             secondArg<ReceiveCustomerInfoCallback>()

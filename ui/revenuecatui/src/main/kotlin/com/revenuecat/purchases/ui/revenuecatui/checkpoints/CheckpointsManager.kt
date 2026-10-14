@@ -93,6 +93,7 @@ internal class CheckpointsManager(
     var errorPresenter: ErrorPresenter? = null
 
     private val slot = PresentationSlot()
+    private val errorPresentationQueue = ErrorPresentationQueue(scope)
 
     private val nothingPresented = CheckpointRun(flowOutcome = null, backedOut = false)
     private val blockedByPresentedFlow =
@@ -110,9 +111,13 @@ internal class CheckpointsManager(
     ): CheckpointRun = withContext(Dispatchers.Main) {
         val customVariables = (params ?: CheckpointParams {}).customVariables
         val presenter = params?.paywallPresenter ?: paywallPresenter
-        // Only the flows the SDK presents need one; an app presenter owns its own errors.
-        val errorPresenter: () -> ErrorPresenter =
-            { params?.errorPresenter ?: errorPresenter ?: defaultErrorPresenterFactory(purchases) }
+        // Resolved lazily: an app paywall presenter owns its own errors and may never need one. Whichever presenter
+        // it is, the queue hands it one error at a time.
+        val errorPresenter: () -> ErrorPresenter = {
+            errorPresentationQueue.serialized(
+                params?.errorPresenter ?: errorPresenter ?: defaultErrorPresenterFactory(purchases),
+            )
+        }
         val presentationMode = resolvePresentationMode(params?.presentationMode)
         if (!CheckpointIdentifierValidator.isValid(identifier)) {
             Logger.e(CheckpointIdentifierValidator.invalidIdentifierLogMessage(identifier))

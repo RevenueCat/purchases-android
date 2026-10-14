@@ -23,6 +23,11 @@ public fun interface ErrorPresenter {
      * interactive, underneath whatever the app shows, until [completion] says the app's error UI is done. Present
      * [params]'s error however the app wants, or complete right away to handle it without UI. What the SDK does
      * once the app completes depends on [Params.stage].
+     *
+     * Errors come one at a time per [com.revenuecat.purchases.Purchases] instance: this is not called again,
+     * whichever checkpoint call or stage the next error belongs to, until [completion] has been completed, and
+     * then on a later main thread message rather than from inside [Completion.complete]. A presenter may
+     * therefore keep a single pending request.
      */
     public fun present(params: Params, completion: Completion)
 
