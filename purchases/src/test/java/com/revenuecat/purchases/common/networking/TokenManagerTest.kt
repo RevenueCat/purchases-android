@@ -516,6 +516,79 @@ class TokenManagerTest {
 
     // endregion
 
+    // region onLoadFinished
+
+    @Test
+    fun `onLoadFinished runs the callback once, after the load`() = runTest {
+        val manager = unloadedManager()
+        val results = mutableListOf<Boolean>()
+        var tokenSeenByCallback: String? = null
+        manager.saveTokens("user", accessToken = "access", refreshToken = null, idToken = null)
+
+        manager.onLoadFinished {
+            results.add(it)
+            tokenSeenByCallback = manager.currentAccessToken("user")
+        }
+        assertThat(results).isEmpty()
+
+        advanceUntilIdle()
+        assertThat(results).containsExactly(true)
+        assertThat(tokenSeenByCallback).isEqualTo("access")
+
+        manager.saveTokens("user", accessToken = "other", refreshToken = null, idToken = null)
+        advanceUntilIdle()
+        assertThat(results).containsExactly(true)
+    }
+
+    @Test
+    fun `onLoadFinished runs the callback immediately when already loaded`() = runTest {
+        val manager = manager()
+        val results = mutableListOf<Boolean>()
+
+        manager.onLoadFinished { results.add(it) }
+
+        assertThat(results).containsExactly(true)
+    }
+
+    @Test
+    fun `onLoadFinished runs every callback registered before the load`() = runTest {
+        val manager = unloadedManager()
+        val calls = mutableListOf<Int>()
+
+        manager.onLoadFinished { calls.add(1) }
+        manager.onLoadFinished { calls.add(2) }
+        advanceUntilIdle()
+
+        assertThat(calls).containsExactly(1, 2)
+    }
+
+    @Test
+    fun `onLoadFinished never runs the callback when disabled`() = runTest {
+        val manager = TokenManager(context, "test_api_key", enabled = false, scope = testScope())
+        var calls = 0
+
+        manager.onLoadFinished { calls++ }
+        advanceUntilIdle()
+
+        assertThat(calls).isZero()
+    }
+
+    @Test
+    fun `onLoadFinished reports false when storage is unavailable, and the cache stays unloaded`() = runTest {
+        val manager = unloadedManager(apiKey = "   ")
+        val results = mutableListOf<Boolean>()
+
+        manager.onLoadFinished { results.add(it) }
+        advanceUntilIdle()
+        manager.onLoadFinished { results.add(it) }
+        manager.saveTokens("user", accessToken = "access", refreshToken = null, idToken = null)
+
+        assertThat(results).containsExactly(false, false)
+        assertThat(manager.currentAccessToken("user")).isNull()
+    }
+
+    // endregion
+
     // region close
 
     @Test
