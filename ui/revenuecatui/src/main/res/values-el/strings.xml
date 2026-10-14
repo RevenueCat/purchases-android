@@ -24,4 +24,13 @@
     <string name="revenuecatui_purchase">Αγορά</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
     <string name="revenuecatui_preview_workflow_load_error">Δεν ήταν δυνατή η φόρτωση της ροής εργασίας προεπισκόπησης. Δοκιμάστε ξανά.</string>
+    <string name="revenuecatui_checkpoint_error_network">Δεν ήταν δυνατή η σύνδεση. Ελέγξτε τη σύνδεσή σας στο διαδίκτυο και δοκιμάστε ξανά.</string>
+    <string name="revenuecatui_checkpoint_error_load">Δεν ήταν δυνατή η φόρτωση αυτού του περιεχομένου. Δοκιμάστε ξανά αργότερα.</string>
+    <string name="revenuecatui_checkpoint_error_store">Παρουσιάστηκε πρόβλημα με το κατάστημα. Δοκιμάστε ξανά αργότερα.</string>
+    <string name="revenuecatui_checkpoint_error_purchase_not_allowed">Οι αγορές δεν επιτρέπονται σε αυτήν τη συσκευή.</string>
+    <string name="revenuecatui_checkpoint_error_product_unavailable">Αυτό το προϊόν δεν είναι διαθέσιμο αυτήν τη στιγμή.</string>
+    <string name="revenuecatui_checkpoint_error_already_purchased">Έχετε ήδη αυτό το προϊόν.</string>
+    <string name="revenuecatui_checkpoint_error_payment_pending">Η πληρωμή σας εκκρεμεί. Θα αποκτήσετε πρόσβαση μόλις εγκριθεί.</string>
+    <string name="revenuecatui_checkpoint_error_generic">Κάτι πήγε στραβά. Δοκιμάστε ξανά.</string>
+    <string name="revenuecatui_checkpoint_error_sync">Δεν ήταν δυνατή η επαλήθευση των αγορών σας αυτήν τη στιγμή. Δοκιμάστε ξανά αργότερα.</string>
 </resources>

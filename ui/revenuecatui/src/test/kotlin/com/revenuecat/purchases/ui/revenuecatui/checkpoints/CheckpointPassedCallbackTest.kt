@@ -3,6 +3,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
 import android.app.Activity
+import android.view.View
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
@@ -11,12 +12,15 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
+import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -35,7 +39,9 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Robolectric
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowDialog
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -50,6 +56,13 @@ class CheckpointPassedCallbackTest {
     private var defaultPresenter: DefaultPaywallPresenter? = null
     private val presentedCallIds = mutableListOf<String>()
     private val results = mutableListOf<FlowResult?>()
+    private val errorPresenter = RecordingErrorPresenter()
+    private var defaultErrorPresenterFactory: (Purchases) -> DefaultErrorPresenter = { _ ->
+        // The SDK's own dialog needs a real activity; by default it acknowledges every error right away.
+        mockk<DefaultErrorPresenter> {
+            every { present(any(), any()) } answers { secondArg<ErrorPresenter.Completion>().complete() }
+        }
+    }
 
     private lateinit var manager: CheckpointsManager
 
@@ -76,6 +89,7 @@ class CheckpointPassedCallbackTest {
                 DefaultPaywallPresenter(purchases, errorPresenter) { _, _, _ -> mockPresenter }
                     .also { defaultPresenter = it }
             },
+            defaultErrorPresenterFactory = { defaultErrorPresenterFactory(it) },
         )
     }
 
@@ -95,11 +109,168 @@ class CheckpointPassedCallbackTest {
     }
 
     @Test
-    fun `an invalid identifier invokes the callback with null instead of throwing`() = runTest(dispatcher) {
-        checkpoint(identifier = " bad😀")
+    fun `an unknown checkpoint invokes the callback with null and no error`() = runTest(dispatcher) {
+        resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.NO_MATCH))
+        manager.errorPresenter = errorPresenter
+
+        checkpoint()
 
         assertThat(results).containsExactly(null)
+        assertThat(errorPresenter.stages).isEmpty()
     }
+
+    @Test
+    fun `unavailable configuration is presented and the callback is not invoked`() = runTest(dispatcher) {
+        resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE))
+        manager.errorPresenter = errorPresenter
+
+        checkpoint()
+        errorPresenter.complete()
+
+        assertThat(results).isEmpty()
+        assertThat(errorPresenter.stages).containsExactly(ErrorPresentationStage.BEFORE_FLOW_PRESENTATION)
+    }
+
+    @Test
+    fun `a resolution that throws is presented and the callback is not invoked`() = runTest(dispatcher) {
+        val error = PurchasesError(PurchasesErrorCode.ConfigurationError, "Simulated.")
+        coEvery { mockPurchases.internalResolveCp(any(), any()) } throws PurchasesException(error)
+        manager.errorPresenter = errorPresenter
+
+        checkpoint()
+        errorPresenter.complete()
+
+        assertThat(results).isEmpty()
+        assertThat(errorPresenter.errors).containsExactly(error)
+        assertThat(errorPresenter.stages).containsExactly(ErrorPresentationStage.BEFORE_FLOW_PRESENTATION)
+    }
+
+    @Test
+    fun `an invalid identifier is presented, the callback is not invoked, and nothing is resolved`() =
+        runTest(dispatcher) {
+            manager.errorPresenter = errorPresenter
+
+            checkpoint(identifier = " bad😀")
+            errorPresenter.complete()
+
+            assertThat(results).isEmpty()
+            assertThat(errorPresenter.stages).containsExactly(ErrorPresentationStage.BEFORE_FLOW_PRESENTATION)
+            coVerify(exactly = 0) { mockPurchases.internalResolveCp(any(), any()) }
+        }
+
+    @Test
+    fun `a missing activity is presented and the callback is not invoked`() = runTest(dispatcher) {
+        every { mockPurchases.currentActivity } returns null
+        resolvesToWorkflow()
+        manager.errorPresenter = errorPresenter
+
+        checkpoint()
+        errorPresenter.complete()
+
+        assertThat(results).isEmpty()
+        assertThat(errorPresenter.stages).containsExactly(ErrorPresentationStage.BEFORE_FLOW_PRESENTATION)
+    }
+
+    @Test
+    fun `a workflow that fails to show is presented and the callback is not invoked`() = runTest(dispatcher) {
+        every { mockPresenter.show(any()) } throws IllegalStateException("show failed")
+        resolvesToWorkflow()
+        manager.errorPresenter = errorPresenter
+
+        checkpoint()
+        errorPresenter.complete()
+
+        assertThat(results).isEmpty()
+        assertThat(errorPresenter.stages).containsExactly(ErrorPresentationStage.BEFORE_FLOW_PRESENTATION)
+    }
+
+    @Test
+    fun `the SDK's own dialog shows customer-facing copy and the callback is not invoked once acknowledged`() =
+        runTest(dispatcher) {
+            val controller = Robolectric.buildActivity(Activity::class.java).setup()
+            every { mockPurchases.currentActivity } returns controller.get()
+            val messages = mutableListOf<String>()
+            var acknowledge: (() -> Unit)? = null
+            defaultErrorPresenterFactory = { purchases ->
+                DefaultErrorPresenter(purchases) { activity, message, onAcknowledged ->
+                    messages += message
+                    acknowledge = onAcknowledged
+                    View(activity)
+                }
+            }
+            coEvery { mockPurchases.internalResolveCp(any(), any()) } throws
+                PurchasesException(PurchasesError(PurchasesErrorCode.ConfigurationError, "Simulated."))
+
+            checkpoint()
+
+            assertThat(messages)
+                .containsExactly(controller.get().getString(R.string.revenuecatui_checkpoint_error_load))
+            assertThat(ShadowDialog.getLatestDialog().isShowing).isTrue
+            acknowledge!!()
+            assertThat(ShadowDialog.getLatestDialog().isShowing).isFalse
+            assertThat(results).isEmpty()
+        }
+
+    @Test
+    fun `a purchase error followed by a close delivers an empty result`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+
+        checkpoint()
+        workflowListener().onPurchaseError(PurchasesError(PurchasesErrorCode.StoreProblemError, "boom"))
+        finishPaywall(outcome = null)
+
+        assertThat(results.obtained).containsExactly(emptySet<String>())
+    }
+
+    @Test
+    fun `a workflow that fails to come back after a configuration change is presented and does not pass`() =
+        runTest(dispatcher) {
+            resolvesToWorkflow()
+            manager.errorPresenter = errorPresenter
+
+            checkpoint()
+            manager.onPresentationFailed(
+                presentedCallIds.last(),
+                PurchasesError(PurchasesErrorCode.ConfigurationError, "Re-present failed."),
+            )
+            errorPresenter.complete()
+
+            assertThat(results).isEmpty()
+            assertThat(errorPresenter.stages).containsExactly(ErrorPresentationStage.DURING_FLOW_PRESENTATION)
+        }
+
+    @Test
+    fun `the SDK's own paywall that cannot load does not pass`() = runTest(dispatcher) {
+        resolvesTo(CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null))
+
+        checkpoint()
+        defaultPresenter!!.paywallOptions("") {}!!.dismissRequestWithExitOffering!!(
+            null,
+            PaywallResult.Error(PurchasesError(PurchasesErrorCode.ConfigurationError, "No packages available")),
+            PaywallDismissReason.CLOSE,
+        )
+        defaultPresenter!!.onPresentationFinished("")
+
+        assertThat(results).isEmpty()
+        verify(exactly = 0) { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) }
+    }
+
+    @Test
+    fun `the SDK's own paywall that fails to come back after a configuration change is presented and does not pass`() =
+        runTest(dispatcher) {
+            resolvesTo(CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null))
+            manager.errorPresenter = errorPresenter
+
+            checkpoint()
+            defaultPresenter!!.onPresentationFailed(
+                "",
+                PurchasesError(PurchasesErrorCode.ConfigurationError, "Re-present failed."),
+            )
+            errorPresenter.complete()
+
+            assertThat(results).isEmpty()
+            assertThat(errorPresenter.stages).containsExactly(ErrorPresentationStage.DURING_FLOW_PRESENTATION)
+        }
 
     @Test
     fun `a presented workflow delivers the grants obtained during it`() = runTest(dispatcher) {
@@ -228,23 +399,13 @@ class CheckpointPassedCallbackTest {
         }
 
     @Test
-    fun `a presentation failure invokes the callback with null`() = runTest(dispatcher) {
-        every { mockPurchases.currentActivity } returns null
+    fun `a paywall that ended in an error does not invoke the callback`() = runTest(dispatcher) {
         resolvesToWorkflow()
 
         checkpoint()
+        finishPaywall(CheckpointFlowOutcome.Error(PurchasesError(PurchasesErrorCode.ConfigurationError, "boom")))
 
-        assertThat(results).containsExactly(null)
-    }
-
-    @Test
-    fun `a paywall that ended in an error invokes the callback with null`() = runTest(dispatcher) {
-        resolvesToWorkflow()
-
-        checkpoint()
-        finishPaywall(CheckpointFlowOutcome.Error(PurchasesError(PurchasesErrorCode.StoreProblemError, "boom")))
-
-        assertThat(results).containsExactly(null)
+        assertThat(results).isEmpty()
     }
 
     @Test
@@ -280,20 +441,18 @@ class CheckpointPassedCallbackTest {
         assertThat(results.obtained).containsExactly(emptySet<String>())
     }
 
-    @Test
-    fun `the SDK's own paywall that cannot load delivers null and never syncs`() = runTest(dispatcher) {
-        resolvesTo(CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null))
+    private class RecordingErrorPresenter : ErrorPresenter {
+        val errors = mutableListOf<PurchasesError>()
+        val stages = mutableListOf<ErrorPresentationStage>()
+        private val completions = mutableListOf<ErrorPresenter.Completion>()
 
-        checkpoint()
-        defaultPresenter!!.paywallOptions("") {}!!.dismissRequestWithExitOffering!!(
-            null,
-            PaywallResult.Error(PurchasesError(PurchasesErrorCode.ConfigurationError, "No packages available")),
-            PaywallDismissReason.CLOSE,
-        )
-        defaultPresenter!!.onPresentationFinished("")
+        override fun present(params: ErrorPresenter.Params, completion: ErrorPresenter.Completion) {
+            errors += params.error
+            stages += params.stage
+            completions += completion
+        }
 
-        assertThat(results).containsExactly(null)
-        verify(exactly = 0) { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) }
+        fun complete() = completions.last().complete()
     }
 
     @Test

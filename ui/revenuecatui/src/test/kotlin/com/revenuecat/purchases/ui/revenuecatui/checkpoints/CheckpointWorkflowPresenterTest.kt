@@ -3,6 +3,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
 import android.app.Activity
+import androidx.activity.ComponentDialog
 import android.os.Looper
 import android.view.View
 import android.view.WindowManager
@@ -332,11 +333,19 @@ class CheckpointWorkflowPresenterTest {
     }
 
     @Test
-    fun `a failed re-present with no recorded outcome completes with an error instead of a dismissal`() {
+    fun `a failed re-present with no recorded outcome presents the error and completes with it once acknowledged`() {
         launchCheckpoint()
         contentFactory = { throw IllegalStateException("content failed") }
 
         controller.recreate()
+
+        assertThat(result).isNull()
+        // The SDK's error dialog is a Compose dialog (a ComponentDialog subclass) inside a plain ComponentDialog
+        // window of its own; cancelling that window acknowledges the error, as the dialog's OK does.
+        val errorWindow = ShadowDialog.getShownDialogs()
+            .last { it.isShowing && it::class.java == ComponentDialog::class.java }
+        errorWindow.cancel()
+        shadowOf(Looper.getMainLooper()).idle()
 
         val outcome = paywallOutcome()
         assertThat(outcome).isInstanceOf(CheckpointFlowOutcome.Error::class.java)

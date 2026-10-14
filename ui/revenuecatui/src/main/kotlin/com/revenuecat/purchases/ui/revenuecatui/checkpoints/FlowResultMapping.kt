@@ -30,8 +30,9 @@ internal fun Purchases.cachedActiveEntitlementIds(onResult: (Set<String>?) -> Un
 }
 
 /**
- * The result to deliver for this run: null when nothing was presented (nothing to serve, a presentation that
- * failed, or a flow that ended in an error), what the user obtained otherwise.
+ * The result to deliver for this run: null when nothing was presented because there was nothing to serve, what the
+ * user obtained otherwise. A run that failed, or whose flow ended in an error, is not delivered at all (see
+ * [CheckpointsManager.checkpoint]); the null branch for [CheckpointFlowOutcome.Error] only keeps the mapping total.
  */
 internal fun CheckpointRun.toResult(activeEntitlementsBefore: Set<String>?): FlowResult? =
     when (val outcome = flowOutcome) {

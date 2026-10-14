@@ -24,4 +24,13 @@
     <string name="revenuecatui_purchase">شراء</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
     <string name="revenuecatui_preview_workflow_load_error">تعذّر تحميل سير العمل الخاص بالمعاينة. يُرجى المحاولة مرة أخرى.</string>
+    <string name="revenuecatui_checkpoint_error_network">تعذر الاتصال. تحقق من اتصالك بالإنترنت وحاول مرة أخرى.</string>
+    <string name="revenuecatui_checkpoint_error_load">تعذر تحميل هذا المحتوى. يرجى المحاولة مرة أخرى لاحقًا.</string>
+    <string name="revenuecatui_checkpoint_error_store">حدثت مشكلة في المتجر. يرجى المحاولة مرة أخرى لاحقًا.</string>
+    <string name="revenuecatui_checkpoint_error_purchase_not_allowed">عمليات الشراء غير مسموح بها على هذا الجهاز.</string>
+    <string name="revenuecatui_checkpoint_error_product_unavailable">هذا المنتج غير متاح حاليًا.</string>
+    <string name="revenuecatui_checkpoint_error_already_purchased">أنت تمتلك هذا المنتج بالفعل.</string>
+    <string name="revenuecatui_checkpoint_error_payment_pending">دفعتك قيد الانتظار. ستحصل على الوصول بمجرد الموافقة عليها.</string>
+    <string name="revenuecatui_checkpoint_error_generic">حدث خطأ ما. يرجى المحاولة مرة أخرى.</string>
+    <string name="revenuecatui_checkpoint_error_sync">تعذر التحقق من مشترياتك الآن. يرجى المحاولة مرة أخرى لاحقًا.</string>
 </resources>

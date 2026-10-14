@@ -24,4 +24,13 @@
     <string name="revenuecatui_purchase">购买</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
     <string name="revenuecatui_preview_workflow_load_error">无法加载预览工作流程。请重试。</string>
+    <string name="revenuecatui_checkpoint_error_network">无法连接。请检查您的网络连接，然后重试。</string>
+    <string name="revenuecatui_checkpoint_error_load">无法加载此内容。请稍后重试。</string>
+    <string name="revenuecatui_checkpoint_error_store">商店出现问题。请稍后重试。</string>
+    <string name="revenuecatui_checkpoint_error_purchase_not_allowed">此设备不允许购买。</string>
+    <string name="revenuecatui_checkpoint_error_product_unavailable">此产品目前不可用。</string>
+    <string name="revenuecatui_checkpoint_error_already_purchased">您已拥有此产品。</string>
+    <string name="revenuecatui_checkpoint_error_payment_pending">您的付款正在处理中。审核通过后即可使用。</string>
+    <string name="revenuecatui_checkpoint_error_generic">出了点问题。请重试。</string>
+    <string name="revenuecatui_checkpoint_error_sync">目前无法验证您的购买。请稍后重试。</string>
 </resources>

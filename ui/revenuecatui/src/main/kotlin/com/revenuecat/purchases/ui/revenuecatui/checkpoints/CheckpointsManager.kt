@@ -25,7 +25,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.UUID
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Everything the manager's [CheckpointWorkflowPresenter] needs to build a workflow paywall, read in a single pass
@@ -38,19 +37,20 @@ internal class CheckpointPresentation(
 )
 
 /**
- * What a checkpoint run produced: the terminal [flowOutcome] of whatever it presented (null when nothing was,
- * including when resolving or presenting failed), and [backedOut], true when the presented flow went away because
- * the user navigated back (system back, or a navigate-back action on a workflow's first step) without purchasing
- * or restoring.
+ * What a checkpoint run produced: the terminal [flowOutcome] of whatever it presented (null when nothing was),
+ * and [backedOut], true when the presented flow went away because the user navigated back (system back, or a
+ * navigate-back action on a workflow's first step) without purchasing or restoring.
  *
- * [blockedByPresentedFlow] is true when the checkpoint resolved to a flow that was not presented because another
- * checkpoint flow was already on screen. That earlier call is the one the app is waiting on, so a blocked run is
- * not reported as passed.
+ * [failed] is true when the checkpoint could not be served before anything was on screen: the failure went to
+ * the error presenter and the run is not reported as passed. [blockedByPresentedFlow] is true when the checkpoint
+ * resolved to a flow that was not presented because another checkpoint flow was already on screen. That earlier
+ * call is the one the app is waiting on, so a blocked run is not reported as passed either.
  */
 internal class CheckpointRun(
     val flowOutcome: CheckpointFlowOutcome?,
     val backedOut: Boolean,
     val blockedByPresentedFlow: Boolean = false,
+    val failed: Boolean = false,
     // Releases whatever the SDK still has on screen for this run; invoked once the app has been told.
     val finishPresentation: () -> Unit = {},
 )
@@ -100,11 +100,13 @@ internal class CheckpointsManager(
     private val nothingPresented = CheckpointRun(flowOutcome = null, backedOut = false)
     private val blockedByPresentedFlow =
         CheckpointRun(flowOutcome = null, backedOut = false, blockedByPresentedFlow = true)
+    private val failed = CheckpointRun(flowOutcome = null, backedOut = false, failed = true)
 
     /**
      * Runs a checkpoint hit: resolves the checkpoint and presents whatever it resolved to, suspending until the
-     * presented flow finishes. Never throws: a resolution or presentation failure is logged and comes back as a
-     * run that presented nothing. Completion is reported by [checkpoint].
+     * presented flow finishes. Never throws: a failure to resolve or present is logged, handed to the error
+     * presenter, and comes back as a failed run once the app's error UI is done. Completion is reported by
+     * [checkpoint].
      */
     suspend fun runCheckpoint(
         purchases: Purchases,
@@ -122,9 +124,12 @@ internal class CheckpointsManager(
             )
         }
         val presentationMode = resolvePresentationMode(params?.presentationMode)
+        val presentFailure: suspend (PurchasesError) -> CheckpointRun =
+            { error -> presentFailure(errorPresenter(), identifier, customVariables, error) }
         if (!CheckpointIdentifierValidator.isValid(identifier)) {
-            Logger.e(CheckpointIdentifierValidator.invalidIdentifierLogMessage(identifier))
-            return@withContext nothingPresented
+            val message = CheckpointIdentifierValidator.invalidIdentifierLogMessage(identifier)
+            Logger.e(message)
+            return@withContext presentFailure(PurchasesError(PurchasesErrorCode.ConfigurationError, message))
         }
         val resolution = try {
             purchases.internalResolveCp(
@@ -133,7 +138,7 @@ internal class CheckpointsManager(
             )
         } catch (e: PurchasesException) {
             Logger.e("Checkpoint '$identifier' could not be resolved: ${e.error}")
-            return@withContext nothingPresented
+            return@withContext presentFailure(e.error)
         }
         try {
             when (resolution) {
@@ -145,18 +150,48 @@ internal class CheckpointsManager(
                 )
                 is CheckpointResolution.MatchedWorkflow ->
                     present(purchases, identifier, resolution, customVariables, errorPresenter(), presentationMode)
-                is CheckpointResolution.NoAction -> nothingPresented
+                is CheckpointResolution.NoAction -> when (resolution.reason) {
+                    CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE -> presentFailure(
+                        PurchasesError(
+                            PurchasesErrorCode.ConfigurationError,
+                            "The configuration needed to serve checkpoint '$identifier' could not be read.",
+                        ),
+                    )
+                    else -> nothingPresented
+                }
             }
-        } catch (_: PurchasesException) {
+        } catch (e: PurchasesException) {
             // Already logged by presentationError.
-            nothingPresented
+            presentFailure(e.error)
         }
+    }
+
+    // The user is where they were before the checkpoint and stays there whatever the app's error UI does, so
+    // the run only waits for that UI to be done.
+    private suspend fun presentFailure(
+        errorPresenter: ErrorPresenter,
+        identifier: String,
+        customVariables: Map<String, CustomVariableValue>,
+        error: PurchasesError,
+    ): CheckpointRun {
+        val done = CompletableDeferred<Unit>()
+        errorPresenter.presentOnce(
+            ErrorPresenter.Params(
+                error,
+                identifier,
+                customVariables,
+                ErrorPresentationStage.BEFORE_FLOW_PRESENTATION,
+            ),
+        ) { done.complete(Unit) }
+        done.await()
+        return failed
     }
 
     /**
      * The checkpoint API: runs the checkpoint and invokes [callback] with what the user obtained, at most once
-     * and on the main thread. The callback is skipped when the user backed out of the presented flow, and when
-     * the checkpoint resolved to a flow while another checkpoint flow was already on screen. Never throws.
+     * and on the main thread. The callback is skipped when the checkpoint could not be served or its flow ended
+     * in an error, when the user backed out of the presented flow, and when the checkpoint resolved to a flow
+     * while another checkpoint flow was already on screen. Never throws.
      */
     fun checkpoint(
         purchases: Purchases,
@@ -173,6 +208,8 @@ internal class CheckpointsManager(
                         "Checkpoint '$identifier': another checkpoint flow is already being presented, so this " +
                             "call is ignored and its callback is not invoked.",
                     )
+                    run.failed || run.flowOutcome is CheckpointFlowOutcome.Error ->
+                        Logger.d("Checkpoint '$identifier': it could not be served, so the callback is not invoked.")
                     run.backedOut ->
                         Logger.d("Checkpoint '$identifier': the user backed out, so the callback is not invoked.")
                     else -> callback.onCheckpointPassed(run.toResult(activeEntitlementsBefore))
@@ -190,8 +227,8 @@ internal class CheckpointsManager(
         }
 
     // Direct dismissals (a completed purchase or restore) carry no reason and count as a close; everything else
-    // reports one, and an error dialog being dismissed also carries the error as its result. The exit offering,
-    // if any, is not presented for checkpoints.
+    // reports one, and a paywall that could not load carries the error as its result when its error UI is done.
+    // The exit offering, if any, is not presented for checkpoints.
     override fun paywallOptions(callId: String, dismiss: (navigatedBack: Boolean) -> Unit): PaywallOptions? =
         presentation(callId)?.let { presentation ->
             PaywallOptions.Builder(dismissRequest = { dismiss(false) })
@@ -227,16 +264,7 @@ internal class CheckpointsManager(
             }
         }
 
-        override fun onPurchaseError(error: PurchasesError) {
-            if (error.code != PurchasesErrorCode.PurchaseCancelledError) {
-                recordOutcome(callId, CheckpointFlowOutcome.Error(error))
-            }
-        }
-
-        override fun onRestoreError(error: PurchasesError) {
-            recordOutcome(callId, CheckpointFlowOutcome.Error(error))
-        }
-
+        // A failed purchase or restore is not observed: the paywall stays up and how the user leaves decides.
         override fun onWebCheckoutOpened() {
             recordOutcome(callId, CheckpointFlowOutcome.WebCheckoutOpened)
         }
@@ -274,14 +302,23 @@ internal class CheckpointsManager(
         )
     }
 
-    // Like onPresentationFinished, for a presentation that failed: an outcome the paywall already reported
-    // (e.g. a purchase before the configuration change) still wins, but a workflow that failed before
-    // reporting anything surfaces as an error rather than a phantom dismissal.
+    // Like onPresentationFinished, for a presentation that failed: a purchase or granting restore the paywall
+    // already reported (e.g. before the configuration change) still wins. Otherwise the window is gone and the
+    // flow cannot go on, so the error is presented and the run ends with it once the app's error UI is done.
     override fun onPresentationFailed(callId: String, error: PurchasesError) {
         val failed = slot.take(callId) ?: return
-        failed.flowFinished.complete(
-            CheckpointRun(failed.outcome ?: CheckpointFlowOutcome.Error(error), backedOut = false),
-        )
+        val obtained = failed.outcome.takeIf { it.isObtained }
+        if (obtained != null) {
+            failed.flowFinished.complete(CheckpointRun(obtained, backedOut = false))
+            return
+        }
+        val complete = {
+            failed.flowFinished.complete(CheckpointRun(CheckpointFlowOutcome.Error(error), backedOut = false))
+            Unit
+        }
+        failed.errorPresenter
+            ?.presentOnce(error, ErrorPresentationStage.DURING_FLOW_PRESENTATION, complete)
+            ?: complete()
     }
 
     /**
@@ -358,7 +395,7 @@ internal class CheckpointsManager(
             }
         }
 
-        // The SDK's own paywall already presented the error; nothing to sync.
+        // The SDK's own paywall already presented the error; nothing to sync, the checkpoint is not passed.
         private fun failed(error: PurchasesError) {
             slot.take(callId)?.let { call ->
                 call.flowFinished.complete(
@@ -398,26 +435,17 @@ internal class CheckpointsManager(
             )
         }
 
-        // The user has left the flow and goes on either way: once the app's error UI is done, or right away when
-        // the presenter cannot show it (the SDK's own needs a started activity). Only the first completion counts.
-        private fun presentSyncFailure(error: PurchasesError, onComplete: () -> Unit) {
-            val completed = AtomicBoolean(false)
-            val completion = ErrorPresenter.Completion { if (completed.compareAndSet(false, true)) onComplete() }
-            try {
-                errorPresenter().present(
-                    ErrorPresenter.Params(
-                        error,
-                        params.checkpointIdentifier,
-                        params.customVariables,
-                        CheckpointFailureKind.FLOW_RESULT_SYNC_FAILED,
-                    ),
-                    completion,
-                )
-            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                Logger.e("Error presenter failed: $e")
-                completion.complete()
-            }
-        }
+        // The user has left the flow and goes on either way, once the app's error UI is done.
+        private fun presentSyncFailure(error: PurchasesError, onComplete: () -> Unit) =
+            errorPresenter().presentOnce(
+                ErrorPresenter.Params(
+                    error,
+                    params.checkpointIdentifier,
+                    params.customVariables,
+                    CheckpointFailureKind.FLOW_RESULT_SYNC_FAILED,
+                ),
+                onComplete,
+            )
     }
 
     @Suppress("LongParameterList")

@@ -24,4 +24,13 @@
     <string name="revenuecatui_purchase">Comprar</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
     <string name="revenuecatui_preview_workflow_load_error">No s\'ha pogut carregar el flux de treball de previsualització. Torna-ho a provar.</string>
+    <string name="revenuecatui_checkpoint_error_network">No s\'ha pogut connectar. Comprova la connexió a internet i torna-ho a provar.</string>
+    <string name="revenuecatui_checkpoint_error_load">No s\'ha pogut carregar aquest contingut. Torna-ho a provar més tard.</string>
+    <string name="revenuecatui_checkpoint_error_store">Hi ha hagut un problema amb la botiga. Torna-ho a provar més tard.</string>
+    <string name="revenuecatui_checkpoint_error_purchase_not_allowed">Les compres no estan permeses en aquest dispositiu.</string>
+    <string name="revenuecatui_checkpoint_error_product_unavailable">Aquest producte no està disponible ara mateix.</string>
+    <string name="revenuecatui_checkpoint_error_already_purchased">Ja tens aquest producte.</string>
+    <string name="revenuecatui_checkpoint_error_payment_pending">El teu pagament està pendent. Hi tindràs accés quan s\'aprovi.</string>
+    <string name="revenuecatui_checkpoint_error_generic">Alguna cosa ha fallat. Torna-ho a provar.</string>
+    <string name="revenuecatui_checkpoint_error_sync">No s\'han pogut verificar les teves compres ara mateix. Torna-ho a provar més tard.</string>
 </resources>

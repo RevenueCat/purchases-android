@@ -26,10 +26,10 @@ import java.util.UUID
  * It reports how the user left the paywall, except that a purchase, or a restore that granted an entitlement the
  * user did not hold when the paywall opened, continues the flow whatever closed the window; a granting restore
  * also closes the paywall, like a purchase does. What the user obtained is still read from the synced customer
- * info, like for any other presenter. A paywall that could not load reports [Result.Failed] unless the user
- * obtained something first: the checkpoint is not passed. One instance per presentation, and the host of its own
- * window. Like an app presenter's UI, the window is not taken down when the checkpoint call is abandoned: the user
- * closes it, and its report is ignored.
+ * info, like for any other presenter. A paywall that could not load, or a window that could not be kept on
+ * screen, reports [Result.Failed] unless the user obtained something first: the checkpoint is not passed. One
+ * instance per presentation, and the host of its own window. Like an app presenter's UI, the window is not taken
+ * down when the checkpoint call is abandoned: the user closes it, and its report is ignored.
  */
 internal class DefaultPaywallPresenter(
     private val purchases: Purchases,
@@ -122,9 +122,23 @@ internal class DefaultPaywallPresenter(
         )
     }
 
+    // The window is gone and the paywall cannot go on, so the error is presented like the paywall's own would
+    // be, and the report follows the app's error UI.
     override fun onPresentationFailed(callId: String, error: PurchasesError) {
-        Logger.e("Checkpoint paywall could not be kept on screen; treating it as closed: $error")
-        complete(if (obtained) Result.Continued else Result.Closed)
+        Logger.e("Checkpoint paywall could not be kept on screen: $error")
+        if (obtained) {
+            complete(Result.Continued)
+            return
+        }
+        if (completion == null) return
+        errorPresenter.presentOnce(
+            ErrorPresenter.Params(
+                error,
+                params.checkpointIdentifier,
+                params.customVariables,
+                ErrorPresentationStage.DURING_FLOW_PRESENTATION,
+            ),
+        ) { complete(Result.Failed(error)) }
     }
 
     private fun complete(result: Result) {

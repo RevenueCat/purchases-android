@@ -11,6 +11,7 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.composables.ErrorDialog
 import com.revenuecat.purchases.ui.revenuecatui.helpers.EDGE_TO_EDGE_WINDOW_THEME
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -21,6 +22,9 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.applyEdgeToEdge
  * error in the SDK's dialog over the current activity and completes once the user acknowledges it. It goes through
  * the same contract an app presenter does and uses nothing an app presenter lacks: the current activity, a dialog
  * of its own, and the completion. One instance per checkpoint call.
+ *
+ * The dialog shows localized copy written for the customer, chosen from the stage and the error code; the
+ * developer's reason is in the logs of whoever reported the error.
  *
  * The dialog dies with its activity, so on a configuration change it is shown again over the next started
  * activity. An activity finishing for real takes the flow with it, so the presentation completes then too.
@@ -74,7 +78,7 @@ internal class DefaultErrorPresenter(
         // the host window only happens if that dialog is not there, and must never leave a touch-blocking window.
         dialog.setOnCancelListener { acknowledged(current) }
         dialog.setContentView(
-            createContent(activity, current.message) { acknowledged(current) },
+            createContent(activity, activity.getString(current.params.messageResource)) { acknowledged(current) },
             ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
         )
         current.dialog = dialog
@@ -143,13 +147,25 @@ internal class DefaultErrorPresenter(
         override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
     }
 
-    // What the paywall's own dialog shows: an action that failed reads best as its code's description, while
-    // a failure around the flow carries its reason in the underlying message.
-    private val Presentation.message: String
-        get() = if (params.kind == CheckpointFailureKind.FLOW_ACTION_FAILED) {
-            params.error.message
-        } else {
-            params.error.underlyingErrorMessage ?: params.error.message
+    // Before the flow nothing could be loaded and after it nothing could be verified, whatever the code; during
+    // it the code says what the customer can do about it. A stage this code doesn't know reads as "during".
+    private val ErrorPresenter.Params.messageResource: Int
+        get() = when {
+            error.code == PurchasesErrorCode.NetworkError -> R.string.revenuecatui_checkpoint_error_network
+            kind == CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN -> R.string.revenuecatui_checkpoint_error_load
+            kind == CheckpointFailureKind.FLOW_RESULT_SYNC_FAILED -> R.string.revenuecatui_checkpoint_error_sync
+            else -> error.code.duringFlowMessageResource
+        }
+
+    private val PurchasesErrorCode.duringFlowMessageResource: Int
+        get() = when (this) {
+            PurchasesErrorCode.StoreProblemError -> R.string.revenuecatui_checkpoint_error_store
+            PurchasesErrorCode.PurchaseNotAllowedError -> R.string.revenuecatui_checkpoint_error_purchase_not_allowed
+            PurchasesErrorCode.ProductNotAvailableForPurchaseError ->
+                R.string.revenuecatui_checkpoint_error_product_unavailable
+            PurchasesErrorCode.ProductAlreadyPurchasedError -> R.string.revenuecatui_checkpoint_error_already_purchased
+            PurchasesErrorCode.PaymentPendingError -> R.string.revenuecatui_checkpoint_error_payment_pending
+            else -> R.string.revenuecatui_checkpoint_error_generic
         }
 }
 
