@@ -1,0 +1,34 @@
+# `error_checkpoint` is the SDK's simulated resolution failure (the resolver throws before reading any config).
+# The SDK presents its error dialog (BEFORE_FLOW_PRESENTATION copy) and the passed callback is not invoked.
+#
+# Run locally against the test store:
+#   maestro test -e MAESTRO_STORE=test_store maestro/checkpoints/checkpoint_resolution_error.yaml
+
+appId: com.revenuecat.e2etests
+name: Checkpoint whose resolution fails shows the SDK error dialog and does not pass
+env:
+  MAESTRO_STORE: ${MAESTRO_STORE || 'test_store'}
+
+---
+- launchApp:
+    clearState: true
+    arguments:
+      e2e_test_flow: open_checkpoint
+      checkpoint_identifier: error_checkpoint
+- extendedWaitUntil:
+    visible: "Hit checkpoint"
+    timeout: 15000
+- tapOn:
+    text: "Hit checkpoint"
+
+- extendedWaitUntil:
+    visible: "This content couldn't be loaded. Please try again later."
+    timeout: 15000
+- takeScreenshot: "checkpoint_resolution_error - error dialog"
+- tapOn:
+    text: "OK"
+- assertNotVisible: "This content couldn't be loaded. Please try again later."
+
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible: "Callback: not invoked"

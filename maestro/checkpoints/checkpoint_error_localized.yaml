@@ -1,0 +1,36 @@
+# The SDK's checkpoint error dialog follows the preferred UI locale override (app_locale), not the device locale:
+# with "es" the BEFORE_FLOW_PRESENTATION copy is the Spanish string from values-es.
+#
+# Run locally against the test store:
+#   maestro test -e MAESTRO_STORE=test_store maestro/checkpoints/checkpoint_error_localized.yaml
+
+appId: com.revenuecat.e2etests
+name: Checkpoint error dialog is localized to the preferred UI locale override
+env:
+  MAESTRO_STORE: ${MAESTRO_STORE || 'test_store'}
+
+---
+- launchApp:
+    clearState: true
+    arguments:
+      e2e_test_flow: open_checkpoint
+      checkpoint_identifier: error_checkpoint
+      app_locale: es
+- extendedWaitUntil:
+    visible: "Hit checkpoint"
+    timeout: 15000
+- tapOn:
+    text: "Hit checkpoint"
+
+- extendedWaitUntil:
+    visible: "No se pudo cargar este contenido. Inténtalo de nuevo más tarde."
+    timeout: 15000
+- assertNotVisible: "This content couldn't be loaded. Please try again later."
+- takeScreenshot: "checkpoint_error_localized - Spanish error dialog"
+- tapOn:
+    text: "OK"
+- assertNotVisible: "No se pudo cargar este contenido. Inténtalo de nuevo más tarde."
+
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible: "Callback: not invoked"

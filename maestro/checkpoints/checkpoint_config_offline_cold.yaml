@@ -1,0 +1,39 @@
+# Config endpoint unreachable (remote_config_network_error) on a cold cache: the checkpoint's rules cannot be
+# read, so it resolves to CONFIGURATION_UNAVAILABLE. The SDK presents its error dialog
+# (BEFORE_FLOW_PRESENTATION copy) and the passed callback is not invoked; the user stays where they were.
+#
+# Run locally against the test store:
+#   maestro test -e MAESTRO_STORE=test_store maestro/checkpoints/checkpoint_config_offline_cold.yaml
+
+appId: com.revenuecat.e2etests
+name: Checkpoint with config offline and nothing cached shows the SDK error dialog and does not pass
+# Forces server errors through configureForE2ETests, which only exists in debug builds.
+tags:
+  - debug-only
+env:
+  MAESTRO_STORE: ${MAESTRO_STORE || 'test_store'}
+
+---
+- launchApp:
+    clearState: true
+    arguments:
+      e2e_test_flow: open_checkpoint
+      checkpoint_identifier: donottouch_sdk_entitlement
+      force_server_error_strategy: remote_config_network_error
+- extendedWaitUntil:
+    visible: "Hit checkpoint"
+    timeout: 20000
+- tapOn:
+    text: "Hit checkpoint"
+
+- extendedWaitUntil:
+    visible: "This content couldn't be loaded. Please try again later."
+    timeout: 20000
+- takeScreenshot: "checkpoint_config_offline_cold - error dialog"
+- tapOn:
+    text: "OK"
+- assertNotVisible: "This content couldn't be loaded. Please try again later."
+
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible: "Callback: not invoked"
