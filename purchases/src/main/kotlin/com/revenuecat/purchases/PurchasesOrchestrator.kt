@@ -1052,7 +1052,8 @@ internal class PurchasesOrchestrator(
     fun logOut(callback: ReceiveCustomerInfoCallback? = null) {
         identityManager.logOut { error ->
             if (error != null) {
-                callback?.onError(error)
+                // IAM revoke and anonymous-login failures arrive on a background thread.
+                dispatch { callback?.onError(error) }
             } else {
                 synchronized(this@PurchasesOrchestrator) {
                     state = state.copy(purchaseCallbacksByProductId = Collections.emptyMap())

@@ -2,6 +2,7 @@
 
 package com.revenuecat.purchases
 
+import android.os.Looper
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.identity.AuthenticationDelegate
 import com.revenuecat.purchases.identity.Identity
@@ -14,7 +15,9 @@ import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import kotlin.concurrent.thread
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -313,6 +316,28 @@ internal class PurchasesIAMBootstrapTest : BasePurchasesTest() {
         purchases.purchasesOrchestrator.switchUser("other-user")
 
         assertThat(delegate.tokens).isEmpty()
+    }
+
+    @Test
+    fun `an IAM logout failure on a background thread reaches the callback on the main thread`() {
+        configure()
+        val error = PurchasesError(PurchasesErrorCode.NetworkError)
+        every { mockIdentityManager.logOut(any()) } answers {
+            val completion = firstArg<(PurchasesError?) -> Unit>()
+            thread { completion(error) }.join()
+        }
+        var errorThread: Thread? = null
+        val callback = object : ReceiveCustomerInfoCallback {
+            override fun onReceived(customerInfo: CustomerInfo) = Unit
+            override fun onError(error: PurchasesError) {
+                errorThread = Thread.currentThread()
+            }
+        }
+
+        purchases.purchasesOrchestrator.authentication.logOut(callback)
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertThat(errorThread).isEqualTo(Looper.getMainLooper().thread)
     }
 
     @Test

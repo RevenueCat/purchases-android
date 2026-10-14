@@ -38,8 +38,9 @@ class AuthenticationTest {
     private var deferMain = false
     private var currentUser = "user"
     private var tokens: TokenManager? = null
+    private val mainDispatch: (() -> Unit) -> Unit = { if (deferMain) mainQueue.add(it) else it() }
     private val reporter = AuthenticationReporter(
-        mainDispatch = { if (deferMain) mainQueue.add(it) else it() },
+        mainDispatch = mainDispatch,
         currentAppUserID = { currentUser },
         currentAccessToken = { tokens?.currentAccessToken(it) },
     )
@@ -184,6 +185,34 @@ class AuthenticationTest {
     // region logIn / logOut
 
     @Test
+    fun `logOut results are delivered on the main thread`() = runTest {
+        val authentication = authentication(tokenManager())
+        val callback = RecordingCallback()
+        deferMain = true
+
+        authentication.logOut(callback)
+        flows.pendingLogOut!!.onError(networkError)
+        assertThat(callback.errors).isEmpty()
+
+        mainQueue.forEach { it() }
+        assertThat(callback.errors).containsExactly(networkError)
+    }
+
+    @Test
+    fun `logIn results are delivered on the main thread`() = runTest {
+        val authentication = authentication(tokenManager())
+        val callback = RecordingCallback()
+        deferMain = true
+
+        authentication.logIn(Identity.anonymous, callback)
+        flows.pendingLogIn!!.onReceived(customerInfo)
+        assertThat(callback.infos).isEmpty()
+
+        mainQueue.forEach { it() }
+        assertThat(callback.infos).containsExactly(customerInfo)
+    }
+
+    @Test
     fun `logIn passes the identity through and returns the CustomerInfo`() = runTest {
         val callback = RecordingCallback()
 
@@ -294,7 +323,7 @@ class AuthenticationTest {
             currentAppUserID = { currentUser },
             flows = flows,
             customEntitlementComputation = customEntitlementComputation,
-            mainDispatch = { it() },
+            mainDispatch = mainDispatch,
         ).also {
             tokens = tokenManager
             tokenManager.setTokenUpdateListener { update: TokenUpdate -> reporter.report(update) }

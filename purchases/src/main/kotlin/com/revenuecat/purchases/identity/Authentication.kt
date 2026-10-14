@@ -50,7 +50,10 @@ public class Authentication internal constructor(
         flows.logIn(identity, finishing(callback))
     }
 
-    /** Logs the current user out, reverting to an anonymous user. [callback] gets that user's [CustomerInfo]. */
+    /**
+     * Logs the current user out, reverting to an anonymous user. [callback] gets that user's [CustomerInfo] on the
+     * main thread.
+     */
     public fun logOut(callback: ReceiveCustomerInfoCallback? = null) {
         if (customEntitlementComputation) {
             val error = PurchasesError(
@@ -92,15 +95,16 @@ public class Authentication internal constructor(
                 continuation.safeResumeWithException(PurchasesException(error))
         }
 
+    // Results go to the main thread whatever thread the flow finished on; mainDispatch runs inline when already there.
     private fun finishing(callback: ReceiveCustomerInfoCallback?) = object : ReceiveCustomerInfoCallback {
         override fun onReceived(customerInfo: CustomerInfo) {
             reporter.userInitiatedFinished()
-            callback?.onReceived(customerInfo)
+            mainDispatch { callback?.onReceived(customerInfo) }
         }
 
         override fun onError(error: PurchasesError) {
             reporter.userInitiatedFinished()
-            callback?.onError(error)
+            mainDispatch { callback?.onError(error) }
         }
     }
 
