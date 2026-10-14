@@ -19,8 +19,13 @@ import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
 import dev.drewhamilton.poko.Poko
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.nullable
+import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 
 @Suppress("LongParameterList")
 @InternalRevenueCatAPI
@@ -57,6 +62,7 @@ public class StackComponent(
     @get:JvmSynthetic
     public val badge: Badge? = null,
     @get:JvmSynthetic
+    @Serializable(with = NullableStackOverflowDeserializer::class)
     public val overflow: Overflow? = null,
     @get:JvmSynthetic
     public val overrides: List<ComponentOverride<PartialStackComponent>> = emptyList(),
@@ -105,6 +111,7 @@ public class PartialStackComponent(
     @get:JvmSynthetic
     public val badge: Badge? = null,
     @get:JvmSynthetic
+    @Serializable(with = NullableStackOverflowDeserializer::class)
     public val overflow: StackComponent.Overflow? = null,
     @get:JvmSynthetic
     public val name: String? = null,
@@ -113,5 +120,28 @@ public class PartialStackComponent(
 @OptIn(InternalRevenueCatAPI::class)
 internal object StackOverflowDeserializer : EnumDeserializerWithDefault<StackComponent.Overflow>(
     serialName = "com.revenuecat.purchases.paywalls.components.StackComponent.Overflow",
+    valuesByType = mapOf(
+        "none" to StackComponent.Overflow.NONE,
+        // The schema's explicit "not scrollable" value.
+        "default" to StackComponent.Overflow.NONE,
+        "scroll" to StackComponent.Overflow.SCROLL,
+    ),
     defaultValue = StackComponent.Overflow.NONE,
 )
+
+/** Unknown overflow values leave the stack's existing scroll behavior unchanged. */
+@OptIn(InternalRevenueCatAPI::class)
+internal object NullableStackOverflowDeserializer : KSerializer<StackComponent.Overflow?> {
+    private val delegate = String.serializer().nullable
+    override val descriptor = delegate.descriptor
+
+    override fun deserialize(decoder: Decoder): StackComponent.Overflow? = when (delegate.deserialize(decoder)) {
+        "none", "default" -> StackComponent.Overflow.NONE
+        "scroll" -> StackComponent.Overflow.SCROLL
+        else -> null
+    }
+
+    override fun serialize(encoder: Encoder, value: StackComponent.Overflow?) {
+        throw NotImplementedError("Serialization is not implemented because it is not needed.")
+    }
+}

@@ -284,6 +284,7 @@ internal fun previewStackComponentStyle(
     shadow: ShadowStyles? = null,
     badge: BadgeStyle? = null,
     scrollOrientation: Orientation? = null,
+    scrollExplicitlyDisabled: Boolean = false,
     countdownDate: Date? = null,
     countFrom: CountdownComponent.CountFrom = CountdownComponent.CountFrom.DAYS,
 ): StackComponentStyle {
@@ -301,6 +302,7 @@ internal fun previewStackComponentStyle(
         shadow = shadow,
         badge = badge,
         scrollOrientation = scrollOrientation,
+        scrollExplicitlyDisabled = scrollExplicitlyDisabled,
         rcPackage = null,
         tabIndex = null,
         countdownDate = countdownDate,

@@ -1,15 +1,12 @@
 ## RevenueCat SDK
-### ✨ New Features
-* feat(paywalls): introduce video localization support for Android (#4389) via Sufi Gaffar (@sufigaffar)
+### 📦 Dependency Updates
+* [RENOVATE] Update dependency gradle to v8.14.6 (#4418) via RevenueCat Git Bot (@RCGitBot)
 
 ## RevenueCatUI SDK
-### 🐞 Bugfixes
-* Render the developer-passed Offering instance in workflow paywalls (#4401) via Toni Rico (@tonidero)
 ### Paywallsv2
 #### 🐞 Bugfixes
-* PWENG-243 | Render paywall screens without text instead of the fallback paywall (#4370) via Facundo Menzella (@facumenzella)
+* Use the screen's offering when a workflow step has none (#4424) via Facundo Menzella (@facumenzella)
 
 ### 🔄 Other Changes
-* Resolve workflow offerings through a single WorkflowOfferings wrapper (#4404) via Toni Rico (@tonidero)
-* Add Maestro flow for developer-provided offering filtering packages (#4403) via Toni Rico (@tonidero)
-* other: send fallback_original_step_id and always send blob_ref on workflow events (#4351) via Facundo Menzella (@facumenzella)
+* feat(ads): add new capture methods (#4425) via Peter Porfy (@peterporfy)
+* Update baseline profiles (#4426) via RevenueCat Git Bot (@RCGitBot)
