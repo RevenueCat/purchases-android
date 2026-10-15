@@ -150,9 +150,8 @@ internal open class BasePurchasesTest {
         every {
             updatedCustomerInfoListener.onReceived(any())
         } just Runs
-        every {
-            mockIdentityManager.configure(any())
-        } just Runs
+        every { mockIdentityManager.configure(any()) } just Runs
+        every { mockIdentityManager.checkIAMLoginNeeded(any()) } answers { firstArg<(Boolean) -> Unit>()(false) }
         every {
             mockDiagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
         } just Runs
