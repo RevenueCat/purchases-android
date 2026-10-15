@@ -35,8 +35,9 @@ fun HardPaywallScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(
-            text = "Hits the 'hard_paywall' checkpoint on entry. Access is granted only on Purchased or " +
-                "Restored, so dismissing the paywall keeps the content locked.",
+            text = "Hits the 'hard_paywall' checkpoint on entry. The callback unlocks the content. " +
+                "Remote hard gating suppresses the callback until any configured entitlement is active. " +
+                "Backing out of an unresolved hard gate leaves the content locked.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -68,7 +69,7 @@ private fun PremiumContent(message: String?) {
                 color = MaterialTheme.colorScheme.primary,
             )
             Text(
-                text = "The checkpoint granted access, so the gated content renders.",
+                text = "The checkpoint callback ran, so the gated content renders.",
                 style = MaterialTheme.typography.bodyMedium,
             )
             message?.let { Text(text = it, style = MaterialTheme.typography.bodyMedium) }
@@ -91,7 +92,7 @@ private fun LockedContent(attempts: Int, message: String?, onRetry: () -> Unit) 
                 color = MaterialTheme.colorScheme.error,
             )
             Text(
-                text = "This content needs an active subscription. Attempts so far: $attempts.",
+                text = "The hard gate needs any configured entitlement to be active. Attempts so far: $attempts.",
                 style = MaterialTheme.typography.bodyMedium,
             )
             message?.let { Text(text = it, style = MaterialTheme.typography.bodyMedium) }

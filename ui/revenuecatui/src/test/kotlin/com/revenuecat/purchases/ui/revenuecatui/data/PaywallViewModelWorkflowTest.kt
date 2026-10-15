@@ -59,6 +59,8 @@ import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointFailureKind
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointGateContext
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointGateOutcome
 import com.revenuecat.purchases.ui.revenuecatui.components.style.WebViewComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.webview.webViewContextSnapshot
 import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable
@@ -82,6 +84,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import com.revenuecat.purchases.common.workflows.WorkflowStepID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -722,6 +725,7 @@ class PaywallViewModelWorkflowTest {
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         purchases = mockk {
+            every { appUserID } returns "customer-a"
             every { storefrontCountryCode } returns "US"
             every { preferredUILocaleOverride } returns null
             every { purchasesAreCompletedBy } returns PurchasesAreCompletedBy.REVENUECAT
@@ -746,18 +750,23 @@ class PaywallViewModelWorkflowTest {
         dismissRequestWithExitOffering: ((Offering?, PaywallResult?, PaywallDismissReason) -> Unit)? = null,
         listener: PaywallListener? = null,
         errorPresenter: PaywallErrorPresenter? = null,
+        gateContext: CheckpointGateContext? = null,
+        purchaseLogic: PaywallPurchaseLogic? = null,
+        shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null,
     ): PaywallViewModelImpl {
         val builder = PaywallOptions.Builder(dismissRequest = dismissRequest)
         dismissRequestWithExitOffering?.let { builder.setDismissRequestWithExitOffering(it) }
         listener?.let { builder.setListener(it) }
         errorPresenter?.let { builder.setErrorPresenter(it) }
+        builder.setCheckpointGateContext(gateContext)
+        builder.setPurchaseLogic(purchaseLogic)
         return PaywallViewModelImpl(
             resourceProvider = MockResourceProvider(),
             purchases = purchases,
             options = builder.build(),
             colorScheme = TestData.Constants.currentColorScheme,
             isDarkMode = false,
-            shouldDisplayBlock = null,
+            shouldDisplayBlock = shouldDisplayBlock,
             // Run the step-state pre-warm on the test scheduler so advanceUntilIdle() awaits it
             // instead of it escaping to Dispatchers.Default and resuming after resetMain().
             backgroundDispatcher = testDispatcher,
@@ -800,6 +809,839 @@ class PaywallViewModelWorkflowTest {
         every { onRestoreStarted() } just runs
         every { onRestoreCompleted(any()) } just runs
         every { onRestoreError(any()) } just runs
+    }
+
+    private fun WorkflowStep.withHardGate() = copy(paramValues = paramValues + ("gating" to JsonObject(mapOf(
+        "type" to JsonPrimitive("hard"),
+        "entitlement_identifiers" to JsonArray(listOf(JsonPrimitive("pro"), JsonPrimitive("premium"))),
+    ))))
+
+    private fun gatedCustomerInfo(entitlement: String): CustomerInfo = mockk {
+        every { entitlements.active } returns mapOf(entitlement to mockk())
+    }
+
+    private fun PaywallViewModelImpl.startHardGate() = startWorkflowPresentationFromResult(
+        workflow.copy(steps = mapOf(step1.id to step1.withHardGate(), step2.id to step2)),
+        testOfferings, null, uiConfig,
+    )
+
+    @Test
+    fun `cached entitlements from previous identity cannot pass a later hard gate`() {
+        val outcomes = mutableListOf<CheckpointGateOutcome>()
+        val reasons = mutableListOf<PaywallDismissReason>()
+        val vm = createVm(
+            gateContext = CheckpointGateContext("customer-a", setOf("pro"), outcomes::add),
+            dismissRequestWithExitOffering = { _, _, reason -> reasons.add(reason) },
+        )
+        vm.startWorkflowPresentationFromResult(
+            workflow.copy(steps = mapOf(step1.id to step1, step2.id to step2.withHardGate())),
+            testOfferings, null, uiConfig,
+        )
+        every { purchases.appUserID } returns "customer-b"
+
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-2")
+        assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.NOT_PASSED)
+        assertThat(reasons).isEmpty()
+        vm.closePaywall()
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+        vm.closePaywall()
+        assertThat(reasons).containsExactly(PaywallDismissReason.NAVIGATED_BACK)
+        assertThat(outcomes).doesNotContain(CheckpointGateOutcome.PASSED)
+    }
+
+    @Test
+    fun `cached entitlements from previous identity cannot pass initial hard gate`() {
+        val outcomes = mutableListOf<CheckpointGateOutcome>()
+        val vm = createVm(gateContext = CheckpointGateContext("customer-a", setOf("pro"), outcomes::add))
+        every { purchases.appUserID } returns "customer-b"
+
+        vm.startHardGate()
+
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+        assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.NOT_PASSED)
+    }
+
+    @Test
+    fun `restore from previous identity on earlier soft step cannot seed later hard gate`() = runTest {
+        val result = CompletableDeferred<CustomerInfo>()
+        coEvery { purchases.awaitRestore() } coAnswers { result.await() }
+        val outcomes = mutableListOf<CheckpointGateOutcome>()
+        var dismissals = 0
+        val vm = createVm(
+            gateContext = CheckpointGateContext("customer-a", emptySet(), outcomes::add),
+            dismissRequest = { dismissals++ },
+        )
+        vm.startWorkflowPresentationFromResult(
+            workflow.copy(steps = mapOf(step1.id to step1, step2.id to step2.withHardGate())),
+            testOfferings, null, uiConfig,
+        )
+        val operation = launch { vm.handleRestorePurchases() }
+        runCurrent()
+        every { purchases.appUserID } returns "customer-b"
+        result.complete(gatedCustomerInfo("pro"))
+        operation.join()
+
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+
+        assertThat(dismissals).isZero()
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-2")
+        assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.NOT_PASSED)
+    }
+
+    @Test
+    fun `restore listener changing identity cannot complete hard gate for new customer`() = runTest {
+        coEvery { purchases.awaitRestore() } returns gatedCustomerInfo("pro")
+        val outcomes = mutableListOf<CheckpointGateOutcome>()
+        val events = mutableListOf<FeatureEvent>()
+        every { purchases.track(capture(events)) } just Runs
+        val listener = makeListener()
+        every { listener.onRestoreCompleted(any()) } answers {
+            every { purchases.appUserID } returns "customer-b"
+        }
+        var dismissals = 0
+        val vm = createVm(
+            gateContext = CheckpointGateContext("customer-a", emptySet(), outcomes::add),
+            dismissRequest = { dismissals++ }, listener = listener,
+        )
+        vm.startHardGate()
+
+        vm.handleRestorePurchases()
+
+        assertThat(dismissals).isZero()
+        assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.NOT_PASSED)
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+        vm.closePaywall()
+        assertThat(events.filterIsInstance<WorkflowEvent.Close>()).hasSize(1)
+    }
+
+    @Test
+    fun `entry outcome callback changing identity renders hard gate for new customer`() {
+        val outcomes = mutableListOf<CheckpointGateOutcome>()
+        var dismissals = 0
+        val vm = createVm(
+            gateContext = CheckpointGateContext("customer-a", setOf("pro")) { outcome ->
+                outcomes.add(outcome)
+                if (outcome == CheckpointGateOutcome.PASSED) every { purchases.appUserID } returns "customer-b"
+            },
+            dismissRequest = { dismissals++ },
+        )
+
+        vm.startHardGate()
+
+        assertThat(dismissals).isZero()
+        assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.NOT_PASSED)
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+    }
+
+    @Test
+    fun `identity invalidation during close cannot dismiss replacement presentation`() = runTest {
+        coEvery { purchases.awaitRestore() } returns gatedCustomerInfo("pro")
+        var passed = false
+        var dismissals = 0
+        lateinit var vm: PaywallViewModelImpl
+        val listener = makeListener()
+        every { listener.onRestoreCompleted(any()) } answers {
+            every { purchases.appUserID } returns "customer-b"
+            vm.closePaywall()
+        }
+        vm = createVm(
+            gateContext = CheckpointGateContext("customer-a", emptySet()) { outcome ->
+                if (outcome == CheckpointGateOutcome.PASSED) passed = true
+                if (passed && outcome == CheckpointGateOutcome.NOT_PASSED) {
+                    vm.startWorkflowPresentationFromResult(workflow, testOfferings, null, uiConfig)
+                }
+            },
+            dismissRequest = { dismissals++ }, listener = listener,
+        )
+        vm.startHardGate()
+
+        vm.handleRestorePurchases()
+
+        assertThat(dismissals).isZero()
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+    }
+
+    @Test
+    fun `RevenueCat purchase from previous identity cannot complete hard gate`() = runTest {
+        assertPreviousIdentityCompletion(isPurchase = true)
+    }
+
+    @Test
+    fun `RevenueCat restore from previous identity cannot complete hard gate`() = runTest {
+        assertPreviousIdentityCompletion(isPurchase = false)
+    }
+
+    @Test
+    fun `MY_APP purchase from previous identity cannot complete hard gate`() = runTest {
+        assertPreviousIdentityCompletion(isPurchase = true, myApp = true)
+    }
+
+    @Test
+    fun `MY_APP restore from previous identity cannot complete hard gate`() = runTest {
+        assertPreviousIdentityCompletion(isPurchase = false, myApp = true)
+    }
+
+    @Test
+    fun `RevenueCat purchase after identity change preserves soft completion`() = runTest {
+        assertPreviousIdentityCompletion(isPurchase = true, hardGate = false)
+    }
+
+    @Test
+    fun `RevenueCat restore after identity change preserves soft completion`() = runTest {
+        assertPreviousIdentityCompletion(isPurchase = false, hardGate = false)
+    }
+
+    @Test
+    fun `MY_APP purchase after identity change preserves soft completion`() = runTest {
+        assertPreviousIdentityCompletion(isPurchase = true, myApp = true, hardGate = false)
+    }
+
+    @Test
+    fun `MY_APP restore after identity change preserves soft completion`() = runTest {
+        assertPreviousIdentityCompletion(isPurchase = false, myApp = true, hardGate = false)
+    }
+
+    private suspend fun TestScope.assertPreviousIdentityCompletion(
+        isPurchase: Boolean,
+        myApp: Boolean = false,
+        hardGate: Boolean = true,
+    ) {
+        val result = CompletableDeferred<CustomerInfo>()
+        val transaction = mockk<StoreTransaction>()
+        coEvery { purchases.awaitPurchase(any()) } coAnswers { PurchaseResult(transaction, result.await()) }
+        coEvery { purchases.awaitRestore() } coAnswers { result.await() }
+        coEvery { purchases.awaitSyncPurchases() } coAnswers { result.await() }
+        if (myApp) every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+        val listener = makeListener()
+        val outcomes = mutableListOf<CheckpointGateOutcome>()
+        val events = mutableListOf<FeatureEvent>()
+        every { purchases.track(capture(events)) } just Runs
+        var dismissals = 0
+        val vm = createVm(
+            dismissRequest = { dismissals++ }, listener = listener,
+            gateContext = CheckpointGateContext("customer-a", emptySet(), outcomes::add),
+            purchaseLogic = if (myApp) successfulPurchaseLogic else null,
+        )
+        if (hardGate) vm.startHardGate()
+        else vm.startWorkflowPresentationFromResult(workflow, testOfferings, null, uiConfig)
+        val operation = launch {
+            if (isPurchase) vm.handlePackagePurchase(mockk<Activity>(), TestData.Packages.monthly)
+            else vm.handleRestorePurchases()
+        }
+        runCurrent()
+        every { purchases.appUserID } returns "customer-b"
+        val customerInfo = gatedCustomerInfo("pro")
+        result.complete(customerInfo)
+        operation.join()
+
+        verify(exactly = if (!myApp && isPurchase) 1 else 0) {
+            listener.onPurchaseCompleted(customerInfo, transaction)
+        }
+        verify(exactly = if (!myApp && !isPurchase) 1 else 0) { listener.onRestoreCompleted(customerInfo) }
+        if (hardGate) {
+            assertThat(dismissals).isZero()
+            assertThat(outcomes).doesNotContain(CheckpointGateOutcome.PASSED)
+            assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+            assertThat(events.filterIsInstance<WorkflowEvent.StepCompleted>()).isEmpty()
+            // A fresh operation belongs to B even when CustomerInfo's original ID is an alias of A.
+            every { customerInfo.originalAppUserId } returns "customer-a"
+            vm.handleRestorePurchases()
+            assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.PASSED)
+            assertThat(dismissals).isEqualTo(1)
+        } else {
+            assertThat(dismissals).isEqualTo(if (isPurchase) 1 else 0)
+            if (!isPurchase) vm.closePaywall()
+            assertThat(events.filterIsInstance<WorkflowEvent.Close>()).isEmpty()
+        }
+    }
+
+    @Test
+    fun `restore on earlier soft step does not suppress later blocked hard gate abandonment`() = runTest {
+        coEvery { purchases.awaitRestore() } returns gatedCustomerInfo("unrelated")
+        val outcomes = mutableListOf<CheckpointGateOutcome>()
+        val events = mutableListOf<FeatureEvent>()
+        every { purchases.track(capture(events)) } just Runs
+        val reasons = mutableListOf<PaywallDismissReason>()
+        val vm = createVm(
+            gateContext = CheckpointGateContext("customer-a", emptySet(), outcomes::add),
+            dismissRequestWithExitOffering = { _, _, reason -> reasons.add(reason) },
+        )
+        vm.startWorkflowPresentationFromResult(
+            workflow.copy(steps = mapOf(step1.id to step1, step2.id to step2.withHardGate())),
+            testOfferings, null, uiConfig,
+        )
+        vm.handleRestorePurchases()
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        vm.closePaywall()
+        vm.closePaywall()
+
+        assertThat(events.filterIsInstance<WorkflowEvent.Close>().map { it.stepId }).containsExactly("step-1")
+        assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.NOT_PASSED)
+        assertThat(reasons).containsExactly(PaywallDismissReason.NAVIGATED_BACK)
+    }
+
+    @Test
+    fun `RevenueCat qualifying purchase passes hard gate and completes visible step once`() = runTest {
+        val customerInfo = gatedCustomerInfo("pro")
+        val transaction = mockk<StoreTransaction>()
+        coEvery { purchases.awaitPurchase(any()) } returns PurchaseResult(transaction, customerInfo)
+        val listener = makeListener()
+        val outcomes = mutableListOf<CheckpointGateOutcome>()
+        val events = mutableListOf<FeatureEvent>()
+        every { purchases.track(capture(events)) } just Runs
+        var dismissals = 0
+        val vm = createVm(
+            dismissRequest = { dismissals++ }, listener = listener,
+            gateContext = CheckpointGateContext("customer-a", emptySet(), outcomes::add),
+        )
+        vm.startHardGate()
+
+        vm.handlePackagePurchase(mockk<Activity>(), TestData.Packages.monthly)
+
+        verify(exactly = 1) { listener.onPurchaseCompleted(customerInfo, transaction) }
+        assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.PASSED)
+        assertThat(dismissals).isEqualTo(1)
+        assertThat(vm.purchaseCompleted.value).isTrue()
+        assertThat(vm.workflowState.value).isNull()
+        assertThat(events.filterIsInstance<WorkflowEvent.StepCompleted>().map { it.stepId })
+            .containsExactly("step-1")
+        assertThat(events.filterIsInstance<WorkflowEvent.Close>()).isEmpty()
+    }
+
+    @Test
+    fun `RevenueCat unrelated purchase succeeds but keeps hard gate unresolved`() = runTest {
+        val customerInfo = gatedCustomerInfo("unrelated")
+        val transaction = mockk<StoreTransaction>()
+        coEvery { purchases.awaitPurchase(any()) } returns PurchaseResult(transaction, customerInfo)
+        val listener = makeListener()
+        val outcomes = mutableListOf<CheckpointGateOutcome>()
+        val events = mutableListOf<FeatureEvent>()
+        every { purchases.track(capture(events)) } just Runs
+        var dismissals = 0
+        val vm = createVm(
+            dismissRequest = { dismissals++ }, listener = listener,
+            gateContext = CheckpointGateContext("customer-a", emptySet(), outcomes::add),
+        )
+        vm.startHardGate()
+
+        vm.handlePackagePurchase(mockk<Activity>(), TestData.Packages.monthly)
+
+        verify(exactly = 1) { listener.onPurchaseCompleted(customerInfo, transaction) }
+        assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.NOT_PASSED)
+        assertThat(dismissals).isZero()
+        assertThat(vm.purchaseCompleted.value).isTrue()
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+        assertThat(events.filterIsInstance<WorkflowEvent.StepCompleted>()).isEmpty()
+        vm.closePaywall()
+        assertThat(events.filterIsInstance<WorkflowEvent.Close>()).hasSize(1)
+    }
+
+    @Test
+    fun `RevenueCat qualifying restore passes hard gate without display predicate`() = runTest {
+        val customerInfo = gatedCustomerInfo("pro")
+        coEvery { purchases.awaitRestore() } returns customerInfo
+        val listener = makeListener()
+        val outcomes = mutableListOf<CheckpointGateOutcome>()
+        val events = mutableListOf<FeatureEvent>()
+        every { purchases.track(capture(events)) } just Runs
+        var dismissals = 0
+        val vm = createVm(
+            dismissRequest = { dismissals++ }, listener = listener,
+            gateContext = CheckpointGateContext("customer-a", emptySet(), outcomes::add),
+        )
+        vm.startHardGate()
+
+        vm.handleRestorePurchases()
+
+        verify(exactly = 1) { listener.onRestoreCompleted(customerInfo) }
+        assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.PASSED)
+        assertThat(dismissals).isEqualTo(1)
+        assertThat(vm.workflowState.value).isNull()
+        assertThat(events.filterIsInstance<WorkflowEvent.StepCompleted>().map { it.stepId })
+            .containsExactly("step-1")
+        assertThat(events.filterIsInstance<WorkflowEvent.Close>()).isEmpty()
+    }
+
+    @Test
+    fun `RevenueCat unrelated restore succeeds but does not complete hard gate session`() = runTest {
+        val customerInfo = gatedCustomerInfo("unrelated")
+        coEvery { purchases.awaitRestore() } returns customerInfo
+        val listener = makeListener()
+        val outcomes = mutableListOf<CheckpointGateOutcome>()
+        val events = mutableListOf<FeatureEvent>()
+        every { purchases.track(capture(events)) } just Runs
+        var dismissals = 0
+        val vm = createVm(
+            dismissRequest = { dismissals++ }, listener = listener,
+            gateContext = CheckpointGateContext("customer-a", emptySet(), outcomes::add),
+        )
+        vm.startHardGate()
+
+        vm.handleRestorePurchases()
+
+        verify(exactly = 1) { listener.onRestoreCompleted(customerInfo) }
+        assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.NOT_PASSED)
+        assertThat(dismissals).isZero()
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+        assertThat(events.filterIsInstance<WorkflowEvent.StepCompleted>()).isEmpty()
+        vm.closePaywall()
+        assertThat(events.filterIsInstance<WorkflowEvent.Close>()).hasSize(1)
+    }
+
+    @Test
+    fun `RevenueCat purchase from older presentation cannot complete replacement hard gate`() = runTest {
+        assertOldCompletionCannotPassGate(isPurchase = true)
+    }
+
+    @Test
+    fun `RevenueCat restore from older presentation cannot complete replacement hard gate`() = runTest {
+        assertOldCompletionCannotPassGate(isPurchase = false)
+    }
+
+    private suspend fun TestScope.assertOldCompletionCannotPassGate(
+        isPurchase: Boolean,
+        myApp: Boolean = false,
+    ) {
+        val result = CompletableDeferred<CustomerInfo>()
+        val transaction = mockk<StoreTransaction>()
+        coEvery { purchases.awaitPurchase(any()) } coAnswers { PurchaseResult(transaction, result.await()) }
+        coEvery { purchases.awaitRestore() } coAnswers { result.await() }
+        coEvery { purchases.awaitSyncPurchases() } coAnswers { result.await() }
+        if (myApp) every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+        val listener = makeListener()
+        val outcomes = mutableListOf<CheckpointGateOutcome>()
+        val events = mutableListOf<FeatureEvent>()
+        every { purchases.track(capture(events)) } just Runs
+        var dismissals = 0
+        val vm = createVm(
+            dismissRequest = { dismissals++ }, listener = listener,
+            gateContext = CheckpointGateContext("customer-a", emptySet(), outcomes::add),
+            purchaseLogic = if (myApp) successfulPurchaseLogic else null,
+        )
+        vm.startHardGate()
+        val operation = launch {
+            if (isPurchase) vm.handlePackagePurchase(mockk<Activity>(), TestData.Packages.monthly)
+            else vm.handleRestorePurchases()
+        }
+        runCurrent()
+        vm.closePaywall()
+        vm.startHardGate()
+        events.clear()
+        outcomes.clear()
+        val customerInfo = gatedCustomerInfo("pro")
+        result.complete(customerInfo)
+        operation.join()
+
+        if (!myApp) {
+            if (isPurchase) verify(exactly = 1) { listener.onPurchaseCompleted(customerInfo, transaction) }
+            else verify(exactly = 1) { listener.onRestoreCompleted(customerInfo) }
+        }
+        assertThat(dismissals).isEqualTo(1)
+        assertThat(outcomes).doesNotContain(CheckpointGateOutcome.PASSED)
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+        assertThat(events.filterIsInstance<WorkflowEvent.StepCompleted>()).isEmpty()
+        vm.closePaywall()
+        assertThat(events.filterIsInstance<WorkflowEvent.Close>()).hasSize(1)
+    }
+
+    @Test
+    fun `purchase errors and cancellation do not pass hard gate`() = runTest {
+        val listener = makeListener()
+        val outcomes = mutableListOf<CheckpointGateOutcome>()
+        var dismissals = 0
+        val vm = createVm(
+            dismissRequest = { dismissals++ }, listener = listener,
+            gateContext = CheckpointGateContext("customer-a", emptySet(), outcomes::add),
+        )
+        vm.startHardGate()
+        val error = PurchasesError(PurchasesErrorCode.NetworkError)
+        coEvery { purchases.awaitPurchase(any()) } throws PurchasesException(error)
+        vm.handlePackagePurchase(mockk<Activity>(), TestData.Packages.monthly)
+        coEvery { purchases.awaitPurchase(any()) } throws PurchasesException(
+            PurchasesError(PurchasesErrorCode.PurchaseCancelledError),
+        )
+        vm.handlePackagePurchase(mockk<Activity>(), TestData.Packages.monthly)
+
+        verify(exactly = 1) { listener.onPurchaseError(error) }
+        verify(exactly = 1) { listener.onPurchaseCancelled() }
+        assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.NOT_PASSED)
+        assertThat(dismissals).isZero()
+        assertThat(vm.purchaseCompleted.value).isFalse()
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+    }
+
+    @Test
+    fun `restore error does not pass hard gate`() = runTest {
+        val listener = makeListener()
+        val outcomes = mutableListOf<CheckpointGateOutcome>()
+        var dismissals = 0
+        val vm = createVm(
+            dismissRequest = { dismissals++ }, listener = listener,
+            gateContext = CheckpointGateContext("customer-a", emptySet(), outcomes::add),
+        )
+        vm.startHardGate()
+        val error = PurchasesError(PurchasesErrorCode.NetworkError)
+        coEvery { purchases.awaitRestore() } throws PurchasesException(error)
+        vm.handleRestorePurchases()
+
+        verify(exactly = 1) { listener.onRestoreError(error) }
+        assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.NOT_PASSED)
+        assertThat(dismissals).isZero()
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+    }
+
+    @Test
+    fun `web checkout notification does not pass hard gate`() {
+        val outcomes = mutableListOf<CheckpointGateOutcome>()
+        var dismissals = 0
+        var notifications = 0
+        val listener = object : PaywallListener {
+            override fun onWebCheckoutOpened() { notifications++ }
+        }
+        val vm = createVm(
+            dismissRequest = { dismissals++ }, listener = listener,
+            gateContext = CheckpointGateContext("customer-a", emptySet(), outcomes::add),
+        )
+        vm.startHardGate()
+        vm.notifyWebCheckoutOpened()
+
+        assertThat(notifications).isEqualTo(1)
+        assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.NOT_PASSED)
+        assertThat(dismissals).isZero()
+        assertThat(vm.purchaseCompleted.value).isFalse()
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+    }
+
+    private val successfulPurchaseLogic = object : PaywallPurchaseLogic {
+        override suspend fun performPurchase(activity: Activity, params: PaywallPurchaseLogicParams) =
+            PurchaseLogicResult.Success
+        override suspend fun performRestore(customerInfo: CustomerInfo) = PurchaseLogicResult.Success
+    }
+
+    @Test
+    fun `MY_APP qualifying purchase passes hard gate and completes visible step once`() = runTest {
+        assertMyAppGateCompletion(isPurchase = true, entitlement = "pro", shouldPass = true)
+    }
+
+    @Test
+    fun `MY_APP unrelated purchase succeeds but keeps hard gate unresolved`() = runTest {
+        assertMyAppGateCompletion(isPurchase = true, entitlement = "unrelated", shouldPass = false)
+    }
+
+    @Test
+    fun `MY_APP qualifying restore passes hard gate without display predicate`() = runTest {
+        assertMyAppGateCompletion(isPurchase = false, entitlement = "pro", shouldPass = true)
+    }
+
+    @Test
+    fun `MY_APP unrelated restore succeeds but does not complete hard gate session`() = runTest {
+        assertMyAppGateCompletion(isPurchase = false, entitlement = "unrelated", shouldPass = false)
+    }
+
+    private suspend fun assertMyAppGateCompletion(isPurchase: Boolean, entitlement: String, shouldPass: Boolean) {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+        coEvery { purchases.awaitSyncPurchases() } returns gatedCustomerInfo(entitlement)
+        val outcomes = mutableListOf<CheckpointGateOutcome>()
+        val events = mutableListOf<FeatureEvent>()
+        every { purchases.track(capture(events)) } just Runs
+        var dismissals = 0
+        val vm = createVm(
+            dismissRequest = { dismissals++ }, purchaseLogic = successfulPurchaseLogic,
+            gateContext = CheckpointGateContext("customer-a", emptySet(), outcomes::add),
+        )
+        vm.startHardGate()
+        if (isPurchase) vm.handlePackagePurchase(mockk<Activity>(), TestData.Packages.monthly)
+        else vm.handleRestorePurchases()
+
+        assertThat(vm.purchaseCompleted.value).isEqualTo(isPurchase)
+        if (shouldPass) {
+            assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.PASSED)
+            assertThat(dismissals).isEqualTo(1)
+            assertThat(vm.workflowState.value).isNull()
+            assertThat(events.filterIsInstance<WorkflowEvent.StepCompleted>().map { it.stepId })
+                .containsExactly("step-1")
+            assertThat(events.filterIsInstance<WorkflowEvent.Close>()).isEmpty()
+        } else {
+            assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.NOT_PASSED)
+            assertThat(dismissals).isZero()
+            assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+            assertThat(events.filterIsInstance<WorkflowEvent.StepCompleted>()).isEmpty()
+            vm.closePaywall()
+            assertThat(events.filterIsInstance<WorkflowEvent.Close>()).hasSize(1)
+        }
+    }
+
+    @Test
+    fun `MY_APP purchase from older presentation cannot complete replacement hard gate`() = runTest {
+        assertOldCompletionCannotPassGate(isPurchase = true, myApp = true)
+    }
+
+    @Test
+    fun `MY_APP restore from older presentation cannot complete replacement hard gate`() = runTest {
+        assertOldCompletionCannotPassGate(isPurchase = false, myApp = true)
+    }
+
+    @Test
+    fun `restore display predicate cannot bypass an unresolved hard gate`() = runTest {
+        coEvery { purchases.awaitRestore() } returns gatedCustomerInfo("unrelated")
+        var dismissals = 0
+        val outcomes = mutableListOf<CheckpointGateOutcome>()
+        val vm = createVm(
+            dismissRequest = { dismissals++ }, shouldDisplayBlock = { false },
+            gateContext = CheckpointGateContext("customer-a", emptySet(), outcomes::add),
+        )
+        vm.startHardGate()
+        vm.handleRestorePurchases()
+
+        assertThat(dismissals).isZero()
+        assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.NOT_PASSED)
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+    }
+
+    @Test
+    fun `operation gate outcome callback cannot dismiss replacement presentation`() = runTest {
+        coEvery { purchases.awaitRestore() } returns gatedCustomerInfo("pro")
+        var dismissals = 0
+        lateinit var vm: PaywallViewModelImpl
+        vm = createVm(
+            dismissRequest = { dismissals++ },
+            gateContext = CheckpointGateContext("customer-a", emptySet()) { outcome ->
+                if (outcome == CheckpointGateOutcome.PASSED) {
+                    vm.startWorkflowPresentationFromResult(workflow, testOfferings, null, uiConfig)
+                }
+            },
+        )
+        vm.startHardGate()
+        vm.handleRestorePurchases()
+
+        assertThat(dismissals).isZero()
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+    }
+
+    @Test
+    fun `successful soft restore listener can close without reporting workflow abandonment`() = runTest {
+        coEvery { purchases.awaitRestore() } returns mockk<CustomerInfo>()
+        val events = mutableListOf<FeatureEvent>()
+        every { purchases.track(capture(events)) } just Runs
+        lateinit var vm: PaywallViewModelImpl
+        val listener = object : PaywallListener {
+            override fun onRestoreCompleted(customerInfo: CustomerInfo) { vm.closePaywall() }
+        }
+        vm = createVm(listener = listener)
+        vm.startWorkflowPresentationFromResult(workflow, testOfferings, null, uiConfig)
+        vm.handleRestorePurchases()
+
+        assertThat(events.filterIsInstance<WorkflowEvent.Close>()).isEmpty()
+        assertThat(events.filterIsInstance<WorkflowEvent.StepCompleted>().map { it.stepId })
+            .containsExactly("step-1")
+    }
+
+    @Test
+    fun `RevenueCat restore display predicate cannot dismiss replacement hard gate`() = runTest {
+        assertRestorePredicateCannotDismissReplacement(PurchasesAreCompletedBy.REVENUECAT)
+    }
+
+    @Test
+    fun `MY_APP restore display predicate cannot dismiss replacement hard gate`() = runTest {
+        assertRestorePredicateCannotDismissReplacement(PurchasesAreCompletedBy.MY_APP)
+    }
+
+    private suspend fun assertRestorePredicateCannotDismissReplacement(completedBy: PurchasesAreCompletedBy) {
+        every { purchases.purchasesAreCompletedBy } returns completedBy
+        val customerInfo = gatedCustomerInfo("unrelated")
+        coEvery { purchases.awaitRestore() } returns customerInfo
+        coEvery { purchases.awaitSyncPurchases() } returns customerInfo
+        val listener = makeListener()
+        val outcomes = mutableListOf<CheckpointGateOutcome>()
+        val events = mutableListOf<FeatureEvent>()
+        every { purchases.track(capture(events)) } just Runs
+        var dismissals = 0
+        var predicateCalls = 0
+        lateinit var vm: PaywallViewModelImpl
+        vm = createVm(
+            dismissRequest = { dismissals++ }, listener = listener,
+            purchaseLogic = if (completedBy == PurchasesAreCompletedBy.MY_APP) successfulPurchaseLogic else null,
+            gateContext = CheckpointGateContext("customer-a", emptySet(), outcomes::add),
+            shouldDisplayBlock = {
+                predicateCalls++
+                vm.closePaywall()
+                vm.startHardGate()
+                events.clear()
+                false
+            },
+        )
+        vm.startWorkflowPresentationFromResult(workflow, testOfferings, null, uiConfig)
+        vm.handleRestorePurchases()
+
+        if (completedBy == PurchasesAreCompletedBy.REVENUECAT) {
+            verify(exactly = 1) { listener.onRestoreCompleted(customerInfo) }
+        }
+        assertThat(predicateCalls).isEqualTo(1)
+        assertThat(dismissals).isEqualTo(1)
+        assertThat(vm.purchaseCompleted.value).isFalse()
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+        assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.NOT_PASSED)
+        assertThat(events.filterIsInstance<WorkflowEvent.StepCompleted>()).isEmpty()
+        assertThat(events.filterIsInstance<WorkflowEvent.Close>()).isEmpty()
+        vm.closePaywall()
+        assertThat(events.filterIsInstance<WorkflowEvent.Close>()).hasSize(1)
+    }
+
+    @Test
+    fun `satisfied initial hard gate dismisses without rendering or step and paywall events`() {
+        var dismissals = 0
+        val events = mutableListOf<FeatureEvent>()
+        every { purchases.track(capture(events)) } just Runs
+        val outcomes = mutableListOf<CheckpointGateOutcome>()
+        val vm = createVm(
+            dismissRequest = { dismissals++ },
+            gateContext = CheckpointGateContext("customer-a", setOf("premium"), outcomes::add),
+        )
+        vm.startWorkflowPresentationFromResult(
+            workflow.copy(steps = mapOf(step1.id to step1.withHardGate(), step2.id to step2)),
+            testOfferings, null, uiConfig,
+        )
+        vm.trackPaywallImpressionIfNeeded()
+        assertThat(dismissals).isEqualTo(1)
+        assertThat(vm.workflowState.value).isNull()
+        assertThat(events).isEmpty()
+        assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.PASSED)
+    }
+
+    @Test
+    fun `unsatisfied initial hard gate renders and reports not passed`() {
+        val outcomes = mutableListOf<CheckpointGateOutcome>()
+        val vm = createVm(gateContext = CheckpointGateContext("customer-a", null, outcomes::add))
+        vm.startWorkflowPresentationFromResult(
+            workflow.copy(steps = mapOf(step1.id to step1.withHardGate(), step2.id to step2)),
+            testOfferings, null, uiConfig,
+        )
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+        assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.NOT_PASSED)
+    }
+
+    @Test
+    fun `satisfied later hard gate completes only the prior visible step`() {
+        var dismissals = 0
+        val events = mutableListOf<FeatureEvent>()
+        every { purchases.track(capture(events)) } just Runs
+        val vm = createVm(
+            dismissRequest = { dismissals++ },
+            gateContext = CheckpointGateContext("customer-a", setOf("pro")) {},
+        )
+        vm.startWorkflowPresentationFromResult(
+            workflow.copy(steps = mapOf(step1.id to step1, step2.id to step2.withHardGate())),
+            testOfferings, null, uiConfig,
+        )
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        assertThat(dismissals).isEqualTo(1)
+        assertThat(vm.workflowState.value).isNull()
+        assertThat(events.filterIsInstance<WorkflowEvent.StepStarted>().map { it.stepId }).containsExactly("step-1")
+        assertThat(events.filterIsInstance<WorkflowEvent.StepCompleted>().map { it.stepId }).containsExactly("step-1")
+        assertThat(events.filterIsInstance<WorkflowEvent.Close>()).isEmpty()
+        assertThat(events.filterIsInstance<PaywallEvent>()).isEmpty()
+    }
+
+    @Test
+    fun `invalid gate fails closed like a hard gate that never passes`() {
+        val outcomes = mutableListOf<CheckpointGateOutcome>()
+        val invalidStep = step1.copy(paramValues = step1.paramValues + ("gating" to JsonNull))
+        val vm = createVm(gateContext = CheckpointGateContext("customer-a", setOf("pro")) { outcomes += it })
+        val invalidWorkflow = workflow.copy(steps = mapOf(step1.id to invalidStep, step2.id to step2))
+        vm.startWorkflowPresentationFromResult(invalidWorkflow, testOfferings, null, uiConfig)
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+        assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.NOT_PASSED)
+    }
+
+    @Test
+    fun `blocked initial hard step ignores forward triggers`() {
+        val vm = createVm(gateContext = CheckpointGateContext("customer-a", emptySet()) {})
+        vm.startWorkflowPresentationFromResult(
+            workflow.copy(steps = mapOf(step1.id to step1.withHardGate(), step2.id to step2)),
+            testOfferings, null, uiConfig,
+        )
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+    }
+
+    @Test
+    fun `close on blocked initial step dismisses as navigated back without exit offer`() {
+        val reasons = mutableListOf<PaywallDismissReason>()
+        val exitOfferings = mutableListOf<Offering?>()
+        val vm = createVm(
+            dismissRequestWithExitOffering = { offering, _, reason -> exitOfferings.add(offering); reasons.add(reason) },
+            gateContext = CheckpointGateContext("customer-a", null) {},
+        )
+        vm.startWorkflowPresentationFromResult(
+            workflow.copy(steps = mapOf(step1.id to step1.withHardGate(), step2.id to step2)),
+            testOfferings, null, uiConfig,
+        )
+        vm.closePaywall()
+        assertThat(reasons).containsExactly(PaywallDismissReason.NAVIGATED_BACK)
+        assertThat(exitOfferings).containsExactly(null)
+        assertThat(vm.workflowState.value).isNull()
+    }
+
+    @Test
+    fun `close on blocked later step goes back and closing earlier cannot bypass gate`() {
+        val reasons = mutableListOf<PaywallDismissReason>()
+        val outcomes = mutableListOf<CheckpointGateOutcome>()
+        val vm = createVm(
+            dismissRequestWithExitOffering = { _, _, reason -> reasons.add(reason) },
+            gateContext = CheckpointGateContext("customer-a", emptySet(), outcomes::add),
+        )
+        vm.startWorkflowPresentationFromResult(
+            workflow.copy(steps = mapOf(step1.id to step1, step2.id to step2.withHardGate())),
+            testOfferings, null, uiConfig,
+        )
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        vm.closePaywall()
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+        assertThat(reasons).isEmpty()
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-2")
+        vm.closePaywall()
+        vm.closePaywall()
+        assertThat(reasons).containsExactly(PaywallDismissReason.NAVIGATED_BACK)
+        assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.NOT_PASSED)
+    }
+
+    @Test
+    fun `system back on a blocked gate stays available and preserves the unresolved outcome`() {
+        val outcomes = mutableListOf<CheckpointGateOutcome>()
+        val vm = createVm(gateContext = CheckpointGateContext("customer-a", emptySet(), outcomes::add))
+        vm.startWorkflowPresentationFromResult(
+            workflow.copy(steps = mapOf(step1.id to step1, step2.id to step2.withHardGate())),
+            testOfferings, null, uiConfig,
+        )
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        assertThat(vm.handleBackNavigation()).isTrue()
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+        assertThat(vm.handleBackNavigation()).isFalse()
+        assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.NOT_PASSED)
+    }
+
+    @Test
+    fun `gate completion callback cannot dismiss a replacement presentation`() {
+        var dismissals = 0
+        lateinit var vm: PaywallViewModelImpl
+        vm = createVm(
+            dismissRequest = { dismissals++ },
+            gateContext = CheckpointGateContext("customer-a", setOf("pro")) { outcome ->
+                if (outcome == CheckpointGateOutcome.PASSED) {
+                    vm.startWorkflowPresentationFromResult(workflow, testOfferings, null, uiConfig)
+                }
+            },
+        )
+        vm.startWorkflowPresentationFromResult(
+            workflow.copy(steps = mapOf(step1.id to step1.withHardGate(), step2.id to step2)),
+            testOfferings, null, uiConfig,
+        )
+        assertThat(dismissals).isZero()
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
     }
 
     // region forward navigation
