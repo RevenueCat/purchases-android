@@ -1,5 +1,5 @@
 # `error_checkpoint` is the SDK's simulated resolution failure (the resolver throws before reading any config).
-# The SDK presents its error dialog (BEFORE_FLOW_PRESENTATION copy) and the passed callback is not invoked.
+# The SDK presents its error dialog (FLOW_COULD_NOT_BE_SHOWN copy) and the passed callback is not invoked.
 #
 # Run locally against the test store:
 #   maestro test -e MAESTRO_STORE=test_store maestro/checkpoints/checkpoint_resolution_error.yaml

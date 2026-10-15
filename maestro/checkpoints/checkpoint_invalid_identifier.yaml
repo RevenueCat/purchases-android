@@ -1,5 +1,5 @@
 # A checkpoint identifier that fails validation never reaches the backend: the SDK presents its error dialog
-# (BEFORE_FLOW_PRESENTATION copy) and the passed callback is not invoked, so the app keeps the user where they were.
+# (FLOW_COULD_NOT_BE_SHOWN copy) and the passed callback is not invoked, so the app keeps the user where they were.
 #
 # Run locally against the test store:
 #   maestro test -e MAESTRO_STORE=test_store maestro/checkpoints/checkpoint_invalid_identifier.yaml

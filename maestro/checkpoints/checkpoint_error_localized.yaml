@@ -1,5 +1,5 @@
 # The SDK's checkpoint error dialog follows the preferred UI locale override (app_locale), not the device locale:
-# with "es" the BEFORE_FLOW_PRESENTATION copy is the Spanish string from values-es.
+# with "es" the FLOW_COULD_NOT_BE_SHOWN copy is the Spanish string from values-es.
 #
 # Run locally against the test store:
 #   maestro test -e MAESTRO_STORE=test_store maestro/checkpoints/checkpoint_error_localized.yaml

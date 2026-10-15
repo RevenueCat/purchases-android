@@ -1,5 +1,5 @@
 # A purchase that fails inside the flow a checkpoint presents (`donottouch_sdk_entitlement` presents its paywall to
-# a user without the entitlement): the SDK presents its error dialog (DURING_FLOW_PRESENTATION; the Test Store's
+# a user without the entitlement): the SDK presents its error dialog (FLOW_ACTION_FAILED; the Test Store's
 # simulated failure keeps its own description), acknowledging it leaves the paywall on screen and the callback
 # uninvoked, and closing the paywall afterwards passes the checkpoint with an empty result.
 #
