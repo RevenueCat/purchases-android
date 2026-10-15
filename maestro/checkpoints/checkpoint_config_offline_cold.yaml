@@ -18,7 +18,8 @@ env:
     clearState: true
     arguments:
       e2e_test_flow: open_checkpoint
-      checkpoint_identifier: donottouch_sdk_entitlement
+      checkpoint_identifier: donottouch_sdk_everyone
+      app_user_id: "maestro-checkpoint-${Date.now()}"
       force_server_error_strategy: remote_config_network_error
 - extendedWaitUntil:
     visible: "Hit checkpoint"

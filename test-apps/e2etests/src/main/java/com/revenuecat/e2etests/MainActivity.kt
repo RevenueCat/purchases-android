@@ -73,6 +73,6 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
         // Comma-separated app user ids. Each one gets a button that logs in as it.
         const val LOG_IN_APP_USER_IDS_EXTRA_KEY = "log_in_app_user_ids"
         const val CHECKPOINT_IDENTIFIER_EXTRA_KEY = "checkpoint_identifier"
-        const val DEFAULT_CHECKPOINT_IDENTIFIER = "donottouch_sdk_entitlement"
+        const val DEFAULT_CHECKPOINT_IDENTIFIER = "donottouch_sdk_everyone"
     }
 }
