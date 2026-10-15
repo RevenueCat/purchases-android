@@ -354,6 +354,7 @@ internal open class BasePurchasesTest {
         val mockEntitlements = mockk<EntitlementInfos>()
         every { mockEntitlements.verification } returns verificationResult
         every { mockInfo.entitlements } returns mockEntitlements
+        every { mockInfo.subscriptionsByProductIdentifier } returns emptyMap()
     }
 
     protected fun mockCustomerInfoHelper(

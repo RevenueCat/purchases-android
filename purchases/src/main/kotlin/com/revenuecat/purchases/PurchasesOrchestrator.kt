@@ -83,6 +83,7 @@ import com.revenuecat.purchases.common.workflows.WorkflowsConfigProvider
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.WebPurchaseRedemptionHelper
 import com.revenuecat.purchases.google.isSuccessful
+import com.revenuecat.purchases.google.originalGooglePurchase
 import com.revenuecat.purchases.identity.Identity
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
@@ -112,6 +113,7 @@ import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.models.toStoreReplacementModeOrNull
 import com.revenuecat.purchases.paywalls.DownloadedFontFamily
 import com.revenuecat.purchases.paywalls.FontLoader
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
@@ -313,6 +315,9 @@ internal class PurchasesOrchestrator(
 
     @SuppressWarnings("MagicNumber")
     private val preferredLocaleOverrideRateLimiter = RateLimiter(2, 60.seconds)
+
+    // Guarded by this. Base plans launched in this session, per subscription.
+    private val launchedBasePlanIdsByProductId = mutableMapOf<String, MutableSet<String>>()
 
     var storefrontCountryCode: String? = null
         private set
@@ -1818,8 +1823,25 @@ internal class PurchasesOrchestrator(
             blockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded {
                 blockstoreHelper.storeUserIdIfNeeded(info)
                 getPurchaseCallback(storeTransaction.productIds[0])?.let { purchaseCallback ->
-                    dispatch {
-                        purchaseCallback.onCompleted(storeTransaction, info)
+                    val billedBasePlanId = billedBasePlanIdOfEarlierLaunch(storeTransaction, info)
+                    if (billedBasePlanId == null) {
+                        dispatch {
+                            purchaseCallback.onCompleted(storeTransaction, info)
+                        }
+                    } else {
+                        // Fail rather than wait: if Play returned this purchase as the launch's own result, no other
+                        // result will come.
+                        purchaseCallback.dispatch(
+                            PurchasesError(
+                                PurchasesErrorCode.ProductAlreadyPurchasedError,
+                                PurchaseStrings.PURCHASE_COMPLETED_FOR_ANOTHER_BASE_PLAN.format(
+                                    storeTransaction.orderId,
+                                    billedBasePlanId,
+                                    storeTransaction.productIds[0],
+                                    storeTransaction.subscriptionOptionId,
+                                ),
+                            ).also { errorLog(it) },
+                        )
                     }
                 }
             }
@@ -1830,6 +1852,34 @@ internal class PurchasesOrchestrator(
 
         return Pair(onSuccess, onError)
     }
+
+    // Play purchases don't carry the base plan, so a late purchase of another base plan of the same subscription
+    // arrives stamped with the pending launch's option. It only counts when the backend, which knows the billed plan,
+    // reports for this exact order another plan launched earlier in this session. Skipped when Play may have handed
+    // back the existing purchase (a DEFERRED change, or an acknowledged purchase for Play's default one), and for apps
+    // that acknowledge purchases themselves, since they need the purchase.
+    private fun billedBasePlanIdOfEarlierLaunch(transaction: StoreTransaction, customerInfo: CustomerInfo): String? {
+        val isNewPlayPurchase = store == Store.PLAY_STORE &&
+            appConfig.finishTransactions &&
+            transaction.replacementMode.toStoreReplacementModeOrNull() != StoreReplacementMode.DEFERRED &&
+            transaction.originalGooglePurchase?.isAcknowledged == false
+        val launchedBasePlanId = transaction.subscriptionOptionId
+            ?.takeIf { isNewPlayPurchase }
+            ?.let { basePlanIdOf(it) }
+            ?: return null
+        val productId = transaction.productIds[0]
+        return customerInfo.subscriptionsByProductIdentifier[productId]
+            ?.takeIf { it.storeTransactionId != null && it.storeTransactionId == transaction.orderId }
+            ?.productPlanIdentifier
+            ?.takeIf { it != launchedBasePlanId && wasLaunchedInThisSession(productId, it) }
+    }
+
+    private fun wasLaunchedInThisSession(productId: String, basePlanId: String): Boolean = synchronized(this) {
+        launchedBasePlanIdsByProductId[productId]?.contains(basePlanId) == true
+    }
+
+    // Option ids are basePlanId or basePlanId:offerId.
+    private fun basePlanIdOf(subscriptionOptionId: String): String = subscriptionOptionId.substringBefore(':')
 
     private fun getProductChangeCompletedCallbacks(
         productChangeListener: ProductChangeCallback?,
@@ -1902,6 +1952,11 @@ internal class PurchasesOrchestrator(
                 state = state.copy(
                     purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener,
                 )
+                (purchasingData as? GooglePurchasingData.Subscription)?.let { subscription ->
+                    launchedBasePlanIdsByProductId
+                        .getOrPut(subscription.productId) { mutableSetOf() }
+                        .add(basePlanIdOf(subscription.optionId))
+                }
                 userPurchasing = identityManager.currentAppUserID
             }
         }

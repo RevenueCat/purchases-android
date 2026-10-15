@@ -69,4 +69,6 @@ public object PurchaseStrings {
         "only supported on the Play Store."
     public const val DEFERRED_PRODUCT_CHANGE_WITH_BASE_PLAN_ID: String = "Passing a basePlanId in oldProductId (%s) " +
         "during a DEFERRED product change is not recommended. The basePlanId will be stripped automatically."
+    public const val PURCHASE_COMPLETED_FOR_ANOTHER_BASE_PLAN: String = "Google Play completed order %s for base " +
+        "plan %s of %s, not for the option being purchased (%s). Check CustomerInfo for the active subscription."
 }
