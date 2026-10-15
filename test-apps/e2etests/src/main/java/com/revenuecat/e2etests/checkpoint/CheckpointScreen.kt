@@ -9,6 +9,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -22,7 +23,8 @@ import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint
 
 /**
  * Hits a checkpoint and reports what its callback received. The SDK presents whatever the checkpoint resolves to
- * (a flow, or its error dialog) over this activity; Maestro asserts on that and on the status line here.
+ * (a flow, or its error dialog) over this activity; Maestro asserts on that and on the status line here, which
+ * counts the invocations so a flow can tell a callback that fired once from one that fired earlier too.
  */
 @OptIn(InviteOnlyCheckpointsAPI::class)
 @Composable
@@ -31,6 +33,7 @@ fun CheckpointScreen(
     modifier: Modifier = Modifier,
 ) {
     var status by remember { mutableStateOf("Callback: not invoked") }
+    var invocations by remember { mutableIntStateOf(0) }
 
     Column(
         modifier = modifier
@@ -43,7 +46,10 @@ fun CheckpointScreen(
         Text(text = "Identifier: $identifier")
         Button(
             onClick = {
-                Purchases.sharedInstance.checkpoint(identifier) { result -> status = result.describe() }
+                Purchases.sharedInstance.checkpoint(identifier) { result ->
+                    invocations++
+                    status = "${result.describe()} (call #$invocations)"
+                }
             },
         ) {
             Text("Hit checkpoint")

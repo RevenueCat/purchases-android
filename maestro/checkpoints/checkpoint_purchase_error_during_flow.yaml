@@ -47,16 +47,16 @@ env:
     text: "OK"
 - assertNotVisible: "Purchase failure simulated successfully in Test Store."
 
-# Acknowledging resumes the flow where it was: the paywall is still up and the callback has not fired.
+# Acknowledging resumes the flow where it was: the paywall is still up.
 - assertVisible: "Continue"
-- assertNotVisible: "Callback:.*"
 
-# Swiping the sheet down closes the flow like a close action: the checkpoint passes with nothing obtained.
+# Swiping the sheet down closes the flow like a close action: the checkpoint passes with nothing obtained, and
+# the call count shows the callback had not fired while the error dialog was up.
 - swipe:
     start: "50%,10%"
     end: "50%,90%"
     duration: 600
 - extendedWaitUntil:
-    visible: "Callback: passed, entitlements: none"
+    visible: "Callback: passed, entitlements: none (call #1)"
     timeout: 15000
 - takeScreenshot: "checkpoint_purchase_error_during_flow - passed empty"
