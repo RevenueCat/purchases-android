@@ -5,7 +5,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
 import com.revenuecat.purchases.ui.revenuecatui.PaywallErrorPresenter
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresentationStage
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointFailureKind
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import kotlinx.coroutines.CoroutineScope
@@ -66,7 +66,7 @@ internal class PaywallErrorReporter(
         present(
             presenter,
             error,
-            ErrorPresentationStage.DURING_FLOW_PRESENTATION,
+            CheckpointFailureKind.FLOW_ACTION_FAILED,
             onFailure = { host.showErrorDialog(error) },
             onComplete = {},
         )
@@ -80,7 +80,7 @@ internal class PaywallErrorReporter(
         present(
             presenter,
             paywallResult.error,
-            ErrorPresentationStage.BEFORE_FLOW_PRESENTATION,
+            CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN,
             onFailure = { host.closePaywall(paywallResult, PaywallDismissReason.CLOSE) },
         ) {
             // The paywall may have moved past this error meanwhile (e.g. a retried load succeeded); a completion
@@ -99,7 +99,7 @@ internal class PaywallErrorReporter(
     private fun present(
         presenter: PaywallErrorPresenter,
         error: PurchasesError,
-        stage: ErrorPresentationStage,
+        kind: CheckpointFailureKind,
         onFailure: () -> Unit,
         onComplete: () -> Unit,
     ) {
@@ -116,7 +116,7 @@ internal class PaywallErrorReporter(
         current?.discard()
         current = completion
         try {
-            presenter.present(error, stage, completion)
+            presenter.present(error, kind, completion)
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             Logger.e("Error presenter failed: $e")
             completion.discard()

@@ -408,7 +408,7 @@ internal class CheckpointsManager(
                         error,
                         params.checkpointIdentifier,
                         params.customVariables,
-                        ErrorPresentationStage.AFTER_FLOW_PRESENTATION,
+                        CheckpointFailureKind.FLOW_RESULT_SYNC_FAILED,
                     ),
                     completion,
                 )

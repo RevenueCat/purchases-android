@@ -378,6 +378,19 @@ package com.revenuecat.purchases.ui.revenuecatui.activity {
 
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints {
 
+  @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI public final class CheckpointFailureKind {
+    field public static final com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointFailureKind.Companion Companion;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointFailureKind FLOW_ACTION_FAILED;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointFailureKind FLOW_COULD_NOT_BE_SHOWN;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointFailureKind FLOW_RESULT_SYNC_FAILED;
+  }
+
+  public static final class CheckpointFailureKind.Companion {
+    property public com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointFailureKind FLOW_ACTION_FAILED;
+    property public com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointFailureKind FLOW_COULD_NOT_BE_SHOWN;
+    property public com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointFailureKind FLOW_RESULT_SYNC_FAILED;
+  }
+
   @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI public final class CheckpointParams {
     method @InaccessibleFromKotlin public java.util.Map<java.lang.String,com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue> getCustomVariables();
     method @InaccessibleFromKotlin public com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter? getErrorPresenter();
@@ -444,19 +457,6 @@ package com.revenuecat.purchases.ui.revenuecatui.checkpoints {
     property @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI public static com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter? com.revenuecat.purchases.Purchases.paywallPresenter;
   }
 
-  @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI public final class ErrorPresentationStage {
-    field public static final com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresentationStage AFTER_FLOW_PRESENTATION;
-    field public static final com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresentationStage BEFORE_FLOW_PRESENTATION;
-    field public static final com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresentationStage.Companion Companion;
-    field public static final com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresentationStage DURING_FLOW_PRESENTATION;
-  }
-
-  public static final class ErrorPresentationStage.Companion {
-    property public com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresentationStage AFTER_FLOW_PRESENTATION;
-    property public com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresentationStage BEFORE_FLOW_PRESENTATION;
-    property public com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresentationStage DURING_FLOW_PRESENTATION;
-  }
-
   @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI public fun interface ErrorPresenter {
     method public void present(com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter.Params params, com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter.Completion completion);
   }
@@ -469,11 +469,11 @@ package com.revenuecat.purchases.ui.revenuecatui.checkpoints {
     method @InaccessibleFromKotlin public String getCheckpointIdentifier();
     method @InaccessibleFromKotlin public java.util.Map<java.lang.String,com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue> getCustomVariables();
     method @InaccessibleFromKotlin public com.revenuecat.purchases.PurchasesError getError();
-    method @InaccessibleFromKotlin public com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresentationStage getStage();
+    method @InaccessibleFromKotlin public com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointFailureKind getKind();
     property public String checkpointIdentifier;
     property public java.util.Map<java.lang.String,com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue> customVariables;
     property public com.revenuecat.purchases.PurchasesError error;
-    property public com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresentationStage stage;
+    property public com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointFailureKind kind;
   }
 
   @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI public final class FlowPresentationMode {

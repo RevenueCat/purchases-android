@@ -142,7 +142,7 @@ class ErrorPresentationQueueTest {
         PurchasesError(PurchasesErrorCode.ConfigurationError, name),
         "test_checkpoint",
         emptyMap(),
-        ErrorPresentationStage.BEFORE_FLOW_PRESENTATION,
+        CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN,
     )
 
     private class RecordingPresenter : ErrorPresenter {

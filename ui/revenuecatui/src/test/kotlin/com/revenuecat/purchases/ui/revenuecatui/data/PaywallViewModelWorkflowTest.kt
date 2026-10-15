@@ -56,7 +56,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresentationStage
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointFailureKind
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter
 import com.revenuecat.purchases.ui.revenuecatui.components.style.WebViewComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.webview.webViewContextSnapshot
@@ -2019,14 +2019,14 @@ class PaywallViewModelWorkflowTest {
     fun `a failed purchase during a workflow is handed to the error presenter`() = runTest {
         coEvery { purchases.awaitPurchase(any()) } throws
             PurchasesException(PurchasesError(PurchasesErrorCode.StoreProblemError))
-        val presented = mutableListOf<ErrorPresentationStage>()
-        val vm = createVm(errorPresenter = { _, stage, _ -> presented += stage })
+        val presented = mutableListOf<CheckpointFailureKind>()
+        val vm = createVm(errorPresenter = { _, kind, _ -> presented += kind })
         vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
         advanceUntilIdle()
 
         vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
 
-        assertThat(presented).containsExactly(ErrorPresentationStage.DURING_FLOW_PRESENTATION)
+        assertThat(presented).containsExactly(CheckpointFailureKind.FLOW_ACTION_FAILED)
         assertThat(vm.actionError.value).isNull()
     }
 

@@ -22,12 +22,12 @@ public fun interface ErrorPresenter {
      * Called on the main thread with an error of a checkpoint. Whatever the SDK has on screen stays there,
      * interactive, underneath whatever the app shows, until [completion] says the app's error UI is done. Present
      * [params]'s error however the app wants, or complete right away to handle it without UI. What the SDK does
-     * once the app completes depends on [Params.stage].
+     * once the app completes depends on [Params.kind].
      *
      * Errors come one at a time per [com.revenuecat.purchases.Purchases] instance: this is not called again,
-     * whichever checkpoint call or stage the next error belongs to, until [completion] has been completed, and
-     * then on a later main thread message rather than from inside [Completion.complete]. A presenter may
-     * therefore keep a single pending request.
+     * whichever checkpoint call or kind of failure the next error belongs to, until [completion] has been
+     * completed, and then on a later main thread message rather than from inside [Completion.complete]. A
+     * presenter may therefore keep a single pending request.
      */
     public fun present(params: Params, completion: Completion)
 
@@ -41,8 +41,8 @@ public fun interface ErrorPresenter {
         public val checkpointIdentifier: String,
         /** The custom variables supplied to the checkpoint call. */
         public val customVariables: Map<String, CustomVariableValue>,
-        /** When the error occurred, which decides what the SDK does once the app completes. */
-        public val stage: ErrorPresentationStage,
+        /** What kind of failure the error is, which decides what the SDK does once the app completes. */
+        public val kind: CheckpointFailureKind,
     )
 
     /**
@@ -53,9 +53,10 @@ public fun interface ErrorPresenter {
     public fun interface Completion {
 
         /**
-         * Tells the SDK that the app's error UI is done. What happens next depends on [Params.stage]: before or
-         * during a flow the user stays where they were, back in the app or on the flow still on screen; after a
-         * flow the checkpoint is passed and its callback receives an empty result.
+         * Tells the SDK that the app's error UI is done. What happens next depends on [Params.kind]: when the flow
+         * could not be shown or an action in it failed, the user stays where they were, back in the app or on the
+         * flow still on screen; when its result could not be synced, the checkpoint is passed and its callback
+         * receives an empty result.
          */
         public fun complete()
     }
@@ -65,6 +66,6 @@ public fun interface ErrorPresenter {
 internal fun ErrorPresenter.forCheckpoint(
     checkpointIdentifier: String,
     customVariables: Map<String, CustomVariableValue>,
-): PaywallErrorPresenter = PaywallErrorPresenter { error, stage, completion ->
-    present(ErrorPresenter.Params(error, checkpointIdentifier, customVariables, stage), completion)
+): PaywallErrorPresenter = PaywallErrorPresenter { error, kind, completion ->
+    present(ErrorPresenter.Params(error, checkpointIdentifier, customVariables, kind), completion)
 }

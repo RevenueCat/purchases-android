@@ -13,8 +13,8 @@ import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 
 /**
  * The dialog behind the app's error presenters: says which presenter received the error, where the error came from
- * and at which stage of the flow. Acknowledging it, or dismissing it with an outside tap or system back, completes
- * the presentation; the SDK decides what the flow does next from the stage.
+ * and what kind of failure it is. Acknowledging it, or dismissing it with an outside tap or system back, completes
+ * the presentation; the SDK decides what the flow does next from the kind.
  */
 @OptIn(InviteOnlyCheckpointsAPI::class)
 @Composable
@@ -31,7 +31,7 @@ fun AppErrorDialog(request: ParkedErrorPresenter.Request, presenterName: String)
                     label = "Error",
                     value = "${error.code.name}: ${error.underlyingErrorMessage ?: error.message}",
                 )
-                DetailLine(label = "Stage", value = params.stage.toString())
+                DetailLine(label = "Kind", value = params.kind.toString())
             }
         },
         confirmButton = {

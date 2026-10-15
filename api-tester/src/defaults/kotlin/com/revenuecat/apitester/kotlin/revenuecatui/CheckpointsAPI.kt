@@ -7,9 +7,9 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointFailureKind
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPassedCallback
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresentationStage
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowResult
@@ -92,16 +92,16 @@ private class CheckpointsAPI {
             val error: PurchasesError = params.error
             val checkpointIdentifier: String = params.checkpointIdentifier
             val customVariables: Map<String, CustomVariableValue> = params.customVariables
-            val stage: ErrorPresentationStage = params.stage
+            val kind: CheckpointFailureKind = params.kind
             completion.complete()
         }
     }
 
-    fun checkErrorPresentationStage(stage: ErrorPresentationStage) {
-        when (stage) {
-            ErrorPresentationStage.BEFORE_FLOW_PRESENTATION -> {}
-            ErrorPresentationStage.DURING_FLOW_PRESENTATION -> {}
-            ErrorPresentationStage.AFTER_FLOW_PRESENTATION -> {}
+    fun checkCheckpointFailureKind(kind: CheckpointFailureKind) {
+        when (kind) {
+            CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN -> {}
+            CheckpointFailureKind.FLOW_ACTION_FAILED -> {}
+            CheckpointFailureKind.FLOW_RESULT_SYNC_FAILED -> {}
             // Not an enum, so values added later must be handled too.
             else -> {}
         }

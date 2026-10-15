@@ -251,10 +251,10 @@ class CheckpointPassedCallbackTest {
     fun `a sync failure after an app-owned presentation presents the error and then passes with an empty result`() =
         runTest(dispatcher) {
             syncFails()
-            val stages = mutableListOf<ErrorPresentationStage>()
+            val kinds = mutableListOf<CheckpointFailureKind>()
             var errorCompletion: ErrorPresenter.Completion? = null
             manager.errorPresenter = ErrorPresenter { params, completion ->
-                stages += params.stage
+                kinds += params.kind
                 errorCompletion = completion
             }
             val completion = presentThroughRegisteredPresenter()
@@ -262,7 +262,7 @@ class CheckpointPassedCallbackTest {
             checkpoint()
             completion()!!.complete(PaywallPresenter.Completion.Result.Closed)
 
-            assertThat(stages).containsExactly(ErrorPresentationStage.AFTER_FLOW_PRESENTATION)
+            assertThat(kinds).containsExactly(CheckpointFailureKind.FLOW_RESULT_SYNC_FAILED)
             assertThat(results).isEmpty()
             errorCompletion!!.complete()
             assertThat(results.obtained).containsExactly(emptySet<String>())

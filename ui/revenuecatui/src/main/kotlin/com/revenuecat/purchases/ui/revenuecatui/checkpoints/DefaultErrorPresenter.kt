@@ -143,10 +143,10 @@ internal class DefaultErrorPresenter(
         override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
     }
 
-    // What the paywall's own dialog shows: a purchase or restore error reads best as its code's description, while
+    // What the paywall's own dialog shows: an action that failed reads best as its code's description, while
     // a failure around the flow carries its reason in the underlying message.
     private val Presentation.message: String
-        get() = if (params.stage == ErrorPresentationStage.DURING_FLOW_PRESENTATION) {
+        get() = if (params.kind == CheckpointFailureKind.FLOW_ACTION_FAILED) {
             params.error.message
         } else {
             params.error.underlyingErrorMessage ?: params.error.message

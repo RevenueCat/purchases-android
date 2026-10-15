@@ -922,7 +922,7 @@ class CheckpointsManagerTest {
             completion()!!.complete(PaywallPresenter.Completion.Result.Closed)
 
             assertThat(presented).containsExactly(
-                ErrorPresenter.Params(error, checkpointId, emptyMap(), ErrorPresentationStage.AFTER_FLOW_PRESENTATION),
+                ErrorPresenter.Params(error, checkpointId, emptyMap(), CheckpointFailureKind.FLOW_RESULT_SYNC_FAILED),
             )
             assertThat(run).isNull()
             errorCompletion!!.complete()
@@ -1131,14 +1131,14 @@ class CheckpointsManagerTest {
             val call = launch { runCheckpoint(params) }
 
             val options = manager.paywallOptions(currentCallId()) {}!!
-            options.errorPresenter!!.present(error, ErrorPresentationStage.DURING_FLOW_PRESENTATION) {}
+            options.errorPresenter!!.present(error, CheckpointFailureKind.FLOW_ACTION_FAILED) {}
 
             assertThat(presented).containsExactly(
                 ErrorPresenter.Params(
                     error,
                     checkpointId,
                     params.customVariables,
-                    ErrorPresentationStage.DURING_FLOW_PRESENTATION,
+                    CheckpointFailureKind.FLOW_ACTION_FAILED,
                 ),
             )
             finishPaywall(outcome = null)
@@ -1202,7 +1202,7 @@ class CheckpointsManagerTest {
         val call = launch { runCheckpoint(params) }
 
         manager.paywallOptions(currentCallId()) {}!!.errorPresenter!!
-            .present(PurchasesError(PurchasesErrorCode.StoreProblemError), ErrorPresentationStage.DURING_FLOW_PRESENTATION) {}
+            .present(PurchasesError(PurchasesErrorCode.StoreProblemError), CheckpointFailureKind.FLOW_ACTION_FAILED) {}
 
         assertThat(perCallAsked).isTrue
         assertThat(registeredAsked).isFalse
@@ -1219,10 +1219,10 @@ class CheckpointsManagerTest {
         val call = launch { runCheckpoint() }
 
         defaultPresenter!!.paywallOptions("") {}!!.errorPresenter!!
-            .present(error, ErrorPresentationStage.BEFORE_FLOW_PRESENTATION) {}
+            .present(error, CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN) {}
 
         assertThat(presented).containsExactly(
-            ErrorPresenter.Params(error, checkpointId, emptyMap(), ErrorPresentationStage.BEFORE_FLOW_PRESENTATION),
+            ErrorPresenter.Params(error, checkpointId, emptyMap(), CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN),
         )
         finishDefaultPaywall(navigatedBack = true)
         call.join()

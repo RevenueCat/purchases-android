@@ -64,7 +64,7 @@ class DefaultErrorPresenterTest {
     fun `an error before the flow shows its reason`() {
         present(
             params(
-                stage = ErrorPresentationStage.BEFORE_FLOW_PRESENTATION,
+                kind = CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN,
                 error = PurchasesError(PurchasesErrorCode.UnknownError, "No packages available"),
             ),
         )
@@ -76,7 +76,7 @@ class DefaultErrorPresenterTest {
     fun `an error after the flow shows its reason`() {
         present(
             params(
-                stage = ErrorPresentationStage.AFTER_FLOW_PRESENTATION,
+                kind = CheckpointFailureKind.FLOW_RESULT_SYNC_FAILED,
                 error = PurchasesError(PurchasesErrorCode.NetworkError, "Request timed out"),
             ),
         )
@@ -162,7 +162,7 @@ class DefaultErrorPresenterTest {
         var secondCompletions = 0
 
         presenter.present(
-            params(stage = ErrorPresentationStage.BEFORE_FLOW_PRESENTATION),
+            params(kind = CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN),
             ErrorPresenter.Completion { secondCompletions++ },
         )
 
@@ -188,7 +188,7 @@ class DefaultErrorPresenterTest {
     private fun present(params: ErrorPresenter.Params = params()) = presenter.present(params, completion)
 
     private fun params(
-        stage: ErrorPresentationStage = ErrorPresentationStage.DURING_FLOW_PRESENTATION,
+        kind: CheckpointFailureKind = CheckpointFailureKind.FLOW_ACTION_FAILED,
         error: PurchasesError = PurchasesError(PurchasesErrorCode.StoreProblemError, "boom"),
-    ) = ErrorPresenter.Params(error, "test_checkpoint", emptyMap(), stage)
+    ) = ErrorPresenter.Params(error, "test_checkpoint", emptyMap(), kind)
 }

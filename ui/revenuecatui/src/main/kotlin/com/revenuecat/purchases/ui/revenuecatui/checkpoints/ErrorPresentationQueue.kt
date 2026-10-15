@@ -7,10 +7,10 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Hands checkpoint errors to their [ErrorPresenter] one at a time: the next error, whichever checkpoint call,
- * presenter instance or stage it comes from, is presented only once the previous completion has completed. The
- * SDK waits on those completions, and a checkpoint keeps running while an earlier one is still syncing or showing
- * an error, so without this an app presenter could be asked to present again before it was done, and one that
- * keeps a single pending request would drop the first and leave its checkpoint waiting forever.
+ * presenter instance or kind of failure it comes from, is presented only once the previous completion has
+ * completed. The SDK waits on those completions, and a checkpoint keeps running while an earlier one is still
+ * syncing or showing an error, so without this an app presenter could be asked to present again before it was
+ * done, and one that keeps a single pending request would drop the first and leave its checkpoint waiting forever.
  *
  * Main-thread only, like the [CheckpointsManager] that owns it; completions may arrive on any thread and are
  * brought back to [scope] before the queue moves on.

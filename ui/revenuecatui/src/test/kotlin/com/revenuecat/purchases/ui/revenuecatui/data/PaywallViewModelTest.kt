@@ -64,7 +64,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicWithCallback
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresentationStage
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointFailureKind
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
@@ -3799,7 +3799,7 @@ class PaywallViewModelTest {
         failPurchase(model, expectedError)
 
         assertThat(presenter.errors).containsExactly(expectedError)
-        assertThat(presenter.stages).containsExactly(ErrorPresentationStage.DURING_FLOW_PRESENTATION)
+        assertThat(presenter.kinds).containsExactly(CheckpointFailureKind.FLOW_ACTION_FAILED)
         assertThat(model.actionError.value).isNull()
         assertThat(dismissInvoked).isFalse
         verify(exactly = 1) { listener.onPurchaseError(expectedError) }
@@ -3839,7 +3839,7 @@ class PaywallViewModelTest {
         model.restorePurchases()
 
         assertThat(presenter.errors).containsExactly(expectedError)
-        assertThat(presenter.stages).containsExactly(ErrorPresentationStage.DURING_FLOW_PRESENTATION)
+        assertThat(presenter.kinds).containsExactly(CheckpointFailureKind.FLOW_ACTION_FAILED)
         assertThat(model.actionError.value).isNull()
     }
 
@@ -3876,7 +3876,7 @@ class PaywallViewModelTest {
 
         assertThat(model.state.value).isInstanceOf(PaywallState.Error::class.java)
         assertThat(presenter.errors.single().code).isEqualTo(PurchasesErrorCode.NetworkError)
-        assertThat(presenter.stages).containsExactly(ErrorPresentationStage.BEFORE_FLOW_PRESENTATION)
+        assertThat(presenter.kinds).containsExactly(CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN)
         assertThat(dismissInvoked).isFalse
     }
 
@@ -4045,16 +4045,16 @@ class PaywallViewModelTest {
 
     private class RecordingErrorPresenter : PaywallErrorPresenter {
         val errors = mutableListOf<PurchasesError>()
-        val stages = mutableListOf<ErrorPresentationStage>()
+        val kinds = mutableListOf<CheckpointFailureKind>()
         private val completions = mutableListOf<ErrorPresenter.Completion>()
 
         override fun present(
             error: PurchasesError,
-            stage: ErrorPresentationStage,
+            kind: CheckpointFailureKind,
             completion: ErrorPresenter.Completion,
         ) {
             errors += error
-            stages += stage
+            kinds += kind
             completions += completion
         }
 
