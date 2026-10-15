@@ -2487,13 +2487,13 @@ class PaywallViewModelWorkflowTest {
         val stepWithUnknownOffering = step2.copy(paramValues = offeringParams("unknown_offering"))
         val workflowToStepWithUnknownOffering =
             workflow.copy(steps = mapOf("step-1" to step1, "step-2" to stepWithUnknownOffering))
-        val presented = mutableListOf<ErrorPresentationStage>()
+        val presented = mutableListOf<CheckpointFailureKind>()
         var completion: ErrorPresenter.Completion? = null
         val dismissals = mutableListOf<PaywallDismissReason>()
         val vm = createVm(
             dismissRequestWithExitOffering = { _, _, reason -> dismissals += reason },
-            errorPresenter = { _, stage, c ->
-                presented += stage
+            errorPresenter = { _, kind, c ->
+                presented += kind
                 completion = c
             },
         )
@@ -2502,7 +2502,7 @@ class PaywallViewModelWorkflowTest {
         vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
         completion!!.complete()
 
-        assertThat(presented).containsExactly(ErrorPresentationStage.DURING_FLOW_PRESENTATION)
+        assertThat(presented).containsExactly(CheckpointFailureKind.FLOW_ACTION_FAILED)
         assertThat(vm.actionError.value).isNull()
         assertThat(dismissals).isEmpty()
         assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")

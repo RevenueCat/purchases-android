@@ -294,7 +294,7 @@ class DefaultPaywallPresenterTest {
                 error,
                 params.checkpointIdentifier,
                 params.customVariables,
-                ErrorPresentationStage.DURING_FLOW_PRESENTATION,
+                CheckpointFailureKind.FLOW_ACTION_FAILED,
             ),
         )
         assertThat(results).isEmpty()

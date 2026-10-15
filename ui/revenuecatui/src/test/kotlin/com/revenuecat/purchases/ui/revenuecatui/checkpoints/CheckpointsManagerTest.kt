@@ -136,7 +136,7 @@ class CheckpointsManagerTest {
                 PurchasesError(PurchasesErrorCode.ConfigurationError, message),
                 invalidIdentifier,
                 emptyMap(),
-                ErrorPresentationStage.BEFORE_FLOW_PRESENTATION,
+                CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN,
             ),
         )
         coVerify(exactly = 0) { mockPurchases.internalResolveCp(any(), any()) }
@@ -321,7 +321,7 @@ class CheckpointsManagerTest {
         resolvesTo(CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null))
 
         assertThat(runCheckpoint().failed).isTrue
-        assertThat(defaultPresentedErrors.single().stage).isEqualTo(ErrorPresentationStage.BEFORE_FLOW_PRESENTATION)
+        assertThat(defaultPresentedErrors.single().kind).isEqualTo(CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN)
 
         verify(exactly = 0) { mockPresenter.show(any()) }
         verify {
@@ -380,7 +380,7 @@ class CheckpointsManagerTest {
 
         assertThat(results).isEmpty()
         assertThat(defaultPresentedErrors).containsExactly(
-            ErrorPresenter.Params(error, checkpointId, emptyMap(), ErrorPresentationStage.BEFORE_FLOW_PRESENTATION),
+            ErrorPresenter.Params(error, checkpointId, emptyMap(), CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN),
         )
     }
 
@@ -392,7 +392,7 @@ class CheckpointsManagerTest {
         checkpoint()
 
         assertThat(results).isEmpty()
-        assertThat(defaultPresentedErrors.single().stage).isEqualTo(ErrorPresentationStage.BEFORE_FLOW_PRESENTATION)
+        assertThat(defaultPresentedErrors.single().kind).isEqualTo(CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN)
         verify {
             Logger.e(
                 PurchasesError(
@@ -844,7 +844,7 @@ class CheckpointsManagerTest {
             manager.onPresentationFailed(currentCallId(), error)
 
             assertThat(presented).containsExactly(
-                ErrorPresenter.Params(error, checkpointId, emptyMap(), ErrorPresentationStage.DURING_FLOW_PRESENTATION),
+                ErrorPresenter.Params(error, checkpointId, emptyMap(), CheckpointFailureKind.FLOW_ACTION_FAILED),
             )
             assertThat(run).isNull()
             completion!!.complete()

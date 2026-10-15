@@ -116,7 +116,7 @@ class CheckpointPassedCallbackTest {
         checkpoint()
 
         assertThat(results).containsExactly(null)
-        assertThat(errorPresenter.stages).isEmpty()
+        assertThat(errorPresenter.kinds).isEmpty()
     }
 
     @Test
@@ -128,7 +128,7 @@ class CheckpointPassedCallbackTest {
         errorPresenter.complete()
 
         assertThat(results).isEmpty()
-        assertThat(errorPresenter.stages).containsExactly(ErrorPresentationStage.BEFORE_FLOW_PRESENTATION)
+        assertThat(errorPresenter.kinds).containsExactly(CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN)
     }
 
     @Test
@@ -142,7 +142,7 @@ class CheckpointPassedCallbackTest {
 
         assertThat(results).isEmpty()
         assertThat(errorPresenter.errors).containsExactly(error)
-        assertThat(errorPresenter.stages).containsExactly(ErrorPresentationStage.BEFORE_FLOW_PRESENTATION)
+        assertThat(errorPresenter.kinds).containsExactly(CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN)
     }
 
     @Test
@@ -154,7 +154,7 @@ class CheckpointPassedCallbackTest {
             errorPresenter.complete()
 
             assertThat(results).isEmpty()
-            assertThat(errorPresenter.stages).containsExactly(ErrorPresentationStage.BEFORE_FLOW_PRESENTATION)
+            assertThat(errorPresenter.kinds).containsExactly(CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN)
             coVerify(exactly = 0) { mockPurchases.internalResolveCp(any(), any()) }
         }
 
@@ -168,7 +168,7 @@ class CheckpointPassedCallbackTest {
         errorPresenter.complete()
 
         assertThat(results).isEmpty()
-        assertThat(errorPresenter.stages).containsExactly(ErrorPresentationStage.BEFORE_FLOW_PRESENTATION)
+        assertThat(errorPresenter.kinds).containsExactly(CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN)
     }
 
     @Test
@@ -181,7 +181,7 @@ class CheckpointPassedCallbackTest {
         errorPresenter.complete()
 
         assertThat(results).isEmpty()
-        assertThat(errorPresenter.stages).containsExactly(ErrorPresentationStage.BEFORE_FLOW_PRESENTATION)
+        assertThat(errorPresenter.kinds).containsExactly(CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN)
     }
 
     @Test
@@ -237,7 +237,7 @@ class CheckpointPassedCallbackTest {
             errorPresenter.complete()
 
             assertThat(results).isEmpty()
-            assertThat(errorPresenter.stages).containsExactly(ErrorPresentationStage.DURING_FLOW_PRESENTATION)
+            assertThat(errorPresenter.kinds).containsExactly(CheckpointFailureKind.FLOW_ACTION_FAILED)
         }
 
     @Test
@@ -270,7 +270,7 @@ class CheckpointPassedCallbackTest {
             errorPresenter.complete()
 
             assertThat(results).isEmpty()
-            assertThat(errorPresenter.stages).containsExactly(ErrorPresentationStage.DURING_FLOW_PRESENTATION)
+            assertThat(errorPresenter.kinds).containsExactly(CheckpointFailureKind.FLOW_ACTION_FAILED)
         }
 
     @Test
@@ -444,12 +444,12 @@ class CheckpointPassedCallbackTest {
 
     private class RecordingErrorPresenter : ErrorPresenter {
         val errors = mutableListOf<PurchasesError>()
-        val stages = mutableListOf<ErrorPresentationStage>()
+        val kinds = mutableListOf<CheckpointFailureKind>()
         private val completions = mutableListOf<ErrorPresenter.Completion>()
 
         override fun present(params: ErrorPresenter.Params, completion: ErrorPresenter.Completion) {
             errors += params.error
-            stages += params.stage
+            kinds += params.kind
             completions += completion
         }
 

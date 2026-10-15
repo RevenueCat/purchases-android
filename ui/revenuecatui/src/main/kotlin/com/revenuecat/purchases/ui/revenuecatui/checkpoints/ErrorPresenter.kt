@@ -142,9 +142,9 @@ internal fun ErrorPresenter.presentOnce(params: ErrorPresenter.Params, onComplet
 /** [presentOnce] for the paywall's view of a presenter. */
 internal fun PaywallErrorPresenter.presentOnce(
     error: PurchasesError,
-    stage: ErrorPresentationStage,
+    kind: CheckpointFailureKind,
     onComplete: () -> Unit,
-) = presentErrorOnce(onComplete) { present(error, stage, it) }
+) = presentErrorOnce(onComplete) { present(error, kind, it) }
 
 private fun presentErrorOnce(onComplete: () -> Unit, present: (ErrorPresenter.Completion) -> Unit) {
     val completed = AtomicBoolean(false)

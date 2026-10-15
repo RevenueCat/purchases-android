@@ -30,7 +30,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.toLayoutDirection
  * the same contract an app presenter does and uses nothing an app presenter lacks: the current activity, a dialog
  * of its own, and the completion. One instance per checkpoint call.
  *
- * The dialog shows localized copy written for the customer, chosen from the stage and the error code, in the
+ * The dialog shows localized copy written for the customer, chosen from the kind of failure and the error code, in the
  * SDK's preferred UI locale override when one is set; the developer's reason is in the logs of whoever reported
  * the error.
  *
@@ -170,17 +170,18 @@ internal class DefaultErrorPresenter(
             resources.getString(messageResource)
         }
 
-    // Before the flow nothing could be loaded and after it nothing could be verified, whatever the code; during
-    // it the code says what the customer can do about it. A stage this code doesn't know reads as "during".
+    // When the flow could not be shown nothing could be loaded, and when its result could not be synced nothing
+    // could be verified, whatever the code; for a failed action the code says what the customer can do about it.
+    // A kind this code doesn't know reads as a failed action.
     private val ErrorPresenter.Params.messageResource: Int
         get() = when {
             error.code == PurchasesErrorCode.NetworkError -> R.string.revenuecatui_checkpoint_error_network
             kind == CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN -> R.string.revenuecatui_checkpoint_error_load
             kind == CheckpointFailureKind.FLOW_RESULT_SYNC_FAILED -> R.string.revenuecatui_checkpoint_error_sync
-            else -> error.code.duringFlowMessageResource
+            else -> error.code.failedActionMessageResource
         }
 
-    private val PurchasesErrorCode.duringFlowMessageResource: Int
+    private val PurchasesErrorCode.failedActionMessageResource: Int
         get() = when (this) {
             PurchasesErrorCode.StoreProblemError -> R.string.revenuecatui_checkpoint_error_store
             PurchasesErrorCode.PurchaseNotAllowedError -> R.string.revenuecatui_checkpoint_error_purchase_not_allowed

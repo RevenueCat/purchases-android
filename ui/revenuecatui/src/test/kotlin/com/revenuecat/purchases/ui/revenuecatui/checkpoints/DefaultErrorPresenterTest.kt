@@ -88,13 +88,13 @@ class DefaultErrorPresenterTest {
     }
 
     @Test
-    fun `a network error reads the same at every stage`() {
+    fun `a network error reads the same whatever the kind of failure`() {
         listOf(
-            ErrorPresentationStage.BEFORE_FLOW_PRESENTATION,
-            ErrorPresentationStage.DURING_FLOW_PRESENTATION,
-            ErrorPresentationStage.AFTER_FLOW_PRESENTATION,
-        ).forEach { stage ->
-            present(params(stage = stage, error = PurchasesError(PurchasesErrorCode.NetworkError, "timeout")))
+            CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN,
+            CheckpointFailureKind.FLOW_ACTION_FAILED,
+            CheckpointFailureKind.FLOW_RESULT_SYNC_FAILED,
+        ).forEach { kind ->
+            present(params(kind = kind, error = PurchasesError(PurchasesErrorCode.NetworkError, "timeout")))
         }
 
         assertThat(messages).containsOnly(string(R.string.revenuecatui_checkpoint_error_network))
@@ -138,7 +138,7 @@ class DefaultErrorPresenterTest {
     fun `the copy follows the preferred UI locale override`() {
         localeOverride = "es"
 
-        present(params(stage = ErrorPresentationStage.BEFORE_FLOW_PRESENTATION))
+        present(params(kind = CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN))
 
         assertThat(messages).containsExactly(string(R.string.revenuecatui_checkpoint_error_load, Locale("es")))
         assertThat(messages.single()).isNotEqualTo(string(R.string.revenuecatui_checkpoint_error_load))
@@ -147,7 +147,7 @@ class DefaultErrorPresenterTest {
 
     @Test
     fun `without an override the copy and resources are the activity's`() {
-        present(params(stage = ErrorPresentationStage.BEFORE_FLOW_PRESENTATION))
+        present(params(kind = CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN))
 
         assertThat(messages).containsExactly(string(R.string.revenuecatui_checkpoint_error_load))
         assertThat(resourceContexts.single()).isSameAs(controller.get())

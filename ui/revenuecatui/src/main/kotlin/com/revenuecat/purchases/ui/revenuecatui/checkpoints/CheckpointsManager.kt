@@ -180,7 +180,7 @@ internal class CheckpointsManager(
                 error,
                 identifier,
                 customVariables,
-                ErrorPresentationStage.BEFORE_FLOW_PRESENTATION,
+                CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN,
             ),
         ) { done.complete(Unit) }
         done.await()
@@ -317,7 +317,7 @@ internal class CheckpointsManager(
             Unit
         }
         failed.errorPresenter
-            ?.presentOnce(error, ErrorPresentationStage.DURING_FLOW_PRESENTATION, complete)
+            ?.presentOnce(error, CheckpointFailureKind.FLOW_ACTION_FAILED, complete)
             ?: complete()
     }
 
