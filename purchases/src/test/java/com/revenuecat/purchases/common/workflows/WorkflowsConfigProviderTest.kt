@@ -88,6 +88,16 @@ internal class WorkflowsConfigProviderTest {
     }
 
     @Test
+    fun `workflowIds include workflows that claim no offering`() = runTest {
+        coEvery { manager.topic(RemoteConfigTopic.Workflows) } returns topicWith(
+            WF_CURRENT to configItem(prefetch = false, offeringId = CURRENT_OFFERING),
+            WF_PREFETCH to configItem(prefetch = true, offeringId = null),
+        )
+
+        assertThat(provider.workflowIds()).containsExactlyInAnyOrder(WF_CURRENT, WF_PREFETCH)
+    }
+
+    @Test
     fun `workflowBlobRef falls back to the topic when nothing is cached`() = runTest {
         coEvery { manager.topic(RemoteConfigTopic.Workflows) } returns topicWith(
             WF_CURRENT to RemoteConfiguration.ConfigItem(blobRef = "ref-from-topic", prefetch = false),

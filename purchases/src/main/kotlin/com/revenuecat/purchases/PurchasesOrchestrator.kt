@@ -767,6 +767,8 @@ internal class PurchasesOrchestrator(
     suspend fun resolveWorkflow(offeringId: String): WorkflowResolution =
         workflowManager.resolveWorkflow(offeringId)
 
+    suspend fun workflowIds(): List<String> = workflowManager.workflowIds()
+
     @OptIn(InternalRevenueCatAPI::class)
     suspend fun resolveBranches(
         step: WorkflowStep,
