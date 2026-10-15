@@ -1,6 +1,5 @@
-package com.revenuecat.purchases.common.networking
+package com.revenuecat.purchases.common.caching
 
-import android.content.Context
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.models.Checksum
@@ -19,8 +18,8 @@ import java.util.zip.CRC32
 import java.util.zip.CheckedOutputStream
 
 /**
- * Stores ETag cache payloads as one file per URL, so multi-MB payloads are neither re-encoded nor
- * retained in the SharedPreferences heap map (https://github.com/RevenueCat/purchases-android/issues/3628).
+ * Stores payloads as one file per key, so multi-MB payloads are neither re-encoded nor retained in the
+ * SharedPreferences heap map.
  *
  * Writes stream through fixed-size buffers into a temp file committed by atomic rename (androidx
  * AtomicFile is unsafe here: its openRead deletes a concurrent writer's in-flight file and its
@@ -28,39 +27,38 @@ import java.util.zip.CheckedOutputStream
  * returns on [read] instead, so a file truncated by power loss, left stale by an interrupted rename,
  * or corrupted in place all read back as misses.
  *
- * A [read] costs ~2x the payload size in heap (`ByteArray` plus `String`), which is structural rather
- * than a tuning choice: [HTTPResult.Payload.Text] holds a `String`, so one has to exist.
+ * A [read] costs ~2x the payload size in heap (`ByteArray` plus `String`).
  *
- * `null` reads are cache misses that self-heal via [ETagManager]'s refresh retry; the OS may purge
- * [Context.getCacheDir]. No eviction beyond overwrite and [clear], at parity with the prefs store.
+ * `null` reads are cache misses. No eviction beyond overwrite and [clear].
  */
 @OptIn(InternalRevenueCatAPI::class)
-internal class ETagPayloadStore(
+internal class PayloadFileStore(
     private val directory: File,
 ) {
-    constructor(context: Context) : this(File(File(context.cacheDir, VENDOR_DIRECTORY), DIRECTORY_NAME))
+    // Context storage directories are null on mocked contexts.
+    constructor(baseDirectory: File?, name: String) : this(File(File(baseDirectory, VENDOR_DIRECTORY), name))
 
     /**
      * Returns the payload's CRC32 once the file is in place, or `null` when the write failed; callers
      * must not persist metadata for a failed write.
      */
-    fun write(urlString: String, payload: String): Long? {
+    fun write(key: String, payload: String): Long? {
         if (!directory.exists()) {
             deleteTrash()
             if (!directory.mkdirs()) {
-                errorLog { "Failed to create ETag payload directory: $directory" }
+                errorLog { "Failed to create payload directory: $directory" }
                 return null
             }
         }
-        val file = fileFor(urlString)
+        val file = fileFor(key)
         // Never opened by readers; a crash mid-write leaves one orphan that the next write overwrites.
-        // Same-URL writes are serialized by [ETagManager].
+        // Callers serialize same-key writes.
         val tempFile = File(directory, file.name + TEMP_SUFFIX)
         return try {
             val checksum = FileOutputStream(tempFile).use { out -> encodeTo(out, payload) }
             if (tempFile.renameTo(file)) checksum else null
         } catch (e: IOException) {
-            errorLog(e) { "Failed to persist ETag payload to disk." }
+            errorLog(e) { "Failed to persist payload to disk." }
             null
         }
     }
@@ -70,9 +68,9 @@ internal class ETagPayloadStore(
      * the value [write] returned. Required, not optional: a failing payload decodes to U+FFFD garbage.
      */
     @Suppress("SwallowedException", "ReturnCount")
-    fun read(urlString: String, expectedChecksum: Long): String? {
+    fun read(key: String, expectedChecksum: Long): String? {
         return try {
-            FileInputStream(fileFor(urlString)).use { input ->
+            FileInputStream(fileFor(key)).use { input ->
                 val sizeBytes = input.channel.size()
                 // Not an integrity check: ByteArray would throw past the IOException catch below.
                 if (sizeBytes > Int.MAX_VALUE) return null
@@ -84,17 +82,17 @@ internal class ETagPayloadStore(
                 String(bytes, Charsets.UTF_8)
             }
         } catch (e: FileNotFoundException) {
-            // No payload for this URL: a plain cache miss, not an error.
+            // No payload for this key: a plain cache miss, not an error.
             null
         } catch (e: IOException) {
-            errorLog(e) { "Failed to read ETag payload from disk." }
+            errorLog(e) { "Failed to read payload from disk." }
             null
         }
     }
 
     fun clear() {
-        // Renaming is a constant-time metadata op, safe on the main thread (configure, logIn/logOut);
-        // the trashed directory is deleted by the next write, which runs on a background thread.
+        // Renaming is a constant-time metadata op, safe on the main thread; the trashed directory is deleted by
+        // the next write.
         if (!directory.exists()) return
         val trash = File(directory.parentFile, directory.name + TRASH_SUFFIX + System.nanoTime())
         if (!directory.renameTo(trash)) {
@@ -108,8 +106,8 @@ internal class ETagPayloadStore(
             ?.forEach { it.deleteRecursively() }
     }
 
-    private fun fileFor(urlString: String): File {
-        return File(directory, Checksum.generate(urlString.toByteArray(), Checksum.Algorithm.SHA256).value)
+    private fun fileFor(key: String): File {
+        return File(directory, Checksum.generate(key.toByteArray(), Checksum.Algorithm.SHA256).value)
     }
 
     private fun crc32Of(bytes: ByteArray): Long = CRC32().apply { update(bytes) }.value
@@ -164,7 +162,6 @@ internal class ETagPayloadStore(
 
     private companion object {
         const val VENDOR_DIRECTORY = "RevenueCat"
-        const val DIRECTORY_NAME = "etag_payloads"
         const val TEMP_SUFFIX = ".tmp"
         const val TRASH_SUFFIX = ".trash"
         const val CHUNK_CHARS = 64 * 1024
