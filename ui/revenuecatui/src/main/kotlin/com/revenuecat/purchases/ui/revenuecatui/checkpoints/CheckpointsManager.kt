@@ -38,9 +38,9 @@ internal class CheckpointPresentation(
 
 /**
  * What a checkpoint run produced: the terminal [flowOutcome] of whatever it presented (null when nothing was,
- * including when resolving or presenting failed), and [backedOut], true when the presented flow went away because
- * the user navigated back (system back, or a navigate-back action on a workflow's first step) without purchasing
- * or restoring.
+ * including when resolving or presenting failed), and [backedOut], true when the workflow's gate was not passed,
+ * or when an ungated flow went away because the user navigated back (system back, or a navigate-back action on a
+ * workflow's first step) without purchasing or restoring.
  *
  * [blockedByPresentedFlow] is true when the checkpoint resolved to a flow that was not presented because another
  * checkpoint flow was already on screen. That earlier call is the one the app is waiting on, so a blocked run is
@@ -183,7 +183,8 @@ internal class CheckpointsManager(
     // reports one, and an error dialog being dismissed also carries the error as its result. The exit offering,
     // if any, is not presented for checkpoints.
     override fun paywallOptions(callId: String, dismiss: (navigatedBack: Boolean) -> Unit): PaywallOptions? =
-        presentation(callId)?.let { presentation ->
+        slot.with(callId) { call ->
+            val workflow = call.workflow ?: return@with null
             PaywallOptions.Builder(dismissRequest = { dismiss(false) })
                 .setDismissRequestWithExitOffering { _, result, reason ->
                     (result as? PaywallResult.Error)?.let {
@@ -191,15 +192,20 @@ internal class CheckpointsManager(
                     }
                     dismiss(reason == PaywallDismissReason.NAVIGATED_BACK)
                 }
-                .setErrorPresenter(presentation.errorPresenter)
-                .setCustomVariables(presentation.customVariables)
+                .setErrorPresenter(call.errorPresenter)
+                .setCustomVariables(call.customVariables)
+                .setCheckpointGateContext(
+                    CheckpointGateContext(call.initialAppUserId, call.activeEntitlementsBefore) { outcome ->
+                        slot.with(callId) { it.gateOutcome = outcome }
+                    },
+                )
                 .setListener(OutcomeListener(callId))
                 .injectedWorkflow(
-                    presentation.workflow.workflow,
-                    presentation.workflow.offerings,
-                    presentation.workflow.uiConfig,
-                    presentation.workflow.traceId,
-                    presentation.workflow.workflowBlobRef,
+                    workflow.workflow,
+                    workflow.offerings,
+                    workflow.uiConfig,
+                    workflow.traceId,
+                    workflow.workflowBlobRef,
                 )
                 .build()
         }
@@ -242,9 +248,9 @@ internal class CheckpointsManager(
         }
     }
 
-    // A recorded purchase or restore means the user went through, however the window went away: checkpoint
-    // paywalls don't auto-dismiss on restore, so a user who restored and then backed out still went through. A
-    // paywall that went away without reporting anything was dismissed.
+    // Gate passage takes precedence over purchase/restore bookkeeping. Without a gate, a recorded purchase or
+    // restore still means the user went through however the window went away. A paywall that went away without
+    // reporting anything was dismissed.
     override fun onPresentationFinished(
         callId: String,
         navigatedBack: Boolean,
@@ -258,7 +264,11 @@ internal class CheckpointsManager(
         finished.flowFinished.complete(
             CheckpointRun(
                 recorded ?: CheckpointFlowOutcome.Dismissed,
-                backedOut = navigatedBack && !recorded.isObtained,
+                backedOut = when (finished.gateOutcome) {
+                    CheckpointGateOutcome.NOT_PASSED -> true
+                    CheckpointGateOutcome.PASSED -> false
+                    CheckpointGateOutcome.NOT_APPLICABLE -> navigatedBack && !recorded.isObtained
+                },
                 finishPresentation = finishPresentation,
             ),
         )
@@ -266,11 +276,15 @@ internal class CheckpointsManager(
 
     // Like onPresentationFinished, for a presentation that failed: an outcome the paywall already reported
     // (e.g. a purchase before the configuration change) still wins, but a workflow that failed before
-    // reporting anything surfaces as an error rather than a phantom dismissal.
+    // reporting anything surfaces as an error rather than a phantom dismissal. An unpassed gate still blocks
+    // checkpoint passage even when the purchase/restore outcome is retained.
     override fun onPresentationFailed(callId: String, error: PurchasesError) {
         val failed = slot.take(callId) ?: return
         failed.flowFinished.complete(
-            CheckpointRun(failed.outcome ?: CheckpointFlowOutcome.Error(error), backedOut = false),
+            CheckpointRun(
+                failed.outcome ?: CheckpointFlowOutcome.Error(error),
+                backedOut = failed.gateOutcome == CheckpointGateOutcome.NOT_PASSED,
+            ),
         )
     }
 
@@ -383,6 +397,8 @@ internal class CheckpointsManager(
             PurchasesErrorCode.ConfigurationError,
             "Cannot present checkpoint workflow: no started Activity found.",
         )
+        // Capture before the cache read, which can suspend while logIn/logOut changes the customer.
+        val initialAppUserId = purchases.appUserID
         val call = PendingCall(
             UUID.randomUUID().toString(),
             resolution,
@@ -390,6 +406,7 @@ internal class CheckpointsManager(
             errorPresenter.forCheckpoint(identifier, customVariables),
             customVariables,
             CompletableDeferred(),
+            initialAppUserId = initialAppUserId,
         )
         if (!slot.claim(call)) return blockedByPresentedFlow
         try {

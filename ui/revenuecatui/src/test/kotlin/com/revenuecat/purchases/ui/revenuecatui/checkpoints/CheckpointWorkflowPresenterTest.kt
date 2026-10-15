@@ -63,6 +63,7 @@ class CheckpointWorkflowPresenterTest {
         Dispatchers.setMain(dispatcher)
         controller = Robolectric.buildActivity(Activity::class.java).setup()
         mockPurchases = mockk {
+            every { appUserID } returns "customer-a"
             every { currentActivity } answers { controller.get() }
             coEvery { internalResolveCp(any(), any()) } returns
                 CheckpointResolution.MatchedWorkflow(
@@ -242,6 +243,23 @@ class CheckpointWorkflowPresenterTest {
         lastOptions!!.dismissRequest()
 
         assertThat(paywallOutcome()).isEqualTo(CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
+    }
+
+    @Test
+    fun `a not-passed gate survives recreation despite a recorded non-qualifying purchase`() {
+        val customerInfo = mockk<CustomerInfo>()
+        val storeTransaction = mockk<StoreTransaction>()
+        launchCheckpoint()
+        lastOptions!!.checkpointGateContext!!.onOutcomeChanged(CheckpointGateOutcome.NOT_PASSED)
+        manager.recordOutcome(currentCallId(), CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
+
+        controller.recreate()
+        lastOptions!!.dismissRequestWithExitOffering!!(null, null, PaywallDismissReason.NAVIGATED_BACK)
+
+        assertThat(paywallOutcome()).isEqualTo(CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
+        assertThat(backedOut()).isTrue
+        finishPresentation()
+        assertThat(ShadowDialog.getLatestDialog().isShowing).isFalse
     }
 
     @Test

@@ -13,6 +13,7 @@ import kotlinx.coroutines.CompletableDeferred
  */
 internal class PresentationSlot {
 
+    @Suppress("LongParameterList")
     class PendingCall(
         val callId: String,
         // All null for a call whose flow a PaywallPresenter shows: that UI, and what happens in it, is the
@@ -22,10 +23,14 @@ internal class PresentationSlot {
         val errorPresenter: PaywallErrorPresenter?,
         val customVariables: Map<String, CustomVariableValue>,
         val flowFinished: CompletableDeferred<CheckpointRun>,
+        val initialAppUserId: String? = null,
     ) {
         // Null until the paywall reports something; kept on the call rather than the presented window so
         // losing the window (configuration change) doesn't reset it.
         var outcome: CheckpointFlowOutcome? = null
+
+        // Retained with the call across window recreation, independently of purchase/restore bookkeeping.
+        var gateOutcome: CheckpointGateOutcome = CheckpointGateOutcome.NOT_APPLICABLE
 
         // Only used to take an orphaned workflow window down when its call is abandoned.
         var presenter: CheckpointWorkflowPresenter? = null
