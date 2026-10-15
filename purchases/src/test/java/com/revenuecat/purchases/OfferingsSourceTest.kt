@@ -46,6 +46,7 @@ class OfferingsSourceTest {
         deviceCache = mockk()
         every { deviceCache.cacheOfferingsResponseChecksum(any()) } returns Unit
         every { deviceCache.removeLegacyOfferingsResponse() } returns Unit
+        every { deviceCache.getOfferingsResponseChecksum() } returns null
         every { deviceCache.offeringsResponseCacheKey } returns "offerings_response_key"
         responseDirectory = temporaryFolder.newFolder()
         offeringsCache = OfferingsCache(

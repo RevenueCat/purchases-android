@@ -21,6 +21,7 @@ import com.revenuecat.purchases.utils.copy
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.spyk
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.Before
@@ -364,6 +365,45 @@ class OfferingsCacheTest {
         dispatcher.runAll(reversed = true)
 
         assertThat(offeringsCache.cachedOfferingsResponse?.getString("marker")).isEqualTo("newer")
+    }
+
+    @Test
+    fun `caching the stored response again does not rewrite the file`() {
+        val responseStore = spyk(PayloadFileStore(responseDirectory))
+        val offeringsCache = OfferingsCache(
+            deviceCache,
+            responseStore = responseStore,
+            dispatcher = SyncDispatcher(),
+            dateProvider = dateProvider,
+            localeProvider = DefaultLocaleProvider(),
+        )
+
+        offeringsCache.cacheOfferings(mockk<Offerings>(), ONE_OFFERINGS_RESPONSE)
+        offeringsCache.cacheOfferings(mockk<Offerings>(), String(ONE_OFFERINGS_RESPONSE.toCharArray()))
+
+        verify(exactly = 1) { responseStore.write(any(), any()) }
+        assertThat(offeringsCache.cachedOfferingsResponse.toString())
+            .isEqualTo(JSONObject(ONE_OFFERINGS_RESPONSE).toString())
+    }
+
+    @Test
+    fun `caching a different response rewrites the file`() {
+        val newerResponse = JSONObject(ONE_OFFERINGS_RESPONSE).put("marker", "newer").toString()
+
+        offeringsCache.cacheOfferings(mockk<Offerings>(), ONE_OFFERINGS_RESPONSE)
+        offeringsCache.cacheOfferings(mockk<Offerings>(), newerResponse)
+
+        assertThat(offeringsCache.cachedOfferingsResponse?.getString("marker")).isEqualTo("newer")
+    }
+
+    @Test
+    fun `caching the stored response again restores a missing file`() {
+        offeringsCache.cacheOfferings(mockk<Offerings>(), ONE_OFFERINGS_RESPONSE)
+        responseDirectory.listFiles().orEmpty().single().delete()
+
+        offeringsCache.cacheOfferings(mockk<Offerings>(), ONE_OFFERINGS_RESPONSE)
+
+        assertThat(offeringsCache.cachedOfferingsResponse).isNotNull
     }
 
     @Test

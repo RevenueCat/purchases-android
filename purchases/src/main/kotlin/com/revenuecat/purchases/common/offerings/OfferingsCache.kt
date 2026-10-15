@@ -97,7 +97,10 @@ internal class OfferingsCache(
                 pendingResponse = null
                 payload to diskGeneration
             }
-            val checksum = responseStore.write(responseKey, responsePayload) ?: return
+            val checksum = responsePayload
+                .takeUnless { isAlreadyStored(it) }
+                ?.let { responseStore.write(responseKey, it) }
+                ?: return
             synchronized(this) {
                 if (generation == diskGeneration) {
                     deviceCache.cacheOfferingsResponseChecksum(checksum)
@@ -106,6 +109,12 @@ internal class OfferingsCache(
                 }
             }
         }
+    }
+
+    // A 304 from the ETag cache hands back the same payload on every refresh.
+    private fun isAlreadyStored(responsePayload: String): Boolean {
+        val storedChecksum = deviceCache.getOfferingsResponseChecksum() ?: return false
+        return responseStore.checksumOf(responsePayload) == storedChecksum && responseStore.contains(responseKey)
     }
 
     // region Offerings response cache

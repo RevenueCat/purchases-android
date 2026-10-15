@@ -89,6 +89,18 @@ internal class PayloadFileStore(
         }
     }
 
+    /** The CRC32 [write] would return for [payload], or `null` if it cannot be encoded. Touches no file. */
+    @Suppress("SwallowedException")
+    fun checksumOf(payload: String): Long? {
+        return try {
+            encodeTo(DiscardingOutputStream, payload)
+        } catch (e: IOException) {
+            null
+        }
+    }
+
+    fun contains(key: String): Boolean = fileFor(key).exists()
+
     fun clear() {
         // Renaming is a constant-time metadata op, safe on the main thread (configure, logIn/logOut);
         // the trashed directory is deleted by the next write, which runs on a background thread.
@@ -157,6 +169,11 @@ internal class PayloadFileStore(
             byteBuffer.clear()
             if (result.isUnderflow) return
         }
+    }
+
+    private object DiscardingOutputStream : OutputStream() {
+        override fun write(b: Int) = Unit
+        override fun write(b: ByteArray, off: Int, len: Int) = Unit
     }
 
     private companion object {
