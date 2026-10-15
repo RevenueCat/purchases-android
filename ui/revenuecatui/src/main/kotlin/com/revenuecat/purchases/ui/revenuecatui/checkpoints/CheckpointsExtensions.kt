@@ -64,8 +64,8 @@ public var Purchases.paywallPresenter: PaywallPresenter?
     }
 
 /**
- * Presents the errors of the flows the SDK presents for checkpoints with app-owned UI, unless the call supplies
- * its own through [CheckpointParams.errorPresenter]. When neither is set, the SDK presents its own error dialog
+ * Presents the errors the SDK runs into while serving a checkpoint with app-owned UI, unless the call supplies its
+ * own through [CheckpointParams.errorPresenter]. When neither is set, the SDK presents its own error dialog
  * through a presenter of its own. Held by this [Purchases] instance, so it is cleared when the SDK is reconfigured.
  */
 @InviteOnlyCheckpointsAPI

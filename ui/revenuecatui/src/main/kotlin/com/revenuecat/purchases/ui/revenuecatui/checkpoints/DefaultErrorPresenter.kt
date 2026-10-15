@@ -11,7 +11,6 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter.Completion.Result
 import com.revenuecat.purchases.ui.revenuecatui.composables.ErrorDialog
 import com.revenuecat.purchases.ui.revenuecatui.helpers.EDGE_TO_EDGE_WINDOW_THEME
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -19,13 +18,12 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.applyEdgeToEdge
 
 /**
  * The SDK's own [ErrorPresenter], used when neither the call nor the [Purchases] instance supplies one: shows the
- * error in the SDK's dialog over the current activity and, once the user acknowledges it, resumes the flow when it
- * can go on and ends it otherwise. It goes through the same contract an app presenter does and uses nothing an app
- * presenter lacks: the current activity, a dialog of its own, and the completion. One instance per checkpoint call.
+ * error in the SDK's dialog over the current activity and completes once the user acknowledges it. It goes through
+ * the same contract an app presenter does and uses nothing an app presenter lacks: the current activity, a dialog
+ * of its own, and the completion. One instance per checkpoint call.
  *
  * The dialog dies with its activity, so on a configuration change it is shown again over the next started
- * activity. An activity finishing for real takes the flow with it, so the presentation ends with [Result.Retry],
- * which also ends a flow that cannot go on.
+ * activity. An activity finishing for real takes the flow with it, so the presentation completes then too.
  *
  * Main-thread only, like the paywall that asks for it.
  */
@@ -50,8 +48,9 @@ internal class DefaultErrorPresenter(
                 "Cannot present checkpoint error: no started Activity found.",
             ),
         )
-        // A new error while the previous one is still up replaces it: the flow went on, so that one is a Retry.
-        presentation?.let { finish(it, Result.Retry) }
+        // A new error while the previous one is still up replaces it: the flow went on past that one. Through the
+        // checkpoint queue this never happens, errors arrive one at a time; the contract still allows it.
+        presentation?.let { finish(it) }
         val current = Presentation(params, completion)
         presentation = current
         try {
@@ -82,17 +81,15 @@ internal class DefaultErrorPresenter(
         dialog.show()
     }
 
-    private fun acknowledged(current: Presentation) {
-        finish(current, if (current.params.flowCanContinue) Result.Retry else Result.Continue)
-    }
+    private fun acknowledged(current: Presentation) = finish(current)
 
-    // Only the current presentation finishes, and only once: a stale dialog's report is ignored.
-    private fun finish(current: Presentation, result: Result) {
+    // Only the current presentation finishes, and only once: a stale dialog's acknowledgement is ignored.
+    private fun finish(current: Presentation) {
         if (presentation !== current) return
         presentation = null
         dismissDialog(current)
         teardown()
-        current.completion.complete(result)
+        current.completion.complete()
     }
 
     private fun dismissDialog(current: Presentation) {
@@ -122,7 +119,7 @@ internal class DefaultErrorPresenter(
             if (activity.isChangingConfigurations) {
                 awaitingRepresent = true
             } else {
-                finish(current, Result.Retry)
+                finish(current)
             }
         }
 
@@ -135,7 +132,7 @@ internal class DefaultErrorPresenter(
             } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                 // The flow must never wait on a dialog that is not there.
                 Logger.e("Failed to re-present checkpoint error dialog after a configuration change: $e")
-                finish(current, Result.Retry)
+                finish(current)
             }
         }
 
@@ -146,10 +143,10 @@ internal class DefaultErrorPresenter(
         override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
     }
 
-    // What the paywall's own dialog shows: a flow that cannot go on carries its reason in the underlying message,
-    // while a purchase or restore error reads best as its code's description.
+    // What the paywall's own dialog shows: an action that failed reads best as its code's description, while
+    // a failure around the flow carries its reason in the underlying message.
     private val Presentation.message: String
-        get() = if (params.flowCanContinue) {
+        get() = if (params.kind == CheckpointFailureKind.FLOW_ACTION_FAILED) {
             params.error.message
         } else {
             params.error.underlyingErrorMessage ?: params.error.message

@@ -8,7 +8,6 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter.Completion.Result
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -30,8 +29,8 @@ class DefaultErrorPresenterTest {
 
     private val messages = mutableListOf<String>()
     private var acknowledge: (() -> Unit)? = null
-    private val results = mutableListOf<Result>()
-    private val completion = ErrorPresenter.Completion { results += it }
+    private var completions = 0
+    private val completion = ErrorPresenter.Completion { completions++ }
 
     @Before
     fun setup() {
@@ -51,26 +50,38 @@ class DefaultErrorPresenterTest {
         val dialog = ShadowDialog.getLatestDialog()
         assertThat(dialog).isNotNull
         assertThat(dialog.isShowing).isTrue
-        assertThat(results).isEmpty()
+        assertThat(completions).isZero
     }
 
     @Test
-    fun `a purchase error shows its code's description`() {
+    fun `an error during the flow shows its code's description`() {
         present(params(error = PurchasesError(PurchasesErrorCode.StoreProblemError, "raw store detail")))
 
         assertThat(messages).containsExactly(PurchasesErrorCode.StoreProblemError.description)
     }
 
     @Test
-    fun `an error the flow cannot recover from shows the paywall's reason`() {
+    fun `an error before the flow shows its reason`() {
         present(
             params(
-                flowCanContinue = false,
+                kind = CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN,
                 error = PurchasesError(PurchasesErrorCode.UnknownError, "No packages available"),
             ),
         )
 
         assertThat(messages).containsExactly("No packages available")
+    }
+
+    @Test
+    fun `an error after the flow shows its reason`() {
+        present(
+            params(
+                kind = CheckpointFailureKind.FLOW_RESULT_SYNC_FAILED,
+                error = PurchasesError(PurchasesErrorCode.NetworkError, "Request timed out"),
+            ),
+        )
+
+        assertThat(messages).containsExactly("Request timed out")
     }
 
     @Test
@@ -83,36 +94,27 @@ class DefaultErrorPresenterTest {
             .matches { (it as PurchasesException).error.code == PurchasesErrorCode.ConfigurationError }
 
         assertThat(ShadowDialog.getShownDialogs()).hasSize(dialogsShown)
-        assertThat(results).isEmpty()
+        assertThat(completions).isZero
     }
 
     @Test
-    fun `acknowledging a recoverable error reports Retry and takes the dialog down`() {
-        present(params(flowCanContinue = true))
+    fun `acknowledging the error completes and takes the dialog down`() {
+        present()
 
         acknowledge!!()
 
-        assertThat(results).containsExactly(Result.Retry)
+        assertThat(completions).isEqualTo(1)
         assertThat(ShadowDialog.getLatestDialog().isShowing).isFalse
     }
 
     @Test
-    fun `acknowledging an unrecoverable error reports Continue`() {
-        present(params(flowCanContinue = false))
-
-        acknowledge!!()
-
-        assertThat(results).containsExactly(Result.Continue)
-    }
-
-    @Test
     fun `cancelling the host window acknowledges the error instead of leaving it on screen`() {
-        present(params(flowCanContinue = false))
+        present()
 
         ShadowDialog.getLatestDialog().cancel()
         shadowOf(Looper.getMainLooper()).idle()
 
-        assertThat(results).containsExactly(Result.Continue)
+        assertThat(completions).isEqualTo(1)
         assertThat(ShadowDialog.getLatestDialog().isShowing).isFalse
     }
 
@@ -123,7 +125,7 @@ class DefaultErrorPresenterTest {
         acknowledge!!()
         acknowledge!!()
 
-        assertThat(results).containsExactly(Result.Retry)
+        assertThat(completions).isEqualTo(1)
     }
 
     @Test
@@ -137,35 +139,39 @@ class DefaultErrorPresenterTest {
         assertThat(secondDialog).isNotSameAs(firstDialog)
         assertThat(firstDialog.isShowing).isFalse
         assertThat(secondDialog.isShowing).isTrue
-        assertThat(results).isEmpty()
+        assertThat(completions).isZero
         acknowledge!!()
-        assertThat(results).containsExactly(Result.Retry)
+        assertThat(completions).isEqualTo(1)
     }
 
     @Test
-    fun `the host activity finishing reports Retry`() {
+    fun `the host activity finishing completes`() {
         present()
 
         controller.get().finish()
         controller.pause().stop().destroy()
 
-        assertThat(results).containsExactly(Result.Retry)
+        assertThat(completions).isEqualTo(1)
         assertThat(ShadowDialog.getLatestDialog().isShowing).isFalse
     }
 
     @Test
-    fun `a second error replaces the first, which becomes a Retry`() {
+    fun `a second error replaces the first, which completes`() {
         present()
         val firstDialog = ShadowDialog.getLatestDialog()
-        val secondResults = mutableListOf<Result>()
+        var secondCompletions = 0
 
-        presenter.present(params(flowCanContinue = false), ErrorPresenter.Completion { secondResults += it })
+        presenter.present(
+            params(kind = CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN),
+            ErrorPresenter.Completion { secondCompletions++ },
+        )
 
-        assertThat(results).containsExactly(Result.Retry)
+        assertThat(completions).isEqualTo(1)
         assertThat(firstDialog.isShowing).isFalse
         assertThat(ShadowDialog.getLatestDialog().isShowing).isTrue
         acknowledge!!()
-        assertThat(secondResults).containsExactly(Result.Continue)
+        assertThat(secondCompletions).isEqualTo(1)
+        assertThat(completions).isEqualTo(1)
     }
 
     @Test
@@ -182,7 +188,7 @@ class DefaultErrorPresenterTest {
     private fun present(params: ErrorPresenter.Params = params()) = presenter.present(params, completion)
 
     private fun params(
-        flowCanContinue: Boolean = true,
+        kind: CheckpointFailureKind = CheckpointFailureKind.FLOW_ACTION_FAILED,
         error: PurchasesError = PurchasesError(PurchasesErrorCode.StoreProblemError, "boom"),
-    ) = ErrorPresenter.Params(error, "test_checkpoint", emptyMap(), flowCanContinue)
+    ) = ErrorPresenter.Params(error, "test_checkpoint", emptyMap(), kind)
 }

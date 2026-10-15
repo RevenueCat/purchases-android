@@ -9,6 +9,7 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter.Completion.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import java.util.UUID
@@ -25,9 +26,10 @@ import java.util.UUID
  * It reports how the user left the paywall, except that a purchase, or a restore that granted an entitlement the
  * user did not hold when the paywall opened, continues the flow whatever closed the window; a granting restore
  * also closes the paywall, like a purchase does. What the user obtained is still read from the synced customer
- * info, like for any other presenter. One instance per presentation, and the host of its own window. Like an app
- * presenter's UI, the window is not taken down when the checkpoint call is abandoned: the user closes it, and its
- * report is ignored.
+ * info, like for any other presenter. A paywall that could not load reports [Result.Failed] unless the user
+ * obtained something first: the checkpoint is not passed. One instance per presentation, and the host of its own
+ * window. Like an app presenter's UI, the window is not taken down when the checkpoint call is abandoned: the user
+ * closes it, and its report is ignored.
  */
 internal class DefaultPaywallPresenter(
     private val purchases: Purchases,
@@ -43,6 +45,7 @@ internal class DefaultPaywallPresenter(
     private var completion: PaywallPresenter.Completion? = null
     private var activeEntitlementsBefore: Set<String>? = null
     private var obtained = false
+    private var failure: PurchasesError? = null
 
     // The dismissal wiring of the window currently on screen; a re-present after a configuration change replaces it.
     private var dismiss: ((navigatedBack: Boolean) -> Unit)? = null
@@ -73,9 +76,11 @@ internal class DefaultPaywallPresenter(
         completion?.let {
             this.dismiss = dismiss
             PaywallOptions.Builder(dismissRequest = { dismiss(false) })
-                // The one thing an app embedding the paywall cannot do: the paywall handles system back itself and
-                // only reports the reason through this internal channel. Everything else here is public API.
-                .setDismissRequestWithExitOffering { _, _, reason ->
+                // What an app embedding the paywall cannot do: the paywall handles system back itself and only
+                // reports the reason through this internal channel, and a paywall that could not load carries the
+                // error here once its error UI is done. Everything else here is public API.
+                .setDismissRequestWithExitOffering { _, result, reason ->
+                    (result as? PaywallResult.Error)?.let { failure = it.error }
                     dismiss(reason == PaywallDismissReason.NAVIGATED_BACK)
                 }
                 .setErrorPresenter(errorPresenter.forCheckpoint(params.checkpointIdentifier, params.customVariables))
@@ -106,9 +111,11 @@ internal class DefaultPaywallPresenter(
     // The window goes away on the report, like an app presenter's UI, and the checkpoint resolves after it.
     override fun onPresentationFinished(callId: String, navigatedBack: Boolean, finishPresentation: () -> Unit) {
         finishPresentation()
+        val failure = this.failure
         complete(
             when {
                 obtained -> Result.Continued
+                failure != null -> Result.Failed(failure)
                 navigatedBack -> Result.NavigatedBack
                 else -> Result.Closed
             },

@@ -56,6 +56,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointFailureKind
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter
 import com.revenuecat.purchases.ui.revenuecatui.components.style.WebViewComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.webview.webViewContextSnapshot
@@ -2018,19 +2019,19 @@ class PaywallViewModelWorkflowTest {
     fun `a failed purchase during a workflow is handed to the error presenter`() = runTest {
         coEvery { purchases.awaitPurchase(any()) } throws
             PurchasesException(PurchasesError(PurchasesErrorCode.StoreProblemError))
-        val presented = mutableListOf<Boolean>()
-        val vm = createVm(errorPresenter = { _, flowCanContinue, _ -> presented += flowCanContinue })
+        val presented = mutableListOf<CheckpointFailureKind>()
+        val vm = createVm(errorPresenter = { _, kind, _ -> presented += kind })
         vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
         advanceUntilIdle()
 
         vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
 
-        assertThat(presented).containsExactly(true)
+        assertThat(presented).containsExactly(CheckpointFailureKind.FLOW_ACTION_FAILED)
         assertThat(vm.actionError.value).isNull()
     }
 
     @Test
-    fun `NavigateBack from the error presenter mid-flow goes to the previous step`() = runTest {
+    fun `completing the error presenter mid-flow keeps the current step`() = runTest {
         coEvery { purchases.awaitPurchase(any()) } throws
             PurchasesException(PurchasesError(PurchasesErrorCode.StoreProblemError))
         var completion: ErrorPresenter.Completion? = null
@@ -2045,32 +2046,12 @@ class PaywallViewModelWorkflowTest {
         advanceUntilIdle()
         vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
 
-        completion!!.complete(ErrorPresenter.Completion.Result.NavigateBack)
+        completion!!.complete()
         advanceUntilIdle()
 
         assertThat(dismissals).isEmpty()
-        assertThat(vm.workflowState.value?.pendingTransition?.direction).isEqualTo(NavigationDirection.BACKWARD)
-        assertThat(vm.workflowState.value?.pendingTransition?.fromStepId).isEqualTo("step-2")
-    }
-
-    @Test
-    fun `NavigateBack from the error presenter on the first step leaves the flow`() = runTest {
-        coEvery { purchases.awaitPurchase(any()) } throws
-            PurchasesException(PurchasesError(PurchasesErrorCode.StoreProblemError))
-        var completion: ErrorPresenter.Completion? = null
-        val dismissals = mutableListOf<PaywallDismissReason>()
-        val vm = createVm(
-            dismissRequestWithExitOffering = { _, _, reason -> dismissals += reason },
-            errorPresenter = { _, _, c -> completion = c },
-        )
-        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
-        advanceUntilIdle()
-        vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
-
-        completion!!.complete(ErrorPresenter.Completion.Result.NavigateBack)
-        advanceUntilIdle()
-
-        assertThat(dismissals).containsExactly(PaywallDismissReason.NAVIGATED_BACK)
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-2")
+        assertThat(vm.workflowState.value?.pendingTransition).isNull()
     }
 
     @Test

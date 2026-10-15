@@ -13,6 +13,8 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
+import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import io.mockk.coEvery
 import io.mockk.every
@@ -243,6 +245,105 @@ class CheckpointPassedCallbackTest {
         finishPaywall(CheckpointFlowOutcome.Error(PurchasesError(PurchasesErrorCode.StoreProblemError, "boom")))
 
         assertThat(results).containsExactly(null)
+    }
+
+    @Test
+    fun `a sync failure after an app-owned presentation presents the error and then passes with an empty result`() =
+        runTest(dispatcher) {
+            syncFails()
+            val kinds = mutableListOf<CheckpointFailureKind>()
+            var errorCompletion: ErrorPresenter.Completion? = null
+            manager.errorPresenter = ErrorPresenter { params, completion ->
+                kinds += params.kind
+                errorCompletion = completion
+            }
+            val completion = presentThroughRegisteredPresenter()
+
+            checkpoint()
+            completion()!!.complete(PaywallPresenter.Completion.Result.Closed)
+
+            assertThat(kinds).containsExactly(CheckpointFailureKind.FLOW_RESULT_SYNC_FAILED)
+            assertThat(results).isEmpty()
+            errorCompletion!!.complete()
+            assertThat(results.obtained).containsExactly(emptySet<String>())
+        }
+
+    @Test
+    fun `a sync failure the SDK's own dialog cannot show still passes with an empty result`() = runTest(dispatcher) {
+        syncFails()
+        every { mockPurchases.currentActivity } returns null
+        val completion = presentThroughRegisteredPresenter()
+
+        checkpoint()
+        completion()!!.complete(PaywallPresenter.Completion.Result.Closed)
+
+        assertThat(results.obtained).containsExactly(emptySet<String>())
+    }
+
+    @Test
+    fun `the SDK's own paywall that cannot load delivers null and never syncs`() = runTest(dispatcher) {
+        resolvesTo(CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null))
+
+        checkpoint()
+        defaultPresenter!!.paywallOptions("") {}!!.dismissRequestWithExitOffering!!(
+            null,
+            PaywallResult.Error(PurchasesError(PurchasesErrorCode.ConfigurationError, "No packages available")),
+            PaywallDismissReason.CLOSE,
+        )
+        defaultPresenter!!.onPresentationFinished("")
+
+        assertThat(results).containsExactly(null)
+        verify(exactly = 0) { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) }
+    }
+
+    @Test
+    fun `a presenter holding a single pending request sees overlapping failures one at a time`() =
+        runTest(dispatcher) {
+            syncFails()
+            val presenter = SingleRequestErrorPresenter()
+            manager.errorPresenter = presenter
+            val completion = presentThroughRegisteredPresenter()
+
+            checkpoint()
+            completion()!!.complete(PaywallPresenter.Completion.Result.Closed)
+            checkpoint()
+            completion()!!.complete(PaywallPresenter.Completion.Result.Closed)
+
+            assertThat(presenter.calls).isEqualTo(1)
+            assertThat(results).isEmpty()
+
+            presenter.finish()
+
+            assertThat(results.obtained).containsExactly(emptySet<String>())
+            assertThat(presenter.calls).isEqualTo(2)
+
+            presenter.finish()
+
+            assertThat(results.obtained).containsExactly(emptySet<String>(), emptySet<String>())
+        }
+
+    // The shape of the sample apps' presenters: a new request overwrites the pending one without completing it.
+    private class SingleRequestErrorPresenter : ErrorPresenter {
+        var calls = 0
+        private var request: ErrorPresenter.Completion? = null
+
+        override fun present(params: ErrorPresenter.Params, completion: ErrorPresenter.Completion) {
+            calls++
+            request = completion
+        }
+
+        fun finish() {
+            val pending = request
+            request = null
+            pending?.complete()
+        }
+    }
+
+    private fun syncFails() {
+        every { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) } answers {
+            secondArg<ReceiveCustomerInfoCallback>()
+                .onError(PurchasesError(PurchasesErrorCode.NetworkError, "Simulated."))
+        }
     }
 
     private fun checkpoint(identifier: String = checkpointId) {

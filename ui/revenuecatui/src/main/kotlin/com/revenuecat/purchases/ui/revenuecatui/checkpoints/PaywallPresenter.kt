@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import dev.drewhamilton.poko.Poko
@@ -83,6 +84,15 @@ public fun interface PaywallPresenter {
              */
             public object NavigatedBack : Result() {
                 override fun toString(): String = "NavigatedBack"
+            }
+
+            /**
+             * The SDK's own paywall could not be shown or kept on screen, and the user obtained nothing. Reported
+             * only by [DefaultPaywallPresenter]: the checkpoint is not passed. An app presenter owns its UI's
+             * errors and reports how the user left instead.
+             */
+            internal class Failed(val error: PurchasesError) : Result() {
+                override fun toString(): String = "Failed($error)"
             }
         }
     }
