@@ -114,10 +114,11 @@ internal class CheckpointsManager(
         val customVariables = (params ?: CheckpointParams {}).customVariables
         val presenter = params?.paywallPresenter ?: paywallPresenter
         // Resolved lazily: an app paywall presenter owns its own errors and may never need one. Whichever presenter
-        // it is, the queue hands it one error at a time.
+        // it is, the queue hands it one error at a time, and the SDK's own stands in for an app presenter that throws.
+        val sdkErrorPresenter = { defaultErrorPresenterFactory(purchases) }
         val errorPresenter: () -> ErrorPresenter = {
             errorPresentationQueue.serialized(
-                params?.errorPresenter ?: errorPresenter ?: defaultErrorPresenterFactory(purchases),
+                (params?.errorPresenter ?: errorPresenter)?.withFallback(sdkErrorPresenter) ?: sdkErrorPresenter(),
             )
         }
         val presentationMode = resolvePresentationMode(params?.presentationMode)

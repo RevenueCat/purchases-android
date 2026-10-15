@@ -6,7 +6,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
 import com.revenuecat.purchases.ui.revenuecatui.PaywallErrorPresenter
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointFailureKind
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.HeldCompletion
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.StateFlow
@@ -47,7 +47,7 @@ internal class PaywallErrorReporter(
         val presentationGeneration: Int
     }
 
-    private var current: FirstCompletion? = null
+    private var current: HeldCompletion? = null
 
     init {
         scope.launch { state.filterIsInstance<PaywallState.Error>().collect { onErrorState(it) } }
@@ -106,7 +106,7 @@ internal class PaywallErrorReporter(
         val generation = host.presentationGeneration
         // A completion from another thread is queued behind whatever main is doing, so it is checked again on
         // arrival: the presentation must be the same, and the completion must still be the current one.
-        val completion = FirstCompletion { sender ->
+        val completion = HeldCompletion { sender ->
             scope.launch {
                 if (host.presentationGeneration == generation && current === sender) onComplete()
             }
@@ -124,41 +124,5 @@ internal class PaywallErrorReporter(
             return
         }
         completion.release()
-    }
-
-    // Delivers the first completion once, and only after release(); one made before then waits for it, and
-    // discard() drops it. Completions can come from any thread, the delivery runs outside the lock.
-    private class FirstCompletion(
-        private val onFirst: (sender: FirstCompletion) -> Unit,
-    ) : ErrorPresenter.Completion {
-
-        private val lock = Any()
-        private var completed = false
-        private var released = false
-        private var pending = false
-
-        override fun complete() {
-            val deliverNow = synchronized(lock) {
-                if (completed) return
-                completed = true
-                if (released) true else false.also { pending = true }
-            }
-            if (deliverNow) onFirst(this)
-        }
-
-        fun release() {
-            val held = synchronized(lock) {
-                released = true
-                pending.also { pending = false }
-            }
-            if (held) onFirst(this)
-        }
-
-        fun discard() {
-            synchronized(lock) {
-                completed = true
-                pending = false
-            }
-        }
     }
 }

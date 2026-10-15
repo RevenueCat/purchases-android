@@ -4,6 +4,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.PaywallErrorPresenter
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import dev.drewhamilton.poko.Poko
 
 /**
@@ -28,6 +29,9 @@ public fun interface ErrorPresenter {
      * whichever checkpoint call or kind of failure the next error belongs to, until [completion] has been
      * completed, and then on a later main thread message rather than from inside [Completion.complete]. A
      * presenter may therefore keep a single pending request.
+     *
+     * A presenter that throws is logged, and the SDK presents the error through its own dialog instead; that
+     * dialog's completion is the one that counts then.
      */
     public fun present(params: Params, completion: Completion)
 
@@ -68,4 +72,61 @@ internal fun ErrorPresenter.forCheckpoint(
     customVariables: Map<String, CustomVariableValue>,
 ): PaywallErrorPresenter = PaywallErrorPresenter { error, kind, completion ->
     present(ErrorPresenter.Params(error, checkpointIdentifier, customVariables, kind), completion)
+}
+
+/**
+ * This presenter with [fallback] behind it: when it throws, the error is logged and presented through [fallback]
+ * instead, and only that presentation's completion counts, whether this presenter completed before throwing or
+ * completes afterwards. [fallback] is only created when needed; if it throws too, that propagates.
+ */
+internal fun ErrorPresenter.withFallback(fallback: () -> ErrorPresenter): ErrorPresenter =
+    ErrorPresenter { params, completion ->
+        val held = HeldCompletion { completion.complete() }
+        try {
+            present(params, held)
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            held.discard()
+            Logger.e("Error presenter failed, presenting the error through the SDK's own dialog instead: $e")
+            fallback().present(params, completion)
+            return@ErrorPresenter
+        }
+        held.release()
+    }
+
+/**
+ * Delivers the first completion once, and only after [release]; one made before then waits for it, and [discard]
+ * drops it. Completions can come from any thread; [onFirst] runs outside the lock.
+ */
+internal class HeldCompletion(
+    private val onFirst: (sender: HeldCompletion) -> Unit,
+) : ErrorPresenter.Completion {
+
+    private val lock = Any()
+    private var completed = false
+    private var released = false
+    private var pending = false
+
+    override fun complete() {
+        val deliverNow = synchronized(lock) {
+            if (completed) return
+            completed = true
+            if (released) true else false.also { pending = true }
+        }
+        if (deliverNow) onFirst(this)
+    }
+
+    fun release() {
+        val held = synchronized(lock) {
+            released = true
+            pending.also { pending = false }
+        }
+        if (held) onFirst(this)
+    }
+
+    fun discard() {
+        synchronized(lock) {
+            completed = true
+            pending = false
+        }
+    }
 }

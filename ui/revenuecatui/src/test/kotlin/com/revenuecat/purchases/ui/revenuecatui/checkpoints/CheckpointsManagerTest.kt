@@ -56,6 +56,7 @@ class CheckpointsManagerTest {
     private lateinit var mockPresenter: CheckpointWorkflowPresenter
     private var defaultPresenter: DefaultPaywallPresenter? = null
     private val defaultErrorPresenters = mutableListOf<DefaultErrorPresenter>()
+    private val defaultPresentedErrors = mutableListOf<ErrorPresenter.Params>()
     private val presentedCallIds = mutableListOf<String>()
     private val presentedModes = mutableListOf<FlowPresentationMode>()
     private val defaultPresenterModes = mutableListOf<FlowPresentationMode>()
@@ -75,6 +76,7 @@ class CheckpointsManagerTest {
         mockPresenter = mockk(relaxed = true)
         defaultPresenter = null
         defaultErrorPresenters.clear()
+        defaultPresentedErrors.clear()
         mockPurchases = mockk {
             every { currentActivity } returns mockActivity
             every { getCustomerInfo(CacheFetchPolicy.CACHE_ONLY, any()) } answers {
@@ -94,8 +96,14 @@ class CheckpointsManagerTest {
                     mockPresenter
                 }.also { defaultPresenter = it }
             },
-            defaultErrorPresenterFactory = { purchases ->
-                DefaultErrorPresenter(purchases).also { defaultErrorPresenters += it }
+            defaultErrorPresenterFactory = { _ ->
+                // The SDK's own dialog needs a real activity; here it acknowledges every error right away.
+                mockk<DefaultErrorPresenter> {
+                    every { present(any(), any()) } answers {
+                        defaultPresentedErrors += firstArg<ErrorPresenter.Params>()
+                        secondArg<ErrorPresenter.Completion>().complete()
+                    }
+                }.also { defaultErrorPresenters += it }
             },
         )
     }
@@ -966,8 +974,9 @@ class CheckpointsManagerTest {
     }
 
     @Test
-    fun `a sync failure the error presenter cannot show resolves as unsynced right away`() = runTest(dispatcher) {
-        syncFailsWith(PurchasesError(PurchasesErrorCode.NetworkError, "Simulated."))
+    fun `a sync failure whose app presenter throws is presented through the SDK's dialog`() = runTest(dispatcher) {
+        val error = PurchasesError(PurchasesErrorCode.NetworkError, "Simulated.")
+        syncFailsWith(error)
         manager.errorPresenter = ErrorPresenter { _, _ -> error("Simulated.") }
         val completion = presentThroughRegisteredPresenter()
         var run: CheckpointRun? = null
@@ -976,6 +985,9 @@ class CheckpointsManagerTest {
         completion()!!.complete(PaywallPresenter.Completion.Result.Closed)
         call.join()
 
+        assertThat(defaultPresentedErrors).containsExactly(
+            ErrorPresenter.Params(error, checkpointId, emptyMap(), CheckpointFailureKind.FLOW_RESULT_SYNC_FAILED),
+        )
         assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.SyncFailed)
         verify(exactly = 1) { Logger.e(match { it.startsWith("Error presenter failed") }) }
     }
@@ -1141,6 +1153,27 @@ class CheckpointsManagerTest {
                     CheckpointFailureKind.FLOW_ACTION_FAILED,
                 ),
             )
+            finishPaywall(outcome = null)
+            call.join()
+        }
+
+    @Test
+    fun `a workflow paywall error whose app presenter throws is presented through the SDK's dialog`() =
+        runTest(dispatcher) {
+            resolvesToWorkflow()
+            manager.errorPresenter = ErrorPresenter { _, _ -> error("Simulated.") }
+            val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "boom")
+            var completed = false
+            val call = launch { runCheckpoint() }
+
+            val options = manager.paywallOptions(currentCallId()) {}!!
+            options.errorPresenter!!.present(error, CheckpointFailureKind.FLOW_ACTION_FAILED) { completed = true }
+
+            assertThat(defaultPresentedErrors).containsExactly(
+                ErrorPresenter.Params(error, checkpointId, emptyMap(), CheckpointFailureKind.FLOW_ACTION_FAILED),
+            )
+            assertThat(completed).isTrue
+            verify(exactly = 1) { Logger.e(match { it.startsWith("Error presenter failed") }) }
             finishPaywall(outcome = null)
             call.join()
         }
