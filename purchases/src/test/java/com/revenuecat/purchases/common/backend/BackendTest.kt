@@ -1595,6 +1595,34 @@ class BackendTest {
         assertThat(requestBodySlot.isCaptured).isTrue
         assertThat(requestBodySlot.captured["presented_offering_identifier"]).isEqualTo("offering_a")
         assertThat(requestBodySlot.captured["presented_placement_identifier"]).isEqualTo("placement_a")
+        assertThat(requestBodySlot.captured.keys).doesNotContain("presented_checkpoint_identifier")
+    }
+
+    @Test
+    fun `postReceipt passes presented_checkpoint_identifier in body`() {
+        val context = PresentedOfferingContext("offering_a")
+            .copyWithCheckpointIdentifier("onboarding_paywall")
+        val receiptInfo = createReceiptInfoFromProduct(
+            productIDs = productIDs,
+            storeProduct = storeProduct,
+            presentedOfferingContext = context,
+            storeUserID = "id",
+        )
+
+        mockPostReceiptResponseAndPost(
+            backend,
+            responseCode = 200,
+            isRestore = false,
+            clientException = null,
+            resultBody = null,
+            finishTransactions = false,
+            receiptInfo = receiptInfo,
+            initiationSource = initiationSource,
+        )
+
+        assertThat(requestBodySlot.isCaptured).isTrue
+        assertThat(requestBodySlot.captured["presented_checkpoint_identifier"])
+            .isEqualTo("onboarding_paywall")
     }
 
     @Test
@@ -3272,6 +3300,7 @@ class BackendTest {
             "is_restore" to isRestore,
             "presented_offering_identifier" to receiptInfo.presentedOfferingContext?.offeringIdentifier,
             "presented_placement_identifier" to receiptInfo.presentedOfferingContext?.placementIdentifier,
+            "presented_checkpoint_identifier" to receiptInfo.presentedOfferingContext?.checkpointIdentifier,
             "observer_mode" to !finishTransactions,
             "price" to receiptInfo.price,
             "currency" to receiptInfo.currency,

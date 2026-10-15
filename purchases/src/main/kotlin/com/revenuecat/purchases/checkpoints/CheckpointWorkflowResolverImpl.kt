@@ -24,6 +24,7 @@ import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.common.workflows.WorkflowStep
+import com.revenuecat.purchases.withPresentedCheckpointIdentifier
 import kotlinx.coroutines.CancellationException
 import java.util.UUID
 
@@ -211,7 +212,7 @@ internal class CheckpointWorkflowResolverImpl(
 
     private suspend fun loadOfferings(checkpointIdentifier: String): Offerings? =
         try {
-            getOfferings()
+            getOfferings().withPresentedCheckpointIdentifier(checkpointIdentifier)
         } catch (e: PurchasesException) {
             errorLog { "Offerings could not be fetched for checkpoint '$checkpointIdentifier': ${e.error}" }
             null

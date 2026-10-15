@@ -130,16 +130,24 @@ private data class OfferingsComparableData(
 }
 
 @OptIn(InternalRevenueCatAPI::class)
-internal fun Offering.withPresentedContext(placementId: String?, targeting: Offerings.Targeting?): Offering {
+internal fun Offering.withPresentedContext(
+    placementId: String?,
+    targeting: Offerings.Targeting?,
+    checkpointIdentifier: String? = null,
+): Offering {
     val updatedAvailablePackages = this.availablePackages.map {
         val oldContext = it.presentedOfferingContext
 
-        val newContext = oldContext.copy(
-            placementIdentifier = placementId ?: oldContext.placementIdentifier,
-            targetingContext = targeting?.let { targeting ->
-                PresentedOfferingContext.TargetingContext(targeting.revision, targeting.ruleId)
-            } ?: oldContext.targetingContext,
-        )
+        val newContext = oldContext
+            .copy(
+                placementIdentifier = placementId ?: oldContext.placementIdentifier,
+                targetingContext = targeting?.let { targeting ->
+                    PresentedOfferingContext.TargetingContext(targeting.revision, targeting.ruleId)
+                } ?: oldContext.targetingContext,
+            )
+            .let { context ->
+                checkpointIdentifier?.let(context::copyWithCheckpointIdentifier) ?: context
+            }
         val product = it.product.copyWithPresentedOfferingContext(newContext)
 
         Package(
@@ -160,4 +168,24 @@ internal fun Offering.withPresentedContext(placementId: String?, targeting: Offe
         paywallComponents = this.paywallComponents,
         webCheckoutURL = this.webCheckoutURL,
     ).also { it.hasPaywallComponents = this.hasPaywallComponents }
+}
+
+@OptIn(InternalRevenueCatAPI::class)
+internal fun Offerings.withPresentedCheckpointIdentifier(checkpointIdentifier: String): Offerings {
+    val updatedOfferings = all.mapValues { (_, offering) ->
+        offering.withPresentedContext(
+            placementId = null,
+            targeting = null,
+            checkpointIdentifier = checkpointIdentifier,
+        )
+    }
+    val updatedCurrent = current?.let { offering ->
+        updatedOfferings[offering.identifier]
+            ?: offering.withPresentedContext(
+                placementId = null,
+                targeting = null,
+                checkpointIdentifier = checkpointIdentifier,
+            )
+    }
+    return copy(current = updatedCurrent, all = updatedOfferings)
 }
