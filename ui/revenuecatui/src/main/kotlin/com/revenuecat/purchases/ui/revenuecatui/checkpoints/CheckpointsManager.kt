@@ -151,12 +151,11 @@ internal class CheckpointsManager(
                 is CheckpointResolution.MatchedWorkflow ->
                     present(purchases, identifier, resolution, customVariables, errorPresenter(), presentationMode)
                 is CheckpointResolution.NoAction -> when (resolution.reason) {
-                    CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE -> presentFailure(
-                        PurchasesError(
-                            PurchasesErrorCode.ConfigurationError,
-                            "The configuration needed to serve checkpoint '$identifier' could not be read.",
-                        ),
-                    )
+                    CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE -> {
+                        val message = "The configuration needed to serve checkpoint '$identifier' could not be read."
+                        Logger.e(message)
+                        presentFailure(PurchasesError(PurchasesErrorCode.ConfigurationError, message))
+                    }
                     else -> nothingPresented
                 }
             }

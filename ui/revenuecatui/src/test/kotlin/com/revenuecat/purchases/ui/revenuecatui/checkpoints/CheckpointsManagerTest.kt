@@ -160,18 +160,17 @@ class CheckpointsManagerTest {
     }
 
     @Test
-    fun `unavailable configuration is presented and does not pass`() = runTest(dispatcher) {
+    fun `unavailable configuration is logged, presented and does not pass`() = runTest(dispatcher) {
         resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE))
+        val message = "The configuration needed to serve checkpoint '$checkpointId' could not be read."
 
         checkpoint()
 
         assertThat(results).isEmpty()
         assertThat(defaultPresentedErrors.single().error).isEqualTo(
-            PurchasesError(
-                PurchasesErrorCode.ConfigurationError,
-                "The configuration needed to serve checkpoint '$checkpointId' could not be read.",
-            ),
+            PurchasesError(PurchasesErrorCode.ConfigurationError, message),
         )
+        verify(exactly = 1) { Logger.e(message) }
     }
 
     @Test
