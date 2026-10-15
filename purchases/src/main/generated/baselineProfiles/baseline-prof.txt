@@ -1586,6 +1586,7 @@ HSPLcom/revenuecat/purchases/common/networking/ETagManager$Companion;->initializ
 Lcom/revenuecat/purchases/common/caching/PayloadFileStore;
 HSPLcom/revenuecat/purchases/common/caching/PayloadFileStore;-><clinit>()V
 HSPLcom/revenuecat/purchases/common/caching/PayloadFileStore;-><init>(Ljava/io/File;)V
+HSPLcom/revenuecat/purchases/common/caching/PayloadFileStore;-><init>(Ljava/io/File;Ljava/lang/String;)V
 Lcom/revenuecat/purchases/common/caching/PayloadFileStore$Companion;
 HSPLcom/revenuecat/purchases/common/caching/PayloadFileStore$Companion;-><init>()V
 HSPLcom/revenuecat/purchases/common/caching/PayloadFileStore$Companion;-><init>(Lkotlin/jvm/internal/DefaultConstructorMarker;)V
@@ -1736,8 +1737,8 @@ HSPLcom/revenuecat/purchases/common/networking/TokenManager$Companion;-><init>()
 HSPLcom/revenuecat/purchases/common/networking/TokenManager$Companion;-><init>(Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 HSPLcom/revenuecat/purchases/common/networking/TokenManager$Companion;->refreshTokenKey(Ljava/lang/String;)Ljava/lang/String;
 Lcom/revenuecat/purchases/common/offerings/OfferingsCache;
-HSPLcom/revenuecat/purchases/common/offerings/OfferingsCache;-><init>(Lcom/revenuecat/purchases/common/caching/DeviceCache;Lcom/revenuecat/purchases/common/DateProvider;Lcom/revenuecat/purchases/common/caching/InMemoryCachedObject;Lcom/revenuecat/purchases/common/LocaleProvider;)V
-HSPLcom/revenuecat/purchases/common/offerings/OfferingsCache;-><init>(Lcom/revenuecat/purchases/common/caching/DeviceCache;Lcom/revenuecat/purchases/common/DateProvider;Lcom/revenuecat/purchases/common/caching/InMemoryCachedObject;Lcom/revenuecat/purchases/common/LocaleProvider;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+HSPLcom/revenuecat/purchases/common/offerings/OfferingsCache;-><init>(Lcom/revenuecat/purchases/common/caching/DeviceCache;Lcom/revenuecat/purchases/common/caching/PayloadFileStore;Lcom/revenuecat/purchases/common/Dispatcher;Lcom/revenuecat/purchases/common/DateProvider;Lcom/revenuecat/purchases/common/caching/InMemoryCachedObject;Lcom/revenuecat/purchases/common/LocaleProvider;)V
+HSPLcom/revenuecat/purchases/common/offerings/OfferingsCache;-><init>(Lcom/revenuecat/purchases/common/caching/DeviceCache;Lcom/revenuecat/purchases/common/caching/PayloadFileStore;Lcom/revenuecat/purchases/common/Dispatcher;Lcom/revenuecat/purchases/common/DateProvider;Lcom/revenuecat/purchases/common/caching/InMemoryCachedObject;Lcom/revenuecat/purchases/common/LocaleProvider;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 HSPLcom/revenuecat/purchases/common/offerings/OfferingsCache;->forceCacheStale()V
 HSPLcom/revenuecat/purchases/common/offerings/OfferingsCache;->isOfferingsCacheStale(Z)Z
 Lcom/revenuecat/purchases/common/offerings/OfferingsFactory;

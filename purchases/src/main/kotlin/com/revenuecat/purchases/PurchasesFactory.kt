@@ -20,6 +20,7 @@ import com.revenuecat.purchases.common.SharedPreferencesManager
 import com.revenuecat.purchases.common.audiences.AudiencesConfigProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.LocalTransactionMetadataStore
+import com.revenuecat.purchases.common.caching.PayloadFileStore
 import com.revenuecat.purchases.common.checkpoints.CheckpointsConfigProvider
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsFileHelper
@@ -335,6 +336,8 @@ internal class PurchasesFactory(
 
             val offeringsCache = OfferingsCache(
                 deviceCache = cache,
+                responseStore = PayloadFileStore(contextForStorage.noBackupFilesDir, "offerings_response"),
+                dispatcher = dispatcher,
                 localeProvider = localeProvider,
             )
 
