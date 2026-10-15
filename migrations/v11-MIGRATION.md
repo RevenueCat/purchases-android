@@ -48,16 +48,6 @@ Play Billing Library 9 removed `SkuDetails`, `SkuDetailsParams`, `SkuDetailsResp
 
 RevenueCatUI now depends on Compose BOM 2026.06.01 and exports it as a platform constraint. Your own Compose dependencies resolve to at least that BOM's versions, for example `androidx.compose.material:material` 1.11.4 and `androidx.compose.material3:material3` 1.4.0.
 
-### Declare `material-icons-core` if you use `Icons`
-
-The `material` and `material3` versions in this BOM no longer depend on `material-icons-core`. If your app uses `Icons.Default`, `Icons.Filled` or other icons from that artifact without declaring it, the build fails with unresolved references. Add it explicitly; the BOM provides the version:
-
-```kotlin
-dependencies {
-    implementation("androidx.compose.material:material-icons-core")
-}
-```
-
 ## Library versions your app resolves
 
 Gradle resolves each library to the highest version requested in your dependency graph, so adding the SDK raises these libraries in your app if you use older versions:
