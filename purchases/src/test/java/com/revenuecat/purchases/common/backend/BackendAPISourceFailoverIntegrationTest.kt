@@ -20,7 +20,7 @@ import com.revenuecat.purchases.common.SyncDispatcher
 import com.revenuecat.purchases.common.getLocale
 import com.revenuecat.purchases.common.networking.APISourceFailover
 import com.revenuecat.purchases.common.networking.ETagManager
-import com.revenuecat.purchases.common.networking.ETagPayloadStore
+import com.revenuecat.purchases.common.caching.PayloadFileStore
 import com.revenuecat.purchases.common.networking.SourceHealthChecker
 import com.revenuecat.purchases.common.networking.disabledTokenAuthenticator
 import com.revenuecat.purchases.common.remoteconfig.ConfigTopic
@@ -287,7 +287,7 @@ internal class BackendAPISourceFailoverIntegrationTest {
         val eTagManager = ETagManager(
             mockk(),
             lazy { sharedPreferences },
-            payloadStore = ETagPayloadStore(temporaryFolder.newFolder()),
+            payloadStore = PayloadFileStore(temporaryFolder.newFolder()),
         )
         val signingManager = SigningManager(SignatureVerificationMode.Disabled, appConfig, apiKey)
         val storefrontProvider = mockk<StorefrontProvider>().apply {
