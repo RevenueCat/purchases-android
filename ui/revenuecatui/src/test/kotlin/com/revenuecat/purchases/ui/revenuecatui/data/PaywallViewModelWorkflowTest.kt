@@ -14,6 +14,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchaseResult
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
@@ -2482,6 +2483,49 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
+    fun `a checkpoint workflow adds its identifier only to the offering resolved for a step`() = runTest {
+        val checkpointIdentifier = "test_checkpoint"
+        val unrelatedOffering = Offering(
+            identifier = "unrelated_offering",
+            serverDescription = "",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly),
+        )
+        val sourceOfferings = Offerings(
+            current = testOffering,
+            all = mapOf(
+                testOffering.identifier to testOffering,
+                unrelatedOffering.identifier to unrelatedOffering,
+            ),
+        )
+        val vm = PaywallViewModelImpl(
+            resourceProvider = MockResourceProvider(),
+            purchases = purchases,
+            options = PaywallOptions.Builder(dismissRequest = {})
+                .injectedWorkflow(
+                    workflow,
+                    sourceOfferings,
+                    uiConfig,
+                    traceId = null,
+                    workflowBlobRef = null,
+                    checkpointIdentifier = checkpointIdentifier,
+                )
+                .build(),
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+            backgroundDispatcher = testDispatcher,
+        )
+        advanceUntilIdle()
+
+        val loadedOffering = (vm.state.value as PaywallState.Loaded.Components).offering
+        assertThat(loadedOffering.presentedOfferingContext?.checkpointIdentifierForTest())
+            .isEqualTo(checkpointIdentifier)
+        assertThat(sourceOfferings.all.values.map { it.presentedOfferingContext?.checkpointIdentifierForTest() })
+            .containsOnlyNulls()
+    }
+
+    @Test
     fun `navigation to a step whose offering is not in offerings fails the workflow with an error`() {
         val stepWithUnknownOffering = step2.copy(paramValues = offeringParams("unknown_offering"))
         val workflowToStepWithUnknownOffering =
@@ -2507,6 +2551,12 @@ class PaywallViewModelWorkflowTest {
         val close = workflowEvents[1] as WorkflowEvent.Close
         assertThat(close.stepId).isEqualTo("step-1")
         assertThat(close.traceId).isEqualTo(completed.traceId)
+    }
+
+    private fun PresentedOfferingContext.checkpointIdentifierForTest(): String? {
+        val field = PresentedOfferingContext::class.java.getDeclaredField("checkpointIdentifier")
+        field.isAccessible = true
+        return field.get(this) as String?
     }
 
     @Test

@@ -186,7 +186,7 @@ class CheckpointWorkflowResolverImplTest {
     }
 
     @Test
-    fun `a matched workflow adds the checkpoint identifier to every offering context`() = runTest {
+    fun `a matched workflow leaves fetched offering contexts unchanged`() = runTest {
         val secondaryOffering = offering("secondary")
         mockOfferings = Offerings(
             current = mockOffering,
@@ -198,27 +198,10 @@ class CheckpointWorkflowResolverImplTest {
 
         val resolution = resolve() as CheckpointResolution.MatchedWorkflow
 
-        resolution.offerings.all.values.forEach { resolvedOffering ->
-            assertOfferingCheckpointContext(resolvedOffering)
-        }
-    }
-
-    @Test
-    fun `a matched workflow preserves the current offering targeting context`() = runTest {
-        val targetedCurrent = offering("default")
-        val untargetedCatalogOffering = offering(
-            identifier = "default",
-            placementIdentifier = null,
-            targetingRuleId = null,
-        )
-        mockOfferings = Offerings(
-            current = targetedCurrent,
-            all = mapOf(untargetedCatalogOffering.identifier to untargetedCatalogOffering),
-        )
-
-        val resolution = resolve() as CheckpointResolution.MatchedWorkflow
-
-        assertOfferingCheckpointContext(resolution.offerings.current!!)
+        assertThat(resolution.offerings).isSameAs(mockOfferings)
+        assertThat(resolution.offerings.all.values.map { it.presentedOfferingContext?.checkpointIdentifier })
+            .containsOnlyNulls()
+        assertThat(resolution.offerings.current?.presentedOfferingContext?.checkpointIdentifier).isNull()
     }
 
     @Test

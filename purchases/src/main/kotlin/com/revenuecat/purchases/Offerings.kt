@@ -170,21 +170,12 @@ internal fun Offering.withPresentedContext(
     ).also { it.hasPaywallComponents = this.hasPaywallComponents }
 }
 
-@OptIn(InternalRevenueCatAPI::class)
-internal fun Offerings.withPresentedCheckpointIdentifier(checkpointIdentifier: String): Offerings {
-    val updatedOfferings = all.mapValues { (_, offering) ->
-        offering.withPresentedContext(
-            placementId = null,
-            targeting = null,
-            checkpointIdentifier = checkpointIdentifier,
-        )
-    }
-    val updatedCurrent = current?.let { offering ->
-        offering.withPresentedContext(
-            placementId = null,
-            targeting = null,
-            checkpointIdentifier = checkpointIdentifier,
-        )
-    }
-    return copy(current = updatedCurrent, all = updatedOfferings)
-}
+/** Returns a copy whose purchase contexts identify the checkpoint that presented this offering. */
+@InternalRevenueCatAPI
+@JvmSynthetic
+public fun Offering.withPresentedCheckpointIdentifier(checkpointIdentifier: String): Offering =
+    withPresentedContext(
+        placementId = null,
+        targeting = null,
+        checkpointIdentifier = checkpointIdentifier,
+    )
