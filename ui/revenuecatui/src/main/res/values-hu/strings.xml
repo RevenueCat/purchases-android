@@ -32,5 +32,5 @@
     <string name="revenuecatui_checkpoint_error_already_purchased">Ez a termék már a tiéd.</string>
     <string name="revenuecatui_checkpoint_error_payment_pending">A fizetésed függőben van. Jóváhagyás után hozzáférést kapsz.</string>
     <string name="revenuecatui_checkpoint_error_generic">Hiba történt. Kérjük, próbáld újra.</string>
-    <string name="revenuecatui_checkpoint_error_sync">A vásárlásaidat jelenleg nem sikerült ellenőrizni. Kérjük, próbáld újra később.</string>
+    <string name="revenuecatui_checkpoint_error_sync">A vásárlásaidat nem sikerült ellenőrizni. Kérjük, próbáld újra később.</string>
 </resources>

@@ -32,5 +32,5 @@
     <string name="revenuecatui_checkpoint_error_already_purchased">Anda sudah memiliki produk ini.</string>
     <string name="revenuecatui_checkpoint_error_payment_pending">Pembayaran Anda tertunda. Anda akan mendapatkan akses setelah disetujui.</string>
     <string name="revenuecatui_checkpoint_error_generic">Terjadi kesalahan. Silakan coba lagi.</string>
-    <string name="revenuecatui_checkpoint_error_sync">Pembelian Anda tidak dapat diverifikasi saat ini. Silakan coba lagi nanti.</string>
+    <string name="revenuecatui_checkpoint_error_sync">Pembelian Anda tidak dapat diverifikasi. Silakan coba lagi nanti.</string>
 </resources>

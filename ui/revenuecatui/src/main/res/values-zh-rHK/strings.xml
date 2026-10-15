@@ -32,5 +32,5 @@
     <string name="revenuecatui_checkpoint_error_already_purchased">您已擁有此產品。</string>
     <string name="revenuecatui_checkpoint_error_payment_pending">您的付款正在處理中。核准後即可使用。</string>
     <string name="revenuecatui_checkpoint_error_generic">發生錯誤。請再試一次。</string>
-    <string name="revenuecatui_checkpoint_error_sync">目前無法驗證您的購買。請稍後再試。</string>
+    <string name="revenuecatui_checkpoint_error_sync">無法驗證您的購買。請稍後再試。</string>
 </resources>

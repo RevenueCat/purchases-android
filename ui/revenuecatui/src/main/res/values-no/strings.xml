@@ -32,5 +32,5 @@
     <string name="revenuecatui_checkpoint_error_already_purchased">Du eier allerede dette produktet.</string>
     <string name="revenuecatui_checkpoint_error_payment_pending">Betalingen din venter. Du får tilgang når den er godkjent.</string>
     <string name="revenuecatui_checkpoint_error_generic">Noe gikk galt. Prøv igjen.</string>
-    <string name="revenuecatui_checkpoint_error_sync">Kjøpene dine kunne ikke bekreftes akkurat nå. Prøv igjen senere.</string>
+    <string name="revenuecatui_checkpoint_error_sync">Kjøpene dine kunne ikke bekreftes. Prøv igjen senere.</string>
 </resources>

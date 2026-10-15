@@ -32,5 +32,5 @@
     <string name="revenuecatui_checkpoint_error_already_purchased">Bu məhsul artıq sizindir.</string>
     <string name="revenuecatui_checkpoint_error_payment_pending">Ödənişiniz gözləmədədir. Təsdiqləndikdən sonra girişiniz olacaq.</string>
     <string name="revenuecatui_checkpoint_error_generic">Nəsə səhv getdi. Zəhmət olmasa, yenidən cəhd edin.</string>
-    <string name="revenuecatui_checkpoint_error_sync">Alışlarınızı hazırda yoxlamaq mümkün olmadı. Zəhmət olmasa, daha sonra yenidən cəhd edin.</string>
+    <string name="revenuecatui_checkpoint_error_sync">Alışlarınızı yoxlamaq mümkün olmadı. Zəhmət olmasa, daha sonra yenidən cəhd edin.</string>
 </resources>

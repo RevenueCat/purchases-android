@@ -33,5 +33,5 @@
     <string name="revenuecatui_checkpoint_error_already_purchased">You already own this product.</string>
     <string name="revenuecatui_checkpoint_error_payment_pending">Your payment is pending. You\'ll get access once it\'s approved.</string>
     <string name="revenuecatui_checkpoint_error_generic">Something went wrong. Please try again.</string>
-    <string name="revenuecatui_checkpoint_error_sync">Your purchases couldn\'t be verified right now. Please try again later.</string>
+    <string name="revenuecatui_checkpoint_error_sync">Your purchases couldn\'t be verified. Please try again later.</string>
 </resources>

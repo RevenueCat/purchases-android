@@ -32,5 +32,5 @@
     <string name="revenuecatui_checkpoint_error_already_purchased">この商品はすでに購入済みです。</string>
     <string name="revenuecatui_checkpoint_error_payment_pending">お支払いは保留中です。承認されるとご利用いただけるようになります。</string>
     <string name="revenuecatui_checkpoint_error_generic">問題が発生しました。もう一度お試しください。</string>
-    <string name="revenuecatui_checkpoint_error_sync">現在、ご購入内容を確認できませんでした。しばらくしてからもう一度お試しください。</string>
+    <string name="revenuecatui_checkpoint_error_sync">ご購入内容を確認できませんでした。しばらくしてからもう一度お試しください。</string>
 </resources>

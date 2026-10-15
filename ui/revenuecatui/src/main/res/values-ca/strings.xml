@@ -32,5 +32,5 @@
     <string name="revenuecatui_checkpoint_error_already_purchased">Ja tens aquest producte.</string>
     <string name="revenuecatui_checkpoint_error_payment_pending">El teu pagament està pendent. Hi tindràs accés quan s\'aprovi.</string>
     <string name="revenuecatui_checkpoint_error_generic">Alguna cosa ha fallat. Torna-ho a provar.</string>
-    <string name="revenuecatui_checkpoint_error_sync">No s\'han pogut verificar les teves compres ara mateix. Torna-ho a provar més tard.</string>
+    <string name="revenuecatui_checkpoint_error_sync">No s\'han pogut verificar les teves compres. Torna-ho a provar més tard.</string>
 </resources>

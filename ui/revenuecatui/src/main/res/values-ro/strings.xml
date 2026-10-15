@@ -32,5 +32,5 @@
     <string name="revenuecatui_checkpoint_error_already_purchased">Deții deja acest produs.</string>
     <string name="revenuecatui_checkpoint_error_payment_pending">Plata ta este în așteptare. Vei avea acces după ce va fi aprobată.</string>
     <string name="revenuecatui_checkpoint_error_generic">Ceva nu a funcționat. Te rugăm să încerci din nou.</string>
-    <string name="revenuecatui_checkpoint_error_sync">Achizițiile tale nu au putut fi verificate momentan. Te rugăm să încerci din nou mai târziu.</string>
+    <string name="revenuecatui_checkpoint_error_sync">Achizițiile tale nu au putut fi verificate. Te rugăm să încerci din nou mai târziu.</string>
 </resources>

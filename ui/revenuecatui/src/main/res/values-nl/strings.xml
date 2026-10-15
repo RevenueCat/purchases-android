@@ -32,5 +32,5 @@
     <string name="revenuecatui_checkpoint_error_already_purchased">Je hebt dit product al.</string>
     <string name="revenuecatui_checkpoint_error_payment_pending">Je betaling is in behandeling. Je krijgt toegang zodra deze is goedgekeurd.</string>
     <string name="revenuecatui_checkpoint_error_generic">Er is iets misgegaan. Probeer het opnieuw.</string>
-    <string name="revenuecatui_checkpoint_error_sync">Je aankopen konden op dit moment niet worden geverifieerd. Probeer het later opnieuw.</string>
+    <string name="revenuecatui_checkpoint_error_sync">Je aankopen konden niet worden geverifieerd. Probeer het later opnieuw.</string>
 </resources>

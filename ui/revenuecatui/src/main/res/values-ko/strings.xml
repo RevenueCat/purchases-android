@@ -32,5 +32,5 @@
     <string name="revenuecatui_checkpoint_error_already_purchased">이미 보유하고 있는 상품입니다.</string>
     <string name="revenuecatui_checkpoint_error_payment_pending">결제가 보류 중입니다. 승인되면 이용할 수 있습니다.</string>
     <string name="revenuecatui_checkpoint_error_generic">문제가 발생했습니다. 다시 시도해 주세요.</string>
-    <string name="revenuecatui_checkpoint_error_sync">지금은 구매 내역을 확인할 수 없습니다. 나중에 다시 시도해 주세요.</string>
+    <string name="revenuecatui_checkpoint_error_sync">구매 내역을 확인할 수 없습니다. 나중에 다시 시도해 주세요.</string>
 </resources>

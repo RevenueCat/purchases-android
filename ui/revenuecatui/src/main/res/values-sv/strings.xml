@@ -32,5 +32,5 @@
     <string name="revenuecatui_checkpoint_error_already_purchased">Du äger redan den här produkten.</string>
     <string name="revenuecatui_checkpoint_error_payment_pending">Din betalning väntar på behandling. Du får åtkomst när den har godkänts.</string>
     <string name="revenuecatui_checkpoint_error_generic">Något gick fel. Försök igen.</string>
-    <string name="revenuecatui_checkpoint_error_sync">Dina köp kunde inte verifieras just nu. Försök igen senare.</string>
+    <string name="revenuecatui_checkpoint_error_sync">Dina köp kunde inte verifieras. Försök igen senare.</string>
 </resources>

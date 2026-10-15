@@ -32,5 +32,5 @@
     <string name="revenuecatui_checkpoint_error_already_purchased">Vous possédez déjà ce produit.</string>
     <string name="revenuecatui_checkpoint_error_payment_pending">Votre paiement est en attente. Vous y aurez accès une fois qu\'il sera approuvé.</string>
     <string name="revenuecatui_checkpoint_error_generic">Une erreur s\'est produite. Veuillez réessayer.</string>
-    <string name="revenuecatui_checkpoint_error_sync">Vos achats n\'ont pas pu être vérifiés pour le moment. Veuillez réessayer plus tard.</string>
+    <string name="revenuecatui_checkpoint_error_sync">Vos achats n\'ont pas pu être vérifiés. Veuillez réessayer plus tard.</string>
 </resources>

@@ -32,5 +32,5 @@
     <string name="revenuecatui_checkpoint_error_already_purchased">Έχετε ήδη αυτό το προϊόν.</string>
     <string name="revenuecatui_checkpoint_error_payment_pending">Η πληρωμή σας εκκρεμεί. Θα αποκτήσετε πρόσβαση μόλις εγκριθεί.</string>
     <string name="revenuecatui_checkpoint_error_generic">Κάτι πήγε στραβά. Δοκιμάστε ξανά.</string>
-    <string name="revenuecatui_checkpoint_error_sync">Δεν ήταν δυνατή η επαλήθευση των αγορών σας αυτήν τη στιγμή. Δοκιμάστε ξανά αργότερα.</string>
+    <string name="revenuecatui_checkpoint_error_sync">Δεν ήταν δυνατή η επαλήθευση των αγορών σας. Δοκιμάστε ξανά αργότερα.</string>
 </resources>
