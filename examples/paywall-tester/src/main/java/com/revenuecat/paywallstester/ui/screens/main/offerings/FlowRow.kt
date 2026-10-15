@@ -19,17 +19,21 @@ data class FlowRow(
     /** Offerings that route to this flow, resolved the same way the SDK resolves an offering entry point. */
     val claimedOfferingIds: Set<String>,
     /** Offerings this flow's steps use, claimed or not. */
-    val offeringIds: Set<String>,
-    /** Set when the first step is an offering step: the flow shows no UI and only returns this offering. */
-    val uiLessOfferingId: String?,
+    val stepOfferingIds: Set<String>,
+    /** Set for an offering flow: its only step is an offering step, so it shows no UI and returns this offering. */
+    val returnedOfferingId: String?,
 ) {
+    val isOfferingFlow: Boolean
+        get() = returnedOfferingId != null
+
     val subtitle: String
         get() = error
             ?: claimedOfferingIds.takeIf { it.isNotEmpty() }?.sorted()?.joinToString(prefix = "Offering: ")
-            ?: offeringIds.takeIf { it.isNotEmpty() }?.sorted()?.joinToString(prefix = "Uses: ")
+            ?: stepOfferingIds.takeIf { it.isNotEmpty() }?.sorted()?.joinToString(prefix = "Uses: ")
             ?: "No offering"
 
-    fun uses(offeringId: String): Boolean = offeringId in claimedOfferingIds || offeringId in offeringIds
+    fun referencesOffering(offeringId: String): Boolean =
+        offeringId in claimedOfferingIds || offeringId in stepOfferingIds
 
     fun matches(query: String): Boolean =
         (listOfNotNull(id, name) + claimedOfferingIds).any { it.lowercase().contains(query) }
@@ -58,15 +62,15 @@ data class FlowRow(
                 onSuccess = { workflow ->
                     val initialStep = workflow.steps[workflow.initialStepId]
                     // Same rule as checkpoints: an offering step must be the flow's only step.
-                    val isUiLess = initialStep?.isOfferingStep == true
-                    val uiLessOfferingId = initialStep?.offeringIdentifier?.takeIf { workflow.steps.size == 1 }
+                    val startsWithOfferingStep = initialStep?.isOfferingStep == true
+                    val returnedOfferingId = initialStep?.offeringIdentifier?.takeIf { workflow.steps.size == 1 }
                     FlowRow(
                         id = workflowId,
                         name = workflow.displayName,
-                        error = NOT_SERVABLE.takeIf { isUiLess && uiLessOfferingId == null },
+                        error = NOT_SERVABLE.takeIf { startsWithOfferingStep && returnedOfferingId == null },
                         claimedOfferingIds = claimedOfferingIds,
-                        offeringIds = workflow.stepOfferingIds(),
-                        uiLessOfferingId = uiLessOfferingId.takeIf { isUiLess },
+                        stepOfferingIds = workflow.stepOfferingIds(),
+                        returnedOfferingId = returnedOfferingId.takeIf { startsWithOfferingStep },
                     )
                 },
                 onFailure = { error ->
@@ -75,8 +79,8 @@ data class FlowRow(
                         name = null,
                         error = error.message ?: error.toString(),
                         claimedOfferingIds = claimedOfferingIds,
-                        offeringIds = emptySet(),
-                        uiLessOfferingId = null,
+                        stepOfferingIds = emptySet(),
+                        returnedOfferingId = null,
                     )
                 },
             )

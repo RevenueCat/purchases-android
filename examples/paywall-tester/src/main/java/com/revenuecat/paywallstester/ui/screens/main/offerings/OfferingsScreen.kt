@@ -155,7 +155,7 @@ private fun OfferingsListScreen(
     val showDialog = remember { mutableStateOf(false) }
     var showCustomVariablesEditor by remember { mutableStateOf(false) }
     var presentedFlow by remember { mutableStateOf<Pair<PublishedWorkflow, UiConfig>?>(null) }
-    var presentedUiLessOffering by remember { mutableStateOf<Offering?>(null) }
+    var presentedOfferingFlowOffering by remember { mutableStateOf<Offering?>(null) }
     var flowError by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val openFlow: (String) -> Unit = { workflowId ->
@@ -167,9 +167,9 @@ private fun OfferingsListScreen(
                 .onFailure { flowError = it.message ?: it.toString() }
         }
     }
-    val openUiLessFlow: (String) -> Unit = { offeringId ->
+    val openOfferingFlow: (String) -> Unit = { offeringId ->
         offeringsState.offerings.all[offeringId]
-            ?.let { presentedUiLessOffering = it }
+            ?.let { presentedOfferingFlowOffering = it }
             ?: run { flowError = "Offering '$offeringId' is not in the offerings." }
     }
     val query = offeringsState.searchQuery.lowercase().trim()
@@ -192,7 +192,7 @@ private fun OfferingsListScreen(
         filtered.groupBy { offering ->
             offering.paywallComponents?.dataOrNull?.templateName?.let { "V2 — $it" }
                 ?: offering.paywall?.templateName?.let { "Template $it" }
-                ?: UNCLAIMED_OFFERINGS
+                ?: NO_PAYWALL
         }.toSortedMap(
             compareBy {
                 // Sort: templates first, then V2, then no paywall last
@@ -243,7 +243,7 @@ private fun OfferingsListScreen(
                 HorizontalDivider()
             }
 
-            val screenFlows = flows.filter { it.uiLessOfferingId == null }
+            val screenFlows = flows.filterNot { it.isOfferingFlow }
             if (screenFlows.isNotEmpty()) {
                 item {
                     SectionHeader("Flows", "Opened by id. Long press a flow with an offering to open it by offering.")
@@ -268,6 +268,7 @@ private fun OfferingsListScreen(
                                         text = { Text("By offering ${offering.identifier}: dialog") },
                                         onClick = {
                                             dropdownExpandedKey = null
+                                            onOfferingInteract(offering)
                                             displayPaywallDialogOffering = offering
                                         },
                                     )
@@ -285,13 +286,13 @@ private fun OfferingsListScreen(
                     }
                 }
             }
-            val uiLessFlows = flows.filter { it.uiLessOfferingId != null }
-            if (uiLessFlows.isNotEmpty()) {
-                item { SectionHeader("UI-less flows", "Return only an offering. Opens that offering, like an app.") }
-                items(uiLessFlows, key = { "uiless_${it.id}" }) { flow ->
-                    val offeringId = flow.uiLessOfferingId.orEmpty()
+            val offeringFlows = flows.filter { it.isOfferingFlow }
+            if (offeringFlows.isNotEmpty()) {
+                item { SectionHeader("Offering flows", "Return only an offering. Opens that offering, like an app.") }
+                items(offeringFlows, key = { "offering_flow_${it.id}" }) { flow ->
+                    val offeringId = flow.returnedOfferingId.orEmpty()
                     FlowListItem(flow.name ?: flow.id, "Offering: $offeringId", isError = false) {
-                        openUiLessFlow(offeringId)
+                        openOfferingFlow(offeringId)
                     }
                 }
             }
@@ -327,12 +328,12 @@ private fun OfferingsListScreen(
                 item { HorizontalDivider() }
             }
 
-            val firstPaywallSection = groupedOfferings.keys.firstOrNull { it != UNCLAIMED_OFFERINGS }
+            val firstPaywallSection = groupedOfferings.keys.firstOrNull { it != NO_PAYWALL }
             groupedOfferings.forEach { (sectionTitle, offerings) ->
                 item(key = "header_$sectionTitle") {
                     when (sectionTitle) {
-                        UNCLAIMED_OFFERINGS -> SectionHeader(
-                            sectionTitle,
+                        NO_PAYWALL -> SectionHeader(
+                            "Unclaimed offerings",
                             "No paywall or flow attached. Opens the fallback.",
                         )
                         firstPaywallSection -> SectionHeader(
@@ -345,7 +346,7 @@ private fun OfferingsListScreen(
                 items(offerings, key = { it.identifier }) { offering ->
                     val rowKey = offering.identifier
                     val usedBy = offeringsState.flows
-                        .filter { sectionTitle == UNCLAIMED_OFFERINGS && it.uses(offering.identifier) }
+                        .filter { sectionTitle == NO_PAYWALL && it.referencesOffering(offering.identifier) }
                         .map { it.name ?: it.id }
                     OfferingRow(
                         offering = offering,
@@ -455,14 +456,14 @@ private fun OfferingsListScreen(
     }
 
     // The options the SDK's default checkpoint presenter uses: the offering's paywall, or the fallback paywall.
-    presentedUiLessOffering?.let { offering ->
+    presentedOfferingFlowOffering?.let { offering ->
         FullScreenPaywall(
-            PaywallOptions.Builder(dismissRequest = { presentedUiLessOffering = null })
+            PaywallOptions.Builder(dismissRequest = { presentedOfferingFlowOffering = null })
                 .setOffering(offering)
                 .setShouldDisplayDismissButton(true)
                 .setCustomVariables(CustomVariablesHolder.customVariables)
                 .build(),
-            onDismiss = { presentedUiLessOffering = null },
+            onDismiss = { presentedOfferingFlowOffering = null },
         )
     }
 
@@ -501,7 +502,7 @@ private fun FlowListItem(
     )
 }
 
-private const val UNCLAIMED_OFFERINGS = "Unclaimed offerings"
+private const val NO_PAYWALL = "No paywall"
 
 @Composable
 private fun PlacementDialog(
