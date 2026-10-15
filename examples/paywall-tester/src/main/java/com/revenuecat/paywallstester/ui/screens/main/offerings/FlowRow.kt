@@ -36,7 +36,7 @@ data class FlowRow(
         offeringId in claimedOfferingIds || offeringId in stepOfferingIds
 
     fun matches(query: String): Boolean =
-        (listOfNotNull(id, name) + claimedOfferingIds).any { it.lowercase().contains(query) }
+        (listOfNotNull(id, name) + claimedOfferingIds + stepOfferingIds).any { it.lowercase().contains(query) }
 
     companion object {
         @OptIn(InternalRevenueCatAPI::class)

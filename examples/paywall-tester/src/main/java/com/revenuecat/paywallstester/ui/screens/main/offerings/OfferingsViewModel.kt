@@ -7,6 +7,8 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.awaitSyncAttributesAndOfferingsIfNeeded
 import com.revenuecat.purchases.getOfferingsWith
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,6 +31,7 @@ class OfferingsViewModelImpl : OfferingsViewModel() {
     override val offeringsState: StateFlow<OfferingsState>
         get() = _offeringsState.asStateFlow()
     private val _offeringsState = MutableStateFlow<OfferingsState>(OfferingsState.Loading)
+    private var loadFlowsJob: Job? = null
 
     init {
         updateOfferings()
@@ -78,7 +81,8 @@ class OfferingsViewModelImpl : OfferingsViewModel() {
             },
             onSuccess = { offerings ->
                 _offeringsState.update { OfferingsState.Loaded(offerings) }
-                viewModelScope.launch {
+                loadFlowsJob?.cancel()
+                loadFlowsJob = viewModelScope.launch {
                     val flows = loadFlows(offerings)
                     _offeringsState.update { (it as? OfferingsState.Loaded)?.copy(flows = flows) ?: it }
                 }
@@ -88,6 +92,7 @@ class OfferingsViewModelImpl : OfferingsViewModel() {
 
     private suspend fun loadFlows(offerings: Offerings): List<FlowRow> =
         runCatching { FlowRow.loadAll(offerings) }
+            .onFailure { if (it is CancellationException) throw it }
             .onFailure { Log.e("PaywallsTester", "Error loading flows: $it") }
             .getOrDefault(emptyList())
 }
