@@ -41,6 +41,7 @@ fun mockProductDetails(
     every { getDescription() } returns description
     every { getTitle() } returns title
     every { getOneTimePurchaseOfferDetails() } returns oneTimePurchaseOfferDetails
+    every { oneTimePurchaseOfferDetailsList } returns oneTimePurchaseOfferDetails?.let { listOf(it) }
     every { getSubscriptionOfferDetails() } returns subscriptionOfferDetails
     every { zza() } returns "mock-package-name" // This seems to return the packageName property from the response json
 }
