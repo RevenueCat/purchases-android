@@ -441,15 +441,21 @@ internal class StyleFactory(
         }
 
         /**
-         * Applies the top window insets to the provided ComponentStyle if they haven't been applied to any other
-         * component yet.
+         * Applies the top window insets to [to] if no component has taken them yet.
+         *
+         * Keeps an inset already set on [to]. The root stack can itself be the hero ZLayer, and
+         * [WindowInsetsState.topWindowInsetsApplied] is true in that case, so replacing the root's value would
+         * clear the inset.
          */
         fun applyTopWindowInsetsIfNotYetApplied(to: ComponentStyle): ComponentStyle =
             when (to) {
-                is StackComponentStyle -> to.copy(applyTopWindowInsets = !windowInsetsState.topWindowInsetsApplied)
+                is StackComponentStyle -> to.copy(
+                    applyTopWindowInsets = to.applyTopWindowInsets || !windowInsetsState.topWindowInsetsApplied,
+                )
                 is HeaderComponentStyle -> to.copy(
                     stackComponentStyle = to.stackComponentStyle.copy(
-                        applyTopWindowInsets = !windowInsetsState.topWindowInsetsApplied,
+                        applyTopWindowInsets = to.stackComponentStyle.applyTopWindowInsets ||
+                            !windowInsetsState.topWindowInsetsApplied,
                         ignoreHeaderHeight = true,
                     ),
                 )
