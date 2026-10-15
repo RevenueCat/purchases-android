@@ -24,4 +24,13 @@
     <string name="revenuecatui_purchase">Osta</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
     <string name="revenuecatui_preview_workflow_load_error">Esikatselun työnkulkua ei voitu ladata. Yritä uudelleen.</string>
+    <string name="revenuecatui_checkpoint_error_network">Yhteyden muodostaminen epäonnistui. Tarkista internetyhteytesi ja yritä uudelleen.</string>
+    <string name="revenuecatui_checkpoint_error_load">Tätä sisältöä ei voitu ladata. Yritä myöhemmin uudelleen.</string>
+    <string name="revenuecatui_checkpoint_error_store">Kaupassa ilmeni ongelma. Yritä myöhemmin uudelleen.</string>
+    <string name="revenuecatui_checkpoint_error_purchase_not_allowed">Ostokset eivät ole sallittuja tällä laitteella.</string>
+    <string name="revenuecatui_checkpoint_error_product_unavailable">Tämä tuote ei ole juuri nyt saatavilla.</string>
+    <string name="revenuecatui_checkpoint_error_already_purchased">Omistat jo tämän tuotteen.</string>
+    <string name="revenuecatui_checkpoint_error_payment_pending">Maksusi on odottamassa. Saat käyttöoikeuden, kun se on hyväksytty.</string>
+    <string name="revenuecatui_checkpoint_error_generic">Jokin meni pieleen. Yritä uudelleen.</string>
+    <string name="revenuecatui_checkpoint_error_sync">Ostoksiasi ei voitu vahvistaa. Yritä myöhemmin uudelleen.</string>
 </resources>

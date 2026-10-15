@@ -7,13 +7,14 @@ import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
  * Registers that [checkpointIdentifier] was hit. Depending on the configured targeting rules, this may present a
  * flow or do nothing. [callback] is invoked at most once, on the main thread, when the user goes through the
  * checkpoint:
- * - with null when nothing was presented: no rule matched, nothing could be served, or presenting failed;
+ * - with null when there was nothing to present: the checkpoint is not configured, or no rule matched;
  * - with what the user obtained when the presented flow ended with a purchase or restore, or through a close
  *   action.
  *
- * It is not invoked when the user backs out of the presented flow (system back, or a back action on a flow's
- * first step): the flow is dismissed and the app keeps the user where they were. Don't model a checkpoint as a
- * pending operation the user waits on.
+ * It is not invoked when the checkpoint could not be served (the error goes to the [ErrorPresenter], the user
+ * stays where they were), nor when the user backs out of the presented flow (system back, or a back action on a
+ * flow's first step): the flow is dismissed and the app keeps the user where they were. Don't model a checkpoint
+ * as a pending operation the user waits on.
  *
  * Only one checkpoint flow is presented at a time. A checkpoint that resolves to a flow while another one is
  * already on screen is ignored and its callback is never invoked: the call that presented the flow is the one
@@ -22,13 +23,13 @@ import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
  * Every checkpoint is a soft gate today. Hard gates, configured in the dashboard, will additionally require the
  * user to meet a backend-provided rule (typically holding an entitlement) before the callback is invoked.
  *
- * This call never throws. Why nothing was presented, and any failure, are reported in the logs.
+ * This call never throws. Why nothing was presented is reported in the logs.
  *
  * @param checkpointIdentifier The checkpoint identifier, as configured in the RevenueCat dashboard. It must start
  * with an ASCII letter, contain only ASCII letters, numbers, underscores, and hyphens, and be no more than 255
  * characters.
  * @param params Optional per-call parameters, like custom properties usable in targeting rules.
- * @param callback Receives the [FlowResult], or null, once the user goes through the checkpoint.
+ * @param callback Receives the [FlowResult], or null, once the user passes the checkpoint.
  */
 @InviteOnlyCheckpointsAPI
 public fun Purchases.checkpoint(

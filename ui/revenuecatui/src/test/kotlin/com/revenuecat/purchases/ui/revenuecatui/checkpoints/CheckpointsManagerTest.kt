@@ -124,16 +124,64 @@ class CheckpointsManagerTest {
     }
 
     @Test
-    fun `invalid checkpoint identifier is logged and skips resolution`() = runTest(dispatcher) {
+    fun `invalid checkpoint identifier is presented, logged, and skips resolution`() = runTest(dispatcher) {
         val invalidIdentifier = " checkout😀"
+        val message = CheckpointIdentifierValidator.invalidIdentifierLogMessage(invalidIdentifier)
 
         checkpoint(identifier = invalidIdentifier)
 
-        assertThat(results).containsExactly(null)
+        assertThat(results).isEmpty()
+        assertThat(defaultPresentedErrors).containsExactly(
+            ErrorPresenter.Params(
+                PurchasesError(PurchasesErrorCode.ConfigurationError, message),
+                invalidIdentifier,
+                emptyMap(),
+                CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN,
+            ),
+        )
         coVerify(exactly = 0) { mockPurchases.internalResolveCp(any(), any()) }
-        verify(exactly = 1) {
-            Logger.e(CheckpointIdentifierValidator.invalidIdentifierLogMessage(invalidIdentifier))
-        }
+        verify(exactly = 1) { Logger.e(message) }
+    }
+
+    @Test
+    fun `a failure waits for the app's error UI before the run ends`() = runTest(dispatcher) {
+        var completion: ErrorPresenter.Completion? = null
+        manager.errorPresenter = ErrorPresenter { _, c -> completion = c }
+        resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE))
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+
+        assertThat(run).isNull()
+        completion!!.complete()
+        call.join()
+
+        assertThat(run!!.failed).isTrue
+        assertThat(run!!.flowOutcome).isNull()
+    }
+
+    @Test
+    fun `unavailable configuration is logged, presented and does not pass`() = runTest(dispatcher) {
+        resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE))
+        val message = "The configuration needed to serve checkpoint '$checkpointId' could not be read."
+
+        checkpoint()
+
+        assertThat(results).isEmpty()
+        assertThat(defaultPresentedErrors.single().error).isEqualTo(
+            PurchasesError(PurchasesErrorCode.ConfigurationError, message),
+        )
+        verify(exactly = 1) { Logger.e(message) }
+    }
+
+    @Test
+    fun `a failure whose error presenter throws still ends the run`() = runTest(dispatcher) {
+        manager.errorPresenter = ErrorPresenter { _, _ -> error("Simulated.") }
+        resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE))
+
+        checkpoint()
+
+        assertThat(results).isEmpty()
+        verify(exactly = 1) { Logger.e(match { it.startsWith("Error presenter failed") }) }
     }
 
     @Test
@@ -271,7 +319,8 @@ class CheckpointsManagerTest {
         every { mockPurchases.currentActivity } returns null
         resolvesTo(CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null))
 
-        assertThat(runCheckpoint().flowOutcome).isNull()
+        assertThat(runCheckpoint().failed).isTrue
+        assertThat(defaultPresentedErrors.single().kind).isEqualTo(CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN)
 
         verify(exactly = 0) { mockPresenter.show(any()) }
         verify {
@@ -322,23 +371,27 @@ class CheckpointsManagerTest {
     }
 
     @Test
-    fun `resolution failure passes null without a flow`() = runTest(dispatcher) {
+    fun `resolution failure is presented and does not pass`() = runTest(dispatcher) {
         val error = PurchasesError(PurchasesErrorCode.ConfigurationError, "Simulated.")
         coEvery { mockPurchases.internalResolveCp(any(), any()) } throws PurchasesException(error)
 
         checkpoint()
 
-        assertThat(results).containsExactly(null)
+        assertThat(results).isEmpty()
+        assertThat(defaultPresentedErrors).containsExactly(
+            ErrorPresenter.Params(error, checkpointId, emptyMap(), CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN),
+        )
     }
 
     @Test
-    fun `a presentation failure completes with null without throwing`() = runTest(dispatcher) {
+    fun `a presentation failure is presented and does not pass without throwing`() = runTest(dispatcher) {
         every { mockPurchases.currentActivity } returns null
         resolvesToWorkflow()
 
         checkpoint()
 
-        assertThat(results).containsExactly(null)
+        assertThat(results).isEmpty()
+        assertThat(defaultPresentedErrors.single().kind).isEqualTo(CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN)
         verify {
             Logger.e(
                 PurchasesError(
@@ -761,6 +814,74 @@ class CheckpointsManagerTest {
         assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Dismissed)
         assertThat(run!!.backedOut).isTrue
         assertThat(manager.presentation(currentCallId())).isNull()
+    }
+
+    @Test
+    fun `a flow that ended in an error does not pass`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+
+        checkpoint()
+        finishPaywall(CheckpointFlowOutcome.Error(PurchasesError(PurchasesErrorCode.ConfigurationError, "boom")))
+
+        assertThat(results).isEmpty()
+    }
+
+    @Test
+    fun `a failed re-present is presented through the call's error presenter and ends with the error`() =
+        runTest(dispatcher) {
+            resolvesToWorkflow()
+            val presented = mutableListOf<ErrorPresenter.Params>()
+            var completion: ErrorPresenter.Completion? = null
+            manager.errorPresenter = ErrorPresenter { params, c ->
+                presented += params
+                completion = c
+            }
+            val error = PurchasesError(PurchasesErrorCode.ConfigurationError, "Re-present failed.")
+            var run: CheckpointRun? = null
+            val call = launch { run = runCheckpoint() }
+
+            manager.onPresentationFailed(currentCallId(), error)
+
+            assertThat(presented).containsExactly(
+                ErrorPresenter.Params(error, checkpointId, emptyMap(), CheckpointFailureKind.FLOW_ACTION_FAILED),
+            )
+            assertThat(run).isNull()
+            completion!!.complete()
+            call.join()
+            assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Error(error))
+        }
+
+    @Test
+    fun `a failed re-present after a purchase keeps the purchase and presents nothing`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        var presented = false
+        manager.errorPresenter = ErrorPresenter { _, _ -> presented = true }
+        val customerInfo = mockk<CustomerInfo>()
+        val storeTransaction = mockk<StoreTransaction>()
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+        manager.recordOutcome(currentCallId(), CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
+
+        manager.onPresentationFailed(currentCallId(), PurchasesError(PurchasesErrorCode.ConfigurationError, "boom"))
+        call.join()
+
+        assertThat(presented).isFalse
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
+    }
+
+    @Test
+    fun `a purchase error in the workflow is not an outcome`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+
+        val listener = manager.paywallOptions(currentCallId()) {}!!.listener!!
+        listener.onPurchaseError(PurchasesError(PurchasesErrorCode.StoreProblemError, "boom"))
+        listener.onRestoreError(PurchasesError(PurchasesErrorCode.NetworkError, "boom"))
+        finishPaywall(outcome = null)
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Dismissed)
     }
 
     @Test
@@ -1334,9 +1455,12 @@ class CheckpointsManagerTest {
     private suspend fun runCheckpoint(params: CheckpointParams? = null): CheckpointRun =
         manager.runCheckpoint(mockPurchases, checkpointId, params)
 
-    // Presentation failures are logged rather than returned: the run just presents nothing.
+    // Presentation failures are logged and presented rather than returned: the run just fails.
     private suspend fun checkpointFailsWith(code: PurchasesErrorCode, message: String) {
-        assertThat(runCheckpoint().flowOutcome).isNull()
+        val run = runCheckpoint()
+        assertThat(run.failed).isTrue
+        assertThat(run.flowOutcome).isNull()
+        assertThat(defaultPresentedErrors.last().error).isEqualTo(PurchasesError(code, message))
         verify { Logger.e(PurchasesError(code, message).toString()) }
     }
 }

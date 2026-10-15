@@ -48,8 +48,9 @@ internal abstract class CheckpointFlowOutcome {
     }
 
     /**
-     * A purchase or restore failed with [error], or the flow could not be kept on screen (e.g. a failed
-     * re-present after a configuration change). Cancellations are reported as [Dismissed] instead.
+     * The flow could not be shown or kept on screen: its content failed to load, or a re-present after a
+     * configuration change failed. The checkpoint is not passed. A purchase or restore that failed is not an
+     * outcome: the paywall stays up and how the user then leaves decides.
      */
     @Poko
     class Error(

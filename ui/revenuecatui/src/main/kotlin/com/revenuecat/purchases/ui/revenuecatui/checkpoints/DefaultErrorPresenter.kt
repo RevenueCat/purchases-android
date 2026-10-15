@@ -2,25 +2,37 @@ package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
 import android.app.Activity
 import android.app.Application
+import android.content.Context
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.ComponentDialog
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.composables.ErrorDialog
 import com.revenuecat.purchases.ui.revenuecatui.helpers.EDGE_TO_EDGE_WINDOW_THEME
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.applyEdgeToEdge
+import com.revenuecat.purchases.ui.revenuecatui.helpers.localizedTo
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toLayoutDirection
 
 /**
  * The SDK's own [ErrorPresenter], used when neither the call nor the [Purchases] instance supplies one: shows the
  * error in the SDK's dialog over the current activity and completes once the user acknowledges it. It goes through
  * the same contract an app presenter does and uses nothing an app presenter lacks: the current activity, a dialog
  * of its own, and the completion. One instance per checkpoint call.
+ *
+ * The dialog shows localized copy written for the customer, chosen from the kind of failure and the error code, in the
+ * SDK's preferred UI locale override when one is set; the developer's reason is in the logs of whoever reported
+ * the error.
  *
  * The dialog dies with its activity, so on a configuration change it is shown again over the next started
  * activity. An activity finishing for real takes the flow with it, so the presentation completes then too.
@@ -29,7 +41,12 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.applyEdgeToEdge
  */
 internal class DefaultErrorPresenter(
     private val purchases: Purchases,
-    private val createContent: (Activity, message: String, onAcknowledged: () -> Unit) -> View = ::errorDialogContent,
+    private val createContent: (
+        Activity,
+        resources: Context,
+        message: String,
+        onAcknowledged: () -> Unit,
+    ) -> View = ::errorDialogContent,
 ) : ErrorPresenter {
 
     private class Presentation(val params: ErrorPresenter.Params, val completion: ErrorPresenter.Completion) {
@@ -73,8 +90,9 @@ internal class DefaultErrorPresenter(
         // The error dialog inside handles back and outside taps itself, both as an acknowledgement. Cancelling
         // the host window only happens if that dialog is not there, and must never leave a touch-blocking window.
         dialog.setOnCancelListener { acknowledged(current) }
+        val resources = activity.localizedTo(purchases.preferredUILocaleOverride)
         dialog.setContentView(
-            createContent(activity, current.message) { acknowledged(current) },
+            createContent(activity, resources, current.params.message(resources)) { acknowledged(current) },
             ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
         )
         current.dialog = dialog
@@ -143,19 +161,55 @@ internal class DefaultErrorPresenter(
         override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
     }
 
-    // What the paywall's own dialog shows: an action that failed reads best as its code's description, while
-    // a failure around the flow carries its reason in the underlying message.
-    private val Presentation.message: String
-        get() = if (params.kind == CheckpointFailureKind.FLOW_ACTION_FAILED) {
-            params.error.message
+    // A simulated Test Store failure only happens with a test API key, so the developer reads it: the code's own
+    // description says what it is.
+    private fun ErrorPresenter.Params.message(resources: Context): String =
+        if (error.code == PurchasesErrorCode.TestStoreSimulatedPurchaseError) {
+            error.message
         } else {
-            params.error.underlyingErrorMessage ?: params.error.message
+            resources.getString(messageResource)
+        }
+
+    // When the flow could not be shown nothing could be loaded, and when its result could not be synced nothing
+    // could be verified, whatever the code; for a failed action the code says what the customer can do about it.
+    // A kind this code doesn't know reads as a failed action.
+    private val ErrorPresenter.Params.messageResource: Int
+        get() = when {
+            error.code == PurchasesErrorCode.NetworkError -> R.string.revenuecatui_checkpoint_error_network
+            kind == CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN -> R.string.revenuecatui_checkpoint_error_load
+            kind == CheckpointFailureKind.FLOW_RESULT_SYNC_FAILED -> R.string.revenuecatui_checkpoint_error_sync
+            else -> error.code.failedActionMessageResource
+        }
+
+    private val PurchasesErrorCode.failedActionMessageResource: Int
+        get() = when (this) {
+            PurchasesErrorCode.StoreProblemError -> R.string.revenuecatui_checkpoint_error_store
+            PurchasesErrorCode.PurchaseNotAllowedError -> R.string.revenuecatui_checkpoint_error_purchase_not_allowed
+            PurchasesErrorCode.ProductNotAvailableForPurchaseError ->
+                R.string.revenuecatui_checkpoint_error_product_unavailable
+            PurchasesErrorCode.ProductAlreadyPurchasedError -> R.string.revenuecatui_checkpoint_error_already_purchased
+            PurchasesErrorCode.PaymentPendingError -> R.string.revenuecatui_checkpoint_error_payment_pending
+            else -> R.string.revenuecatui_checkpoint_error_generic
         }
 }
 
 // The paywall's own error dialog, unchanged: the Compose AlertDialog brings the scrim and the Material look, so the
-// window hosting it only needs to be transparent.
-private fun errorDialogContent(activity: Activity, message: String, onAcknowledged: () -> Unit): View =
-    ComposeView(activity).apply {
-        setContent { ErrorDialog(dismissRequest = onAcknowledged, error = message) }
+// window hosting it only needs to be transparent. The view keeps the activity as its context (the dialog's window
+// is built from it); only what the composition resolves follows the localized resources.
+private fun errorDialogContent(
+    activity: Activity,
+    resources: Context,
+    message: String,
+    onAcknowledged: () -> Unit,
+): View = ComposeView(activity).apply {
+    setContent {
+        val configuration = resources.resources.configuration
+        CompositionLocalProvider(
+            LocalContext provides resources,
+            LocalConfiguration provides configuration,
+            LocalLayoutDirection provides configuration.toLayoutDirection(),
+        ) {
+            ErrorDialog(dismissRequest = onAcknowledged, error = message)
+        }
     }
+}

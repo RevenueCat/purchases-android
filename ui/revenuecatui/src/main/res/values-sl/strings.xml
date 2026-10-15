@@ -24,4 +24,13 @@
     <string name="revenuecatui_purchase">Kupi</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
     <string name="revenuecatui_preview_workflow_load_error">Poteka dela za predogled ni bilo mogoče naložiti. Poskusite znova.</string>
+    <string name="revenuecatui_checkpoint_error_network">Povezava ni uspela. Preverite internetno povezavo in poskusite znova.</string>
+    <string name="revenuecatui_checkpoint_error_load">Te vsebine ni bilo mogoče naložiti. Poskusite znova pozneje.</string>
+    <string name="revenuecatui_checkpoint_error_store">Prišlo je do težave s trgovino. Poskusite znova pozneje.</string>
+    <string name="revenuecatui_checkpoint_error_purchase_not_allowed">Nakupi v tej napravi niso dovoljeni.</string>
+    <string name="revenuecatui_checkpoint_error_product_unavailable">Ta izdelek trenutno ni na voljo.</string>
+    <string name="revenuecatui_checkpoint_error_already_purchased">Ta izdelek že imate.</string>
+    <string name="revenuecatui_checkpoint_error_payment_pending">Vaše plačilo je v obdelavi. Dostop boste dobili, ko bo odobreno.</string>
+    <string name="revenuecatui_checkpoint_error_generic">Nekaj je šlo narobe. Poskusite znova.</string>
+    <string name="revenuecatui_checkpoint_error_sync">Vaših nakupov ni bilo mogoče preveriti. Poskusite znova pozneje.</string>
 </resources>

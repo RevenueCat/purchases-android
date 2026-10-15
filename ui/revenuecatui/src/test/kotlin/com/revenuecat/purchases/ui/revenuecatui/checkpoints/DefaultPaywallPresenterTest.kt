@@ -271,6 +271,55 @@ class DefaultPaywallPresenterTest {
     }
 
     @Test
+    fun `a window that could not be kept on screen presents the error and reports Failed once acknowledged`() {
+        val presented = mutableListOf<ErrorPresenter.Params>()
+        var errorCompletion: ErrorPresenter.Completion? = null
+        presenter = DefaultPaywallPresenter(
+            mockPurchases,
+            errorPresenter = { errorParams, completion ->
+                presented += errorParams
+                errorCompletion = completion
+            },
+        ) { callId, _, _ ->
+            windowCallId = callId
+            mockWindow
+        }
+        present()
+        val error = PurchasesError(PurchasesErrorCode.ConfigurationError, "Re-present failed.")
+
+        presenter.onPresentationFailed(windowCallId!!, error)
+
+        assertThat(presented).containsExactly(
+            ErrorPresenter.Params(
+                error,
+                params.checkpointIdentifier,
+                params.customVariables,
+                CheckpointFailureKind.FLOW_ACTION_FAILED,
+            ),
+        )
+        assertThat(results).isEmpty()
+        verify(exactly = 1) { Logger.e(match { it.contains(error.toString()) }) }
+        errorCompletion!!.complete()
+        assertThat(results).hasSize(1)
+        assertThat((results.single() as Result.Failed).error).isEqualTo(error)
+    }
+
+    @Test
+    fun `a window that could not be kept on screen reports Failed right away when the error cannot be shown`() {
+        presenter = DefaultPaywallPresenter(mockPurchases, errorPresenter = { _, _ -> error("Simulated.") }) {
+                callId, _, _ ->
+            windowCallId = callId
+            mockWindow
+        }
+        present()
+        val error = PurchasesError(PurchasesErrorCode.ConfigurationError, "Re-present failed.")
+
+        presenter.onPresentationFailed(windowCallId!!, error)
+
+        assertThat((results.single() as Result.Failed).error).isEqualTo(error)
+    }
+
+    @Test
     fun `a paywall that could not load reports Failed with its error`() {
         present()
         val error = PurchasesError(PurchasesErrorCode.ConfigurationError, "No packages available")
@@ -295,17 +344,6 @@ class DefaultPaywallPresenterTest {
         finished(navigatedBack = false)
 
         assertThat(results).containsExactly(Result.Continued)
-    }
-
-    @Test
-    fun `a window that could not be kept on screen reports Closed and logs the error`() {
-        present()
-        val error = PurchasesError(PurchasesErrorCode.ConfigurationError, "Re-present failed.")
-
-        presenter.onPresentationFailed(windowCallId!!, error)
-
-        assertThat(results).containsExactly(Result.Closed)
-        verify(exactly = 1) { Logger.e(match { it.contains(error.toString()) }) }
     }
 
     @Test

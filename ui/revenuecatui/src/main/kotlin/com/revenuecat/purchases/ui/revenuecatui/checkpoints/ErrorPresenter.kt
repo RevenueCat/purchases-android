@@ -6,6 +6,7 @@ import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.PaywallErrorPresenter
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import dev.drewhamilton.poko.Poko
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Presents the errors the SDK runs into while serving a checkpoint. Set per call through
@@ -128,5 +129,30 @@ internal class HeldCompletion(
             completed = true
             pending = false
         }
+    }
+}
+
+/**
+ * Presents [params] and runs [onComplete] exactly once: on the first completion, or right away when the presenter
+ * throws (the SDK's own needs a started activity), so nothing ever waits on error UI that is not there.
+ */
+internal fun ErrorPresenter.presentOnce(params: ErrorPresenter.Params, onComplete: () -> Unit) =
+    presentErrorOnce(onComplete) { present(params, it) }
+
+/** [presentOnce] for the paywall's view of a presenter. */
+internal fun PaywallErrorPresenter.presentOnce(
+    error: PurchasesError,
+    kind: CheckpointFailureKind,
+    onComplete: () -> Unit,
+) = presentErrorOnce(onComplete) { present(error, kind, it) }
+
+private fun presentErrorOnce(onComplete: () -> Unit, present: (ErrorPresenter.Completion) -> Unit) {
+    val completed = AtomicBoolean(false)
+    val completion = ErrorPresenter.Completion { if (completed.compareAndSet(false, true)) onComplete() }
+    try {
+        present(completion)
+    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+        Logger.e("Error presenter failed: $e")
+        completion.complete()
     }
 }
