@@ -48,17 +48,6 @@ Play Billing Library 9 removed `SkuDetails`, `SkuDetailsParams`, `SkuDetailsResp
 
 RevenueCatUI now depends on Compose BOM 2026.06.01 and exports it as a platform constraint. Your own Compose dependencies resolve to at least that BOM's versions, for example `androidx.compose.material:material` 1.11.4 and `androidx.compose.material3:material3` 1.4.0.
 
-## Library versions your app resolves
-
-Gradle resolves each library to the highest version requested in your dependency graph, so adding the SDK raises these libraries in your app if you use older versions:
-
-| Library | Minimum version |
-| --- | --- |
-| `org.jetbrains.kotlin:kotlin-stdlib` | 2.2.21 |
-| `org.jetbrains.kotlinx:kotlinx-coroutines-core` / `-android` | 1.9.0 |
-| `org.jetbrains.kotlinx:kotlinx-serialization-json` | 1.7.3 |
-| `androidx.core:core` | 1.15.0 |
-
 ## Reporting undocumented issues:
 
 Feel free to file an issue! [New RevenueCat Issue](https://github.com/RevenueCat/purchases-android/issues/new/).
