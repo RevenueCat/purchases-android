@@ -87,6 +87,7 @@ class CheckpointPassedCallbackTest {
         mockPresenter = mockk(relaxed = true)
         defaultPresenter = null
         mockPurchases = mockk {
+            every { appUserID } returns "customer-a"
             every { currentActivity } returns mockActivity
         }
         customerInfoBeforeHasActive()
@@ -366,6 +367,75 @@ class CheckpointPassedCallbackTest {
         resolvesToWorkflow()
 
         checkpoint()
+        finishPaywall(CheckpointFlowOutcome.Purchased(customerInfoWithActive("pro"), mockk()), navigatedBack = true)
+
+        assertThat(results.obtained).containsExactly(setOf("pro"))
+    }
+
+    @Test
+    fun `a not-passed gate suppresses the callback despite a recorded purchase`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        checkpoint()
+        val callId = presentedCallIds.last()
+        manager.recordOutcome(callId, CheckpointFlowOutcome.Purchased(customerInfoWithActive("unrelated"), mockk()))
+
+        manager.paywallOptions(callId) {}!!.checkpointGateContext!!
+            .onOutcomeChanged(CheckpointGateOutcome.NOT_PASSED)
+        finishPaywall(outcome = null, navigatedBack = true)
+
+        assertThat(results).isEmpty()
+    }
+
+    @Test
+    fun `a not-passed gate suppresses the callback on close despite a granting restore`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        checkpoint()
+        workflowListener().onRestoreCompleted(customerInfoWithActive("unrelated"))
+
+        manager.paywallOptions(presentedCallIds.last()) {}!!.checkpointGateContext!!
+            .onOutcomeChanged(CheckpointGateOutcome.NOT_PASSED)
+        finishPaywall(outcome = null)
+
+        assertThat(results).isEmpty()
+    }
+
+    @Test
+    fun `a failed presentation with a not-passed gate suppresses the callback despite a purchase`() =
+        runTest(dispatcher) {
+            resolvesToWorkflow()
+            checkpoint()
+            val callId = presentedCallIds.last()
+            manager.recordOutcome(callId, CheckpointFlowOutcome.Purchased(customerInfoWithActive("unrelated"), mockk()))
+            manager.paywallOptions(callId) {}!!.checkpointGateContext!!
+                .onOutcomeChanged(CheckpointGateOutcome.NOT_PASSED)
+
+            manager.onPresentationFailed(
+                callId,
+                PurchasesError(PurchasesErrorCode.ConfigurationError, "Re-present failed"),
+            )
+
+            assertThat(results).isEmpty()
+        }
+
+    @Test
+    fun `a passed gate invokes the callback on back without a recorded outcome`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        checkpoint()
+
+        manager.paywallOptions(presentedCallIds.last()) {}!!.checkpointGateContext!!
+            .onOutcomeChanged(CheckpointGateOutcome.PASSED)
+        finishPaywall(outcome = null, navigatedBack = true)
+
+        assertThat(results.obtained).containsExactly(emptySet<String>())
+    }
+
+    @Test
+    fun `a not-applicable gate invokes the callback with purchase grants on back`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        checkpoint()
+
+        manager.paywallOptions(presentedCallIds.last()) {}!!.checkpointGateContext!!
+            .onOutcomeChanged(CheckpointGateOutcome.NOT_APPLICABLE)
         finishPaywall(CheckpointFlowOutcome.Purchased(customerInfoWithActive("pro"), mockk()), navigatedBack = true)
 
         assertThat(results.obtained).containsExactly(setOf("pro"))

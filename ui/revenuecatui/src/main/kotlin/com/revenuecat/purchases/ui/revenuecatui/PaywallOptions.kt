@@ -13,6 +13,7 @@ import com.revenuecat.purchases.common.CustomVariableKeyValidator
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointFailureKind
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointGateContext
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 import dev.drewhamilton.poko.Poko
@@ -72,11 +73,13 @@ public class PaywallOptions internal constructor(
     internal val injectedWorkflowBlobRef: String? = null,
     internal val injectedWorkflowCheckpointIdentifier: String? = null,
     internal val errorPresenter: PaywallErrorPresenter? = null,
+    internal val checkpointGateContext: CheckpointGateContext? = null,
 ) {
     public companion object {
         private const val hashMultiplier = 31
     }
 
+    @Suppress("ForbiddenPublicConstructor")
     public constructor(builder: Builder) : this(
         offeringSelection = builder.offeringSelection,
         shouldDisplayDismissButton = builder.shouldDisplayDismissButton,
@@ -94,6 +97,7 @@ public class PaywallOptions internal constructor(
         injectedWorkflowBlobRef = builder.injectedWorkflowBlobRef,
         injectedWorkflowCheckpointIdentifier = builder.injectedWorkflowCheckpointIdentifier,
         errorPresenter = builder.errorPresenter,
+        checkpointGateContext = builder.checkpointGateContext,
     )
 
     // Only key fields that affect the paywall's identity and rendering logic are used in hashCode.
@@ -153,6 +157,7 @@ public class PaywallOptions internal constructor(
         injectedWorkflowBlobRef: String? = this.injectedWorkflowBlobRef,
         injectedWorkflowCheckpointIdentifier: String? = this.injectedWorkflowCheckpointIdentifier,
         errorPresenter: PaywallErrorPresenter? = this.errorPresenter,
+        checkpointGateContext: CheckpointGateContext? = this.checkpointGateContext,
     ): PaywallOptions = PaywallOptions(
         offeringSelection = offeringSelection,
         shouldDisplayDismissButton = shouldDisplayDismissButton,
@@ -170,6 +175,7 @@ public class PaywallOptions internal constructor(
         injectedWorkflowBlobRef = injectedWorkflowBlobRef,
         injectedWorkflowCheckpointIdentifier = injectedWorkflowCheckpointIdentifier,
         errorPresenter = errorPresenter,
+        checkpointGateContext = checkpointGateContext,
     )
 
     @Suppress("TooManyFunctions")
@@ -191,6 +197,7 @@ public class PaywallOptions internal constructor(
         internal var injectedWorkflowBlobRef: String? = null
         internal var injectedWorkflowCheckpointIdentifier: String? = null
         internal var errorPresenter: PaywallErrorPresenter? = null
+        internal var checkpointGateContext: CheckpointGateContext? = null
 
         public fun setOffering(offering: Offering?): Builder = apply {
             this.offeringSelection = offering?.let { OfferingSelection.OfferingType(it) }
@@ -245,6 +252,10 @@ public class PaywallOptions internal constructor(
         /** Hands the paywall's errors to the app instead of showing the SDK's dialog; null keeps the dialog. */
         internal fun setErrorPresenter(errorPresenter: PaywallErrorPresenter?) = apply {
             this.errorPresenter = errorPresenter
+        }
+
+        internal fun setCheckpointGateContext(context: CheckpointGateContext?) = apply {
+            this.checkpointGateContext = context
         }
 
         /**

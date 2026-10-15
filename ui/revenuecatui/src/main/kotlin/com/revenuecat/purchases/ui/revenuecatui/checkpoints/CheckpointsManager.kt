@@ -41,8 +41,9 @@ internal class CheckpointPresentation(
 
 /**
  * What a checkpoint run produced: the terminal [flowOutcome] of whatever it presented (null when nothing was),
- * and [backedOut], true when the presented flow went away because the user navigated back (system back, or a
- * navigate-back action on a workflow's first step) without purchasing or restoring.
+ * and [backedOut], true when the workflow's gate was not passed, or when an ungated flow went away because the
+ * user navigated back (system back, or a navigate-back action on a workflow's first step) without purchasing or
+ * restoring.
  *
  * [failed] is true when the checkpoint could not be served before anything was on screen: the failure went to
  * the error presenter and the run is not reported as passed. [blockedByPresentedFlow] is true when the checkpoint
@@ -167,6 +168,8 @@ internal class CheckpointsManager(
             Logger.e("Checkpoint '$identifier' could not be resolved: ${e.error}")
             return@withContext presentFailure(e.error)
         }
+        // Capture before the customer read, which can suspend while logIn/logOut changes the customer.
+        val initialAppUserId = purchases.appUserID
         val customerInfoBefore = purchases.customerInfo(CacheFetchPolicy.CACHED_OR_FETCHED).getOrElse { error ->
             Logger.e("Checkpoint '$identifier': the customer's information could not be read: $error")
             return@withContext presentFailure(error)
@@ -188,6 +191,7 @@ internal class CheckpointsManager(
                     errorPresenter(),
                     presentationMode,
                     customerInfoBefore,
+                    initialAppUserId,
                 )
                 is CheckpointResolution.NoAction -> when (resolution.reason) {
                     CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE -> {
@@ -282,7 +286,8 @@ internal class CheckpointsManager(
     // reports one, and a paywall that could not load carries the error as its result when its error UI is done.
     // The exit offering, if any, is not presented for checkpoints.
     override fun paywallOptions(callId: String, dismiss: (navigatedBack: Boolean) -> Unit): PaywallOptions? =
-        presentation(callId)?.let { presentation ->
+        slot.with(callId) { call ->
+            val presentation = call.presentation ?: return@with null
             PaywallOptions.Builder(dismissRequest = { dismiss(false) })
                 .setDismissRequestWithExitOffering { _, result, reason ->
                     (result as? PaywallResult.Error)?.let {
@@ -292,6 +297,11 @@ internal class CheckpointsManager(
                 }
                 .setErrorPresenter(presentation.errorPresenter)
                 .setCustomVariables(presentation.customVariables)
+                .setCheckpointGateContext(
+                    CheckpointGateContext(call.initialAppUserId, call.activeEntitlementsBefore) { outcome ->
+                        slot.with(callId) { it.gateOutcome = outcome }
+                    },
+                )
                 .setListener(OutcomeListener(callId))
                 .injectedWorkflow(
                     presentation.workflow.workflow,
@@ -333,9 +343,9 @@ internal class CheckpointsManager(
         }
     }
 
-    // A recorded purchase or restore means the user went through, however the window went away: checkpoint
-    // paywalls don't auto-dismiss on restore, so a user who restored and then backed out still went through. A
-    // paywall that went away without reporting anything was dismissed.
+    // Gate passage takes precedence over purchase/restore bookkeeping. Without a gate, a recorded purchase or
+    // restore still means the user went through however the window went away. A paywall that went away without
+    // reporting anything was dismissed.
     override fun onPresentationFinished(
         callId: String,
         navigatedBack: Boolean,
@@ -349,7 +359,11 @@ internal class CheckpointsManager(
         finished.flowFinished.complete(
             CheckpointRun(
                 recorded ?: CheckpointFlowOutcome.Dismissed,
-                backedOut = navigatedBack && !recorded.isObtained,
+                backedOut = when (finished.gateOutcome) {
+                    CheckpointGateOutcome.NOT_PASSED -> true
+                    CheckpointGateOutcome.PASSED -> false
+                    CheckpointGateOutcome.NOT_APPLICABLE -> navigatedBack && !recorded.isObtained
+                },
                 finishPresentation = finishPresentation,
                 customerInfoBefore = finished.customerInfoBefore,
             ),
@@ -358,13 +372,15 @@ internal class CheckpointsManager(
 
     // Like onPresentationFinished, for a presentation that failed: a purchase or granting restore the paywall
     // already reported (e.g. before the configuration change) still wins. Otherwise the window is gone and the
-    // flow cannot go on, so the error is presented and the run ends with it once the app's error UI is done.
+    // flow cannot go on, so the error is presented and the run ends with it once the app's error UI is done. An
+    // unpassed gate still blocks checkpoint passage even when the purchase/restore outcome is retained.
     override fun onPresentationFailed(callId: String, error: PurchasesError) {
         val failed = slot.take(callId) ?: return
+        val gateNotPassed = failed.gateOutcome == CheckpointGateOutcome.NOT_PASSED
         val obtained = failed.outcome.takeIf { it.isObtained }
         if (obtained != null) {
             failed.flowFinished.complete(
-                CheckpointRun(obtained, backedOut = false, customerInfoBefore = failed.customerInfoBefore),
+                CheckpointRun(obtained, backedOut = gateNotPassed, customerInfoBefore = failed.customerInfoBefore),
             )
             return
         }
@@ -372,7 +388,7 @@ internal class CheckpointsManager(
             failed.flowFinished.complete(
                 CheckpointRun(
                     CheckpointFlowOutcome.Error(error),
-                    backedOut = false,
+                    backedOut = gateNotPassed,
                     customerInfoBefore = failed.customerInfoBefore,
                 ),
             )
@@ -532,6 +548,7 @@ internal class CheckpointsManager(
         errorPresenter: ErrorPresenter,
         presentationMode: FlowPresentationMode,
         customerInfoBefore: CustomerInfo,
+        initialAppUserId: String,
     ): CheckpointRun {
         val activity = purchases.currentActivity ?: presentationError(
             PurchasesErrorCode.ConfigurationError,
@@ -548,6 +565,7 @@ internal class CheckpointsManager(
             activeEntitlementsBefore = customerInfoBefore.activeEntitlementIds,
             customerInfoBefore = customerInfoBefore,
             flowFinished = CompletableDeferred(),
+            initialAppUserId = initialAppUserId,
         )
         if (!slot.claim(call)) return blockedByPresentedFlow
         try {
