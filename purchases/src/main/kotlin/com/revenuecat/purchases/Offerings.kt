@@ -180,12 +180,11 @@ internal fun Offerings.withPresentedCheckpointIdentifier(checkpointIdentifier: S
         )
     }
     val updatedCurrent = current?.let { offering ->
-        updatedOfferings[offering.identifier]
-            ?: offering.withPresentedContext(
-                placementId = null,
-                targeting = null,
-                checkpointIdentifier = checkpointIdentifier,
-            )
+        offering.withPresentedContext(
+            placementId = null,
+            targeting = null,
+            checkpointIdentifier = checkpointIdentifier,
+        )
     }
     return copy(current = updatedCurrent, all = updatedOfferings)
 }

@@ -204,6 +204,24 @@ class CheckpointWorkflowResolverImplTest {
     }
 
     @Test
+    fun `a matched workflow preserves the current offering targeting context`() = runTest {
+        val targetedCurrent = offering("default")
+        val untargetedCatalogOffering = offering(
+            identifier = "default",
+            placementIdentifier = null,
+            targetingRuleId = null,
+        )
+        mockOfferings = Offerings(
+            current = targetedCurrent,
+            all = mapOf(untargetedCatalogOffering.identifier to untargetedCatalogOffering),
+        )
+
+        val resolution = resolve() as CheckpointResolution.MatchedWorkflow
+
+        assertOfferingCheckpointContext(resolution.offerings.current!!)
+    }
+
+    @Test
     fun `a matched workflow carries the served workflow's blob ref`() = runTest {
         coEvery { mockWorkflowManager.workflowBlobRef("wf1234") } returns "blob-ref-1"
 
@@ -742,14 +760,20 @@ class CheckpointWorkflowResolverImplTest {
 
     private fun alwaysMatching(audienceId: String) = Audience(id = audienceId, rules = "true")
 
-    private fun offering(identifier: String): Offering {
+    private fun offering(
+        identifier: String,
+        placementIdentifier: String? = "test_placement",
+        targetingRuleId: String? = "test_targeting_rule",
+    ): Offering {
         val context = PresentedOfferingContext(
             offeringIdentifier = identifier,
-            placementIdentifier = "test_placement",
-            targetingContext = PresentedOfferingContext.TargetingContext(
-                revision = 1,
-                ruleId = "test_targeting_rule",
-            ),
+            placementIdentifier = placementIdentifier,
+            targetingContext = targetingRuleId?.let {
+                PresentedOfferingContext.TargetingContext(
+                    revision = 1,
+                    ruleId = it,
+                )
+            },
         )
         val product = TestStoreProduct(
             id = "product_$identifier",
