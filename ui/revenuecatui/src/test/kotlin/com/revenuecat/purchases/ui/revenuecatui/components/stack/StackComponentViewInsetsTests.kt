@@ -24,14 +24,20 @@ import androidx.core.graphics.Insets
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
+import com.revenuecat.purchases.paywalls.components.properties.Badge
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
+import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
+import com.revenuecat.purchases.paywalls.components.properties.Size
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
+import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
@@ -42,6 +48,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.net.URL
 import kotlin.math.roundToInt
 
 @RunWith(AndroidJUnit4::class)
@@ -82,14 +89,58 @@ class StackComponentViewInsetsTests {
             assertThat(textTopPx).isEqualTo(STATUS_BAR_PX)
         }
 
+    @Test
+    fun `hero overlay badge applies the top safe area once for a long edge`() {
+        assertEdgeBadgeInsets(TwoDimensionalAlignment.TOP)
+    }
+
+    @Test
+    fun `hero overlay badge applies the top safe area once for a corner`() {
+        assertEdgeBadgeInsets(TwoDimensionalAlignment.TOP_LEADING)
+    }
+
+    private fun assertEdgeBadgeInsets(alignment: TwoDimensionalAlignment) = with(composeTestRule) {
+        val imageUrl = URL("https://example.com/hero.png")
+        val hero = ImageComponent(
+            source = ThemeImageUrls(light = ImageUrls(
+                original = imageUrl, webp = imageUrl, webpLowRes = imageUrl, width = 400u, height = 240u,
+            )),
+            size = Size(SizeConstraint.Fill(), SizeConstraint.Fixed(240u)),
+        )
+        val overlay = StackComponent(
+            components = emptyList(),
+            size = Size(SizeConstraint.Fill(), SizeConstraint.Fixed(160u)),
+            badge = Badge(stack = component, style = Badge.Style.EdgeToEdge, alignment = alignment),
+        )
+        val root = StackComponent(
+            components = listOf(hero, overlay),
+            dimension = Dimension.ZLayer(TwoDimensionalAlignment.TOP),
+        )
+        val textTopPx = textTopOnFirstFrame(
+            statusBarConsumedAbove = false,
+            componentUnderTest = root,
+            verifyStyle = { rootStyle ->
+                val overlayStyle = rootStyle.children[1] as StackComponentStyle
+                // The renderer copies this stack; its legacy inset hint must not be applied again.
+                assertThat(overlayStyle.badge!!.stackStyle.applyTopWindowInsets).isTrue()
+            },
+        )
+        assertThat(textTopPx).isEqualTo(STATUS_BAR_PX)
+    }
+
     /**
      * Composes the stack only after the window has reported a status bar inset, like a paywall that loads
      * into an already visible window, and reads where its text landed after a single frame.
      */
-    private fun ComposeContentTestRule.textTopOnFirstFrame(statusBarConsumedAbove: Boolean): Int {
+    private fun ComposeContentTestRule.textTopOnFirstFrame(
+        statusBarConsumedAbove: Boolean,
+        componentUnderTest: StackComponent = component,
+        verifyStyle: (StackComponentStyle) -> Unit = {},
+    ): Int {
         mainClock.autoAdvance = false
-        val style = styleFactory.create(component).getOrThrow().componentStyle as StackComponentStyle
-        val state = FakePaywallState(components = listOf(component))
+        val style = styleFactory.create(componentUnderTest).getOrThrow().componentStyle as StackComponentStyle
+        verifyStyle(style)
+        val state = FakePaywallState(components = listOf(componentUnderTest))
         var showStack by mutableStateOf(false)
         lateinit var view: View
         var density = 1f

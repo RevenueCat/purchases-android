@@ -98,44 +98,43 @@ internal fun LoadedWorkflowPaywall(
         transition = transition,
     )
 
-    val headerPresentation = workflowHeaderState(
-        currentStepId = currentStepId,
-        stepStates = stepStates,
-        transitionState = transitionState,
-    )
-    val headerState = stepStates[headerPresentation.headerStepId] ?: currentState
-    val onClick: suspend (PaywallAction) -> Unit = { action ->
-        handleClick(action, currentState, clickHandler, componentInteractionTracker)
-    }
-    val headerOnClick: suspend (PaywallAction) -> Unit = { action ->
-        handleClick(action, headerState, clickHandler, componentInteractionTracker)
-    }
-
-    // When the header is LEAVING (fading out over an incoming step that has no header), routing it
-    // through OverlayLayout would write its measured height into currentState.headerHeightPx.
-    // The incoming step would then use that height as its hero ZLayer top inset instead of the
-    // status-bar fallback. To avoid this, LEAVING headers are rendered as a Box overlay inside the
-    // mainContent lambda — outside OverlayLayout — so currentState.headerHeightPx stays 0.
-    val isLeavingHeader = headerPresentation.role == WorkflowHeaderTransitionRole.LEAVING
-    val headerComposable: (@Composable () -> Unit)? = headerState.header?.let { headerStyle ->
-        {
-            ComponentView(
-                style = headerStyle,
-                state = headerState,
-                onClick = headerOnClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .workflowHeaderFade(headerPresentation.role, transitionState)
-                    // The scaffold composes the header outside the body's guard, so it needs its own.
-                    // It stays silent: the body already announces the screen as loading.
-                    .conditional(isSkeleton) { blockInput().clearAndSetSemantics {} },
-            )
-        }
-    }
-
-    // Measured once at the root so the header — composed by the scaffold, outside any step's
-    // subtree — sees the bounds on its first frame; every step fills the same scaffold.
+    // Resolve hero ownership after measuring bounds, before selecting and composing the header.
     MeasurePaywallBounds(states = stepStates.values.toList(), modifier = modifier) {
+        stepStates.forEach { (stepId, state) ->
+            key(stepId) { resolveHeroInsets(state.stack, state) }
+        }
+        val headerPresentation = workflowHeaderState(
+            currentStepId = currentStepId,
+            stepStates = stepStates,
+            transitionState = transitionState,
+        )
+        val headerState = stepStates[headerPresentation.headerStepId] ?: currentState
+        val headerOnClick: suspend (PaywallAction) -> Unit = { action ->
+            handleClick(action, headerState, clickHandler, componentInteractionTracker)
+        }
+
+        // When the header is LEAVING (fading out over an incoming step that has no header), routing it
+        // through OverlayLayout would write its measured height into currentState.headerHeightPx.
+        // The incoming step would then use that height as its hero ZLayer top inset instead of the
+        // status-bar fallback. To avoid this, LEAVING headers are rendered as a Box overlay inside the
+        // mainContent lambda — outside OverlayLayout — so currentState.headerHeightPx stays 0.
+        val isLeavingHeader = headerPresentation.role == WorkflowHeaderTransitionRole.LEAVING
+        val headerComposable: (@Composable () -> Unit)? = headerState.header?.let { headerStyle ->
+            {
+                ComponentView(
+                    style = headerStyle,
+                    state = headerState,
+                    onClick = headerOnClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .workflowHeaderFade(headerPresentation.role, transitionState)
+                        // The scaffold composes the header outside the body's guard, so it needs its own.
+                        // It stays silent: the body already announces the screen as loading.
+                        .conditional(isSkeleton) { blockInput().clearAndSetSemantics {} },
+                )
+            }
+        }
+
         PaywallComponentsScaffold(
             state = currentState,
             background = null,

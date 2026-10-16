@@ -24,10 +24,12 @@ import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.storage.FileRepository
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
+import com.revenuecat.purchases.ui.revenuecatui.components.ComponentStyleIdentity
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ConditionContext
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedPackagePartial
+import com.revenuecat.purchases.ui.revenuecatui.components.ResolvedHeroInsets
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.getBestMatch
@@ -109,7 +111,7 @@ internal sealed interface PaywallState {
             val header: ComponentStyle?,
             val stickyFooter: ComponentStyle?,
             val background: BackgroundStyles,
-            val mainStackHasHeroImage: Boolean = false,
+            mainStackHasHeroImage: Boolean = false,
             /**
              * Some currencies do not commonly use decimals when displaying prices. Set this to false to accommodate
              * for that.
@@ -160,6 +162,13 @@ internal sealed interface PaywallState {
              */
             var paywallBoundsDp: DpSize? by mutableStateOf(null)
                 @JvmSynthetic internal set
+
+            var mainStackHasHeroImage by mutableStateOf(mainStackHasHeroImage)
+                internal set
+
+            internal var resolvedHeroInsets by mutableStateOf<Map<ComponentStyleIdentity, ResolvedHeroInsets>>(
+                emptyMap(),
+            )
 
             val store: Store get() = purchases.store
             val fileRepositoryOverride: FileRepository? get() = purchases.fileRepositoryOverride
