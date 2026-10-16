@@ -271,6 +271,24 @@ class CheckpointWorkflowResolverImplTest {
     }
 
     @Test
+    fun `a matched offering adds its trace id to its purchase contexts`() = runTest {
+        coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns offeringWorkflow("wf1234", "default")
+
+        val resolution = resolve() as CheckpointResolution.MatchedOffering
+
+        val packageObject = resolution.offering.availablePackages.single()
+        val product = packageObject.product
+        val contexts = buildList {
+            add(packageObject.presentedOfferingContext)
+            add(product.presentedOfferingContext)
+            add(product.defaultOption?.presentedOfferingContext)
+            addAll(product.subscriptionOptions.orEmpty().map { it.presentedOfferingContext })
+        }
+        assertThat(resolution.traceId).isNotBlank
+        assertThat(contexts.map { it?.traceId }).containsOnly(resolution.traceId)
+    }
+
+    @Test
     fun `a matched workflow reports no rule id when the rules topic omits it`() = runTest {
         configureRules(CheckpointRule(id = null, audienceId = "aud_wf1234", workflowId = "wf1234"))
 

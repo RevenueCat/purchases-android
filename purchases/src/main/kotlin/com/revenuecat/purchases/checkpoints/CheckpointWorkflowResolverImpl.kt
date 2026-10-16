@@ -184,11 +184,12 @@ internal class CheckpointWorkflowResolverImpl(
 
         val offering = loadOfferings(checkpointIdentifier)?.all?.get(offeringIdentifier)
             ?: return unservableRule(rule, "offering '$offeringIdentifier' was not found in offerings")
-        val presentedOffering = offering.withPresentedCheckpointIdentifier(checkpointIdentifier)
+        val traceId = UUID.randomUUID().toString()
+        val presentedOffering = offering.withPresentedCheckpointIdentifier(checkpointIdentifier, traceId)
         debugLog {
             "Checkpoint resolved to offering '${presentedOffering.identifier}' from workflow '${rule.workflowId}'"
         }
-        return CheckpointResolution.MatchedOffering(presentedOffering, checkpointRuleId = rule.id)
+        return CheckpointResolution.MatchedOffering(presentedOffering, checkpointRuleId = rule.id, traceId = traceId)
     }
 
     private suspend fun resolveUiRule(

@@ -608,6 +608,7 @@ class ReceiptInfoTest {
             "placementIdentifier",
             "targetingContext",
             "checkpointIdentifier",
+            "traceId",
         )
     }
 
