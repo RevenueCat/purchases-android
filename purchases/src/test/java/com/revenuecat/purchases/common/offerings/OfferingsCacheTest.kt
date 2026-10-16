@@ -510,6 +510,24 @@ class OfferingsCacheTest {
         assertThat(otherApiKeyCache.cachedOfferingsResponse?.getString("marker")).isEqualTo("other")
     }
 
+    @Test
+    fun `clearing the cache for one API key keeps another key's response`() {
+        val otherApiKeyCache = OfferingsCache(
+            DeviceCache(sharedPreferences, "other_api_key"),
+            responseStore = PayloadFileStore(responseDirectory),
+            dispatcher = SyncDispatcher(),
+            localeProvider = DefaultLocaleProvider(),
+        )
+        val otherResponse = JSONObject(ONE_OFFERINGS_RESPONSE).put("marker", "other").toString()
+        offeringsCache.cacheOfferings(mockk<Offerings>(), ONE_OFFERINGS_RESPONSE)
+        otherApiKeyCache.cacheOfferings(mockk<Offerings>(), otherResponse)
+
+        offeringsCache.clearCache()
+
+        assertThat(offeringsCache.cachedOfferingsResponse).isNull()
+        assertThat(otherApiKeyCache.cachedOfferingsResponse?.getString("marker")).isEqualTo("other")
+    }
+
     // endregion offerings response cache
 
     // region helpers

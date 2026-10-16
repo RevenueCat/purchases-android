@@ -115,6 +115,17 @@ class PayloadFileStoreTest {
     }
 
     @Test
+    fun `delete removes only that key's payload`() {
+        val checksum = underTest.write(key, "payload")!!
+        val otherChecksum = underTest.write("other_key", "other")!!
+
+        underTest.delete(key)
+
+        assertThat(underTest.read(key, expectedChecksum = checksum)).isNull()
+        assertThat(underTest.read("other_key", expectedChecksum = otherChecksum)).isEqualTo("other")
+    }
+
+    @Test
     fun `a leftover temp file from a crashed write does not affect reads or later writes`() {
         val checksum = underTest.write(key, "good")!!
         val payloadFileName = directory.list()!!.single()

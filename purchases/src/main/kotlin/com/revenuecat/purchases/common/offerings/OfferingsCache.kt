@@ -40,7 +40,7 @@ internal class OfferingsCache(
         diskGeneration++
         pendingResponse = null
         deviceCache.clearOfferingsResponseChecksum()
-        responseStore.clear()
+        responseStore.delete(responseKey)
         cachedLanguageTags = null
     }
 
@@ -105,7 +105,7 @@ internal class OfferingsCache(
                 if (generation == diskGeneration) {
                     deviceCache.cacheOfferingsResponseChecksum(checksum)
                 } else {
-                    responseStore.clear()
+                    responseStore.delete(responseKey)
                 }
             }
         }
