@@ -5,6 +5,7 @@ import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.Store
@@ -103,10 +104,12 @@ internal class DiagnosticsTracker(
     var listener: DiagnosticsEventTrackerListener? = null
 
     /**
-     * Applies the remote `diagnostics.enabled` setting, falling back to the SDK configuration when the backend
-     * did not send one. Until this is called, events are collected on disk but never synced. Disabling deletes
-     * the diagnostics file on the diagnostics thread, behind any append already queued; enabling lets the
-     * listener sync whatever was collected while the decision was pending.
+     * Applies the remote `diagnostics.enabled` setting, falling back to
+     * [PurchasesConfiguration.Builder.diagnosticsEnabled] when the backend did not send one. The remote setting is
+     * enabled only at the developer's request or with their explicit approval. Until this is called, events are
+     * collected on disk but never synced. Disabling deletes the diagnostics file on the diagnostics thread, behind
+     * any append already queued; enabling lets the listener sync whatever was collected while the decision was
+     * pending.
      */
     fun applyRemoteCollectionSetting(remoteEnabled: Boolean?) {
         val enabled = remoteEnabled ?: enabledBySdkConfiguration
