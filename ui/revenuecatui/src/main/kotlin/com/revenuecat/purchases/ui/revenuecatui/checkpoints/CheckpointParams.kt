@@ -105,12 +105,12 @@ public class CheckpointParams private constructor(
         public fun paywallPresenter(paywallPresenter: PaywallPresenter): Builder =
             setPaywallPresenter(paywallPresenter)
 
-        /** Presents the errors of this call's flow; null leaves it to the registered presenter or the SDK. */
+        /** Presents the errors of this call; null leaves it to the registered presenter or the SDK. */
         public fun setErrorPresenter(errorPresenter: ErrorPresenter?): Builder = apply {
             this.errorPresenter = errorPresenter
         }
 
-        /** Presents the errors of this call's flow, ahead of the registered presenter. */
+        /** Presents the errors of this call, ahead of the registered presenter. */
         @JvmSynthetic
         public fun errorPresenter(errorPresenter: ErrorPresenter): Builder = setErrorPresenter(errorPresenter)
 

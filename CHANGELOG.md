@@ -1,3 +1,19 @@
+## 10.28.0
+## RevenueCat SDK
+### ✨ New Features
+* Add LevelPlay manual ad tracking sample (#4340) via Pol Miro (@polmiro)
+
+## RevenueCatUI SDK
+### 🐞 Bugfixes
+* Fix(paywalls) Transparent progress indicator caused idle redraws (#4442) via Jacob Rakidzich (@JZDesign)
+* [EXTERNAL] Fix PaywallView crash when recomposing after detaching inside a pooling container (#4420) via @ceydaakin (#4433) via Cesar de la Vega (@vegaro)
+### Paywallsv2
+#### ✨ New Features
+* Honor explicit `default` stack overflow to disable scrolling (#4210) via Josh Holtz (@joshdholtz)
+
+### 🔄 Other Changes
+* IAM P6: Wiring through login/logout methods (#4392) via Dave DeLong (@davedelong)
+
 ## 10.27.1
 ## RevenueCat SDK
 ### 📦 Dependency Updates
@@ -110,7 +126,7 @@
 ### 🔄 Other Changes
 * Resolve the diagnostics collection decision at configure when remote config is disabled (#4353) via Toni Rico (@tonidero)
 * Chore(Paywalls): Support min/max on Fill sizes only (#4280) via Jacob Rakidzich (@JZDesign)
-* Drive diagnostics collection from the sdk_settings remote config (#4322) via Toni Rico (@tonidero)
+* feat(diagnostics): support collection through SDK settings with explicit developer approval (#4322) via Toni Rico (@tonidero)
 
 ## 10.23.4
 ## RevenueCatUI SDK

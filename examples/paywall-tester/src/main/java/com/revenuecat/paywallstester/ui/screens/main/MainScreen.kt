@@ -84,7 +84,7 @@ fun MainScreenPreview() {
 private val bottomNavigationItems = listOf(
     Tab.AppInfo,
     Tab.Paywalls,
-    Tab.Offerings,
+    Tab.Flows,
     Tab.Checkpoints,
     Tab.Locale,
 )
@@ -114,7 +114,7 @@ private fun MainNavHost(
         composable(Tab.Paywalls.route) {
             PaywallsScreen()
         }
-        composable(Tab.Offerings.route) {
+        composable(Tab.Flows.route) {
             OfferingsScreen(
                 tappedOnOffering = { offering -> navigateToPaywallScreen(offering) },
                 tappedOnOfferingFooter = { offering -> navigateToPaywallFooterScreen(offering) },

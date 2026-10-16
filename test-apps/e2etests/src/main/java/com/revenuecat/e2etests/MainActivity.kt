@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import com.revenuecat.e2etests.checkpoint.CheckpointScreen
 import com.revenuecat.e2etests.main.DeveloperProvidedOfferingScreen
 import com.revenuecat.e2etests.main.MainPage
 import com.revenuecat.e2etests.main.NoPaywallScreen
@@ -32,13 +33,18 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
         val flow = E2ETestFlow.fromRawValue(intent.getStringExtra(E2ETestFlow.INTENT_EXTRA_KEY))
         val usersCountOverride = intent.getStringExtra(CUSTOM_USERS_COUNT_EXTRA_KEY)?.toIntOrNull()
         val offeringId = intent.getStringExtra(WORKFLOW_OFFERING_EXTRA_KEY)
+        val logInAppUserIds = intent.getStringExtra(LOG_IN_APP_USER_IDS_EXTRA_KEY)
+            ?.split(",")
+            .orEmpty()
         val workflowId = intent.getStringExtra(WORKFLOW_ID_EXTRA_KEY)
+        val checkpointIdentifier = intent.getStringExtra(CHECKPOINT_IDENTIFIER_EXTRA_KEY)
         setContent {
             PurchasesandroidTheme {
                 when (flow) {
                     E2ETestFlow.OPEN_WORKFLOW -> WorkflowScreen(
                         usersCountOverride = usersCountOverride,
                         offeringId = offeringId,
+                        logInAppUserIds = logInAppUserIds,
                         workflowId = workflowId,
                     )
                     E2ETestFlow.OPEN_WORKFLOW_PRESENTED -> PresentedWorkflowScreen(
@@ -46,6 +52,9 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
                     )
                     E2ETestFlow.OPEN_NO_PAYWALL -> NoPaywallScreen()
                     E2ETestFlow.OPEN_DEVELOPER_PROVIDED_OFFERING -> DeveloperProvidedOfferingScreen()
+                    E2ETestFlow.OPEN_CHECKPOINT -> CheckpointScreen(
+                        identifier = checkpointIdentifier ?: DEFAULT_CHECKPOINT_IDENTIFIER,
+                    )
                     null -> MainPage()
                 }
             }
@@ -60,5 +69,10 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
         const val CUSTOM_USERS_COUNT_EXTRA_KEY = "custom_users_count"
         const val WORKFLOW_OFFERING_EXTRA_KEY = "workflow_offering_identifier"
         const val WORKFLOW_ID_EXTRA_KEY = "workflow_id"
+
+        // Comma-separated app user ids. Each one gets a button that logs in as it.
+        const val LOG_IN_APP_USER_IDS_EXTRA_KEY = "log_in_app_user_ids"
+        const val CHECKPOINT_IDENTIFIER_EXTRA_KEY = "checkpoint_identifier"
+        const val DEFAULT_CHECKPOINT_IDENTIFIER = "donottouch_sdk_everyone"
     }
 }

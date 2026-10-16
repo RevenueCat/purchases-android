@@ -473,6 +473,11 @@ public class Purchases internal constructor(
     @Throws(PurchasesException::class)
     public suspend fun awaitGetUiConfig(): UiConfig = purchasesOrchestrator.getUiConfig()
 
+    /** Every workflow id in the synced config, including ones that claim no offering. For internal test apps. */
+    @InternalRevenueCatAPI
+    @JvmSynthetic
+    public suspend fun awaitGetWorkflowIds(): List<String> = purchasesOrchestrator.workflowIds()
+
     @InternalRevenueCatAPI
     @JvmSynthetic
     public suspend fun resolveWorkflow(offeringId: String): WorkflowResolution =

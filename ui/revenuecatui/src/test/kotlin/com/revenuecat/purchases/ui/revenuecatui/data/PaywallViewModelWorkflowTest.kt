@@ -57,6 +57,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointFailureKind
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter
 import com.revenuecat.purchases.ui.revenuecatui.components.style.WebViewComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.webview.webViewContextSnapshot
@@ -2019,19 +2020,19 @@ class PaywallViewModelWorkflowTest {
     fun `a failed purchase during a workflow is handed to the error presenter`() = runTest {
         coEvery { purchases.awaitPurchase(any()) } throws
             PurchasesException(PurchasesError(PurchasesErrorCode.StoreProblemError))
-        val presented = mutableListOf<Boolean>()
-        val vm = createVm(errorPresenter = { _, flowCanContinue, _ -> presented += flowCanContinue })
+        val presented = mutableListOf<CheckpointFailureKind>()
+        val vm = createVm(errorPresenter = { _, kind, _ -> presented += kind })
         vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
         advanceUntilIdle()
 
         vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
 
-        assertThat(presented).containsExactly(true)
+        assertThat(presented).containsExactly(CheckpointFailureKind.FLOW_ACTION_FAILED)
         assertThat(vm.actionError.value).isNull()
     }
 
     @Test
-    fun `NavigateBack from the error presenter mid-flow goes to the previous step`() = runTest {
+    fun `completing the error presenter mid-flow keeps the current step`() = runTest {
         coEvery { purchases.awaitPurchase(any()) } throws
             PurchasesException(PurchasesError(PurchasesErrorCode.StoreProblemError))
         var completion: ErrorPresenter.Completion? = null
@@ -2046,32 +2047,12 @@ class PaywallViewModelWorkflowTest {
         advanceUntilIdle()
         vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
 
-        completion!!.complete(ErrorPresenter.Completion.Result.NavigateBack)
+        completion!!.complete()
         advanceUntilIdle()
 
         assertThat(dismissals).isEmpty()
-        assertThat(vm.workflowState.value?.pendingTransition?.direction).isEqualTo(NavigationDirection.BACKWARD)
-        assertThat(vm.workflowState.value?.pendingTransition?.fromStepId).isEqualTo("step-2")
-    }
-
-    @Test
-    fun `NavigateBack from the error presenter on the first step leaves the flow`() = runTest {
-        coEvery { purchases.awaitPurchase(any()) } throws
-            PurchasesException(PurchasesError(PurchasesErrorCode.StoreProblemError))
-        var completion: ErrorPresenter.Completion? = null
-        val dismissals = mutableListOf<PaywallDismissReason>()
-        val vm = createVm(
-            dismissRequestWithExitOffering = { _, _, reason -> dismissals += reason },
-            errorPresenter = { _, _, c -> completion = c },
-        )
-        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
-        advanceUntilIdle()
-        vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
-
-        completion!!.complete(ErrorPresenter.Completion.Result.NavigateBack)
-        advanceUntilIdle()
-
-        assertThat(dismissals).containsExactly(PaywallDismissReason.NAVIGATED_BACK)
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-2")
+        assertThat(vm.workflowState.value?.pendingTransition).isNull()
     }
 
     @Test
@@ -2327,7 +2308,7 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
-    fun `error during navigation clears workflow state and fires StepCompleted with null toStepId`() {
+    fun `a step that cannot be shown keeps the current step and fires no navigation events`() {
         val captured = mutableListOf<FeatureEvent>()
         every { purchases.track(any()) } answers { captured.add(firstArg()) }
 
@@ -2335,15 +2316,13 @@ class PaywallViewModelWorkflowTest {
         vm.startWorkflowPresentationFromResult(fetchResultToError, testOfferingsWithEmpty, null, uiConfig)
         captured.clear() // clear load event
 
-        // Navigate to step-3 — computeStateForStep returns Error since its offering has no packages
+        // Navigate to step-3: computeStateForStep returns Error since its offering has no packages
         vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
 
-        val workflowEvents = captured.filterIsInstance<WorkflowEvent>()
-        // StepCompleted for step-1 must be fired when _workflowState is cleared due to error
-        val completed = workflowEvents.filterIsInstance<WorkflowEvent.StepCompleted>()
-        assertThat(completed).hasSize(1)
-        assertThat(completed[0].stepId).isEqualTo("step-1")
-        assertThat(completed[0].toStepId).isNull()
+        assertThat(captured.filterIsInstance<WorkflowEvent>()).isEmpty()
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+        assertThat(vm.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+        assertThat(vm.actionError.value?.underlyingErrorMessage).contains("No packages available")
     }
 
     @Test
@@ -2526,7 +2505,7 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
-    fun `navigation to a step whose offering is not in offerings fails the workflow with an error`() {
+    fun `navigation to a step whose offering is not in offerings keeps the current step with the error`() {
         val stepWithUnknownOffering = step2.copy(paramValues = offeringParams("unknown_offering"))
         val workflowToStepWithUnknownOffering =
             workflow.copy(steps = mapOf("step-1" to step1, "step-2" to stepWithUnknownOffering))
@@ -2539,18 +2518,12 @@ class PaywallViewModelWorkflowTest {
 
         vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
 
-        assertThat(vm.workflowState.value).isNull()
-        val error = vm.state.value as PaywallState.Error
-        assertThat(error.errorMessage).contains("Offering 'unknown_offering' not found for step 'step-2'")
-        assertThat(error.toPaywallResult().error.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
-        val workflowEvents = captured.filterIsInstance<WorkflowEvent>()
-        assertThat(workflowEvents).hasSize(2)
-        val completed = workflowEvents[0] as WorkflowEvent.StepCompleted
-        assertThat(completed.stepId).isEqualTo("step-1")
-        assertThat(completed.toStepId).isNull()
-        val close = workflowEvents[1] as WorkflowEvent.Close
-        assertThat(close.stepId).isEqualTo("step-1")
-        assertThat(close.traceId).isEqualTo(completed.traceId)
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+        assertThat(vm.workflowState.value?.pendingTransition).isNull()
+        val error = vm.actionError.value!!
+        assertThat(error.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
+        assertThat(error.underlyingErrorMessage).contains("Offering 'unknown_offering' not found for step 'step-2'")
+        assertThat(captured.filterIsInstance<WorkflowEvent>()).isEmpty()
     }
 
     private fun PresentedOfferingContext.checkpointIdentifierForTest(): String? {
@@ -2560,24 +2533,33 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
-    fun `dismissing the error after a failed navigation does not repeat the workflow events`() {
+    fun `a step that cannot be shown is handed to the error presenter as an error during the flow`() {
         val stepWithUnknownOffering = step2.copy(paramValues = offeringParams("unknown_offering"))
         val workflowToStepWithUnknownOffering =
             workflow.copy(steps = mapOf("step-1" to step1, "step-2" to stepWithUnknownOffering))
-        val captured = mutableListOf<FeatureEvent>()
-        every { purchases.track(any()) } answers { captured.add(firstArg()) }
-        val vm = createVm()
+        val presented = mutableListOf<CheckpointFailureKind>()
+        var completion: ErrorPresenter.Completion? = null
+        val dismissals = mutableListOf<PaywallDismissReason>()
+        val vm = createVm(
+            dismissRequestWithExitOffering = { _, _, reason -> dismissals += reason },
+            errorPresenter = { _, kind, c ->
+                presented += kind
+                completion = c
+            },
+        )
         vm.startWorkflowPresentationFromResult(workflowToStepWithUnknownOffering, testOfferings, null, uiConfig)
+
         vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
-        captured.clear()
+        completion!!.complete()
 
-        vm.closePaywall(result = (vm.state.value as PaywallState.Error).toPaywallResult())
-
-        assertThat(captured.filterIsInstance<WorkflowEvent>()).isEmpty()
+        assertThat(presented).containsExactly(CheckpointFailureKind.FLOW_ACTION_FAILED)
+        assertThat(vm.actionError.value).isNull()
+        assertThat(dismissals).isEmpty()
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
     }
 
     @Test
-    fun `navigation to a step whose screen is missing fails the workflow with an error`() {
+    fun `navigation to a step whose screen is missing keeps the current step with the error`() {
         val stepWithMissingScreen = step2.copy(screenId = "missing-screen")
         val workflowToMissingScreen =
             workflow.copy(steps = mapOf("step-1" to step1, "step-2" to stepWithMissingScreen))
@@ -2587,10 +2569,8 @@ class PaywallViewModelWorkflowTest {
 
         vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
 
-        assertThat(vm.workflowState.value).isNull()
-        val error = vm.state.value as PaywallState.Error
-        assertThat(error.errorMessage).contains("Screen 'missing-screen' not found")
-        assertThat(error.error?.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+        assertThat(vm.actionError.value?.underlyingErrorMessage).contains("Screen 'missing-screen' not found")
     }
 
     @Test

@@ -9,7 +9,9 @@ import com.revenuecat.purchases.Purchases;
 import com.revenuecat.purchases.PurchasesError;
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPassedCallback;
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams;
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointFailureKind;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowResult;
@@ -26,9 +28,10 @@ final class CheckpointsAPI {
 
     @OptIn(markerClass = InviteOnlyCheckpointsAPI.class)
     static void check(Purchases purchases, CheckpointParams params) {
-        CheckpointPassedCallback callback = (FlowResult result) -> {
-            if (result != null) {
-                Set<ObtainedEntitlement> obtainedEntitlements = result.getObtainedEntitlements();
+        CheckpointPassedCallback callback = (CheckpointResult result) -> {
+            FlowResult flow = result.getFlow();
+            if (flow != null) {
+                Set<ObtainedEntitlement> obtainedEntitlements = flow.getObtainedEntitlements();
             }
         };
         CheckpointsExtensionsKt.checkpoint(purchases, "checkpoint_identifier", callback);
@@ -76,13 +79,19 @@ final class CheckpointsAPI {
             PurchasesError error = params.getError();
             String checkpointIdentifier = params.getCheckpointIdentifier();
             Map<String, CustomVariableValue> customVariables = params.getCustomVariables();
-            boolean flowCanContinue = params.getFlowCanContinue();
-            completion.complete(ErrorPresenter.Completion.Result.Retry.INSTANCE);
-            completion.complete(ErrorPresenter.Completion.Result.Continue.INSTANCE);
-            completion.complete(ErrorPresenter.Completion.Result.NavigateBack.INSTANCE);
+            CheckpointFailureKind kind = params.getKind();
+            completion.complete();
         };
         CheckpointsExtensionsKt.setErrorPresenter(purchases, presenter);
         CheckpointsExtensionsKt.setErrorPresenter(purchases, null);
         ErrorPresenter current = CheckpointsExtensionsKt.getErrorPresenter(purchases);
+    }
+
+    @OptIn(markerClass = InviteOnlyCheckpointsAPI.class)
+    static void checkCheckpointFailureKind(CheckpointFailureKind kind) {
+        CheckpointFailureKind before = CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN;
+        CheckpointFailureKind during = CheckpointFailureKind.FLOW_ACTION_FAILED;
+        CheckpointFailureKind after = CheckpointFailureKind.FLOW_RESULT_SYNC_FAILED;
+        boolean isBefore = kind.equals(before);
     }
 }

@@ -24,4 +24,13 @@
     <string name="revenuecatui_purchase">Beli</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
     <string name="revenuecatui_preview_workflow_load_error">Alur kerja pratinjau tidak dapat dimuat. Silakan coba lagi.</string>
+    <string name="revenuecatui_checkpoint_error_network">Tidak dapat terhubung. Periksa koneksi internet Anda dan coba lagi.</string>
+    <string name="revenuecatui_checkpoint_error_load">Konten ini tidak dapat dimuat. Silakan coba lagi nanti.</string>
+    <string name="revenuecatui_checkpoint_error_store">Terjadi masalah dengan toko. Silakan coba lagi nanti.</string>
+    <string name="revenuecatui_checkpoint_error_purchase_not_allowed">Pembelian tidak diizinkan di perangkat ini.</string>
+    <string name="revenuecatui_checkpoint_error_product_unavailable">Produk ini tidak tersedia saat ini.</string>
+    <string name="revenuecatui_checkpoint_error_already_purchased">Anda sudah memiliki produk ini.</string>
+    <string name="revenuecatui_checkpoint_error_payment_pending">Pembayaran Anda tertunda. Anda akan mendapatkan akses setelah disetujui.</string>
+    <string name="revenuecatui_checkpoint_error_generic">Terjadi kesalahan. Silakan coba lagi.</string>
+    <string name="revenuecatui_checkpoint_error_sync">Pembelian Anda tidak dapat diverifikasi. Silakan coba lagi nanti.</string>
 </resources>

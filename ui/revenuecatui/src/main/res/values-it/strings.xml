@@ -24,4 +24,13 @@
     <string name="revenuecatui_purchase">Acquista</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
     <string name="revenuecatui_preview_workflow_load_error">Impossibile caricare il flusso di lavoro di anteprima. Riprova.</string>
+    <string name="revenuecatui_checkpoint_error_network">Impossibile connettersi. Controlla la connessione a internet e riprova.</string>
+    <string name="revenuecatui_checkpoint_error_load">Impossibile caricare questo contenuto. Riprova più tardi.</string>
+    <string name="revenuecatui_checkpoint_error_store">Si è verificato un problema con lo store. Riprova più tardi.</string>
+    <string name="revenuecatui_checkpoint_error_purchase_not_allowed">Gli acquisti non sono consentiti su questo dispositivo.</string>
+    <string name="revenuecatui_checkpoint_error_product_unavailable">Questo prodotto non è disponibile al momento.</string>
+    <string name="revenuecatui_checkpoint_error_already_purchased">Possiedi già questo prodotto.</string>
+    <string name="revenuecatui_checkpoint_error_payment_pending">Il tuo pagamento è in sospeso. Avrai accesso una volta approvato.</string>
+    <string name="revenuecatui_checkpoint_error_generic">Qualcosa è andato storto. Riprova.</string>
+    <string name="revenuecatui_checkpoint_error_sync">Impossibile verificare i tuoi acquisti. Riprova più tardi.</string>
 </resources>

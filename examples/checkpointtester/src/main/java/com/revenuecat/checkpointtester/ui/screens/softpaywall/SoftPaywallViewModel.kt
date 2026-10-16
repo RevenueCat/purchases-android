@@ -34,7 +34,7 @@ class SoftPaywallViewModel : ViewModel() {
     fun hit() {
         _state.update { it.copy(message = null, hasRun = true) }
         Purchases.sharedInstance.checkpoint("soft_paywall", PaywallPresenters.params()) { result ->
-            if (result != null && result.obtainedEntitlements.isNotEmpty()) {
+            if (result.flow?.obtainedEntitlements.orEmpty().isNotEmpty()) {
                 upgraded(result.summary())
             } else {
                 free(result.summary())
