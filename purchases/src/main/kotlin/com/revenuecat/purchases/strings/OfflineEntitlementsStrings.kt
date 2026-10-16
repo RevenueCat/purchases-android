@@ -15,4 +15,7 @@ internal object OfflineEntitlementsStrings {
         "one time purchases. Found one time purchases. See for more info: https://rev.cat/offline-entitlements"
     const val PRODUCT_ENTITLEMENT_MAPPING_REQUIRED = "Product entitlement mapping is required for offline " +
         "entitlements. Skipping offline customer info calculation."
+    const val UNKNOWN_BASE_PLAN_FOR_PRODUCT = "The base plans of %s unlock different entitlements and the " +
+        "purchased one can't be determined from the purchase, so only unlocking the entitlements that all of " +
+        "its base plans unlock: %s."
 }
