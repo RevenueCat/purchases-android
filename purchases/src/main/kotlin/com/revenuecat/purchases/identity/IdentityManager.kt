@@ -340,14 +340,18 @@ internal class IdentityManager(
     @Synchronized
     private fun switchToIAMUserIfStillCurrent(oldAppUserID: String, newAppUserID: String): Boolean {
         if (currentAppUserID != oldAppUserID) return false
-        deviceCache.clearCachesForAppUserID(oldAppUserID)
-        clearRemoteConfigThenOfferingsCaches(newAppUserID)
-        subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
-        deviceCache.cacheAppUserID(newAppUserID)
-        copySubscriberAttributesToNewUserIfOldIsAnonymous(oldAppUserID, newAppUserID)
-        clearPaywallWebViewStorageIfUserChanged(oldAppUserID, newAppUserID)
-        offlineEntitlementsManager.resetOfflineCustomerInfoCache()
-        backend.clearCaches()
+        // Only clear caches if the new user id is different.
+        // Migrating a pre-IAM anonymous account can preserve the user id, and should also preserve caches
+        if (oldAppUserID != newAppUserID) {
+            deviceCache.clearCachesForAppUserID(oldAppUserID)
+            clearRemoteConfigThenOfferingsCaches(newAppUserID)
+            subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
+            deviceCache.cacheAppUserID(newAppUserID)
+            copySubscriberAttributesToNewUserIfOldIsAnonymous(oldAppUserID, newAppUserID)
+            clearPaywallWebViewStorageIfUserChanged(oldAppUserID, newAppUserID)
+            offlineEntitlementsManager.resetOfflineCustomerInfoCache()
+            backend.clearCaches()
+        }
         return true
     }
 
@@ -458,9 +462,12 @@ internal class IdentityManager(
         offeringsCache.clearCache()
     }
 
-    // Server-assigned anonymous IDs needn't match the regex; their ID token says so. False until tokens load.
+    // Server-assigned anonymous IDs needn't match the regex; their ID token or cached CustomerInfo says so.
+    // The token check is false until tokens load.
     private fun isAnonymous(appUserID: String): Boolean =
-        isUserIDAnonymous(appUserID) || tokenManager.isCurrentIdentityAnonymous(appUserID)
+        isUserIDAnonymous(appUserID) ||
+            tokenManager.isCurrentIdentityAnonymous(appUserID) ||
+            tokenManager.enabled && deviceCache.getCachedCustomerInfo(appUserID)?.allIdentitiesAreAnonymous == true
 
     // Anonymous is exempt: signing in mid-flow is the multipage paywall case, same customer either side.
     private fun clearPaywallWebViewStorageIfUserChanged(oldAppUserID: String, newAppUserID: String) {

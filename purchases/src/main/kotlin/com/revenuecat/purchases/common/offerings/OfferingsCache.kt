@@ -8,6 +8,8 @@ import com.revenuecat.purchases.common.LocaleProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.InMemoryCachedObject
 import com.revenuecat.purchases.common.caching.isCacheStale
+import com.revenuecat.purchases.common.debugLog
+import com.revenuecat.purchases.strings.OfferingStrings
 import org.json.JSONObject
 
 @OptIn(InternalRevenueCatAPI::class)
@@ -21,8 +23,14 @@ internal class OfferingsCache(
 ) {
     private var cachedLanguageTags: String? = null
 
+    // Bumped by clearCache() on identity changes, so a fetch started for the previous user can't cache over it.
+    @get:Synchronized
+    var epoch: Int = 0
+        private set
+
     @Synchronized
     fun clearCache() {
+        epoch++
         offeringsCachedObject.clearCache()
         deviceCache.clearOfferingsResponseCache()
         cachedLanguageTags = null
@@ -31,9 +39,14 @@ internal class OfferingsCache(
     /**
      * [responsePayload] is null when [offerings] was parsed from the disk cache, whose response is already
      * on disk: re-writing it would re-serialize a multi-MB payload on every failed fetch.
+     * Nothing is cached when [requestEpoch] predates the last [clearCache].
      */
     @Synchronized
-    fun cacheOfferings(offerings: Offerings, responsePayload: String?) {
+    fun cacheOfferings(offerings: Offerings, responsePayload: String?, requestEpoch: Int = epoch) {
+        if (requestEpoch != epoch) {
+            debugLog { OfferingStrings.DROPPING_OFFERINGS_FROM_PREVIOUS_USER }
+            return
+        }
         offeringsCachedObject.cacheInstance(offerings)
         responsePayload?.let { deviceCache.cacheOfferingsResponse(it) }
         offeringsCachedObject.updateCacheTimestamp(dateProvider.now)
