@@ -1,14 +1,11 @@
-## RevenueCat SDK
-### ✨ New Features
-* Add LevelPlay manual ad tracking sample (#4340) via Pol Miro (@polmiro)
-
-## RevenueCatUI SDK
-### 🐞 Bugfixes
-* Fix(paywalls) Transparent progress indicator caused idle redraws (#4442) via Jacob Rakidzich (@JZDesign)
-* [EXTERNAL] Fix PaywallView crash when recomposing after detaching inside a pooling container (#4420) via @ceydaakin (#4433) via Cesar de la Vega (@vegaro)
-### Paywallsv2
-#### ✨ New Features
-* Honor explicit `default` stack overflow to disable scrolling (#4210) via Josh Holtz (@joshdholtz)
-
 ### 🔄 Other Changes
-* IAM P6: Wiring through login/logout methods (#4392) via Dave DeLong (@davedelong)
+* WFL-735 - Send checkpoint identifier with purchase receipts (#4449) via Cesar de la Vega (@vegaro)
+* docs(remote-config): clarify when diagnostics are enabled (#4458) via Rick (@rickvdl)
+* Wrap the checkpoint callback result in a non-null CheckpointResult (#4460) via Toni Rico (@tonidero)
+* Add Maestro flows for the checkpoint error dialog before a flow is presented (#4440) via Toni Rico (@tonidero)
+* Hand every checkpoint failure to the ErrorPresenter and never pass on failure (#4437) via Toni Rico (@tonidero)
+* Simplify the checkpoint ErrorPresenter completion and add CheckpointFailureKind (#4436) via Toni Rico (@tonidero)
+* chore: route CODEOWNERS review requests to owning teams (#4412) via Cesar de la Vega (@vegaro)
+* Paywall tester: list and open flows by id (#4421) via Facundo Menzella (@facumenzella)
+* other(workflows): maestro flow for the experiment variant after a log in (#4396) via Facundo Menzella (@facumenzella)
+* build(deps): bump fastlane from 2.240.1 to 2.241.0 (#4447) via dependabot[bot] (@dependabot[bot])
