@@ -136,7 +136,9 @@ public open class DeviceCache(
         "$apiKeyPrefix.subscriberDimensions"
     }
 
-    private val offeringsResponseCacheKey: String by lazy { "$apiKeyPrefix.offeringsResponse" }
+    /** The prefs key older versions stored the response body under, and the file key it is stored under now. */
+    internal val offeringsResponseCacheKey: String by lazy { "$apiKeyPrefix.offeringsResponse" }
+    private val offeringsResponseChecksumCacheKey: String by lazy { "$apiKeyPrefix.offeringsResponseChecksum" }
 
     internal fun startEditing(): SharedPreferences.Editor {
         return preferences.edit()
@@ -631,24 +633,36 @@ public open class DeviceCache(
     // region offerings response
 
     @Synchronized
-    internal fun getOfferingsResponseCache(): JSONObject? {
-        return getJSONObjectOrNull(offeringsResponseCacheKey)
+    internal fun getOfferingsResponseChecksum(): Long? {
+        return if (preferences.contains(offeringsResponseChecksumCacheKey)) {
+            preferences.getLong(offeringsResponseChecksumCacheKey, 0L)
+        } else {
+            null
+        }
+    }
+
+    @Synchronized
+    internal fun cacheOfferingsResponseChecksum(checksum: Long) {
+        preferences.edit().putLong(offeringsResponseChecksumCacheKey, checksum).apply()
+    }
+
+    @Synchronized
+    internal fun clearOfferingsResponseChecksum() {
+        preferences.edit().remove(offeringsResponseChecksumCacheKey).apply()
     }
 
     /**
-     * Serializing a [JSONObject] here instead of storing [offeringsResponse] as received would cost a
-     * contiguous allocation of several times the response size, which OOMs on low-heap devices.
+     * Drops the response body older versions stored in prefs: SharedPreferences keeps its whole file in the
+     * heap for the process lifetime, so it is removed without being read.
      */
     @Synchronized
-    internal fun cacheOfferingsResponse(offeringsResponse: String) {
+    internal fun removeLegacyOfferingsResponse() {
+        if (!preferences.contains(offeringsResponseCacheKey)) return
+        // An older SDK ran since the checksum was stored and may have switched users without clearing it.
         preferences.edit()
-            .putString(offeringsResponseCacheKey, offeringsResponse)
+            .remove(offeringsResponseCacheKey)
+            .remove(offeringsResponseChecksumCacheKey)
             .apply()
-    }
-
-    @Synchronized
-    internal fun clearOfferingsResponseCache() {
-        preferences.edit().remove(offeringsResponseCacheKey).apply()
     }
 
     // endregion
