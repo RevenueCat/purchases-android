@@ -55,7 +55,7 @@ class CheckpointPassedCallbackTest {
     private lateinit var mockPresenter: CheckpointWorkflowPresenter
     private var defaultPresenter: DefaultPaywallPresenter? = null
     private val presentedCallIds = mutableListOf<String>()
-    private val results = mutableListOf<FlowResult?>()
+    private val results = mutableListOf<CheckpointResult>()
     private val errorPresenter = RecordingErrorPresenter()
     private var defaultErrorPresenterFactory: (Purchases) -> DefaultErrorPresenter = { _ ->
         // The SDK's own dialog needs a real activity; by default it acknowledges every error right away.
@@ -100,22 +100,22 @@ class CheckpointPassedCallbackTest {
     }
 
     @Test
-    fun `a no-action checkpoint invokes the callback exactly once with null`() = runTest(dispatcher) {
+    fun `a no-action checkpoint invokes the callback exactly once without a flow`() = runTest(dispatcher) {
         resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.UNKNOWN_CHECKPOINT))
 
         checkpoint()
 
-        assertThat(results).containsExactly(null)
+        assertThat(results).containsExactly(CheckpointResult(flow = null))
     }
 
     @Test
-    fun `an unknown checkpoint invokes the callback with null and no error`() = runTest(dispatcher) {
+    fun `an unknown checkpoint invokes the callback without a flow and no error`() = runTest(dispatcher) {
         resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.NO_MATCH))
         manager.errorPresenter = errorPresenter
 
         checkpoint()
 
-        assertThat(results).containsExactly(null)
+        assertThat(results).containsExactly(CheckpointResult(flow = null))
         assertThat(errorPresenter.kinds).isEmpty()
     }
 
@@ -510,8 +510,8 @@ class CheckpointPassedCallbackTest {
         manager.checkpoint(mockPurchases, identifier, null) { results += it }
     }
 
-    private val List<FlowResult?>.obtained: List<Set<String>?>
-        get() = map { result -> result?.obtainedEntitlements?.map { it.entitlementInfo.identifier }?.toSet() }
+    private val List<CheckpointResult>.obtained: List<Set<String>?>
+        get() = map { result -> result.flow?.obtainedEntitlements?.map { it.entitlementInfo.identifier }?.toSet() }
 
     // Registers a presenter for a matched offering and returns an accessor for the completion it was handed.
     private fun presentThroughRegisteredPresenter(offering: Offering = mockk()): () -> PaywallPresenter.Completion? {

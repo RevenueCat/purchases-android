@@ -5,9 +5,8 @@ import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import dev.drewhamilton.poko.Poko
 
 /**
- * What the user obtained while going through the flow a checkpoint presented. Delivered to
- * [com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint]'s callback, which receives null instead when
- * nothing was presented.
+ * What the user obtained while going through the flow a checkpoint presented. Delivered as
+ * [CheckpointResult.flow], which is null instead when nothing was presented.
  */
 @InviteOnlyCheckpointsAPI
 @Poko

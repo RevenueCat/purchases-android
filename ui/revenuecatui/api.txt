@@ -443,7 +443,12 @@ package com.revenuecat.purchases.ui.revenuecatui.checkpoints {
   }
 
   @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI public fun interface CheckpointPassedCallback {
-    method public void onCheckpointPassed(com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowResult? result);
+    method public void onCheckpointPassed(com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult result);
+  }
+
+  @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI @dev.drewhamilton.poko.Poko public final class CheckpointResult {
+    method @InaccessibleFromKotlin public com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowResult? getFlow();
+    property public com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowResult? flow;
   }
 
   public final class CheckpointsExtensionsKt {

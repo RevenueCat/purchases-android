@@ -9,6 +9,7 @@ import com.revenuecat.purchases.Purchases;
 import com.revenuecat.purchases.PurchasesError;
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPassedCallback;
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointFailureKind;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter;
@@ -27,9 +28,10 @@ final class CheckpointsAPI {
 
     @OptIn(markerClass = InviteOnlyCheckpointsAPI.class)
     static void check(Purchases purchases, CheckpointParams params) {
-        CheckpointPassedCallback callback = (FlowResult result) -> {
-            if (result != null) {
-                Set<ObtainedEntitlement> obtainedEntitlements = result.getObtainedEntitlements();
+        CheckpointPassedCallback callback = (CheckpointResult result) -> {
+            FlowResult flow = result.getFlow();
+            if (flow != null) {
+                Set<ObtainedEntitlement> obtainedEntitlements = flow.getObtainedEntitlements();
             }
         };
         CheckpointsExtensionsKt.checkpoint(purchases, "checkpoint_identifier", callback);

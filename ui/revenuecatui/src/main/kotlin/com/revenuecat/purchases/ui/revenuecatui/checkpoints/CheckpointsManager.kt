@@ -211,7 +211,7 @@ internal class CheckpointsManager(
                         Logger.d("Checkpoint '$identifier': it could not be served, so the callback is not invoked.")
                     run.backedOut ->
                         Logger.d("Checkpoint '$identifier': the user backed out, so the callback is not invoked.")
-                    else -> callback.onCheckpointPassed(run.toResult(activeEntitlementsBefore))
+                    else -> callback.onCheckpointPassed(CheckpointResult(run.toResult(activeEntitlementsBefore)))
                 }
             } finally {
                 run.finishPresentation()

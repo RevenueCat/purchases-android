@@ -29,7 +29,7 @@ import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
  * with an ASCII letter, contain only ASCII letters, numbers, underscores, and hyphens, and be no more than 255
  * characters.
  * @param params Optional per-call parameters, like custom properties usable in targeting rules.
- * @param callback Receives the [FlowResult], or null, once the user passes the checkpoint.
+ * @param callback Receives the [CheckpointResult] once the user passes the checkpoint.
  */
 @InviteOnlyCheckpointsAPI
 public fun Purchases.checkpoint(
