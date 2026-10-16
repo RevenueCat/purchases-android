@@ -10,9 +10,9 @@ import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointFailureKind
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPassedCallback
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowResult
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.errorPresenter
@@ -22,9 +22,9 @@ import com.revenuecat.purchases.ui.revenuecatui.checkpoints.paywallPresenter
 private class CheckpointsAPI {
 
     fun checkCheckpoint(purchases: Purchases, params: CheckpointParams, callback: CheckpointPassedCallback) {
-        purchases.checkpoint("checkpoint_identifier") { result: FlowResult? -> }
-        purchases.checkpoint("checkpoint_identifier", params) { result: FlowResult? -> }
-        purchases.checkpoint("checkpoint_identifier", params = null) { result: FlowResult? -> }
+        purchases.checkpoint("checkpoint_identifier") { result: CheckpointResult -> }
+        purchases.checkpoint("checkpoint_identifier", params) { result: CheckpointResult -> }
+        purchases.checkpoint("checkpoint_identifier", params = null) { result: CheckpointResult -> }
         purchases.checkpoint("checkpoint_identifier", callback)
         purchases.checkpoint(
             checkpointIdentifier = "checkpoint_identifier",

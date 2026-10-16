@@ -60,7 +60,7 @@ class CheckpointsManagerTest {
     private val presentedCallIds = mutableListOf<String>()
     private val presentedModes = mutableListOf<FlowPresentationMode>()
     private val defaultPresenterModes = mutableListOf<FlowPresentationMode>()
-    private val results = mutableListOf<FlowResult?>()
+    private val results = mutableListOf<CheckpointResult>()
 
     private lateinit var manager: CheckpointsManager
 
@@ -185,13 +185,13 @@ class CheckpointsManagerTest {
     }
 
     @Test
-    fun `unmatched checkpoint passes null without a flow`() =
+    fun `unmatched checkpoint passes a result without a flow`() =
         runTest(dispatcher) {
             resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.UNKNOWN_CHECKPOINT))
 
             checkpoint()
 
-            assertThat(results).containsExactly(null)
+            assertThat(results).containsExactly(CheckpointResult(flow = null))
         }
 
     @Test
@@ -412,7 +412,7 @@ class CheckpointsManagerTest {
 
         finishPaywall(CheckpointFlowOutcome.Dismissed)
 
-        assertThat(results).containsExactly(FlowResult(obtainedEntitlements = emptySet()))
+        assertThat(results).containsExactly(CheckpointResult(FlowResult(obtainedEntitlements = emptySet())))
     }
 
     @Test
@@ -649,19 +649,19 @@ class CheckpointsManagerTest {
 
         assertThat(results).isEmpty()
         finishPaywall(CheckpointFlowOutcome.Dismissed)
-        assertThat(results).containsExactly(FlowResult(obtainedEntitlements = emptySet()))
+        assertThat(results).containsExactly(CheckpointResult(FlowResult(obtainedEntitlements = emptySet())))
         assertThat(presentedCallIds).hasSize(1)
     }
 
     @Test
-    fun `an unmatched checkpoint still passes null while another flow is presented`() = runTest(dispatcher) {
+    fun `an unmatched checkpoint still passes without a flow while another flow is presented`() = runTest(dispatcher) {
         resolvesToWorkflow()
         checkpoint()
         resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.NO_MATCH))
 
         checkpoint()
 
-        assertThat(results).containsExactly(null)
+        assertThat(results).containsExactly(CheckpointResult(flow = null))
     }
 
     @Test

@@ -18,7 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowResult
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint
 
 /**
@@ -59,8 +59,8 @@ fun CheckpointScreen(
 }
 
 @OptIn(InviteOnlyCheckpointsAPI::class)
-private fun FlowResult?.describe(): String {
-    if (this == null) return "Callback: passed with null"
-    val entitlements = obtainedEntitlements.map { it.entitlementInfo.identifier }.sorted()
+private fun CheckpointResult.describe(): String {
+    val flow = flow ?: return "Callback: passed, no flow"
+    val entitlements = flow.obtainedEntitlements.map { it.entitlementInfo.identifier }.sorted()
     return "Callback: passed, entitlements: ${entitlements.ifEmpty { listOf("none") }.joinToString()}"
 }
