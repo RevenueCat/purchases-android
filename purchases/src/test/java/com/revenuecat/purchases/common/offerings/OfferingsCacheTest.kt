@@ -407,6 +407,45 @@ class OfferingsCacheTest {
     }
 
     @Test
+    fun `a damaged file is rewritten by the next unchanged response`() {
+        offeringsCache.cacheOfferings(mockk<Offerings>(), ONE_OFFERINGS_RESPONSE)
+        val responseFile = responseDirectory.listFiles().orEmpty().single()
+        responseFile.writeText(ONE_OFFERINGS_RESPONSE.take(ONE_OFFERINGS_RESPONSE.length / 2))
+        assertThat(offeringsCache.cachedOfferingsResponse).isNull()
+
+        offeringsCache.cacheOfferings(mockk<Offerings>(), ONE_OFFERINGS_RESPONSE)
+
+        assertThat(offeringsCache.cachedOfferingsResponse.toString())
+            .isEqualTo(JSONObject(ONE_OFFERINGS_RESPONSE).toString())
+    }
+
+    @Test
+    fun `a failed read does not clear the checksum of a newer response`() {
+        val responseStore = spyk(PayloadFileStore(responseDirectory))
+        val offeringsCache = OfferingsCache(
+            deviceCache,
+            responseStore = responseStore,
+            dispatcher = SyncDispatcher(),
+            dateProvider = dateProvider,
+            localeProvider = DefaultLocaleProvider(),
+        )
+        val newerResponse = JSONObject(ONE_OFFERINGS_RESPONSE).put("marker", "newer").toString()
+        offeringsCache.cacheOfferings(mockk<Offerings>(), ONE_OFFERINGS_RESPONSE)
+        var newerWrittenDuringRead = false
+        every { responseStore.read(any(), any()) } answers {
+            if (!newerWrittenDuringRead) {
+                newerWrittenDuringRead = true
+                offeringsCache.cacheOfferings(mockk<Offerings>(), newerResponse)
+            }
+            callOriginal()
+        }
+
+        assertThat(offeringsCache.cachedOfferingsResponse).isNull()
+
+        assertThat(offeringsCache.cachedOfferingsResponse?.getString("marker")).isEqualTo("newer")
+    }
+
+    @Test
     fun `response is null when nothing was cached`() {
         assertThat(offeringsCache.cachedOfferingsResponse).isNull()
     }

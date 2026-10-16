@@ -122,15 +122,26 @@ internal class OfferingsCache(
     val cachedOfferingsResponse: JSONObject?
         @Suppress("SwallowedException")
         get() {
-            val response = deviceCache.getOfferingsResponseChecksum()
-                ?.let { responseStore.read(responseKey, it) }
-                ?: return null
+            val response = readStoredResponse() ?: return null
             return try {
                 JSONObject(response)
             } catch (exception: JSONException) {
                 null
             }
         }
+
+    private fun readStoredResponse(): String? {
+        val checksum = deviceCache.getOfferingsResponseChecksum() ?: return null
+        return responseStore.read(responseKey, checksum) ?: null.also { forgetUnreadableResponse(checksum) }
+    }
+
+    // Lets the next unchanged response rewrite the file instead of being skipped by isAlreadyStored.
+    @Synchronized
+    private fun forgetUnreadableResponse(checksum: Long) {
+        if (deviceCache.getOfferingsResponseChecksum() == checksum) {
+            deviceCache.clearOfferingsResponseChecksum()
+        }
+    }
 
     // endregion Offerings response cache
 }
