@@ -67,6 +67,14 @@ internal class IdentityManager(
         fun isIdentityChangedError(error: PurchasesError): Boolean = error === identityChangedError
     }
 
+    @Volatile
+    private var identityChangeListener: (() -> Unit)? = null
+
+    /** Told, on the committing thread, each time the current user changes after [configure]. */
+    fun setIdentityChangeListener(listener: (() -> Unit)?) {
+        identityChangeListener = listener
+    }
+
     val currentAppUserID: String
         get() = deviceCache.getCachedAppUserID() ?: ""
 
@@ -184,7 +192,7 @@ internal class IdentityManager(
                         clearRemoteConfigThenOfferingsCaches(newAppUserID)
                         subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
 
-                        deviceCache.cacheAppUserID(newAppUserID)
+                        commitAppUserID(newAppUserID)
                         deviceCache.cacheCustomerInfo(newAppUserID, customerInfo)
                         copySubscriberAttributesToNewUserIfOldIsAnonymous(oldAppUserID, newAppUserID)
                         clearPaywallWebViewStorageIfUserChanged(oldAppUserID, newAppUserID)
@@ -343,7 +351,7 @@ internal class IdentityManager(
         deviceCache.clearCachesForAppUserID(oldAppUserID)
         clearRemoteConfigThenOfferingsCaches(newAppUserID)
         subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
-        deviceCache.cacheAppUserID(newAppUserID)
+        commitAppUserID(newAppUserID)
         copySubscriberAttributesToNewUserIfOldIsAnonymous(oldAppUserID, newAppUserID)
         clearPaywallWebViewStorageIfUserChanged(oldAppUserID, newAppUserID)
         offlineEntitlementsManager.resetOfflineCustomerInfoCache()
@@ -509,8 +517,13 @@ internal class IdentityManager(
         clearRemoteConfigThenOfferingsCaches(newUserID)
         subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)
         offlineEntitlementsManager.resetOfflineCustomerInfoCache()
-        deviceCache.cacheAppUserID(newUserID)
+        commitAppUserID(newUserID)
         backend.clearCaches()
+    }
+
+    private fun commitAppUserID(newAppUserID: String) {
+        deviceCache.cacheAppUserID(newAppUserID)
+        identityChangeListener?.invoke()
     }
 
     @Synchronized

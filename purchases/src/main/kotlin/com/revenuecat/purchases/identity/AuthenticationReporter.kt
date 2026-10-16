@@ -11,9 +11,9 @@ import java.util.concurrent.atomic.AtomicInteger
  * weakly, on the main thread via [mainDispatch]. Errors are dropped while a user-initiated login or logout is in
  * flight, since that call reports its own failure (mirrors iOS's `ongoingUserInitiatedRequestCount`).
  *
- * Only the current user's updates are delivered, checked on delivery: tokens saved by a login before its switch
- * commits, or by a refresh for a user since replaced, are never published. [currentUserChanged] publishes the
- * new user's token once a switch commits.
+ * The delegate only ever hears the current user's token, read on the main thread when an update is delivered, and
+ * never the same token twice in a row. Saves for a user who isn't current then are dropped; [currentUserChanged]
+ * covers the switch itself, so a login's token is published whichever of the two is delivered first.
  */
 @OptIn(InternalRevenueCatAPI::class)
 internal class AuthenticationReporter(
@@ -27,10 +27,15 @@ internal class AuthenticationReporter(
 
     private val userInitiatedInFlight = AtomicInteger(0)
 
+    // The token last given to the delegate; only touched on the main thread, except when a delegate is set.
+    @Volatile
+    private var lastPublished: LastPublished = LastPublished.None
+
     var delegate: AuthenticationDelegate?
         get() = delegateReference?.get()
         set(value) {
             delegateReference = value?.let { WeakReference(it) }
+            lastPublished = LastPublished.None
         }
 
     fun userInitiatedStarted() {
@@ -43,20 +48,14 @@ internal class AuthenticationReporter(
 
     fun report(update: TokenUpdate) {
         when (update) {
-            is TokenUpdate.AccessToken -> delegate?.let { delegate ->
-                mainDispatch {
-                    if (isCurrent(update.appUserID)) delegate.authenticatorDidUpdateAccessToken(update.accessToken)
-                }
-            }
+            is TokenUpdate.AccessToken -> mainDispatch { if (isCurrent(update.appUserID)) publishCurrentToken() }
             is TokenUpdate.RefreshFailed -> reportError(update.error, forAppUserID = update.appUserID)
         }
     }
 
-    /** Publishes the current user's access token; call after an identity change commits. */
+    /** Publishes the current user's access token, if it changed; call after an identity change commits. */
     fun currentUserChanged() {
-        delegate?.let { delegate ->
-            mainDispatch { delegate.authenticatorDidUpdateAccessToken(currentAccessToken(currentAppUserID())) }
-        }
+        mainDispatch { publishCurrentToken() }
     }
 
     fun reportError(error: PurchasesError, forAppUserID: String? = null) {
@@ -69,4 +68,18 @@ internal class AuthenticationReporter(
     }
 
     private fun isCurrent(appUserID: String) = appUserID == currentAppUserID()
+
+    private fun publishCurrentToken() {
+        val delegate = delegate ?: return
+        val token = currentAccessToken(currentAppUserID())
+        val last = lastPublished
+        if (last is LastPublished.Token && last.accessToken == token) return
+        lastPublished = LastPublished.Token(token)
+        delegate.authenticatorDidUpdateAccessToken(token)
+    }
+
+    private sealed interface LastPublished {
+        object None : LastPublished
+        class Token(val accessToken: String?) : LastPublished
+    }
 }

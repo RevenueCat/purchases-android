@@ -600,6 +600,54 @@ class IdentityManagerIAMTests {
 
     // endregion
 
+    // region identity change listener
+
+    @Test
+    fun `the listener hears an IAM switch even when the CustomerInfo fetch then fails`() = runTest {
+        cachedAppUserID = anonymousID
+        createIdentityManager()
+        var changes = 0
+        identityManager.setIdentityChangeListener { changes++ }
+        stubTokenLogIn(succeedWith = serverID)
+        every { backend.getCustomerInfo(any(), any(), any(), any()) } answers {
+            arg<(PurchasesError, Boolean) -> Unit>(3)(PurchasesError(PurchasesErrorCode.NetworkError), false)
+        }
+
+        logIn(googleIdentity)
+
+        assertThat(identityManager.currentAppUserID).isEqualTo(serverID)
+        assertThat(changes).isEqualTo(1)
+    }
+
+    @Test
+    fun `the listener hears switchUser`() = runTest {
+        cachedAppUserID = anonymousID
+        createIdentityManager()
+        var changes = 0
+        identityManager.setIdentityChangeListener { changes++ }
+
+        identityManager.switchUser(identifiedID)
+
+        assertThat(changes).isEqualTo(1)
+    }
+
+    @Test
+    fun `the listener doesn't hear a login dropped because the identity changed meanwhile`() = runTest {
+        cachedAppUserID = anonymousID
+        createIdentityManager()
+        val pending = deferTokenLogIn()
+        identityManager.logIn(googleIdentity, { _, _ -> }, { })
+        identityManager.switchUser(identifiedID)
+        var changes = 0
+        identityManager.setIdentityChangeListener { changes++ }
+
+        pending.onSuccess(serverID)
+
+        assertThat(changes).isEqualTo(0)
+    }
+
+    // endregion
+
     // region identity changes while a request is in flight
 
     @Test

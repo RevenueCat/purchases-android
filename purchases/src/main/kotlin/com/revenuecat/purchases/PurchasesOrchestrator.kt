@@ -366,6 +366,10 @@ internal class PurchasesOrchestrator(
 
         identityManager.configure(backingFieldAppUserID)
         tokenManager.setTokenUpdateListener(authenticationReporter::report)
+        // At the switch itself, not after the login's follow-up: a failed CustomerInfo fetch still switched users.
+        identityManager.setIdentityChangeListener {
+            if (tokenManager.enabled) authenticationReporter.currentUserChanged()
+        }
         sdkSettingsConfigProvider.listener = this
 
         billing.stateListener = object : BillingAbstract.StateListener {
@@ -1058,7 +1062,6 @@ internal class PurchasesOrchestrator(
                 synchronized(this@PurchasesOrchestrator) {
                     state = state.copy(purchaseCallbacksByProductId = Collections.emptyMap())
                 }
-                publishCurrentAccessToken()
                 updateAllCaches(
                     identityManager.currentAppUserID,
                     RemoteConfigFetchContext.IdentityChange,
@@ -1612,7 +1615,6 @@ internal class PurchasesOrchestrator(
         }
 
         identityManager.switchUser(newAppUserID)
-        publishCurrentAccessToken()
 
         offeringsManager.fetchAndCacheOfferings(newAppUserID, state.appInBackground)
         remoteConfigManager.refreshRemoteConfig(
@@ -1747,7 +1749,6 @@ internal class PurchasesOrchestrator(
 
     // Everything a login does after IdentityManager has switched users and fetched their CustomerInfo.
     private fun handleIdentityChange(customerInfo: CustomerInfo, appUserID: String) {
-        publishCurrentAccessToken()
         dispatch { customerInfoUpdateHandler.notifyListeners(customerInfo, appUserID) }
         remoteConfigManager.refreshRemoteConfig(
             state.appInBackground,
@@ -1756,11 +1757,6 @@ internal class PurchasesOrchestrator(
         )
         offeringsManager.fetchAndCacheOfferings(appUserID, state.appInBackground)
         backupManager.dataChanged()
-    }
-
-    // Token updates are only published for the current user, so the delegate learns of a switch here.
-    private fun publishCurrentAccessToken() {
-        if (tokenManager.enabled) authenticationReporter.currentUserChanged()
     }
 
     private fun updateAllCaches(

@@ -105,6 +105,57 @@ class AuthenticationTest {
     }
 
     @Test
+    fun `a login's token is published once when its save is delivered after the switch`() = runTest {
+        val tokenManager = tokenManager()
+        authentication(tokenManager).delegate = delegate
+        deferMain = true
+
+        tokenManager.saveTokens("next-user", "next-access", "refresh", null)
+        currentUser = "next-user"
+        reporter.currentUserChanged()
+        mainQueue.forEach { it() }
+
+        assertThat(delegate.tokens).containsExactly("next-access")
+    }
+
+    @Test
+    fun `a login's token is published when its save is delivered before the switch`() = runTest {
+        val tokenManager = tokenManager()
+        authentication(tokenManager).delegate = delegate
+
+        tokenManager.saveTokens("next-user", "next-access", "refresh", null)
+        currentUser = "next-user"
+        reporter.currentUserChanged()
+
+        assertThat(delegate.tokens).containsExactly("next-access")
+    }
+
+    @Test
+    fun `an unchanged token is not published again`() = runTest {
+        val tokenManager = tokenManager()
+        authentication(tokenManager).delegate = delegate
+
+        tokenManager.saveTokens("user", "access", "refresh", null)
+        reporter.currentUserChanged()
+        tokenManager.saveTokens("user", "access", "refresh-2", null)
+
+        assertThat(delegate.tokens).containsExactly("access")
+    }
+
+    @Test
+    fun `a new delegate hears the current token on the next update`() = runTest {
+        val tokenManager = tokenManager()
+        val authentication = authentication(tokenManager).apply { delegate = this@AuthenticationTest.delegate }
+        tokenManager.saveTokens("user", "access", "refresh", null)
+        val second = RecordingDelegate()
+
+        authentication.delegate = second
+        reporter.currentUserChanged()
+
+        assertThat(second.tokens).containsExactly("access")
+    }
+
+    @Test
     fun `a refresh failure for another user is not reported`() = runTest {
         val tokenManager = tokenManager()
         authentication(tokenManager).delegate = delegate
