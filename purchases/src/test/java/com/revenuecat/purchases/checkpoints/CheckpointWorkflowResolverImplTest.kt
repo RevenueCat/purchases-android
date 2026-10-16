@@ -119,7 +119,7 @@ class CheckpointWorkflowResolverImplTest {
     @Test
     fun `simulated error checkpoint throws ConfigurationError`() = runTest {
         val errorCode = try {
-            resolver.resolve("error_checkpoint", emptyMap())
+            resolver.resolve("f0rc3_3rr0r", emptyMap())
             null
         } catch (e: PurchasesException) {
             e.code

@@ -41,7 +41,7 @@ One identifier is still simulated, since nothing in the config-driven path throw
 
 | Identifier | Result |
 |---|---|
-| `error_checkpoint` | The call throws a `PurchasesException` with `ConfigurationError` |
+| `f0rc3_3rr0r` | The call throws a `PurchasesException` with `ConfigurationError` |
 
 ## Use cases
 
@@ -63,7 +63,7 @@ step. It always advances, whatever the outcome, and shows the result on the fina
 gated on the outcome, so this is how you exercise a checkpoint configured in the dashboard without rebuilding.
 
 **No action / Simulated error** — run inline from the use-case list, using an identifier the dashboard doesn't
-know about and the `error_checkpoint` identifier above.
+know about and the `f0rc3_3rr0r` identifier above.
 
 **Subscriber attribute** — the person icon in the top bar opens a dialog that sets or unsets a single subscriber attribute. Attributes are part of the checkpoint rule evaluation scope, so this is how you flip which rule matches without rebuilding. *Unset* passes a `null` value, which is how the SDK deletes an attribute.
 
