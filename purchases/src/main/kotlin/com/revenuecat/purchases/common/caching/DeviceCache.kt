@@ -1,3 +1,5 @@
+@file:Suppress("RedundantInternalApiAnnotation")
+
 //  Purchases
 //
 //  Copyright © 2019 RevenueCat, Inc. All rights reserved.

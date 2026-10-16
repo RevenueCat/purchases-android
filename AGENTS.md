@@ -113,6 +113,10 @@ Variant names combine the flavor and build type, e.g. `defaultsDebug`, `customEn
 ## Code Style
 
 - **Imports over inline fully-qualified references**: Always add an `import` statement at the top of the file rather than using a fully-qualified name inline (e.g., write `import foo.Bar` and use `Bar`, not `foo.Bar` inline in the code).
+- **No `runBlocking` in production code** — it blocks the calling thread and can cause ANRs. Use `suspend` functions or callback-based APIs instead. `runBlocking` is acceptable only in tests. Enforced by the `ForbiddenRunBlocking` detekt rule.
+- **No redundant `@InternalRevenueCatAPI` on members** — when the enclosing type already carries `@InternalRevenueCatAPI`, the opt-in propagates to all members. Do not repeat it on individual properties or functions. Enforced by the `RedundantInternalApiAnnotation` detekt rule.
+- **Avoid `@VisibleForTesting`** — prefer testing through side effects and injected mock dependencies rather than exposing internals. Minimize code in large orchestrator classes; extract logic into smaller, testable classes.
+- **Only document the non-obvious** — do not add KDoc or comments that merely restate what the code already says. Comments should explain *why*, not *what*.
 
 ## Testing Framework
 

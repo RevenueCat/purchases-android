@@ -1,4 +1,4 @@
-@file:Suppress("LongParameterList")
+@file:Suppress("LongParameterList", "RedundantInternalApiAnnotation")
 
 package com.revenuecat.purchases.paywalls.components
 

@@ -1,3 +1,5 @@
+@file:Suppress("RedundantInternalApiAnnotation")
+
 package com.revenuecat.purchases.common.offlineentitlements
 
 import com.revenuecat.purchases.InternalRevenueCatAPI

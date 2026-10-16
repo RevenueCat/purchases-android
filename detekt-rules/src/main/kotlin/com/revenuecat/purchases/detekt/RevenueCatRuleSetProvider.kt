@@ -12,6 +12,8 @@ class RevenueCatRuleSetProvider : RuleSetProvider {
         listOf(
             ForbiddenPublicSealedClass(config),
             ForbiddenPublicEnum(config),
+            ForbiddenRunBlocking(config),
+            RedundantInternalApiAnnotation(config),
         ),
     )
 }
