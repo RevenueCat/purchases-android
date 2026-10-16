@@ -389,6 +389,27 @@ class BlockstoreHelperTest {
         assertThat(callbackCalled).isTrue()
     }
 
+    @Test
+    fun `aliasCurrentAndStoredUserIdsIfNeeded calls callback without retrieving when no BlockstoreClient`() {
+        blockstoreHelper = BlockstoreHelper(
+            applicationContext = mockContext,
+            identityManager = mockIdentityManager,
+            blockstoreClient = null,
+            ioScope = testScope,
+            mainScope = testScope
+        )
+
+        var callbackCalled = false
+        blockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded {
+            callbackCalled = true
+        }
+
+        testScope.advanceUntilIdle()
+
+        assertThat(callbackCalled).isTrue()
+        verify(exactly = 0) { mockBlockstoreClient.retrieveBytes(any()) }
+    }
+
     // endregion aliasCurrentAndStoredUserIdsIfNeeded
 
     // region clearUserIdBackupIfNeeded
