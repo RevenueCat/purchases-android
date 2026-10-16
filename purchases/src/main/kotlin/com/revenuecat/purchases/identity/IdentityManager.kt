@@ -56,6 +56,15 @@ internal class IdentityManager(
         fun isUserIDAnonymous(appUserID: String): Boolean {
             return anonymousIdRegex.matches(appUserID)
         }
+
+        // The one error for a result dropped because the identity changed during the request. Recognized by
+        // reference: its code also covers backend request-already-in-progress failures, which are real failures.
+        internal val identityChangedError = PurchasesError(
+            PurchasesErrorCode.OperationAlreadyInProgressError,
+            IdentityStrings.IAM_IDENTITY_CHANGED_DURING_REQUEST,
+        )
+
+        fun isIdentityChangedError(error: PurchasesError): Boolean = error === identityChangedError
     }
 
     val currentAppUserID: String
@@ -233,7 +242,7 @@ internal class IdentityManager(
                         log(LogIntent.USER) { IdentityStrings.IAM_LOG_IN_SUCCESSFUL.format(newAppUserID) }
                         fetchCustomerInfo(newAppUserID, onSuccess, onError)
                     } else {
-                        onError(identityChangedError())
+                        onError(identityChangedError)
                     }
                 },
                 onError = onError,
@@ -352,7 +361,7 @@ internal class IdentityManager(
     private fun logOutThroughIAM(oldAppUserID: String, completion: (PurchasesError?) -> Unit) {
         // A login or switchUser finished during the attribute sync: that user isn't the one logging out.
         if (currentAppUserID != oldAppUserID) {
-            completion(identityChangedError())
+            completion(identityChangedError)
             return
         }
         tokenAPI.revokeTokens(
@@ -366,7 +375,7 @@ internal class IdentityManager(
                             log(LogIntent.USER) { IdentityStrings.LOG_OUT_SUCCESSFUL }
                             completion(null)
                         } else {
-                            completion(identityChangedError())
+                            completion(identityChangedError)
                         }
                     },
                     onError = { error ->
@@ -382,7 +391,7 @@ internal class IdentityManager(
                             log(LogIntent.USER) { IdentityStrings.LOG_OUT_SUCCESSFUL }
                             completion(null)
                         } else {
-                            completion(identityChangedError())
+                            completion(identityChangedError)
                         }
                     },
                 )
@@ -413,11 +422,6 @@ internal class IdentityManager(
         }
     }
 
-    private fun identityChangedError() = PurchasesError(
-        PurchasesErrorCode.OperationAlreadyInProgressError,
-        IdentityStrings.IAM_IDENTITY_CHANGED_DURING_REQUEST,
-    )
-
     private fun fetchCustomerInfo(
         appUserID: String,
         onSuccess: (CustomerInfo, String) -> Unit,
@@ -433,7 +437,7 @@ internal class IdentityManager(
                         if (it) deviceCache.cacheCustomerInfo(appUserID, customerInfo)
                     }
                 }
-                if (stillCurrent) onSuccess(customerInfo, appUserID) else onError(identityChangedError())
+                if (stillCurrent) onSuccess(customerInfo, appUserID) else onError(identityChangedError)
             },
             onError = { error, _ -> onError(error) },
         )

@@ -352,6 +352,14 @@ class IdentityManagerIAMTests {
 
     // endregion
 
+    @Test
+    fun `a backend request-already-in-progress failure is not mistaken for an identity change`() {
+        val backendError = PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError)
+
+        assertThat(IdentityManager.isIdentityChangedError(backendError)).isFalse()
+        assertThat(IdentityManager.isIdentityChangedError(IdentityManager.identityChangedError)).isTrue()
+    }
+
     // region currentUserIsAnonymous
 
     @Test
@@ -606,7 +614,7 @@ class IdentityManagerIAMTests {
         pending.onSuccess(serverID)
 
         assertThat(identityManager.currentAppUserID).isEqualTo(identifiedID)
-        assertThat((result as PurchasesError).code).isEqualTo(PurchasesErrorCode.OperationAlreadyInProgressError)
+        assertThat(IdentityManager.isIdentityChangedError(result as PurchasesError)).isTrue()
         verify(exactly = 0) { deviceCache.cacheAppUserID(serverID) }
         verify(exactly = 0) { subscriberAttributesManager.copyUnsyncedSubscriberAttributes(any(), any()) }
         verify(exactly = 0) { backend.getCustomerInfo(any(), any(), any(), any()) }
@@ -647,7 +655,7 @@ class IdentityManagerIAMTests {
         // The fetch itself went out for the server-assigned user, pinned to that user's token.
         verify(exactly = 1) { backend.getCustomerInfo(serverID, any(), any(), any()) }
         verify(exactly = 0) { deviceCache.cacheCustomerInfo(any(), any()) }
-        assertThat((result as PurchasesError).code).isEqualTo(PurchasesErrorCode.OperationAlreadyInProgressError)
+        assertThat(IdentityManager.isIdentityChangedError(result as PurchasesError)).isTrue()
         assertThat(identityManager.currentAppUserID).isEqualTo(identifiedID)
     }
 
@@ -666,7 +674,7 @@ class IdentityManagerIAMTests {
         finishSync()
 
         assertThat(identityManager.currentAppUserID).isEqualTo("another-user")
-        assertThat(error?.code).isEqualTo(PurchasesErrorCode.OperationAlreadyInProgressError)
+        assertThat(IdentityManager.isIdentityChangedError(error!!)).isTrue()
         verify(exactly = 1) {
             subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(identifiedID, any(), any())
         }
@@ -687,7 +695,7 @@ class IdentityManagerIAMTests {
         pending.onSuccess(serverID)
 
         assertThat(identityManager.currentAppUserID).isEqualTo("another-user")
-        assertThat(error?.code).isEqualTo(PurchasesErrorCode.OperationAlreadyInProgressError)
+        assertThat(IdentityManager.isIdentityChangedError(error!!)).isTrue()
     }
 
     @Test
@@ -703,7 +711,7 @@ class IdentityManagerIAMTests {
         pending.onError(PurchasesError(PurchasesErrorCode.NetworkError))
 
         assertThat(identityManager.currentAppUserID).isEqualTo("another-user")
-        assertThat(error?.code).isEqualTo(PurchasesErrorCode.OperationAlreadyInProgressError)
+        assertThat(IdentityManager.isIdentityChangedError(error!!)).isTrue()
     }
 
     // endregion
