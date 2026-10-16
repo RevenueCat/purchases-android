@@ -246,6 +246,6 @@ internal class CheckpointWorkflowResolverImpl(
         Exception("the audiences configuration could not be read")
 
     private companion object {
-        const val SIMULATED_ERROR_CHECKPOINT_ID = "error_checkpoint"
+        const val SIMULATED_ERROR_CHECKPOINT_ID = "f0rc3_3rr0r"
     }
 }

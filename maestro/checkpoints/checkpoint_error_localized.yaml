@@ -14,7 +14,7 @@ env:
     clearState: true
     arguments:
       e2e_test_flow: open_checkpoint
-      checkpoint_identifier: error_checkpoint
+      checkpoint_identifier: f0rc3_3rr0r
       app_locale: es
 - extendedWaitUntil:
     visible: "Hit checkpoint"
