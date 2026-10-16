@@ -13,6 +13,7 @@ import com.revenuecat.purchases.common.BackendErrorCode
 import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.SubscriberAttributeError
+import com.revenuecat.purchases.common.createCustomerInfo
 import com.revenuecat.purchases.common.subscriberattributes.DeviceIdentifiersFetcher
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigCommitListener
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
@@ -22,6 +23,7 @@ import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
 import com.revenuecat.purchases.google.toInAppStoreProduct
 import com.revenuecat.purchases.google.toStoreProduct
+import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
@@ -34,17 +36,21 @@ import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
+import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
 import com.revenuecat.purchases.utils.createMockOneTimeProductDetails
 import com.revenuecat.purchases.utils.createMockProductDetailsFreeTrial
 import com.revenuecat.purchases.utils.mockProductDetails
+import com.revenuecat.purchases.utils.mockSubscriptionOfferDetails
 import com.revenuecat.purchases.utils.stubFreeTrialPricingPhase
+import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubINAPPStoreProduct
 import com.revenuecat.purchases.utils.stubOTPOffering
 import com.revenuecat.purchases.utils.stubOfferings
@@ -64,6 +70,7 @@ import io.mockk.verifyAll
 import io.mockk.verifyOrder
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
+import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.fail
 import org.junit.Test
@@ -1507,6 +1514,148 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 onError = any()
             )
         }
+    }
+
+    @Test
+    fun `late purchase of another launched base plan fails the pending purchase`() {
+        // Plan A's checkout was cancelled but approved later. Its purchase has no base plan, so it arrives stamped
+        // with plan B's pending launch.
+        val outcome = launchPlanBAndDeliverPurchase(
+            customerInfoWithSubscription(storeTransactionId = "GPA.plan-a", basePlanId = "plan-a"),
+        )
+
+        assertThat(outcome.completed).isFalse
+        assertThat(outcome.error?.code).isEqualTo(PurchasesErrorCode.ProductAlreadyPurchasedError)
+        assertThat(outcome.userCancelled).isFalse
+    }
+
+    @Test
+    fun `late purchase of another launched base plan fails a pending product change`() {
+        val (planA, planB) = mockQueryingSubscriptionWithTwoBasePlans()
+        purchases.purchaseWith(getPurchaseParams(planA), onError = { _, _ -> }) { _, _ ->
+            fail("plan A was cancelled")
+        }
+        capturedPurchasesUpdatedListener.captured.onPurchasesFailedToUpdate(
+            PurchasesError(PurchasesErrorCode.PurchaseCancelledError),
+        )
+        val oldProductId = mockPurchaseFound().productIds.first()
+        var receivedError: PurchasesError? = null
+        purchases.purchaseWith(
+            getPurchaseParams(planB, oldProductId, storeReplacementMode = StoreReplacementMode.WITH_TIME_PRORATION),
+            onError = { error, _ -> receivedError = error },
+        ) { _, _ -> fail("the product change must not complete with plan A's purchase") }
+
+        deliverSubscriptionPurchase(
+            orderId = "GPA.plan-a",
+            stampedOptionId = planB.id,
+            customerInfo = customerInfoWithSubscription(storeTransactionId = "GPA.plan-a", basePlanId = "plan-a"),
+            replacementMode = StoreReplacementMode.WITH_TIME_PRORATION,
+        )
+
+        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.ProductAlreadyPurchasedError)
+    }
+
+    @Test
+    fun `pending purchase completes when the backend reports the launched base plan for the order`() {
+        val outcome = launchPlanBAndDeliverPurchase(
+            customerInfoWithSubscription(storeTransactionId = "GPA.plan-b", basePlanId = "plan-b"),
+            orderId = "GPA.plan-b",
+        )
+
+        assertThat(outcome.completed).isTrue
+    }
+
+    @Test
+    fun `pending purchase completes when the backend reports another base plan only for another order`() {
+        val outcome = launchPlanBAndDeliverPurchase(
+            customerInfoWithSubscription(storeTransactionId = "GPA.older-order", basePlanId = "plan-a"),
+        )
+
+        assertThat(outcome.completed).isTrue
+    }
+
+    @Test
+    fun `pending purchase completes when the backend reports no base plan for the order`() {
+        val outcome = launchPlanBAndDeliverPurchase(
+            customerInfoWithSubscription(storeTransactionId = "GPA.plan-a", basePlanId = null),
+        )
+
+        assertThat(outcome.completed).isTrue
+    }
+
+    @Test
+    fun `pending purchase completes when the backend reports an empty base plan for the order`() {
+        val outcome = launchPlanBAndDeliverPurchase(
+            customerInfoWithSubscription(storeTransactionId = "GPA.plan-a", basePlanId = ""),
+        )
+
+        assertThat(outcome.completed).isTrue
+    }
+
+    @Test
+    fun `pending purchase completes when neither the purchase nor the backend has an order id`() {
+        val outcome = launchPlanBAndDeliverPurchase(
+            customerInfoWithSubscription(storeTransactionId = null, basePlanId = "plan-a"),
+            orderId = "",
+        )
+
+        assertThat(outcome.completed).isTrue
+    }
+
+    @Test
+    fun `pending purchase completes when the billed base plan was not launched in this session`() {
+        val outcome = launchPlanBAndDeliverPurchase(
+            customerInfoWithSubscription(storeTransactionId = "GPA.plan-a", basePlanId = "plan-a"),
+            launchAndCancelPlanAFirst = false,
+        )
+
+        assertThat(outcome.completed).isTrue
+    }
+
+    @Test
+    fun `pending purchase completes when Play hands back the owned purchase for a deferred plan change`() {
+        // With the subscription already owned, a plain purchase lets Play apply the default replacement mode.
+        // DEFERRED hands back the existing, acknowledged purchase, stamped with the new option.
+        val outcome = launchPlanBAndDeliverPurchase(
+            customerInfoWithSubscription(storeTransactionId = "GPA.owned", basePlanId = "plan-a"),
+            orderId = "GPA.owned",
+            acknowledged = true,
+        )
+
+        assertThat(outcome.completed).isTrue
+    }
+
+    @Test
+    fun `pending purchase completes when the app acknowledges purchases itself`() {
+        appConfig.finishTransactions = false
+
+        val outcome = launchPlanBAndDeliverPurchase(
+            customerInfoWithSubscription(storeTransactionId = "GPA.plan-a", basePlanId = "plan-a"),
+        )
+
+        assertThat(outcome.completed).isTrue
+    }
+
+    @Test
+    fun `pending purchase completes outside the Play Store`() {
+        // Simulated store purchases have no signature, so this Play-like purchase only isolates the store check.
+        buildPurchases(anonymous = false, store = Store.TEST_STORE)
+
+        val outcome = launchPlanBAndDeliverPurchase(
+            customerInfoWithSubscription(storeTransactionId = "GPA.plan-a", basePlanId = "plan-a"),
+        )
+
+        assertThat(outcome.completed).isTrue
+    }
+
+    @Test
+    fun `deferred product change completes although the backend reports the old base plan for the order`() {
+        assertThat(launchDeferredProductChangeAndDeliverOldPurchase(acknowledged = true)).isTrue
+    }
+
+    @Test
+    fun `deferred product change completes even if Play hands back an unacknowledged purchase`() {
+        assertThat(launchDeferredProductChangeAndDeliverOldPurchase(acknowledged = false)).isTrue
     }
 
     @Test
@@ -3316,6 +3465,153 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         }
 
         return storeProduct
+    }
+
+    private fun mockQueryingSubscriptionWithTwoBasePlans(): Pair<SubscriptionOption, SubscriptionOption> {
+        val offerA = mockSubscriptionOfferDetails(token = "offer-token-a", basePlanId = "plan-a")
+        val offerB = mockSubscriptionOfferDetails(token = "offer-token-b", basePlanId = "plan-b")
+        val productDetails = mockProductDetails(productId = "sub", subscriptionOfferDetails = listOf(offerA, offerB))
+        val planA = productDetails.toStoreProduct(listOf(offerA))!!
+        val planB = productDetails.toStoreProduct(listOf(offerB))!!
+        every {
+            mockBillingAbstract.queryProductDetailsAsync(
+                productType = ProductType.SUBS,
+                productIds = setOf("sub"),
+                onReceive = captureLambda(),
+                onError = any(),
+            )
+        } answers {
+            lambda<(List<StoreProduct>) -> Unit>().captured.invoke(listOf(planA, planB))
+        }
+        return planA.subscriptionOptions!!.first() to planB.subscriptionOptions!!.first()
+    }
+
+    private class PlanBOutcome {
+        var completed = false
+        var error: PurchasesError? = null
+        var userCancelled: Boolean? = null
+    }
+
+    private fun launchPlanBAndDeliverPurchase(
+        customerInfo: CustomerInfo,
+        orderId: String = "GPA.plan-a",
+        acknowledged: Boolean = false,
+        launchAndCancelPlanAFirst: Boolean = true,
+    ): PlanBOutcome {
+        val (planA, planB) = mockQueryingSubscriptionWithTwoBasePlans()
+        if (launchAndCancelPlanAFirst) {
+            purchases.purchaseWith(getPurchaseParams(planA), onError = { _, _ -> }) { _, _ ->
+                fail("plan A was cancelled")
+            }
+            capturedPurchasesUpdatedListener.captured.onPurchasesFailedToUpdate(
+                PurchasesError(PurchasesErrorCode.PurchaseCancelledError),
+            )
+        }
+        val outcome = PlanBOutcome()
+        purchases.purchaseWith(
+            getPurchaseParams(planB),
+            onError = { error, userCancelled ->
+                outcome.error = error
+                outcome.userCancelled = userCancelled
+            },
+        ) { _, _ -> outcome.completed = true }
+        deliverSubscriptionPurchase(
+            orderId = orderId,
+            stampedOptionId = planB.id,
+            customerInfo = customerInfo,
+            acknowledged = acknowledged,
+        )
+        return outcome
+    }
+
+    private fun launchDeferredProductChangeAndDeliverOldPurchase(acknowledged: Boolean): Boolean {
+        val (_, planB) = mockQueryingSubscriptionWithTwoBasePlans()
+        val oldProductId = mockPurchaseFound().productIds.first()
+        mockQueryingProductDetails(oldProductId, ProductType.SUBS)
+        // The old plan is launched first, so the session check alone can't let the change complete.
+        val oldPlanOffer = mockSubscriptionOfferDetails(token = "offer-token-old", basePlanId = "old-plan")
+        val oldPlan = mockProductDetails(productId = oldProductId, subscriptionOfferDetails = listOf(oldPlanOffer))
+            .toStoreProduct(listOf(oldPlanOffer))!!
+            .subscriptionOptions!!
+            .first()
+        purchases.purchaseWith(getPurchaseParams(oldPlan), onError = { _, _ -> }) { _, _ -> }
+        capturedPurchasesUpdatedListener.captured.onPurchasesFailedToUpdate(
+            PurchasesError(PurchasesErrorCode.PurchaseCancelledError),
+        )
+        var completed = false
+        purchases.purchaseWith(
+            getPurchaseParams(planB, oldProductId, storeReplacementMode = StoreReplacementMode.DEFERRED),
+            onError = { error, _ -> fail("deferred product change should complete: $error") },
+        ) { _, _ -> completed = true }
+
+        // DEFERRED delivers the old purchase, stamped with the new option.
+        deliverSubscriptionPurchase(
+            orderId = "GPA.old",
+            stampedOptionId = planB.id,
+            customerInfo = customerInfoWithSubscription(
+                storeTransactionId = "GPA.old",
+                basePlanId = "old-plan",
+                productId = oldProductId,
+            ),
+            productId = oldProductId,
+            replacementMode = StoreReplacementMode.DEFERRED,
+            acknowledged = acknowledged,
+        )
+        return completed
+    }
+
+    private fun deliverSubscriptionPurchase(
+        orderId: String,
+        stampedOptionId: String,
+        customerInfo: CustomerInfo,
+        productId: String = "sub",
+        replacementMode: StoreReplacementMode? = null,
+        acknowledged: Boolean = false,
+    ) {
+        val transaction = stubGooglePurchase(
+            productIds = listOf(productId),
+            purchaseToken = "token-$orderId",
+            orderId = orderId,
+            acknowledged = acknowledged,
+        ).toStoreTransaction(
+            ProductType.SUBS,
+            subscriptionOptionId = stampedOptionId,
+            replacementMode = replacementMode,
+        )
+        every {
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+                purchase = transaction,
+                storeProduct = any(),
+                subscriptionOptionForProductIDs = any(),
+                isRestore = any(),
+                appUserID = any(),
+                initiationSource = any(),
+                sdkOriginated = any(),
+                onSuccess = captureLambda(),
+                onError = any(),
+            )
+        } answers {
+            lambda<SuccessfulPurchaseCallback>().captured.invoke(transaction, customerInfo)
+        }
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(transaction))
+    }
+
+    private fun customerInfoWithSubscription(
+        storeTransactionId: String?,
+        basePlanId: String?,
+        productId: String = "sub",
+    ): CustomerInfo {
+        val subscription = JSONObject()
+            .put("purchase_date", "2026-10-14T00:00:00Z")
+            .put("expires_date", "2099-10-14T00:00:00Z")
+            .put("store", "play_store")
+            .put("is_sandbox", false)
+            .put("period_type", "normal")
+        storeTransactionId?.let { subscription.put("store_transaction_id", it) }
+        basePlanId?.let { subscription.put("product_plan_identifier", it) }
+        val response = JSONObject(Responses.validEmptyPurchaserResponse)
+        response.getJSONObject("subscriber").getJSONObject("subscriptions").put(productId, subscription)
+        return createCustomerInfo(response)
     }
 
     private fun mockPurchaseFound(error: PurchasesError? = null): StoreTransaction {
