@@ -32,6 +32,7 @@ import java.util.UUID
  */
 internal class CheckpointPresentation(
     val workflow: CheckpointResolution.MatchedWorkflow,
+    val checkpointIdentifier: String,
     val customVariables: Map<String, CustomVariableValue>,
     val errorPresenter: PaywallErrorPresenter?,
 )
@@ -221,9 +222,7 @@ internal class CheckpointsManager(
 
     // Null for a call whose flow a PaywallPresenter shows: that UI is not the manager's.
     fun presentation(callId: String): CheckpointPresentation? =
-        slot.with(callId) { call ->
-            call.workflow?.let { CheckpointPresentation(it, call.customVariables, call.errorPresenter) }
-        }
+        slot.with(callId) { it.presentation }
 
     // Direct dismissals (a completed purchase or restore) carry no reason and count as a close; everything else
     // reports one, and a paywall that could not load carries the error as its result when its error UI is done.
@@ -246,6 +245,7 @@ internal class CheckpointsManager(
                     presentation.workflow.uiConfig,
                     presentation.workflow.traceId,
                     presentation.workflow.workflowBlobRef,
+                    presentation.checkpointIdentifier,
                 )
                 .build()
         }
@@ -315,7 +315,7 @@ internal class CheckpointsManager(
             failed.flowFinished.complete(CheckpointRun(CheckpointFlowOutcome.Error(error), backedOut = false))
             Unit
         }
-        failed.errorPresenter
+        failed.presentation?.errorPresenter
             ?.presentOnce(error, CheckpointFailureKind.FLOW_ACTION_FAILED, complete)
             ?: complete()
     }
@@ -334,12 +334,10 @@ internal class CheckpointsManager(
         errorPresenter: () -> ErrorPresenter,
     ): CheckpointRun {
         val call = PendingCall(
-            UUID.randomUUID().toString(),
-            workflow = null,
+            callId = UUID.randomUUID().toString(),
+            presentation = null,
             activeEntitlementsBefore = null,
-            errorPresenter = null,
-            params.customVariables,
-            CompletableDeferred(),
+            flowFinished = CompletableDeferred(),
         )
         if (!slot.claim(call)) return blockedByPresentedFlow
         try {
@@ -461,12 +459,15 @@ internal class CheckpointsManager(
             "Cannot present checkpoint workflow: no started Activity found.",
         )
         val call = PendingCall(
-            UUID.randomUUID().toString(),
-            resolution,
-            cachedActiveEntitlementIds(purchases),
-            errorPresenter.forCheckpoint(identifier, customVariables),
-            customVariables,
-            CompletableDeferred(),
+            callId = UUID.randomUUID().toString(),
+            presentation = CheckpointPresentation(
+                workflow = resolution,
+                checkpointIdentifier = identifier,
+                customVariables = customVariables,
+                errorPresenter = errorPresenter.forCheckpoint(identifier, customVariables),
+            ),
+            activeEntitlementsBefore = cachedActiveEntitlementIds(purchases),
+            flowFinished = CompletableDeferred(),
         )
         if (!slot.claim(call)) return blockedByPresentedFlow
         try {

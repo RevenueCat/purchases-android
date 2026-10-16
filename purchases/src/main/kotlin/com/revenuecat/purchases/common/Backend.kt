@@ -335,6 +335,7 @@ internal class Backend(
             "is_restore" to isRestore,
             "presented_offering_identifier" to receiptInfo.presentedOfferingContext?.offeringIdentifier,
             "presented_placement_identifier" to receiptInfo.presentedOfferingContext?.placementIdentifier,
+            "presented_checkpoint_identifier" to receiptInfo.presentedOfferingContext?.checkpointIdentifier,
             "applied_targeting_rule" to receiptInfo.presentedOfferingContext?.targetingContext?.let {
                 return@let mapOf("revision" to it.revision, "rule_id" to it.ruleId)
             },

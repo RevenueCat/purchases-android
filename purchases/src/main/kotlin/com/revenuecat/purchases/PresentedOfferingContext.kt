@@ -18,7 +18,7 @@ import kotlinx.serialization.encoding.encodeStructure
  */
 @Parcelize
 @Poko
-public class PresentedOfferingContext @JvmOverloads constructor(
+public class PresentedOfferingContext private constructor(
     /**
      * The identifier of the offering used to obtain this object.
      */
@@ -31,8 +31,16 @@ public class PresentedOfferingContext @JvmOverloads constructor(
      * The targeting context used to obtain this object.
      */
     public val targetingContext: TargetingContext?,
+    @get:JvmSynthetic
+    internal val checkpointIdentifier: String?,
 ) : Parcelable {
-    public constructor(offeringIdentifier: String) : this(offeringIdentifier, null, null)
+    public constructor(
+        offeringIdentifier: String,
+        placementIdentifier: String?,
+        targetingContext: TargetingContext?,
+    ) : this(offeringIdentifier, placementIdentifier, targetingContext, null)
+
+    public constructor(offeringIdentifier: String) : this(offeringIdentifier, null, null, null)
 
     @JvmSynthetic
     @InternalRevenueCatAPI
@@ -44,7 +52,31 @@ public class PresentedOfferingContext @JvmOverloads constructor(
         offeringIdentifier = offeringIdentifier,
         placementIdentifier = placementIdentifier,
         targetingContext = targetingContext,
+        checkpointIdentifier = checkpointIdentifier,
     )
+
+    @JvmSynthetic
+    internal fun copyWithCheckpointIdentifier(checkpointIdentifier: String?): PresentedOfferingContext =
+        PresentedOfferingContext(
+            offeringIdentifier = offeringIdentifier,
+            placementIdentifier = placementIdentifier,
+            targetingContext = targetingContext,
+            checkpointIdentifier = checkpointIdentifier,
+        )
+
+    internal companion object {
+        fun create(
+            offeringIdentifier: String,
+            placementIdentifier: String?,
+            targetingContext: TargetingContext?,
+            checkpointIdentifier: String?,
+        ): PresentedOfferingContext = PresentedOfferingContext(
+            offeringIdentifier = offeringIdentifier,
+            placementIdentifier = placementIdentifier,
+            targetingContext = targetingContext,
+            checkpointIdentifier = checkpointIdentifier,
+        )
+    }
 
     @Parcelize
     @Poko
@@ -100,6 +132,7 @@ internal object PresentedOfferingContextSerializer : KSerializer<PresentedOfferi
     private const val OFFERING_IDENTIFIER_INDEX = 0
     private const val PLACEMENT_IDENTIFIER_INDEX = 1
     private const val TARGETING_CONTEXT_INDEX = 2
+    private const val CHECKPOINT_IDENTIFIER_INDEX = 3
 
     private val nullableStringSerializer = String.serializer().nullable
     private val nullableTargetingContextSerializer = TargetingContextSerializer.nullable
@@ -108,6 +141,7 @@ internal object PresentedOfferingContextSerializer : KSerializer<PresentedOfferi
         element("offeringIdentifier", String.serializer().descriptor)
         element("placementIdentifier", nullableStringSerializer.descriptor)
         element("targetingContext", nullableTargetingContextSerializer.descriptor)
+        element("checkpointIdentifier", nullableStringSerializer.descriptor, isOptional = true)
     }
 
     override fun serialize(encoder: Encoder, value: PresentedOfferingContext) {
@@ -125,6 +159,9 @@ internal object PresentedOfferingContextSerializer : KSerializer<PresentedOfferi
                 nullableTargetingContextSerializer,
                 value.targetingContext,
             )
+            value.checkpointIdentifier?.let {
+                encodeStringElement(descriptor, CHECKPOINT_IDENTIFIER_INDEX, it)
+            }
         }
     }
 
@@ -133,6 +170,7 @@ internal object PresentedOfferingContextSerializer : KSerializer<PresentedOfferi
             var offeringIdentifier = ""
             var placementIdentifier: String? = null
             var targetingContext: PresentedOfferingContext.TargetingContext? = null
+            var checkpointIdentifier: String? = null
 
             while (true) {
                 when (val index = decodeElementIndex(descriptor)) {
@@ -150,12 +188,22 @@ internal object PresentedOfferingContextSerializer : KSerializer<PresentedOfferi
                         TARGETING_CONTEXT_INDEX,
                         nullableTargetingContextSerializer,
                     )
+                    CHECKPOINT_IDENTIFIER_INDEX -> checkpointIdentifier = decodeSerializableElement(
+                        descriptor,
+                        CHECKPOINT_IDENTIFIER_INDEX,
+                        nullableStringSerializer,
+                    )
                     -1 -> break
                     else -> error("Unexpected index: $index")
                 }
             }
 
-            PresentedOfferingContext(offeringIdentifier, placementIdentifier, targetingContext)
+            PresentedOfferingContext.create(
+                offeringIdentifier,
+                placementIdentifier,
+                targetingContext,
+                checkpointIdentifier,
+            )
         }
     }
 }

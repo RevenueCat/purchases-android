@@ -75,6 +75,7 @@ import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorSt
 import com.revenuecat.purchases.ui.revenuecatui.workflow.NavigationDirection
 import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowNavigator
 import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowScreenMapper
+import com.revenuecat.purchases.withPresentedCheckpointIdentifier
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -1437,9 +1438,12 @@ internal class PaywallViewModelImpl(
             webCheckoutURL = baseOffering?.webCheckoutURL,
         )
         val offeringWithContext = presentedOfferingContext?.let { offering.copy(it) } ?: offering
+        val presentedOffering = options.injectedWorkflowCheckpointIdentifier?.let {
+            offeringWithContext.withPresentedCheckpointIdentifier(it)
+        } ?: offeringWithContext
 
         return calculateState(
-            offering = offeringWithContext,
+            offering = presentedOffering,
             colorScheme = _colorScheme.value,
             storefrontCountryCode = purchases.storefrontCountryCode,
             mode = options.mode,

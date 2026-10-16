@@ -24,6 +24,7 @@ import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.common.workflows.WorkflowStep
+import com.revenuecat.purchases.withPresentedCheckpointIdentifier
 import kotlinx.coroutines.CancellationException
 import java.util.UUID
 
@@ -183,10 +184,11 @@ internal class CheckpointWorkflowResolverImpl(
 
         val offering = loadOfferings(checkpointIdentifier)?.all?.get(offeringIdentifier)
             ?: return unservableRule(rule, "offering '$offeringIdentifier' was not found in offerings")
+        val presentedOffering = offering.withPresentedCheckpointIdentifier(checkpointIdentifier)
         debugLog {
-            "Checkpoint resolved to offering '${offering.identifier}' from workflow '${rule.workflowId}'"
+            "Checkpoint resolved to offering '${presentedOffering.identifier}' from workflow '${rule.workflowId}'"
         }
-        return CheckpointResolution.MatchedOffering(offering, checkpointRuleId = rule.id)
+        return CheckpointResolution.MatchedOffering(presentedOffering, checkpointRuleId = rule.id)
     }
 
     private suspend fun resolveUiRule(

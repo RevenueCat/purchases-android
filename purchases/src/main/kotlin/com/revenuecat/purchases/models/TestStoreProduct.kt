@@ -140,13 +140,16 @@ public class TestStoreProduct @JvmOverloads constructor(
             billingCycleCount = null,
             price = price,
         )
+        val optionPresentedOfferingContext = presentedOfferingContext ?: PresentedOfferingContext("offering")
         val subscriptionOptionsList = listOfNotNull(
             TestSubscriptionOption(
                 listOfNotNull(freeTrialPricingPhase, introPricePricingPhase, basePricePhase),
+                presentedOfferingContext = optionPresentedOfferingContext,
                 purchasingData = purchasingData,
             ).takeIf { freeTrialPricingPhase != null || introPricePricingPhase != null },
             TestSubscriptionOption(
                 listOf(basePricePhase),
+                presentedOfferingContext = optionPresentedOfferingContext,
                 purchasingData = purchasingData,
             ),
         )

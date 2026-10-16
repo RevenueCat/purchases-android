@@ -270,6 +270,7 @@ class CheckpointsManagerTest {
         assertThat(options.injectedWorkflow).isSameAs(resolution.workflow)
         assertThat(options.injectedWorkflowTraceId).isEqualTo(resolution.traceId)
         assertThat(options.injectedWorkflowBlobRef).isEqualTo(resolution.workflowBlobRef)
+        assertThat(options.injectedWorkflowCheckpointIdentifier).isEqualTo(checkpointId)
         options.listener!!.onPurchaseCompleted(customerInfo, storeTransaction)
         options.dismissRequestWithExitOffering!!(null, PaywallResult.Error(error), PaywallDismissReason.NAVIGATED_BACK)
         assertThat(dismissals).containsExactly(true)
