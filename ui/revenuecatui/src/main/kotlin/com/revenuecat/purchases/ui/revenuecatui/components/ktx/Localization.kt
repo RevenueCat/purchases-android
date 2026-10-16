@@ -143,6 +143,19 @@ internal fun <V> Map<LocaleId, V>.getBestMatch(localeId: LocaleId): V? =
     keys.getBestMatch(localeId)?.let { bestMatch -> get(bestMatch) }
 
 /**
+ * Selects the first available locale matching [preferredLocales], falling back to [defaultLocale].
+ *
+ * Returns [defaultLocale] when none of the preferred or default locales match an entry in this set.
+ */
+@JvmSynthetic
+internal fun Set<LocaleId>.resolveLocale(
+    preferredLocales: List<LocaleId>,
+    defaultLocale: LocaleId,
+): LocaleId = preferredLocales.firstNotNullOfOrNull { locale -> getBestMatch(locale) }
+    ?: getBestMatch(defaultLocale)
+    ?: defaultLocale
+
+/**
  * Returns the best match to [localeId] in this set, or null if no match is found.
  */
 @Suppress("ReturnCount")

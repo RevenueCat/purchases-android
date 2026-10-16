@@ -32,6 +32,7 @@ import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.common.workflows.events.WorkflowEvent
 import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
 import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
 import com.revenuecat.purchases.paywalls.events.ExitOfferType
@@ -52,6 +53,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.asRulesDimensionValue
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.emptyUiConfig
@@ -337,14 +339,11 @@ internal class PaywallViewModelImpl(
         if (_lastLocaleList.value != currentLocaleList) {
             _lastLocaleList.value = currentLocaleList
 
-            // If we have a Components paywall state, update its locale instead of recreating the entire state
             val currentState = _state.value
-            if (currentState is PaywallState.Loaded.Components) {
-                val localeFrameworkList = currentLocaleList.toFrameworkLocaleList()
-                currentState.update(localeList = localeFrameworkList)
-                workflowStepStateCache.values.forEach { it.update(localeList = localeFrameworkList) }
-            } else {
-                updateState()
+            when {
+                currentWorkflow != null -> rebuildWorkflowStepStates()
+                currentState is PaywallState.Loaded -> updatePaywallState(currentState.offering)
+                else -> updateState()
             }
         }
     }
@@ -1166,9 +1165,8 @@ internal class PaywallViewModelImpl(
     }
 
     /**
-     * Rebuilds workflow step states with the current color scheme without resetting the
-     * navigator position. Used when colors change while a workflow paywall is active,
-     * so the user is not silently sent back to the first step.
+     * Rebuilds workflow step states with the current presentation settings without resetting the navigator position.
+     * Used when colors or locales change while a workflow paywall is active.
      */
     @Suppress("ReturnCount")
     private fun rebuildWorkflowStepStates() {
@@ -1784,6 +1782,9 @@ internal class PaywallViewModelImpl(
         return android.os.LocaleList(*locales)
     }
 
+    private fun LocaleListCompat.toLocaleIds(): List<LocaleId> =
+        List(size()) { index -> get(index)!!.toLocaleId() }
+
     private fun calculateState(
         offering: Offering,
         colorScheme: ColorScheme,
@@ -1796,7 +1797,11 @@ internal class PaywallViewModelImpl(
             return PaywallState.Error("No packages available")
         }
 
-        var validationResult = offering.validatedPaywall(colorScheme, resourceProvider)
+        var validationResult = offering.validatedPaywall(
+            currentColorScheme = colorScheme,
+            resourceProvider = resourceProvider,
+            preferredLocales = _lastLocaleList.value.toLocaleIds(),
+        )
         if (validationResult is PaywallValidationResult.Components && !mode.isFullScreen) {
             validationResult = offering.fallbackPaywall(
                 colorScheme,
