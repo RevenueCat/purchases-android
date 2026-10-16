@@ -8,6 +8,7 @@ import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
@@ -60,7 +61,7 @@ internal class PurchasedProductsFetcher(
 
         return transaction.productIds
             .map { productIdentifier ->
-                val mapping = productEntitlementMapping.mappings[productIdentifier]
+                val mapping = findMapping(productIdentifier, productEntitlementMapping)
                 PurchasedProduct(
                     productIdentifier,
                     mapping?.basePlanId,
@@ -70,6 +71,44 @@ internal class PurchasedProductsFetcher(
                     isSynced,
                 )
             }
+    }
+
+    /**
+     * Queried transactions only contain the subscription identifier, not the base plan that was purchased, and
+     * the mapping for the subscription identifier is the one of the backwards compatible base plan. So when the
+     * base plans of a subscription unlock different entitlements, we can't know which ones to unlock. In that
+     * case we only unlock the entitlements that all of its base plans unlock, and we don't report a base plan,
+     * instead of unlocking the backwards compatible base plan's entitlements.
+     */
+    private fun findMapping(
+        productIdentifier: String,
+        productEntitlementMapping: ProductEntitlementMapping,
+    ): ProductEntitlementMapping.Mapping? {
+        val mapping = productEntitlementMapping.mappings[productIdentifier]
+        val entitlementsPerBasePlan = productEntitlementMapping.mappings
+            .filterKeys { it != productIdentifier }
+            .values
+            .filter { it.productIdentifier == productIdentifier }
+            .map { it.entitlements.toSet() }
+        val mappingEntitlements = mapping?.entitlements?.toSet() ?: emptySet()
+        if (entitlementsPerBasePlan.all { it == mappingEntitlements }) {
+            return mapping
+        }
+
+        val entitlementsUnlockedByAllBasePlans = mapping?.entitlements
+            ?.filter { entitlement -> entitlementsPerBasePlan.all { entitlement in it } }
+            ?: emptyList()
+        warnLog {
+            OfflineEntitlementsStrings.UNKNOWN_BASE_PLAN_FOR_PRODUCT.format(
+                productIdentifier,
+                entitlementsUnlockedByAllBasePlans,
+            )
+        }
+        return ProductEntitlementMapping.Mapping(
+            productIdentifier = productIdentifier,
+            basePlanId = null,
+            entitlements = entitlementsUnlockedByAllBasePlans,
+        )
     }
 
     private fun getExpirationDate(
