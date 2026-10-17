@@ -24,6 +24,11 @@ internal fun secondaryDiscountPhase(subscriptionOption: SubscriptionOption?, rcP
     return option?.let { if (it.freePhase != null) it.introPhase else null }
 }
 
+internal fun discountPhases(subscriptionOption: SubscriptionOption?, rcPackage: Package?): List<PricingPhase> {
+    val option = subscriptionOption ?: rcPackage?.product?.defaultOption
+    return option?.pricingPhases?.dropLast(1).orEmpty()
+}
+
 internal fun resolveOfferPrice(
     discountPhase: PricingPhase?,
     locale: Locale,

@@ -14,7 +14,7 @@ import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
 
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LargeClass")
 internal object VariableProcessorV2 {
 
     internal enum class Variable(@get:JvmSynthetic val identifier: String) {
@@ -58,6 +58,11 @@ internal object VariableProcessorV2 {
         PRODUCT_SECONDARY_OFFER_PERIOD("product.secondary_offer_period"),
         PRODUCT_SECONDARY_OFFER_PERIOD_ABBREVIATED("product.secondary_offer_period_abbreviated"),
         PRODUCT_RELATIVE_DISCOUNT("product.relative_discount"),
+        PRODUCT_ABSOLUTE_DISCOUNT("product.absolute_discount"),
+        PRODUCT_OFFER_RELATIVE_DISCOUNT("product.offer_relative_discount"),
+        PRODUCT_OFFER_ABSOLUTE_DISCOUNT("product.offer_absolute_discount"),
+        PRODUCT_OFFER_RELATIVE_DISCOUNT_VS_STANDARD("product.offer_relative_discount_vs_standard"),
+        PRODUCT_OFFER_ABSOLUTE_DISCOUNT_VS_STANDARD("product.offer_absolute_discount_vs_standard"),
         PRODUCT_STORE_PRODUCT_NAME("product.store_product_name"),
 
         COUNT_DAYS_WITH_ZERO("count_days_with_zero"),
@@ -727,6 +732,27 @@ internal object VariableProcessorV2 {
             ) { rcPackage?.productPeriodAbbreviated(localizedVariableKeys) }
 
         Variable.PRODUCT_RELATIVE_DISCOUNT -> packageContext?.relativeDiscount(localizedVariableKeys)
+
+        Variable.PRODUCT_ABSOLUTE_DISCOUNT ->
+            rcPackage?.standardSavings(packageContext?.mostExpensivePricePerMonthMicros)
+                ?.localizedAmount(currencyLocale, packageContext)
+
+        Variable.PRODUCT_OFFER_RELATIVE_DISCOUNT ->
+            rcPackage?.offerSavings(subscriptionOption, packageContext.mostExpensiveBaseline())
+                ?.let { localizedVariableKeys.percent(it.relative) }
+
+        Variable.PRODUCT_OFFER_ABSOLUTE_DISCOUNT ->
+            rcPackage?.offerSavings(subscriptionOption, packageContext.mostExpensiveBaseline())
+                ?.localizedAmount(currencyLocale, packageContext)
+
+        Variable.PRODUCT_OFFER_RELATIVE_DISCOUNT_VS_STANDARD ->
+            rcPackage?.offerSavings(subscriptionOption, FirstPeriodSavings.Baseline.StandardPrice)
+                ?.let { localizedVariableKeys.percent(it.relative) }
+
+        Variable.PRODUCT_OFFER_ABSOLUTE_DISCOUNT_VS_STANDARD ->
+            rcPackage?.offerSavings(subscriptionOption, FirstPeriodSavings.Baseline.StandardPrice)
+                ?.localizedAmount(currencyLocale, packageContext)
+
         Variable.PRODUCT_STORE_PRODUCT_NAME -> rcPackage?.product?.name
 
         Variable.COUNT_DAYS_WITH_ZERO -> countdownTime?.let {
@@ -801,9 +827,14 @@ internal object VariableProcessorV2 {
     }
 
     private fun PackageContext.relativeDiscount(localizedVariableKeys: Map<VariableLocalizationKey, String>): String? =
-        discountRelativeToMostExpensivePerMonth
-            ?.let { discount -> (discount * PERCENT_SCALE).roundToInt() }
-            ?.let { discountPercentage ->
-                localizedVariableKeys.getStringOrLogError(VariableLocalizationKey.PERCENT)?.format(discountPercentage)
-            }
+        discountRelativeToMostExpensivePerMonth?.let { localizedVariableKeys.percent(it) }
+
+    private fun Map<VariableLocalizationKey, String>.percent(fraction: Double): String? =
+        getStringOrLogError(VariableLocalizationKey.PERCENT)?.format((fraction * PERCENT_SCALE).roundToInt())
+
+    private fun PackageContext?.mostExpensiveBaseline() =
+        FirstPeriodSavings.Baseline.MostExpensive(this?.mostExpensivePricePerMonthMicros)
+
+    private fun FirstPeriodSavings.localizedAmount(locale: Locale, packageContext: PackageContext?): String =
+        localizedAmount(locale, showZeroDecimalPlacePrices = packageContext?.showZeroDecimalPlacePrices ?: false)
 }
