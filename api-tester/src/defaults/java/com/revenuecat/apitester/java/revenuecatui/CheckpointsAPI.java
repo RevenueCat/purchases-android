@@ -2,6 +2,7 @@ package com.revenuecat.apitester.java.revenuecatui;
 
 import androidx.annotation.OptIn;
 
+import com.revenuecat.purchases.CustomerInfo;
 import com.revenuecat.purchases.EntitlementInfo;
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI;
 import com.revenuecat.purchases.Offering;
@@ -30,6 +31,7 @@ final class CheckpointsAPI {
     static void check(Purchases purchases, CheckpointParams params) {
         CheckpointPassedCallback callback = (CheckpointResult result) -> {
             FlowResult flow = result.getFlow();
+            CustomerInfo customer = result.getCustomer();
             if (flow != null) {
                 Set<ObtainedEntitlement> obtainedEntitlements = flow.getObtainedEntitlements();
             }

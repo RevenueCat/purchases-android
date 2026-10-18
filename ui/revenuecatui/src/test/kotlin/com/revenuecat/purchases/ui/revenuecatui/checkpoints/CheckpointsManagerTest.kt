@@ -22,6 +22,7 @@ import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -52,6 +53,7 @@ class CheckpointsManagerTest {
     private val dispatcher = UnconfinedTestDispatcher()
 
     private lateinit var mockPurchases: Purchases
+    private lateinit var customerInfoBefore: CustomerInfo
     private lateinit var mockActivity: Activity
     private lateinit var mockPresenter: CheckpointWorkflowPresenter
     private var defaultPresenter: DefaultPaywallPresenter? = null
@@ -77,8 +79,12 @@ class CheckpointsManagerTest {
         defaultPresenter = null
         defaultErrorPresenters.clear()
         defaultPresentedErrors.clear()
+        customerInfoBefore = customerInfoWithActive()
         mockPurchases = mockk {
             every { currentActivity } returns mockActivity
+            every { getCustomerInfo(CacheFetchPolicy.CACHED_OR_FETCHED, any()) } answers {
+                secondArg<ReceiveCustomerInfoCallback>().onReceived(customerInfoBefore)
+            }
             every { getCustomerInfo(CacheFetchPolicy.CACHE_ONLY, any()) } answers {
                 secondArg<ReceiveCustomerInfoCallback>()
                     .onError(PurchasesError(PurchasesErrorCode.CustomerInfoError, "No cache."))
@@ -191,8 +197,56 @@ class CheckpointsManagerTest {
 
             checkpoint()
 
-            assertThat(results).containsExactly(CheckpointResult(flow = null))
+            assertThat(results).containsExactly(CheckpointResult(flow = null, customer = customerInfoBefore))
         }
+
+    @Test
+    fun `the customer's information is read once resolved and before anything is presented`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        val call = launch { runCheckpoint() }
+
+        coVerifyOrder {
+            mockPurchases.internalResolveCp(any(), any())
+            mockPurchases.getCustomerInfo(CacheFetchPolicy.CACHED_OR_FETCHED, any())
+            mockPresenter.show(any())
+        }
+        verify(exactly = 1) { mockPurchases.getCustomerInfo(CacheFetchPolicy.CACHED_OR_FETCHED, any()) }
+        verify(exactly = 0) { mockPurchases.getCustomerInfo(CacheFetchPolicy.CACHE_ONLY, any()) }
+        finishPaywall(CheckpointFlowOutcome.Dismissed)
+        call.join()
+    }
+
+    @Test
+    fun `customer information that cannot be read is logged, presented and does not pass`() = runTest(dispatcher) {
+        val error = PurchasesError(PurchasesErrorCode.NetworkError, "Simulated.")
+        customerInfoReadFailsWith(error)
+        resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.NO_MATCH))
+
+        val run = runCheckpoint()
+
+        assertThat(run.failed).isTrue
+        assertThat(run.customerInfoBefore).isNull()
+        assertThat(defaultPresentedErrors).containsExactly(
+            ErrorPresenter.Params(error, checkpointId, emptyMap(), CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN),
+        )
+        coVerify(exactly = 1) { mockPurchases.internalResolveCp(any(), any()) }
+        verify(exactly = 1) { Logger.e(match { it.contains(error.toString()) }) }
+    }
+
+    @Test
+    fun `a run carries the customer's information read before it`() = runTest(dispatcher) {
+        resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.NO_MATCH))
+
+        assertThat(runCheckpoint().customerInfoBefore).isSameAs(customerInfoBefore)
+
+        resolvesToWorkflow()
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+        finishPaywall(CheckpointFlowOutcome.Dismissed)
+        call.join()
+
+        assertThat(run!!.customerInfoBefore).isSameAs(customerInfoBefore)
+    }
 
     @Test
     fun `offering checkpoint presents the fallback paywall through the SDK's own presenter`() = runTest(dispatcher) {
@@ -286,7 +340,7 @@ class CheckpointsManagerTest {
 
     @Test
     fun `a workflow restore that grants nothing new is not an outcome`() = runTest(dispatcher) {
-        cachedActiveEntitlements("plus")
+        customerInfoBeforeHasActive("plus")
         resolvesToWorkflow()
         var run: CheckpointRun? = null
         val call = launch { run = runCheckpoint() }
@@ -301,7 +355,7 @@ class CheckpointsManagerTest {
 
     @Test
     fun `a workflow restore that grants a new entitlement is recorded`() = runTest(dispatcher) {
-        cachedActiveEntitlements("plus")
+        customerInfoBeforeHasActive("plus")
         resolvesToWorkflow()
         val restored = customerInfoWithActive("plus", "pro")
         var run: CheckpointRun? = null
@@ -413,7 +467,8 @@ class CheckpointsManagerTest {
 
         finishPaywall(CheckpointFlowOutcome.Dismissed)
 
-        assertThat(results).containsExactly(CheckpointResult(FlowResult(obtainedEntitlements = emptySet())))
+        assertThat(results)
+            .containsExactly(CheckpointResult(FlowResult(obtainedEntitlements = emptySet()), customerInfoBefore))
     }
 
     @Test
@@ -638,6 +693,7 @@ class CheckpointsManagerTest {
 
         assertThat(run.blockedByPresentedFlow).isTrue
         assertThat(run.flowOutcome).isNull()
+        assertThat(run.customerInfoBefore).isNull()
         firstCall.cancel()
     }
 
@@ -650,7 +706,8 @@ class CheckpointsManagerTest {
 
         assertThat(results).isEmpty()
         finishPaywall(CheckpointFlowOutcome.Dismissed)
-        assertThat(results).containsExactly(CheckpointResult(FlowResult(obtainedEntitlements = emptySet())))
+        assertThat(results)
+            .containsExactly(CheckpointResult(FlowResult(obtainedEntitlements = emptySet()), customerInfoBefore))
         assertThat(presentedCallIds).hasSize(1)
     }
 
@@ -662,7 +719,7 @@ class CheckpointsManagerTest {
 
         checkpoint()
 
-        assertThat(results).containsExactly(CheckpointResult(flow = null))
+        assertThat(results).containsExactly(CheckpointResult(flow = null, customer = customerInfoBefore))
     }
 
     @Test
@@ -1393,9 +1450,15 @@ class CheckpointsManagerTest {
         return { completion }
     }
 
-    private fun cachedActiveEntitlements(vararg identifiers: String) {
-        every { mockPurchases.getCustomerInfo(CacheFetchPolicy.CACHE_ONLY, any()) } answers {
+    private fun customerInfoBeforeHasActive(vararg identifiers: String) {
+        every { mockPurchases.getCustomerInfo(CacheFetchPolicy.CACHED_OR_FETCHED, any()) } answers {
             secondArg<ReceiveCustomerInfoCallback>().onReceived(customerInfoWithActive(*identifiers))
+        }
+    }
+
+    private fun customerInfoReadFailsWith(error: PurchasesError) {
+        every { mockPurchases.getCustomerInfo(CacheFetchPolicy.CACHED_OR_FETCHED, any()) } answers {
+            secondArg<ReceiveCustomerInfoCallback>().onError(error)
         }
     }
 

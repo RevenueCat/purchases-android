@@ -51,6 +51,8 @@ class CheckpointPassedCallbackTest {
     private val dispatcher = UnconfinedTestDispatcher()
 
     private lateinit var mockPurchases: Purchases
+    private lateinit var customerInfoBefore: CustomerInfo
+    private lateinit var cachedCustomerInfo: CustomerInfo
     private lateinit var mockActivity: Activity
     private lateinit var mockPresenter: CheckpointWorkflowPresenter
     private var defaultPresenter: DefaultPaywallPresenter? = null
@@ -79,6 +81,7 @@ class CheckpointPassedCallbackTest {
         mockPurchases = mockk {
             every { currentActivity } returns mockActivity
         }
+        customerInfoBeforeHasActive()
         cachedCustomerInfoHasActive()
         manager = CheckpointsManager(
             presenterFactory = { callId, _, _ ->
@@ -105,7 +108,7 @@ class CheckpointPassedCallbackTest {
 
         checkpoint()
 
-        assertThat(results).containsExactly(CheckpointResult(flow = null))
+        assertThat(results).containsExactly(CheckpointResult(flow = null, customer = cachedCustomerInfo))
     }
 
     @Test
@@ -115,7 +118,7 @@ class CheckpointPassedCallbackTest {
 
         checkpoint()
 
-        assertThat(results).containsExactly(CheckpointResult(flow = null))
+        assertThat(results).containsExactly(CheckpointResult(flow = null, customer = cachedCustomerInfo))
         assertThat(errorPresenter.kinds).isEmpty()
     }
 
@@ -275,7 +278,7 @@ class CheckpointPassedCallbackTest {
 
     @Test
     fun `a presented workflow delivers the grants obtained during it`() = runTest(dispatcher) {
-        cachedCustomerInfoHasActive("plus")
+        customerInfoBeforeHasActive("plus")
         resolvesToWorkflow()
 
         checkpoint()
@@ -304,7 +307,7 @@ class CheckpointPassedCallbackTest {
 
     @Test
     fun `a workflow restore that unlocks nothing does not pass the checkpoint on back`() = runTest(dispatcher) {
-        cachedCustomerInfoHasActive("plus")
+        customerInfoBeforeHasActive("plus")
         resolvesToWorkflow()
 
         checkpoint()
@@ -316,7 +319,7 @@ class CheckpointPassedCallbackTest {
 
     @Test
     fun `a workflow restore that unlocks an entitlement passes the checkpoint on back`() = runTest(dispatcher) {
-        cachedCustomerInfoHasActive("plus")
+        customerInfoBeforeHasActive("plus")
         resolvesToWorkflow()
 
         checkpoint()
@@ -362,7 +365,7 @@ class CheckpointPassedCallbackTest {
 
     @Test
     fun `an app-owned presentation delivers the grants the SDK finds after syncing`() = runTest(dispatcher) {
-        cachedCustomerInfoHasActive("plus")
+        customerInfoBeforeHasActive("plus")
         every { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) } answers {
             secondArg<ReceiveCustomerInfoCallback>().onReceived(customerInfoWithActive("plus", "pro"))
         }
@@ -388,15 +391,115 @@ class CheckpointPassedCallbackTest {
     }
 
     @Test
-    fun `a missing cached customer info counts every entitlement active afterwards as granted`() =
+    fun `customer information that cannot be read is presented and the callback is not invoked`() =
+        runTest(dispatcher) {
+            val error = PurchasesError(PurchasesErrorCode.NetworkError, "Simulated.")
+            customerInfoReadFailsWith(error)
+            resolvesToWorkflow()
+            manager.errorPresenter = errorPresenter
+
+            checkpoint()
+            errorPresenter.complete()
+
+            assertThat(results).isEmpty()
+            assertThat(errorPresenter.errors).containsExactly(error)
+            assertThat(errorPresenter.kinds).containsExactly(CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN)
+            verify(exactly = 0) { mockPresenter.show(any()) }
+        }
+
+    @Test
+    fun `a purchase delivers the customer information it produced`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        val purchased = customerInfoWithActive("pro")
+
+        checkpoint()
+        finishPaywall(CheckpointFlowOutcome.Purchased(purchased, mockk()))
+
+        assertThat(results.single().customer).isSameAs(purchased)
+        verify(exactly = 0) { mockPurchases.getCustomerInfo(CacheFetchPolicy.CACHE_ONLY, any()) }
+    }
+
+    @Test
+    fun `a granting restore delivers the customer information it produced`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        val restored = customerInfoWithActive("pro")
+
+        checkpoint()
+        workflowListener().onRestoreCompleted(restored)
+        finishPaywall(outcome = null)
+
+        assertThat(results.single().customer).isSameAs(restored)
+    }
+
+    @Test
+    fun `an app-owned presentation delivers the synced customer information`() = runTest(dispatcher) {
+        val synced = customerInfoWithActive("pro")
+        every { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) } answers {
+            secondArg<ReceiveCustomerInfoCallback>().onReceived(synced)
+        }
+        val completion = presentThroughRegisteredPresenter()
+
+        checkpoint()
+        completion()!!.complete(PaywallPresenter.Completion.Result.Closed)
+
+        assertThat(results.single().customer).isSameAs(synced)
+        verify(exactly = 0) { mockPurchases.getCustomerInfo(CacheFetchPolicy.CACHE_ONLY, any()) }
+    }
+
+    @Test
+    fun `a dismissed paywall delivers the latest cached customer information`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+
+        checkpoint()
+        finishPaywall(CheckpointFlowOutcome.Dismissed)
+
+        assertThat(results.single().customer).isSameAs(cachedCustomerInfo)
+        verify(exactly = 1) { mockPurchases.getCustomerInfo(CacheFetchPolicy.CACHE_ONLY, any()) }
+    }
+
+    @Test
+    fun `a web checkout delivers the latest cached customer information`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+
+        checkpoint()
+        workflowListener().onWebCheckoutOpened()
+        finishPaywall(outcome = null)
+
+        assertThat(results.single().customer).isSameAs(cachedCustomerInfo)
+    }
+
+    @Test
+    fun `a sync failure delivers the latest cached customer information`() = runTest(dispatcher) {
+        syncFails()
+        val completion = presentThroughRegisteredPresenter()
+
+        checkpoint()
+        completion()!!.complete(PaywallPresenter.Completion.Result.Closed)
+
+        assertThat(results.single().customer).isSameAs(cachedCustomerInfo)
+    }
+
+    @Test
+    fun `the customer information read before the flow is delivered when the cache is gone afterwards`() =
         runTest(dispatcher) {
             noCachedCustomerInfo()
             resolvesToWorkflow()
 
             checkpoint()
-            finishPaywall(CheckpointFlowOutcome.Restored(customerInfoWithActive("pro")))
+            finishPaywall(CheckpointFlowOutcome.Dismissed)
 
-            assertThat(results.obtained).containsExactly(setOf("pro"))
+            assertThat(results.single().customer).isSameAs(customerInfoBefore)
+        }
+
+    @Test
+    fun `a no-action checkpoint delivers the customer information read before when the cache is gone`() =
+        runTest(dispatcher) {
+            noCachedCustomerInfo()
+            resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.NO_MATCH))
+
+            checkpoint()
+
+            assertThat(results).containsExactly(CheckpointResult(flow = null, customer = customerInfoBefore))
         }
 
     @Test
@@ -541,9 +644,23 @@ class CheckpointPassedCallbackTest {
         ))
     }
 
+    private fun customerInfoBeforeHasActive(vararg identifiers: String) {
+        customerInfoBefore = customerInfoWithActive(*identifiers)
+        every { mockPurchases.getCustomerInfo(CacheFetchPolicy.CACHED_OR_FETCHED, any()) } answers {
+            secondArg<ReceiveCustomerInfoCallback>().onReceived(customerInfoBefore)
+        }
+    }
+
+    private fun customerInfoReadFailsWith(error: PurchasesError) {
+        every { mockPurchases.getCustomerInfo(CacheFetchPolicy.CACHED_OR_FETCHED, any()) } answers {
+            secondArg<ReceiveCustomerInfoCallback>().onError(error)
+        }
+    }
+
     private fun cachedCustomerInfoHasActive(vararg identifiers: String) {
+        cachedCustomerInfo = customerInfoWithActive(*identifiers)
         every { mockPurchases.getCustomerInfo(CacheFetchPolicy.CACHE_ONLY, any()) } answers {
-            secondArg<ReceiveCustomerInfoCallback>().onReceived(customerInfoWithActive(*identifiers))
+            secondArg<ReceiveCustomerInfoCallback>().onReceived(cachedCustomerInfo)
         }
     }
 

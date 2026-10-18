@@ -75,9 +75,9 @@ class CheckpointWorkflowPresenterTest {
                     traceId = "trace-id",
                     workflowBlobRef = null,
                 )
-            every { getCustomerInfo(CacheFetchPolicy.CACHE_ONLY, any()) } answers {
+            every { getCustomerInfo(CacheFetchPolicy.CACHED_OR_FETCHED, any()) } answers {
                 secondArg<ReceiveCustomerInfoCallback>()
-                    .onError(PurchasesError(PurchasesErrorCode.CustomerInfoError, "No cache."))
+                    .onReceived(mockk { every { entitlements.active } returns emptyMap() })
             }
         }
         manager = CheckpointsManager(

@@ -155,21 +155,23 @@ internal class CheckpointsViewModelImpl(
 
     // Why nothing was presented, and any failure, are in the SDK logs.
     private fun CheckpointResult.toUi(): CheckpointResultUi {
+        val activeNow = "Active now: ${customer.entitlements.active.keys.joinToString().ifEmpty { "none" }}"
+        val raw = "flow=$flow, originalAppUserId=${customer.originalAppUserId}"
         val flow = flow ?: return CheckpointResultUi(
             title = "Nothing presented",
-            detail = "See the logs for the reason.",
+            detail = "See the logs for the reason. $activeNow",
             isError = false,
-            raw = toString(),
+            raw = raw,
         )
         return CheckpointResultUi(
             title = "Flow presented",
             detail = if (flow.obtainedEntitlements.isNotEmpty()) {
-                "Obtained ${flow.obtainedEntitlements.joinToString { it.entitlementInfo.identifier }}"
+                "Obtained ${flow.obtainedEntitlements.joinToString { it.entitlementInfo.identifier }}. $activeNow"
             } else {
-                "Nothing obtained"
+                "Nothing obtained. $activeNow"
             },
             isError = false,
-            raw = toString(),
+            raw = raw,
         )
     }
 }

@@ -1,12 +1,19 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfo
+import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
+import com.revenuecat.purchases.ui.revenuecatui.helpers.errorOrNull
+import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrNull
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -89,6 +96,77 @@ class FlowResultMappingTest {
         val unknownOutcome = object : CheckpointFlowOutcome() {}
 
         assertThat(presented(unknownOutcome).toResult(emptySet())).isEqualTo(FlowResult(emptySet()))
+    }
+
+    @Test
+    fun `the customer info a flow produced is the purchase, restore or sync one`() {
+        val customerInfo = customerInfoWithActive("pro")
+        val producing = listOf(
+            CheckpointFlowOutcome.Purchased(customerInfo, mockk()),
+            CheckpointFlowOutcome.Restored(customerInfo),
+            CheckpointFlowOutcome.Finished(customerInfo),
+        )
+        val others = listOf(
+            CheckpointFlowOutcome.Dismissed,
+            CheckpointFlowOutcome.WebCheckoutOpened,
+            CheckpointFlowOutcome.SyncFailed,
+            CheckpointFlowOutcome.Error(PurchasesError(PurchasesErrorCode.StoreProblemError, "Simulated.")),
+            object : CheckpointFlowOutcome() {},
+        )
+
+        producing.forEach { assertThat(it.customerInfo).isSameAs(customerInfo) }
+        others.forEach { assertThat(it.customerInfo).isNull() }
+    }
+
+    @Test
+    fun `a run delivers the customer info its flow produced without reading the cache`() = runTest {
+        val produced = customerInfoWithActive("pro")
+        val purchases = mockk<Purchases>()
+
+        val run = presented(CheckpointFlowOutcome.Purchased(produced, mockk()))
+
+        val delivered = run.customerInfoAfter(purchases, customerInfoBefore = mockk())
+
+        assertThat(delivered).isSameAs(produced)
+        verify(exactly = 0) { purchases.getCustomerInfo(any(), any()) }
+    }
+
+    @Test
+    fun `a run whose flow produced nothing delivers the cached customer info, else the one read before`() = runTest {
+        val cached = customerInfoWithActive()
+        val before = customerInfoWithActive()
+        val purchases = mockk<Purchases>()
+        every { purchases.getCustomerInfo(CacheFetchPolicy.CACHE_ONLY, any()) } answers {
+            secondArg<ReceiveCustomerInfoCallback>().onReceived(cached)
+        }
+
+        assertThat(presented(CheckpointFlowOutcome.Dismissed).customerInfoAfter(purchases, before)).isSameAs(cached)
+
+        every { purchases.getCustomerInfo(CacheFetchPolicy.CACHE_ONLY, any()) } answers {
+            secondArg<ReceiveCustomerInfoCallback>()
+                .onError(PurchasesError(PurchasesErrorCode.CustomerInfoError, "No cache."))
+        }
+
+        assertThat(presented(CheckpointFlowOutcome.Dismissed).customerInfoAfter(purchases, before)).isSameAs(before)
+        assertThat(CheckpointRun(flowOutcome = null, backedOut = false).customerInfoAfter(purchases, before))
+            .isSameAs(before)
+    }
+
+    @Test
+    fun `a customer info read delivers the customer info under the requested policy, or the error`() = runTest {
+        val customerInfo = customerInfoWithActive()
+        val error = PurchasesError(PurchasesErrorCode.NetworkError, "Simulated.")
+        val purchases = mockk<Purchases> {
+            every { getCustomerInfo(CacheFetchPolicy.CACHED_OR_FETCHED, any()) } answers {
+                secondArg<ReceiveCustomerInfoCallback>().onReceived(customerInfo)
+            }
+            every { getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) } answers {
+                secondArg<ReceiveCustomerInfoCallback>().onError(error)
+            }
+        }
+
+        assertThat(purchases.customerInfo(CacheFetchPolicy.CACHED_OR_FETCHED).getOrNull()).isSameAs(customerInfo)
+        assertThat(purchases.customerInfo(CacheFetchPolicy.FETCH_CURRENT).errorOrNull()).isEqualTo(error)
     }
 
     private fun presented(outcome: CheckpointFlowOutcome) =

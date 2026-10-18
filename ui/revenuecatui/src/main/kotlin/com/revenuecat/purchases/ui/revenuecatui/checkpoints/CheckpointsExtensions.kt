@@ -7,14 +7,16 @@ import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
  * Registers that [checkpointIdentifier] was hit. Depending on the configured targeting rules, this may present a
  * flow or do nothing. [callback] is invoked at most once, on the main thread, when the user goes through the
  * checkpoint:
- * - with null when there was nothing to present: the checkpoint is not configured, or no rule matched;
+ * - with a null [CheckpointResult.flow] when there was nothing to present: the checkpoint is not configured, or
+ *   no rule matched;
  * - with what the user obtained when the presented flow ended with a purchase or restore, or through a close
  *   action.
  *
- * It is not invoked when the checkpoint could not be served (the error goes to the [ErrorPresenter], the user
- * stays where they were), nor when the user backs out of the presented flow (system back, or a back action on a
- * flow's first step): the flow is dismissed and the app keeps the user where they were. Don't model a checkpoint
- * as a pending operation the user waits on.
+ * Either way the result carries the customer's information after the flow, synced when it ended with a purchase
+ * or restore. It is not invoked when the checkpoint could not be served, the customer's information could not be
+ * read included (the error goes to the [ErrorPresenter], the user stays where they were), nor when the user backs
+ * out of the presented flow (system back, or a back action on a flow's first step): the flow is dismissed and the
+ * app keeps the user where they were. Don't model a checkpoint as a pending operation the user waits on.
  *
  * Only one checkpoint flow is presented at a time. A checkpoint that resolves to a flow while another one is
  * already on screen is ignored and its callback is never invoked: the call that presented the flow is the one
