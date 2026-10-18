@@ -26,9 +26,10 @@ public class CheckpointFailureKind private constructor(private val name: String)
         public val FLOW_ACTION_FAILED: CheckpointFailureKind = CheckpointFailureKind("FLOW_ACTION_FAILED")
 
         /**
-         * The flow ended, and the SDK could not sync what the customer obtained during it. Only a flow presented
-         * through a [PaywallPresenter] is synced afterwards, the app's own or the SDK's paywall for an offering; a
-         * workflow reports its purchases and restores as they happen and never fails this way.
+         * The flow ended, and the SDK could not sync what the customer obtained during it. A flow presented
+         * through a [PaywallPresenter] is synced afterwards, the app's own or the SDK's paywall for an offering,
+         * and so is a workflow in which the app's own purchase logic completed a purchase or restore; a workflow
+         * whose purchases RevenueCat completes reports them as they happen and never fails this way.
          */
         @JvmField
         public val FLOW_RESULT_SYNC_FAILED: CheckpointFailureKind = CheckpointFailureKind("FLOW_RESULT_SYNC_FAILED")

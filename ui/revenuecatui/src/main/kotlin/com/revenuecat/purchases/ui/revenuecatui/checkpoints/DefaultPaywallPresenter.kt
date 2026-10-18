@@ -9,6 +9,7 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter.Completion.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -25,7 +26,9 @@ import java.util.UUID
  *
  * It reports how the user left the paywall, except that a purchase, or a restore that granted an entitlement the
  * user did not hold when the paywall opened, continues the flow whatever closed the window; a granting restore
- * also closes the paywall, like a purchase does. What the user obtained is still read from the synced customer
+ * also closes the paywall, like a purchase does. When the app completes purchases itself, through
+ * [purchaseLogic], a purchase or restore it reports as successful continues the flow the same way, and the paywall
+ * stays up after a restore. What the user obtained is still read from the synced customer
  * info, like for any other presenter. A paywall that could not load, or a window that could not be kept on
  * screen, reports [Result.Failed] unless the user obtained something first: the checkpoint is not passed. One
  * instance per presentation, and the host of its own window. Like an app presenter's UI, the window is not taken
@@ -34,6 +37,7 @@ import java.util.UUID
 internal class DefaultPaywallPresenter(
     private val purchases: Purchases,
     private val errorPresenter: ErrorPresenter,
+    private val purchaseLogic: PaywallPurchaseLogic? = null,
     private val windowFactory: (
         callId: String,
         host: CheckpointPresentationHost,
@@ -88,8 +92,17 @@ internal class DefaultPaywallPresenter(
                 .setShouldDisplayDismissButton(true)
                 .setCustomVariables(params.customVariables)
                 .setListener(listener)
+                .setPurchaseLogic(purchaseLogic?.let { ObservedPurchaseLogic(it, ::onCompletedByApp) })
                 .build()
         }
+
+    // The paywall tells its listener nothing about a purchase or restore the app completed, and only closes
+    // after the purchase, so the app's own report of success is what counts as going through. Whether the restore
+    // granted anything is left to the synced customer info, like for an app presenter that reports Continued.
+    private fun onCompletedByApp() {
+        if (completion == null) return
+        obtained = true
+    }
 
     // A grant is sticky: a later error or web checkout must not erase it, and neither changes how leaving is
     // reported, so they are not observed. A restore that granted nothing changes nothing either.

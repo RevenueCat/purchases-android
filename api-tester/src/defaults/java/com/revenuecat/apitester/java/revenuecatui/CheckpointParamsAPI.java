@@ -4,6 +4,7 @@ import androidx.annotation.OptIn;
 
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI;
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue;
+import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode;
 
@@ -13,9 +14,12 @@ import java.util.Map;
 final class CheckpointParamsAPI {
 
     @OptIn(markerClass = InviteOnlyCheckpointsAPI.class)
-    static void check(CheckpointParams params) {
+    static void check(CheckpointParams params, PaywallPurchaseLogic logic) {
         Map<String, CustomVariableValue> customVariables = params.getCustomVariables();
         FlowPresentationMode presentationMode = params.getPresentationMode();
+        PaywallPurchaseLogic purchaseLogic = params.getPurchaseLogic();
+        CheckpointParams withLogic = new CheckpointParams.Builder().setPurchaseLogic(logic).build();
+        CheckpointParams withoutLogic = new CheckpointParams.Builder().setPurchaseLogic(null).build();
 
         CheckpointParams empty = new CheckpointParams.Builder().build();
         Map<String, CustomVariableValue> added = new CheckpointParams.CustomVariablesBuilder()

@@ -14,6 +14,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
 import com.revenuecat.purchases.ui.revenuecatui.PaywallErrorPresenter
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PresentationSlot.PendingCall
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -27,14 +28,17 @@ import kotlinx.coroutines.withContext
 import java.util.UUID
 
 /**
- * Everything the manager's [CheckpointWorkflowPresenter] needs to build a workflow paywall, read in a single pass
- * so it can't observe a call that was taken between two accessors.
+ * Everything the manager's [CheckpointWorkflowPresenter] needs to build a workflow paywall, and the manager to
+ * resolve the flow once it ends, read in a single pass so it can't observe a call that was taken between two
+ * accessors.
  */
 internal class CheckpointPresentation(
+    val purchases: Purchases,
     val workflow: CheckpointResolution.MatchedWorkflow,
     val checkpointIdentifier: String,
     val customVariables: Map<String, CustomVariableValue>,
     val errorPresenter: PaywallErrorPresenter?,
+    val purchaseLogic: PaywallPurchaseLogic?,
 )
 
 /**
@@ -82,8 +86,13 @@ internal class CheckpointsManager(
         manager: CheckpointsManager,
         presentationMode: FlowPresentationMode,
     ) -> CheckpointWorkflowPresenter = { callId, manager, mode -> CheckpointWorkflowPresenter(callId, manager, mode) },
-    private val defaultPresenterFactory: (Purchases, ErrorPresenter) -> DefaultPaywallPresenter =
-        { purchases, errorPresenter -> DefaultPaywallPresenter(purchases, errorPresenter) },
+    private val defaultPresenterFactory: (
+        purchases: Purchases,
+        errorPresenter: ErrorPresenter,
+        purchaseLogic: PaywallPurchaseLogic?,
+    ) -> DefaultPaywallPresenter = { purchases, errorPresenter, purchaseLogic ->
+        DefaultPaywallPresenter(purchases, errorPresenter, purchaseLogic)
+    },
     private val defaultErrorPresenterFactory: (Purchases) -> DefaultErrorPresenter = { DefaultErrorPresenter(it) },
 ) : CheckpointPresentationHost {
 
@@ -125,6 +134,7 @@ internal class CheckpointsManager(
             )
         }
         val presentationMode = resolvePresentationMode(params?.presentationMode)
+        val purchaseLogic = params?.purchaseLogic
         val presentFailure: suspend (PurchasesError) -> CheckpointRun =
             { error -> presentFailure(errorPresenter(), identifier, customVariables, error) }
         if (!CheckpointIdentifierValidator.isValid(identifier)) {
@@ -146,11 +156,18 @@ internal class CheckpointsManager(
                 is CheckpointResolution.MatchedOffering -> presentOffering(
                     purchases,
                     PaywallPresenter.Params(resolution.offering, identifier, customVariables, presentationMode),
-                    presenter ?: defaultPresenterFactory(purchases, errorPresenter()),
+                    presenter ?: defaultPresenterFactory(purchases, errorPresenter(), purchaseLogic),
                     errorPresenter,
                 )
-                is CheckpointResolution.MatchedWorkflow ->
-                    present(purchases, identifier, resolution, customVariables, errorPresenter(), presentationMode)
+                is CheckpointResolution.MatchedWorkflow -> present(
+                    purchases,
+                    identifier,
+                    resolution,
+                    customVariables,
+                    errorPresenter(),
+                    presentationMode,
+                    purchaseLogic,
+                )
                 is CheckpointResolution.NoAction -> when (resolution.reason) {
                     CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE -> {
                         val message = "The configuration needed to serve checkpoint '$identifier' could not be read."
@@ -226,19 +243,32 @@ internal class CheckpointsManager(
 
     // Direct dismissals (a completed purchase or restore) carry no reason and count as a close; everything else
     // reports one, and a paywall that could not load carries the error as its result when its error UI is done.
-    // The exit offering, if any, is not presented for checkpoints.
+    // A purchase the app's own logic completed is reported here too, synced, rather than to the listener. The
+    // exit offering, if any, is not presented for checkpoints.
     override fun paywallOptions(callId: String, dismiss: (navigatedBack: Boolean) -> Unit): PaywallOptions? =
         presentation(callId)?.let { presentation ->
             PaywallOptions.Builder(dismissRequest = { dismiss(false) })
                 .setDismissRequestWithExitOffering { _, result, reason ->
-                    (result as? PaywallResult.Error)?.let {
-                        recordOutcome(callId, CheckpointFlowOutcome.Error(it.error))
+                    when (result) {
+                        is PaywallResult.Error -> recordOutcome(callId, CheckpointFlowOutcome.Error(result.error))
+                        is PaywallResult.Purchased -> recordOutcome(
+                            callId,
+                            CheckpointFlowOutcome.Purchased(result.customerInfo, storeTransaction = null),
+                        )
+                        else -> Unit
                     }
                     dismiss(reason == PaywallDismissReason.NAVIGATED_BACK)
                 }
                 .setErrorPresenter(presentation.errorPresenter)
                 .setCustomVariables(presentation.customVariables)
                 .setListener(OutcomeListener(callId))
+                .setPurchaseLogic(
+                    presentation.purchaseLogic?.let { purchaseLogic ->
+                        ObservedPurchaseLogic(purchaseLogic) {
+                            recordOutcome(callId, CheckpointFlowOutcome.CompletedByApp)
+                        }
+                    },
+                )
                 .injectedWorkflow(
                     presentation.workflow.workflow,
                     presentation.workflow.offerings,
@@ -292,6 +322,10 @@ internal class CheckpointsManager(
             return
         }
         val recorded = finished.outcome
+        if (recorded is CheckpointFlowOutcome.CompletedByApp) {
+            syncAppCompletedFlow(finished, finishPresentation)
+            return
+        }
         finished.flowFinished.complete(
             CheckpointRun(
                 recorded ?: CheckpointFlowOutcome.Dismissed,
@@ -307,17 +341,71 @@ internal class CheckpointsManager(
     override fun onPresentationFailed(callId: String, error: PurchasesError) {
         val failed = slot.take(callId) ?: return
         val obtained = failed.outcome.takeIf { it.isObtained }
-        if (obtained != null) {
-            failed.flowFinished.complete(CheckpointRun(obtained, backedOut = false))
+        when {
+            obtained is CheckpointFlowOutcome.CompletedByApp -> syncAppCompletedFlow(failed, finishPresentation = {})
+            obtained != null -> failed.flowFinished.complete(CheckpointRun(obtained, backedOut = false))
+            else -> {
+                val complete = {
+                    failed.flowFinished.complete(
+                        CheckpointRun(CheckpointFlowOutcome.Error(error), backedOut = false),
+                    )
+                    Unit
+                }
+                failed.presentation?.errorPresenter
+                    ?.presentOnce(error, CheckpointFailureKind.FLOW_ACTION_FAILED, complete)
+                    ?: complete()
+            }
+        }
+    }
+
+    // The app's own logic completed a purchase or restore that the paywall never reported with the customer's
+    // information: a restore, or a purchase the user left before the paywall had synced it. What the user obtained
+    // is read the way it is for an app presenter: the window goes down first, as the app's UI would be gone, then
+    // the SDK syncs the store purchases and refreshes the customer's information.
+    private fun syncAppCompletedFlow(call: PendingCall, finishPresentation: () -> Unit) {
+        finishPresentation()
+        val presentation = call.presentation ?: run {
+            call.flowFinished.complete(CheckpointRun(CheckpointFlowOutcome.Dismissed, backedOut = false))
             return
         }
-        val complete = {
-            failed.flowFinished.complete(CheckpointRun(CheckpointFlowOutcome.Error(error), backedOut = false))
-            Unit
+        syncAndComplete(call, presentation.purchases, presentation.checkpointIdentifier) { error, onComplete ->
+            presentation.errorPresenter
+                ?.presentOnce(error, CheckpointFailureKind.FLOW_RESULT_SYNC_FAILED, onComplete)
+                ?: onComplete()
         }
-        failed.presentation?.errorPresenter
-            ?.presentOnce(error, CheckpointFailureKind.FLOW_ACTION_FAILED, complete)
-            ?: complete()
+    }
+
+    // FETCH_CURRENT posts the store purchases the SDK hasn't seen yet (e.g. made through the app's own billing
+    // client) before fetching, so the outcome reflects whatever the flow sold. A sync that fails goes to
+    // [presentSyncFailure]: the user has left the flow and goes on either way, once the app's error UI is done.
+    private fun syncAndComplete(
+        call: PendingCall,
+        purchases: Purchases,
+        checkpointIdentifier: String,
+        presentSyncFailure: (error: PurchasesError, onComplete: () -> Unit) -> Unit,
+    ) {
+        purchases.getCustomerInfo(
+            CacheFetchPolicy.FETCH_CURRENT,
+            object : ReceiveCustomerInfoCallback {
+                override fun onReceived(customerInfo: CustomerInfo) {
+                    call.flowFinished.complete(
+                        CheckpointRun(CheckpointFlowOutcome.Finished(customerInfo), backedOut = false),
+                    )
+                }
+
+                override fun onError(error: PurchasesError) {
+                    Logger.e(
+                        "Checkpoint '$checkpointIdentifier': the purchases made during the flow could not be " +
+                            "synced: $error",
+                    )
+                    presentSyncFailure(error) {
+                        call.flowFinished.complete(
+                            CheckpointRun(CheckpointFlowOutcome.SyncFailed, backedOut = false),
+                        )
+                    }
+                }
+            },
+        )
     }
 
     /**
@@ -401,38 +489,11 @@ internal class CheckpointsManager(
             }
         }
 
-        // FETCH_CURRENT posts the store purchases the SDK hasn't seen yet (e.g. made through the app's own
-        // billing client) before fetching, so the outcome reflects whatever the app's paywall sold.
         private fun finished() {
             val call = slot.take(callId) ?: return
-            purchases.getCustomerInfo(
-                CacheFetchPolicy.FETCH_CURRENT,
-                object : ReceiveCustomerInfoCallback {
-                    override fun onReceived(customerInfo: CustomerInfo) {
-                        call.flowFinished.complete(
-                            CheckpointRun(
-                                CheckpointFlowOutcome.Finished(customerInfo),
-                                backedOut = false,
-                            ),
-                        )
-                    }
-
-                    override fun onError(error: PurchasesError) {
-                        Logger.e(
-                            "Checkpoint '${params.checkpointIdentifier}': the purchases made during the flow " +
-                                "could not be synced: $error",
-                        )
-                        presentSyncFailure(error) {
-                            call.flowFinished.complete(
-                                CheckpointRun(CheckpointFlowOutcome.SyncFailed, backedOut = false),
-                            )
-                        }
-                    }
-                },
-            )
+            syncAndComplete(call, purchases, params.checkpointIdentifier, ::presentSyncFailure)
         }
 
-        // The user has left the flow and goes on either way, once the app's error UI is done.
         private fun presentSyncFailure(error: PurchasesError, onComplete: () -> Unit) =
             errorPresenter().presentOnce(
                 ErrorPresenter.Params(
@@ -453,6 +514,7 @@ internal class CheckpointsManager(
         customVariables: Map<String, CustomVariableValue>,
         errorPresenter: ErrorPresenter,
         presentationMode: FlowPresentationMode,
+        purchaseLogic: PaywallPurchaseLogic?,
     ): CheckpointRun {
         val activity = purchases.currentActivity ?: presentationError(
             PurchasesErrorCode.ConfigurationError,
@@ -461,10 +523,12 @@ internal class CheckpointsManager(
         val call = PendingCall(
             callId = UUID.randomUUID().toString(),
             presentation = CheckpointPresentation(
+                purchases = purchases,
                 workflow = resolution,
                 checkpointIdentifier = identifier,
                 customVariables = customVariables,
                 errorPresenter = errorPresenter.forCheckpoint(identifier, customVariables),
+                purchaseLogic = purchaseLogic,
             ),
             activeEntitlementsBefore = cachedActiveEntitlementIds(purchases),
             flowFinished = CompletableDeferred(),
@@ -504,7 +568,9 @@ internal class CheckpointsManager(
         }
 
     private val CheckpointFlowOutcome?.isObtained: Boolean
-        get() = this is CheckpointFlowOutcome.Purchased || this is CheckpointFlowOutcome.Restored
+        get() = this is CheckpointFlowOutcome.Purchased ||
+            this is CheckpointFlowOutcome.Restored ||
+            this is CheckpointFlowOutcome.CompletedByApp
 
     private fun presentationError(code: PurchasesErrorCode, message: String): Nothing {
         val error = PurchasesError(code, message)

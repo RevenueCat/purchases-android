@@ -4,15 +4,20 @@ package com.revenuecat.apitester.kotlin.revenuecatui
 
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
+import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode
 
 @Suppress("unused", "UNUSED_VARIABLE", "LongMethod")
 private class CheckpointParamsAPI {
 
-    fun check(params: CheckpointParams) {
+    fun check(params: CheckpointParams, logic: PaywallPurchaseLogic) {
         val customVariables: Map<String, CustomVariableValue> = params.customVariables
         val presentationMode: FlowPresentationMode = params.presentationMode
+        val purchaseLogic: PaywallPurchaseLogic? = params.purchaseLogic
+        val withLogicFromBuilder: CheckpointParams = CheckpointParams.Builder().setPurchaseLogic(logic).build()
+        val withoutLogicFromBuilder: CheckpointParams = CheckpointParams.Builder().setPurchaseLogic(null).build()
+        val withLogicFromDsl: CheckpointParams = CheckpointParams { purchaseLogic(logic) }
 
         val empty: CheckpointParams = CheckpointParams.Builder().build()
         val emptyDsl: CheckpointParams = CheckpointParams {}

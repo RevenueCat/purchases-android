@@ -14,9 +14,12 @@ import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter.Completion.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -24,6 +27,7 @@ import io.mockk.mockkObject
 import io.mockk.runs
 import io.mockk.unmockkObject
 import io.mockk.verify
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.After
@@ -271,6 +275,78 @@ class DefaultPaywallPresenterTest {
     }
 
     @Test
+    fun `the paywall is handed the call's purchase logic, observed`() {
+        val logic = appPurchaseLogic()
+        presenterWithPurchaseLogic(logic)
+        present()
+
+        val observed = options().purchaseLogic
+
+        assertThat((observed as ObservedPurchaseLogic).delegate).isSameAs(logic)
+    }
+
+    @Test
+    fun `without a purchase logic the paywall is handed none`() {
+        present()
+
+        assertThat(options().purchaseLogic).isNull()
+    }
+
+    @Test
+    fun `a purchase the app completed reports Continued even when leaving through back navigation`() = runTest {
+        presenterWithPurchaseLogic(appPurchaseLogic())
+        present()
+
+        options().purchaseLogic!!.performPurchase(mockk(), mockk())
+        finished(navigatedBack = true)
+
+        assertThat(results).containsExactly(Result.Continued)
+        assertThat(dismissals).isEmpty()
+    }
+
+    @Test
+    fun `a restore the app completed leaves the paywall up and reports Continued`() = runTest {
+        presenterWithPurchaseLogic(appPurchaseLogic())
+        present()
+
+        options().purchaseLogic!!.performRestore(mockk())
+        assertThat(dismissals).isEmpty()
+        finished(navigatedBack = true)
+
+        assertThat(results).containsExactly(Result.Continued)
+    }
+
+    @Test
+    fun `a cancelled or failed app purchase or restore changes nothing`() = runTest {
+        presenterWithPurchaseLogic(
+            mockk {
+                coEvery { performPurchase(any(), any()) } returns PurchaseLogicResult.Cancellation
+                coEvery { performRestore(any()) } returns
+                    PurchaseLogicResult.Error(PurchasesError(PurchasesErrorCode.StoreProblemError))
+            },
+        )
+        present()
+
+        options().purchaseLogic!!.performPurchase(mockk(), mockk())
+        options().purchaseLogic!!.performRestore(mockk())
+        finished(navigatedBack = true)
+
+        assertThat(results).containsExactly(Result.NavigatedBack)
+    }
+
+    @Test
+    fun `an app completion after the report is ignored`() = runTest {
+        presenterWithPurchaseLogic(appPurchaseLogic())
+        present()
+        val purchaseLogic = options().purchaseLogic!!
+        finished(navigatedBack = false)
+
+        purchaseLogic.performRestore(mockk())
+
+        assertThat(results).containsExactly(Result.Closed)
+    }
+
+    @Test
     fun `a window that could not be kept on screen presents the error and reports Failed once acknowledged`() {
         val presented = mutableListOf<ErrorPresenter.Params>()
         var errorCompletion: ErrorPresenter.Completion? = null
@@ -405,6 +481,19 @@ class DefaultPaywallPresenterTest {
     }
 
     private fun present() = presenter.present(params, completion)
+
+    private fun presenterWithPurchaseLogic(purchaseLogic: PaywallPurchaseLogic) {
+        presenter = DefaultPaywallPresenter(mockPurchases, errorPresenter = { _, _ -> }, purchaseLogic) { callId, _, _ ->
+            windowCallId = callId
+            mockWindow
+        }
+    }
+
+    // An app's purchase logic that completes every purchase and restore.
+    private fun appPurchaseLogic(): PaywallPurchaseLogic = mockk {
+        coEvery { performPurchase(any(), any()) } returns PurchaseLogicResult.Success
+        coEvery { performRestore(any()) } returns PurchaseLogicResult.Success
+    }
 
     // What the window asks its host for on each show.
     private fun options(): PaywallOptions = presenter.paywallOptions(windowCallId!!) { dismissals += it }!!

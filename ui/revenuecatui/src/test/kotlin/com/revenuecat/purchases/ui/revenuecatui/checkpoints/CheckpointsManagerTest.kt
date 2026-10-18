@@ -18,6 +18,8 @@ import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
+import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import io.mockk.coEvery
@@ -90,8 +92,8 @@ class CheckpointsManagerTest {
                 presentedModes += mode
                 mockPresenter
             },
-            defaultPresenterFactory = { purchases, errorPresenter ->
-                DefaultPaywallPresenter(purchases, errorPresenter) { _, _, mode ->
+            defaultPresenterFactory = { purchases, errorPresenter, purchaseLogic ->
+                DefaultPaywallPresenter(purchases, errorPresenter, purchaseLogic) { _, _, mode ->
                     defaultPresenterModes += mode
                     mockPresenter
                 }.also { defaultPresenter = it }
@@ -297,6 +299,192 @@ class CheckpointsManagerTest {
 
         assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Dismissed)
         assertThat(run!!.backedOut).isTrue
+    }
+
+    @Test
+    fun `the workflow window's options carry the call's purchase logic, observed`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        val logic = appPurchaseLogic()
+        val call = launch { runCheckpoint(CheckpointParams { purchaseLogic(logic) }) }
+
+        val observed = manager.paywallOptions(currentCallId()) {}!!.purchaseLogic
+
+        assertThat((observed as ObservedPurchaseLogic).delegate).isSameAs(logic)
+        finishPaywall(outcome = null)
+        call.join()
+    }
+
+    @Test
+    fun `without a purchase logic the workflow window's options carry none`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        val call = launch { runCheckpoint() }
+
+        assertThat(manager.paywallOptions(currentCallId()) {}!!.purchaseLogic).isNull()
+
+        finishPaywall(outcome = null)
+        call.join()
+    }
+
+    @Test
+    fun `a purchase the app completed is recorded from the paywall's dismissal, already synced`() =
+        runTest(dispatcher) {
+            resolvesToWorkflow()
+            val customerInfo = mockk<CustomerInfo>()
+            val dismissals = mutableListOf<Boolean>()
+            var run: CheckpointRun? = null
+            val call = launch { run = runCheckpoint(CheckpointParams { purchaseLogic(appPurchaseLogic()) }) }
+            val options = manager.paywallOptions(currentCallId()) { dismissals += it }!!
+
+            options.purchaseLogic!!.performPurchase(mockk(), mockk())
+            options.dismissRequestWithExitOffering!!(null, PaywallResult.Purchased(customerInfo), PaywallDismissReason.CLOSE)
+            assertThat(dismissals).containsExactly(false)
+            finishPaywall(outcome = null)
+            call.join()
+
+            assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Purchased(customerInfo, null))
+            assertThat(run!!.backedOut).isFalse
+            verify(exactly = 0) { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) }
+        }
+
+    @Test
+    fun `a restore the app completed is synced once the window is down, and is not backed out`() =
+        runTest(dispatcher) {
+            resolvesToWorkflow()
+            val customerInfo = mockk<CustomerInfo>()
+            val events = mutableListOf<String>()
+            every { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) } answers {
+                events += "synced"
+                secondArg<ReceiveCustomerInfoCallback>().onReceived(customerInfo)
+            }
+            var run: CheckpointRun? = null
+            val call = launch { run = runCheckpoint(CheckpointParams { purchaseLogic(appPurchaseLogic()) }) }
+            val options = manager.paywallOptions(currentCallId()) {}!!
+
+            options.purchaseLogic!!.performRestore(mockk())
+            manager.onPresentationFinished(currentCallId(), navigatedBack = true) { events += "released" }
+            call.join()
+
+            assertThat(events).containsExactly("released", "synced")
+            assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Finished(customerInfo))
+            assertThat(run!!.backedOut).isFalse
+        }
+
+    @Test
+    fun `a failed sync after an app-completed restore is presented and resolves as unsynced once completed`() =
+        runTest(dispatcher) {
+            resolvesToWorkflow()
+            val error = PurchasesError(PurchasesErrorCode.NetworkError, "Simulated.")
+            syncFailsWith(error)
+            val presented = mutableListOf<ErrorPresenter.Params>()
+            var errorCompletion: ErrorPresenter.Completion? = null
+            manager.errorPresenter = ErrorPresenter { params, completion ->
+                presented += params
+                errorCompletion = completion
+            }
+            var run: CheckpointRun? = null
+            val call = launch { run = runCheckpoint(CheckpointParams { purchaseLogic(appPurchaseLogic()) }) }
+
+            manager.paywallOptions(currentCallId()) {}!!.purchaseLogic!!.performRestore(mockk())
+            finishPaywall(outcome = null)
+
+            assertThat(presented).containsExactly(
+                ErrorPresenter.Params(error, checkpointId, emptyMap(), CheckpointFailureKind.FLOW_RESULT_SYNC_FAILED),
+            )
+            assertThat(run).isNull()
+            errorCompletion!!.complete()
+            call.join()
+            assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.SyncFailed)
+        }
+
+    @Test
+    fun `an app-completed restore is still synced when the window could not be kept on screen`() =
+        runTest(dispatcher) {
+            resolvesToWorkflow()
+            val customerInfo = mockk<CustomerInfo>()
+            syncedCustomerInfoIs(customerInfo)
+            var run: CheckpointRun? = null
+            val call = launch { run = runCheckpoint(CheckpointParams { purchaseLogic(appPurchaseLogic()) }) }
+
+            manager.paywallOptions(currentCallId()) {}!!.purchaseLogic!!.performRestore(mockk())
+            manager.onPresentationFailed(
+                currentCallId(),
+                PurchasesError(PurchasesErrorCode.ConfigurationError, "Re-present failed."),
+            )
+            call.join()
+
+            assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Finished(customerInfo))
+            assertThat(defaultPresentedErrors).isEmpty()
+        }
+
+    @Test
+    fun `a later paywall error does not erase an app completion`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        val customerInfo = mockk<CustomerInfo>()
+        syncedCustomerInfoIs(customerInfo)
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint(CheckpointParams { purchaseLogic(appPurchaseLogic()) }) }
+        val options = manager.paywallOptions(currentCallId()) {}!!
+
+        options.purchaseLogic!!.performRestore(mockk())
+        options.dismissRequestWithExitOffering!!(
+            null,
+            PaywallResult.Error(PurchasesError(PurchasesErrorCode.StoreProblemError, "boom")),
+            PaywallDismissReason.CLOSE,
+        )
+        finishPaywall(outcome = null)
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Finished(customerInfo))
+    }
+
+    @Test
+    fun `a cancelled or failed app purchase or restore is not an outcome`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        val logic = mockk<PaywallPurchaseLogic> {
+            coEvery { performPurchase(any(), any()) } returns PurchaseLogicResult.Cancellation
+            coEvery { performRestore(any()) } returns
+                PurchaseLogicResult.Error(PurchasesError(PurchasesErrorCode.StoreProblemError))
+        }
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint(CheckpointParams { purchaseLogic(logic) }) }
+        val options = manager.paywallOptions(currentCallId()) {}!!
+
+        options.purchaseLogic!!.performPurchase(mockk(), mockk())
+        options.purchaseLogic!!.performRestore(mockk())
+        finishPaywall(outcome = null, navigatedBack = true)
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Dismissed)
+        assertThat(run!!.backedOut).isTrue
+        verify(exactly = 0) { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) }
+    }
+
+    @Test
+    fun `an app completion reported after the call is gone is ignored`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint(CheckpointParams { purchaseLogic(appPurchaseLogic()) }) }
+        val options = manager.paywallOptions(currentCallId()) {}!!
+        finishPaywall(outcome = null)
+        call.join()
+
+        options.purchaseLogic!!.performRestore(mockk())
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Dismissed)
+        verify(exactly = 0) { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) }
+    }
+
+    @Test
+    fun `the SDK's own paywall is handed the call's purchase logic`() = runTest(dispatcher) {
+        resolvesTo(CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null))
+        val logic = appPurchaseLogic()
+        val call = launch { runCheckpoint(CheckpointParams { purchaseLogic(logic) }) }
+
+        val observed = defaultPresenter!!.paywallOptions("") {}!!.purchaseLogic
+
+        assertThat((observed as ObservedPurchaseLogic).delegate).isSameAs(logic)
+        finishDefaultPaywall(navigatedBack = true)
+        call.join()
     }
 
     @Test
@@ -1391,6 +1579,12 @@ class CheckpointsManagerTest {
         }
         resolvesTo(CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null))
         return { completion }
+    }
+
+    // An app's purchase logic that completes every purchase and restore.
+    private fun appPurchaseLogic(): PaywallPurchaseLogic = mockk {
+        coEvery { performPurchase(any(), any()) } returns PurchaseLogicResult.Success
+        coEvery { performRestore(any()) } returns PurchaseLogicResult.Success
     }
 
     private fun cachedActiveEntitlements(vararg identifiers: String) {
