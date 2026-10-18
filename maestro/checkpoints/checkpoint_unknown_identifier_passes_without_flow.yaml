@@ -1,0 +1,33 @@
+# A well-formed identifier that is not configured in the dashboard: nothing is presented and the checkpoint passes
+# right away with no flow, so the result's lookups find nothing, but it still carries the customer's
+# information, read before the run for a user the backend has just met.
+#
+# Run locally against the test store:
+#   maestro test -e MAESTRO_STORE=test_store maestro/checkpoints/checkpoint_unknown_identifier_passes_without_flow.yaml
+
+appId: com.revenuecat.e2etests
+name: Checkpoint with an unknown identifier passes without a flow and with the customer's information
+env:
+  MAESTRO_STORE: ${MAESTRO_STORE || 'test_store'}
+
+---
+- launchApp:
+    clearState: true
+    arguments:
+      e2e_test_flow: open_checkpoint
+      checkpoint_identifier: maestro_unknown_checkpoint
+      app_user_id: "maestro-checkpoint-${Date.now()}"
+- extendedWaitUntil:
+    visible: "Hit checkpoint"
+    timeout: 15000
+- tapOn:
+    text: "Hit checkpoint"
+
+- extendedWaitUntil:
+    visible: "Callback: passed, no flow (call #1)"
+    timeout: 20000
+- assertVisible: "Obtained products: none"
+- assertVisible: "Entitlement pro obtained: false"
+- assertVisible: "Product pro_monthly_subscription obtained: false"
+- assertVisible: "Customer active entitlements: none"
+- takeScreenshot: "checkpoint_unknown_identifier_passes_without_flow - passed without flow"

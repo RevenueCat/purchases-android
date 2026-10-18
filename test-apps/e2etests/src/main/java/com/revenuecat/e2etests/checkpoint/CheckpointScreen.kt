@@ -30,9 +30,11 @@ import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint
 @Composable
 fun CheckpointScreen(
     identifier: String,
+    productIdentifier: String,
     modifier: Modifier = Modifier,
 ) {
     var status by remember { mutableStateOf("Callback: not invoked") }
+    var details by remember { mutableStateOf(emptyList<String>()) }
     var invocations by remember { mutableIntStateOf(0) }
 
     Column(
@@ -49,12 +51,14 @@ fun CheckpointScreen(
                 Purchases.sharedInstance.checkpoint(identifier) { result ->
                     invocations++
                     status = "${result.describe()} (call #$invocations)"
+                    details = result.details(productIdentifier)
                 }
             },
         ) {
             Text("Hit checkpoint")
         }
         Text(text = status)
+        details.forEach { Text(text = it) }
     }
 }
 
@@ -64,3 +68,18 @@ private fun CheckpointResult.describe(): String {
     val entitlements = flow.obtainedEntitlements.map { it.entitlementInfo.identifier }.sorted()
     return "Callback: passed, entitlements: ${entitlements.ifEmpty { listOf("none") }.joinToString()}"
 }
+
+// One line per fact, without regex specials, so Maestro matches each literally.
+@OptIn(InviteOnlyCheckpointsAPI::class)
+private fun CheckpointResult.details(productIdentifier: String): List<String> {
+    val products = flow?.obtainedProducts?.map { it.product.purchasingData.productId }?.sorted().orEmpty()
+    val active = customer.entitlements.active.keys.sorted()
+    return listOf(
+        "Obtained products: ${products.ifEmpty { listOf("none") }.joinToString()}",
+        "Entitlement $ENTITLEMENT_ID obtained: ${didObtainEntitlement(ENTITLEMENT_ID)}",
+        "Product $productIdentifier obtained: ${didObtainProduct(productIdentifier)}",
+        "Customer active entitlements: ${active.ifEmpty { listOf("none") }.joinToString()}",
+    )
+}
+
+private const val ENTITLEMENT_ID = "pro"

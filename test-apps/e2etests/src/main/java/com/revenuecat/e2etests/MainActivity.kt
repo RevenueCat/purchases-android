@@ -38,6 +38,7 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
             .orEmpty()
         val workflowId = intent.getStringExtra(WORKFLOW_ID_EXTRA_KEY)
         val checkpointIdentifier = intent.getStringExtra(CHECKPOINT_IDENTIFIER_EXTRA_KEY)
+        val checkpointProductIdentifier = intent.getStringExtra(CHECKPOINT_PRODUCT_IDENTIFIER_EXTRA_KEY)
         setContent {
             PurchasesandroidTheme {
                 when (flow) {
@@ -54,6 +55,7 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
                     E2ETestFlow.OPEN_DEVELOPER_PROVIDED_OFFERING -> DeveloperProvidedOfferingScreen()
                     E2ETestFlow.OPEN_CHECKPOINT -> CheckpointScreen(
                         identifier = checkpointIdentifier ?: DEFAULT_CHECKPOINT_IDENTIFIER,
+                        productIdentifier = checkpointProductIdentifier ?: DEFAULT_CHECKPOINT_PRODUCT_IDENTIFIER,
                     )
                     null -> MainPage()
                 }
@@ -74,5 +76,9 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
         const val LOG_IN_APP_USER_IDS_EXTRA_KEY = "log_in_app_user_ids"
         const val CHECKPOINT_IDENTIFIER_EXTRA_KEY = "checkpoint_identifier"
         const val DEFAULT_CHECKPOINT_IDENTIFIER = "donottouch_sdk_everyone"
+
+        // The product the checkpoint screen looks up in the result; the checkpoint paywall's preselected package.
+        const val CHECKPOINT_PRODUCT_IDENTIFIER_EXTRA_KEY = "checkpoint_product_identifier"
+        const val DEFAULT_CHECKPOINT_PRODUCT_IDENTIFIER = "pro_monthly_subscription"
     }
 }

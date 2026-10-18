@@ -1,7 +1,8 @@
 # A purchase that fails inside the flow a checkpoint presents (`donottouch_sdk_everyone` presents its paywall to
 # every user): the SDK presents its error dialog (FLOW_ACTION_FAILED; the Test Store's
 # simulated failure keeps its own description), acknowledging it leaves the paywall on screen and the callback
-# uninvoked, and closing the paywall afterwards passes the checkpoint with an empty result.
+# uninvoked, and closing the paywall afterwards passes the checkpoint with an empty result: no entitlement, no
+# product, and a customer with nothing active.
 #
 # Run locally against the test store:
 #   maestro test -e MAESTRO_STORE=test_store maestro/checkpoints/checkpoint_purchase_error_during_flow.yaml
@@ -60,4 +61,7 @@ env:
 - extendedWaitUntil:
     visible: "Callback: passed, entitlements: none (call #1)"
     timeout: 15000
+- assertVisible: "Obtained products: none"
+- assertVisible: "Product pro_monthly_subscription obtained: false"
+- assertVisible: "Customer active entitlements: none"
 - takeScreenshot: "checkpoint_purchase_error_during_flow - passed empty"

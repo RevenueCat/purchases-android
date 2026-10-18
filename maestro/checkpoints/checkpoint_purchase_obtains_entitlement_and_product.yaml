@@ -1,0 +1,50 @@
+# A purchase inside the flow a checkpoint presents (`donottouch_sdk_everyone` presents its paywall to every user,
+# monthly package preselected): the paywall closes on its own and the checkpoint passes with the entitlement and
+# the product the user obtained, both findable through the result's lookups, and the customer's information
+# showing the entitlement active.
+#
+# Run locally against the test store:
+#   maestro test -e MAESTRO_STORE=test_store maestro/checkpoints/checkpoint_purchase_obtains_entitlement_and_product.yaml
+
+appId: com.revenuecat.e2etests
+name: Checkpoint purchase passes with the obtained entitlement and product and the customer's information
+env:
+  MAESTRO_STORE: ${MAESTRO_STORE || 'test_store'}
+
+---
+- launchApp:
+    clearState: true
+    arguments:
+      e2e_test_flow: open_checkpoint
+      checkpoint_identifier: donottouch_sdk_everyone
+      app_user_id: "maestro-checkpoint-${Date.now()}"
+- extendedWaitUntil:
+    visible: "Hit checkpoint"
+    timeout: 15000
+- tapOn:
+    text: "Hit checkpoint"
+
+# The checkpoint's paywall, presented as a sheet, with the monthly package preselected.
+- extendedWaitUntil:
+    visible: "Continue"
+    timeout: 20000
+- tapOn:
+    text: "Continue"
+
+# Test store purchase confirmation for the preselected product.
+- extendedWaitUntil:
+    visible: "TEST VALID PURCHASE"
+    timeout: 15000
+- assertVisible: ".*Product: pro_monthly_subscription.*"
+- tapOn:
+    text: "TEST VALID PURCHASE"
+
+# The purchase closes the paywall and passes the checkpoint with everything the flow sold.
+- extendedWaitUntil:
+    visible: "Callback: passed, entitlements: pro (call #1)"
+    timeout: 20000
+- assertVisible: "Obtained products: pro_monthly_subscription"
+- assertVisible: "Entitlement pro obtained: true"
+- assertVisible: "Product pro_monthly_subscription obtained: true"
+- assertVisible: "Customer active entitlements: pro"
+- takeScreenshot: "checkpoint_purchase_obtains_entitlement_and_product - passed"
