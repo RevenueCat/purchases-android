@@ -447,8 +447,12 @@ package com.revenuecat.purchases.ui.revenuecatui.checkpoints {
   }
 
   @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI @dev.drewhamilton.poko.Poko public final class CheckpointResult {
+    method public boolean didObtainEntitlement(String identifier);
+    method public boolean didObtainProduct(String identifier);
     method @InaccessibleFromKotlin public com.revenuecat.purchases.CustomerInfo getCustomer();
     method @InaccessibleFromKotlin public com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowResult? getFlow();
+    method public com.revenuecat.purchases.ui.revenuecatui.checkpoints.ObtainedEntitlement? obtainedEntitlement(String identifier);
+    method public com.revenuecat.purchases.ui.revenuecatui.checkpoints.ObtainedProduct? obtainedProduct(String identifier);
     property public com.revenuecat.purchases.CustomerInfo customer;
     property public com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowResult? flow;
   }
@@ -497,13 +501,24 @@ package com.revenuecat.purchases.ui.revenuecatui.checkpoints {
   }
 
   @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI @dev.drewhamilton.poko.Poko public final class FlowResult {
+    method public boolean didObtainEntitlement(String identifier);
+    method public boolean didObtainProduct(String identifier);
     method @InaccessibleFromKotlin public java.util.Set<com.revenuecat.purchases.ui.revenuecatui.checkpoints.ObtainedEntitlement> getObtainedEntitlements();
+    method @InaccessibleFromKotlin public java.util.Set<com.revenuecat.purchases.ui.revenuecatui.checkpoints.ObtainedProduct> getObtainedProducts();
+    method public com.revenuecat.purchases.ui.revenuecatui.checkpoints.ObtainedEntitlement? obtainedEntitlement(String identifier);
+    method public com.revenuecat.purchases.ui.revenuecatui.checkpoints.ObtainedProduct? obtainedProduct(String identifier);
     property public java.util.Set<com.revenuecat.purchases.ui.revenuecatui.checkpoints.ObtainedEntitlement> obtainedEntitlements;
+    property public java.util.Set<com.revenuecat.purchases.ui.revenuecatui.checkpoints.ObtainedProduct> obtainedProducts;
   }
 
   @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI @dev.drewhamilton.poko.Poko public final class ObtainedEntitlement {
     method @InaccessibleFromKotlin public com.revenuecat.purchases.EntitlementInfo getEntitlementInfo();
     property public com.revenuecat.purchases.EntitlementInfo entitlementInfo;
+  }
+
+  @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI @dev.drewhamilton.poko.Poko public final class ObtainedProduct {
+    method @InaccessibleFromKotlin public com.revenuecat.purchases.models.StoreProduct getProduct();
+    property public com.revenuecat.purchases.models.StoreProduct product;
   }
 
   @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI public fun interface PaywallPresenter {

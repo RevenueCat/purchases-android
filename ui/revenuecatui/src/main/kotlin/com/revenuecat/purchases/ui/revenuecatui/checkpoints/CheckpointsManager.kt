@@ -8,6 +8,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
+import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
@@ -47,7 +48,11 @@ internal class CheckpointPresentation(
  * the error presenter and the run is not reported as passed. [blockedByPresentedFlow] is true when the checkpoint
  * resolved to a flow that was not presented because another checkpoint flow was already on screen. That earlier
  * call is the one the app is waiting on, so a blocked run is not reported as passed either.
+ *
+ * [presentedProducts] are the products the resolved flow could sell, whether or not it was presented; what the
+ * user obtained is read among them.
  */
+@Suppress("LongParameterList")
 internal class CheckpointRun(
     val flowOutcome: CheckpointFlowOutcome?,
     val backedOut: Boolean,
@@ -58,7 +63,19 @@ internal class CheckpointRun(
     // The customer's information read before anything was presented. Null only for a failed or blocked run,
     // which ends before that read or without one and is never delivered.
     val customerInfoBefore: CustomerInfo? = null,
-)
+    val presentedProducts: List<StoreProduct> = emptyList(),
+) {
+
+    fun withPresentedProducts(products: List<StoreProduct>): CheckpointRun = CheckpointRun(
+        flowOutcome = flowOutcome,
+        backedOut = backedOut,
+        blockedByPresentedFlow = blockedByPresentedFlow,
+        failed = failed,
+        finishPresentation = finishPresentation,
+        customerInfoBefore = customerInfoBefore,
+        presentedProducts = products,
+    )
+}
 
 /**
  * Runs a checkpoint hit end to end: asks the core module what the checkpoint resolves to, and presents the
@@ -154,7 +171,7 @@ internal class CheckpointsManager(
             Logger.e("Checkpoint '$identifier': the customer's information could not be read: $error")
             return@withContext presentFailure(error)
         }
-        try {
+        val run = try {
             when (resolution) {
                 is CheckpointResolution.MatchedOffering -> presentOffering(
                     purchases,
@@ -189,6 +206,7 @@ internal class CheckpointsManager(
             // Already logged by presentationError.
             presentFailure(e.error)
         }
+        run.withPresentedProducts(resolution.presentedProducts)
     }
 
     // The user is where they were before the checkpoint and stays there whatever the app's error UI does, so
@@ -243,12 +261,12 @@ internal class CheckpointsManager(
                         "Checkpoint '$identifier': passed without the customer's information, so the callback is " +
                             "not invoked.",
                     )
-                    else -> callback.onCheckpointPassed(
-                        CheckpointResult(
-                            flow = run.toResult(customerInfoBefore.activeEntitlementIds),
-                            customer = run.customerInfoAfter(purchases, customerInfoBefore),
-                        ),
-                    )
+                    else -> {
+                        val customer = run.customerInfoAfter(purchases, customerInfoBefore)
+                        callback.onCheckpointPassed(
+                            CheckpointResult(flow = run.toResult(customerInfoBefore, customer), customer = customer),
+                        )
+                    }
                 }
             } finally {
                 run.finishPresentation()

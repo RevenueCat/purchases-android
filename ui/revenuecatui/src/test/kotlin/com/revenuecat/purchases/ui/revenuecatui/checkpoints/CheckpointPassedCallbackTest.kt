@@ -9,12 +9,17 @@ import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.Offerings
+import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
+import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
@@ -42,6 +47,7 @@ import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowDialog
+import java.util.Date
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -245,7 +251,7 @@ class CheckpointPassedCallbackTest {
 
     @Test
     fun `the SDK's own paywall that cannot load does not pass`() = runTest(dispatcher) {
-        resolvesTo(CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null, traceId = "trace_id"))
+        resolvesTo(CheckpointResolution.MatchedOffering(offering(), checkpointRuleId = null, traceId = "trace_id"))
 
         checkpoint()
         defaultPresenter!!.paywallOptions("") {}!!.dismissRequestWithExitOffering!!(
@@ -262,7 +268,7 @@ class CheckpointPassedCallbackTest {
     @Test
     fun `the SDK's own paywall that fails to come back after a configuration change is presented and does not pass`() =
         runTest(dispatcher) {
-            resolvesTo(CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null, traceId = "trace_id"))
+            resolvesTo(CheckpointResolution.MatchedOffering(offering(), checkpointRuleId = null, traceId = "trace_id"))
             manager.errorPresenter = errorPresenter
 
             checkpoint()
@@ -292,7 +298,7 @@ class CheckpointPassedCallbackTest {
     @Test
     fun `an offering checkpoint presents the fallback paywall and delivers what the user obtained`() =
         runTest(dispatcher) {
-            resolvesTo(CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null, traceId = "trace_id"))
+            resolvesTo(CheckpointResolution.MatchedOffering(offering(), checkpointRuleId = null, traceId = "trace_id"))
             every { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) } answers {
                 secondArg<ReceiveCustomerInfoCallback>().onReceived(customerInfoWithActive("pro"))
             }
@@ -492,6 +498,86 @@ class CheckpointPassedCallbackTest {
         }
 
     @Test
+    fun `an offering checkpoint reports the product the paywall sold`() = runTest(dispatcher) {
+        val monthly = product("monthly")
+        resolvesTo(
+            CheckpointResolution.MatchedOffering(offering(monthly), checkpointRuleId = null, traceId = "trace_id"),
+        )
+        every { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) } answers {
+            secondArg<ReceiveCustomerInfoCallback>().onReceived(customerInfoWithActive("pro").purchased("monthly"))
+        }
+
+        checkpoint()
+        defaultPresenter!!.onPresentationFinished("")
+
+        val result = results.single()
+        assertThat(result.flow!!.obtainedProducts).containsExactly(ObtainedProduct(monthly))
+        assertThat(result.obtainedProduct("monthly")!!.product).isSameAs(monthly)
+        assertThat(result.didObtainProduct("monthly")).isTrue
+        assertThat(result.didObtainEntitlement("pro")).isTrue
+    }
+
+    @Test
+    fun `a presented workflow reports a product from any of its offerings and none from outside them`() =
+        runTest(dispatcher) {
+            val annual = product("annual")
+            resolvesToWorkflow(annual)
+
+            checkpoint()
+            finishPaywall(
+                CheckpointFlowOutcome.Purchased(customerInfoWithActive().purchased("annual", "other"), mockk()),
+            )
+
+            val result = results.single()
+            assertThat(result.flow!!.obtainedProducts).containsExactly(ObtainedProduct(annual))
+            assertThat(result.didObtainProduct("other")).isFalse
+        }
+
+    @Test
+    fun `a restore that only brought back a presented product reports it on close`() = runTest(dispatcher) {
+        val monthly = product("monthly")
+        resolvesToWorkflow(monthly)
+        cachedCustomerInfoHasActive().purchased("monthly")
+
+        checkpoint()
+        workflowListener().onRestoreCompleted(customerInfoWithActive().purchased("monthly"))
+        finishPaywall(outcome = null)
+
+        val result = results.single()
+        assertThat(result.didObtainProduct("monthly")).isTrue
+        assertThat(result.flow!!.obtainedEntitlements).isEmpty()
+        assertThat(result.customer).isSameAs(cachedCustomerInfo)
+    }
+
+    @Test
+    fun `a restore that only brought back a presented product is not enough to pass on back`() =
+        runTest(dispatcher) {
+            val monthly = product("monthly")
+            resolvesToWorkflow(monthly)
+            cachedCustomerInfoHasActive().purchased("monthly")
+
+            checkpoint()
+            workflowListener().onRestoreCompleted(customerInfoWithActive().purchased("monthly"))
+            finishPaywall(outcome = null, navigatedBack = true)
+
+            assertThat(results).isEmpty()
+        }
+
+    @Test
+    fun `a result without a flow obtains no entitlement or product`() = runTest(dispatcher) {
+        resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.NO_MATCH))
+
+        checkpoint()
+
+        val result = results.single()
+        assertThat(result.flow).isNull()
+        assertThat(result.obtainedEntitlement("pro")).isNull()
+        assertThat(result.didObtainEntitlement("pro")).isFalse
+        assertThat(result.obtainedProduct("monthly")).isNull()
+        assertThat(result.didObtainProduct("monthly")).isFalse
+    }
+
+    @Test
     fun `a no-action checkpoint delivers the customer information read before when the cache is gone`() =
         runTest(dispatcher) {
             noCachedCustomerInfo()
@@ -617,7 +703,7 @@ class CheckpointPassedCallbackTest {
         get() = map { result -> result.flow?.obtainedEntitlements?.map { it.entitlementInfo.identifier }?.toSet() }
 
     // Registers a presenter for a matched offering and returns an accessor for the completion it was handed.
-    private fun presentThroughRegisteredPresenter(offering: Offering = mockk()): () -> PaywallPresenter.Completion? {
+    private fun presentThroughRegisteredPresenter(offering: Offering = offering()): () -> PaywallPresenter.Completion? {
         var completion: PaywallPresenter.Completion? = null
         manager.paywallPresenter = PaywallPresenter { _, presentation ->
             completion = presentation
@@ -633,11 +719,11 @@ class CheckpointPassedCallbackTest {
         coEvery { mockPurchases.internalResolveCp(any(), any()) } returns resolution
     }
 
-    private fun resolvesToWorkflow() {
+    private fun resolvesToWorkflow(vararg products: StoreProduct) {
         resolvesTo(CheckpointResolution.MatchedWorkflow(
             mockk(),
             mockk(),
-            mockk(),
+            offerings(*products),
             checkpointRuleId = null,
             traceId = "trace-id",
             workflowBlobRef = null,
@@ -657,11 +743,12 @@ class CheckpointPassedCallbackTest {
         }
     }
 
-    private fun cachedCustomerInfoHasActive(vararg identifiers: String) {
+    private fun cachedCustomerInfoHasActive(vararg identifiers: String): CustomerInfo {
         cachedCustomerInfo = customerInfoWithActive(*identifiers)
         every { mockPurchases.getCustomerInfo(CacheFetchPolicy.CACHE_ONLY, any()) } answers {
             secondArg<ReceiveCustomerInfoCallback>().onReceived(cachedCustomerInfo)
         }
+        return cachedCustomerInfo
     }
 
     private fun noCachedCustomerInfo() {
@@ -673,7 +760,25 @@ class CheckpointPassedCallbackTest {
 
     private fun customerInfoWithActive(vararg identifiers: String): CustomerInfo {
         val active = identifiers.associateWith { id -> mockk<EntitlementInfo> { every { identifier } returns id } }
-        return mockk { every { entitlements.active } returns active }
+        return mockk {
+            every { entitlements.active } returns active
+            every { getPurchaseDateForProductId(any()) } returns null
+        }
+    }
+
+    private fun product(identifier: String): StoreProduct =
+        TestStoreProduct(identifier, "name", "title", "description", Price("$1.99", 1_990_000, "USD"))
+
+    private fun offering(vararg products: StoreProduct): Offering = mockk {
+        every { availablePackages } returns products.map { p -> mockk<Package> { every { product } returns p } }
+    }
+
+    private fun offerings(vararg products: StoreProduct): Offerings = mockk {
+        every { all } returns mapOf("default" to offering(*products))
+    }
+
+    private fun CustomerInfo.purchased(vararg identifiers: String, date: Date = Date(1_000)): CustomerInfo = apply {
+        identifiers.forEach { identifier -> every { getPurchaseDateForProductId(identifier) } returns date }
     }
 
     // Mirrors what CheckpointWorkflowPresenter does for a workflow: record the outcome for the presented call, then

@@ -4,10 +4,13 @@ import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.checkpoints.CheckpointResolution
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
+import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrNull
 import kotlinx.coroutines.suspendCancellableCoroutine
+import java.util.Date
 import kotlin.coroutines.resume
 
 /**
@@ -56,15 +59,52 @@ internal val CheckpointFlowOutcome.customerInfo: CustomerInfo?
 
 /**
  * The result to deliver for this run: null when nothing was presented because there was nothing to serve, what the
- * user obtained otherwise. A run that failed, or whose flow ended in an error, is not delivered at all (see
- * [CheckpointsManager.checkpoint]); the null branch for [CheckpointFlowOutcome.Error] only keeps the mapping total.
- * Dismissed, WebCheckoutOpened, and any future outcome without an in-app grant signal obtained nothing.
+ * user obtained otherwise, read from [customer] (the information delivered with the run) against
+ * [customerInfoBefore], whatever the outcome: a restore that granted nothing new, or a purchase the app's own
+ * paywall completed, is not an outcome but still shows in the delivered information. A run that failed, or whose
+ * flow ended in an error, is not delivered at all (see [CheckpointsManager.checkpoint]); the null branch for
+ * [CheckpointFlowOutcome.Error] only keeps the mapping total.
  */
-internal fun CheckpointRun.toResult(activeEntitlementsBefore: Set<String>?): FlowResult? =
-    when (val outcome = flowOutcome) {
+internal fun CheckpointRun.toResult(customerInfoBefore: CustomerInfo, customer: CustomerInfo): FlowResult? =
+    when (flowOutcome) {
         null, is CheckpointFlowOutcome.Error -> null
-        else -> FlowResult(outcome.customerInfo?.obtainedEntitlements(activeEntitlementsBefore).orEmpty())
+        else -> FlowResult(
+            obtainedEntitlements = customer.obtainedEntitlements(customerInfoBefore.activeEntitlementIds),
+            obtainedProducts = customer.obtainedProducts(customerInfoBefore, presentedProducts),
+        )
     }
+
+/** The products a resolved checkpoint can sell: the matched offering's, or every offering's for a workflow. */
+internal val CheckpointResolution.presentedProducts: List<StoreProduct>
+    get() = when (this) {
+        is CheckpointResolution.MatchedOffering -> offering.availablePackages.map { it.product }
+        is CheckpointResolution.MatchedWorkflow -> offerings.all.values.flatMap { offering ->
+            offering.availablePackages.map { it.product }
+        }
+        is CheckpointResolution.NoAction -> emptyList()
+    }
+
+/**
+ * The products among [presentedProducts] purchased since [customerInfoBefore]: those whose purchase date is now
+ * known and differs from before (a renewal or a repeat consumable counts). One per store product identifier: a
+ * customer holds at most one base plan of a subscription, so the first package presenting it stands for all.
+ */
+internal fun CustomerInfo.obtainedProducts(
+    customerInfoBefore: CustomerInfo,
+    presentedProducts: List<StoreProduct>,
+): Set<ObtainedProduct> = presentedProducts
+    .distinctBy { it.purchasingData.productId }
+    .filter { product ->
+        val purchaseDate = purchaseDate(product)
+        purchaseDate != null && purchaseDate != customerInfoBefore.purchaseDate(product)
+    }
+    .map { ObtainedProduct(it) }
+    .toSet()
+
+// Keyed like StoreProduct.id (base plan included for a Play subscription); the plain product identifier is the
+// key a purchase recorded without one carries.
+private fun CustomerInfo.purchaseDate(product: StoreProduct): Date? =
+    getPurchaseDateForProductId(product.id) ?: getPurchaseDateForProductId(product.purchasingData.productId)
 
 /**
  * The customer info to deliver with a passed run: the one the flow produced, else the latest cached copy (a

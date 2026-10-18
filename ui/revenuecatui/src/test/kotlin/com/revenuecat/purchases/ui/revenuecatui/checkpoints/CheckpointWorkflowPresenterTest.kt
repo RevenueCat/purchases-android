@@ -12,6 +12,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
@@ -70,7 +71,7 @@ class CheckpointWorkflowPresenterTest {
                 CheckpointResolution.MatchedWorkflow(
                     mockk(),
                     mockk(),
-                    mockk(),
+                    mockk<Offerings> { every { all } returns emptyMap() },
                     checkpointRuleId = null,
                     traceId = "trace-id",
                     workflowBlobRef = null,
@@ -117,7 +118,7 @@ class CheckpointWorkflowPresenterTest {
         val resolution = CheckpointResolution.MatchedWorkflow(
             mockk(),
             mockk(),
-            mockk(),
+            mockk<Offerings> { every { all } returns emptyMap() },
             checkpointRuleId = null,
             traceId = "trace-id",
             workflowBlobRef = null,
