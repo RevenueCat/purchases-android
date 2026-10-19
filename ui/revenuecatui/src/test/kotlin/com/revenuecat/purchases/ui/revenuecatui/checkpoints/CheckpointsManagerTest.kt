@@ -240,7 +240,7 @@ class CheckpointsManagerTest {
     }
 
     @Test
-    fun `a run carries the products the resolved checkpoint can sell`() = runTest(dispatcher) {
+    fun `a run carries the offerings the resolved checkpoint can present`() = runTest(dispatcher) {
         val monthly = product("monthly")
         val annual = product("annual")
         syncedCustomerInfoIs(customerInfoWithActive())
@@ -263,7 +263,7 @@ class CheckpointsManagerTest {
 
         resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.NO_MATCH))
 
-        assertThat(runCheckpoint().presentedProducts).isEmpty()
+        assertThat(runCheckpoint().presentedOfferings).isEmpty()
     }
 
     @Test
@@ -1505,6 +1505,9 @@ class CheckpointsManagerTest {
 
     private fun product(identifier: String): StoreProduct =
         TestStoreProduct(identifier, "name", "title", "description", Price("$1.99", 1_990_000, "USD"))
+
+    private val CheckpointRun.presentedProducts: List<StoreProduct>
+        get() = presentedOfferings.flatMap { offering -> offering.availablePackages.map { it.product } }
 
     private fun offering(vararg products: StoreProduct): Offering = mockk {
         every { availablePackages } returns products.map { p -> mockk<Package> { every { product } returns p } }

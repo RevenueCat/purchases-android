@@ -57,7 +57,11 @@ public class ObtainedEntitlement internal constructor(
 @InviteOnlyCheckpointsAPI
 @Poko
 public class ObtainedProduct internal constructor(
-    /** The product, as the presented flow offered it. */
+    /**
+     * The product, as the offering it was bought from presented it when the SDK knows which, as its only
+     * presenting offering did otherwise. Carries no presented offering context when several offerings presented
+     * it and the purchase was not made through the SDK's own flow.
+     */
     public val product: StoreProduct,
 ) {
 

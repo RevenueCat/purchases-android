@@ -4,12 +4,16 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfo
+import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.helpers.errorOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrNull
@@ -39,7 +43,7 @@ class FlowResultMappingTest {
         val monthly = product("monthly")
         val before = customerInfoWithActive("plus").purchased("annual")
         val delivered = customerInfoWithActive("plus", "pro").purchased("monthly", "annual")
-        val run = presented(CheckpointFlowOutcome.Dismissed, presentedProducts = listOf(monthly, product("annual")))
+        val run = presented(CheckpointFlowOutcome.Dismissed, monthly, product("annual"))
 
         val result = run.toResult(before, delivered)
 
@@ -66,7 +70,7 @@ class FlowResultMappingTest {
             CheckpointFlowOutcome.SyncFailed,
             object : CheckpointFlowOutcome() {},
         ).forEach { outcome ->
-            val run = presented(outcome, presentedProducts = listOf(product("monthly")))
+            val run = presented(outcome, product("monthly"))
 
             assertThat(run.toResult(before, delivered)).isEqualTo(FlowResult(emptySet(), emptySet()))
         }
@@ -98,7 +102,7 @@ class FlowResultMappingTest {
             .purchased("annual", date = Date(2_000))
             .purchased("lifetime")
 
-        val obtained = after.obtainedProducts(before, listOf(monthly, annual, lifetime))
+        val obtained = after.obtainedProducts(before, presenting(monthly, annual, lifetime), purchase = null)
 
         assertThat(obtained).containsExactlyInAnyOrder(ObtainedProduct(monthly), ObtainedProduct(annual))
     }
@@ -108,8 +112,8 @@ class FlowResultMappingTest {
         val before = customerInfoWithActive()
         val after = customerInfoWithActive().purchased("other")
 
-        assertThat(after.obtainedProducts(before, listOf(product("monthly")))).isEmpty()
-        assertThat(after.obtainedProducts(before, emptyList())).isEmpty()
+        assertThat(after.obtainedProducts(before, presenting(product("monthly")), purchase = null)).isEmpty()
+        assertThat(after.obtainedProducts(before, presenting(), purchase = null)).isEmpty()
         verify(exactly = 0) { after.getPurchaseDateForProductId("other") }
     }
 
@@ -119,7 +123,8 @@ class FlowResultMappingTest {
         val before = customerInfoWithActive()
         val after = customerInfoWithActive().purchased("monthly")
 
-        assertThat(after.obtainedProducts(before, listOf(monthly))).containsExactly(ObtainedProduct(monthly))
+        assertThat(after.obtainedProducts(before, presenting(monthly), purchase = null))
+            .containsExactly(ObtainedProduct(monthly))
     }
 
     @Test
@@ -129,7 +134,11 @@ class FlowResultMappingTest {
         val after = customerInfoWithActive().purchased("monthly:p1y")
 
         listOf(listOf(monthly, annual), listOf(annual, monthly)).forEach { presented ->
-            val obtained = after.obtainedProducts(customerInfoWithActive(), presented)
+            val obtained = after.obtainedProducts(
+                customerInfoWithActive(),
+                presenting(*presented.toTypedArray()),
+                purchase = null,
+            )
 
             assertThat(obtained).hasSize(1)
             assertThat(obtained.single().product).isSameAs(annual)
@@ -143,10 +152,66 @@ class FlowResultMappingTest {
         val second = product("monthly")
         val after = customerInfoWithActive().purchased("monthly")
 
-        val obtained = after.obtainedProducts(customerInfoWithActive(), listOf(first, second))
+        val obtained = after.obtainedProducts(customerInfoWithActive(), presenting(first, second), purchase = null)
 
         assertThat(obtained).hasSize(1)
         assertThat(obtained.single().product).isSameAs(first)
+    }
+
+    @Test
+    fun `the offering the purchase was made from gives its context to the product it bought`() {
+        val fromA = PresentedOfferingContext("a")
+        val fromB = PresentedOfferingContext("b")
+        val presentedOfferings = listOf(
+            offering("a", product("monthly", fromA), product("annual", fromA)),
+            offering("b", product("monthly", fromB), product("annual", fromB)),
+        )
+        val after = customerInfoWithActive().purchased("monthly", "annual")
+
+        val obtained = after.obtainedProducts(
+            customerInfoWithActive(),
+            presentedOfferings,
+            purchase = transaction("monthly", presentedOfferingContext = fromB),
+        )
+
+        val byId = obtained.associateBy { it.product.purchasingData.productId }
+        assertThat(byId.getValue("monthly").product.presentedOfferingContext).isEqualTo(fromB)
+        assertThat(byId.getValue("annual").product.presentedOfferingContext).isNull()
+        assertThat(byId.getValue("annual").product.id).isEqualTo("annual")
+    }
+
+    @Test
+    fun `a product only one offering presents keeps that offering's context`() {
+        val fromA = PresentedOfferingContext("a")
+        val monthly = product("monthly", fromA)
+        val after = customerInfoWithActive().purchased("monthly")
+
+        val obtained = after.obtainedProducts(
+            customerInfoWithActive(),
+            listOf(offering("a", monthly, product("monthly", fromA)), offering("b", product("annual"))),
+            purchase = null,
+        )
+
+        assertThat(obtained.single().product).isSameAs(monthly)
+    }
+
+    @Test
+    fun `a product several offerings present carries no context unless the purchase says which`() {
+        val presentedOfferings = listOf(
+            offering("a", product("monthly", PresentedOfferingContext("a"))),
+            offering("b", product("monthly", PresentedOfferingContext("b"))),
+        )
+        val after = customerInfoWithActive().purchased("monthly")
+
+        val withoutPurchase = after.obtainedProducts(customerInfoWithActive(), presentedOfferings, purchase = null)
+        val otherPurchase = after.obtainedProducts(
+            customerInfoWithActive(),
+            presentedOfferings,
+            purchase = transaction("annual", presentedOfferingContext = PresentedOfferingContext("b")),
+        )
+
+        assertThat(withoutPurchase.single().product.presentedOfferingContext).isNull()
+        assertThat(otherPurchase.single().product.presentedOfferingContext).isNull()
     }
 
     @Test
@@ -268,8 +333,22 @@ class FlowResultMappingTest {
         assertThat(purchases.customerInfo(CacheFetchPolicy.FETCH_CURRENT).errorOrNull()).isEqualTo(error)
     }
 
-    private fun presented(outcome: CheckpointFlowOutcome, presentedProducts: List<StoreProduct> = emptyList()) =
-        CheckpointRun(outcome, backedOut = false, presentedProducts = presentedProducts)
+    private fun presented(outcome: CheckpointFlowOutcome, vararg presentedProducts: StoreProduct) =
+        CheckpointRun(outcome, backedOut = false, presentedOfferings = presenting(*presentedProducts))
+
+    private fun presenting(vararg products: StoreProduct, identifier: String = "default"): List<Offering> =
+        listOf(offering(identifier, *products))
+
+    private fun offering(identifier: String, vararg products: StoreProduct): Offering = mockk {
+        every { this@mockk.identifier } returns identifier
+        every { availablePackages } returns products.map { p -> mockk<Package> { every { product } returns p } }
+    }
+
+    private fun transaction(vararg productIds: String, presentedOfferingContext: PresentedOfferingContext?) =
+        mockk<StoreTransaction> {
+            every { this@mockk.productIds } returns productIds.toList()
+            every { this@mockk.presentedOfferingContext } returns presentedOfferingContext
+        }
 
     private fun FlowResult?.obtainedIdentifiers(): List<String>? =
         this?.obtainedEntitlements?.map { it.entitlementInfo.identifier }
@@ -286,11 +365,19 @@ class FlowResultMappingTest {
         identifiers.forEach { identifier -> every { getPurchaseDateForProductId(identifier) } returns date }
     }
 
-    private fun product(identifier: String): StoreProduct =
-        TestStoreProduct(identifier, "name", "title", "description", Price("$1.99", 1_990_000, "USD"))
+    private fun product(identifier: String, presentedOfferingContext: PresentedOfferingContext? = null): StoreProduct =
+        TestStoreProduct(
+            identifier,
+            "name",
+            "title",
+            "description",
+            Price("$1.99", 1_990_000, "USD"),
+            presentedOfferingContext = presentedOfferingContext,
+        )
 
     private fun subscriptionProduct(id: String, productId: String): StoreProduct = mockk {
         every { this@mockk.id } returns id
         every { purchasingData.productId } returns productId
+        every { presentedOfferingContext } returns null
     }
 }

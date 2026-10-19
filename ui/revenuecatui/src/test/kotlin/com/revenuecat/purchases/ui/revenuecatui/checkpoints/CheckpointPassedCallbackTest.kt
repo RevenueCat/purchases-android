@@ -11,6 +11,7 @@ import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -19,6 +20,7 @@ import com.revenuecat.purchases.checkpoints.CheckpointResolution
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
 import com.revenuecat.purchases.ui.revenuecatui.R
@@ -521,15 +523,20 @@ class CheckpointPassedCallbackTest {
     fun `a presented workflow reports a product from any of its offerings and none from outside them`() =
         runTest(dispatcher) {
             val annual = product("annual")
+            val boughtFrom = PresentedOfferingContext("workflow_offering")
             resolvesToWorkflow(annual)
 
             checkpoint()
             finishPaywall(
-                CheckpointFlowOutcome.Purchased(customerInfoWithActive().purchased("annual", "other"), mockk()),
+                CheckpointFlowOutcome.Purchased(
+                    customerInfoWithActive().purchased("annual", "other"),
+                    transaction("annual", presentedOfferingContext = boughtFrom),
+                ),
             )
 
             val result = results.single()
             assertThat(result.flow!!.obtainedProducts).containsExactly(ObtainedProduct(annual))
+            assertThat(result.obtainedProduct("annual")!!.product.presentedOfferingContext).isEqualTo(boughtFrom)
             assertThat(result.didObtainProduct("other")).isFalse
         }
 
@@ -768,6 +775,12 @@ class CheckpointPassedCallbackTest {
 
     private fun product(identifier: String): StoreProduct =
         TestStoreProduct(identifier, "name", "title", "description", Price("$1.99", 1_990_000, "USD"))
+
+    private fun transaction(vararg productIds: String, presentedOfferingContext: PresentedOfferingContext?) =
+        mockk<StoreTransaction> {
+            every { this@mockk.productIds } returns productIds.toList()
+            every { this@mockk.presentedOfferingContext } returns presentedOfferingContext
+        }
 
     private fun offering(vararg products: StoreProduct): Offering = mockk {
         every { availablePackages } returns products.map { p -> mockk<Package> { every { product } returns p } }

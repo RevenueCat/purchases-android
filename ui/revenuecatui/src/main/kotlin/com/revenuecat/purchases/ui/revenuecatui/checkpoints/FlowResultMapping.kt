@@ -2,11 +2,13 @@ package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrNull
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -70,37 +72,56 @@ internal fun CheckpointRun.toResult(customerInfoBefore: CustomerInfo, customer: 
         null, is CheckpointFlowOutcome.Error -> null
         else -> FlowResult(
             obtainedEntitlements = customer.obtainedEntitlements(customerInfoBefore.activeEntitlementIds),
-            obtainedProducts = customer.obtainedProducts(customerInfoBefore, presentedProducts),
+            obtainedProducts = customer.obtainedProducts(
+                customerInfoBefore,
+                presentedOfferings,
+                purchase = (flowOutcome as? CheckpointFlowOutcome.Purchased)?.storeTransaction,
+            ),
         )
     }
 
-/** The products a resolved checkpoint can sell: the matched offering's, or every offering's for a workflow. */
-internal val CheckpointResolution.presentedProducts: List<StoreProduct>
+/** The offerings a resolved checkpoint can present: the matched one, or every offering for a workflow. */
+internal val CheckpointResolution.presentedOfferings: List<Offering>
     get() = when (this) {
-        is CheckpointResolution.MatchedOffering -> offering.availablePackages.map { it.product }
-        is CheckpointResolution.MatchedWorkflow -> offerings.all.values.flatMap { offering ->
-            offering.availablePackages.map { it.product }
-        }
+        is CheckpointResolution.MatchedOffering -> listOf(offering)
+        is CheckpointResolution.MatchedWorkflow -> offerings.all.values.toList()
         is CheckpointResolution.NoAction -> emptyList()
     }
 
 /**
- * The products among [presentedProducts] purchased since [customerInfoBefore]: those whose purchase date is now
- * known and differs from before (a renewal or a repeat consumable counts). Matched per base plan, since that is
- * how purchases are keyed, then one per store product identifier: a customer holds at most one base plan of a
- * subscription, so the matching one stands for the product.
+ * The products among those [presentedOfferings] sell purchased since [customerInfoBefore]: those whose purchase
+ * date is now known and differs from before (a renewal or a repeat consumable counts). Matched per base plan,
+ * since that is how purchases are keyed, then one per store product identifier: a customer holds at most one
+ * base plan of a subscription. Each is delivered with the presented offering context of the offering it was
+ * bought from when [purchase] says which, of its only presenting offering otherwise, and with none when several
+ * offerings presented it and the purchase is not the SDK's own.
  */
 internal fun CustomerInfo.obtainedProducts(
     customerInfoBefore: CustomerInfo,
-    presentedProducts: List<StoreProduct>,
-): Set<ObtainedProduct> = presentedProducts
+    presentedOfferings: List<Offering>,
+    purchase: StoreTransaction?,
+): Set<ObtainedProduct> = presentedOfferings
+    .flatMap { offering -> offering.availablePackages.map { it.product } }
     .filter { product ->
         val purchaseDate = purchaseDate(product)
         purchaseDate != null && purchaseDate != customerInfoBefore.purchaseDate(product)
     }
-    .distinctBy { it.purchasingData.productId }
-    .map { ObtainedProduct(it) }
+    .groupBy { it.purchasingData.productId }
+    .values
+    .map { instances -> ObtainedProduct(instances.withPresentationContext(purchase)) }
     .toSet()
+
+private fun List<StoreProduct>.withPresentationContext(purchase: StoreTransaction?): StoreProduct {
+    val product = first()
+    val purchasedFrom = purchase?.presentedOfferingContext?.takeIf {
+        product.purchasingData.productId in purchase.productIds || product.id in purchase.productIds
+    }
+    return when {
+        purchasedFrom != null -> product.copyWithPresentedOfferingContext(purchasedFrom)
+        distinctBy { it.presentedOfferingContext?.offeringIdentifier }.size == 1 -> product
+        else -> product.copyWithPresentedOfferingContext(null)
+    }
+}
 
 // Keyed like StoreProduct.id (base plan included for a Play subscription); the plain product identifier is the
 // key a purchase recorded without one carries.
