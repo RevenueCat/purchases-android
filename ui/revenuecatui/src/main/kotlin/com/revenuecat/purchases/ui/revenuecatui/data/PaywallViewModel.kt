@@ -1439,7 +1439,7 @@ internal class PaywallViewModelImpl(
         )
         val offeringWithContext = presentedOfferingContext?.let { offering.copy(it) } ?: offering
         val presentedOffering = options.injectedWorkflowCheckpointIdentifier?.let {
-            offeringWithContext.withPresentedCheckpointIdentifier(it)
+            offeringWithContext.withPresentedCheckpointIdentifier(it, traceId = null)
         } ?: offeringWithContext
 
         return calculateState(

@@ -179,7 +179,7 @@ internal fun Offering.withPresentedContext(
 @JvmSynthetic
 public fun Offering.withPresentedCheckpointIdentifier(
     checkpointIdentifier: String,
-    traceId: String? = null,
+    traceId: String?,
 ): Offering =
     withPresentedContext(
         placementId = null,
