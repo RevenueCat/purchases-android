@@ -264,6 +264,21 @@ class FlowResultMappingTest {
     }
 
     @Test
+    fun `hasEntitlement reads the delivered customer, obtained or not`() {
+        val pro = customerInfoWithActive("pro").entitlements.active.getValue("pro")
+        val heldBefore = CheckpointResult(flow = null, customer = customerInfoWithActive("pro"))
+        val obtainedOnly = CheckpointResult(
+            flow = FlowResult(setOf(ObtainedEntitlement(pro)), emptySet()),
+            customer = customerInfoWithActive(),
+        )
+
+        assertThat(heldBefore.hasEntitlement("pro")).isTrue
+        assertThat(heldBefore.didObtainEntitlement("pro")).isFalse
+        assertThat(heldBefore.hasEntitlement("plus")).isFalse
+        assertThat(obtainedOnly.hasEntitlement("pro")).isFalse
+    }
+
+    @Test
     fun `the customer info a flow produced is the purchase, restore or sync one`() {
         val customerInfo = customerInfoWithActive("pro")
         val producing = listOf(

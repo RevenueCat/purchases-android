@@ -37,4 +37,10 @@ public class CheckpointResult internal constructor(
 
     /** Whether the user obtained the product with [identifier] during this checkpoint. */
     public fun didObtainProduct(identifier: String): Boolean = obtainedProduct(identifier) != null
+
+    /**
+     * Whether the user holds an active entitlement with [identifier] according to [customer]: obtained during this
+     * checkpoint or already theirs before it.
+     */
+    public fun hasEntitlement(identifier: String): Boolean = identifier in customer.activeEntitlementIds
 }

@@ -451,6 +451,7 @@ package com.revenuecat.purchases.ui.revenuecatui.checkpoints {
     method public boolean didObtainProduct(String identifier);
     method @InaccessibleFromKotlin public com.revenuecat.purchases.CustomerInfo getCustomer();
     method @InaccessibleFromKotlin public com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowResult? getFlow();
+    method public boolean hasEntitlement(String identifier);
     method public com.revenuecat.purchases.ui.revenuecatui.checkpoints.ObtainedEntitlement? obtainedEntitlement(String identifier);
     method public com.revenuecat.purchases.ui.revenuecatui.checkpoints.ObtainedProduct? obtainedProduct(String identifier);
     property public com.revenuecat.purchases.CustomerInfo customer;

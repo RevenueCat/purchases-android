@@ -21,6 +21,7 @@ private class FlowResultAPI {
         val didObtainEntitlement: Boolean = result.didObtainEntitlement("pro")
         val obtainedProduct: ObtainedProduct? = result.obtainedProduct("monthly")
         val didObtainProduct: Boolean = result.didObtainProduct("monthly")
+        val hasEntitlement: Boolean = result.hasEntitlement("pro")
     }
 
     fun checkResult(result: FlowResult) {

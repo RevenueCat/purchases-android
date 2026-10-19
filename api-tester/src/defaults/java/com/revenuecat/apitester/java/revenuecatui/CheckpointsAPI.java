@@ -38,6 +38,7 @@ final class CheckpointsAPI {
             boolean didObtainEntitlement = result.didObtainEntitlement("pro");
             ObtainedProduct obtainedProduct = result.obtainedProduct("monthly");
             boolean didObtainProduct = result.didObtainProduct("monthly");
+            boolean hasEntitlement = result.hasEntitlement("pro");
             if (flow != null) {
                 Set<ObtainedEntitlement> obtainedEntitlements = flow.getObtainedEntitlements();
                 Set<ObtainedProduct> obtainedProducts = flow.getObtainedProducts();
