@@ -267,6 +267,48 @@ class DiscountVariableProcessingTests {
     }
 
     @Test
+    fun `discount variables are empty for a product period without length`() {
+        listOf(
+            Period(value = 1, unit = Period.Unit.UNKNOWN, iso8601 = "P1X"),
+            Period(value = 0, unit = Period.Unit.MONTH, iso8601 = "P0M"),
+        ).forEach { period ->
+            val pkg = subscription(
+                priceMicros = 59_990_000,
+                period = period,
+                packageType = PackageType.ANNUAL,
+                intro = phase(period, cycles = 1, micros = 990_000),
+            )
+
+            allVariables.forEach { variable ->
+                assertThat(process(variable, pkg, MOST_EXPENSIVE)).describedAs("$variable, $period").isEmpty()
+            }
+        }
+    }
+
+    @Test
+    fun `discount variables ignore an offer period without length`() {
+        listOf(
+            Period(value = 1, unit = Period.Unit.UNKNOWN, iso8601 = "P1X"),
+            Period(value = 0, unit = Period.Unit.MONTH, iso8601 = "P0M"),
+        ).forEach { period ->
+            val pkg = yearlyWithIntro(phase(period, cycles = 1, micros = 990_000))
+
+            listOf(
+                "product.offer_relative_discount",
+                "product.offer_absolute_discount",
+                "product.relative_discount_with_offer",
+                "product.absolute_discount_with_offer",
+            ).forEach { variable ->
+                assertThat(process(variable, pkg, MOST_EXPENSIVE)).describedAs("$variable, $period").isEmpty()
+            }
+            // 9.99 * 12 - 99.99, as without an offer
+            assertThat(process("product.absolute_discount_with_offer_full_period", pkg, MOST_EXPENSIVE))
+                .describedAs(period.toString())
+                .isEqualTo("$19.89")
+        }
+    }
+
+    @Test
     fun `discount variables are empty for lifetime`() {
         val lifetime = Package(
             identifier = PackageType.LIFETIME.identifier!!,
