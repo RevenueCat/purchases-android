@@ -86,18 +86,19 @@ internal val CheckpointResolution.presentedProducts: List<StoreProduct>
 
 /**
  * The products among [presentedProducts] purchased since [customerInfoBefore]: those whose purchase date is now
- * known and differs from before (a renewal or a repeat consumable counts). One per store product identifier: a
- * customer holds at most one base plan of a subscription, so the first package presenting it stands for all.
+ * known and differs from before (a renewal or a repeat consumable counts). Matched per base plan, since that is
+ * how purchases are keyed, then one per store product identifier: a customer holds at most one base plan of a
+ * subscription, so the matching one stands for the product.
  */
 internal fun CustomerInfo.obtainedProducts(
     customerInfoBefore: CustomerInfo,
     presentedProducts: List<StoreProduct>,
 ): Set<ObtainedProduct> = presentedProducts
-    .distinctBy { it.purchasingData.productId }
     .filter { product ->
         val purchaseDate = purchaseDate(product)
         purchaseDate != null && purchaseDate != customerInfoBefore.purchaseDate(product)
     }
+    .distinctBy { it.purchasingData.productId }
     .map { ObtainedProduct(it) }
     .toSet()
 

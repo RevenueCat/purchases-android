@@ -123,6 +123,21 @@ class FlowResultMappingTest {
     }
 
     @Test
+    fun `the base plan the user bought is reported when several base plans of a product are presented`() {
+        val monthly = subscriptionProduct(id = "monthly:p1m", productId = "monthly")
+        val annual = subscriptionProduct(id = "monthly:p1y", productId = "monthly")
+        val after = customerInfoWithActive().purchased("monthly:p1y")
+
+        listOf(listOf(monthly, annual), listOf(annual, monthly)).forEach { presented ->
+            val obtained = after.obtainedProducts(customerInfoWithActive(), presented)
+
+            assertThat(obtained).hasSize(1)
+            assertThat(obtained.single().product).isSameAs(annual)
+            assertThat(FlowResult(emptySet(), obtained).obtainedProduct("monthly")?.product).isSameAs(annual)
+        }
+    }
+
+    @Test
     fun `the same product presented by several packages is reported once`() {
         val first = product("monthly")
         val second = product("monthly")
