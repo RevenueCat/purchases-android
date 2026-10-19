@@ -40,6 +40,7 @@ import com.revenuecat.purchases.common.workflows.WorkflowStepID
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.DeepLinkParser
+import com.revenuecat.purchases.identity.Authentication
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
@@ -136,6 +137,14 @@ public class Purchases internal constructor(
      */
     public val appUserID: String
         @Synchronized get() = purchasesOrchestrator.appUserID
+
+    /**
+     * IAM login and logout, for other RevenueCat SDKs. Requires
+     * `PurchasesConfiguration.Builder.iamEnabled(true)`; see [Authentication].
+     */
+    @InternalRevenueCatAPI
+    public val authentication: Authentication
+        get() = purchasesOrchestrator.authentication
 
     /**
      * The storefront country code in ISO-3166-1 alpha2.

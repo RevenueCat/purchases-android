@@ -8,6 +8,7 @@ import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.identity.Authentication
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontCallback
@@ -41,6 +42,14 @@ public class Purchases internal constructor(
      */
     public val appUserID: String
         @Synchronized get() = purchasesOrchestrator.appUserID
+
+    /**
+     * IAM login and logout, for other RevenueCat SDKs. Requires
+     * `PurchasesConfiguration.Builder.iamEnabled(true)`; see [Authentication].
+     */
+    @InternalRevenueCatAPI
+    public val authentication: Authentication
+        get() = purchasesOrchestrator.authentication
 
     public val storefrontCountryCode: String?
         @Synchronized get() = purchasesOrchestrator.storefrontCountryCode
