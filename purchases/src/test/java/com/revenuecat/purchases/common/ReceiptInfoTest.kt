@@ -541,7 +541,7 @@ class ReceiptInfoTest {
     }
 
     @Test
-    fun `ReceiptInfo preserves checkpoint identifier when serialized and deserialized`() {
+    fun `ReceiptInfo preserves checkpoint identifier and trace id when serialized and deserialized`() {
         // language=JSON
         val serialized = """
             {
@@ -550,7 +550,8 @@ class ReceiptInfoTest {
                     "offeringIdentifier":"offering1",
                     "placementIdentifier":null,
                     "targetingContext":null,
-                    "checkpointIdentifier":"onboarding_paywall"
+                    "checkpointIdentifier":"onboarding_paywall",
+                    "traceId":"trace_id"
                 }
             }
         """.trimIndent().lines().joinToString("") { it.trim() }
