@@ -3,6 +3,7 @@
 package com.revenuecat.purchases.checkpoints
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -24,6 +25,7 @@ import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.common.workflows.WorkflowStep
+import com.revenuecat.purchases.withPresentedCheckpointIdentifier
 import kotlinx.coroutines.CancellationException
 import java.util.UUID
 
@@ -183,10 +185,24 @@ internal class CheckpointWorkflowResolverImpl(
 
         val offering = loadOfferings(checkpointIdentifier)?.all?.get(offeringIdentifier)
             ?: return unservableRule(rule, "offering '$offeringIdentifier' was not found in offerings")
+        val matched = matchedOffering(offering, checkpointIdentifier, rule)
         debugLog {
-            "Checkpoint resolved to offering '${offering.identifier}' from workflow '${rule.workflowId}'"
+            "Checkpoint resolved to offering '${matched.offering.identifier}' from workflow '${rule.workflowId}'"
         }
-        return CheckpointResolution.MatchedOffering(offering, checkpointRuleId = rule.id)
+        return matched
+    }
+
+    private fun matchedOffering(
+        offering: Offering,
+        checkpointIdentifier: String,
+        rule: CheckpointRule,
+    ): CheckpointResolution.MatchedOffering {
+        val traceId = UUID.randomUUID().toString()
+        return CheckpointResolution.MatchedOffering(
+            offering.withPresentedCheckpointIdentifier(checkpointIdentifier, traceId),
+            checkpointRuleId = rule.id,
+            traceId = traceId,
+        )
     }
 
     private suspend fun resolveUiRule(
@@ -244,6 +260,6 @@ internal class CheckpointWorkflowResolverImpl(
         Exception("the audiences configuration could not be read")
 
     private companion object {
-        const val SIMULATED_ERROR_CHECKPOINT_ID = "error_checkpoint"
+        const val SIMULATED_ERROR_CHECKPOINT_ID = "f0rc3_3rr0r"
     }
 }

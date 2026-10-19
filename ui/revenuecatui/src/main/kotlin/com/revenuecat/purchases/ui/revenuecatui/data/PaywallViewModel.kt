@@ -75,6 +75,7 @@ import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorSt
 import com.revenuecat.purchases.ui.revenuecatui.workflow.NavigationDirection
 import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowNavigator
 import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowScreenMapper
+import com.revenuecat.purchases.withPresentedCheckpointIdentifier
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -307,8 +308,6 @@ internal class PaywallViewModelImpl(
 
             override fun closePaywall(result: PaywallResult?, reason: PaywallDismissReason) =
                 this@PaywallViewModelImpl.closePaywall(result, reason)
-
-            override fun navigateBack(): Boolean = handleBackNavigation()
 
             override val flowEnded: Boolean
                 get() = shouldReloadStateOnNextPresentation
@@ -1186,6 +1185,13 @@ internal class PaywallViewModelImpl(
         )
     }
 
+    private fun initialWorkflowTraceId(
+        workflow: PublishedWorkflow,
+        presentedOfferingContext: PresentedOfferingContext?,
+    ): String = options.injectedWorkflowTraceId.takeIf { workflow == options.injectedWorkflow }
+        ?: presentedOfferingContext?.traceId
+        ?: UUID.randomUUID().toString()
+
     /**
      * Clears any cached workflow step states and builds the state for [currentStep] (plus the
      * package-bearing step, if different) so the UI can render the paywall. Also kicks off
@@ -1203,8 +1209,7 @@ internal class PaywallViewModelImpl(
         workflowStepStateCache.clear()
         _workflowState.value = null
         if (isNewWorkflowImpression) {
-            workflowTraceId = options.injectedWorkflowTraceId.takeIf { workflow == options.injectedWorkflow }
-                ?: UUID.randomUUID().toString()
+            workflowTraceId = initialWorkflowTraceId(workflow, presentedOfferingContext)
             // Fresh presentation: seed the shared store from every screen, sorted by id, so the build order
             // never decides which declaration of a key wins.
             // Rebuilds (navigation, color change) reuse the existing store so values persist across screens.
@@ -1439,9 +1444,12 @@ internal class PaywallViewModelImpl(
             webCheckoutURL = baseOffering?.webCheckoutURL,
         )
         val offeringWithContext = presentedOfferingContext?.let { offering.copy(it) } ?: offering
+        val presentedOffering = options.injectedWorkflowCheckpointIdentifier?.let {
+            offeringWithContext.withPresentedCheckpointIdentifier(it, traceId = null)
+        } ?: offeringWithContext
 
         return calculateState(
-            offering = offeringWithContext,
+            offering = presentedOffering,
             colorScheme = _colorScheme.value,
             storefrontCountryCode = purchases.storefrontCountryCode,
             mode = options.mode,
@@ -1498,10 +1506,7 @@ internal class PaywallViewModelImpl(
         val workflow = currentWorkflow ?: return
         val offerings = currentWorkflowOfferings ?: return
         val candidate = navigator.peekTriggerStep(componentId, triggerType) ?: return
-        (resolveStep(candidate, workflow, offerings) as? StepResolution.Invalid)?.let { invalid ->
-            failWorkflowPresentation(invalid.toErrorState())
-            return
-        }
+        prepareStateForStep(candidate, workflow, offerings) ?: return
         val fromStep = navigator.currentStep
         val fromStepId = fromStep?.id
         // triggerAction repeats the same lookup as peekTriggerStep. It should not return null
@@ -1534,10 +1539,7 @@ internal class PaywallViewModelImpl(
         val workflow = currentWorkflow ?: return false
         val offerings = currentWorkflowOfferings ?: return false
         val candidate = navigator.peekBackStep ?: return false
-        (resolveStep(candidate, workflow, offerings) as? StepResolution.Invalid)?.let { invalid ->
-            failWorkflowPresentation(invalid.toErrorState())
-            return true
-        }
+        prepareStateForStep(candidate, workflow, offerings) ?: return true
         val fromStep = navigator.currentStep
         val fromStepId = fromStep?.id
         // navigateBack should not return null given canNavigateBack is true, but guard to be safe.
@@ -1691,6 +1693,37 @@ internal class PaywallViewModelImpl(
                 experiment = experimentData(step),
             ),
         )
+    }
+
+    /**
+     * The state the user is about to navigate to, from the cache or computed and cached now, so a step that cannot
+     * be served is found out before the navigator moves. Such a step is reported like a failed action and the user
+     * stays on the current step: null is returned and nothing else changes.
+     */
+    private fun prepareStateForStep(
+        step: WorkflowStep,
+        workflow: PublishedWorkflow,
+        offerings: WorkflowOfferings,
+    ): PaywallState.Loaded.Components? {
+        val state = workflowStepStateCache[step.id] ?: computeStateForStep(
+            step,
+            workflow,
+            currentWorkflowUiConfig,
+            offerings,
+            currentWorkflowPresentedOfferingContext,
+            currentWorkflowStateStore,
+        )
+        if (state !is PaywallState.Loaded.Components) {
+            val error = (state as? PaywallState.Error)?.toPaywallResult()?.error
+                ?: PurchasesError(PurchasesErrorCode.ConfigurationError, "Step '${step.id}' cannot be shown.")
+            Logger.e(
+                "Step '${step.id}' of workflow '${workflow.id}' cannot be shown; staying on the current step: $error",
+            )
+            errorReporter.onActionError(error)
+            return null
+        }
+        workflowStepStateCache[step.id] = state
+        return state
     }
 
     @Suppress("ReturnCount")

@@ -24,4 +24,13 @@
     <string name="revenuecatui_purchase">Mua</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
     <string name="revenuecatui_preview_workflow_load_error">Không thể tải quy trình xem trước. Vui lòng thử lại.</string>
+    <string name="revenuecatui_checkpoint_error_network">Không thể kết nối. Hãy kiểm tra kết nối internet của bạn và thử lại.</string>
+    <string name="revenuecatui_checkpoint_error_load">Không thể tải nội dung này. Vui lòng thử lại sau.</string>
+    <string name="revenuecatui_checkpoint_error_store">Đã xảy ra sự cố với cửa hàng. Vui lòng thử lại sau.</string>
+    <string name="revenuecatui_checkpoint_error_purchase_not_allowed">Thiết bị này không được phép mua hàng.</string>
+    <string name="revenuecatui_checkpoint_error_product_unavailable">Sản phẩm này hiện không khả dụng.</string>
+    <string name="revenuecatui_checkpoint_error_already_purchased">Bạn đã sở hữu sản phẩm này.</string>
+    <string name="revenuecatui_checkpoint_error_payment_pending">Thanh toán của bạn đang chờ xử lý. Bạn sẽ có quyền truy cập sau khi được phê duyệt.</string>
+    <string name="revenuecatui_checkpoint_error_generic">Đã xảy ra lỗi. Vui lòng thử lại.</string>
+    <string name="revenuecatui_checkpoint_error_sync">Không thể xác minh các giao dịch mua của bạn. Vui lòng thử lại sau.</string>
 </resources>

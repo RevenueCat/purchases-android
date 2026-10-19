@@ -78,7 +78,7 @@ constructor(
             }
         }
         val currentUserId = identityManager.currentAppUserID
-        if (!IdentityManager.isUserIDAnonymous(currentUserId)) {
+        if (blockstoreClient == null || !IdentityManager.isUserIDAnonymous(currentUserId)) {
             callCompletion()
             return
         }

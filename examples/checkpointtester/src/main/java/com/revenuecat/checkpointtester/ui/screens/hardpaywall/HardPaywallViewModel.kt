@@ -44,7 +44,7 @@ class HardPaywallViewModel : ViewModel() {
                 }
             },
         ) { result ->
-            if (result != null && result.obtainedEntitlements.isNotEmpty()) {
+            if (result.flow?.obtainedEntitlements.orEmpty().isNotEmpty()) {
                 unlock("${result.summary()} Access granted.")
             } else {
                 stayLocked(result.summary())

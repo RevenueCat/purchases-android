@@ -5,7 +5,7 @@ import com.revenuecat.checkpointtester.checkpoints.PaywallPresenters
 import com.revenuecat.checkpointtester.checkpoints.summary
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowResult
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -40,8 +40,8 @@ class CustomCheckpointViewModel : ViewModel() {
 
     // Why nothing was presented, and any failure, only reach the logs.
     @OptIn(InviteOnlyCheckpointsAPI::class)
-    private fun FlowResult?.toUiState(): UiState = if (this == null) {
-        UiState(title = "Nothing presented", detail = "See the logs for the reason.", raw = "null")
+    private fun CheckpointResult.toUiState(): UiState = if (flow == null) {
+        UiState(title = "Nothing presented", detail = "See the logs for the reason.", raw = toString())
     } else {
         UiState(title = "Flow presented", detail = summary(), raw = toString())
     }

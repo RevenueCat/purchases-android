@@ -13,8 +13,8 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowResult
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -154,18 +154,17 @@ internal class CheckpointsViewModelImpl(
     }
 
     // Why nothing was presented, and any failure, are in the SDK logs.
-    private fun FlowResult?.toUi(): CheckpointResultUi = if (this == null) {
-        CheckpointResultUi(
+    private fun CheckpointResult.toUi(): CheckpointResultUi {
+        val flow = flow ?: return CheckpointResultUi(
             title = "Nothing presented",
             detail = "See the logs for the reason.",
             isError = false,
-            raw = "null",
+            raw = toString(),
         )
-    } else {
-        CheckpointResultUi(
+        return CheckpointResultUi(
             title = "Flow presented",
-            detail = if (obtainedEntitlements.isNotEmpty()) {
-                "Obtained ${obtainedEntitlements.joinToString { it.entitlementInfo.identifier }}"
+            detail = if (flow.obtainedEntitlements.isNotEmpty()) {
+                "Obtained ${flow.obtainedEntitlements.joinToString { it.entitlementInfo.identifier }}"
             } else {
                 "Nothing obtained"
             },

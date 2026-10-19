@@ -448,7 +448,7 @@ jobs:
       - install-awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/10.28.0-SNAPSHOT s3://purchases-docs/android/10.28.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/10.29.0-SNAPSHOT s3://purchases-docs/android/10.29.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -929,14 +929,14 @@ jobs:
           name: Run Maestro tests on minified release build
           command: |
             adb install -r test-apps/e2etests/build/outputs/apk/release/e2etests-release.apk
-            maestro test --exclude-tags debug-only --format junit --output maestro/report.xml maestro/e2e_tests/ maestro/workflows/
+            maestro test --exclude-tags debug-only --format junit --output maestro/report.xml maestro/e2e_tests/ maestro/workflows/ maestro/checkpoints/
       - run:
           # Flows tagged debug-only force server errors through configureForE2ETests, which only
           # exists in the SDK's debug variant, so they run against the debug build.
           name: Run Maestro debug-only tests
           command: |
             adb install -r test-apps/e2etests/build/outputs/apk/debug/e2etests-debug.apk
-            maestro test --include-tags debug-only --format junit --output maestro/debug-report.xml maestro/workflows/
+            maestro test --include-tags debug-only --format junit --output maestro/debug-report.xml maestro/workflows/ maestro/checkpoints/
       - store_artifacts:
           path: ~/.maestro/tests/
       - store_test_results:

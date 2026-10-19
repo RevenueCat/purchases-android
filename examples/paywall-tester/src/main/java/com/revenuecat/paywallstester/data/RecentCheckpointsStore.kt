@@ -12,7 +12,7 @@ internal class RecentCheckpointsStore(
         private const val KEY_RECENT_CHECKPOINTS = "com.revenuecat.paywallstester.recent_checkpoints"
         private const val MAX_RECENTS = 10
         private const val SEPARATOR = "\n"
-        private val DEFAULT_RECENTS = listOf("test_checkpoint", "unknown_checkpoint", "error_checkpoint")
+        private val DEFAULT_RECENTS = listOf("test_checkpoint", "unknown_checkpoint", "f0rc3_3rr0r")
     }
 
     constructor(context: Context) : this(context.getSharedPreferences(SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE))
