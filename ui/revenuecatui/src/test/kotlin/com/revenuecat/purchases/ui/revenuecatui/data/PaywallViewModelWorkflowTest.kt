@@ -1575,7 +1575,7 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
-    fun `workflow load from a checkpoint offering uses the checkpoint trace id`() {
+    fun `workflow load from a checkpoint offering uses the checkpoint trace id`() = runTest {
         val captured = mutableListOf<FeatureEvent>()
         every { purchases.track(any()) } answers {
             captured.add(firstArg())
@@ -1586,8 +1586,11 @@ class PaywallViewModelWorkflowTest {
 
         val vm = createVm()
         vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, checkpointContext, uiConfig)
+        advanceUntilIdle()
 
         assertThat(captured.filterIsInstance<WorkflowEvent.StepStarted>().single().traceId).isEqualTo("hit_trace")
+        val loadedOffering = (vm.state.value as PaywallState.Loaded.Components).offering
+        assertThat(loadedOffering.availablePackages.first().presentedOfferingContext.traceId).isEqualTo("hit_trace")
     }
 
     @Test

@@ -52,7 +52,12 @@ internal constructor(
         val showNoOffering = placements.offeringIdsByPlacement.containsKey(placementId)
         val offering = offeringForPlacement ?: if (showNoOffering) null else fallbackOffering
 
-        return offering?.withPresentedContext(placementId = placementId, targeting = this.targeting)
+        return offering?.withPresentedContext(
+            placementId = placementId,
+            targeting = this.targeting,
+            checkpointIdentifier = null,
+            traceId = null,
+        )
     }
 
     /**
@@ -133,8 +138,8 @@ private data class OfferingsComparableData(
 internal fun Offering.withPresentedContext(
     placementId: String?,
     targeting: Offerings.Targeting?,
-    checkpointIdentifier: String? = null,
-    traceId: String? = null,
+    checkpointIdentifier: String?,
+    traceId: String?,
 ): Offering {
     val updatedAvailablePackages = this.availablePackages.map {
         val oldContext = it.presentedOfferingContext
