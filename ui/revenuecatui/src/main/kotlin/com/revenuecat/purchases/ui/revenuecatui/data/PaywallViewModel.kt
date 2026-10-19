@@ -1185,6 +1185,13 @@ internal class PaywallViewModelImpl(
         )
     }
 
+    private fun initialWorkflowTraceId(
+        workflow: PublishedWorkflow,
+        presentedOfferingContext: PresentedOfferingContext?,
+    ): String = options.injectedWorkflowTraceId.takeIf { workflow == options.injectedWorkflow }
+        ?: presentedOfferingContext?.traceId
+        ?: UUID.randomUUID().toString()
+
     /**
      * Clears any cached workflow step states and builds the state for [currentStep] (plus the
      * package-bearing step, if different) so the UI can render the paywall. Also kicks off
@@ -1202,8 +1209,7 @@ internal class PaywallViewModelImpl(
         workflowStepStateCache.clear()
         _workflowState.value = null
         if (isNewWorkflowImpression) {
-            workflowTraceId = options.injectedWorkflowTraceId.takeIf { workflow == options.injectedWorkflow }
-                ?: UUID.randomUUID().toString()
+            workflowTraceId = initialWorkflowTraceId(workflow, presentedOfferingContext)
             // Fresh presentation: seed the shared store from every screen, sorted by id, so the build order
             // never decides which declaration of a key wins.
             // Rebuilds (navigation, color change) reuse the existing store so values persist across screens.
@@ -1439,7 +1445,7 @@ internal class PaywallViewModelImpl(
         )
         val offeringWithContext = presentedOfferingContext?.let { offering.copy(it) } ?: offering
         val presentedOffering = options.injectedWorkflowCheckpointIdentifier?.let {
-            offeringWithContext.withPresentedCheckpointIdentifier(it)
+            offeringWithContext.withPresentedCheckpointIdentifier(it, traceId = null)
         } ?: offeringWithContext
 
         return calculateState(

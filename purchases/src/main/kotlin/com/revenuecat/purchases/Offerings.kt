@@ -52,7 +52,12 @@ internal constructor(
         val showNoOffering = placements.offeringIdsByPlacement.containsKey(placementId)
         val offering = offeringForPlacement ?: if (showNoOffering) null else fallbackOffering
 
-        return offering?.withPresentedContext(placementId = placementId, targeting = this.targeting)
+        return offering?.withPresentedContext(
+            placementId = placementId,
+            targeting = this.targeting,
+            checkpointIdentifier = null,
+            traceId = null,
+        )
     }
 
     /**
@@ -133,7 +138,8 @@ private data class OfferingsComparableData(
 internal fun Offering.withPresentedContext(
     placementId: String?,
     targeting: Offerings.Targeting?,
-    checkpointIdentifier: String? = null,
+    checkpointIdentifier: String?,
+    traceId: String?,
 ): Offering {
     val updatedAvailablePackages = this.availablePackages.map {
         val oldContext = it.presentedOfferingContext
@@ -147,6 +153,9 @@ internal fun Offering.withPresentedContext(
             )
             .let { context ->
                 checkpointIdentifier?.let(context::copyWithCheckpointIdentifier) ?: context
+            }
+            .let { context ->
+                traceId?.let(context::copyWithTraceId) ?: context
             }
         val product = it.product.copyWithPresentedOfferingContext(newContext)
 
@@ -173,9 +182,13 @@ internal fun Offering.withPresentedContext(
 /** Returns a copy whose purchase contexts identify the checkpoint that presented this offering. */
 @InternalRevenueCatAPI
 @JvmSynthetic
-public fun Offering.withPresentedCheckpointIdentifier(checkpointIdentifier: String): Offering =
+public fun Offering.withPresentedCheckpointIdentifier(
+    checkpointIdentifier: String,
+    traceId: String?,
+): Offering =
     withPresentedContext(
         placementId = null,
         targeting = null,
         checkpointIdentifier = checkpointIdentifier,
+        traceId = traceId,
     )

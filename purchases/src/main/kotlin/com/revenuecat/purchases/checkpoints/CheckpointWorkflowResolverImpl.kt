@@ -3,6 +3,7 @@
 package com.revenuecat.purchases.checkpoints
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -184,11 +185,24 @@ internal class CheckpointWorkflowResolverImpl(
 
         val offering = loadOfferings(checkpointIdentifier)?.all?.get(offeringIdentifier)
             ?: return unservableRule(rule, "offering '$offeringIdentifier' was not found in offerings")
-        val presentedOffering = offering.withPresentedCheckpointIdentifier(checkpointIdentifier)
+        val matched = matchedOffering(offering, checkpointIdentifier, rule)
         debugLog {
-            "Checkpoint resolved to offering '${presentedOffering.identifier}' from workflow '${rule.workflowId}'"
+            "Checkpoint resolved to offering '${matched.offering.identifier}' from workflow '${rule.workflowId}'"
         }
-        return CheckpointResolution.MatchedOffering(presentedOffering, checkpointRuleId = rule.id)
+        return matched
+    }
+
+    private fun matchedOffering(
+        offering: Offering,
+        checkpointIdentifier: String,
+        rule: CheckpointRule,
+    ): CheckpointResolution.MatchedOffering {
+        val traceId = UUID.randomUUID().toString()
+        return CheckpointResolution.MatchedOffering(
+            offering.withPresentedCheckpointIdentifier(checkpointIdentifier, traceId),
+            checkpointRuleId = rule.id,
+            traceId = traceId,
+        )
     }
 
     private suspend fun resolveUiRule(

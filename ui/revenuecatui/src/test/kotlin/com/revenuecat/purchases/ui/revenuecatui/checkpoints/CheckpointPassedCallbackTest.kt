@@ -242,7 +242,7 @@ class CheckpointPassedCallbackTest {
 
     @Test
     fun `the SDK's own paywall that cannot load does not pass`() = runTest(dispatcher) {
-        resolvesTo(CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null))
+        resolvesTo(CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null, traceId = "trace_id"))
 
         checkpoint()
         defaultPresenter!!.paywallOptions("") {}!!.dismissRequestWithExitOffering!!(
@@ -259,7 +259,7 @@ class CheckpointPassedCallbackTest {
     @Test
     fun `the SDK's own paywall that fails to come back after a configuration change is presented and does not pass`() =
         runTest(dispatcher) {
-            resolvesTo(CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null))
+            resolvesTo(CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null, traceId = "trace_id"))
             manager.errorPresenter = errorPresenter
 
             checkpoint()
@@ -289,7 +289,7 @@ class CheckpointPassedCallbackTest {
     @Test
     fun `an offering checkpoint presents the fallback paywall and delivers what the user obtained`() =
         runTest(dispatcher) {
-            resolvesTo(CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null))
+            resolvesTo(CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null, traceId = "trace_id"))
             every { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) } answers {
                 secondArg<ReceiveCustomerInfoCallback>().onReceived(customerInfoWithActive("pro"))
             }
@@ -519,7 +519,7 @@ class CheckpointPassedCallbackTest {
         manager.paywallPresenter = PaywallPresenter { _, presentation ->
             completion = presentation
         }
-        resolvesTo(CheckpointResolution.MatchedOffering(offering, checkpointRuleId = null))
+        resolvesTo(CheckpointResolution.MatchedOffering(offering, checkpointRuleId = null, traceId = "trace_id"))
         return { completion }
     }
 
