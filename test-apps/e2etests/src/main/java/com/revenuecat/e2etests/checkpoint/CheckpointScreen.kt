@@ -31,7 +31,6 @@ import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint
 @Composable
 fun CheckpointScreen(
     identifier: String,
-    productIdentifier: String,
     modifier: Modifier = Modifier,
 ) {
     var status by remember { mutableStateOf("Callback: not invoked") }
@@ -52,7 +51,7 @@ fun CheckpointScreen(
                 Purchases.sharedInstance.checkpoint(identifier) { result ->
                     invocations++
                     status = "${result.describe()} (call #$invocations)"
-                    details = result.details(productIdentifier)
+                    details = result.details()
                 }
             },
         ) {
@@ -72,14 +71,14 @@ private fun CheckpointResult.describe(): String {
 
 // One line per fact, without regex specials, so Maestro matches each literally.
 @OptIn(InviteOnlyCheckpointsAPI::class)
-private fun CheckpointResult.details(productIdentifier: String): List<String> {
+private fun CheckpointResult.details(): List<String> {
     val products = flow?.obtainedProducts?.map { it.product.purchasingData.productId }?.sorted().orEmpty()
     val active = customer.entitlements.active.keys.sorted()
     return listOf(
         "Obtained products: ${products.ifEmpty { listOf("none") }.joinToString()}",
         "Entitlement $ENTITLEMENT_ID obtained: ${didObtainEntitlement(ENTITLEMENT_ID)}",
-        "Product $productIdentifier obtained: ${didObtainProduct(productIdentifier)}",
-        "Product $productIdentifier offering: ${obtainedProduct(productIdentifier)?.offeringIdentifier ?: "none"}",
+        "Product $PRODUCT_ID obtained: ${didObtainProduct(PRODUCT_ID)}",
+        "Product $PRODUCT_ID offering: ${obtainedProduct(PRODUCT_ID)?.offeringIdentifier ?: "none"}",
         "Customer active entitlements: ${active.ifEmpty { listOf("none") }.joinToString()}",
     )
 }
@@ -89,3 +88,6 @@ private val ObtainedProduct.offeringIdentifier: String?
     get() = product.presentedOfferingContext?.offeringIdentifier
 
 private const val ENTITLEMENT_ID = "pro"
+
+// The checkpoint paywall's preselected package.
+private const val PRODUCT_ID = "pro_monthly_subscription"
