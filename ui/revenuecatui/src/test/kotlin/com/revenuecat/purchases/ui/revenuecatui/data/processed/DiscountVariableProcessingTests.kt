@@ -23,7 +23,10 @@ import java.util.Locale
 class DiscountVariableProcessingTests {
 
     private companion object {
-        private const val MOST_EXPENSIVE_MONTHLY_MICROS = 9_990_000L
+        /**
+         * The most expensive per-month price in the tab: a 9.99 monthly package.
+         */
+        private const val MOST_EXPENSIVE = 9_990_000L
 
         private val year = Period(value = 1, unit = Period.Unit.YEAR, iso8601 = "P1Y")
         private val threeMonths = Period(value = 3, unit = Period.Unit.MONTH, iso8601 = "P3M")
@@ -32,18 +35,29 @@ class DiscountVariableProcessingTests {
 
         private val oneWeekFreeTrial = phase(week, cycles = 1, micros = 0)
 
-        private val offerVariables = listOf(
+        private val mostExpensiveVariables = listOf(
+            "product.absolute_discount",
+            "product.relative_discount_with_offer",
+            "product.absolute_discount_with_offer",
+            "product.relative_discount_with_offer_full_period",
+            "product.absolute_discount_with_offer_full_period",
+        )
+
+        private val allVariables = mostExpensiveVariables + listOf(
             "product.offer_relative_discount",
             "product.offer_absolute_discount",
-            "product.offer_relative_discount_vs_standard",
-            "product.offer_absolute_discount_vs_standard",
         )
 
         private fun usd(micros: Long) = Price(formatted = "", amountMicros = micros, currencyCode = "USD")
 
-        private fun phase(period: Period, cycles: Int, micros: Long) = PricingPhase(
+        private fun phase(
+            period: Period,
+            cycles: Int,
+            micros: Long,
+            recurrenceMode: RecurrenceMode = RecurrenceMode.FINITE_RECURRING,
+        ) = PricingPhase(
             billingPeriod = period,
-            recurrenceMode = RecurrenceMode.FINITE_RECURRING,
+            recurrenceMode = recurrenceMode,
             billingCycleCount = cycles,
             price = usd(micros),
         )
@@ -83,50 +97,113 @@ class DiscountVariableProcessingTests {
             packageType = PackageType.MONTHLY,
             intro = phase(month, cycles = 3, micros = 4_990_000),
         )
+
+        private fun yearlyWithIntro(intro: PricingPhase) = subscription(
+            priceMicros = 99_990_000,
+            period = year,
+            packageType = PackageType.ANNUAL,
+            intro = intro,
+        )
     }
 
     @Test
-    fun `offer discounts vs standard prorate a free trial over the first year`() {
+    fun `offer discounts prorate a free trial over the first year`() {
         // 59.99 - 59.99 * 358 / 365 = 1.15
-        assertThat(process("product.offer_absolute_discount_vs_standard", yearlyWithOneWeekTrial)).isEqualTo("$1.15")
-        assertThat(process("product.offer_relative_discount_vs_standard", yearlyWithOneWeekTrial)).isEqualTo("2%")
+        assertThat(process("product.offer_absolute_discount", yearlyWithOneWeekTrial)).isEqualTo("$1.15")
+        assertThat(process("product.offer_relative_discount", yearlyWithOneWeekTrial)).isEqualTo("2%")
     }
 
     @Test
-    fun `offer discounts vs most expensive include the offer in the first year`() {
+    fun `full period discounts with offer include the offer in the first year`() {
         // 9.99 * 12 - 59.99 * 358 / 365 = 61.04
-        assertThat(process("product.offer_absolute_discount", yearlyWithOneWeekTrial, MOST_EXPENSIVE_MONTHLY_MICROS))
+        assertThat(process("product.absolute_discount_with_offer_full_period", yearlyWithOneWeekTrial, MOST_EXPENSIVE))
             .isEqualTo("$61.04")
-        assertThat(process("product.offer_relative_discount", yearlyWithOneWeekTrial, MOST_EXPENSIVE_MONTHLY_MICROS))
+        assertThat(process("product.relative_discount_with_offer_full_period", yearlyWithOneWeekTrial, MOST_EXPENSIVE))
             .isEqualTo("51%")
     }
 
     @Test
     fun `absolute discount compares the standard price with the most expensive over the product period`() {
         // 9.99 * 12 - 59.99, ignoring the offer
-        assertThat(process("product.absolute_discount", yearlyWithOneWeekTrial, MOST_EXPENSIVE_MONTHLY_MICROS))
+        assertThat(process("product.absolute_discount", yearlyWithOneWeekTrial, MOST_EXPENSIVE)).isEqualTo("$59.89")
+    }
+
+    @Test
+    fun `absolute discount is not one cent too low`() {
+        val pkg = subscription(119_990_000, year, PackageType.ANNUAL)
+
+        // 19.99 * 12 - 119.99
+        assertThat(process("product.absolute_discount", pkg, mostExpensivePricePerMonthMicros = 19_990_000))
+            .isEqualTo("$119.89")
+    }
+
+    @Test
+    fun `discounts with offer compare the offer term with the most expensive`() {
+        val pkg = yearlyWithIntro(phase(year, cycles = 1, micros = 52_990_000))
+
+        // (9.99 - 52.99 / 12) / 9.99 and 9.99 * 12 - 52.99
+        assertThat(process("product.relative_discount_with_offer", pkg, MOST_EXPENSIVE)).isEqualTo("56%")
+        assertThat(process("product.absolute_discount_with_offer", pkg, MOST_EXPENSIVE)).isEqualTo("$66.89")
+    }
+
+    @Test
+    fun `discounts with offer measure a short offer over its own term`() {
+        val pkg = yearlyWithIntro(phase(month, cycles = 1, micros = 990_000))
+
+        // 9.99 - 0.99 over the offer month
+        assertThat(process("product.absolute_discount_with_offer", pkg, MOST_EXPENSIVE)).isEqualTo("$9.00")
+        assertThat(process("product.relative_discount_with_offer", pkg, MOST_EXPENSIVE)).isEqualTo("90%")
+        // 9.99 * 12 - (0.99 + 99.99 * 335 / 365) over the first year
+        assertThat(process("product.absolute_discount_with_offer_full_period", pkg, MOST_EXPENSIVE))
+            .isEqualTo("$27.12")
+        assertThat(process("product.relative_discount_with_offer_full_period", pkg, MOST_EXPENSIVE))
+            .isEqualTo("23%")
+    }
+
+    @Test
+    fun `discounts with offer treat a free trial as no offer`() {
+        assertThat(process("product.absolute_discount_with_offer", yearlyWithOneWeekTrial, MOST_EXPENSIVE))
             .isEqualTo("$59.89")
+        assertThat(process("product.relative_discount_with_offer", yearlyWithOneWeekTrial, MOST_EXPENSIVE))
+            .isEqualTo("50%")
+    }
+
+    @Test
+    fun `discounts with offer use the paid phase after a free trial`() {
+        val pkg = subscription(
+            priceMicros = 59_990_000,
+            period = year,
+            packageType = PackageType.ANNUAL,
+            freeTrial = oneWeekFreeTrial,
+            intro = phase(month, cycles = 3, micros = 2_990_000),
+        )
+
+        // 9.99 * 3 - 2.99 * 3
+        assertThat(process("product.absolute_discount_with_offer", pkg, MOST_EXPENSIVE)).isEqualTo("$21.00")
+        assertThat(process("product.relative_discount_with_offer", pkg, MOST_EXPENSIVE)).isEqualTo("70%")
     }
 
     @Test
     fun `offer discounts count only the first period of a recurring offer`() {
         val pkg = monthlyWithThreeHalfPriceMonths()
 
-        assertThat(process("product.offer_absolute_discount_vs_standard", pkg)).isEqualTo("$5.00")
-        assertThat(process("product.offer_relative_discount_vs_standard", pkg)).isEqualTo("50%")
+        assertThat(process("product.offer_absolute_discount", pkg)).isEqualTo("$5.00")
+        assertThat(process("product.offer_relative_discount", pkg)).isEqualTo("50%")
     }
 
     @Test
-    fun `offer discounts prorate a single payment offer longer than the period`() {
+    fun `a single payment phase reported with zero cycles counts once`() {
         val pkg = subscription(
-            9_990_000,
-            month,
-            PackageType.MONTHLY,
-            intro = phase(threeMonths, cycles = 1, micros = 19_990_000),
+            priceMicros = 9_990_000,
+            period = month,
+            packageType = PackageType.MONTHLY,
+            intro = phase(threeMonths, cycles = 0, micros = 19_990_000, RecurrenceMode.NON_RECURRING),
         )
 
         // 9.99 - 19.99 / 3
-        assertThat(process("product.offer_absolute_discount_vs_standard", pkg)).isEqualTo("$3.33")
+        assertThat(process("product.offer_absolute_discount", pkg)).isEqualTo("$3.33")
+        // 9.99 * 3 - 19.99
+        assertThat(process("product.absolute_discount_with_offer", pkg, MOST_EXPENSIVE)).isEqualTo("$9.98")
     }
 
     @Test
@@ -134,7 +211,7 @@ class DiscountVariableProcessingTests {
         val pkg = subscription(9_990_000, month, PackageType.MONTHLY, freeTrial = oneWeekFreeTrial)
 
         // 9.99 * 7 / 30
-        assertThat(process("product.offer_absolute_discount_vs_standard", pkg)).isEqualTo("$2.33")
+        assertThat(process("product.offer_absolute_discount", pkg)).isEqualTo("$2.33")
     }
 
     @Test
@@ -148,40 +225,45 @@ class DiscountVariableProcessingTests {
         )
 
         // 9.99 - 4.99 * 23 / 30
-        assertThat(process("product.offer_absolute_discount_vs_standard", pkg)).isEqualTo("$6.16")
-        assertThat(process("product.offer_relative_discount_vs_standard", pkg)).isEqualTo("62%")
+        assertThat(process("product.offer_absolute_discount", pkg)).isEqualTo("$6.16")
+        assertThat(process("product.offer_relative_discount", pkg)).isEqualTo("62%")
     }
 
     @Test
     fun `absolute discounts drop trailing zeros when configured`() {
-        val pkg = monthlyWithThreeHalfPriceMonths()
-
-        assertThat(process("product.offer_absolute_discount_vs_standard", pkg, showZeroDecimalPlacePrices = true))
-            .isEqualTo("$5")
+        assertThat(
+            process("product.offer_absolute_discount", monthlyWithThreeHalfPriceMonths(), showZeroDecimalPlaces = true),
+        ).isEqualTo("$5")
     }
 
     @Test
-    fun `offer discounts are empty without an offer`() {
+    fun `discounts with offer match absolute discount without an offer`() {
         val pkg = subscription(59_990_000, year, PackageType.ANNUAL)
 
-        offerVariables.forEach { variable ->
-            assertThat(process(variable, pkg, MOST_EXPENSIVE_MONTHLY_MICROS)).describedAs(variable).isEmpty()
+        listOf("product.offer_relative_discount", "product.offer_absolute_discount").forEach { variable ->
+            assertThat(process(variable, pkg, MOST_EXPENSIVE)).describedAs(variable).isEmpty()
         }
-        assertThat(process("product.absolute_discount", pkg, MOST_EXPENSIVE_MONTHLY_MICROS)).isEqualTo("$59.89")
+        listOf(
+            "product.absolute_discount",
+            "product.absolute_discount_with_offer",
+            "product.absolute_discount_with_offer_full_period",
+        ).forEach { variable ->
+            assertThat(process(variable, pkg, MOST_EXPENSIVE)).describedAs(variable).isEqualTo("$59.89")
+        }
     }
 
     @Test
     fun `discounts vs most expensive are empty without a most expensive price`() {
-        assertThat(process("product.offer_relative_discount", yearlyWithOneWeekTrial)).isEmpty()
-        assertThat(process("product.offer_absolute_discount", yearlyWithOneWeekTrial)).isEmpty()
-        assertThat(process("product.absolute_discount", yearlyWithOneWeekTrial)).isEmpty()
+        mostExpensiveVariables.forEach { variable ->
+            assertThat(process(variable, yearlyWithOneWeekTrial)).describedAs(variable).isEmpty()
+        }
     }
 
     @Test
     fun `absolute discount is empty for the most expensive product`() {
-        val pkg = subscription(MOST_EXPENSIVE_MONTHLY_MICROS, month, PackageType.MONTHLY)
+        val pkg = subscription(MOST_EXPENSIVE, month, PackageType.MONTHLY)
 
-        assertThat(process("product.absolute_discount", pkg, MOST_EXPENSIVE_MONTHLY_MICROS)).isEmpty()
+        assertThat(process("product.absolute_discount", pkg, MOST_EXPENSIVE)).isEmpty()
     }
 
     @Test
@@ -199,8 +281,8 @@ class DiscountVariableProcessingTests {
             presentedOfferingContext = PresentedOfferingContext(offeringIdentifier = "offering"),
         )
 
-        (offerVariables + "product.absolute_discount").forEach { variable ->
-            assertThat(process(variable, lifetime, MOST_EXPENSIVE_MONTHLY_MICROS)).describedAs(variable).isEmpty()
+        allVariables.forEach { variable ->
+            assertThat(process(variable, lifetime, MOST_EXPENSIVE)).describedAs(variable).isEmpty()
         }
     }
 
@@ -208,7 +290,7 @@ class DiscountVariableProcessingTests {
         variable: String,
         rcPackage: Package,
         mostExpensivePricePerMonthMicros: Long? = null,
-        showZeroDecimalPlacePrices: Boolean = false,
+        showZeroDecimalPlaces: Boolean = false,
     ): String = VariableProcessorV2.processVariables(
         template = "{{ $variable }}",
         localizedVariableKeys = variableLocalizationKeysForEnUs(),
@@ -219,7 +301,7 @@ class DiscountVariableProcessingTests {
         variableDataProvider = VariableDataProvider(MockResourceProvider()),
         packageContext = PackageContext(
             discountRelativeToMostExpensivePerMonth = null,
-            showZeroDecimalPlacePrices = showZeroDecimalPlacePrices,
+            showZeroDecimalPlacePrices = showZeroDecimalPlaces,
             mostExpensivePricePerMonthMicros = mostExpensivePricePerMonthMicros,
         ),
         rcPackage = rcPackage,
