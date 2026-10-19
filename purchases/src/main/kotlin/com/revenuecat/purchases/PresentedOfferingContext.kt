@@ -1,3 +1,5 @@
+@file:OptIn(InternalRevenueCatAPI::class)
+
 package com.revenuecat.purchases
 
 import android.os.Parcelable
@@ -34,7 +36,8 @@ public class PresentedOfferingContext private constructor(
     @get:JvmSynthetic
     internal val checkpointIdentifier: String?,
     @get:JvmSynthetic
-    internal val traceId: String?,
+    @property:InternalRevenueCatAPI
+    public val traceId: String?,
 ) : Parcelable {
     public constructor(
         offeringIdentifier: String,

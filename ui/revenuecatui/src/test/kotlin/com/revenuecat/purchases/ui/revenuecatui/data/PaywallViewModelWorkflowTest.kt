@@ -94,6 +94,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
+import com.revenuecat.purchases.withPresentedCheckpointIdentifier
 import kotlinx.serialization.json.JsonPrimitive
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
@@ -1571,6 +1572,22 @@ class PaywallViewModelWorkflowTest {
         assertThat(started.first().isFirstStep).isTrue
         assertThat(started.first().isLastStep).isFalse
         assertThat(started.first().traceId).isNotEmpty()
+    }
+
+    @Test
+    fun `workflow load from a checkpoint offering uses the checkpoint trace id`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers {
+            captured.add(firstArg())
+        }
+        val checkpointContext = testOfferings.all.values.first()
+            .withPresentedCheckpointIdentifier("app_start", traceId = "hit_trace")
+            .availablePackages.first().presentedOfferingContext
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, checkpointContext, uiConfig)
+
+        assertThat(captured.filterIsInstance<WorkflowEvent.StepStarted>().single().traceId).isEqualTo("hit_trace")
     }
 
     @Test
