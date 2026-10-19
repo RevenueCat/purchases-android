@@ -172,8 +172,12 @@ class ConfigureFragment : Fragment() {
             .entitlementVerificationMode(entitlementVerificationMode)
             .purchasesAreCompletedBy(purchasesAreCompletedBy)
             .pendingTransactionsForPrepaidPlansEnabled(true)
+            .iamEnabled(binding.iamEnabledCheckbox.isChecked)
             .build()
         Purchases.configure(configuration)
+        application.iamEnabled = binding.iamEnabledCheckbox.isChecked
+        // The application holds the delegate strongly; Authentication only keeps a weak reference.
+        if (application.iamEnabled) Purchases.sharedInstance.authentication.delegate = application
         Purchases.sharedInstance.debugEventListener = DebugEventListener { event ->
             android.util.Log.d("PurchaseTester", "DebugEvent: ${event.name} ${event.properties}")
         }

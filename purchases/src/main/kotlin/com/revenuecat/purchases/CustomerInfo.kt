@@ -9,6 +9,7 @@ import android.net.Uri
 import android.os.Parcelable
 import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.identity.IdentitySource
 import com.revenuecat.purchases.models.RawDataContainer
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.utils.DateHelper
@@ -261,6 +262,15 @@ public class CustomerInfo internal constructor(
 
     @IgnoredOnParcel
     private val subscriberJSONObject = jsonObject.getJSONObject("subscriber")
+
+    // IAM responses carry the user's `amr`; true only when it's non-empty and every entry is anonymous.
+    @OptIn(InternalRevenueCatAPI::class)
+    internal val allIdentitiesAreAnonymous: Boolean
+        get() {
+            val amr = jsonObject.optJSONObject("user")?.optJSONArray("amr") ?: return false
+            return amr.length() > 0 &&
+                (0 until amr.length()).all { amr.optString(it) == IdentitySource.ANONYMOUS.rawValue }
+        }
 
     /**
      * @hide

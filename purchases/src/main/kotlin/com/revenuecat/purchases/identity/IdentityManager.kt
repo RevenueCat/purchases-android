@@ -348,14 +348,18 @@ internal class IdentityManager(
     @Synchronized
     private fun switchToIAMUserIfStillCurrent(oldAppUserID: String, newAppUserID: String): Boolean {
         if (currentAppUserID != oldAppUserID) return false
-        deviceCache.clearCachesForAppUserID(oldAppUserID)
-        clearRemoteConfigThenOfferingsCaches(newAppUserID)
-        subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
-        commitAppUserID(newAppUserID)
-        copySubscriberAttributesToNewUserIfOldIsAnonymous(oldAppUserID, newAppUserID)
-        clearPaywallWebViewStorageIfUserChanged(oldAppUserID, newAppUserID)
-        offlineEntitlementsManager.resetOfflineCustomerInfoCache()
-        backend.clearCaches()
+        // Only clear caches if the new user id is different.
+        // Migrating a pre-IAM anonymous account can preserve the user id, and should also preserve caches
+        if (oldAppUserID != newAppUserID) {
+            deviceCache.clearCachesForAppUserID(oldAppUserID)
+            clearRemoteConfigThenOfferingsCaches(newAppUserID)
+            subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
+            commitAppUserID(newAppUserID)
+            copySubscriberAttributesToNewUserIfOldIsAnonymous(oldAppUserID, newAppUserID)
+            clearPaywallWebViewStorageIfUserChanged(oldAppUserID, newAppUserID)
+            offlineEntitlementsManager.resetOfflineCustomerInfoCache()
+            backend.clearCaches()
+        }
         return true
     }
 
@@ -466,9 +470,13 @@ internal class IdentityManager(
         offeringsCache.clearCache()
     }
 
-    // Server-assigned anonymous IDs needn't match the regex; their ID token says so. False until tokens load.
-    private fun isAnonymous(appUserID: String): Boolean =
-        isUserIDAnonymous(appUserID) || tokenManager.isCurrentIdentityAnonymous(appUserID)
+    // Server-assigned anonymous IDs needn't match the regex. When there's an ID token, it decides: a cached
+    // CustomerInfo can be stale after linking. The cache only covers having no ID token (or none loaded yet).
+    private fun isAnonymous(appUserID: String): Boolean = when {
+        isUserIDAnonymous(appUserID) -> true
+        tokenManager.currentIdentitySources(appUserID) != null -> tokenManager.isCurrentIdentityAnonymous(appUserID)
+        else -> tokenManager.enabled && deviceCache.getCachedCustomerInfo(appUserID)?.allIdentitiesAreAnonymous == true
+    }
 
     // Anonymous is exempt: signing in mid-flow is the multipage paywall case, same customer either side.
     private fun clearPaywallWebViewStorageIfUserChanged(oldAppUserID: String, newAppUserID: String) {
