@@ -429,6 +429,27 @@ class IdentityManagerIAMTests {
         }
 
     @Test
+    fun `an identified ID token wins over a stale anonymous cached CustomerInfo`() = runTest {
+        cachedAppUserID = serverID
+        every { deviceCache.getCachedCustomerInfo(serverID) } returns customerInfoWithAmr("anonymous")
+        createIdentityManager()
+        saveIDToken(serverID, amr = listOf("anonymous", "google"))
+
+        assertThat(identityManager.currentUserIsAnonymous()).isFalse()
+    }
+
+    @Test
+    fun `the cached CustomerInfo isn't read when there's an ID token`() = runTest {
+        cachedAppUserID = serverID
+        createIdentityManager()
+        saveIDToken(serverID, amr = listOf("google"))
+
+        identityManager.currentUserIsAnonymous()
+
+        verify(exactly = 0) { deviceCache.getCachedCustomerInfo(any()) }
+    }
+
+    @Test
     fun `the cached CustomerInfo is not consulted when IAM is disabled`() = runTest {
         cachedAppUserID = serverID
         every { deviceCache.getCachedCustomerInfo(serverID) } returns customerInfoWithAmr("anonymous")

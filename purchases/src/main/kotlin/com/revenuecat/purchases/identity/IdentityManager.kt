@@ -470,12 +470,13 @@ internal class IdentityManager(
         offeringsCache.clearCache()
     }
 
-    // Server-assigned anonymous IDs needn't match the regex; their ID token or cached CustomerInfo says so.
-    // The token check is false until tokens load.
-    private fun isAnonymous(appUserID: String): Boolean =
-        isUserIDAnonymous(appUserID) ||
-            tokenManager.isCurrentIdentityAnonymous(appUserID) ||
-            tokenManager.enabled && deviceCache.getCachedCustomerInfo(appUserID)?.allIdentitiesAreAnonymous == true
+    // Server-assigned anonymous IDs needn't match the regex. When there's an ID token, it decides: a cached
+    // CustomerInfo can be stale after linking. The cache only covers having no ID token (or none loaded yet).
+    private fun isAnonymous(appUserID: String): Boolean = when {
+        isUserIDAnonymous(appUserID) -> true
+        tokenManager.currentIdentitySources(appUserID) != null -> tokenManager.isCurrentIdentityAnonymous(appUserID)
+        else -> tokenManager.enabled && deviceCache.getCachedCustomerInfo(appUserID)?.allIdentitiesAreAnonymous == true
+    }
 
     // Anonymous is exempt: signing in mid-flow is the multipage paywall case, same customer either side.
     private fun clearPaywallWebViewStorageIfUserChanged(oldAppUserID: String, newAppUserID: String) {
