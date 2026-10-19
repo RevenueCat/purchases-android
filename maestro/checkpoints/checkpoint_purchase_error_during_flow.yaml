@@ -63,5 +63,6 @@ env:
     timeout: 15000
 - assertVisible: "Obtained products: none"
 - assertVisible: "Product pro_monthly_subscription obtained: false"
+- assertVisible: "Product pro_monthly_subscription offering: none"
 - assertVisible: "Customer active entitlements: none"
 - takeScreenshot: "checkpoint_purchase_error_during_flow - passed empty"

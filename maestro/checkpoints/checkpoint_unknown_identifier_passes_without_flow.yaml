@@ -29,5 +29,6 @@ env:
 - assertVisible: "Obtained products: none"
 - assertVisible: "Entitlement pro obtained: false"
 - assertVisible: "Product pro_monthly_subscription obtained: false"
+- assertVisible: "Product pro_monthly_subscription offering: none"
 - assertVisible: "Customer active entitlements: none"
 - takeScreenshot: "checkpoint_unknown_identifier_passes_without_flow - passed without flow"

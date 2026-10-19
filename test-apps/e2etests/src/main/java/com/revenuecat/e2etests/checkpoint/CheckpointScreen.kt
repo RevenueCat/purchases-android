@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ObtainedProduct
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint
 
 /**
@@ -78,8 +79,13 @@ private fun CheckpointResult.details(productIdentifier: String): List<String> {
         "Obtained products: ${products.ifEmpty { listOf("none") }.joinToString()}",
         "Entitlement $ENTITLEMENT_ID obtained: ${didObtainEntitlement(ENTITLEMENT_ID)}",
         "Product $productIdentifier obtained: ${didObtainProduct(productIdentifier)}",
+        "Product $productIdentifier offering: ${obtainedProduct(productIdentifier)?.offeringIdentifier ?: "none"}",
         "Customer active entitlements: ${active.ifEmpty { listOf("none") }.joinToString()}",
     )
 }
+
+@OptIn(InviteOnlyCheckpointsAPI::class)
+private val ObtainedProduct.offeringIdentifier: String?
+    get() = product.presentedOfferingContext?.offeringIdentifier
 
 private const val ENTITLEMENT_ID = "pro"

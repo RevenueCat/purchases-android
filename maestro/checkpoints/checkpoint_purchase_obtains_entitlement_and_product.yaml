@@ -1,7 +1,7 @@
 # A purchase inside the flow a checkpoint presents (`donottouch_sdk_everyone` presents its paywall to every user,
 # monthly package preselected): the paywall closes on its own and the checkpoint passes with the entitlement and
-# the product the user obtained, both findable through the result's lookups, and the customer's information
-# showing the entitlement active.
+# the product the user obtained, both findable through the result's lookups, the product carrying the context
+# of the offering it was bought from, and the customer's information showing the entitlement active.
 #
 # Run locally against the test store:
 #   maestro test -e MAESTRO_STORE=test_store maestro/checkpoints/checkpoint_purchase_obtains_entitlement_and_product.yaml
@@ -46,5 +46,6 @@ env:
 - assertVisible: "Obtained products: pro_monthly_subscription"
 - assertVisible: "Entitlement pro obtained: true"
 - assertVisible: "Product pro_monthly_subscription obtained: true"
+- assertVisible: "Product pro_monthly_subscription offering: default"
 - assertVisible: "Customer active entitlements: pro"
 - takeScreenshot: "checkpoint_purchase_obtains_entitlement_and_product - passed"
