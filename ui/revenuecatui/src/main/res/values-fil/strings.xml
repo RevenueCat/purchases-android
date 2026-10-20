@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="OK">OK</string>
+    <string name="loading">Naglo-load</string>
+    <string name="all_plans">Lahat ng plano</string>
+    <string name="privacy">Privacy</string>
+    <string name="privacy_policy">Patakaran sa privacy</string>
+    <string name="restore">Ibalik</string>
+    <string name="restore_purchases">Ibalik ang mga binili</string>
+    <string name="terms">Mga Tuntunin</string>
+    <string name="terms_and_conditions">Mga tuntunin at kundisyon</string>
+    <string name="annual">Taunan</string>
+    <string name="semester">6 Buwan</string>
+    <string name="quarter">3 Buwan</string>
+    <string name="bimonthly">2 Buwan</string>
+    <string name="monthly">Buwanan</string>
+    <string name="weekly">Lingguhan</string>
+    <string name="lifetime">Panghabambuhay</string>
+    <string name="package_discount">%1$d%% diskwento</string>
+    <string name="continue_cta">Magpatuloy</string>
+    <string name="default_offer_details_with_intro_offer">Simulan ang iyong trial na {{ sub_offer_duration }}, pagkatapos ay {{ total_price_and_per_month }}.</string>
+    <string name="no_browser_cannot_open_link">Walang naka-install na browser. Hindi mabuksan ang link.</string>
+    <string name="cannot_open_link">Hindi wasto ang link. Hindi ito mabuksan.</string>
+    <string name="revenuecatui_purchase">Bilhin</string>
+    <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">Hindi ma-load ang preview na workflow. Pakisubukang muli.</string>
+    <string name="revenuecatui_checkpoint_error_network">Hindi makakonekta. Tingnan ang iyong koneksyon sa internet at subukang muli.</string>
+    <string name="revenuecatui_checkpoint_error_load">Hindi ma-load ang nilalamang ito. Pakisubukang muli mamaya.</string>
+    <string name="revenuecatui_checkpoint_error_store">Nagkaproblema sa store. Pakisubukang muli mamaya.</string>
+    <string name="revenuecatui_checkpoint_error_purchase_not_allowed">Hindi pinapayagan ang mga pagbili sa device na ito.</string>
+    <string name="revenuecatui_checkpoint_error_product_unavailable">Hindi available ang produktong ito sa ngayon.</string>
+    <string name="revenuecatui_checkpoint_error_already_purchased">Pagmamay-ari mo na ang produktong ito.</string>
+    <string name="revenuecatui_checkpoint_error_payment_pending">Nakabinbin ang iyong bayad. Magkakaroon ka ng access kapag naaprubahan na ito.</string>
+    <string name="revenuecatui_checkpoint_error_generic">Nagkaproblema. Pakisubukang muli.</string>
+    <string name="revenuecatui_checkpoint_error_sync">Hindi ma-verify ang iyong mga binili. Pakisubukang muli mamaya.</string>
+</resources>

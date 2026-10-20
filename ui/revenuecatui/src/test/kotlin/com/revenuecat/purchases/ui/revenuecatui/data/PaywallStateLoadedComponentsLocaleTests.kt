@@ -329,6 +329,31 @@ internal class PaywallStateLoadedComponentsLocaleTests(
                     expected = "no",
                 ),
             ),
+            arrayOf(
+                "fil-PH -> fil",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "fil"),
+                    deviceLocales = nonEmptyListOf("fil-PH", "en-US"),
+                    expected = "fil",
+                ),
+            ),
+            // Tagalog is an alias of Filipino
+            arrayOf(
+                "tl-PH -> fil",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "fil"),
+                    deviceLocales = nonEmptyListOf("tl-PH", "en-US"),
+                    expected = "fil",
+                ),
+            ),
+            arrayOf(
+                "tl -> fil",
+                Args(
+                    paywallLocales = nonEmptyListOf("en_US", "fil"),
+                    deviceLocales = nonEmptyListOf("tl", "en-US"),
+                    expected = "fil",
+                ),
+            ),
         )
     }
 

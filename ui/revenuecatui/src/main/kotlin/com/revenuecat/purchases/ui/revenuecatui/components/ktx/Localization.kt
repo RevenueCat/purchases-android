@@ -195,12 +195,14 @@ private fun LocaleId.withFallbackLanguages(): List<JavaLocale> {
 
 /**
  * For some language codes it is expected to fall back to another language code if an exact match can't be found. This
- * is the case for Norwegian Bokmål (`nb`) and Norwegian Nynorsk (`nn`), for instance.
+ * is the case for Norwegian Bokmål (`nb`) and Norwegian Nynorsk (`nn`), for instance, and for Tagalog (`tl`), which
+ * is an alias of Filipino (`fil`).
  */
 private val JavaLocale.fallbackLanguages: List<JavaLocale>
     get() = when (language) {
         "nb" -> listOf(JavaLocale("no", country, variant))
         "nn" -> listOf(JavaLocale("no", country, variant))
+        "tl" -> listOf(JavaLocale("fil", country, variant))
         else -> emptyList()
     }
 
