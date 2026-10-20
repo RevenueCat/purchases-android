@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ObtainedProduct
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint
 
 /**
@@ -33,6 +34,7 @@ fun CheckpointScreen(
     modifier: Modifier = Modifier,
 ) {
     var status by remember { mutableStateOf("Callback: not invoked") }
+    var details by remember { mutableStateOf(emptyList<String>()) }
     var invocations by remember { mutableIntStateOf(0) }
 
     Column(
@@ -49,12 +51,14 @@ fun CheckpointScreen(
                 Purchases.sharedInstance.checkpoint(identifier) { result ->
                     invocations++
                     status = "${result.describe()} (call #$invocations)"
+                    details = result.details()
                 }
             },
         ) {
             Text("Hit checkpoint")
         }
         Text(text = status)
+        details.forEach { Text(text = it) }
     }
 }
 
@@ -64,3 +68,26 @@ private fun CheckpointResult.describe(): String {
     val entitlements = flow.obtainedEntitlements.map { it.entitlementInfo.identifier }.sorted()
     return "Callback: passed, entitlements: ${entitlements.ifEmpty { listOf("none") }.joinToString()}"
 }
+
+// One line per fact, without regex specials, so Maestro matches each literally.
+@OptIn(InviteOnlyCheckpointsAPI::class)
+private fun CheckpointResult.details(): List<String> {
+    val products = flow?.obtainedProducts?.map { it.product.purchasingData.productId }?.sorted().orEmpty()
+    val active = customer.entitlements.active.keys.sorted()
+    return listOf(
+        "Obtained products: ${products.ifEmpty { listOf("none") }.joinToString()}",
+        "Entitlement $ENTITLEMENT_ID obtained: ${didObtainEntitlement(ENTITLEMENT_ID)}",
+        "Product $PRODUCT_ID obtained: ${didObtainProduct(PRODUCT_ID)}",
+        "Product $PRODUCT_ID offering: ${obtainedProduct(PRODUCT_ID)?.offeringIdentifier ?: "none"}",
+        "Customer active entitlements: ${active.ifEmpty { listOf("none") }.joinToString()}",
+    )
+}
+
+@OptIn(InviteOnlyCheckpointsAPI::class)
+private val ObtainedProduct.offeringIdentifier: String?
+    get() = product.presentedOfferingContext?.offeringIdentifier
+
+private const val ENTITLEMENT_ID = "pro"
+
+// The checkpoint paywall's preselected package.
+private const val PRODUCT_ID = "pro_monthly_subscription"
