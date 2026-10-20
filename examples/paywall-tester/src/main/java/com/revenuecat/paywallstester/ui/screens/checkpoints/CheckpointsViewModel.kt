@@ -165,8 +165,10 @@ internal class CheckpointsViewModelImpl(
         )
         return CheckpointResultUi(
             title = "Flow presented",
-            detail = if (flow.obtainedEntitlements.isNotEmpty()) {
-                "Obtained ${flow.obtainedEntitlements.joinToString { it.entitlementInfo.identifier }}. $activeNow"
+            detail = if (flow.obtainedEntitlements.isNotEmpty() || flow.obtainedProducts.isNotEmpty()) {
+                val entitlements = flow.obtainedEntitlements.joinToString { it.entitlementInfo.identifier }
+                val products = flow.obtainedProducts.joinToString { it.product.purchasingData.productId }
+                "Obtained entitlements: $entitlements, products: $products. $activeNow"
             } else {
                 "Nothing obtained. $activeNow"
             },

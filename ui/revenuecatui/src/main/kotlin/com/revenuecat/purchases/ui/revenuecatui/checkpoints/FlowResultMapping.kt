@@ -2,12 +2,17 @@ package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.checkpoints.CheckpointResolution
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
+import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrNull
 import kotlinx.coroutines.suspendCancellableCoroutine
+import java.util.Date
 import kotlin.coroutines.resume
 
 /**
@@ -56,15 +61,72 @@ internal val CheckpointFlowOutcome.customerInfo: CustomerInfo?
 
 /**
  * The result to deliver for this run: null when nothing was presented because there was nothing to serve, what the
- * user obtained otherwise. A run that failed, or whose flow ended in an error, is not delivered at all (see
- * [CheckpointsManager.checkpoint]); the null branch for [CheckpointFlowOutcome.Error] only keeps the mapping total.
- * Dismissed, WebCheckoutOpened, and any future outcome without an in-app grant signal obtained nothing.
+ * user obtained otherwise, read from [customer] (the information delivered with the run) against
+ * [customerInfoBefore], whatever the outcome: a restore that granted nothing new, or a purchase the app's own
+ * paywall completed, is not an outcome but still shows in the delivered information. A run that failed, or whose
+ * flow ended in an error, is not delivered at all (see [CheckpointsManager.checkpoint]); the null branch for
+ * [CheckpointFlowOutcome.Error] only keeps the mapping total.
  */
-internal fun CheckpointRun.toResult(activeEntitlementsBefore: Set<String>?): FlowResult? =
-    when (val outcome = flowOutcome) {
+internal fun CheckpointRun.toResult(customerInfoBefore: CustomerInfo, customer: CustomerInfo): FlowResult? =
+    when (flowOutcome) {
         null, is CheckpointFlowOutcome.Error -> null
-        else -> FlowResult(outcome.customerInfo?.obtainedEntitlements(activeEntitlementsBefore).orEmpty())
+        else -> FlowResult(
+            obtainedEntitlements = customer.obtainedEntitlements(customerInfoBefore.activeEntitlementIds),
+            obtainedProducts = customer.obtainedProducts(
+                customerInfoBefore,
+                presentedOfferings,
+                purchase = (flowOutcome as? CheckpointFlowOutcome.Purchased)?.storeTransaction,
+            ),
+        )
     }
+
+/** The offerings a resolved checkpoint can present: the matched one, or every offering for a workflow. */
+internal val CheckpointResolution.presentedOfferings: List<Offering>
+    get() = when (this) {
+        is CheckpointResolution.MatchedOffering -> listOf(offering)
+        is CheckpointResolution.MatchedWorkflow -> offerings.all.values.toList()
+        is CheckpointResolution.NoAction -> emptyList()
+    }
+
+/**
+ * The products among those [presentedOfferings] sell purchased since [customerInfoBefore]: those whose purchase
+ * date is now known and differs from before (a renewal or a repeat consumable counts). Matched per base plan,
+ * since that is how purchases are keyed, then one per store product identifier: a customer holds at most one
+ * base plan of a subscription. Each is delivered with the presented offering context of the offering it was
+ * bought from when [purchase] says which, of its only presenting offering otherwise, and with none when several
+ * offerings presented it and the purchase is not the SDK's own.
+ */
+internal fun CustomerInfo.obtainedProducts(
+    customerInfoBefore: CustomerInfo,
+    presentedOfferings: List<Offering>,
+    purchase: StoreTransaction?,
+): Set<ObtainedProduct> = presentedOfferings
+    .flatMap { offering -> offering.availablePackages.map { it.product } }
+    .filter { product ->
+        val purchaseDate = purchaseDate(product)
+        purchaseDate != null && purchaseDate != customerInfoBefore.purchaseDate(product)
+    }
+    .groupBy { it.purchasingData.productId }
+    .values
+    .map { instances -> ObtainedProduct(instances.withPresentationContext(purchase)) }
+    .toSet()
+
+private fun List<StoreProduct>.withPresentationContext(purchase: StoreTransaction?): StoreProduct {
+    val product = first()
+    val purchasedFrom = purchase?.presentedOfferingContext?.takeIf {
+        product.purchasingData.productId in purchase.productIds || product.id in purchase.productIds
+    }
+    return when {
+        purchasedFrom != null -> product.copyWithPresentedOfferingContext(purchasedFrom)
+        distinctBy { it.presentedOfferingContext?.offeringIdentifier }.size == 1 -> product
+        else -> product.copyWithPresentedOfferingContext(null)
+    }
+}
+
+// Keyed like StoreProduct.id (base plan included for a Play subscription); the plain product identifier is the
+// key a purchase recorded without one carries.
+private fun CustomerInfo.purchaseDate(product: StoreProduct): Date? =
+    getPurchaseDateForProductId(product.id) ?: getPurchaseDateForProductId(product.purchasingData.productId)
 
 /**
  * The customer info to deliver with a passed run: the one the flow produced, else the latest cached copy (a
