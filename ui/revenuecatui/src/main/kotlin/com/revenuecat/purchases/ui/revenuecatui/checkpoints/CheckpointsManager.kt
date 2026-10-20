@@ -17,6 +17,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PresentationSlot.PendingCall
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrElse
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -54,6 +55,9 @@ internal class CheckpointRun(
     val failed: Boolean = false,
     // Releases whatever the SDK still has on screen for this run; invoked once the app has been told.
     val finishPresentation: () -> Unit = {},
+    // The customer's information read before anything was presented. Null only for a failed or blocked run,
+    // which ends before that read or without one and is never delivered.
+    val customerInfoBefore: CustomerInfo? = null,
 )
 
 /**
@@ -98,7 +102,6 @@ internal class CheckpointsManager(
     private val slot = PresentationSlot()
     private val errorPresentationQueue = ErrorPresentationQueue(scope)
 
-    private val nothingPresented = CheckpointRun(flowOutcome = null, backedOut = false)
     private val blockedByPresentedFlow =
         CheckpointRun(flowOutcome = null, backedOut = false, blockedByPresentedFlow = true)
     private val failed = CheckpointRun(flowOutcome = null, backedOut = false, failed = true)
@@ -108,7 +111,13 @@ internal class CheckpointsManager(
      * presented flow finishes. Never throws: a failure to resolve or present is logged, handed to the error
      * presenter, and comes back as a failed run once the app's error UI is done. Completion is reported by
      * [checkpoint].
+     *
+     * The customer's information is read once resolved and before anything is presented: cached when warm,
+     * fetched otherwise, so a run that goes on always has one to deliver. A read that fails is served like a
+     * resolution that fails. It comes after resolving so the checkpoint hit is tracked either way, and so the
+     * resolver's own read has already warmed the cache for a configured checkpoint.
      */
+    @Suppress("LongMethod")
     suspend fun runCheckpoint(
         purchases: Purchases,
         identifier: String,
@@ -141,6 +150,10 @@ internal class CheckpointsManager(
             Logger.e("Checkpoint '$identifier' could not be resolved: ${e.error}")
             return@withContext presentFailure(e.error)
         }
+        val customerInfoBefore = purchases.customerInfo(CacheFetchPolicy.CACHED_OR_FETCHED).getOrElse { error ->
+            Logger.e("Checkpoint '$identifier': the customer's information could not be read: $error")
+            return@withContext presentFailure(error)
+        }
         try {
             when (resolution) {
                 is CheckpointResolution.MatchedOffering -> presentOffering(
@@ -148,16 +161,28 @@ internal class CheckpointsManager(
                     PaywallPresenter.Params(resolution.offering, identifier, customVariables, presentationMode),
                     presenter ?: defaultPresenterFactory(purchases, errorPresenter()),
                     errorPresenter,
+                    customerInfoBefore,
                 )
-                is CheckpointResolution.MatchedWorkflow ->
-                    present(purchases, identifier, resolution, customVariables, errorPresenter(), presentationMode)
+                is CheckpointResolution.MatchedWorkflow -> present(
+                    purchases,
+                    identifier,
+                    resolution,
+                    customVariables,
+                    errorPresenter(),
+                    presentationMode,
+                    customerInfoBefore,
+                )
                 is CheckpointResolution.NoAction -> when (resolution.reason) {
                     CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE -> {
                         val message = "The configuration needed to serve checkpoint '$identifier' could not be read."
                         Logger.e(message)
                         presentFailure(PurchasesError(PurchasesErrorCode.ConfigurationError, message))
                     }
-                    else -> nothingPresented
+                    else -> CheckpointRun(
+                        flowOutcome = null,
+                        backedOut = false,
+                        customerInfoBefore = customerInfoBefore,
+                    )
                 }
             }
         } catch (e: PurchasesException) {
@@ -188,10 +213,10 @@ internal class CheckpointsManager(
     }
 
     /**
-     * The checkpoint API: runs the checkpoint and invokes [callback] with what the user obtained, at most once
-     * and on the main thread. The callback is skipped when the checkpoint could not be served or its flow ended
-     * in an error, when the user backed out of the presented flow, and when the checkpoint resolved to a flow
-     * while another checkpoint flow was already on screen. Never throws.
+     * The checkpoint API: runs the checkpoint and invokes [callback] with what the user obtained and the customer's
+     * information after the flow, at most once and on the main thread. The callback is skipped when the checkpoint
+     * could not be served or its flow ended in an error, when the user backed out of the presented flow, and when
+     * the checkpoint resolved to a flow while another checkpoint flow was already on screen. Never throws.
      */
     fun checkpoint(
         purchases: Purchases,
@@ -200,9 +225,9 @@ internal class CheckpointsManager(
         callback: CheckpointPassedCallback,
     ) {
         scope.launch {
-            val activeEntitlementsBefore = cachedActiveEntitlementIds(purchases)
             val run = runCheckpoint(purchases, identifier, params)
             try {
+                val customerInfoBefore = run.customerInfoBefore
                 when {
                     run.blockedByPresentedFlow -> Logger.w(
                         "Checkpoint '$identifier': another checkpoint flow is already being presented, so this " +
@@ -212,7 +237,18 @@ internal class CheckpointsManager(
                         Logger.d("Checkpoint '$identifier': it could not be served, so the callback is not invoked.")
                     run.backedOut ->
                         Logger.d("Checkpoint '$identifier': the user backed out, so the callback is not invoked.")
-                    else -> callback.onCheckpointPassed(CheckpointResult(run.toResult(activeEntitlementsBefore)))
+                    // Unreachable: every run that gets here was built with one. Logged rather than thrown so a
+                    // slip never takes the main thread down.
+                    customerInfoBefore == null -> Logger.e(
+                        "Checkpoint '$identifier': passed without the customer's information, so the callback is " +
+                            "not invoked.",
+                    )
+                    else -> callback.onCheckpointPassed(
+                        CheckpointResult(
+                            flow = run.toResult(customerInfoBefore.activeEntitlementIds),
+                            customer = run.customerInfoAfter(purchases, customerInfoBefore),
+                        ),
+                    )
                 }
             } finally {
                 run.finishPresentation()
@@ -297,6 +333,7 @@ internal class CheckpointsManager(
                 recorded ?: CheckpointFlowOutcome.Dismissed,
                 backedOut = navigatedBack && !recorded.isObtained,
                 finishPresentation = finishPresentation,
+                customerInfoBefore = finished.customerInfoBefore,
             ),
         )
     }
@@ -308,11 +345,19 @@ internal class CheckpointsManager(
         val failed = slot.take(callId) ?: return
         val obtained = failed.outcome.takeIf { it.isObtained }
         if (obtained != null) {
-            failed.flowFinished.complete(CheckpointRun(obtained, backedOut = false))
+            failed.flowFinished.complete(
+                CheckpointRun(obtained, backedOut = false, customerInfoBefore = failed.customerInfoBefore),
+            )
             return
         }
         val complete = {
-            failed.flowFinished.complete(CheckpointRun(CheckpointFlowOutcome.Error(error), backedOut = false))
+            failed.flowFinished.complete(
+                CheckpointRun(
+                    CheckpointFlowOutcome.Error(error),
+                    backedOut = false,
+                    customerInfoBefore = failed.customerInfoBefore,
+                ),
+            )
             Unit
         }
         failed.presentation?.errorPresenter
@@ -332,11 +377,13 @@ internal class CheckpointsManager(
         params: PaywallPresenter.Params,
         presenter: PaywallPresenter,
         errorPresenter: () -> ErrorPresenter,
+        customerInfoBefore: CustomerInfo,
     ): CheckpointRun {
         val call = PendingCall(
             callId = UUID.randomUUID().toString(),
             presentation = null,
-            activeEntitlementsBefore = null,
+            activeEntitlementsBefore = customerInfoBefore.activeEntitlementIds,
+            customerInfoBefore = customerInfoBefore,
             flowFinished = CompletableDeferred(),
         )
         if (!slot.claim(call)) return blockedByPresentedFlow
@@ -387,7 +434,11 @@ internal class CheckpointsManager(
         private fun navigatedBack() {
             slot.take(callId)?.let { call ->
                 call.flowFinished.complete(
-                    CheckpointRun(CheckpointFlowOutcome.Dismissed, backedOut = true),
+                    CheckpointRun(
+                        CheckpointFlowOutcome.Dismissed,
+                        backedOut = true,
+                        customerInfoBefore = call.customerInfoBefore,
+                    ),
                 )
             }
         }
@@ -396,7 +447,11 @@ internal class CheckpointsManager(
         private fun failed(error: PurchasesError) {
             slot.take(callId)?.let { call ->
                 call.flowFinished.complete(
-                    CheckpointRun(CheckpointFlowOutcome.Error(error), backedOut = false),
+                    CheckpointRun(
+                        CheckpointFlowOutcome.Error(error),
+                        backedOut = false,
+                        customerInfoBefore = call.customerInfoBefore,
+                    ),
                 )
             }
         }
@@ -413,6 +468,7 @@ internal class CheckpointsManager(
                             CheckpointRun(
                                 CheckpointFlowOutcome.Finished(customerInfo),
                                 backedOut = false,
+                                customerInfoBefore = call.customerInfoBefore,
                             ),
                         )
                     }
@@ -424,7 +480,11 @@ internal class CheckpointsManager(
                         )
                         presentSyncFailure(error) {
                             call.flowFinished.complete(
-                                CheckpointRun(CheckpointFlowOutcome.SyncFailed, backedOut = false),
+                                CheckpointRun(
+                                    CheckpointFlowOutcome.SyncFailed,
+                                    backedOut = false,
+                                    customerInfoBefore = call.customerInfoBefore,
+                                ),
                             )
                         }
                     }
@@ -453,6 +513,7 @@ internal class CheckpointsManager(
         customVariables: Map<String, CustomVariableValue>,
         errorPresenter: ErrorPresenter,
         presentationMode: FlowPresentationMode,
+        customerInfoBefore: CustomerInfo,
     ): CheckpointRun {
         val activity = purchases.currentActivity ?: presentationError(
             PurchasesErrorCode.ConfigurationError,
@@ -466,7 +527,8 @@ internal class CheckpointsManager(
                 customVariables = customVariables,
                 errorPresenter = errorPresenter.forCheckpoint(identifier, customVariables),
             ),
-            activeEntitlementsBefore = cachedActiveEntitlementIds(purchases),
+            activeEntitlementsBefore = customerInfoBefore.activeEntitlementIds,
+            customerInfoBefore = customerInfoBefore,
             flowFinished = CompletableDeferred(),
         )
         if (!slot.claim(call)) return blockedByPresentedFlow

@@ -447,7 +447,9 @@ package com.revenuecat.purchases.ui.revenuecatui.checkpoints {
   }
 
   @com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI @dev.drewhamilton.poko.Poko public final class CheckpointResult {
+    method @InaccessibleFromKotlin public com.revenuecat.purchases.CustomerInfo getCustomer();
     method @InaccessibleFromKotlin public com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowResult? getFlow();
+    property public com.revenuecat.purchases.CustomerInfo customer;
     property public com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowResult? flow;
   }
 

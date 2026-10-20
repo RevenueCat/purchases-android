@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import dev.drewhamilton.poko.Poko
 
@@ -15,4 +16,9 @@ public class CheckpointResult internal constructor(
      * present: the checkpoint is not configured, or no rule matched.
      */
     public val flow: FlowResult?,
+    /**
+     * The customer's information once the checkpoint is passed: synced with what they obtained when the presented
+     * flow ended with a purchase or restore, the latest known otherwise.
+     */
+    public val customer: CustomerInfo,
 )
