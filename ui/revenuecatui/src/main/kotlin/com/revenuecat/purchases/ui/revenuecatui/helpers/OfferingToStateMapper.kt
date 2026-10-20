@@ -29,6 +29,7 @@ import com.revenuecat.purchases.paywalls.components.TimelineComponent
 import com.revenuecat.purchases.paywalls.components.VideoComponent
 import com.revenuecat.purchases.paywalls.components.WebViewComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
+import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
@@ -39,6 +40,7 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.getBestMatch
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.resolveLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.determineFontSpecs
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBackgroundStyles
@@ -65,8 +67,9 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.Result as RcResult
 internal fun Offering.validatedPaywall(
     currentColorScheme: ColorScheme,
     resourceProvider: ResourceProvider,
+    preferredLocales: List<LocaleId>? = null,
 ): PaywallValidationResult =
-    validatePaywallComponentsDataOrNull(resourceProvider)?.let { result ->
+    validatePaywallComponentsDataOrNull(resourceProvider, preferredLocales)?.let { result ->
         // We need to either unwrap the success value, or wrap the errors in a fallback Paywall.
         when (result) {
             is RcResult.Success -> result.value
@@ -126,6 +129,7 @@ private fun Offering.fallbackPaywall(
 @Suppress("MaxLineLength", "ReturnCount", "LongMethod")
 internal fun Offering.validatePaywallComponentsDataOrNull(
     resourceProvider: ResourceProvider,
+    preferredLocales: List<LocaleId>? = null,
 ): RcResult<PaywallValidationResult.Components, NonEmptyList<PaywallValidationError>>? {
     val paywallComponents = paywallComponents ?: return null
 
@@ -137,31 +141,20 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
         return null
     }
 
-    // A missing or empty localization table is valid, e.g. a paywall without text components. This matches iOS.
-    val defaultLocalization = componentsData.defaultLocalization ?: run {
-        Logger.w("No localizations found for default locale '${componentsData.defaultLocaleIdentifier}'.")
-        emptyMap()
+    val selectedLocale = preferredLocales?.let {
+        componentsData.componentsLocalizations.keys.resolveLocale(
+            preferredLocales = it,
+            defaultLocale = componentsData.defaultLocaleIdentifier,
+        )
     }
 
-    // Build a NonEmptyMap of localizations, ensuring that we always have the default localization as fallback.
-    val localizations = nonEmptyMapOf(
-        componentsData.defaultLocaleIdentifier to defaultLocalization,
-        componentsData.componentsLocalizations,
-    )
+    val localizations = componentsData.localizationsFor(selectedLocale)
+    val variableLocalizationMaps = paywallComponents.variableLocalizationMapsFor(
+        componentsData = componentsData,
+        selectedLocale = selectedLocale,
+    ).getOrElse { error -> return RcResult.Error(error) }
 
-    // Check that the default variable localization is present in the localizations map.
-    val defaultVariableLocalization = paywallComponents.defaultVariableLocalization
-        .errorIfNull(
-            PaywallValidationError.AllVariableLocalizationsMissing(componentsData.defaultLocaleIdentifier),
-        )
-        .mapError { nonEmptyListOf(it) }
-        .getOrElse { error -> return RcResult.Error(error) }
-
-    // Build a NonEmptyMap of variable localizations, ensuring that we always have the default localization as fallback.
-    val variableLocalizations = nonEmptyMapOf(
-        componentsData.defaultLocaleIdentifier to defaultVariableLocalization,
-        paywallComponents.uiConfig.localizations,
-    ).mapValues { (locale, map) ->
+    val variableLocalizations = variableLocalizationMaps.mapValues { (locale, map) ->
         // We need to turn our NonEmptyMap<LocaleId, Map> into NonEmptyMap<LocaleId, NonEmptyMap>. If a certain locale
         // has an empty Map, we add an AllLocalizationsMissing error for that locale to our list of errors.
         map.toNonEmptyMapOrNull()
@@ -459,8 +452,51 @@ private fun PaywallData.validateTemplate(): PaywallTemplate? {
 private val PaywallComponentsData.defaultLocalization: Map<LocalizationKey, LocalizationData>?
     get() = componentsLocalizations.getBestMatch(defaultLocaleIdentifier)
 
-private val Offering.PaywallComponents.defaultVariableLocalization: Map<VariableLocalizationKey, String>?
-    get() = dataOrNull?.defaultLocaleIdentifier?.let { uiConfig.localizations.getBestMatch(it) }
+private fun PaywallComponentsData.localizationsFor(
+    selectedLocale: LocaleId?,
+): NonEmptyMap<LocaleId, Map<LocalizationKey, LocalizationData>> {
+    if (selectedLocale != null) {
+        return nonEmptyMapOf(selectedLocale to componentsLocalizations[selectedLocale].orEmpty())
+    }
+
+    // A missing or empty localization table is valid, e.g. a paywall without text components. This matches iOS.
+    val defaultLocalization = defaultLocalization ?: run {
+        Logger.w("No localizations found for default locale '$defaultLocaleIdentifier'.")
+        emptyMap()
+    }
+    return nonEmptyMapOf(
+        defaultLocaleIdentifier to defaultLocalization,
+        componentsLocalizations,
+    )
+}
+
+@Suppress("ReturnCount")
+private fun Offering.PaywallComponents.variableLocalizationMapsFor(
+    componentsData: PaywallComponentsData,
+    selectedLocale: LocaleId?,
+): RcResult<
+    NonEmptyMap<LocaleId, Map<VariableLocalizationKey, String>>,
+    NonEmptyList<PaywallValidationError>,
+    > {
+    if (selectedLocale != null) {
+        val defaultLocale = componentsData.defaultLocaleIdentifier
+        val variableLocale = uiConfig.localizations.keys.getBestMatch(selectedLocale)
+            ?: uiConfig.localizations.keys.getBestMatch(defaultLocale)
+            ?: defaultLocale
+        val localization = uiConfig.localizations[variableLocale]
+            ?: return RcResult.Error(
+                nonEmptyListOf(PaywallValidationError.AllVariableLocalizationsMissing(variableLocale)),
+            )
+        return RcResult.Success(nonEmptyMapOf(variableLocale to localization))
+    }
+
+    val defaultLocale = componentsData.defaultLocaleIdentifier
+    val defaultLocalization = uiConfig.localizations.getBestMatch(defaultLocale)
+        ?: return RcResult.Error(
+            nonEmptyListOf(PaywallValidationError.AllVariableLocalizationsMissing(defaultLocale)),
+        )
+    return RcResult.Success(nonEmptyMapOf(defaultLocale to defaultLocalization, uiConfig.localizations))
+}
 
 /**
  * Recursively checks whether any component override in the paywall config contains an
