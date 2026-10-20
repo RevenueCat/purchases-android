@@ -6,8 +6,8 @@ import android.Manifest
 import android.app.Application
 import android.os.Looper
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
-import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
@@ -26,6 +26,8 @@ import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
+import io.mockk.every
+import io.mockk.mockk
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Before
@@ -37,7 +39,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 /**
  * Base for the IAM end-to-end suite: the real SDK from `PurchasesFactory` down, with only the network
  * ([FakeRevenueCatBackend] behind a [MockWebServer] proxy) and the store ([FakeBilling]) standing in.
- * Foreground and background go through the real process lifecycle.
+ * Foreground and background go through the SDK's lifecycle observer, on a lifecycle the test owns.
  */
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -48,6 +50,14 @@ internal abstract class IAMEndToEndTest {
     protected val customerInfoUpdates = CopyOnWriteArrayList<CustomerInfo>()
 
     private val server = MockWebServer()
+
+    // The suite's own process lifecycle. The real ProcessLifecycleOwner is shared by every test in the JVM, and
+    // other tests leave observers on it that would see these foregrounds. A mock owner compiles against both the
+    // Java (2.5) and Kotlin (2.6+) LifecycleOwner.
+    private val processLifecycleOwner = mockk<LifecycleOwner>()
+    private val processLifecycle = LifecycleRegistry(processLifecycleOwner).also { registry ->
+        every { processLifecycleOwner.lifecycle } returns registry
+    }
     private val application: Application = ApplicationProvider.getApplicationContext()
     private val instances = mutableListOf<Purchases>()
 
@@ -89,6 +99,7 @@ internal abstract class IAMEndToEndTest {
             proxyURL = server.url("/").toUrl(),
             overrideBillingAbstract = billing,
             runningIntegrationTests = true,
+            processLifecycleOwnerProvider = { processLifecycleOwner },
         )
         instances.add(purchases)
         purchases.updatedCustomerInfoListener = UpdatedCustomerInfoListener { customerInfoUpdates.add(it) }
@@ -203,9 +214,7 @@ internal abstract class IAMEndToEndTest {
     }
 
     private fun setProcessLifecycle(state: Lifecycle.State) {
-        val registry = ProcessLifecycleOwner.get().lifecycle as LifecycleRegistry
-        if (registry.currentState == Lifecycle.State.INITIALIZED) registry.currentState = Lifecycle.State.CREATED
-        registry.currentState = state
+        processLifecycle.currentState = state
         idleMainLooper()
     }
 
