@@ -1640,9 +1640,9 @@ internal class PurchasesTest : BasePurchasesTest() {
     fun `resolving checkpoint tracks nothing when resolution throws`() = runTest {
         every { mockEventsManager.track(any<CheckpointEvent>()) } just Runs
 
-        // "error_checkpoint" is the resolver's simulated-error hook, the only path that throws.
+        // "f0rc3_3rr0r" is the resolver's simulated-error hook, the only path that throws.
         assertThatThrownBy {
-            runBlocking { purchases.internalResolveCp("error_checkpoint") }
+            runBlocking { purchases.internalResolveCp("f0rc3_3rr0r") }
         }.isInstanceOf(PurchasesException::class.java)
 
         verify(exactly = 0) { mockEventsManager.track(any<CheckpointEvent>()) }

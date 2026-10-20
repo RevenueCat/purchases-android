@@ -7,6 +7,8 @@ import android.util.Base64
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.identity.IdentitySource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -585,6 +587,52 @@ class TokenManagerTest {
 
         assertThat(results).containsExactly(false, false)
         assertThat(manager.currentAccessToken("user")).isNull()
+    }
+
+    // endregion
+
+    // region update listener
+
+    @Test
+    fun `the update listener hears every save and delete`() = runTest {
+        val manager = manager()
+        val updates = mutableListOf<TokenManager.TokenUpdate>()
+        manager.setTokenUpdateListener { updates.add(it) }
+
+        manager.saveTokens("user", accessToken = "access", refreshToken = "refresh", idToken = null)
+        manager.deleteTokens("user")
+        manager.reportRefreshFailure("user", PurchasesError(PurchasesErrorCode.NetworkError))
+
+        assertThat(updates).containsExactly(
+            TokenManager.TokenUpdate.AccessToken("user", "access"),
+            TokenManager.TokenUpdate.AccessToken("user", null),
+            TokenManager.TokenUpdate.RefreshFailed("user", PurchasesError(PurchasesErrorCode.NetworkError)),
+        )
+    }
+
+    @Test
+    fun `the update listener can be removed`() = runTest {
+        val manager = manager()
+        val updates = mutableListOf<TokenManager.TokenUpdate>()
+        manager.setTokenUpdateListener { updates.add(it) }
+        manager.setTokenUpdateListener(null)
+
+        manager.saveTokens("user", accessToken = "access", refreshToken = null, idToken = null)
+
+        assertThat(updates).isEmpty()
+    }
+
+    @Test
+    fun `the update listener never hears anything when disabled`() = runTest {
+        val manager = TokenManager(context, "test_api_key", enabled = false, scope = testScope())
+        val updates = mutableListOf<TokenManager.TokenUpdate>()
+        manager.setTokenUpdateListener { updates.add(it) }
+
+        manager.saveTokens("user", accessToken = "access", refreshToken = null, idToken = null)
+        manager.deleteTokens("user")
+        manager.reportRefreshFailure("user", PurchasesError(PurchasesErrorCode.NetworkError))
+
+        assertThat(updates).isEmpty()
     }
 
     // endregion

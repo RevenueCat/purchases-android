@@ -318,7 +318,7 @@ private fun CheckpointsScreenPreview() {
             override val state: StateFlow<UiState>
                 get() = MutableStateFlow(
                     UiState(
-                        recents = listOf("test_checkpoint", "unknown_checkpoint", "error_checkpoint"),
+                        recents = listOf("test_checkpoint", "unknown_checkpoint", "f0rc3_3rr0r"),
                         lastResult = CheckpointResultUi(
                             title = "Paywall presented",
                             detail = "Dismissed",

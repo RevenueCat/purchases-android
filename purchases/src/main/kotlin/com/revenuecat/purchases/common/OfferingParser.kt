@@ -97,7 +97,12 @@ internal abstract class OfferingParser {
         }
 
         return Offerings(
-            current = offerings[currentOfferingID]?.withPresentedContext(null, targeting),
+            current = offerings[currentOfferingID]?.withPresentedContext(
+                placementId = null,
+                targeting = targeting,
+                checkpointIdentifier = null,
+                traceId = null,
+            ),
             all = offerings,
             placements = placements,
             targeting = targeting,

@@ -1,4 +1,4 @@
-# `error_checkpoint` is the SDK's simulated resolution failure (the resolver throws before reading any config).
+# `f0rc3_3rr0r` is the SDK's simulated resolution failure (the resolver throws before reading any config).
 # The SDK presents its error dialog (FLOW_COULD_NOT_BE_SHOWN copy) and the passed callback is not invoked.
 #
 # Run locally against the test store:
@@ -14,7 +14,7 @@ env:
     clearState: true
     arguments:
       e2e_test_flow: open_checkpoint
-      checkpoint_identifier: error_checkpoint
+      checkpoint_identifier: f0rc3_3rr0r
 - extendedWaitUntil:
     visible: "Hit checkpoint"
     timeout: 15000

@@ -48,10 +48,9 @@ class PresentationSlotTest {
 
     private fun pendingCall(callId: String) = PresentationSlot.PendingCall(
         callId = callId,
-        workflow = null,
+        presentation = null,
         activeEntitlementsBefore = null,
-        errorPresenter = null,
-        customVariables = emptyMap(),
+        customerInfoBefore = mockk(),
         flowFinished = CompletableDeferred(),
     )
 }
