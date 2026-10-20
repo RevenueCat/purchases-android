@@ -109,13 +109,14 @@ internal class DiscountSavings private constructor(
 
         private fun create(product: StoreProduct, baselineMicros: BigDecimal, cost: BigDecimal): DiscountSavings? {
             val currencyCode = product.price.currencyCode
-            val amountMicros = baselineMicros.subtract(cost).roundedToMinorUnit(currencyCode)
+            val savedMicros = baselineMicros.subtract(cost)
+            val amountMicros = savedMicros.roundedToMinorUnit(currencyCode)
             if (baselineMicros.signum() <= 0 || amountMicros.signum() <= 0) return null
 
             return DiscountSavings(
                 amountMicros = amountMicros.toLong(),
                 currencyCode = currencyCode,
-                relative = amountMicros.divide(baselineMicros, MathContext.DECIMAL64).toDouble(),
+                relative = savedMicros.divide(baselineMicros, MathContext.DECIMAL64).toDouble(),
             )
         }
 

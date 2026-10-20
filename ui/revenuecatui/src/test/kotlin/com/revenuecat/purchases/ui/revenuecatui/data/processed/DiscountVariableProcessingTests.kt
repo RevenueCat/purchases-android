@@ -68,6 +68,7 @@ class DiscountVariableProcessingTests {
             packageType: PackageType,
             freeTrial: PricingPhase? = null,
             intro: PricingPhase? = null,
+            currencyCode: String = "USD",
         ) = Package(
             identifier = packageType.identifier!!,
             packageType = packageType,
@@ -76,7 +77,7 @@ class DiscountVariableProcessingTests {
                 name = "Pro",
                 title = "Pro",
                 description = "Pro",
-                price = usd(priceMicros),
+                price = Price(formatted = "", amountMicros = priceMicros, currencyCode = currencyCode),
                 period = period,
                 freeTrialPricingPhase = freeTrial,
                 introPricePricingPhase = intro,
@@ -227,6 +228,20 @@ class DiscountVariableProcessingTests {
         // 9.99 - 4.99 * 23 / 30
         assertThat(process("product.offer_absolute_discount", pkg)).isEqualTo("$6.16")
         assertThat(process("product.offer_relative_discount", pkg)).isEqualTo("62%")
+    }
+
+    @Test
+    fun `relative discounts use the unrounded amount`() {
+        val pkg = subscription(
+            priceMicros = 50_000_000,
+            period = week,
+            packageType = PackageType.WEEKLY,
+            freeTrial = phase(Period(value = 3, unit = Period.Unit.DAY, iso8601 = "P3D"), cycles = 1, micros = 0),
+            currencyCode = "JPY",
+        )
+
+        // 50 * 3 / 7 = 21.43 saved, shown as ¥21, but 43% rather than 21 / 50
+        assertThat(process("product.offer_relative_discount", pkg)).isEqualTo("43%")
     }
 
     @Test
