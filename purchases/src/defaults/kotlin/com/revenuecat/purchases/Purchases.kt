@@ -8,6 +8,8 @@ import android.net.Uri
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.Purchases.Companion.configure
 import com.revenuecat.purchases.Purchases.Companion.debugLogsEnabled
+import com.revenuecat.purchases.ads.AdRewardConfiguration
+import com.revenuecat.purchases.ads.ConfiguredAdRewards
 import com.revenuecat.purchases.ads.events.AdCaptureMethod
 import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.ads.events.types.AdRewardEarnedUnverifiedData
@@ -42,6 +44,7 @@ import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.DeepLinkParser
 import com.revenuecat.purchases.identity.Authentication
 import com.revenuecat.purchases.interfaces.Callback
+import com.revenuecat.purchases.interfaces.GetAdRewardsCallback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetRewardVerificationResultCallback
@@ -273,6 +276,23 @@ public class Purchases internal constructor(
     @get:JvmSynthetic
     public val adTracker: AdTracker
         get() = purchasesOrchestrator.adTracker
+
+    /**
+     * Resolves rewards configured for the exact, case-sensitive [adUnitId]. Uses cached configuration
+     * when available, otherwise loads remote configuration and its reward blob on demand.
+     * The callback runs on the main thread. Unavailable configuration or invalid JSON/container structure
+     * is reported through [GetAdRewardsCallback.onError]. Unknown or invalid individual rewards use
+     * [AdRewardConfiguration.UnsupportedReward]. A null [ConfiguredAdRewards.reward] means configuration
+     * was resolved successfully and no rewards are configured for the ad unit.
+     * Unresolvable configuration or invalid JSON/container structure is reported as [PurchasesErrorCode.UnknownError],
+     * with decoding details included when available.
+     * An empty [adUnitId] is reported as [PurchasesErrorCode.ConfigurationError].
+     */
+    @JvmSynthetic
+    @Suppress("UNUSED_PARAMETER", "UnusedParameter")
+    internal fun getAdRewards(adUnitId: String, callback: GetAdRewardsCallback) {
+        throw NotImplementedError("Configured ad rewards will be implemented in a follow-up PR.")
+    }
 
     @Suppress("EmptyFunctionBlock", "DeprecatedCallableAddReplaceWith")
     @Deprecated("Will be removed in next major. Logic has been moved to PurchasesOrchestrator")
