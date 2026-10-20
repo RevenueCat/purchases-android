@@ -114,21 +114,21 @@ Variant names combine the flavor and build type, e.g. `defaultsDebug`, `customEn
 
 ### Models and audience
 
-- Check effective Kotlin visibility (including containing types) and API annotations before choosing precedents. `@InternalRevenueCatAPI` surfaces serve SDK modules and hybrids; they are not developer-facing API examples. Follow comparable public APIs rather than internal implementations or unrelated capability checks.
-- Use `@Poko` for public value models rather than `data class`, preserving value equality without adding `copy`/`componentN` compatibility obligations. See the [v9 migration](migrations/v9-MIGRATION.md) and [detekt configuration](config/detekt/detekt.yml).
-- Prefer extensible regular interfaces over new public sealed hierarchies. Detekt also prohibits new public enums: adding cases can break exhaustive callers. Existing baseline exceptions are not precedents for new APIs; internal sealed types can be appropriate. See the public [VerifiedReward](purchases/src/defaults/kotlin/com/revenuecat/purchases/ads/rewardverification/VerifiedReward.kt) model.
+- Follow comparable developer-facing APIs. Check containing types and `@InternalRevenueCatAPI` annotations before choosing precedents.
+- Use `@Poko` for public value models to avoid `copy`/`componentN` compatibility obligations. See the [v9 migration](migrations/v9-MIGRATION.md) and [detekt configuration](config/detekt/detekt.yml).
+- Prefer regular interfaces over public sealed hierarchies. Do not introduce public enums; new cases can break exhaustive callers. Existing baseline exceptions are not precedents.
 
 ### Asynchronous fetch contracts
 
-- Follow comparable callback APIs: a non-null success value (`onReceived` or `onSuccess`) and `onError(PurchasesError)`. Examples include [ReceiveOfferingsCallback](purchases/src/main/kotlin/com/revenuecat/purchases/interfaces/ReceiveOfferingsCallback.kt), [GetVirtualCurrenciesCallback](purchases/src/main/kotlin/com/revenuecat/purchases/interfaces/GetVirtualCurrenciesCallback.kt), and [GetStoreProductsCallback](purchases/src/main/kotlin/com/revenuecat/purchases/interfaces/GetStoreProductsCallback.kt).
-- Distinguish successful empty/no-match results from fetch failures. `Offerings.current` can be null inside a successful `Offerings`; `cachedVirtualCurrencies` is a nullable synchronous cache read. Neither implies a nullable asynchronous fetch result. Preserve error codes and diagnostic details rather than turning unavailable or malformed data into null/empty success.
-- Coroutine fetch APIs conventionally return a non-null value and throw `PurchasesException`. Follow [existing extensions](purchases/src/main/kotlin/com/revenuecat/purchases/CoroutinesExtensionsCommon.kt), using `suspendCancellableCoroutine`, `safeResume`, and `safeResumeWithException` while preserving cancellation. Explicit `*Result` variants also exist; choose entry points from analogous APIs rather than adding every wrapper style mechanically.
+- Follow comparable callback APIs: non-null success values and `onError(PurchasesError)`.
+- Keep successful empty/no-match results distinct from fetch failures. Preserve error codes and diagnostics; nullable cache reads or fields do not justify nullable asynchronous fetch results.
+- Coroutine fetch APIs conventionally return non-null values and throw `PurchasesException`. Follow existing cancellation-safe helpers. Add `*Result` variants only when analogous APIs justify them.
 
 ### Exposure and verification
 
-- Mark developer-facing preview entry points and models with the applicable experimental annotation; retain required opt-ins where they are consumed. Do not add preview or internal-API markers mechanically to Kotlin `internal` scaffolding. Keep initial implementation layers concrete and internal until functional public entry points are ready; avoid public no-op stubs.
-- Review Kotlin and Java call sites together, including callback/coroutine entry points and justified JVM annotations. Update and compile relevant consumers in [api-tester](api-tester) for public API changes, checking applicable flavors.
-- Generate and review signature changes with the API commands above; do not hand-edit generated signatures. Verify successful empty results, error propagation, and cancellation where applicable. Use plain JUnit for tests that do not need Android behavior.
+- Annotate developer-facing preview APIs and retain consumer opt-ins. Keep unfinished implementation internal; avoid public no-op stubs and unnecessary API annotations on internal scaffolding.
+- Review Kotlin and Java call sites, JVM annotations, and callback/coroutine entry points. Update and compile relevant `api-tester` consumers across applicable flavors.
+- Generate and review API signatures; do not hand-edit them. Test empty results, errors, and cancellation where applicable. Use plain JUnit when Android behavior is unnecessary.
 
 ## Code Style
 
