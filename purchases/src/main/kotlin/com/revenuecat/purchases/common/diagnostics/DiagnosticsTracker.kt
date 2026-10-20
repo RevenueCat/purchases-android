@@ -57,8 +57,6 @@ internal class DiagnosticsTracker(
         get() = collectionState.get() == CollectionState.ENABLED
 
     private companion object {
-        // Generated once per app launch, independently from EventsManager.appSessionID, so diagnostics
-        // cannot be correlated with other events from the same session.
         val diagnosticsSessionID: UUID = UUID.randomUUID()
 
         const val HOST_KEY = "host"
