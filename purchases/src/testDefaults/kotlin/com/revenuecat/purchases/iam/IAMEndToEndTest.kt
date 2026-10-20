@@ -133,9 +133,18 @@ internal abstract class IAMEndToEndTest {
         while (true) {
             idleMainLooper()
             if (condition()) return
-            check(System.currentTimeMillis() < deadline) { "Timed out waiting for: $description" }
+            check(System.currentTimeMillis() < deadline) { "Timed out waiting for: $description\n${diagnostics()}" }
             backend.awaitArrival(POLL_MS)
         }
+    }
+
+    // What a timeout reports, so a failure on another machine explains itself.
+    private fun diagnostics(): String = buildString {
+        appendLine("App user ID: ${if (::purchases.isInitialized) currentAppUserID else "not configured"}")
+        appendLine("CustomerInfo updates: ${customerInfoUpdates.map { it.originalAppUserId }}")
+        appendLine("Delegate: ${delegate.tokens.size} token(s), errors ${delegate.errors}")
+        appendLine("Requests (${backend.requests.size}):")
+        backend.requests.forEach { appendLine("  ${it.method} ${it.path} as ${it.user() ?: "API key"}") }
     }
 
     /** Lets in-flight work finish: returns once no request has arrived for [quietMs]. */
