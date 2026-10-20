@@ -121,6 +121,8 @@ class PaywallViewModelTest {
     private val defaultOfferingParams =
         mapOf("offering" to JsonObject(mapOf("identifier" to JsonPrimitive(defaultOffering.identifier))))
     private val defaultLocaleIdentifier = LocaleId("en_US")
+    private val spanishLocaleIdentifier = LocaleId("es_ES")
+    private val localizedUrlKey = LocalizationKey("url")
     private val localizations = nonEmptyMapOf(
         defaultLocaleIdentifier to nonEmptyMapOf(
             LocalizationKey("dummy_text") to LocalizationData.Text("dummy text"),
@@ -140,6 +142,31 @@ class PaywallViewModelTest {
         ),
         componentsLocalizations = localizations,
         defaultLocaleIdentifier = defaultLocaleIdentifier,
+    )
+    private val localizedUrlComponentsConfig = ComponentsConfig(
+        base = PaywallComponentsConfig(
+            stack = StackComponent(
+                components = listOf(
+                    ButtonComponent(
+                        action = ButtonComponent.Action.NavigateTo(
+                            destination = ButtonComponent.Destination.Url(
+                                urlLid = localizedUrlKey,
+                                method = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
+                            ),
+                        ),
+                        stack = StackComponent(components = emptyList()),
+                    ),
+                    TestData.Components.monthlyPackageComponent,
+                ),
+            ),
+            background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+        ),
+    )
+    private val localizedUrlLocalizations = mapOf(
+        defaultLocaleIdentifier to mapOf(
+            localizedUrlKey to LocalizationData.Text("https://revenuecat.com"),
+        ),
+        spanishLocaleIdentifier to emptyMap(),
     )
 
     private lateinit var purchases: PurchasesType
@@ -866,6 +893,39 @@ class PaywallViewModelTest {
         val model = create(offering = offering, mode = PaywallMode.FULL_SCREEN)
 
         // Assert
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+    }
+
+    @Test
+    fun `locale changes revalidate the selected components localization`(): Unit = runBlocking {
+        val data = PaywallComponentsData(
+            id = "paywall_id",
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = localizedUrlComponentsConfig,
+            componentsLocalizations = localizedUrlLocalizations,
+            defaultLocaleIdentifier = defaultLocaleIdentifier,
+        )
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        )
+        var preferredLocale = "en_US"
+        every { purchases.preferredUILocaleOverride } answers { preferredLocale }
+        val model = create(offering = offering, mode = PaywallMode.FULL_SCREEN)
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+
+        preferredLocale = "es_ES"
+        model.refreshStateIfLocaleChanged()
+
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Legacy::class.java)
+
+        preferredLocale = "en_US"
+        model.refreshStateIfLocaleChanged()
+
         assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
     }
 
@@ -1715,6 +1775,51 @@ class PaywallViewModelTest {
 
         coVerify(exactly = 1) { purchases.awaitGetWorkflow(any()) }
         assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+    }
+
+    @Test
+    fun `locale changes revalidate workflow localizations without refetching`() {
+        val workflowScreen = WorkflowScreen(
+            templateName = "template",
+            revision = 0,
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = localizedUrlComponentsConfig,
+            componentsLocalizations = localizedUrlLocalizations,
+            defaultLocaleIdentifier = defaultLocaleIdentifier,
+            offeringIdentifier = defaultOffering.identifier,
+        )
+        val workflow = PublishedWorkflow(
+            id = "wfl-test",
+            displayName = "Test Workflow",
+            initialStepId = "step-1",
+            steps = mapOf(
+                "step-1" to WorkflowStep(
+                    id = "step-1",
+                    type = "screen",
+                    screenId = "screen-1",
+                    paramValues = defaultOfferingParams,
+                ),
+            ),
+            screens = mapOf("screen-1" to workflowScreen),
+        )
+        var preferredLocale = "en_US"
+        every { purchases.preferredUILocaleOverride } answers { preferredLocale }
+        coEvery { purchases.resolveWorkflow(offeringWithWPL.identifier) } returns WorkflowResolution.Found("wfl-test")
+        coEvery { purchases.awaitGetWorkflow("wfl-test") } returns workflow
+        val model = create(offering = offeringWithWPL)
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+
+        preferredLocale = "es_ES"
+        model.refreshStateIfLocaleChanged()
+
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Legacy::class.java)
+        coVerify(exactly = 1) { purchases.awaitGetWorkflow(any()) }
+
+        preferredLocale = "en_US"
+        model.refreshStateIfLocaleChanged()
+
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+        coVerify(exactly = 1) { purchases.awaitGetWorkflow(any()) }
     }
 
     @Test

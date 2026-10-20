@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
+import com.revenuecat.purchases.CustomerInfo
 import kotlinx.coroutines.CompletableDeferred
 
 /**
@@ -16,6 +17,8 @@ internal class PresentationSlot {
         // presenter's, and the manager only learns how it ended.
         val presentation: CheckpointPresentation?,
         val activeEntitlementsBefore: Set<String>?,
+        // Read before the flow was presented; delivered with the run when the flow produced nothing newer.
+        val customerInfoBefore: CustomerInfo,
         val flowFinished: CompletableDeferred<CheckpointRun>,
     ) {
         // Null until the paywall reports something; kept on the call rather than the presented window so

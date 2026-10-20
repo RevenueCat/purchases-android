@@ -18,6 +18,7 @@ import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.SyncDispatcher
+import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.networking.ConnectionErrorReason
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
@@ -54,7 +55,7 @@ class DiagnosticsTrackerTest {
     private val testDiagnosticsEntry = DiagnosticsEntry(
         name = DiagnosticsEntryName.HTTP_REQUEST_PERFORMED,
         properties = mapOf("test-key-1" to "test-value-1"),
-        appSessionID = UUID.randomUUID(),
+        diagnosticsSessionID = UUID.randomUUID(),
     )
 
     private lateinit var diagnosticsFileHelper: DiagnosticsFileHelper
@@ -114,6 +115,15 @@ class DiagnosticsTrackerTest {
         diagnosticsTracker.trackEvent(testDiagnosticsEntry)
         diagnosticsTracker.trackEvent(testDiagnosticsEntry)
         Assertions.assertThat(diagnosticsTrackListenerCallCount).isEqualTo(3)
+    }
+
+    @Test
+    fun `tracked events use a session id different from the app session id`() {
+        val trackedEvents = mutableListOf<DiagnosticsEntry>()
+        every { diagnosticsFileHelper.appendEvent(capture(trackedEvents)) } just Runs
+        diagnosticsTracker.trackMaxEventsStoredLimitReached()
+        Assertions.assertThat(trackedEvents).hasSize(1)
+        Assertions.assertThat(trackedEvents.single().diagnosticsSessionID).isNotEqualTo(EventsManager.appSessionID)
     }
 
     @Test

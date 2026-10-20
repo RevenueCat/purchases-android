@@ -2,11 +2,13 @@ package com.revenuecat.apitester.java.revenuecatui;
 
 import androidx.annotation.OptIn;
 
+import com.revenuecat.purchases.CustomerInfo;
 import com.revenuecat.purchases.EntitlementInfo;
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI;
 import com.revenuecat.purchases.Offering;
 import com.revenuecat.purchases.Purchases;
 import com.revenuecat.purchases.PurchasesError;
+import com.revenuecat.purchases.models.StoreProduct;
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPassedCallback;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult;
@@ -17,6 +19,7 @@ import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowResult;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointsExtensionsKt;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ObtainedEntitlement;
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ObtainedProduct;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter;
 
 import java.util.Collections;
@@ -30,8 +33,19 @@ final class CheckpointsAPI {
     static void check(Purchases purchases, CheckpointParams params) {
         CheckpointPassedCallback callback = (CheckpointResult result) -> {
             FlowResult flow = result.getFlow();
+            CustomerInfo customer = result.getCustomer();
+            ObtainedEntitlement obtainedEntitlement = result.obtainedEntitlement("pro");
+            boolean didObtainEntitlement = result.didObtainEntitlement("pro");
+            ObtainedProduct obtainedProduct = result.obtainedProduct("monthly");
+            boolean didObtainProduct = result.didObtainProduct("monthly");
+            boolean hasEntitlement = result.hasEntitlement("pro");
             if (flow != null) {
                 Set<ObtainedEntitlement> obtainedEntitlements = flow.getObtainedEntitlements();
+                Set<ObtainedProduct> obtainedProducts = flow.getObtainedProducts();
+                ObtainedEntitlement flowEntitlement = flow.obtainedEntitlement("pro");
+                boolean flowDidObtainEntitlement = flow.didObtainEntitlement("pro");
+                ObtainedProduct flowProduct = flow.obtainedProduct("monthly");
+                boolean flowDidObtainProduct = flow.didObtainProduct("monthly");
             }
         };
         CheckpointsExtensionsKt.checkpoint(purchases, "checkpoint_identifier", callback);
@@ -55,6 +69,11 @@ final class CheckpointsAPI {
     @OptIn(markerClass = InviteOnlyCheckpointsAPI.class)
     static void checkObtainedEntitlement(ObtainedEntitlement obtainedEntitlement) {
         EntitlementInfo entitlementInfo = obtainedEntitlement.getEntitlementInfo();
+    }
+
+    @OptIn(markerClass = InviteOnlyCheckpointsAPI.class)
+    static void checkObtainedProduct(ObtainedProduct obtained) {
+        StoreProduct product = obtained.getProduct();
     }
 
     @OptIn(markerClass = InviteOnlyCheckpointsAPI.class)
