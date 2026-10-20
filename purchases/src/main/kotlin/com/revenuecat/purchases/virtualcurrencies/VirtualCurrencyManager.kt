@@ -48,6 +48,56 @@ internal class VirtualCurrencyManager(
         )
     }
 
+    // Mirrors iOS: invalid entries are dropped, and a spend with nothing left returns the current balances.
+    fun spendVirtualCurrencies(
+        amounts: Map<String, Int>,
+        reference: String?,
+        callback: GetVirtualCurrenciesCallback,
+    ) {
+        val resolvedAmounts = amounts.filter { (code, amount) -> isValidSpend(code, amount) }
+        val emptyOrTooManyMessage = when {
+            resolvedAmounts.isEmpty() -> VirtualCurrencyStrings.EMPTY_SPEND_AMOUNT
+            resolvedAmounts.size >= MAX_SPEND_CODES -> VirtualCurrencyStrings.TOO_MANY_CODES
+            else -> null
+        }
+        if (emptyOrTooManyMessage != null) {
+            log(LogIntent.WARNING) { emptyOrTooManyMessage }
+            virtualCurrencies(callback)
+            return
+        }
+
+        val appUserID = identityManager.currentAppUserID
+        backend.spendVirtualCurrencies(
+            appUserID = appUserID,
+            amounts = resolvedAmounts,
+            reference = reference,
+            onSuccessHandler = { virtualCurrencies ->
+                log(LogIntent.RC_SUCCESS) { VirtualCurrencyStrings.VIRTUAL_CURRENCIES_SPENT_ON_NETWORK }
+                cacheVirtualCurrencies(virtualCurrencies, appUserID)
+                callback.onReceived(virtualCurrencies)
+            },
+            onErrorHandler = { error ->
+                log(LogIntent.RC_ERROR) {
+                    VirtualCurrencyStrings.VIRTUAL_CURRENCIES_SPENT_ON_NETWORK_ERROR.format(error)
+                }
+                callback.onError(error)
+            },
+        )
+    }
+
+    private fun isValidSpend(code: String, amount: Int): Boolean = when {
+        // The server caps codes far below this; it only rejects obvious garbage.
+        code.length > MAX_CODE_LENGTH -> {
+            log(LogIntent.WARNING) { VirtualCurrencyStrings.INVALID_CODE.format(code) }
+            false
+        }
+        amount <= 0 -> {
+            log(LogIntent.WARNING) { VirtualCurrencyStrings.INVALID_SPEND_AMOUNT.format(amount, code) }
+            false
+        }
+        else -> true
+    }
+
     @Synchronized
     fun cachedVirtualCurrencies(): VirtualCurrencies? {
         val appUserID = identityManager.currentAppUserID
@@ -137,5 +187,10 @@ internal class VirtualCurrencyManager(
             }
             completion.onError(error)
         }
+    }
+
+    private companion object {
+        const val MAX_CODE_LENGTH = 100
+        const val MAX_SPEND_CODES = 1000
     }
 }

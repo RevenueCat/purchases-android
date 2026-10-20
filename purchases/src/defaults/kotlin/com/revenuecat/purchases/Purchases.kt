@@ -702,6 +702,38 @@ public class Purchases internal constructor(
     }
 
     /**
+     * Spends virtual currencies for the current subscriber. Requires the SDK to be configured with
+     * [PurchasesConfiguration.Builder.iamEnabled]; otherwise the callback receives an
+     * [PurchasesErrorCode.UnsupportedError].
+     *
+     * @param amounts How much of each currency to spend, keyed by currency code. Non-positive amounts are ignored;
+     * if none are left, nothing is spent and the callback receives the current balances.
+     * @param reference An optional app-specific reference for this transaction.
+     * @param callback Called with the subscriber's balances after the spend.
+     */
+    @InternalRevenueCatAPI
+    public fun spendVirtualCurrencies(
+        amounts: Map<String, Int>,
+        reference: String? = null,
+        callback: GetVirtualCurrenciesCallback,
+    ) {
+        purchasesOrchestrator.spendVirtualCurrencies(amounts, reference, callback)
+    }
+
+    /**
+     * Spends [amount] of the virtual currency [code]. See [spendVirtualCurrencies].
+     */
+    @InternalRevenueCatAPI
+    public fun spendVirtualCurrency(
+        code: String,
+        amount: Int,
+        reference: String? = null,
+        callback: GetVirtualCurrenciesCallback,
+    ) {
+        spendVirtualCurrencies(mapOf(code to amount), reference, callback)
+    }
+
+    /**
      * Invalidates the cache for virtual currencies.
      *
      * This is useful for cases where a virtual currency's balance might have been updated
