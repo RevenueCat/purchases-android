@@ -2817,6 +2817,35 @@ class CustomerCenterViewModelTests {
         assertThat(diagnostics.last().reason).isEqualTo(CustomerCenterPreviewDiagnosticReason.SUBSCRIPTION_REQUIRED)
     }
 
+    @Test
+    fun `preview hides plan changes for purchases the customer doesn't own`(): Unit = runBlocking {
+        setupPurchasesMock()
+        val provider = mockk<CustomerCenterPreviewProvider>(relaxed = true)
+        val diagnostics = mutableListOf<CustomerCenterPreviewDiagnostic>()
+        every { provider.onDiagnosticsUpdated(any()) } answers {
+            diagnostics.addAll(firstArg<List<CustomerCenterPreviewDiagnostic>>())
+        }
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            previewProvider = provider,
+        )
+        val path = HelpPath(id = "change_plans", title = "Change plans", type = HelpPath.PathType.CHANGE_PLANS)
+        setupSuccessLoadScreen(path, model)
+        val active = CustomerCenterConfigTestData.purchaseInformationYearlyExpiring.copy(store = Store.PLAY_STORE)
+        for ((ownershipType, expectedReason) in listOf(
+            OwnershipType.FAMILY_SHARED to CustomerCenterPreviewDiagnosticReason.PLAN_CHANGE_UNAVAILABLE_FOR_FAMILY_SHARED,
+            OwnershipType.ASSIGNED to CustomerCenterPreviewDiagnosticReason.PLAN_CHANGE_UNAVAILABLE_FOR_ASSIGNED,
+        )) {
+            model.selectPurchase(active.copy(ownershipType = ownershipType))
+
+            assertThat(diagnostics.last().reason).isEqualTo(expectedReason)
+            assertThat(diagnostics.last().visible).isFalse()
+            assertThat((model.state.value as CustomerCenterState.Success).detailScreenPaths).isEmpty()
+        }
+    }
+
     private fun setupPurchasesMock() {
         every { purchases.customerCenterListener } returns null
         coEvery { purchases.awaitGetProduct(any(), any()) } returns null

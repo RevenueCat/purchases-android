@@ -764,6 +764,8 @@ internal class CustomerCenterViewModelImpl(
         purchase?.isSubscription != true -> CustomerCenterPreviewDiagnosticReason.SUBSCRIPTION_REQUIRED
         path.type == HelpPath.PathType.CHANGE_PLANS && purchase.ownershipType == OwnershipType.FAMILY_SHARED ->
             CustomerCenterPreviewDiagnosticReason.PLAN_CHANGE_UNAVAILABLE_FOR_FAMILY_SHARED
+        path.type == HelpPath.PathType.CHANGE_PLANS && purchase.ownershipType == OwnershipType.ASSIGNED ->
+            CustomerCenterPreviewDiagnosticReason.PLAN_CHANGE_UNAVAILABLE_FOR_ASSIGNED
         else -> CustomerCenterPreviewDiagnosticReason.ACTIVE_SUBSCRIPTION_REQUIRED
     }
 
@@ -795,7 +797,8 @@ internal class CustomerCenterViewModelImpl(
     ): Boolean = when {
         previewProvider != null && path.type == HelpPath.PathType.CHANGE_PLANS ->
             purchaseInformation?.isSubscription == true && !purchaseInformation.isExpired &&
-                purchaseInformation.ownershipType != OwnershipType.FAMILY_SHARED
+                purchaseInformation.ownershipType != OwnershipType.FAMILY_SHARED &&
+                purchaseInformation.ownershipType != OwnershipType.ASSIGNED
         previewProvider != null && path.type == HelpPath.PathType.REFUND_REQUEST ->
             purchaseInformation != null && !purchaseInformation.isTrial &&
                 purchaseInformation.pricePaid != PriceDetails.Free
