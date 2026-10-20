@@ -15,7 +15,7 @@ constructor(
     val id: UUID = UUID.randomUUID(),
     val name: DiagnosticsEntryName,
     val properties: Map<String, Any>,
-    val appSessionID: UUID,
+    val diagnosticsSessionID: UUID,
     val dateProvider: DateProvider = DefaultDateProvider(),
     val dateTime: Date = dateProvider.now,
 ) : Event {
@@ -39,7 +39,9 @@ constructor(
         put(VERSION_KEY, VERSION)
         put(NAME_KEY, name.name.lowercase())
         put(PROPERTIES_KEY, JSONObject(properties))
-        put(APP_SESSION_ID_KEY, appSessionID)
+        // Encoded under the `app_session_id` key for backend compatibility, but its value is
+        // `DiagnosticsTracker.diagnosticsSessionID`, which is unrelated to `EventsManager.appSessionID`.
+        put(APP_SESSION_ID_KEY, diagnosticsSessionID)
         put(TIMESTAMP_KEY, Iso8601Utils.format(dateTime))
     }
 }

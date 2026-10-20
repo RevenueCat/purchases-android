@@ -67,7 +67,8 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
             """
             {
                "sources": [
-                  { "id": "primary", "url": "https://api.revenuecat.com/", "priority": 0, "weight": 100 }
+                  { "id": "primary", "url": "https://api.revenuecat.com/", "priority": 0, "weight": 100 },
+                  { "id": "source_1", "url": "https://api.rc-backup.com/", "priority": 1, "weight": 100 }
                 ]
             }
             """.trimIndent(),

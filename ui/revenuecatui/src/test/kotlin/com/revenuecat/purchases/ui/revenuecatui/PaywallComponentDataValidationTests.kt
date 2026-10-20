@@ -12,9 +12,11 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.UiConfig.AppConfig
 import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig
 import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig.FontInfo
+import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
+import com.revenuecat.purchases.paywalls.components.PaywallComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
@@ -380,6 +382,79 @@ class PaywallComponentDataValidationTests {
         assertEquals("", secondText.texts.getValue(LocaleId("nl_NL")))
         assertEquals("value1", firstText.texts.getValue(defaultLocale))
         assertEquals("value2", secondText.texts.getValue(defaultLocale))
+    }
+
+    @Test
+    fun `Should validate override text only in the active locale`() {
+        val english = LocaleId("en_US")
+        val spanish = LocaleId("es_ES")
+        val baseKey = LocalizationKey("base")
+        val overrideKey = LocalizationKey("override")
+        val component = TextComponent(
+            text = baseKey,
+            color = ColorScheme(ColorInfo.Hex(Color.White.toArgb())),
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                    properties = PartialTextComponent(text = overrideKey),
+                ),
+            ),
+        )
+        val offering = offeringWithLocalizedComponent(
+            component = component,
+            localizations = mapOf(
+                english to mapOf(
+                    baseKey to LocalizationData.Text("English"),
+                    overrideKey to LocalizationData.Text("English override"),
+                ),
+                spanish to mapOf(baseKey to LocalizationData.Text("Español")),
+            ),
+        )
+
+        val englishValidation = offering.validatedPaywall(
+            currentColorScheme = TestData.Constants.currentColorScheme,
+            resourceProvider = MockResourceProvider(),
+            preferredLocales = listOf(english),
+        )
+        val spanishValidation = offering.validatedPaywall(
+            currentColorScheme = TestData.Constants.currentColorScheme,
+            resourceProvider = MockResourceProvider(),
+            preferredLocales = listOf(spanish),
+        )
+
+        assertTrue(englishValidation is PaywallValidationResult.Components)
+        assertTrue(spanishValidation is PaywallValidationResult.Legacy)
+    }
+
+    @Test
+    fun `Should ignore a missing localized URL in an inactive locale`() {
+        val english = LocaleId("en_US")
+        val spanish = LocaleId("es_ES")
+        val urlKey = LocalizationKey("url")
+        val component = ButtonComponent(
+            action = ButtonComponent.Action.NavigateTo(
+                destination = ButtonComponent.Destination.Url(
+                    urlLid = urlKey,
+                    method = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
+                ),
+            ),
+            stack = StackComponent(components = emptyList()),
+        )
+        val offering = offeringWithLocalizedComponent(
+            component = component,
+            localizations = mapOf(
+                english to mapOf(urlKey to LocalizationData.Text("https://revenuecat.com")),
+                spanish to emptyMap(),
+            ),
+        )
+
+        val validated = offering.validatedPaywall(
+            currentColorScheme = TestData.Constants.currentColorScheme,
+            resourceProvider = MockResourceProvider(),
+            preferredLocales = listOf(english),
+        )
+
+        assertTrue(validated is PaywallValidationResult.Components)
     }
 
     @Test
@@ -1473,5 +1548,37 @@ class PaywallComponentDataValidationTests {
         val stack = validated.stack as StackComponentStyle
         val textStyle = stack.children[0] as TextComponentStyle
         assertEquals(3, textStyle.overrides.size)
+    }
+
+    private fun offeringWithLocalizedComponent(
+        component: PaywallComponent,
+        localizations: Map<LocaleId, Map<LocalizationKey, LocalizationData>>,
+    ): Offering {
+        val defaultLocale = LocaleId("en_US")
+        val data = PaywallComponentsData(
+            id = "paywall_id",
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(component)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = defaultLocale,
+        )
+        return Offering(
+            identifier = "identifier",
+            serverDescription = "serverDescription",
+            metadata = emptyMap(),
+            availablePackages = emptyList(),
+            paywallComponents = Offering.PaywallComponents(
+                uiConfig = UiConfig(
+                    localizations = localizations.keys.associateWith { variableLocalizationKeysForEnUs() },
+                ),
+                data = data,
+            ),
+        )
     }
 }
