@@ -39,8 +39,8 @@ constructor(
         put(VERSION_KEY, VERSION)
         put(NAME_KEY, name.name.lowercase())
         put(PROPERTIES_KEY, JSONObject(properties))
-        /// Encoded under the `app_session_id` key for backend compatibility, but its value is
-        /// `DiagnosticsTracker.diagnosticsSessionID`, which is unrelated to `EventsManager.appSessionID`.
+        // Encoded under the `app_session_id` key for backend compatibility, but its value is
+        // `DiagnosticsTracker.diagnosticsSessionID`, which is unrelated to `EventsManager.appSessionID`.
         put(APP_SESSION_ID_KEY, diagnosticsSessionID)
         put(TIMESTAMP_KEY, Iso8601Utils.format(dateTime))
     }
