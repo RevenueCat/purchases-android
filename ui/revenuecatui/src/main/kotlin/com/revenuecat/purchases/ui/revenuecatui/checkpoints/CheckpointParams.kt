@@ -5,6 +5,7 @@ import com.revenuecat.purchases.common.CustomVariableKeyValidator
 import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
+import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
 
 /**
  * Marks the receivers of the [CheckpointParams] DSL, so an inner block cannot implicitly call methods of an
@@ -31,6 +32,11 @@ public annotation class CheckpointParamsDsl
  * [presentationMode] decides how the SDK presents the flow itself, full screen or as a sheet, or leaves the choice
  * to the SDK with [FlowPresentationMode.DEFAULT].
  *
+ * [purchaseLogic] performs the purchases and restores of the flow the SDK presents for this call when the app
+ * completes purchases itself ([com.revenuecat.purchases.PurchasesAreCompletedBy.MY_APP]). It is not used when
+ * RevenueCat completes purchases, nor by a [paywallPresenter], whose UI makes its own purchases. The SDK holds it
+ * only while the flow is on screen.
+ *
  * Built through [Builder], or the DSL:
  * ```kotlin
  * val params = CheckpointParams {
@@ -41,6 +47,7 @@ public annotation class CheckpointParamsDsl
  *     }
  *     paywallPresenter { params, completion -> presentCustomPaywall(params, completion) }
  *     errorPresenter { params, completion -> presentCustomError(params, completion) }
+ *     purchaseLogic(myAppPurchaseLogic)
  * }
  * ```
  */
@@ -50,6 +57,7 @@ public class CheckpointParams private constructor(
     public val paywallPresenter: PaywallPresenter?,
     public val errorPresenter: ErrorPresenter?,
     public val presentationMode: FlowPresentationMode,
+    public val purchaseLogic: PaywallPurchaseLogic?,
 ) {
 
     /**
@@ -66,23 +74,28 @@ public class CheckpointParams private constructor(
             other.customVariables == customVariables &&
             other.paywallPresenter == paywallPresenter &&
             other.errorPresenter == errorPresenter &&
-            other.presentationMode == presentationMode
+            other.presentationMode == presentationMode &&
+            other.purchaseLogic == purchaseLogic
 
     override fun hashCode(): Int =
-        31 * (31 * (31 * customVariables.hashCode() + paywallPresenter.hashCode()) + errorPresenter.hashCode()) +
-            presentationMode.hashCode()
+        31 * (
+            31 * (31 * (31 * customVariables.hashCode() + paywallPresenter.hashCode()) + errorPresenter.hashCode()) +
+                presentationMode.hashCode()
+            ) + purchaseLogic.hashCode()
 
     override fun toString(): String =
         "CheckpointParams(customVariables=$customVariables, paywallPresenter=$paywallPresenter, " +
-            "errorPresenter=$errorPresenter, presentationMode=$presentationMode)"
+            "errorPresenter=$errorPresenter, presentationMode=$presentationMode, purchaseLogic=$purchaseLogic)"
 
     @CheckpointParamsDsl
+    @Suppress("TooManyFunctions")
     public class Builder {
 
         private var customVariables: Map<String, CustomVariableValue> = emptyMap()
         private var paywallPresenter: PaywallPresenter? = null
         private var errorPresenter: ErrorPresenter? = null
         private var presentationMode: FlowPresentationMode = FlowPresentationMode.DEFAULT
+        private var purchaseLogic: PaywallPurchaseLogic? = null
 
         /** Replaces any previously set custom variables. */
         public fun setCustomVariables(customVariables: Map<String, CustomVariableValue>): Builder = apply {
@@ -124,8 +137,23 @@ public class CheckpointParams private constructor(
         public fun presentationMode(presentationMode: FlowPresentationMode): Builder =
             setPresentationMode(presentationMode)
 
+        /**
+         * Performs the purchases and restores of the flow the SDK presents, when the app completes purchases itself
+         * ([com.revenuecat.purchases.PurchasesAreCompletedBy.MY_APP]). Null when RevenueCat completes them.
+         */
+        public fun setPurchaseLogic(purchaseLogic: PaywallPurchaseLogic?): Builder = apply {
+            this.purchaseLogic = purchaseLogic
+        }
+
+        /**
+         * Performs the purchases and restores of the flow the SDK presents, when the app completes purchases itself
+         * ([com.revenuecat.purchases.PurchasesAreCompletedBy.MY_APP]).
+         */
+        @JvmSynthetic
+        public fun purchaseLogic(purchaseLogic: PaywallPurchaseLogic): Builder = setPurchaseLogic(purchaseLogic)
+
         public fun build(): CheckpointParams =
-            CheckpointParams(customVariables, paywallPresenter, errorPresenter, presentationMode)
+            CheckpointParams(customVariables, paywallPresenter, errorPresenter, presentationMode, purchaseLogic)
     }
 
     /**

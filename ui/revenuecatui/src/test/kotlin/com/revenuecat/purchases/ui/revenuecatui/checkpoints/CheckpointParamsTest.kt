@@ -3,6 +3,8 @@ package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -100,6 +102,33 @@ class CheckpointParamsTest {
         assertThat(params).isEqualTo(CheckpointParams { errorPresenter(presenter) })
         assertThat(params.hashCode()).isEqualTo(CheckpointParams { errorPresenter(presenter) }.hashCode())
         assertThat(params).isNotEqualTo(CheckpointParams { errorPresenter { _, _ -> } })
+        assertThat(params).isNotEqualTo(CheckpointParams {})
+    }
+
+    @Test
+    fun `params default to no purchase logic`() {
+        assertThat(CheckpointParams {}.purchaseLogic).isNull()
+        assertThat(CheckpointParams.Builder().build().purchaseLogic).isNull()
+    }
+
+    @Test
+    fun `the purchase logic is set through the builder and the DSL alike`() {
+        val logic = mockk<PaywallPurchaseLogic>()
+
+        assertThat(CheckpointParams { purchaseLogic(logic) }.purchaseLogic).isSameAs(logic)
+        assertThat(CheckpointParams.Builder().setPurchaseLogic(logic).build().purchaseLogic).isSameAs(logic)
+        val cleared = CheckpointParams.Builder().setPurchaseLogic(logic).setPurchaseLogic(null).build()
+        assertThat(cleared.purchaseLogic).isNull()
+    }
+
+    @Test
+    fun `params are equal only when their purchase logics are`() {
+        val logic = mockk<PaywallPurchaseLogic>()
+        val params = CheckpointParams { purchaseLogic(logic) }
+
+        assertThat(params).isEqualTo(CheckpointParams { purchaseLogic(logic) })
+        assertThat(params.hashCode()).isEqualTo(CheckpointParams { purchaseLogic(logic) }.hashCode())
+        assertThat(params).isNotEqualTo(CheckpointParams { purchaseLogic(mockk()) })
         assertThat(params).isNotEqualTo(CheckpointParams {})
     }
 

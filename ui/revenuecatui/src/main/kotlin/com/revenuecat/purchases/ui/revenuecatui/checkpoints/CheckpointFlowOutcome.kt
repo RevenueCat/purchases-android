@@ -15,12 +15,21 @@ internal abstract class CheckpointFlowOutcome {
         override fun toString(): String = "Dismissed"
     }
 
-    /** A purchase completed from the flow. */
+    /** A purchase completed from the flow. [storeTransaction] is null when the app completed the purchase itself. */
     @Poko
     class Purchased(
         val customerInfo: CustomerInfo,
-        val storeTransaction: StoreTransaction,
+        val storeTransaction: StoreTransaction?,
     ) : CheckpointFlowOutcome()
+
+    /**
+     * The app's own purchase logic reported a successful purchase or restore, which the paywall does not report
+     * with the customer's information. Never terminal: when the flow ends, the SDK syncs the store purchases and
+     * reads what the user obtained from the refreshed customer information, like for a [Finished] presentation.
+     */
+    object CompletedByApp : CheckpointFlowOutcome() {
+        override fun toString(): String = "CompletedByApp"
+    }
 
     /** Purchases were restored from the flow. */
     @Poko
