@@ -3,7 +3,11 @@
 package com.revenuecat.purchases.common.networking
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.isSuccessful
+import com.revenuecat.purchases.common.toPurchasesError
 import org.json.JSONException
 import java.io.IOException
 
@@ -76,31 +80,49 @@ internal class TokenAuthenticator(
             if (currentHeaders.isNotEmpty() && currentHeaders != requestAuthentication.sentAuthorizationHeaders) {
                 true // Already refreshed by another request.
             } else {
-                val tokens = tokenManager.currentRefreshToken(requestAuthentication.appUserID)
-                    ?.let { refresh(it, postTokenRefresh) }
-                tokens?.let {
-                    tokenManager.saveTokens(
-                        requestAuthentication.appUserID,
-                        it.accessToken,
-                        it.refreshToken,
-                        it.idToken,
-                    )
-                } != null
+                // No refresh token: nothing to refresh with, and nothing to report (iOS does the same).
+                val refreshToken = tokenManager.currentRefreshToken(requestAuthentication.appUserID)
+                when (val tokens = refreshToken?.let { refresh(it, postTokenRefresh) }) {
+                    null -> false
+                    is RefreshResult.Failure -> {
+                        tokenManager.reportRefreshFailure(requestAuthentication.appUserID, tokens.error)
+                        false
+                    }
+                    is RefreshResult.Success -> {
+                        val set = tokens.tokens
+                        val appUserID = requestAuthentication.appUserID
+                        tokenManager.saveTokens(appUserID, set.accessToken, set.refreshToken, set.idToken)
+                        true
+                    }
+                }
             }
         }
+    }
+
+    private sealed interface RefreshResult {
+        class Success(val tokens: TokenManager.TokenSet) : RefreshResult
+        class Failure(val error: PurchasesError) : RefreshResult
     }
 
     private fun refresh(
         refreshToken: String,
         postTokenRefresh: (body: Map<String, Any?>) -> HTTPResult,
-    ): TokenManager.TokenSet? =
+    ): RefreshResult =
         try {
-            TokenRefreshOperation.handleResponse(postTokenRefresh(TokenRefreshOperation.body(refreshToken)))
+            val result = postTokenRefresh(TokenRefreshOperation.body(refreshToken))
+            TokenRefreshOperation.handleResponse(result)?.let { RefreshResult.Success(it) }
+                ?: RefreshResult.Failure(
+                    if (result.isSuccessful()) {
+                        PurchasesError(PurchasesErrorCode.UnexpectedBackendResponseError, "No access token in refresh")
+                    } else {
+                        result.toPurchasesError()
+                    },
+                )
         } catch (e: IOException) {
             errorLog(e) { "IAM token refresh failed." }
-            null
+            RefreshResult.Failure(e.toPurchasesError())
         } catch (e: JSONException) {
             errorLog(e) { "IAM token refresh failed." }
-            null
+            RefreshResult.Failure(e.toPurchasesError())
         }
 }

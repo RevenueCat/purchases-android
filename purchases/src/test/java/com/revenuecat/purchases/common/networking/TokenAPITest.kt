@@ -40,6 +40,7 @@ class TokenAPITest {
     private lateinit var tokenAPI: TokenAPI
 
     private val bodySlot = slot<Map<String, Any?>>()
+    private val legacyAnonymousID = "\$RCAnonymousID:6b2787de2fb848a8b403a45f695ee74f"
 
     @Before
     fun setUp() {
@@ -83,6 +84,62 @@ class TokenAPITest {
         dispatcher.runAll()
 
         assertThat(bodySlot.captured["link_to_id"]).isEqualTo("current-id-token")
+    }
+
+    @Test
+    fun `an anonymous logIn from a pre-IAM anonymous user migrates its app user ID`() {
+        respond(Endpoint.TokenLogin, loginResponse(appUserID = "new-user"))
+
+        tokenAPI.logIn(legacyAnonymousID, Identity.anonymous, {}, ::fail)
+        dispatcher.runAll()
+
+        assertThat(bodySlot.captured).isEqualTo(
+            mapOf("method" to "anonymous", "scope" to "openid offline_access", "app_user_id" to legacyAnonymousID),
+        )
+        verify(exactly = 0) { tokenManager.currentIDToken(any()) }
+    }
+
+    @Test
+    fun `an anonymous logIn from an identified user doesn't send an app user ID`() {
+        respond(Endpoint.TokenLogin, loginResponse(appUserID = "new-user"))
+
+        tokenAPI.logIn("identified-user", Identity.anonymous, {}, ::fail)
+        dispatcher.runAll()
+
+        assertThat(bodySlot.captured).doesNotContainKeys("app_user_id", "link_to_id")
+        verify(exactly = 0) { tokenManager.currentIDToken(any()) }
+    }
+
+    @Test
+    fun `an anonymous logIn doesn't treat a malformed anonymous ID as anonymous`() {
+        respond(Endpoint.TokenLogin, loginResponse(appUserID = "new-user"))
+
+        tokenAPI.logIn("\$RCAnonymousID:not-a-valid-id", Identity.anonymous, {}, ::fail)
+        dispatcher.runAll()
+
+        assertThat(bodySlot.captured).doesNotContainKey("app_user_id")
+    }
+
+    @Test
+    fun `a non-anonymous logIn from an anonymous user links the ID token, not the app user ID`() {
+        every { tokenManager.currentIDToken(legacyAnonymousID) } returns "existing-id-token"
+        respond(Endpoint.TokenLogin, loginResponse(appUserID = "new-user"))
+
+        tokenAPI.logIn(legacyAnonymousID, Identity.oidc("oidc-token".toByteArray()), {}, ::fail)
+        dispatcher.runAll()
+
+        assertThat(bodySlot.captured["link_to_id"]).isEqualTo("existing-id-token")
+        assertThat(bodySlot.captured).doesNotContainKey("app_user_id")
+    }
+
+    @Test
+    fun `a non-anonymous logIn without an existing ID token links nothing`() {
+        respond(Endpoint.TokenLogin, loginResponse(appUserID = "new-user"))
+
+        tokenAPI.logIn(legacyAnonymousID, Identity.firebase("firebase-token".toByteArray()), {}, ::fail)
+        dispatcher.runAll()
+
+        assertThat(bodySlot.captured).doesNotContainKeys("app_user_id", "link_to_id")
     }
 
     @Test

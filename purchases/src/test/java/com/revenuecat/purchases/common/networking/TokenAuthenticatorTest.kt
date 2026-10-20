@@ -5,6 +5,7 @@ package com.revenuecat.purchases.common.networking
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.createResult
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -17,6 +18,7 @@ import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.io.IOException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -146,6 +148,89 @@ class TokenAuthenticatorTest {
         }
         assertThat(retry).isTrue()
     }
+
+    // region updates reported to TokenManager's listener
+
+    @Test
+    fun `a successful refresh reports the new access token`() = runTest {
+        val tokenManager = tokenManager()
+        val updates = updatesOf(tokenManager)
+
+        authenticator(tokenManager).refreshTokensIfNeeded(endpoint, unauthorized, false, bearer("access")) {
+            tokenResponse("new-access")
+        }
+
+        assertThat(updates).containsExactly(TokenManager.TokenUpdate.AccessToken("user", "new-access"))
+    }
+
+    @Test
+    fun `a refresh failure is reported for the user who made the request`() = runTest {
+        val tokenManager = tokenManager()
+        val updates = updatesOf(tokenManager)
+
+        authenticator(tokenManager).refreshTokensIfNeeded(endpoint, unauthorized, false, bearer("access")) {
+            throw IOException("offline")
+        }
+
+        assertThat(updates.single().appUserID).isEqualTo("user")
+    }
+
+    @Test
+    fun `a refresh the server rejects reports its error`() = runTest {
+        val tokenManager = tokenManager()
+        val updates = updatesOf(tokenManager)
+
+        authenticator(tokenManager).refreshTokensIfNeeded(endpoint, unauthorized, false, bearer("access")) {
+            HTTPResult.createResult(responseCode = RCHTTPStatusCodes.UNAUTHORIZED)
+        }
+
+        val failure = updates.single() as TokenManager.TokenUpdate.RefreshFailed
+        assertThat(failure.error.code).isEqualTo(PurchasesErrorCode.UnknownBackendError)
+    }
+
+    @Test
+    fun `a refresh response without an access token reports an unexpected response`() = runTest {
+        val tokenManager = tokenManager()
+        val updates = updatesOf(tokenManager)
+
+        authenticator(tokenManager).refreshTokensIfNeeded(endpoint, unauthorized, false, bearer("access")) {
+            HTTPResult.createResult(payload = "{}")
+        }
+
+        val failure = updates.single() as TokenManager.TokenUpdate.RefreshFailed
+        assertThat(failure.error.code).isEqualTo(PurchasesErrorCode.UnexpectedBackendResponseError)
+    }
+
+    @Test
+    fun `a refresh that can't reach the server reports a network error`() = runTest {
+        val tokenManager = tokenManager()
+        val updates = updatesOf(tokenManager)
+
+        authenticator(tokenManager).refreshTokensIfNeeded(endpoint, unauthorized, false, bearer("access")) {
+            throw IOException("offline")
+        }
+
+        val failure = updates.single() as TokenManager.TokenUpdate.RefreshFailed
+        assertThat(failure.error.code).isEqualTo(PurchasesErrorCode.NetworkError)
+    }
+
+    @Test
+    fun `no refresh token means no refresh and nothing reported`() = runTest {
+        val tokenManager = tokenManager()
+        val updates = updatesOf(tokenManager)
+
+        TokenAuthenticator(tokenManager) { "other-user" }
+            .refreshTokensIfNeeded(endpoint, unauthorized, false, emptyMap(), noRefresh)
+
+        assertThat(updates).isEmpty()
+    }
+
+    // endregion
+
+    private fun updatesOf(tokenManager: TokenManager): List<TokenManager.TokenUpdate> =
+        mutableListOf<TokenManager.TokenUpdate>().also { updates ->
+            tokenManager.setTokenUpdateListener { updates.add(it) }
+        }
 
     private fun authenticator(tokenManager: TokenManager) = TokenAuthenticator(tokenManager) { "user" }
 

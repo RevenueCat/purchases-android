@@ -196,6 +196,8 @@ internal class OfferingsManager(
             return
         }
         log(LogIntent.RC_SUCCESS) { OfferingStrings.OFFERINGS_START_UPDATE_FROM_NETWORK }
+        // A response that arrives after an identity change still reaches its callers, but isn't cached.
+        val requestEpoch = offeringsCache.epoch
         backend.getOfferings(
             appUserID,
             appInBackground,
@@ -204,6 +206,7 @@ internal class OfferingsManager(
                     offeringsJSON = body,
                     originalDataSource = originalDataSource,
                     responsePayloadToCache = responsePayload,
+                    requestEpoch,
                     onError,
                     onSuccess,
                 )
@@ -223,6 +226,7 @@ internal class OfferingsManager(
                                 // response body to be re-serialized on every write.
                                 originalDataSource = null,
                                 responsePayloadToCache = null,
+                                requestEpoch,
                                 onError,
                                 onSuccess,
                             )
@@ -241,6 +245,7 @@ internal class OfferingsManager(
         originalDataSource: HTTPResponseOriginalSource?,
         /** Null when this parse came from the disk cache; see [OfferingsCache.cacheOfferings]. */
         responsePayloadToCache: String?,
+        requestEpoch: Int,
         onError: ((PurchasesError) -> Unit)? = null,
         onSuccess: ((OfferingsResultData) -> Unit)? = null,
     ) {
@@ -256,7 +261,7 @@ internal class OfferingsManager(
                 val current = offeringsResultData.offerings.current
                 current?.let(offeringImagePreDownloader::preDownloadOfferingImages)
                 offeringFontPreDownloader.preDownloadOfferingFontsIfNeeded(offeringsResultData.offerings)
-                offeringsCache.cacheOfferings(offeringsResultData.offerings, responsePayloadToCache)
+                offeringsCache.cacheOfferings(offeringsResultData.offerings, responsePayloadToCache, requestEpoch)
                 workflowManager.onPaywallConfigReady(
                     onComplete = { dispatch { onSuccess?.invoke(offeringsResultData) } },
                 )

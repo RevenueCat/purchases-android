@@ -1,15 +1,24 @@
+@file:OptIn(InternalRevenueCatAPI::class)
+
 package com.revenuecat.purchases
 
+import android.os.Looper
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.identity.AuthenticationDelegate
 import com.revenuecat.purchases.identity.Identity
+import com.revenuecat.purchases.identity.IdentityManager
+import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import kotlin.concurrent.thread
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -224,6 +233,140 @@ internal class PurchasesIAMBootstrapTest : BasePurchasesTest() {
 
         verify(exactly = 1) { mockIdentityManager.logIn(Identity.anonymous, any(), any()) }
         verify(exactly = 1) { mockBillingAbstract.queryProductDetailsAsync(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `a failed bootstrap login reaches the authentication delegate`() {
+        configure()
+        val delegate = RecordingDelegate()
+        purchases.purchasesOrchestrator.authentication.delegate = delegate
+        foreground()
+        needChecks.single().invoke(true)
+
+        bootstrapError!!.invoke(PurchasesError(PurchasesErrorCode.NetworkError))
+
+        assertThat(delegate.errors.map { it.code }).containsExactly(PurchasesErrorCode.NetworkError)
+    }
+
+    @Test
+    fun `a bootstrap result dropped because the identity changed is not reported`() {
+        configure()
+        val delegate = RecordingDelegate()
+        purchases.purchasesOrchestrator.authentication.delegate = delegate
+        foreground()
+        needChecks.single().invoke(true)
+
+        bootstrapError!!.invoke(IdentityManager.identityChangedError)
+
+        assertThat(delegate.errors).isEmpty()
+    }
+
+    @Test
+    fun `a bootstrap failing because a backend request was already in progress is reported`() {
+        configure()
+        val delegate = RecordingDelegate()
+        purchases.purchasesOrchestrator.authentication.delegate = delegate
+        foreground()
+        needChecks.single().invoke(true)
+
+        bootstrapError!!.invoke(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError))
+
+        assertThat(delegate.errors.map { it.code }).containsExactly(PurchasesErrorCode.OperationAlreadyInProgressError)
+    }
+
+    @Test
+    fun `logIn with an identity runs the identity-change follow-up`() {
+        configure()
+        mockOfferingsManagerFetchOfferings(serverID)
+        val identity = Identity.google("google-token".toByteArray())
+        every { mockIdentityManager.logIn(identity, captureLambda(), any()) } answers {
+            lambda<(CustomerInfo, String) -> Unit>().captured.invoke(mockInfo, serverID)
+        }
+        var received: CustomerInfo? = null
+
+        purchases.purchasesOrchestrator.authentication.logIn(
+            identity,
+            object : ReceiveCustomerInfoCallback {
+                override fun onReceived(customerInfo: CustomerInfo) {
+                    received = customerInfo
+                }
+
+                override fun onError(error: PurchasesError) = Unit
+            },
+        )
+
+        assertThat(received).isEqualTo(mockInfo)
+        verify(exactly = 1) { mockCustomerInfoUpdateHandler.notifyListeners(mockInfo, serverID) }
+        verify(exactly = 1) { mockOfferingsManager.fetchAndCacheOfferings(serverID, false, any(), any()) }
+    }
+
+    @Test
+    fun `an identity change publishes the new user's access token`() {
+        configure()
+        every { mockTokenManager.enabled } returns true
+        every { mockIdentityManager.currentAppUserID } returns serverID
+        every { mockTokenManager.currentAccessToken(serverID) } returns "server-access"
+        val delegate = RecordingDelegate()
+        purchases.purchasesOrchestrator.authentication.delegate = delegate
+
+        identityChangeListener!!.invoke()
+
+        assertThat(delegate.tokens).containsExactly("server-access")
+    }
+
+    @Test
+    fun `with IAM disabled, an identity change publishes nothing`() {
+        configure()
+        val delegate = RecordingDelegate()
+        purchases.purchasesOrchestrator.authentication.delegate = delegate
+
+        identityChangeListener!!.invoke()
+
+        assertThat(delegate.tokens).isEmpty()
+    }
+
+    @Test
+    fun `an IAM logout failure on a background thread reaches the callback on the main thread`() {
+        configure()
+        val error = PurchasesError(PurchasesErrorCode.NetworkError)
+        every { mockIdentityManager.logOut(any()) } answers {
+            val completion = firstArg<(PurchasesError?) -> Unit>()
+            thread { completion(error) }.join()
+        }
+        var errorThread: Thread? = null
+        val callback = object : ReceiveCustomerInfoCallback {
+            override fun onReceived(customerInfo: CustomerInfo) = Unit
+            override fun onError(error: PurchasesError) {
+                errorThread = Thread.currentThread()
+            }
+        }
+
+        purchases.purchasesOrchestrator.authentication.logOut(callback)
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertThat(errorThread).isEqualTo(Looper.getMainLooper().thread)
+    }
+
+    @Test
+    fun `Purchases exposes the orchestrator's Authentication`() {
+        configure()
+
+        assertThat(Purchases.sharedInstance.authentication)
+            .isSameAs(purchases.authentication)
+            .isSameAs(purchases.purchasesOrchestrator.authentication)
+    }
+
+    private class RecordingDelegate : AuthenticationDelegate {
+        val errors = mutableListOf<PurchasesError>()
+        val tokens = mutableListOf<String?>()
+
+        override fun authenticatorDidEncounterError(error: PurchasesError) {
+            errors.add(error)
+        }
+
+        override fun authenticatorDidUpdateAccessToken(newAccessToken: String?) {
+            tokens.add(newAccessToken)
+        }
     }
 
     private fun purchase() = getMockedStoreTransaction("product", "token", ProductType.SUBS)

@@ -5,6 +5,7 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Store
 
 internal object OfferingStrings {
+    const val DROPPING_OFFERINGS_FROM_PREVIOUS_USER = "Not caching offerings fetched for a previous user."
     const val CANNOT_FIND_PRODUCT_CONFIGURATION_ERROR = "Could not find ProductDetails for %s " +
         "\nThere is a problem with your configuration in Play Store Developer Console. " +
         "More info here: https://errors.rev.cat/configuring-products"
