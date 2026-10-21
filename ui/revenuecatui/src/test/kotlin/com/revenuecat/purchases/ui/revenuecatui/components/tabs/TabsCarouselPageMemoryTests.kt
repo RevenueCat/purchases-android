@@ -38,6 +38,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import kotlin.math.abs
 
 @RunWith(AndroidJUnit4::class)
 class TabsCarouselPageMemoryTests {
@@ -86,6 +87,33 @@ class TabsCarouselPageMemoryTests {
         assertPageShown(tab = "a", page = 1)
     }
 
+    @Test
+    fun `A carousel hidden mid auto-advance comes back settled on a page`(): Unit = with(composeTestRule) {
+        // Arrange
+        mainClock.autoAdvance = false
+        setTabsWithCarousels(loop = false, autoAdvanceTabA = true)
+        waitForIdle()
+        val restingX = pagePositionsX(tab = "a").first()
+
+        // Act: leave tab A partway through its first auto-advance transition, then come back.
+        mainClock.advanceTimeBy(AUTO_ADVANCE_MS_PER_PAGE + AUTO_ADVANCE_MS_TRANSITION / 5)
+        waitForIdle()
+        assertThat(pagePositionsX(tab = "a")).noneMatch { abs(it - restingX) < 1f }
+        onNodeWithText(tabButtonText("b")).performClick()
+        mainClock.advanceTimeBy(TAB_SWITCH_MS)
+        onNodeWithText(tabButtonText("a")).performClick()
+        mainClock.advanceTimeBy(TAB_SWITCH_MS)
+        waitForIdle()
+
+        // Assert: one of tab A's pages is back where a page rests, not between two.
+        assertThat(pagePositionsX(tab = "a")).anyMatch { abs(it - restingX) < 1f }
+    }
+
+    private fun ComposeTestRule.pagePositionsX(tab: String): List<Float> =
+        (0 until pageCount).flatMap { page ->
+            onAllNodesWithText(pageText(tab, page)).fetchSemanticsNodes().map { it.positionInRoot.x }
+        }
+
     private fun ComposeTestRule.swipeCarouselForward(tab: String, fromPage: Int) {
         // Swipe across the whole width at the height of the visible page, since the page's text node itself is
         // narrower than the pager's swipe threshold.
@@ -116,7 +144,7 @@ class TabsCarouselPageMemoryTests {
         return visible.single()
     }
 
-    private fun ComposeContentTestRule.setTabsWithCarousels(loop: Boolean) {
+    private fun ComposeContentTestRule.setTabsWithCarousels(loop: Boolean, autoAdvanceTabA: Boolean = false) {
         val tabControlButtons = tabNames.mapIndexed { index, tab ->
             TabControlButtonComponent(
                 tabIndex = index,
@@ -150,6 +178,15 @@ class TabsCarouselPageMemoryTests {
                                 pageAlignment = VerticalAlignment.CENTER,
                                 size = Size(width = Fill(), height = Fit()),
                                 loop = loop,
+                                autoAdvance = if (autoAdvanceTabA && tab == "a") {
+                                    CarouselComponent.AutoAdvancePages(
+                                        msTimePerPage = AUTO_ADVANCE_MS_PER_PAGE.toInt(),
+                                        msTransitionTime = AUTO_ADVANCE_MS_TRANSITION.toInt(),
+                                        transitionType = CarouselComponent.AutoAdvancePages.TransitionType.SLIDE,
+                                    )
+                                } else {
+                                    null
+                                },
                             ),
                         ),
                     ),
@@ -178,6 +215,9 @@ class TabsCarouselPageMemoryTests {
     private companion object {
         const val SWIPE_START_FRACTION = 0.9f
         const val SWIPE_END_FRACTION = 0.1f
+        const val AUTO_ADVANCE_MS_PER_PAGE = 5_000L
+        const val AUTO_ADVANCE_MS_TRANSITION = 1_000L
+        const val TAB_SWITCH_MS = 400L
     }
 
     private fun tabButtonKey(tab: String) = LocalizationKey("tab_$tab")
