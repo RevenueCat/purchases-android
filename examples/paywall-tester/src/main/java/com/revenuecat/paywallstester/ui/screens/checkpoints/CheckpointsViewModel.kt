@@ -4,11 +4,13 @@ package com.revenuecat.paywallstester.ui.screens.checkpoints
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.revenuecat.paywallstester.data.RecentCheckpointsStore
 import com.revenuecat.paywallstester.ui.screens.checkpoints.CheckpointsViewModel.CheckpointResultUi
 import com.revenuecat.paywallstester.ui.screens.checkpoints.CheckpointsViewModel.UiState
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
@@ -21,6 +23,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 interface CheckpointsViewModel {
     data class CheckpointResultUi(
@@ -32,6 +35,7 @@ interface CheckpointsViewModel {
 
     data class UiState(
         val recents: List<String> = emptyList(),
+        val configured: List<String> = emptyList(),
         val waitingFor: String? = null,
         val lastResult: CheckpointResultUi? = null,
         val presentWithAppPaywall: Boolean = false,
@@ -53,6 +57,8 @@ interface CheckpointsViewModel {
     val errorRequest: StateFlow<AppErrorPresenter.Request?>
 
     fun hit(identifier: String)
+
+    fun refreshConfigured()
 
     fun setPresentWithAppPaywall(enabled: Boolean)
 
@@ -108,6 +114,14 @@ internal class CheckpointsViewModelImpl(
         }
         Purchases.sharedInstance.checkpoint(checkpointIdentifier, params) { result ->
             _state.update { it.copy(waitingFor = null, lastResult = result.toUi()) }
+        }
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    override fun refreshConfigured() {
+        viewModelScope.launch {
+            val configured = Purchases.sharedInstance.awaitGetCheckpointIds()
+            _state.update { it.copy(configured = configured) }
         }
     }
 

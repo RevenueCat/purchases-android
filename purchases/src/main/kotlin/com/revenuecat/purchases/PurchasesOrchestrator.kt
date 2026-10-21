@@ -806,6 +806,8 @@ internal class PurchasesOrchestrator(
 
     suspend fun workflowIds(): List<String> = workflowManager.workflowIds()
 
+    suspend fun checkpointIds(): List<String> = checkpointsConfigProvider.checkpointIds()
+
     @OptIn(InternalRevenueCatAPI::class)
     suspend fun resolveBranches(
         step: WorkflowStep,
