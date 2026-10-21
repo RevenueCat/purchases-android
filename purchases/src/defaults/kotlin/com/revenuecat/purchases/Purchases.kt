@@ -288,10 +288,9 @@ public class Purchases internal constructor(
      * with decoding details included when available.
      * An empty [adUnitId] is reported as [PurchasesErrorCode.ConfigurationError].
      */
-    @JvmSynthetic
-    @Suppress("UNUSED_PARAMETER", "UnusedParameter")
-    internal fun getAdRewards(adUnitId: String, callback: GetAdRewardsCallback) {
-        throw NotImplementedError("Configured ad rewards will be implemented in a follow-up PR.")
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    public fun getAdRewards(adUnitId: String, callback: GetAdRewardsCallback) {
+        purchasesOrchestrator.getAdRewards(adUnitId, callback)
     }
 
     @Suppress("EmptyFunctionBlock", "DeprecatedCallableAddReplaceWith")

@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ads
 
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import dev.drewhamilton.poko.Poko
 import kotlin.time.Duration
 
@@ -13,8 +14,9 @@ import kotlin.time.Duration
  * @property reward The primary reward, or null when no reward is configured.
  * @property moreRewards Additional rewards in configured order. Empty when [reward] is null.
  */
+@ExperimentalPreviewRevenueCatPurchasesAPI
 @Poko
-internal class ConfiguredAdRewards internal constructor(
+public class ConfiguredAdRewards internal constructor(
     public val reward: AdRewardConfiguration?,
     public val moreRewards: List<AdRewardConfiguration>,
 ) {
@@ -24,7 +26,8 @@ internal class ConfiguredAdRewards internal constructor(
 }
 
 /** A reward configured before ad presentation. Unknown or invalid reward shapes use [UnsupportedReward]. */
-internal interface AdRewardConfiguration {
+@ExperimentalPreviewRevenueCatPurchasesAPI
+public interface AdRewardConfiguration {
     /** A configured virtual currency reward. */
     @Poko
     public class VirtualCurrency internal constructor(

@@ -13,6 +13,7 @@ import com.revenuecat.purchases.common.safeResume
 import com.revenuecat.purchases.common.safeResumeWithException
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.data.LogInResult
+import com.revenuecat.purchases.interfaces.GetAdRewardsCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetRewardVerificationResultCallback
 import com.revenuecat.purchases.interfaces.ManageSubscriptionsCallback
@@ -31,10 +32,22 @@ import java.util.Locale
  */
 @JvmSynthetic
 @Throws(PurchasesException::class)
-@Suppress("UNUSED_PARAMETER", "UnusedParameter")
-internal suspend fun Purchases.awaitGetAdRewards(adUnitId: String): ConfiguredAdRewards {
-    throw NotImplementedError("Configured ad rewards will be implemented in a follow-up PR.")
-}
+@ExperimentalPreviewRevenueCatPurchasesAPI
+public suspend fun Purchases.awaitGetAdRewards(adUnitId: String): ConfiguredAdRewards =
+    suspendCancellableCoroutine { continuation ->
+        getAdRewards(
+            adUnitId,
+            object : GetAdRewardsCallback {
+                override fun onReceived(rewards: ConfiguredAdRewards) {
+                    continuation.safeResume(rewards)
+                }
+
+                override fun onError(error: PurchasesError) {
+                    continuation.safeResumeWithException(PurchasesException(error))
+                }
+            },
+        )
+    }
 
 /**
  * Get latest available customer info.
