@@ -124,6 +124,8 @@ internal class FakeRevenueCatBackend : Dispatcher() {
         val path = request.path
         return when {
             path == "/v1/customer" -> tokenOwner?.let(::customerInfo) ?: unauthorized()
+            path == "/v1/subscribers/identify" ->
+                customerInfo(request.body?.optString("new_app_user_id")).setResponseCode(CREATED)
             path.startsWith("/v1/subscribers/") && path.count { it == '/' } == LEGACY_CUSTOMER_SLASHES ->
                 customerInfo(URLDecoder.decode(path.substringAfterLast('/'), "UTF-8"))
             path == "/v1/receipts" -> customerInfo(tokenOwner ?: request.body?.optString("app_user_id"))
@@ -199,6 +201,7 @@ internal class FakeRevenueCatBackend : Dispatcher() {
 
     companion object {
         private const val OK = 200
+        private const val CREATED = 201
         private const val UNAUTHORIZED = 401
         private const val NOT_FOUND = 404
         private const val HOLD_TIMEOUT_SECONDS = 20L

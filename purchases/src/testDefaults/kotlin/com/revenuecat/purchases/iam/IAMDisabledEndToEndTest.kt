@@ -42,24 +42,39 @@ internal class IAMDisabledEndToEndTest : IAMEndToEndTest() {
     }
 
     @Test
-    fun `login, purchase, restore and logout use the legacy endpoints`() {
+    fun `login, purchase, restore and logout succeed on the legacy endpoints`() {
         configure(iamEnabled = false)
         foreground()
         awaitQuiet()
-        var loggedIn = false
+        val anonymousID = currentAppUserID
 
-        purchases.logInWith("custom-id", onError = { loggedIn = true }) { _, _ -> loggedIn = true }
-        awaitUntil("the login") { loggedIn }
+        var loginResult: Result<Pair<String, Boolean>>? = null
+        purchases.logInWith(
+            "custom-id",
+            onError = { loginResult = Result.failure(PurchasesErrorException(it)) },
+        ) { customerInfo, created -> loginResult = Result.success(customerInfo.originalAppUserId to created) }
+        awaitUntil("the login") { loginResult != null }
+        assertThat(loginResult?.getOrThrow()).isEqualTo("custom-id" to true)
+        assertThat(currentAppUserID).isEqualTo("custom-id")
+        val identify = backend.requests("/v1/subscribers/identify").single()
+        assertThat(identify.body?.getString("app_user_id")).isEqualTo(anonymousID)
+        assertThat(identify.body?.getString("new_app_user_id")).isEqualTo("custom-id")
+
         billing.deliverPurchase(stubStoreTransactionFromGooglePurchase(listOf("monthly"), PURCHASE_TIME))
-        awaitUntil("the receipt post") { backend.requests("/v1/receipts").isNotEmpty() }
-        purchases.restorePurchases(noopCallback())
+        awaitUntil("the purchase's receipt post") { backend.requests("/v1/receipts").isNotEmpty() }
+        assertThat(backend.requests("/v1/receipts").single().body?.getString("app_user_id")).isEqualTo("custom-id")
+
+        val restored = awaitCustomerInfo { purchases.restorePurchases(it) }
+        assertThat(restored.getOrThrow().originalAppUserId).isEqualTo("custom-id")
+        assertThat(backend.requests("/v1/receipts").last().body?.getBoolean("is_restore")).isTrue()
+
+        val loggedOut = awaitCustomerInfo { purchases.logOut(it) }
         awaitQuiet()
-        awaitCustomerInfo { purchases.logOut(it) }
-        awaitQuiet()
+        assertThat(currentAppUserID).startsWith("\$RCAnonymousID:").isNotEqualTo(anonymousID)
+        assertThat(loggedOut.getOrThrow().originalAppUserId).isEqualTo(currentAppUserID)
+        assertThat(purchases.isAnonymous).isTrue()
 
         assertNoIAMTraffic()
-        assertThat(backend.requests("/v1/subscribers/identify")).hasSize(1)
-        assertThat(backend.requests("/v1/receipts").first().body?.getString("app_user_id")).isNotEmpty()
     }
 
     @Test
