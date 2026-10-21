@@ -58,6 +58,8 @@ interface CheckpointsViewModel {
 
     fun hit(identifier: String)
 
+    fun refreshConfigured()
+
     fun setPresentWithAppPaywall(enabled: Boolean)
 
     fun setPresentErrorsWithApp(enabled: Boolean)
@@ -94,10 +96,6 @@ internal class CheckpointsViewModelImpl(
 
     private val appErrorPresenter = AppErrorPresenter()
 
-    init {
-        loadConfigured()
-    }
-
     override val errorRequest: StateFlow<AppErrorPresenter.Request?>
         get() = appErrorPresenter.request
 
@@ -116,12 +114,11 @@ internal class CheckpointsViewModelImpl(
         }
         Purchases.sharedInstance.checkpoint(checkpointIdentifier, params) { result ->
             _state.update { it.copy(waitingFor = null, lastResult = result.toUi()) }
-            loadConfigured()
         }
     }
 
     @OptIn(InternalRevenueCatAPI::class)
-    private fun loadConfigured() {
+    override fun refreshConfigured() {
         viewModelScope.launch {
             val configured = Purchases.sharedInstance.awaitGetCheckpointIds()
             _state.update { it.copy(configured = configured) }

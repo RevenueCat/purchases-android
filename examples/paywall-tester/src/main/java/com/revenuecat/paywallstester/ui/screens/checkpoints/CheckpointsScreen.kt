@@ -33,6 +33,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,6 +62,9 @@ fun CheckpointsScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var showCustomVariablesEditor by rememberSaveable { mutableStateOf(false) }
+
+    // The view model outlives this screen, so reload on each visit to pick up a new API key or late config.
+    LaunchedEffect(Unit) { viewModel.refreshConfigured() }
 
     Scaffold(
         modifier = modifier,
@@ -346,6 +350,7 @@ private fun CheckpointsScreenPreview() {
                 get() = MutableStateFlow(null)
 
             override fun hit(identifier: String) {}
+            override fun refreshConfigured() {}
             override fun setPresentWithAppPaywall(enabled: Boolean) {}
             override fun setPresentErrorsWithApp(enabled: Boolean) {}
             override fun setPresentationMode(mode: FlowPresentationMode) {}
