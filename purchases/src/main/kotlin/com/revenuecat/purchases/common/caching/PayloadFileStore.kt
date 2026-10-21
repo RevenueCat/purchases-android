@@ -23,9 +23,10 @@ import java.util.zip.CheckedOutputStream
  *
  * Writes stream through fixed-size buffers into a temp file committed by atomic rename (androidx
  * AtomicFile is unsafe here: its openRead deletes a concurrent writer's in-flight file and its
- * finishWrite hides rename failures). Writes are not fsynced; callers verify the checksum [write]
- * returns on [read] instead, so a file truncated by power loss, left stale by an interrupted rename,
- * or corrupted in place all read back as misses.
+ * finishWrite hides rename failures). Callers verify the checksum [write] returns on [read], so a file
+ * truncated by power loss, left stale by an interrupted rename, or corrupted in place all read back as misses.
+ * Without [syncWrites] the temp file is not fsynced, and a filesystem can commit the rename before the data,
+ * so a power loss can leave neither the old payload nor the new one.
  *
  * A [read] costs ~2x the payload size in heap (`ByteArray` plus `String`).
  *
@@ -34,9 +35,11 @@ import java.util.zip.CheckedOutputStream
 @OptIn(InternalRevenueCatAPI::class)
 internal class PayloadFileStore(
     private val directory: File,
+    private val syncWrites: Boolean = false,
 ) {
     // Context storage directories are null on mocked contexts.
-    constructor(baseDirectory: File?, name: String) : this(File(File(baseDirectory, VENDOR_DIRECTORY), name))
+    constructor(baseDirectory: File?, name: String, syncWrites: Boolean = false) :
+        this(File(File(baseDirectory, VENDOR_DIRECTORY), name), syncWrites)
 
     /**
      * Returns the payload's CRC32 once the file is in place, or `null` when the write failed; callers
@@ -55,7 +58,9 @@ internal class PayloadFileStore(
         // Callers serialize same-key writes.
         val tempFile = File(directory, file.name + TEMP_SUFFIX)
         return try {
-            val checksum = FileOutputStream(tempFile).use { out -> encodeTo(out, payload) }
+            val checksum = FileOutputStream(tempFile).use { out ->
+                encodeTo(out, payload).also { if (syncWrites) out.fd.sync() }
+            }
             if (tempFile.renameTo(file)) checksum else null
         } catch (e: IOException) {
             errorLog(e) { "Failed to persist payload to disk." }

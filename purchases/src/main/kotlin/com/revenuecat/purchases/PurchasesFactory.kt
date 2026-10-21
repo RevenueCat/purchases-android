@@ -341,7 +341,11 @@ internal class PurchasesFactory(
 
             val offeringsCache = OfferingsCache(
                 deviceCache = cache,
-                responseStore = PayloadFileStore(contextForStorage.noBackupFilesDir, OFFERINGS_RESPONSE_DIRECTORY_NAME),
+                responseStore = PayloadFileStore(
+                    contextForStorage.noBackupFilesDir,
+                    OFFERINGS_RESPONSE_DIRECTORY_NAME,
+                    syncWrites = true,
+                ),
                 dispatcher = dispatcher,
                 localeProvider = localeProvider,
             )
