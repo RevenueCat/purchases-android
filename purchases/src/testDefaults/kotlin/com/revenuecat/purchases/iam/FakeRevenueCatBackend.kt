@@ -40,6 +40,7 @@ internal class FakeRevenueCatBackend : Dispatcher() {
     private val rejectedAccessTokens = ConcurrentHashMap.newKeySet<String>()
     private val oneOffResponses = ConcurrentHashMap<String, MutableList<() -> MockResponse>>()
     private val holds = ConcurrentHashMap<String, CountDownLatch>()
+    private val subscriptions = ConcurrentHashMap<String, MutableSet<String>>()
     private val serial = AtomicInteger()
 
     /** Whether an anonymous login adopts the `app_user_id` it's sent (iOS #8017 behavior). */
@@ -128,8 +129,8 @@ internal class FakeRevenueCatBackend : Dispatcher() {
                 customerInfo(request.body?.optString("new_app_user_id")).setResponseCode(CREATED)
             path.startsWith("/v1/subscribers/") && path.count { it == '/' } == LEGACY_CUSTOMER_SLASHES ->
                 customerInfo(URLDecoder.decode(path.substringAfterLast('/'), "UTF-8"))
-            path == "/v1/receipts" -> customerInfo(tokenOwner ?: request.body?.optString("app_user_id"))
-            path.endsWith("/offerings") -> json("""{"current_offering_id":null,"offerings":[]}""")
+            path == "/v1/receipts" -> postReceipt(tokenOwner ?: request.body?.optString("app_user_id"), request.body)
+            path.endsWith("/offerings") -> json(OFFERINGS)
             path == "/v1/product_entitlement_mapping" -> json("""{"product_entitlement_mapping":{}}""")
             path.endsWith("/attributes") -> json("{}")
             else -> notFound()
@@ -165,6 +166,14 @@ internal class FakeRevenueCatBackend : Dispatcher() {
             .also { issuedTokens.add(it) }
     }
 
+    // Every posted product becomes an active subscription of that user, so a test can tell the post landed.
+    private fun postReceipt(appUserID: String?, body: JSONObject?): MockResponse {
+        val productIDs = body?.optJSONArray("product_ids") ?: JSONArray()
+        val owned = subscriptions.getOrPut(appUserID.orEmpty()) { ConcurrentHashMap.newKeySet() }
+        for (index in 0 until productIDs.length()) owned.add(productIDs.getString(index))
+        return customerInfo(appUserID)
+    }
+
     private fun customerInfo(appUserID: String?): MockResponse = customerInfoBody(appUserID)
         .setHeader(ETAG_HEADER, "etag-$appUserID")
 
@@ -181,11 +190,27 @@ internal class FakeRevenueCatBackend : Dispatcher() {
                     .put("original_app_user_id", appUserID.orEmpty())
                     .put("original_application_version", "1.0")
                     .put("other_purchases", JSONObject())
-                    .put("subscriptions", JSONObject())
+                    .put("subscriptions", subscriptionsOf(appUserID))
                     .put("management_url", JSONObject.NULL),
             )
             .toString(),
     )
+
+    private fun subscriptionsOf(appUserID: String?) = JSONObject().apply {
+        subscriptions[appUserID.orEmpty()].orEmpty().forEach { productID ->
+            put(
+                productID,
+                JSONObject()
+                    .put("purchase_date", "2026-10-19T09:00:00Z")
+                    .put("expires_date", "2099-01-01T00:00:00Z")
+                    .put("period_type", "normal")
+                    .put("store", "play_store")
+                    .put("is_sandbox", true)
+                    .put("unsubscribe_detected_at", JSONObject.NULL)
+                    .put("billing_issues_detected_at", JSONObject.NULL),
+            )
+        }
+    }
 
     private fun json(body: String) = MockResponse().setResponseCode(OK).setBody(body)
         .setHeader("Content-Type", "application/json")
@@ -208,6 +233,28 @@ internal class FakeRevenueCatBackend : Dispatcher() {
         private const val LEGACY_CUSTOMER_SLASHES = 3
         private const val REQUEST_DATE_MS = 1_792_000_000_000L
         const val ETAG_HEADER = "X-RevenueCat-ETag"
+
+        // One offering with the product FakeBilling stubs, so offerings calls succeed.
+        private val OFFERINGS = JSONObject()
+            .put("current_offering_id", "default")
+            .put(
+                "offerings",
+                JSONArray().put(
+                    JSONObject()
+                        .put("identifier", "default")
+                        .put("description", "Default")
+                        .put(
+                            "packages",
+                            JSONArray().put(
+                                JSONObject()
+                                    .put("identifier", "\$rc_monthly")
+                                    .put("platform_product_identifier", "monthly")
+                                    .put("platform_product_plan_identifier", "monthly_base_plan"),
+                            ),
+                        ),
+                ),
+            )
+            .toString()
 
         // Unsigned; the SDK only reads claims.
         fun jwt(payload: JSONObject): String =

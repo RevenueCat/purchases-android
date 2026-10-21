@@ -11,6 +11,7 @@ import androidx.lifecycle.LifecycleRegistry
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.EntitlementVerificationMode
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Offerings
@@ -92,6 +93,9 @@ internal abstract class IAMEndToEndTest {
             .appUserID(appUserID)
             .iamEnabled(iamEnabled)
             .diagnosticsEnabled(false)
+            // The fake's responses are unsigned. Verifying them fails every response, and failed responses are
+            // never ETag-cached.
+            .entitlementVerificationMode(EntitlementVerificationMode.DISABLED)
             .build()
         purchases = PurchasesFactory(isDebugBuild = { true }).createPurchases(
             configuration = configuration,
@@ -200,19 +204,22 @@ internal abstract class IAMEndToEndTest {
         awaitQuiet()
     }
 
-    protected fun noopCallback() = object : ReceiveCustomerInfoCallback {
-        override fun onReceived(customerInfo: CustomerInfo) = Unit
-        override fun onError(error: PurchasesError) = Unit
+    /** A callback that hands its result to [onResult], for calls a test starts without waiting on. */
+    protected fun recordingCallback(onResult: (Result<CustomerInfo>) -> Unit) = object : ReceiveCustomerInfoCallback {
+        override fun onReceived(customerInfo: CustomerInfo) = onResult(Result.success(customerInfo))
+        override fun onError(error: PurchasesError) = onResult(Result.failure(PurchasesErrorException(error)))
     }
 
-    protected fun noopOfferingsCallback() = object : ReceiveOfferingsCallback {
-        override fun onReceived(offerings: Offerings) = Unit
-        override fun onError(error: PurchasesError) = Unit
+    /** Hands [onResult] the call's error, or null on success. */
+    protected fun offeringsCallback(onResult: (PurchasesError?) -> Unit) = object : ReceiveOfferingsCallback {
+        override fun onReceived(offerings: Offerings) = onResult(null)
+        override fun onError(error: PurchasesError) = onResult(error)
     }
 
-    protected fun noopSyncCallback() = object : SyncAttributesAndOfferingsCallback {
-        override fun onSuccess(offerings: Offerings) = Unit
-        override fun onError(error: PurchasesError) = Unit
+    /** Hands [onResult] the call's error, or null on success. */
+    protected fun syncCallback(onResult: (PurchasesError?) -> Unit) = object : SyncAttributesAndOfferingsCallback {
+        override fun onSuccess(offerings: Offerings) = onResult(null)
+        override fun onError(error: PurchasesError) = onResult(error)
     }
 
     protected val isMainThread: Boolean

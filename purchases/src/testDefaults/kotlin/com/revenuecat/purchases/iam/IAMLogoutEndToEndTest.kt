@@ -43,7 +43,7 @@ internal class IAMLogoutEndToEndTest : IAMEndToEndTest() {
         val result = awaitCustomerInfo { purchases.authentication.logOut(it) }
         awaitQuiet()
 
-        assertThat(result.isFailure).isTrue()
+        assertThat(result.purchasesError?.code).isEqualTo(PurchasesErrorCode.UnknownBackendError)
         assertThat(lastCallbackThread).isEqualTo(android.os.Looper.getMainLooper().thread)
         assertThat(currentAppUserID).isEqualTo(IDENTIFIED)
         assertThat(purchases.authentication.currentAccessToken).isEqualTo(token)

@@ -2,6 +2,7 @@
 
 package com.revenuecat.purchases.iam
 
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.identity.Identity
 import com.revenuecat.purchases.utils.stubStoreTransactionFromGooglePurchase
@@ -37,6 +38,8 @@ internal class IAMSequencingEndToEndTest : IAMEndToEndTest() {
 
         val receipt = backend.requests("/v1/receipts").single()
         assertThat(currentAppUserID).isNotEqualTo(localID)
+        assertThat(customerInfoUpdates.last().originalAppUserId).isEqualTo(currentAppUserID)
+        assertThat(customerInfoUpdates.last().activeSubscriptions).containsExactly("monthly")
         assertThat(receipt.user()).isEqualTo(currentAppUserID)
         assertThat(receipt.body?.getString("app_user_id")).isEqualTo(currentAppUserID)
     }
@@ -47,16 +50,21 @@ internal class IAMSequencingEndToEndTest : IAMEndToEndTest() {
         foregroundAndBootstrap()
         billing.ownedPurchases.add(stubStoreTransactionFromGooglePurchase(listOf("monthly"), PURCHASE_TIME))
         backend.hold("/auth/login")
-        purchases.authentication.logIn(oidc, noopCallback())
+        var login: Result<CustomerInfo>? = null
+        purchases.authentication.logIn(oidc, recordingCallback { login = it })
         awaitUntil("the explicit login in flight") { backend.requests("/auth/login").size == 2 }
 
-        purchases.restorePurchases(noopCallback())
+        var restore: Result<CustomerInfo>? = null
+        purchases.restorePurchases(recordingCallback { restore = it })
         idleMainLooper()
 
         backend.release("/auth/login")
-        awaitUntil("the restore's receipt post") { backend.requests("/v1/receipts").isNotEmpty() }
+        awaitUntil("the login and restore results") { login != null && restore != null }
         awaitQuiet()
 
+        assertThat(login?.getOrThrow()?.originalAppUserId).isEqualTo(IDENTIFIED)
+        assertThat(restore?.getOrThrow()?.originalAppUserId).isEqualTo(IDENTIFIED)
+        assertThat(restore?.getOrThrow()?.activeSubscriptions).containsExactly("monthly")
         assertThat(backend.requests("/v1/receipts").map { it.user() }).containsOnly(IDENTIFIED)
     }
 
@@ -68,21 +76,13 @@ internal class IAMSequencingEndToEndTest : IAMEndToEndTest() {
         foreground()
         awaitUntil("the bootstrap login in flight") { backend.requests("/auth/login").isNotEmpty() }
 
-        var loggedIn = false
-        purchases.authentication.logIn(
-            oidc,
-            object : com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback {
-                override fun onReceived(customerInfo: com.revenuecat.purchases.CustomerInfo) {
-                    loggedIn = true
-                }
-
-                override fun onError(error: com.revenuecat.purchases.PurchasesError) = Unit
-            },
-        )
+        var login: Result<CustomerInfo>? = null
+        purchases.authentication.logIn(oidc, recordingCallback { login = it })
         idleMainLooper()
 
         backend.release("/auth/login")
-        awaitUntil("the explicit login") { loggedIn }
+        awaitUntil("the explicit login") { login != null }
+        assertThat(login?.getOrThrow()?.originalAppUserId).isEqualTo(IDENTIFIED)
         awaitQuiet()
 
         val (bootstrap, explicit) = backend.requests("/auth/login")

@@ -95,8 +95,9 @@ internal class IAMDisabledEndToEndTest : IAMEndToEndTest() {
     fun `getCustomerInfo goes to the user's legacy path`() {
         configure(iamEnabled = false)
 
-        awaitCustomerInfo { purchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, it) }
+        val result = awaitCustomerInfo { purchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, it) }
 
+        assertThat(result.getOrThrow().originalAppUserId).isEqualTo(currentAppUserID)
         assertThat(backend.requests.single().path).isEqualTo("/v1/subscribers/${encoded(currentAppUserID)}")
         assertNoIAMTraffic()
     }

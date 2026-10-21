@@ -4,7 +4,6 @@ package com.revenuecat.purchases.iam
 
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.identity.Identity
 import com.revenuecat.purchases.logInWith
 import okhttp3.mockwebserver.MockResponse
@@ -84,8 +83,10 @@ internal class IAMLoginEndToEndTest : IAMEndToEndTest() {
         val anonymous = currentAppUserID
         purchases.setAttributes(mapOf("favorite_cat" to "garfield"))
 
-        awaitCustomerInfo { purchases.authentication.logIn(oidc, it) }
+        val result = awaitCustomerInfo { purchases.authentication.logIn(oidc, it) }
 
+        assertThat(result.getOrThrow().originalAppUserId).isEqualTo(IDENTIFIED)
+        assertThat(currentAppUserID).isEqualTo(IDENTIFIED)
         val paths = backend.requests.map { it.path }
         val attributes = backend.requests("/v1/customer/attributes").single()
         assertThat(attributes.user()).isEqualTo(anonymous)
@@ -97,10 +98,13 @@ internal class IAMLoginEndToEndTest : IAMEndToEndTest() {
         configure()
         foregroundAndBootstrap()
         val anonymous = currentAppUserID
-        awaitCustomerInfo { purchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, it) }
+        awaitCustomerInfo { purchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, it) }.getOrThrow()
 
-        awaitCustomerInfo { purchases.authentication.logIn(oidc, it) }
+        awaitCustomerInfo { purchases.authentication.logIn(oidc, it) }.getOrThrow()
 
+        // The anonymous re-fetch did send its ETag, so the check below isn't passing for lack of ETags.
+        val anonymousFetches = backend.requests("/v1/customer").filter { it.user() == anonymous }
+        assertThat(anonymousFetches.map { it.eTag }).contains("etag-$anonymous")
         val identifiedFetches = backend.requests("/v1/customer").filter { it.user() == IDENTIFIED }
         assertThat(identifiedFetches).isNotEmpty
         assertThat(identifiedFetches.map { it.eTag }).doesNotContain("etag-$anonymous")
@@ -111,20 +115,20 @@ internal class IAMLoginEndToEndTest : IAMEndToEndTest() {
         // Pins today's behavior; Step B rejects this with UnsupportedError.
         configure()
         foregroundAndBootstrap()
-        var error: PurchasesErrorCode? = null
-        var done = false
+        val anonymous = currentAppUserID
+        var result: Result<Pair<String, Boolean>>? = null
 
         purchases.logInWith(
             "custom-id",
-            onError = {
-                error = it.code
-                done = true
-            },
-        ) { _, _ -> done = true }
-        awaitUntil("the logIn(String) result") { done }
+            onError = { result = Result.failure(PurchasesErrorException(it)) },
+        ) { customerInfo, created -> result = Result.success(customerInfo.originalAppUserId to created) }
+        awaitUntil("the logIn(String) result") { result != null }
 
-        assertThat(backend.requests("/v1/subscribers/identify")).hasSize(1)
-        assertThat(error).isNotEqualTo(PurchasesErrorCode.UnsupportedError)
+        assertThat(result?.getOrThrow()).isEqualTo("custom-id" to true)
+        assertThat(currentAppUserID).isEqualTo("custom-id")
+        val identify = backend.requests("/v1/subscribers/identify").single()
+        assertThat(identify.body?.getString("app_user_id")).isEqualTo(anonymous)
+        assertThat(identify.body?.getString("new_app_user_id")).isEqualTo("custom-id")
     }
 
     private fun anonymousUser(): String = backend.ownerOf(backend.issuedTokens.first().getString("access_token"))!!

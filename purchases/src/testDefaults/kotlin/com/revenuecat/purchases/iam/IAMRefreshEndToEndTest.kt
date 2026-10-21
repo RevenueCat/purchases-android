@@ -1,10 +1,13 @@
 package com.revenuecat.purchases.iam
 
 import com.revenuecat.purchases.CacheFetchPolicy
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
 import okhttp3.mockwebserver.MockResponse
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.Test
+import java.util.concurrent.CopyOnWriteArrayList
 
 /** Scenario 5: a 401 refreshes the access token and retries; failures reach the delegate. */
 internal class IAMRefreshEndToEndTest : IAMEndToEndTest() {
@@ -35,12 +38,15 @@ internal class IAMRefreshEndToEndTest : IAMEndToEndTest() {
         configure()
         foregroundAndBootstrap()
         backend.expire(delegate.tokens.single()!!)
+        val errors = CopyOnWriteArrayList<PurchasesError?>()
 
-        purchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, noopCallback())
-        purchases.getOfferings(noopOfferingsCallback())
-        purchases.syncAttributesAndOfferingsIfNeeded(noopSyncCallback())
+        purchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, recordingCallback { errors.add(it.purchasesError) })
+        purchases.getOfferings(offeringsCallback { errors.add(it) })
+        purchases.syncAttributesAndOfferingsIfNeeded(syncCallback { errors.add(it) })
+        awaitUntil("all three results") { errors.size == CALLS }
         awaitQuiet()
 
+        assertThat(errors).containsOnlyNulls()
         assertThat(backend.requests("/auth/token")).hasSize(1)
     }
 
@@ -49,13 +55,14 @@ internal class IAMRefreshEndToEndTest : IAMEndToEndTest() {
         configure()
         foregroundAndBootstrap()
         backend.expire(delegate.tokens.single()!!)
-        backend.respondOnce("/auth/token") { MockResponse().setResponseCode(SERVER_ERROR) }
+        backend.respondOnce("/auth/token") { MockResponse().setResponseCode(SERVER_ERROR).setBody("{}") }
 
         val result = awaitCustomerInfo { purchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, it) }
         awaitQuiet()
 
-        assertThat(result.isFailure).isTrue()
-        assertThat(delegate.errors).hasSize(1)
+        // The request fails with its own 401; the delegate hears why the refresh failed.
+        assertThat(result.purchasesError?.code).isEqualTo(PurchasesErrorCode.InvalidCredentialsError)
+        assertThat(delegate.errors.map { it.code }).containsExactly(PurchasesErrorCode.UnknownBackendError)
     }
 
     @Test
@@ -70,9 +77,10 @@ internal class IAMRefreshEndToEndTest : IAMEndToEndTest() {
             MockResponse().setResponseCode(OK)
                 .setBody(JSONObject().put("access_token", issued.getString("access_token")).toString())
         }
-        awaitCustomerInfo { purchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, it) }
+        val first = awaitCustomerInfo { purchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, it) }
         awaitQuiet()
 
+        assertThat(first.getOrThrow().originalAppUserId).isEqualTo(user)
         backend.expire(purchases.authentication.currentAccessToken!!)
         val second = awaitCustomerInfo { purchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, it) }
         awaitQuiet()
@@ -101,5 +109,6 @@ internal class IAMRefreshEndToEndTest : IAMEndToEndTest() {
         private const val OK = 200
         private const val UNAUTHORIZED = 401
         private const val SERVER_ERROR = 500
+        private const val CALLS = 3
     }
 }
