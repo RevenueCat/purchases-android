@@ -2833,7 +2833,7 @@ class CustomerCenterViewModelTests {
         )
         val path = HelpPath(id = "change_plans", title = "Change plans", type = HelpPath.PathType.CHANGE_PLANS)
         setupSuccessLoadScreen(path, model)
-        val active = CustomerCenterConfigTestData.purchaseInformationYearlyExpiring.copy(store = Store.PLAY_STORE)
+        val active = CustomerCenterConfigTestData.purchaseInformationYearlyExpiring.copy(store = Store.APP_STORE)
         for ((ownershipType, expectedReason) in listOf(
             OwnershipType.FAMILY_SHARED to CustomerCenterPreviewDiagnosticReason.PLAN_CHANGE_UNAVAILABLE_FOR_FAMILY_SHARED,
             OwnershipType.ASSIGNED to CustomerCenterPreviewDiagnosticReason.PLAN_CHANGE_UNAVAILABLE_FOR_ASSIGNED,
