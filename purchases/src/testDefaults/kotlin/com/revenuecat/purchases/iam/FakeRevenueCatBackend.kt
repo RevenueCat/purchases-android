@@ -27,6 +27,7 @@ internal class FakeRevenueCatBackend : Dispatcher() {
         val authorization: String?,
         val body: JSONObject?,
         val eTag: String?,
+        val idempotencyKey: String?,
     ) {
         /** The access token this request carried, or null for the API key / no header. */
         val bearerToken: String?
@@ -41,6 +42,8 @@ internal class FakeRevenueCatBackend : Dispatcher() {
     private val oneOffResponses = ConcurrentHashMap<String, MutableList<() -> MockResponse>>()
     private val holds = ConcurrentHashMap<String, CountDownLatch>()
     private val subscriptions = ConcurrentHashMap<String, MutableSet<String>>()
+    private val balances = ConcurrentHashMap<String, MutableMap<String, Int>>()
+    private val spendsByKey = ConcurrentHashMap<String, () -> MockResponse>()
     private val serial = AtomicInteger()
 
     /** Whether an anonymous login adopts the `app_user_id` it's sent (iOS #8017 behavior). */
@@ -78,6 +81,12 @@ internal class FakeRevenueCatBackend : Dispatcher() {
         holds.remove(path)?.countDown()
     }
 
+    fun setBalance(appUserID: String, code: String, balance: Int) {
+        balances.getOrPut(appUserID) { ConcurrentHashMap() }[code] = balance
+    }
+
+    fun balance(appUserID: String, code: String): Int? = balances[appUserID]?.get(code)
+
     /** Requests carrying [accessToken] get a 401 from now on, as if it expired. */
     fun expire(accessToken: String) {
         rejectedAccessTokens.add(accessToken)
@@ -93,6 +102,7 @@ internal class FakeRevenueCatBackend : Dispatcher() {
             request.getHeader("Authorization"),
             body,
             request.getHeader(ETAG_HEADER),
+            request.getHeader(IDEMPOTENCY_KEY_HEADER),
         )
         recorded.add(recordedRequest)
         try {
@@ -129,6 +139,9 @@ internal class FakeRevenueCatBackend : Dispatcher() {
                 customerInfo(request.body?.optString("new_app_user_id")).setResponseCode(CREATED)
             path.startsWith("/v1/subscribers/") && path.count { it == '/' } == LEGACY_CUSTOMER_SLASHES ->
                 customerInfo(URLDecoder.decode(path.substringAfterLast('/'), "UTF-8"))
+            path == "/v1/customer/virtual_currencies" ->
+                tokenOwner?.let { json(virtualCurrencies(it)) } ?: unauthorized()
+            path == "/v1/customer/virtual_currencies/spend" -> tokenOwner?.let { spend(it, request) } ?: unauthorized()
             path == "/v1/receipts" -> postReceipt(tokenOwner ?: request.body?.optString("app_user_id"), request.body)
             path.endsWith("/offerings") -> json(OFFERINGS)
             path == "/v1/product_entitlement_mapping" -> json("""{"product_entitlement_mapping":{}}""")
@@ -173,6 +186,39 @@ internal class FakeRevenueCatBackend : Dispatcher() {
         for (index in 0 until productIDs.length()) owned.add(productIDs.getString(index))
         return customerInfo(appUserID)
     }
+
+    // Like the real backend, a repeated Idempotency-Key gets the first response and is applied once.
+    @Synchronized
+    private fun spend(appUserID: String, request: Request): MockResponse {
+        val key = request.idempotencyKey
+            ?: return MockResponse().setResponseCode(BAD_REQUEST).setBody("""{"code":7000,"message":"No key"}""")
+        return spendsByKey.getOrPut(key) { applySpend(appUserID, request.body) }()
+    }
+
+    private fun applySpend(appUserID: String, body: JSONObject?): () -> MockResponse {
+        val adjustments = body?.optJSONObject("adjustments") ?: JSONObject()
+        val codes = adjustments.keys().asSequence().toList()
+        val owned = balances.getOrPut(appUserID) { ConcurrentHashMap() }
+        if (codes.any { (owned[it] ?: 0) < adjustments.getInt(it) }) {
+            return {
+                MockResponse().setResponseCode(UNPROCESSABLE)
+                    .setBody("""{"code":7000,"message":"Insufficient balance"}""")
+                    .setHeader("Content-Type", "application/json")
+            }
+        }
+        codes.forEach { owned[it] = owned.getValue(it) - adjustments.getInt(it) }
+        val response = virtualCurrencies(appUserID)
+        return { json(response) }
+    }
+
+    private fun virtualCurrencies(appUserID: String): String = JSONObject().put(
+        "virtual_currencies",
+        JSONObject().apply {
+            balances[appUserID].orEmpty().forEach { (code, balance) ->
+                put(code, JSONObject().put("balance", balance).put("code", code).put("name", code))
+            }
+        },
+    ).toString()
 
     private fun customerInfo(appUserID: String?): MockResponse = customerInfoBody(appUserID)
         .setHeader(ETAG_HEADER, "etag-$appUserID")
@@ -227,12 +273,15 @@ internal class FakeRevenueCatBackend : Dispatcher() {
     companion object {
         private const val OK = 200
         private const val CREATED = 201
+        private const val BAD_REQUEST = 400
         private const val UNAUTHORIZED = 401
+        private const val UNPROCESSABLE = 422
         private const val NOT_FOUND = 404
         private const val HOLD_TIMEOUT_SECONDS = 20L
         private const val LEGACY_CUSTOMER_SLASHES = 3
         private const val REQUEST_DATE_MS = 1_792_000_000_000L
         const val ETAG_HEADER = "X-RevenueCat-ETag"
+        const val IDEMPOTENCY_KEY_HEADER = "Idempotency-Key"
 
         // One offering with the product FakeBilling stubs, so offerings calls succeed.
         private val OFFERINGS = JSONObject()
