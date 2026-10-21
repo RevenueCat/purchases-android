@@ -1,11 +1,14 @@
 package com.revenuecat.purchases.subscriberattributes
 
 import android.app.Application
+import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.CustomerInfoOriginalSource
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.SubscriberAttributeError
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.subscriberattributes.DeviceIdentifiersFetcher
@@ -125,6 +128,33 @@ internal class SubscriberAttributesManager(
                 )
             }
         }
+    }
+
+    /**
+     * Merges the subscriber attributes [customerInfo] carries into [appUserID]'s cache. Best effort: failures
+     * are logged, never thrown, so caching [customerInfo] itself isn't affected.
+     */
+    @Synchronized
+    fun mergeAttributes(customerInfo: CustomerInfo, appUserID: AppUserID) {
+        // computed on device, so it says nothing about the server's attributes
+        if (customerInfo.originalSource == CustomerInfoOriginalSource.OFFLINE_ENTITLEMENTS) return
+        try {
+            val remote = customerInfo.remoteSubscriberAttributes() ?: return
+            deviceCache.mergeRemoteAttributes(appUserID, remote)
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            errorLog(e) { AttributionStrings.MERGING_REMOTE_ATTRIBUTES_FAILED.format(appUserID) }
+        }
+    }
+
+    /**
+     * Every attribute cached for [appUserID], synced or not, including deletions. Empty if the cache can't be read.
+     */
+    @Synchronized
+    fun getStoredAttributes(appUserID: AppUserID): SubscriberAttributeMap = try {
+        deviceCache.getAllStoredSubscriberAttributes(appUserID)
+    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+        errorLog(e) { AttributionStrings.READING_ATTRIBUTES_FAILED.format(appUserID) }
+        emptyMap()
     }
 
     @Synchronized

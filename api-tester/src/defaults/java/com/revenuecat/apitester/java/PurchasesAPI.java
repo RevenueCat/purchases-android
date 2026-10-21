@@ -36,10 +36,13 @@ import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies;
 
 import androidx.annotation.OptIn;
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI;
+import com.revenuecat.purchases.InternalRevenueCatAPI;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
@@ -206,6 +209,15 @@ final class PurchasesAPI {
 
         Map<String, Integer> mapStringInt = new HashMap<>();
         purchases.setAppsFlyerConversionData(mapStringInt);
+    }
+
+    @OptIn(markerClass = InternalRevenueCatAPI.class)
+    static void checkAttributesForCurrentUser(final Purchases purchases) {
+        final List<CustomerInfo.Attribute> attributes = purchases.getAttributesForCurrentUser();
+        final CustomerInfo.Attribute attribute = attributes.get(0);
+        final String key = attribute.getKey();
+        final String value = attribute.getValue();
+        final Date lastUpdatedDate = attribute.getLastUpdatedDate();
     }
 
     static void checkSetAppstackAttributionParams(final Purchases purchases) {

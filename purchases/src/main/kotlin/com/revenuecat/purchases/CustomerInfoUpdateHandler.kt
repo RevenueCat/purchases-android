@@ -12,6 +12,7 @@ import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.strings.CustomerInfoStrings
+import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 
 /**
  * This class is responsible for updating the customer info cache and notifying the listeners.
@@ -19,6 +20,7 @@ import com.revenuecat.purchases.strings.CustomerInfoStrings
 @OptIn(InternalRevenueCatAPI::class)
 internal class CustomerInfoUpdateHandler constructor(
     private val deviceCache: DeviceCache,
+    private val subscriberAttributesManager: SubscriberAttributesManager,
     private val identityManager: IdentityManager,
     private val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val appConfig: AppConfig,
@@ -39,6 +41,7 @@ internal class CustomerInfoUpdateHandler constructor(
 
     fun cacheAndNotifyListeners(customerInfo: CustomerInfo, appUserID: String) {
         deviceCache.cacheCustomerInfo(appUserID, customerInfo)
+        subscriberAttributesManager.mergeAttributes(customerInfo, appUserID)
         notifyListeners(customerInfo, appUserID)
     }
 

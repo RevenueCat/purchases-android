@@ -1097,6 +1097,18 @@ public class Purchases internal constructor(
     }
 
     // region Subscriber Attributes
+
+    /**
+     * The subscriber attributes for the current user, sorted by key.
+     *
+     * Typically this only includes attributes that were set on this device. If the current user was authenticated
+     * through IAM, it includes all readable attributes on the user's customer profile, as of the last time
+     * [CustomerInfo] was fetched. Deleted attributes are not included.
+     */
+    @InternalRevenueCatAPI
+    public val attributesForCurrentUser: List<CustomerInfo.Attribute>
+        get() = purchasesOrchestrator.attributesForCurrentUser
+
     // region Special Attributes
 
     /**

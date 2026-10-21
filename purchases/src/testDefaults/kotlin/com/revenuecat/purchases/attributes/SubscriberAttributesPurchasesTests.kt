@@ -1,3 +1,5 @@
+@file:OptIn(InternalRevenueCatAPI::class)
+
 package com.revenuecat.purchases.attributes
 
 import android.app.Application
@@ -5,7 +7,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.APIKeyValidator
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfoHelper
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.CustomerInfoUpdateHandler
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PostPendingTransactionsHelper
 import com.revenuecat.purchases.PostReceiptHelper
 import com.revenuecat.purchases.PostTransactionWithProductDetailsHelper
@@ -31,6 +35,7 @@ import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeK
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.paywalls.FontLoader
+import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.utils.PurchaseParamsValidator
@@ -43,10 +48,12 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.verify
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.Date
 
 @RunWith(AndroidJUnit4::class)
 class SubscriberAttributesPurchasesTests {
@@ -68,6 +75,7 @@ class SubscriberAttributesPurchasesTests {
     private val eventsManagerMock = mockk<EventsManager>()
     private val adEventsManagerMock = mockk<EventsManager>()
     private lateinit var applicationMock: Application
+    private lateinit var identityManagerMock: IdentityManager
 
     @Before
     fun setup() {
@@ -87,7 +95,7 @@ class SubscriberAttributesPurchasesTests {
             isDebugBuild = false,
             apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
-        val identityManager = mockk<IdentityManager>(relaxed = true).apply {
+        val identityManager = mockk<IdentityManager>(relaxed = true).also { identityManagerMock = it }.apply {
             every { currentAppUserID } returns appUserId
             every { checkIAMLoginNeeded(any()) } answers { firstArg<(Boolean) -> Unit>()(false) }
         }
@@ -280,6 +288,121 @@ class SubscriberAttributesPurchasesTests {
             subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId, Delay.NONE, any())
         }
     }
+
+    // region attributesForCurrentUser
+
+    @Test
+    fun `attributesForCurrentUser is empty when nothing is stored`() {
+        every { subscriberAttributesManagerMock.getStoredAttributes(appUserId) } returns emptyMap()
+
+        assertThat(underTest.attributesForCurrentUser).isEmpty()
+    }
+
+    @Test
+    fun `attributesForCurrentUser exposes key, value and last updated date`() {
+        val setTime = Date(1_600_000_000_000)
+        stubStoredAttributes(appUserId, SubscriberAttribute("\$email", "user@example.com", setTime = setTime))
+
+        val attributes = underTest.attributesForCurrentUser
+
+        assertThat(attributes).hasSize(1)
+        val attribute: CustomerInfo.Attribute = attributes.single()
+        assertThat(attribute.key).isEqualTo("\$email")
+        assertThat(attribute.value).isEqualTo("user@example.com")
+        assertThat(attribute.lastUpdatedDate).isEqualTo(setTime)
+    }
+
+    @Test
+    fun `attributesForCurrentUser includes synced and unsynced attributes`() {
+        stubStoredAttributes(
+            appUserId,
+            SubscriberAttribute("band", "Rush", isSynced = true),
+            SubscriberAttribute("song", "YYZ", isSynced = false),
+        )
+
+        assertThat(underTest.attributesForCurrentUser.associate { it.key to it.value })
+            .isEqualTo(mapOf("band" to "Rush", "song" to "YYZ"))
+    }
+
+    @Test
+    fun `attributesForCurrentUser is sorted by key`() {
+        stubStoredAttributes(
+            appUserId,
+            SubscriberAttribute("zeppelin", "IV"),
+            SubscriberAttribute("\$email", "user@example.com"),
+            SubscriberAttribute("band", "Rush"),
+        )
+
+        assertThat(underTest.attributesForCurrentUser.map { it.key }).containsExactly("\$email", "band", "zeppelin")
+    }
+
+    @Test
+    fun `attributesForCurrentUser excludes synced attributes with null values`() {
+        stubStoredAttributes(
+            appUserId,
+            SubscriberAttribute("band", "Rush", isSynced = true),
+            SubscriberAttribute("\$email", null, isSynced = true),
+        )
+
+        assertThat(underTest.attributesForCurrentUser.map { it.key }).containsExactly("band")
+    }
+
+    @Test
+    fun `attributesForCurrentUser excludes unsynced attributes with empty or null values`() {
+        stubStoredAttributes(
+            appUserId,
+            SubscriberAttribute("band", "Rush", isSynced = false),
+            SubscriberAttribute("\$email", "", isSynced = false),
+            SubscriberAttribute("\$displayName", null, isSynced = false),
+        )
+
+        assertThat(underTest.attributesForCurrentUser.map { it.key }).containsExactly("band")
+    }
+
+    @Test
+    fun `attributesForCurrentUser keeps whitespace-only values`() {
+        stubStoredAttributes(appUserId, SubscriberAttribute("band", " "))
+
+        assertThat(underTest.attributesForCurrentUser.map { it.value }).containsExactly(" ")
+    }
+
+    @Test
+    fun `attributesForCurrentUser is empty when every value is deleted`() {
+        stubStoredAttributes(appUserId, SubscriberAttribute("\$email", null, isSynced = true))
+
+        assertThat(underTest.attributesForCurrentUser).isEmpty()
+    }
+
+    @Test
+    fun `attributesForCurrentUser reads the current app user's attributes`() {
+        stubStoredAttributes("first_user", SubscriberAttribute("band", "Rush"))
+        stubStoredAttributes("second_user", SubscriberAttribute("band", "Yes"))
+
+        every { identityManagerMock.currentAppUserID } returns "first_user"
+        assertThat(underTest.attributesForCurrentUser.map { it.value }).containsExactly("Rush")
+
+        every { identityManagerMock.currentAppUserID } returns "second_user"
+        assertThat(underTest.attributesForCurrentUser.map { it.value }).containsExactly("Yes")
+    }
+
+    @Test
+    fun `attributesForCurrentUser doesn't modify stored attributes`() {
+        stubStoredAttributes(appUserId, SubscriberAttribute("band", "Rush"))
+
+        underTest.attributesForCurrentUser
+
+        verify(exactly = 0) { subscriberAttributesManagerMock.setAttributes(any(), any()) }
+        verify(exactly = 0) { subscriberAttributesManagerMock.setAttribute(any(), any(), any()) }
+        verify(exactly = 0) { subscriberAttributesManagerMock.mergeAttributes(any(), any()) }
+    }
+
+    private fun stubStoredAttributes(appUserID: String, vararg attributes: SubscriberAttribute) {
+        every {
+            subscriberAttributesManagerMock.getStoredAttributes(appUserID)
+        } returns attributes.associateBy { it.key.backendKey }
+    }
+
+    // endregion attributesForCurrentUser
 
     // region Attribution IDs
 
