@@ -52,46 +52,27 @@ class TabsCarouselPageMemoryTests {
 
     @Test
     fun `Each tab's carousel keeps its own page when switching tabs`(): Unit = with(composeTestRule) {
-        // Arrange
-        setTabsWithCarousels(loop = false)
+        // Arrange: tab A's carousel doesn't loop, tab B's does.
+        setTabsWithCarousels()
 
-        // Act: move tab A's carousel to its last page.
+        // Act + assert: each tab returns to its own page, and B first opens on its initial page.
         swipeCarouselForward(tab = "a", fromPage = 0)
         swipeCarouselForward(tab = "a", fromPage = 1)
-        assertPageShown(tab = "a", page = 2)
-
-        // Assert: tab B's carousel still starts on its own initial page.
         onNodeWithText(tabButtonText("b")).performClick()
         assertPageShown(tab = "b", page = 0)
+        swipeCarouselForward(tab = "b", fromPage = 0)
 
-        // Assert: going back to tab A shows the page the user left it on.
         onNodeWithText(tabButtonText("a")).performClick()
         assertPageShown(tab = "a", page = 2)
-    }
-
-    @Test
-    fun `Each tab's looping carousel keeps its own page when switching tabs`(): Unit = with(composeTestRule) {
-        // Arrange
-        setTabsWithCarousels(loop = true)
-
-        // Act
-        swipeCarouselForward(tab = "a", fromPage = 0)
-        assertPageShown(tab = "a", page = 1)
-
         onNodeWithText(tabButtonText("b")).performClick()
-        assertPageShown(tab = "b", page = 0)
-
-        onNodeWithText(tabButtonText("a")).performClick()
-
-        // Assert
-        assertPageShown(tab = "a", page = 1)
+        assertPageShown(tab = "b", page = 1)
     }
 
     @Test
     fun `A carousel hidden mid auto-advance comes back settled on a page`(): Unit = with(composeTestRule) {
         // Arrange
         mainClock.autoAdvance = false
-        setTabsWithCarousels(loop = false, autoAdvanceTabA = true)
+        setTabsWithCarousels(autoAdvanceTabA = true)
         waitForIdle()
         val restingX = pagePositionsX(tab = "a").first()
 
@@ -144,7 +125,7 @@ class TabsCarouselPageMemoryTests {
         return visible.single()
     }
 
-    private fun ComposeContentTestRule.setTabsWithCarousels(loop: Boolean, autoAdvanceTabA: Boolean = false) {
+    private fun ComposeContentTestRule.setTabsWithCarousels(autoAdvanceTabA: Boolean = false) {
         val tabControlButtons = tabNames.mapIndexed { index, tab ->
             TabControlButtonComponent(
                 tabIndex = index,
@@ -177,7 +158,7 @@ class TabsCarouselPageMemoryTests {
                                 },
                                 pageAlignment = VerticalAlignment.CENTER,
                                 size = Size(width = Fill(), height = Fit()),
-                                loop = loop,
+                                loop = tab == "b",
                                 autoAdvance = if (autoAdvanceTabA && tab == "a") {
                                     CarouselComponent.AutoAdvancePages(
                                         msTimePerPage = AUTO_ADVANCE_MS_PER_PAGE.toInt(),
