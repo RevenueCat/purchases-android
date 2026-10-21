@@ -106,9 +106,6 @@ internal fun TabsComponentView(
     val backgroundStyle = tabsState.background?.let { rememberBackgroundStyle(it) }
     val borderStyle = tabsState.border?.let { rememberBorderStyle(border = it) }
     val shadowStyle = tabsState.shadow?.let { rememberShadowStyle(shadow = it) }
-    // Keeps each tab's saveable state (e.g. a carousel's page) while the tab
-    // is hidden. Keyed by index, not id: ids aren't validated as unique, and a
-    // duplicate key would throw while both tabs compose during the cross-fade.
     val tabContentStateHolder = rememberSaveableStateHolder()
 
     AnimatedContent(
@@ -128,6 +125,7 @@ internal fun TabsComponentView(
         // Coerce it, just in case we get an out-of-range value.
         val tabIndex = selectedTabIndex.coerceIn(0..tabsState.tabs.lastIndex)
         val tab = tabsState.tabs[tabIndex]
+        // Keyed by index: tab ids aren't guaranteed unique.
         tabContentStateHolder.SaveableStateProvider(key = tabIndex) {
             StackComponentView(
                 style = tab.stack,
