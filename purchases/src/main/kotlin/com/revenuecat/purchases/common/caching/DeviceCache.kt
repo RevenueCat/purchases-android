@@ -63,6 +63,10 @@ public open class DeviceCache(
 ) : StorefrontProvider {
     private companion object {
         private const val CUSTOMER_INFO_SCHEMA_VERSION_KEY = "schema_version"
+        private const val LEGACY_OFFERINGS_RESPONSE_SUFFIX = ".offeringsResponse"
+        private const val OFFERINGS_RESPONSE_CHECKSUM_KEY_PREFIX =
+            "${SHARED_PREFERENCES_PREFIX}offeringsResponseChecksum."
+        private const val OFFERINGS_RESPONSE_FILE_KEY_SUFFIX = ".offeringsResponse"
         private const val CUSTOMER_INFO_VERIFICATION_RESULT_KEY = "verification_result"
         private const val CUSTOMER_INFO_REQUEST_DATE_KEY = "customer_info_request_date"
         private const val CUSTOMER_INFO_ORIGINAL_SOURCE_KEY = "customer_info_original_source"
@@ -136,7 +140,11 @@ public open class DeviceCache(
         "$apiKeyPrefix.subscriberDimensions"
     }
 
-    private val offeringsResponseCacheKey: String by lazy { "$apiKeyPrefix.offeringsResponse" }
+    private val offeringsResponseCacheKey: String by lazy { "$apiKeyPrefix$LEGACY_OFFERINGS_RESPONSE_SUFFIX" }
+    internal val offeringsResponseFileKey: String by lazy { "$apiKeyPrefix$OFFERINGS_RESPONSE_FILE_KEY_SUFFIX" }
+
+    // Outside `$apiKeyPrefix.`, where CustomerInfo keys take any app user ID and could collide with a Long.
+    private val offeringsResponseChecksumCacheKey: String by lazy { "$OFFERINGS_RESPONSE_CHECKSUM_KEY_PREFIX$apiKey" }
 
     internal fun startEditing(): SharedPreferences.Editor {
         return preferences.edit()
@@ -631,24 +639,36 @@ public open class DeviceCache(
     // region offerings response
 
     @Synchronized
-    internal fun getOfferingsResponseCache(): JSONObject? {
-        return getJSONObjectOrNull(offeringsResponseCacheKey)
+    internal fun getOfferingsResponseChecksum(): Long? {
+        return if (preferences.contains(offeringsResponseChecksumCacheKey)) {
+            preferences.getLong(offeringsResponseChecksumCacheKey, 0L)
+        } else {
+            null
+        }
+    }
+
+    @Synchronized
+    internal fun cacheOfferingsResponseChecksum(checksum: Long) {
+        preferences.edit().putLong(offeringsResponseChecksumCacheKey, checksum).apply()
+    }
+
+    @Synchronized
+    internal fun clearOfferingsResponseChecksum() {
+        remove(offeringsResponseChecksumCacheKey)
     }
 
     /**
-     * Serializing a [JSONObject] here instead of storing [offeringsResponse] as received would cost a
-     * contiguous allocation of several times the response size, which OOMs on low-heap devices.
+     * Drops the response body older versions stored in prefs: SharedPreferences keeps its whole file in the
+     * heap for the process lifetime, so it is removed without being read.
      */
     @Synchronized
-    internal fun cacheOfferingsResponse(offeringsResponse: String) {
+    internal fun removeLegacyOfferingsResponse() {
+        if (!preferences.contains(offeringsResponseCacheKey)) return
+        // An older SDK ran since the checksum was stored and may have switched users without clearing it.
         preferences.edit()
-            .putString(offeringsResponseCacheKey, offeringsResponse)
+            .remove(offeringsResponseCacheKey)
+            .remove(offeringsResponseChecksumCacheKey)
             .apply()
-    }
-
-    @Synchronized
-    internal fun clearOfferingsResponseCache() {
-        preferences.edit().remove(offeringsResponseCacheKey).apply()
     }
 
     // endregion

@@ -120,6 +120,17 @@ class PayloadFileStoreTest {
     }
 
     @Test
+    fun `delete removes only that key's payload`() {
+        val checksum = underTest.write(key, "payload")!!
+        val otherChecksum = underTest.write("other_key", "other")!!
+
+        underTest.delete(key)
+
+        assertThat(underTest.read(key, expectedChecksum = checksum)).isNull()
+        assertThat(underTest.read("other_key", expectedChecksum = otherChecksum)).isEqualTo("other")
+    }
+
+    @Test
     fun `a leftover temp file from a crashed write does not affect reads or later writes`() {
         val checksum = underTest.write(key, "good")!!
         val payloadFileName = directory.list()!!.single()
@@ -211,6 +222,33 @@ class PayloadFileStoreTest {
         File(directory, directory.list()!!.single()).writeBytes(byteArrayOf(0x7B, -1, -2, 0x22, 0x7D))
 
         assertThat(underTest.read(key, expectedChecksum = checksum)).isNull()
+    }
+
+    @Test
+    fun `checksumOf matches the checksum write returns without writing a file`() {
+        val payload = "{\"emoji\":\"🎉\"}"
+
+        val checksum = underTest.checksumOf(payload)
+
+        assertThat(directory.exists()).isFalse
+        assertThat(checksum).isEqualTo(underTest.write(key, payload))
+    }
+
+    @Test
+    fun `checksumOf returns null for a payload the encoder cannot represent`() {
+        assertThat(underTest.checksumOf("{\"key\":\"\uD83C\"}")).isNull()
+    }
+
+    @Test
+    fun `contains reports whether a payload was written for the key`() {
+        assertThat(underTest.contains(key)).isFalse
+
+        underTest.write(key, "payload")
+        assertThat(underTest.contains(key)).isTrue
+        assertThat(underTest.contains("other")).isFalse
+
+        underTest.clear()
+        assertThat(underTest.contains(key)).isFalse
     }
 
     private fun writeAndReadBack(payload: String, storeKey: String = key): String? =

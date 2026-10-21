@@ -1,7 +1,10 @@
 package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.common.DefaultLocaleProvider
 import com.revenuecat.purchases.common.HTTPResponseOriginalSource
+import com.revenuecat.purchases.common.SyncDispatcher
+import com.revenuecat.purchases.common.caching.PayloadFileStore
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.common.GoogleOfferingParser
@@ -18,9 +21,12 @@ import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.io.File
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -29,14 +35,26 @@ class OfferingsSourceTest {
     private lateinit var offeringParser: OfferingParser
     private lateinit var deviceCache: DeviceCache
     private lateinit var offeringsCache: OfferingsCache
+    private lateinit var responseDirectory: File
+
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
 
     @Before
     fun setUp() {
         offeringParser = GoogleOfferingParser()
         deviceCache = mockk()
-        every { deviceCache.cacheOfferingsResponse(any()) } returns Unit
-        every { deviceCache.getOfferingsResponseCache() } returns null
-        offeringsCache = OfferingsCache(deviceCache, localeProvider = com.revenuecat.purchases.common.DefaultLocaleProvider())
+        every { deviceCache.cacheOfferingsResponseChecksum(any()) } returns Unit
+        every { deviceCache.removeLegacyOfferingsResponse() } returns Unit
+        every { deviceCache.getOfferingsResponseChecksum() } returns null
+        every { deviceCache.offeringsResponseFileKey } returns "offerings_response_key"
+        responseDirectory = temporaryFolder.newFolder()
+        offeringsCache = OfferingsCache(
+            deviceCache,
+            responseStore = PayloadFileStore(responseDirectory),
+            dispatcher = SyncDispatcher(),
+            localeProvider = DefaultLocaleProvider(),
+        )
     }
 
     @Test
@@ -121,12 +139,10 @@ class OfferingsSourceTest {
         )
 
         // Cache the offerings
-        every { deviceCache.cacheOfferingsResponse(any()) } returns Unit
         offeringsCache.cacheOfferings(originalOfferings, ONE_OFFERINGS_RESPONSE)
 
-        verify(exactly = 1) {
-            deviceCache.cacheOfferingsResponse(ONE_OFFERINGS_RESPONSE)
-        }
+        assertThat(responseDirectory.listFiles().orEmpty().single().readText()).isEqualTo(ONE_OFFERINGS_RESPONSE)
+        verify(exactly = 1) { deviceCache.cacheOfferingsResponseChecksum(any()) }
     }
 
     @Test
@@ -147,7 +163,6 @@ class OfferingsSourceTest {
             loadedFromDiskCache = false,
         )
 
-        every { deviceCache.cacheOfferingsResponse(any()) } returns Unit
         offeringsCache.cacheOfferings(originalOfferings, ONE_OFFERINGS_RESPONSE)
 
         // Retrieve from cache - originalSource should be preserved
@@ -184,7 +199,6 @@ class OfferingsSourceTest {
             loadedFromDiskCache = true,
         )
 
-        every { deviceCache.cacheOfferingsResponse(any()) } returns Unit
         offeringsCache.cacheOfferings(originalOfferings, ONE_OFFERINGS_RESPONSE)
 
         val cachedOfferings = offeringsCache.cachedOfferings
