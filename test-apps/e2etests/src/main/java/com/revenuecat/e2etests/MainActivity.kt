@@ -38,6 +38,8 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
             .orEmpty()
         val workflowId = intent.getStringExtra(WORKFLOW_ID_EXTRA_KEY)
         val checkpointIdentifier = intent.getStringExtra(CHECKPOINT_IDENTIFIER_EXTRA_KEY)
+        val checkpointAttribute = intent.getStringExtra(CHECKPOINT_ATTRIBUTE_EXTRA_KEY)
+        val checkpointPresenter = intent.getStringExtra(CHECKPOINT_PRESENTER_EXTRA_KEY)
         setContent {
             PurchasesandroidTheme {
                 when (flow) {
@@ -54,6 +56,8 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
                     E2ETestFlow.OPEN_DEVELOPER_PROVIDED_OFFERING -> DeveloperProvidedOfferingScreen()
                     E2ETestFlow.OPEN_CHECKPOINT -> CheckpointScreen(
                         identifier = checkpointIdentifier ?: DEFAULT_CHECKPOINT_IDENTIFIER,
+                        useAppPresenter = checkpointPresenter == APP_CHECKPOINT_PRESENTER,
+                        attribute = checkpointAttribute,
                     )
                     null -> MainPage()
                 }
@@ -74,5 +78,12 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
         const val LOG_IN_APP_USER_IDS_EXTRA_KEY = "log_in_app_user_ids"
         const val CHECKPOINT_IDENTIFIER_EXTRA_KEY = "checkpoint_identifier"
         const val DEFAULT_CHECKPOINT_IDENTIFIER = "donottouch_sdk_everyone"
+
+        // "app" presents the resolved offering with an app-owned presenter instead of the SDK's.
+        const val CHECKPOINT_PRESENTER_EXTRA_KEY = "checkpoint_presenter"
+        const val APP_CHECKPOINT_PRESENTER = "app"
+
+        // Sets the `should_use_custom_ui` attribute before the hit.
+        const val CHECKPOINT_ATTRIBUTE_EXTRA_KEY = "checkpoint_attribute"
     }
 }
