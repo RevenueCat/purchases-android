@@ -231,6 +231,7 @@ package com.revenuecat.purchases {
   }
 
   @kotlinx.serialization.Serializable public enum OwnershipType {
+    enum_constant @kotlinx.serialization.SerialName("ASSIGNED") public static final com.revenuecat.purchases.OwnershipType ASSIGNED;
     enum_constant @kotlinx.serialization.SerialName("FAMILY_SHARED") public static final com.revenuecat.purchases.OwnershipType FAMILY_SHARED;
     enum_constant @kotlinx.serialization.SerialName("PURCHASED") public static final com.revenuecat.purchases.OwnershipType PURCHASED;
     enum_constant @kotlinx.serialization.SerialName("UNKNOWN") public static final com.revenuecat.purchases.OwnershipType UNKNOWN;

@@ -135,9 +135,14 @@ internal fun PurchaseHistoryDetailView(
             // iOS (PurchaseDetailItem.isDebugOnly), so they are not rendered here either.
         }
 
-        if (purchase.ownershipType == OwnershipType.FAMILY_SHARED) {
+        val ownershipString = when (purchase.ownershipType) {
+            OwnershipType.FAMILY_SHARED -> CommonLocalizedString.SHARED_THROUGH_FAMILY_MEMBER
+            OwnershipType.ASSIGNED -> CommonLocalizedString.ASSIGNED_THROUGH_ORGANIZATION
+            OwnershipType.PURCHASED, OwnershipType.UNKNOWN -> null
+        }
+        if (ownershipString != null) {
             Text(
-                text = localization.commonLocalizedString(CommonLocalizedString.SHARED_THROUGH_FAMILY_MEMBER),
+                text = localization.commonLocalizedString(ownershipString),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(

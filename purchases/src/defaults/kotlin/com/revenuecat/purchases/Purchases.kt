@@ -487,6 +487,11 @@ public class Purchases internal constructor(
     @JvmSynthetic
     public suspend fun awaitGetWorkflowIds(): List<String> = purchasesOrchestrator.workflowIds()
 
+    /** Every checkpoint id in the synced config. For internal test apps. */
+    @InternalRevenueCatAPI
+    @JvmSynthetic
+    public suspend fun awaitGetCheckpointIds(): List<String> = purchasesOrchestrator.checkpointIds()
+
     @InternalRevenueCatAPI
     @JvmSynthetic
     public suspend fun resolveWorkflow(offeringId: String): WorkflowResolution =

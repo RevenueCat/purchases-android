@@ -33,6 +33,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,6 +62,9 @@ fun CheckpointsScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var showCustomVariablesEditor by rememberSaveable { mutableStateOf(false) }
+
+    // The view model outlives this screen, so reload on each visit to pick up a new API key or late config.
+    LaunchedEffect(Unit) { viewModel.refreshConfigured() }
 
     Scaffold(
         modifier = modifier,
@@ -92,9 +96,17 @@ fun CheckpointsScreen(
                 waitingFor = state.waitingFor,
                 result = state.lastResult,
             )
-            RecentCheckpointsSection(
-                recents = state.recents,
-                onRecentTap = viewModel::hit,
+            CheckpointListSection(
+                title = "Recent checkpoints",
+                emptyText = "No recent checkpoints yet.",
+                identifiers = state.recents,
+                onTap = viewModel::hit,
+            )
+            CheckpointListSection(
+                title = "Configured checkpoints",
+                emptyText = "No checkpoints loaded for this project.",
+                identifiers = state.configured,
+                onTap = viewModel::hit,
             )
         }
     }
@@ -282,27 +294,29 @@ private fun WaitingRow(waitingFor: String) {
 }
 
 @Composable
-private fun RecentCheckpointsSection(
-    recents: List<String>,
-    onRecentTap: (String) -> Unit,
+private fun CheckpointListSection(
+    title: String,
+    emptyText: String,
+    identifiers: List<String>,
+    onTap: (String) -> Unit,
 ) {
     Column {
         Text(
-            text = "Recent checkpoints",
+            text = title,
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(bottom = 8.dp),
         )
-        if (recents.isEmpty()) {
+        if (identifiers.isEmpty()) {
             Text(
-                text = "No recent checkpoints yet.",
+                text = emptyText,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        recents.forEach { recentIdentifier ->
+        identifiers.forEach { identifier ->
             ListItem(
-                headlineContent = { Text(text = recentIdentifier) },
-                modifier = Modifier.clickable { onRecentTap(recentIdentifier) },
+                headlineContent = { Text(text = identifier) },
+                modifier = Modifier.clickable { onTap(identifier) },
             )
             HorizontalDivider()
         }
@@ -319,6 +333,7 @@ private fun CheckpointsScreenPreview() {
                 get() = MutableStateFlow(
                     UiState(
                         recents = listOf("test_checkpoint", "unknown_checkpoint", "f0rc3_3rr0r"),
+                        configured = listOf("onboarding", "paywall_gate"),
                         lastResult = CheckpointResultUi(
                             title = "Paywall presented",
                             detail = "Dismissed",
@@ -335,6 +350,7 @@ private fun CheckpointsScreenPreview() {
                 get() = MutableStateFlow(null)
 
             override fun hit(identifier: String) {}
+            override fun refreshConfigured() {}
             override fun setPresentWithAppPaywall(enabled: Boolean) {}
             override fun setPresentErrorsWithApp(enabled: Boolean) {}
             override fun setPresentationMode(mode: FlowPresentationMode) {}

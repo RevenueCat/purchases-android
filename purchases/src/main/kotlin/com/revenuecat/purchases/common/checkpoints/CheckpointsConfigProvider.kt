@@ -32,6 +32,7 @@ import kotlinx.coroutines.launch
  * not read, an identity change — falls through to the config layer, which self-primes a `/v1/config` sync on a
  * cold read.
  */
+@Suppress("TooManyFunctions")
 internal class CheckpointsConfigProvider(
     private val manager: RemoteConfigManager,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
@@ -61,6 +62,10 @@ internal class CheckpointsConfigProvider(
 
     fun isCurrent(resolution: CheckpointRulesResolution.Found): Boolean =
         manager.configGeneration == resolution.configGeneration
+
+    /** Every checkpoint in the `checkpoint_rules` topic. Empty when the topic is unavailable. */
+    suspend fun checkpointIds(): List<String> =
+        manager.topic(RemoteConfigTopic.CheckpointRules)?.keys?.sorted().orEmpty()
 
     /**
      * Best-effort populate of the in-memory cache from already-committed config, tagged with [generation]. No-op
