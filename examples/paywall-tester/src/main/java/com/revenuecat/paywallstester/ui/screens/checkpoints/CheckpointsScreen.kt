@@ -92,9 +92,17 @@ fun CheckpointsScreen(
                 waitingFor = state.waitingFor,
                 result = state.lastResult,
             )
-            RecentCheckpointsSection(
-                recents = state.recents,
-                onRecentTap = viewModel::hit,
+            CheckpointListSection(
+                title = "Recent checkpoints",
+                emptyText = "No recent checkpoints yet.",
+                identifiers = state.recents,
+                onTap = viewModel::hit,
+            )
+            CheckpointListSection(
+                title = "Configured checkpoints",
+                emptyText = "No checkpoints loaded for this project.",
+                identifiers = state.configured,
+                onTap = viewModel::hit,
             )
         }
     }
@@ -282,27 +290,29 @@ private fun WaitingRow(waitingFor: String) {
 }
 
 @Composable
-private fun RecentCheckpointsSection(
-    recents: List<String>,
-    onRecentTap: (String) -> Unit,
+private fun CheckpointListSection(
+    title: String,
+    emptyText: String,
+    identifiers: List<String>,
+    onTap: (String) -> Unit,
 ) {
     Column {
         Text(
-            text = "Recent checkpoints",
+            text = title,
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(bottom = 8.dp),
         )
-        if (recents.isEmpty()) {
+        if (identifiers.isEmpty()) {
             Text(
-                text = "No recent checkpoints yet.",
+                text = emptyText,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        recents.forEach { recentIdentifier ->
+        identifiers.forEach { identifier ->
             ListItem(
-                headlineContent = { Text(text = recentIdentifier) },
-                modifier = Modifier.clickable { onRecentTap(recentIdentifier) },
+                headlineContent = { Text(text = identifier) },
+                modifier = Modifier.clickable { onTap(identifier) },
             )
             HorizontalDivider()
         }
@@ -319,6 +329,7 @@ private fun CheckpointsScreenPreview() {
                 get() = MutableStateFlow(
                     UiState(
                         recents = listOf("test_checkpoint", "unknown_checkpoint", "f0rc3_3rr0r"),
+                        configured = listOf("onboarding", "paywall_gate"),
                         lastResult = CheckpointResultUi(
                             title = "Paywall presented",
                             detail = "Dismissed",
