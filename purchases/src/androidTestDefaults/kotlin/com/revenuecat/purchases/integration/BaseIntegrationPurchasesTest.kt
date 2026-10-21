@@ -172,6 +172,7 @@ abstract class BaseIntegrationPurchasesTest : BasePurchasesIntegrationTest() {
             )
         }
 
+        awaitOfferingsResponsePersisted()
         simulateSdkRestart(activity, forceServerErrorsStrategy = ForceServerErrorStrategy.failAll)
 
         ensureBlockFinishes { latch ->
