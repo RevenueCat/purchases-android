@@ -353,7 +353,7 @@ internal class PurchasesFactory(
                 ioDispatcher = Dispatcher(createOfferingsCacheExecutor()),
                 localeProvider = localeProvider,
             )
-            cache.removeLegacyOfferingsResponse()
+            offeringsCache.migrateLegacyResponse()
 
             val remoteConfigBlobStore = RemoteConfigBlobStore(contextForStorage)
             val remoteConfigManager = RemoteConfigManager(

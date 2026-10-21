@@ -36,6 +36,12 @@ internal class OfferingsCache(
     private var pendingResponse: String? = null
 
     @Synchronized
+    fun migrateLegacyResponse() {
+        pendingResponse = deviceCache.takeLegacyOfferingsResponse() ?: return
+        ioDispatcher.enqueue({ persistPendingResponse() })
+    }
+
+    @Synchronized
     fun clearCache() {
         epoch++
         offeringsCachedObject.clearCache()
@@ -57,7 +63,10 @@ internal class OfferingsCache(
             return
         }
         offeringsCachedObject.cacheInstance(offerings)
-        responsePayload?.let(::persistInBackground)
+        if (responsePayload != null) {
+            pendingResponse = responsePayload
+            ioDispatcher.enqueue({ persistPendingResponse() })
+        }
         offeringsCachedObject.updateCacheTimestamp(dateProvider.now)
         cachedLanguageTags = String(localeProvider.currentLocalesLanguageTags.toCharArray())
     }
@@ -92,26 +101,21 @@ internal class OfferingsCache(
     private val responseKey: String
         get() = deviceCache.offeringsResponseFileKey
 
-    private fun persistInBackground(responsePayload: String) {
-        pendingResponse = responsePayload
-        ioDispatcher.enqueue({ persistPendingResponse() })
-    }
-
     private fun persistPendingResponse() {
-        val (responsePayload, requestEpoch) = synchronized(this) {
-            val payload = pendingResponse ?: return
-            pendingResponse = null
-            payload to epoch
-        }
-        val checksum = responsePayload
-            .takeUnless { isAlreadyStored(it) }
-            ?.let { responseStore.write(responseKey, it) }
-            ?: return
-        synchronized(this) {
-            if (requestEpoch == epoch) {
-                deviceCache.cacheOfferingsResponseChecksum(checksum)
-            } else {
-                responseStore.delete(responseKey)
+        val (responsePayload, requestEpoch) = synchronized(this) { (pendingResponse ?: return) to epoch }
+        val persisted = isAlreadyStored(responsePayload) ||
+            responseStore.write(responseKey, responsePayload)?.also { checksum ->
+                synchronized(this) {
+                    if (requestEpoch == epoch) {
+                        deviceCache.cacheOfferingsResponseChecksum(checksum)
+                    } else {
+                        responseStore.delete(responseKey)
+                    }
+                }
+            } != null
+        if (persisted) {
+            synchronized(this) {
+                if (requestEpoch == epoch && pendingResponse === responsePayload) pendingResponse = null
             }
         }
     }
@@ -125,7 +129,7 @@ internal class OfferingsCache(
     // region Offerings response cache
 
     val cachedOfferingsResponse: JSONObject?
-        get() = readStoredResponse()
+        get() = synchronized(this) { pendingResponse }?.let(::parseOrNull) ?: readStoredResponse()
 
     private fun readStoredResponse(): JSONObject? {
         val checksum = deviceCache.getOfferingsResponseChecksum() ?: return null
