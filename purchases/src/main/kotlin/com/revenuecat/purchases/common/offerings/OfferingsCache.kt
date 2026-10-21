@@ -35,10 +35,6 @@ internal class OfferingsCache(
 
     private var pendingResponse: String? = null
 
-    init {
-        deviceCache.removeLegacyOfferingsResponse()
-    }
-
     @Synchronized
     fun clearCache() {
         epoch++
@@ -102,20 +98,22 @@ internal class OfferingsCache(
     }
 
     private fun persistPendingResponse() {
-        val (responsePayload, requestEpoch) = synchronized(this) {
-            val payload = pendingResponse ?: return
-            pendingResponse = null
-            payload to epoch
-        }
-        val checksum = responsePayload
-            .takeUnless { isAlreadyStored(it) }
-            ?.let { responseStore.write(responseKey, it) }
-            ?: return
-        synchronized(this) {
-            if (requestEpoch == epoch) {
-                deviceCache.cacheOfferingsResponseChecksum(checksum)
-            } else {
-                responseStore.delete(responseKey)
+        val (responsePayload, requestEpoch) = synchronized(this) { (pendingResponse ?: return) to epoch }
+        try {
+            val checksum = responsePayload
+                .takeUnless { isAlreadyStored(it) }
+                ?.let { responseStore.write(responseKey, it) }
+                ?: return
+            synchronized(this) {
+                if (requestEpoch == epoch) {
+                    deviceCache.cacheOfferingsResponseChecksum(checksum)
+                } else {
+                    responseStore.delete(responseKey)
+                }
+            }
+        } finally {
+            synchronized(this) {
+                if (requestEpoch == epoch && pendingResponse === responsePayload) pendingResponse = null
             }
         }
     }
@@ -129,7 +127,7 @@ internal class OfferingsCache(
     // region Offerings response cache
 
     val cachedOfferingsResponse: JSONObject?
-        get() = readStoredResponse()
+        get() = synchronized(this) { pendingResponse }?.let(::parseOrNull) ?: readStoredResponse()
 
     private fun readStoredResponse(): JSONObject? {
         val checksum = deviceCache.getOfferingsResponseChecksum() ?: return null
@@ -146,6 +144,11 @@ internal class OfferingsCache(
     }
 
     // endregion Offerings response cache
+
+    // Kotlin runs initializers in declaration order, and this one hands `this` to another thread.
+    init {
+        deviceCache.takeLegacyOfferingsResponse()?.let(::persistInBackground)
+    }
 }
 
 @Suppress("SwallowedException")

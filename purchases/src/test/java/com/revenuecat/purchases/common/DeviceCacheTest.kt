@@ -739,21 +739,20 @@ class DeviceCacheTest {
     }
 
     @Test
-    fun `remove legacy offerings response removes it and the checksum without reading it`() {
-        every { mockPrefs.contains(legacyOfferingsResponseCacheKey) } returns true
-        cache.removeLegacyOfferingsResponse()
+    fun `take legacy offerings response returns it and removes it and the checksum`() {
+        every { mockPrefs.getString(legacyOfferingsResponseCacheKey, null) } returns "legacy"
+        assertThat(cache.takeLegacyOfferingsResponse()).isEqualTo("legacy")
         verifyAll {
             mockEditor.remove(legacyOfferingsResponseCacheKey)
             mockEditor.remove(offeringsResponseChecksumCacheKey)
             mockEditor.apply()
         }
-        verify(exactly = 0) { mockPrefs.getString(legacyOfferingsResponseCacheKey, any()) }
     }
 
     @Test
-    fun `remove legacy offerings response does not edit when there is none`() {
-        every { mockPrefs.contains(legacyOfferingsResponseCacheKey) } returns false
-        cache.removeLegacyOfferingsResponse()
+    fun `take legacy offerings response does not edit when there is none`() {
+        every { mockPrefs.getString(legacyOfferingsResponseCacheKey, null) } returns null
+        assertThat(cache.takeLegacyOfferingsResponse()).isNull()
         verify(exactly = 0) { mockPrefs.edit() }
     }
 
