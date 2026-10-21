@@ -375,6 +375,15 @@ class PurchasesFactoryTest {
         purchases.close()
     }
 
+    @Test
+    fun `offerings cache executor runs one task at a time and lets its idle thread exit`() {
+        val executor = purchasesFactory.createOfferingsCacheExecutor()
+
+        assertThat(executor.maximumPoolSize).isEqualTo(1)
+        assertThat(executor.allowsCoreThreadTimeOut()).isTrue
+        executor.shutdown()
+    }
+
     @OptIn(InternalRevenueCatAPI::class)
     @Test
     fun `ui preview mode has no diagnostics to act on a remote disabled setting`() {
