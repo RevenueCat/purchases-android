@@ -37,6 +37,15 @@ class PayloadFileStoreTest {
     }
 
     @Test
+    fun `a synced write round-trips`() {
+        val store = PayloadFileStore(directory, syncWrites = true)
+
+        val checksum = store.write(key, "payload")!!
+
+        assertThat(store.read(key, checksum)).isEqualTo("payload")
+    }
+
+    @Test
     fun `read returns null when nothing was written`() {
         assertThat(underTest.read(key, expectedChecksum = 0L)).isNull()
     }
