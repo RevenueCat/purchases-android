@@ -49,3 +49,17 @@ revenuecat:
     active: true
     excludes: [ '**/examples/**' ]
     ignoreAnnotated: [ 'InternalRevenueCatAPI' ]
+  ForbiddenPublicConstructor:
+    active: true
+    excludes:
+      - '**/androidTest*/**'
+      - '**/examples/**'
+      - '**/api-tester/**'
+      - '**/test-apps/**'
+      - '**/integration-tests/**'
+      - '**/baselineprofile/**'
+      - '**/codegen/**'
+      - '**/detekt-rules/**'
+      - '**/dokka-hide-internal/**'
+      - '**/build-logic/**'
+    ignoreAnnotated: [ 'InternalRevenueCatAPI' ]
