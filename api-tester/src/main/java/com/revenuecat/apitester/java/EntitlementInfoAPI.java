@@ -90,6 +90,7 @@ final class EntitlementInfoAPI {
         switch (type) {
             case PURCHASED:
             case FAMILY_SHARED:
+            case ASSIGNED:
             case UNKNOWN:
         }
     }
