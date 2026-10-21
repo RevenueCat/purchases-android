@@ -8,6 +8,7 @@ import androidx.annotation.VisibleForTesting
 import androidx.core.os.UserManagerCompat
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
+import com.revenuecat.purchases.ads.ConfiguredAdRewardsProvider
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
@@ -382,6 +383,8 @@ internal class PurchasesFactory(
                 fontLoader = fontLoader,
             )
 
+            val configuredAdRewardsProvider = ConfiguredAdRewardsProvider(remoteConfigManager)
+
             // Single shared instances so the in-memory caches the render path reads synchronously are the same
             // ones the manager warms on commit.
             val uiConfigProvider = UiConfigProvider(remoteConfigManager)
@@ -634,6 +637,7 @@ internal class PurchasesFactory(
                 workflowManager = workflowManager,
                 fileRepository = fileRepository,
                 remoteConfigManager = remoteConfigManager,
+                configuredAdRewardsProvider = configuredAdRewardsProvider,
                 uiConfigProvider = uiConfigProvider,
                 workflowsConfigProvider = workflowsConfigProvider,
                 checkpointsConfigProvider = checkpointsConfigProvider,

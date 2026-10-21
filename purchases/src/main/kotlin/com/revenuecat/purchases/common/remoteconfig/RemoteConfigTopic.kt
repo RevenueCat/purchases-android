@@ -9,6 +9,7 @@ package com.revenuecat.purchases.common.remoteconfig
  * path itself stays topic-agnostic (string-keyed), so unknown server topics are still stored and forwarded.
  */
 internal enum class RemoteConfigTopic(val wireName: String) {
+    AdRewards("ad_rewards"),
     Workflows("workflows"),
     UiConfig("ui_config"),
     Sources("sources"),
