@@ -29,7 +29,7 @@ import java.util.zip.CheckedOutputStream
  *
  * A [read] costs ~2x the payload size in heap (`ByteArray` plus `String`).
  *
- * `null` reads are cache misses. No eviction beyond overwrite and [clear].
+ * `null` reads are cache misses. No eviction beyond overwrite, [delete] and [clear].
  */
 @OptIn(InternalRevenueCatAPI::class)
 internal class PayloadFileStore(
@@ -76,7 +76,9 @@ internal class PayloadFileStore(
                 if (sizeBytes > Int.MAX_VALUE) return null
                 val bytes = ByteArray(sizeBytes.toInt())
                 DataInputStream(input).readFully(bytes)
-                if (crc32Of(bytes) != expectedChecksum) return null
+                val checksum = CRC32()
+                checksum.update(bytes)
+                if (checksum.value != expectedChecksum) return null
                 // Lenient decoding, which the checksum above makes safe. CharsetDecoder.decode would
                 // allocate a payload-sized char[] on top of `bytes`, OOMing on multi-MB responses.
                 String(bytes, Charsets.UTF_8)
@@ -88,6 +90,21 @@ internal class PayloadFileStore(
             errorLog(e) { "Failed to read payload from disk." }
             null
         }
+    }
+
+    @Suppress("SwallowedException")
+    fun checksumOf(payload: String): Long? {
+        return try {
+            encodeTo(DiscardingOutputStream, payload)
+        } catch (exception: IOException) {
+            null
+        }
+    }
+
+    fun contains(key: String): Boolean = fileFor(key).exists()
+
+    fun delete(key: String) {
+        fileFor(key).delete()
     }
 
     fun clear() {
@@ -109,8 +126,6 @@ internal class PayloadFileStore(
     private fun fileFor(key: String): File {
         return File(directory, Checksum.generate(key.toByteArray(), Checksum.Algorithm.SHA256).value)
     }
-
-    private fun crc32Of(bytes: ByteArray): Long = CRC32().apply { update(bytes) }.value
 
     /**
      * Streams [payload] to [rawOut] via a `char[]` chunk, returning the CRC32 of the bytes written:
@@ -158,6 +173,11 @@ internal class PayloadFileStore(
             byteBuffer.clear()
             if (result.isUnderflow) return
         }
+    }
+
+    private object DiscardingOutputStream : OutputStream() {
+        override fun write(byte: Int) = Unit
+        override fun write(buffer: ByteArray, offset: Int, length: Int) = Unit
     }
 
     private companion object {

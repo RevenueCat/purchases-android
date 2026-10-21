@@ -64,7 +64,8 @@ class DeviceCacheTest {
 
     private val productEntitlementMappingLastUpdatedCacheKey = "com.revenuecat.purchases.api_key.productEntitlementMappingLastUpdated"
     private val productEntitlementMappingCacheKey = "com.revenuecat.purchases.api_key.productEntitlementMapping"
-    private val offeringsResponseCacheKey = "com.revenuecat.purchases.api_key.offeringsResponse"
+    private val legacyOfferingsResponseCacheKey = "com.revenuecat.purchases.api_key.offeringsResponse"
+    private val offeringsResponseChecksumCacheKey = "com.revenuecat.purchases.offeringsResponseChecksum.api_key"
 
     private val slotForPutLong = slot<Long>()
 
@@ -707,30 +708,53 @@ class DeviceCacheTest {
     // region offerings response
 
     @Test
-    fun `gets offerings from shared preferences`() {
-        every { mockPrefs.getString(offeringsResponseCacheKey, null) } returns "{\"test-key\": \"test-value\"}"
-        val offeringsResponse = cache.getOfferingsResponseCache()
-        assertThat(offeringsResponse).isNotNull
-        assertThat(offeringsResponse?.getString("test-key")).isEqualTo("test-value")
+    fun `gets offerings response checksum from shared preferences`() {
+        every { mockPrefs.contains(offeringsResponseChecksumCacheKey) } returns true
+        every { mockPrefs.getLong(offeringsResponseChecksumCacheKey, any()) } returns 42L
+        assertThat(cache.getOfferingsResponseChecksum()).isEqualTo(42L)
     }
 
     @Test
-    fun `cache offerings response works`() {
-        val jsonSample = "{\"test-key\":\"test-value\"}"
-        cache.cacheOfferingsResponse(jsonSample)
+    fun `offerings response checksum is null when not stored`() {
+        every { mockPrefs.contains(offeringsResponseChecksumCacheKey) } returns false
+        assertThat(cache.getOfferingsResponseChecksum()).isNull()
+    }
+
+    @Test
+    fun `cache offerings response checksum works`() {
+        cache.cacheOfferingsResponseChecksum(42L)
         verifyAll {
-            mockEditor.putString(offeringsResponseCacheKey, jsonSample)
+            mockEditor.putLong(offeringsResponseChecksumCacheKey, 42L)
             mockEditor.apply()
         }
     }
 
     @Test
-    fun `clear offerings response cache works`() {
-        cache.clearOfferingsResponseCache()
+    fun `clear offerings response checksum works`() {
+        cache.clearOfferingsResponseChecksum()
         verifyAll {
-            mockEditor.remove(offeringsResponseCacheKey)
+            mockEditor.remove(offeringsResponseChecksumCacheKey)
             mockEditor.apply()
         }
+    }
+
+    @Test
+    fun `remove legacy offerings response removes it and the checksum without reading it`() {
+        every { mockPrefs.contains(legacyOfferingsResponseCacheKey) } returns true
+        cache.removeLegacyOfferingsResponse()
+        verifyAll {
+            mockEditor.remove(legacyOfferingsResponseCacheKey)
+            mockEditor.remove(offeringsResponseChecksumCacheKey)
+            mockEditor.apply()
+        }
+        verify(exactly = 0) { mockPrefs.getString(legacyOfferingsResponseCacheKey, any()) }
+    }
+
+    @Test
+    fun `remove legacy offerings response does not edit when there is none`() {
+        every { mockPrefs.contains(legacyOfferingsResponseCacheKey) } returns false
+        cache.removeLegacyOfferingsResponse()
+        verify(exactly = 0) { mockPrefs.edit() }
     }
 
     // endregion offerings response
