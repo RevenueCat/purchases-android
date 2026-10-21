@@ -753,6 +753,7 @@ internal class CustomerCenterViewModelImpl(
             .transformPathsOnSubscriptionState(selectedPurchaseInformation, localization)
     }
 
+    @Suppress("CyclomaticComplexMethod")
     private fun previewSubscriptionStateReason(
         path: HelpPath,
         purchase: PurchaseInformation?,
@@ -795,6 +796,7 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
+    @Suppress("CyclomaticComplexMethod")
     private fun isPathAllowedForSubscriptionState(
         path: HelpPath,
         purchaseInformation: PurchaseInformation?,
