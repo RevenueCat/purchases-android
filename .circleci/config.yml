@@ -857,7 +857,7 @@ jobs:
   record-and-upload-paparazzi-revenuecatui-snapshots:
     description: "Merge the snapshots recorded by the record-paparazzi-* jobs and upload them to Emerge"
     docker:
-      - image: cimg/ruby:3.2.0
+      - image: cimg/ruby:3.3
     steps:
       - checkout
       - attach_workspace:
@@ -865,7 +865,7 @@ jobs:
       - restore_cache:
           name: Restore Emerge CLI
           keys:
-            - emerge-cli-v1-0.7.8
+            - emerge-cli-v2-0.7.8
       - run:
           # The emerge gem pins xcodeproj to a line fastlane does not accept, so it lives outside the Gemfile.
           name: Install Emerge CLI
@@ -874,7 +874,7 @@ jobs:
             [ -x "$GEM_HOME/bin/emerge" ] || gem install emerge -v 0.7.8 --no-document
       - save_cache:
           name: Save Emerge CLI
-          key: emerge-cli-v1-0.7.8
+          key: emerge-cli-v2-0.7.8
           paths:
             - ~/emerge-cli
       - run:
