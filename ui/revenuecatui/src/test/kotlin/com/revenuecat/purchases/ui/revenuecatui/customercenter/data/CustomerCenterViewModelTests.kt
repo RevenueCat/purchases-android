@@ -2878,6 +2878,29 @@ class CustomerCenterViewModelTests {
         }
     }
 
+    @Test
+    fun `non-preview hides cancel for assigned purchases`(): Unit = runBlocking {
+        setupPurchasesMock()
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+        )
+        val path = HelpPath(id = "cancel", title = "Cancel", type = HelpPath.PathType.CANCEL)
+        val base = CustomerCenterConfigTestData.purchaseInformationYearlyExpiring.copy(
+            store = Store.APP_STORE,
+            managementURL = Uri.parse("https://example.com/manage"),
+        )
+
+        setupSuccessLoadScreen(path, model)
+        model.selectPurchase(base.copy(ownershipType = OwnershipType.PURCHASED))
+        assertThat((model.state.value as CustomerCenterState.Success).detailScreenPaths).hasSize(1)
+
+        setupSuccessLoadScreen(path, model)
+        model.selectPurchase(base.copy(ownershipType = OwnershipType.ASSIGNED))
+        assertThat((model.state.value as CustomerCenterState.Success).detailScreenPaths).isEmpty()
+    }
+
     private fun setupPurchasesMock() {
         every { purchases.customerCenterListener } returns null
         coEvery { purchases.awaitGetProduct(any(), any()) } returns null

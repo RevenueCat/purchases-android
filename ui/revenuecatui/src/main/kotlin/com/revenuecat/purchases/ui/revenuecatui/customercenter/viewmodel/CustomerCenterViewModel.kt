@@ -807,11 +807,9 @@ internal class CustomerCenterViewModelImpl(
             purchaseInformation != null && !purchaseInformation.isTrial &&
                 purchaseInformation.pricePaid != PriceDetails.Free &&
                 purchaseInformation.ownershipType != OwnershipType.ASSIGNED
-        previewProvider != null && path.type == HelpPath.PathType.CANCEL ->
+        path.type == HelpPath.PathType.CANCEL ->
             purchaseInformation?.isSubscription == true && !purchaseInformation.isExpired &&
                 purchaseInformation.ownershipType != OwnershipType.ASSIGNED
-        path.type == HelpPath.PathType.CANCEL ->
-            purchaseInformation?.isSubscription == true && !purchaseInformation.isExpired
         else -> true
     }
 
