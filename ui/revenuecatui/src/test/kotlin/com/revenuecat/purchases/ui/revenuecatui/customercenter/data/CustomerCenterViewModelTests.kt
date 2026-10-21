@@ -2846,6 +2846,38 @@ class CustomerCenterViewModelTests {
         }
     }
 
+    @Test
+    fun `preview hides refund requests and cancels for assigned purchases`(): Unit = runBlocking {
+        setupPurchasesMock()
+        val provider = mockk<CustomerCenterPreviewProvider>(relaxed = true)
+        val diagnostics = mutableListOf<CustomerCenterPreviewDiagnostic>()
+        every { provider.onDiagnosticsUpdated(any()) } answers {
+            diagnostics.addAll(firstArg<List<CustomerCenterPreviewDiagnostic>>())
+        }
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            previewProvider = provider,
+        )
+        val active = CustomerCenterConfigTestData.purchaseInformationYearlyExpiring.copy(
+            store = Store.APP_STORE,
+            ownershipType = OwnershipType.ASSIGNED,
+        )
+        for ((type, expectedReason) in listOf(
+            HelpPath.PathType.REFUND_REQUEST to CustomerCenterPreviewDiagnosticReason.REFUND_UNAVAILABLE_FOR_ASSIGNED,
+            HelpPath.PathType.CANCEL to CustomerCenterPreviewDiagnosticReason.CANCEL_UNAVAILABLE_FOR_ASSIGNED,
+        )) {
+            val path = HelpPath(id = type.name, title = type.name, type = type)
+            setupSuccessLoadScreen(path, model)
+            model.selectPurchase(active)
+
+            assertThat(diagnostics.last().reason).isEqualTo(expectedReason)
+            assertThat(diagnostics.last().visible).isFalse()
+            assertThat((model.state.value as CustomerCenterState.Success).detailScreenPaths).isEmpty()
+        }
+    }
+
     private fun setupPurchasesMock() {
         every { purchases.customerCenterListener } returns null
         coEvery { purchases.awaitGetProduct(any(), any()) } returns null

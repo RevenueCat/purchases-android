@@ -761,7 +761,11 @@ internal class CustomerCenterViewModelImpl(
             CustomerCenterPreviewDiagnosticReason.REFUND_UNAVAILABLE_DURING_TRIAL
         path.type == HelpPath.PathType.REFUND_REQUEST && purchase?.pricePaid == PriceDetails.Free ->
             CustomerCenterPreviewDiagnosticReason.REFUND_REQUIRES_PAID_PURCHASE
+        path.type == HelpPath.PathType.REFUND_REQUEST && purchase?.ownershipType == OwnershipType.ASSIGNED ->
+            CustomerCenterPreviewDiagnosticReason.REFUND_UNAVAILABLE_FOR_ASSIGNED
         purchase?.isSubscription != true -> CustomerCenterPreviewDiagnosticReason.SUBSCRIPTION_REQUIRED
+        path.type == HelpPath.PathType.CANCEL && purchase.ownershipType == OwnershipType.ASSIGNED ->
+            CustomerCenterPreviewDiagnosticReason.CANCEL_UNAVAILABLE_FOR_ASSIGNED
         path.type == HelpPath.PathType.CHANGE_PLANS && purchase.ownershipType == OwnershipType.FAMILY_SHARED ->
             CustomerCenterPreviewDiagnosticReason.PLAN_CHANGE_UNAVAILABLE_FOR_FAMILY_SHARED
         path.type == HelpPath.PathType.CHANGE_PLANS && purchase.ownershipType == OwnershipType.ASSIGNED ->
@@ -801,7 +805,11 @@ internal class CustomerCenterViewModelImpl(
                 purchaseInformation.ownershipType != OwnershipType.ASSIGNED
         previewProvider != null && path.type == HelpPath.PathType.REFUND_REQUEST ->
             purchaseInformation != null && !purchaseInformation.isTrial &&
-                purchaseInformation.pricePaid != PriceDetails.Free
+                purchaseInformation.pricePaid != PriceDetails.Free &&
+                purchaseInformation.ownershipType != OwnershipType.ASSIGNED
+        previewProvider != null && path.type == HelpPath.PathType.CANCEL ->
+            purchaseInformation?.isSubscription == true && !purchaseInformation.isExpired &&
+                purchaseInformation.ownershipType != OwnershipType.ASSIGNED
         path.type == HelpPath.PathType.CANCEL ->
             purchaseInformation?.isSubscription == true && !purchaseInformation.isExpired
         else -> true
