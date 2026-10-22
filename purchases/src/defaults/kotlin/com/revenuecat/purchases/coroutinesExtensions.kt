@@ -21,18 +21,15 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Locale
 
 /**
- * Coroutine friendly version of [Purchases.getAdRewards]. Returns a configuration with
- * a null [ConfiguredAdRewards.reward] and no additional rewards when none are configured.
- * Cancelling the caller does not cancel shared remote configuration work.
+ * Coroutine friendly version of [Purchases.getAdRewards]. Returns null when configuration cannot be resolved
+ * or [adUnitId] is empty, and an empty [ConfiguredAdRewards.allRewards] when no rewards are configured.
+ * Unknown or invalid individual rewards use [AdRewardConfiguration.UnsupportedReward].
  *
- * @throws [PurchasesException] when configuration is unavailable, JSON/container structure is invalid,
- * or the ad unit ID is empty. Unknown or invalid individual rewards are represented by
- * [AdRewardConfiguration.UnsupportedReward].
+ * Cancelling the caller cancels its wait, but does not cancel shared remote configuration work.
  */
 @JvmSynthetic
-@Throws(PurchasesException::class)
 @Suppress("UNUSED_PARAMETER", "UnusedParameter")
-internal suspend fun Purchases.awaitGetAdRewards(adUnitId: String): ConfiguredAdRewards {
+internal suspend fun Purchases.awaitGetAdRewards(adUnitId: String): ConfiguredAdRewards? {
     throw NotImplementedError("Configured ad rewards will be implemented in a follow-up PR.")
 }
 
