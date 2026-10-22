@@ -18,6 +18,7 @@ import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
  * This class is responsible for updating the customer info cache and notifying the listeners.
  */
 @OptIn(InternalRevenueCatAPI::class)
+@Suppress("LongParameterList")
 internal class CustomerInfoUpdateHandler constructor(
     private val deviceCache: DeviceCache,
     private val subscriberAttributesManager: SubscriberAttributesManager,
