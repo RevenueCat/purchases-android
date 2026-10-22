@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.style
 
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.text.font.FontWeight
@@ -162,6 +163,11 @@ internal class StyleFactory(
             val value: T,
             val count: Int,
         )
+
+        /**
+         * The number of stacks built so far that scroll vertically, in their base style or in any override.
+         */
+        var verticalScrollStackCount: Int = 0
 
         private class WindowInsetsState {
             /**
@@ -635,8 +641,12 @@ internal class StyleFactory(
     ): Result<HeaderComponentStyle, NonEmptyList<PaywallValidationError>> =
         // tabControlIndex is null because a header cannot be _inside_ a tab control.
         withSelectedScope(packageInfo = null, tabControlIndex = null) {
+            val verticalScrollStackCountBefore = verticalScrollStackCount
             createStackComponentStyle(component.stack).map {
-                HeaderComponentStyle(stackComponentStyle = it)
+                HeaderComponentStyle(
+                    stackComponentStyle = it,
+                    containsVerticalScroll = verticalScrollStackCount > verticalScrollStackCountBefore,
+                )
             }
         }
 
@@ -948,6 +958,7 @@ internal class StyleFactory(
         fifth = component.border?.toBorderStyles(colorAliases).orSuccessfullyNull(),
         sixth = component.shadow?.toShadowStyles(colorAliases).orSuccessfullyNull(),
     ) { presentedOverrides, children, badge, background, borderStyles, shadowStyles ->
+        if (component.scrollsVertically) verticalScrollStackCount++
         StackComponentStyle(
             children = children,
             dimension = component.dimension,
@@ -1416,4 +1427,15 @@ internal class StyleFactory(
         } catch (_: NoSuchElementException) {
             null
         }
+
+    /**
+     * Whether this stack scrolls vertically in its base style or in any override, resolving each override's overflow
+     * and dimension the same way [StackComponentState] does.
+     */
+    private val StackComponent.scrollsVertically: Boolean
+        get() = overflow?.toOrientation(dimension) == Orientation.Vertical ||
+            overrides.any { override ->
+                val partial = override.properties
+                (partial.overflow ?: overflow)?.toOrientation(partial.dimension ?: dimension) == Orientation.Vertical
+            }
 }

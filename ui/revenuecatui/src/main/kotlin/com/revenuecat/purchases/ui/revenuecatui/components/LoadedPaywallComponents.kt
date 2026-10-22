@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.Layout
@@ -23,6 +24,7 @@ import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.offset
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
@@ -63,6 +65,8 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.HeaderComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleBottomSheetScaffold
 import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleSheetState
 import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
@@ -109,7 +113,7 @@ internal fun LoadedPaywallComponents(
                             style = headerStyle,
                             state = state,
                             onClick = onClick,
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().headerContentHeight(headerStyle),
                         )
                     }
                 },
@@ -288,6 +292,24 @@ internal fun Modifier.footerBottomPadding(state: PaywallState.Loaded.Components)
             // Content placed at the top; the extra space is reserved at the bottom, behind the footer.
             placeable.placeRelative(0, 0)
         }
+    }
+
+/**
+ * Measures the header at its content height, like iOS does with `fixedSize(vertical: true)`, so a Fill height in the
+ * header takes its content height. A header containing a vertical scroll keeps the bounded height, since a vertical
+ * scroll measured with an unbounded height throws. The reported height is capped at the available height and the
+ * overflow is clipped.
+ */
+internal fun Modifier.headerContentHeight(header: ComponentStyle): Modifier =
+    conditional((header as? HeaderComponentStyle)?.containsVerticalScroll != true) {
+        clipToBounds()
+            .layout { measurable, constraints ->
+                val placeable = measurable.measure(constraints.copy(minHeight = 0, maxHeight = Constraints.Infinity))
+                val height = placeable.height.coerceIn(constraints.minHeight, constraints.maxHeight)
+                layout(placeable.width, height) {
+                    placeable.placeRelative(0, 0)
+                }
+            }
     }
 
 internal suspend fun handleClick(

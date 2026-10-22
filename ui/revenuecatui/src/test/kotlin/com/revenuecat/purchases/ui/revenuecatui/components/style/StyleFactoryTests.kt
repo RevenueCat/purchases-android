@@ -15,6 +15,7 @@ import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialButtonComponent
 import com.revenuecat.purchases.paywalls.components.PartialPackageComponent
+import com.revenuecat.purchases.paywalls.components.PartialStackComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.PartialVideoComponent
 import com.revenuecat.purchases.paywalls.components.PartialWebViewComponent
@@ -44,6 +45,7 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.ThemeVideoUrls
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
+import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.VideoUrls
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
@@ -2017,6 +2019,82 @@ class StyleFactoryTests {
         assertThat(result).isInstanceOf(Result.Success::class.java)
         val style = (result as Result.Success).value.componentStyle as HeaderComponentStyle
         assertThat(style.stackComponentStyle.applyTopWindowInsets).isFalse()
+    }
+
+    @Test
+    fun `HeaderComponent without vertical scroll does not contain vertical scroll`() {
+        // Arrange
+        val headerComponent = HeaderComponent(
+            stack = StackComponent(components = listOf(StackComponent(components = emptyList()))),
+        )
+
+        // Act
+        val style = styleFactory.create(headerComponent).getOrThrow().componentStyle as HeaderComponentStyle
+
+        // Assert
+        assertThat(style.containsVerticalScroll).isFalse()
+    }
+
+    @Test
+    fun `HeaderComponent with a nested vertically scrolling stack contains vertical scroll`() {
+        // Arrange
+        val headerComponent = HeaderComponent(
+            stack = StackComponent(
+                components = listOf(
+                    StackComponent(components = emptyList(), overflow = StackComponent.Overflow.SCROLL),
+                ),
+            ),
+        )
+
+        // Act
+        val style = styleFactory.create(headerComponent).getOrThrow().componentStyle as HeaderComponentStyle
+
+        // Assert
+        assertThat(style.containsVerticalScroll).isTrue()
+    }
+
+    @Test
+    fun `HeaderComponent with an override enabling vertical scroll contains vertical scroll`() {
+        // Arrange
+        val headerComponent = HeaderComponent(
+            stack = StackComponent(
+                components = emptyList(),
+                overrides = listOf(
+                    ComponentOverride(
+                        conditions = listOf(ComponentOverride.Condition.Selected),
+                        properties = PartialStackComponent(overflow = StackComponent.Overflow.SCROLL),
+                    ),
+                ),
+            ),
+        )
+
+        // Act
+        val style = styleFactory.create(headerComponent).getOrThrow().componentStyle as HeaderComponentStyle
+
+        // Assert
+        assertThat(style.containsVerticalScroll).isTrue()
+    }
+
+    @Test
+    fun `HeaderComponent with a horizontally scrolling stack does not contain vertical scroll`() {
+        // Arrange
+        val headerComponent = HeaderComponent(
+            stack = StackComponent(
+                components = listOf(
+                    StackComponent(
+                        components = emptyList(),
+                        dimension = Dimension.Horizontal(VerticalAlignment.CENTER, FlexDistribution.START),
+                        overflow = StackComponent.Overflow.SCROLL,
+                    ),
+                ),
+            ),
+        )
+
+        // Act
+        val style = styleFactory.create(headerComponent).getOrThrow().componentStyle as HeaderComponentStyle
+
+        // Assert
+        assertThat(style.containsVerticalScroll).isFalse()
     }
 
     @Test
