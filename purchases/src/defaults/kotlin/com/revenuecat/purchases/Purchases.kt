@@ -278,15 +278,13 @@ public class Purchases internal constructor(
         get() = purchasesOrchestrator.adTracker
 
     /**
-     * Resolves rewards configured for the exact, case-sensitive [adUnitId]. Uses cached configuration
-     * when available, otherwise loads remote configuration and its reward blob on demand.
-     * The callback runs on the main thread. Unavailable configuration or invalid JSON/container structure
-     * is reported through [GetAdRewardsCallback.onError]. Unknown or invalid individual rewards use
-     * [AdRewardConfiguration.UnsupportedReward]. A null [ConfiguredAdRewards.reward] means configuration
-     * was resolved successfully and no rewards are configured for the ad unit.
-     * Unresolvable configuration or invalid JSON/container structure is reported as [PurchasesErrorCode.UnknownError],
-     * with decoding details included when available.
-     * An empty [adUnitId] is reported as [PurchasesErrorCode.ConfigurationError].
+     * Returns configured rewards for the exact, case-sensitive [adUnitId], using cached configuration when available
+     * and loading it when needed. These values are for display and may differ from the reward ultimately granted;
+     * use reward verification to determine what was granted.
+     *
+     * The callback runs on the main thread with null when configuration cannot be resolved or [adUnitId] is empty.
+     * An empty [ConfiguredAdRewards.allRewards] means configuration was resolved and no rewards are configured.
+     * Unknown or invalid individual rewards use [AdRewardConfiguration.UnsupportedReward].
      */
     @ExperimentalPreviewRevenueCatPurchasesAPI
     public fun getAdRewards(adUnitId: String, callback: GetAdRewardsCallback) {

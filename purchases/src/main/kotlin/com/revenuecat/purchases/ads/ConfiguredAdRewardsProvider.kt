@@ -32,17 +32,10 @@ internal class ConfiguredAdRewardsProvider(
 ) {
     fun getRewards(
         adUnitId: String,
-        onSuccess: (ConfiguredAdRewards) -> Unit,
-        onError: (PurchasesError) -> Unit,
+        onReceived: (ConfiguredAdRewards?) -> Unit,
     ) {
         scope.launch {
-            val rewards = try {
-                rewards(adUnitId)
-            } catch (e: PurchasesException) {
-                onError(e.error)
-                return@launch
-            }
-            onSuccess(rewards)
+            onReceived(rewards(adUnitId))
         }
     }
 
@@ -50,7 +43,7 @@ internal class ConfiguredAdRewardsProvider(
         scope.cancel()
     }
 
-    suspend fun rewards(adUnitId: String): ConfiguredAdRewards {
+    suspend fun rewards(adUnitId: String): ConfiguredAdRewards? = try {
         if (adUnitId.isEmpty()) {
             throw PurchasesException(
                 PurchasesError(PurchasesErrorCode.ConfigurationError, "The ad unit ID must not be empty."),
@@ -59,8 +52,11 @@ internal class ConfiguredAdRewardsProvider(
         val resolution = manager.readConsistent(what = { "configured rewards for ad unit '$adUnitId'" }) { _ ->
             resolve(adUnitId)
         }
-        return resolution?.getOrThrow()
+        resolution?.getOrThrow()
             ?: throw unavailable("Remote configuration changed while resolving configured ad rewards.")
+    } catch (e: PurchasesException) {
+        warnLog { "Configured ad rewards unavailable: ${e.underlyingErrorMessage}" }
+        null
     }
 
     // Keep failures inside the generation check too, so a superseded failure can be retried.
@@ -75,7 +71,7 @@ internal class ConfiguredAdRewardsProvider(
         val topic = manager.awaitTopicAndPrefetchBlobsReady(RemoteConfigTopic.AdRewards)
         return when {
             topic == null -> if (manager.hasCommittedConfig()) {
-                Result.success(ConfiguredAdRewards(null, emptyList()))
+                Result.success(ConfiguredAdRewards(emptyList()))
             } else {
                 Result.failure(unavailable("No committed remote configuration is available for configured ad rewards."))
             }
@@ -106,7 +102,7 @@ internal class ConfiguredAdRewardsProvider(
             if (payload !is JsonObject) {
                 throw invalidConfiguration("Configured ad rewards must be a JSON object.")
             }
-            val entry = payload[adUnitId] ?: return ConfiguredAdRewards(null, emptyList())
+            val entry = payload[adUnitId] ?: return ConfiguredAdRewards(emptyList())
             return decodeAdUnit(entry, adUnitId)
         }
 
@@ -117,8 +113,8 @@ internal class ConfiguredAdRewardsProvider(
             val moreRewards = decodeMoreRewards(value["more_rewards"], adUnitId)
             val reward = decodeReward(value["reward"])
             return when {
-                reward != null -> ConfiguredAdRewards(reward, moreRewards)
-                moreRewards.isEmpty() -> ConfiguredAdRewards(null, emptyList())
+                reward != null -> ConfiguredAdRewards(listOf(reward) + moreRewards)
+                moreRewards.isEmpty() -> ConfiguredAdRewards(emptyList())
                 else -> throw invalidConfiguration(
                     "Ad unit '$adUnitId' has additional rewards without a primary reward.",
                 )

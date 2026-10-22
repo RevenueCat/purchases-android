@@ -5,13 +5,15 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 import org.junit.Test
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 class ConfiguredAdRewardsTest {
     @Test
     fun `resolved empty configuration has no primary or additional rewards`() {
-        val rewards = ConfiguredAdRewards(null, emptyList())
+        val rewards = ConfiguredAdRewards(emptyList())
+        assertThat(rewards.allRewards).isEmpty()
         assertThat(rewards.reward).isNull()
         assertThat(rewards.moreRewards).isEmpty()
     }
@@ -20,19 +22,29 @@ class ConfiguredAdRewardsTest {
     fun `rewards preserve primary and additional order and value equality`() {
         val primary = AdRewardConfiguration.VirtualCurrency("coins", 10)
         val extra = AdRewardConfiguration.Entitlement("premium", 60.seconds)
-        val rewards = ConfiguredAdRewards(primary, listOf(extra, AdRewardConfiguration.UnsupportedReward))
+        val rewards = ConfiguredAdRewards(listOf(primary, extra, AdRewardConfiguration.UnsupportedReward))
+        assertThat(rewards.allRewards).containsExactly(primary, extra, AdRewardConfiguration.UnsupportedReward)
         assertThat(rewards.reward).isEqualTo(AdRewardConfiguration.VirtualCurrency("coins", 10))
         assertThat(rewards.moreRewards).containsExactly(extra, AdRewardConfiguration.UnsupportedReward)
-        assertThat(rewards).isEqualTo(ConfiguredAdRewards(primary, rewards.moreRewards))
+        assertThat(rewards).isEqualTo(
+            ConfiguredAdRewards(
+                listOf(
+                    AdRewardConfiguration.VirtualCurrency("coins", 10),
+                    AdRewardConfiguration.Entitlement("premium", 60.seconds),
+                    AdRewardConfiguration.UnsupportedReward,
+                ),
+            ),
+        )
         assertThat(extra.duration).isEqualTo(60.seconds)
         assertThat(extra.durationInSeconds).isEqualTo(60L)
     }
 
     @Test
-    fun `additional rewards require a primary reward`() {
-        assertThatIllegalArgumentException().isThrownBy {
-            ConfiguredAdRewards(null, listOf(AdRewardConfiguration.UnsupportedReward))
-        }
+    fun `single reward is primary with no additional rewards`() {
+        val rewards = ConfiguredAdRewards(listOf(AdRewardConfiguration.UnsupportedReward))
+        assertThat(rewards.reward).isEqualTo(AdRewardConfiguration.UnsupportedReward)
+        assertThat(rewards.moreRewards).isEmpty()
+        assertThat(rewards.allRewards).containsExactly(AdRewardConfiguration.UnsupportedReward)
     }
 
     @Test
@@ -42,7 +54,7 @@ class ConfiguredAdRewardsTest {
             assertThatIllegalArgumentException().isThrownBy { AdRewardConfiguration.VirtualCurrency("coins", amount) }
         }
         assertThatIllegalArgumentException().isThrownBy { AdRewardConfiguration.Entitlement("", 1.seconds) }
-        listOf(0.seconds, (-1).seconds, Duration.INFINITE).forEach { duration ->
+        listOf(0.seconds, (-1).seconds, Duration.INFINITE, 500.milliseconds, 1500.milliseconds).forEach { duration ->
             assertThatIllegalArgumentException().isThrownBy { AdRewardConfiguration.Entitlement("pro", duration) }
         }
     }

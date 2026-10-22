@@ -37,6 +37,11 @@ class ConfiguredAdRewardsMappingTest {
             AdRewardConfiguration.Entitlement("pro", 1800.seconds),
             AdRewardConfiguration.VirtualCurrency("coins", 10),
         )
+        assertThat(result.allRewards).containsExactly(
+            AdRewardConfiguration.VirtualCurrency("coins", 10),
+            AdRewardConfiguration.Entitlement("pro", 1800.seconds),
+            AdRewardConfiguration.VirtualCurrency("coins", 10),
+        )
     }
 
     @Test
@@ -45,7 +50,7 @@ class ConfiguredAdRewardsMappingTest {
         assertThat(ConfiguredAdRewardsProvider.decode(data, "AdUnit").reward)
             .isEqualTo(AdRewardConfiguration.VirtualCurrency("coins", 10))
         listOf("adunit", " AdUnit", "AdUnit ", "missing").forEach {
-            assertThat(ConfiguredAdRewardsProvider.decode(data, it)).isEqualTo(ConfiguredAdRewards(null, emptyList()))
+            assertThat(ConfiguredAdRewardsProvider.decode(data, it)).isEqualTo(ConfiguredAdRewards(emptyList()))
         }
         assertMalformed { ConfiguredAdRewardsProvider.decode(data, "bad") }
         assertMalformed { ConfiguredAdRewardsProvider.decode(data, "bad2") }
@@ -54,10 +59,10 @@ class ConfiguredAdRewardsMappingTest {
     @Test
     fun `missing null and no_reward primary with no actual additional rewards mean no reward`() {
         listOf("{}", """{"reward":null}""", """{"reward":{"type":"no_reward"}}""").forEach { entry ->
-            assertThat(decode(entry)).isEqualTo(ConfiguredAdRewards(null, emptyList()))
+            assertThat(decode(entry)).isEqualTo(ConfiguredAdRewards(emptyList()))
         }
         listOf("null", "[]", "[null,{\"type\":\"no_reward\"}]").forEach { more ->
-            assertThat(decode("""{"more_rewards":$more}""")).isEqualTo(ConfiguredAdRewards(null, emptyList()))
+            assertThat(decode("""{"more_rewards":$more}""")).isEqualTo(ConfiguredAdRewards(emptyList()))
         }
     }
 
@@ -110,7 +115,7 @@ class ConfiguredAdRewardsMappingTest {
         listOf("null", "1", "[]", """{"reward":$currency,"more_rewards":{}}""").forEach {
             assertMalformed { decode(it) }
         }
-        assertThat(ConfiguredAdRewardsProvider.decode("{}", "unit")).isEqualTo(ConfiguredAdRewards(null, emptyList()))
+        assertThat(ConfiguredAdRewardsProvider.decode("{}", "unit")).isEqualTo(ConfiguredAdRewards(emptyList()))
     }
 
     private fun assertMalformed(block: () -> Unit) {

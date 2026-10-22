@@ -1616,11 +1616,7 @@ internal class PurchasesOrchestrator(
     // region Configured Ad Rewards
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun getAdRewards(adUnitId: String, callback: GetAdRewardsCallback) {
-        configuredAdRewardsProvider.getRewards(
-            adUnitId,
-            onSuccess = { rewards -> dispatch { callback.onReceived(rewards) } },
-            onError = { error -> dispatch { callback.onError(error) } },
-        )
+        configuredAdRewardsProvider.getRewards(adUnitId) { rewards -> dispatch { callback.onReceived(rewards) } }
     }
 
     // endregion

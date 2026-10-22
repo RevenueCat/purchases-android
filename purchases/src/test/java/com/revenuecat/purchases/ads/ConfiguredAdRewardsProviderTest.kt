@@ -1,9 +1,7 @@
 package com.revenuecat.purchases.ads
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.NoOpLogHandler
-import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.remoteconfig.ConfigTopic
@@ -23,7 +21,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.SerializationException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -35,12 +32,13 @@ class ConfiguredAdRewardsProviderTest {
     private val manager = mockk<RemoteConfigManager>(relaxed = true)
     private val provider = ConfiguredAdRewardsProvider(manager)
     private val originalLogHandler = currentLogHandler
-    private val configured = ConfiguredAdRewards(AdRewardConfiguration.VirtualCurrency("coins", 10), emptyList())
+    private val logHandler = mockk<LogHandler>(relaxed = true)
+    private val configured = ConfiguredAdRewards(listOf(AdRewardConfiguration.VirtualCurrency("coins", 10)))
     private val currencyBlob = """{"unit":{"reward":{"type":"virtual_currency","code":"coins","amount":10}}}"""
 
     @Before
     fun setUp() {
-        currentLogHandler = NoOpLogHandler
+        currentLogHandler = logHandler
         every { manager.configGeneration } returns 0
         every { manager.isDisabled } returns false
         coEvery { manager.awaitTopicAndPrefetchBlobsReady(RemoteConfigTopic.AdRewards) } returns ConfigTopic(
@@ -61,57 +59,52 @@ class ConfiguredAdRewardsProviderTest {
     }
 
     @Test
-    fun `empty ad unit is a configuration error without reading config`() = runTest {
-        val exception = assertFailsWith<PurchasesException> { provider.rewards("") }
-        assertThat(exception.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
-        assertThat(exception.underlyingErrorMessage).contains("ad unit ID")
+    fun `empty ad unit returns null without reading config`() = runTest {
+        assertThat(provider.rewards("")).isNull()
+        verify { logHandler.w(any(), match { it.contains("ad unit ID") }) }
         coVerify(exactly = 0) { manager.awaitTopicAndPrefetchBlobsReady(any()) }
     }
 
     @Test
-    fun `disabled remote config reports a configuration error without fetching`() = runTest {
+    fun `disabled remote config returns null without fetching`() = runTest {
         every { manager.isDisabled } returns true
-        val exception = assertFailsWith<PurchasesException> { provider.rewards("unit") }
-        assertThat(exception.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
+        assertThat(provider.rewards("unit")).isNull()
         coVerify(exactly = 0) { manager.awaitTopicAndPrefetchBlobsReady(any()) }
     }
 
     @Test
     fun `absent topic in committed config means no rewards`() = runTest {
         coEvery { manager.awaitTopicAndPrefetchBlobsReady(RemoteConfigTopic.AdRewards) } returns null
-        assertThat(provider.rewards("unit")).isEqualTo(ConfiguredAdRewards(null, emptyList()))
+        assertThat(provider.rewards("unit")).isEqualTo(ConfiguredAdRewards(emptyList()))
         coVerify(exactly = 0) { blobRead() }
     }
 
     @Test
-    fun `no committed config is an unavailable error rather than empty success`() = runTest {
+    fun `no committed config returns null rather than empty rewards`() = runTest {
         coEvery { manager.awaitTopicAndPrefetchBlobsReady(RemoteConfigTopic.AdRewards) } returns null
         coEvery { manager.hasCommittedConfig() } returns false
-        val exception = assertFailsWith<PurchasesException> { provider.rewards("unit") }
-        assertThat(exception.code).isEqualTo(PurchasesErrorCode.UnknownError)
-        assertThat(exception.underlyingErrorMessage).contains("No committed remote configuration")
+        assertThat(provider.rewards("unit")).isNull()
+        verify { logHandler.w(any(), match { it.contains("No committed remote configuration") }) }
     }
 
     @Test
-    fun `missing default item or blob reference reports malformed configuration`() = runTest {
+    fun `missing default item or blob reference returns null`() = runTest {
         listOf(
             ConfigTopic(emptyMap()),
             ConfigTopic(mapOf("default" to RemoteConfiguration.ConfigItem())),
         ).forEach { topic ->
             coEvery { manager.awaitTopicAndPrefetchBlobsReady(RemoteConfigTopic.AdRewards) } returns topic
-            val exception = assertFailsWith<PurchasesException> { provider.rewards("unit") }
-            assertThat(exception.code).isEqualTo(PurchasesErrorCode.UnknownError)
-            assertThat(exception.underlyingErrorMessage).contains("default blob reference")
+            assertThat(provider.rewards("unit")).isNull()
+            verify { logHandler.w(any(), match { it.contains("default blob reference") }) }
         }
         coVerify(exactly = 0) { blobRead() }
     }
 
     @Test
-    fun `unresolved blob is an unavailable error without guessing its underlying cause`() = runTest {
+    fun `unresolved blob returns null`() = runTest {
         coEvery { blobRead() } returns null
-        val exception = assertFailsWith<PurchasesException> { provider.rewards("unit") }
-        assertThat(exception.code).isEqualTo(PurchasesErrorCode.UnknownError)
-        assertThat(exception.underlyingErrorMessage).contains("blob could not be resolved")
+        assertThat(provider.rewards("unit")).isNull()
+        verify { logHandler.w(any(), match { it.contains("blob could not be resolved") }) }
     }
 
     @Test
@@ -122,19 +115,22 @@ class ConfiguredAdRewardsProviderTest {
         }
         assertThat(provider.rewards("unit")).isEqualTo(configured)
         payload = "{}"
-        assertThat(provider.rewards("unit")).isEqualTo(ConfiguredAdRewards(null, emptyList()))
+        assertThat(provider.rewards("unit")).isEqualTo(ConfiguredAdRewards(emptyList()))
         payload = null
-        assertFailsWith<PurchasesException> { provider.rewards("unit") }
+        assertThat(provider.rewards("unit")).isNull()
         coVerify(exactly = 3) { blobRead() }
     }
 
     @Test
-    fun `malformed JSON retains specific decoding diagnostics`() = runTest {
+    fun `malformed JSON returns null and logs decoding diagnostics`() = runTest {
+        val decodingError = assertFailsWith<PurchasesException> {
+            ConfiguredAdRewardsProvider.decode("not JSON", "unit")
+        }
         returnBlob("not JSON")
-        val exception = assertFailsWith<PurchasesException> { provider.rewards("unit") }
-        assertThat(exception.code).isEqualTo(PurchasesErrorCode.UnknownError)
-        assertThat(exception.cause).isInstanceOf(SerializationException::class.java)
-        assertThat(exception.underlyingErrorMessage).isNotBlank().isEqualTo(exception.cause?.localizedMessage)
+        assertThat(provider.rewards("unit")).isNull()
+        verify {
+            logHandler.w(any(), "Configured ad rewards unavailable: ${decodingError.underlyingErrorMessage}")
+        }
     }
 
     @Test
@@ -148,7 +144,7 @@ class ConfiguredAdRewardsProviderTest {
             } else "{}"
             thirdArg<(ByteArray) -> Result<ConfiguredAdRewards>?>()(bytes.toByteArray())
         }
-        assertThat(provider.rewards("unit")).isEqualTo(ConfiguredAdRewards(null, emptyList()))
+        assertThat(provider.rewards("unit")).isEqualTo(ConfiguredAdRewards(emptyList()))
         coVerify(exactly = 2) { blobRead() }
     }
 
@@ -166,16 +162,15 @@ class ConfiguredAdRewardsProviderTest {
     }
 
     @Test
-    fun `two superseded reads report unavailable instead of returning stale data`() = runTest {
+    fun `two superseded reads return null instead of stale data`() = runTest {
         var generation = 0
         every { manager.configGeneration } answers { generation }
         coEvery { blobRead() } answers {
             generation++
             thirdArg<(ByteArray) -> Result<ConfiguredAdRewards>?>()(currencyBlob.toByteArray())
         }
-        val exception = assertFailsWith<PurchasesException> { provider.rewards("unit") }
-        assertThat(exception.code).isEqualTo(PurchasesErrorCode.UnknownError)
-        assertThat(exception.underlyingErrorMessage).contains("changed while resolving")
+        assertThat(provider.rewards("unit")).isNull()
+        verify { logHandler.w(any(), match { it.contains("changed while resolving") }) }
         coVerify(exactly = 2) { blobRead() }
     }
 
@@ -208,27 +203,22 @@ class ConfiguredAdRewardsProviderTest {
     }
 
     @Test
-    fun `callback delivers each success or failure exactly once`() = runTest {
+    fun `callback delivers each resolved or unavailable result exactly once`() = runTest {
         val callbackProvider = ConfiguredAdRewardsProvider(
             manager,
             CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
         )
-        val successes = mutableListOf<ConfiguredAdRewards>()
-        val errors = mutableListOf<PurchasesError>()
+        val results = mutableListOf<ConfiguredAdRewards?>()
         var payload: String? = "{}"
         coEvery { blobRead() } answers {
             payload?.let { thirdArg<(ByteArray) -> Result<ConfiguredAdRewards>?>()(it.toByteArray()) }
         }
-        callbackProvider.getRewards("unit", { successes.add(it) }, { errors.add(it) })
+        callbackProvider.getRewards("unit") { results.add(it) }
         payload = null
-        callbackProvider.getRewards("unit", { successes.add(it) }, { errors.add(it) })
+        callbackProvider.getRewards("unit") { results.add(it) }
         payload = "not JSON"
-        callbackProvider.getRewards("unit", { successes.add(it) }, { errors.add(it) })
-        assertThat(successes).containsExactly(ConfiguredAdRewards(null, emptyList()))
-        assertThat(errors.map { it.code }).containsExactly(
-            PurchasesErrorCode.UnknownError,
-            PurchasesErrorCode.UnknownError,
-        )
+        callbackProvider.getRewards("unit") { results.add(it) }
+        assertThat(results).containsExactly(ConfiguredAdRewards(emptyList()), null, null)
         callbackProvider.close()
     }
 

@@ -13,7 +13,6 @@ import com.revenuecat.purchases.common.safeResume
 import com.revenuecat.purchases.common.safeResumeWithException
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.data.LogInResult
-import com.revenuecat.purchases.interfaces.GetAdRewardsCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetRewardVerificationResultCallback
 import com.revenuecat.purchases.interfaces.ManageSubscriptionsCallback
@@ -22,31 +21,17 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Locale
 
 /**
- * Coroutine friendly version of [Purchases.getAdRewards]. Returns a configuration with
- * a null [ConfiguredAdRewards.reward] and no additional rewards when none are configured.
- * Cancelling the caller does not cancel shared remote configuration work.
+ * Coroutine friendly version of [Purchases.getAdRewards]. Returns null when configuration cannot be resolved
+ * or [adUnitId] is empty, and an empty [ConfiguredAdRewards.allRewards] when no rewards are configured.
+ * Unknown or invalid individual rewards use [AdRewardConfiguration.UnsupportedReward].
  *
- * @throws [PurchasesException] when configuration is unavailable, JSON/container structure is invalid,
- * or the ad unit ID is empty. Unknown or invalid individual rewards are represented by
- * [AdRewardConfiguration.UnsupportedReward].
+ * Cancelling the caller cancels its wait, but does not cancel shared remote configuration work.
  */
 @JvmSynthetic
-@Throws(PurchasesException::class)
 @ExperimentalPreviewRevenueCatPurchasesAPI
-public suspend fun Purchases.awaitGetAdRewards(adUnitId: String): ConfiguredAdRewards =
+public suspend fun Purchases.awaitGetAdRewards(adUnitId: String): ConfiguredAdRewards? =
     suspendCancellableCoroutine { continuation ->
-        getAdRewards(
-            adUnitId,
-            object : GetAdRewardsCallback {
-                override fun onReceived(rewards: ConfiguredAdRewards) {
-                    continuation.safeResume(rewards)
-                }
-
-                override fun onError(error: PurchasesError) {
-                    continuation.safeResumeWithException(PurchasesException(error))
-                }
-            },
-        )
+        getAdRewards(adUnitId) { rewards -> continuation.safeResume(rewards) }
     }
 
 /**
