@@ -1,0 +1,61 @@
+# Launches the checkpoint screen with a new user and the app presenter, hits CHECKPOINT_ID once and asserts
+# the result.
+#  ATTRIBUTE: `true` or `false` sets `should_use_custom_ui` before the hit. `none` leaves it unset.
+#  EXPECTED_OFFERING: the offering the presenter must receive, or `none` when nothing may be presented.
+
+appId: com.revenuecat.e2etests
+name: Hit a checkpoint and assert the result
+---
+- runFlow:
+    when:
+      true: ${ATTRIBUTE == 'none'}
+    commands:
+      - launchApp:
+          clearState: true
+          arguments:
+            e2e_test_flow: open_checkpoint
+            checkpoint_identifier: ${CHECKPOINT_ID}
+            checkpoint_presenter: app
+- runFlow:
+    when:
+      true: ${ATTRIBUTE != 'none'}
+    commands:
+      - launchApp:
+          clearState: true
+          arguments:
+            e2e_test_flow: open_checkpoint
+            checkpoint_identifier: ${CHECKPOINT_ID}
+            checkpoint_presenter: app
+            checkpoint_attribute: ${ATTRIBUTE}
+- extendedWaitUntil:
+    visible: "Hit checkpoint"
+    timeout: 15000
+- tapOn:
+    text: "Hit checkpoint"
+
+- runFlow:
+    when:
+      true: ${EXPECTED_OFFERING != 'none'}
+    commands:
+      - extendedWaitUntil:
+          visible: "App presenter offering: ${EXPECTED_OFFERING}"
+          timeout: 20000
+      - tapOn:
+          text: "Close"
+      - extendedWaitUntil:
+          visible: "Callback: passed, entitlements: none (call #1)"
+          timeout: 20000
+      - assertVisible: "Presenter invocations: 1"
+      - assertVisible: "Presented offering: ${EXPECTED_OFFERING}"
+
+- runFlow:
+    when:
+      true: ${EXPECTED_OFFERING == 'none'}
+    commands:
+      - extendedWaitUntil:
+          visible: "Callback: passed, no flow (call #1)"
+          timeout: 20000
+      - assertVisible: "Presenter invocations: 0"
+      - assertVisible: "Presented offering: none"
+
+- takeScreenshot: "${CHECKPOINT_ID} - attribute ${ATTRIBUTE}"
