@@ -78,6 +78,16 @@ class RemoteSubscriberAttributesTests {
     }
 
     @Test
+    fun `a missing value is parsed as a deleted attribute, like iOS`() {
+        val info = customerInfoWithSubscriberAttributes(
+            remoteAttributesJSON("band" to JSONObject().put("updated_at_ms", REMOTE_SET_TIME_MS)),
+        )
+
+        assertThat(info.remoteSubscriberAttributes()!!.attributes)
+            .isEqualTo(mapOf("band" to attribute("band", null, synced = true, at = remoteSetTime)))
+    }
+
+    @Test
     fun `updated_at_ms accepts any JSON number`() {
         val info = customerInfoWithSubscriberAttributes(
             remoteAttributesJSON(
@@ -99,7 +109,6 @@ class RemoteSubscriberAttributesTests {
                 "good" to remoteEntry("Rush"),
                 "not_an_object" to "Rush",
                 "null_entry" to JSONObject.NULL,
-                "missing_value" to JSONObject().put("updated_at_ms", REMOTE_SET_TIME_MS),
                 "number_value" to remoteEntry(42),
                 "bool_value" to remoteEntry(true),
                 "object_value" to remoteEntry(JSONObject()),
@@ -115,7 +124,6 @@ class RemoteSubscriberAttributesTests {
         assertThat(remote.unreadableKeys).containsExactlyInAnyOrder(
             "not_an_object",
             "null_entry",
-            "missing_value",
             "number_value",
             "bool_value",
             "object_value",

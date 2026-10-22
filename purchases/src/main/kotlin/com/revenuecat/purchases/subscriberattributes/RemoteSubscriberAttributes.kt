@@ -53,11 +53,14 @@ internal fun CustomerInfo.remoteSubscriberAttributes(): RemoteSubscriberAttribut
     return RemoteSubscriberAttributes(attributes, unreadableKeys)
 }
 
+/**
+ * Each entry is `{"value": String?, "updated_at_ms": Number}`. Like iOS, a missing or null value means the
+ * attribute has no value; a missing or non-numeric timestamp, or a non-string value, makes the entry unreadable.
+ */
 @Suppress("ReturnCount")
 private fun JSONObject.toRemoteSubscriberAttribute(key: String): SubscriberAttribute? {
-    if (!has(BACKEND_NAME_VALUE)) return null
     val value = when (val rawValue = opt(BACKEND_NAME_VALUE)) {
-        JSONObject.NULL -> null
+        null, JSONObject.NULL -> null
         is String -> rawValue
         else -> return null
     }
