@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ads
 
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 import org.junit.Test
@@ -7,6 +8,7 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 class ConfiguredAdRewardsTest {
     @Test
     fun `resolved empty configuration has no primary or additional rewards`() {

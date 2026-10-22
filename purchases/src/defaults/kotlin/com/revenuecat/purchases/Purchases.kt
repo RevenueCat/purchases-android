@@ -286,10 +286,9 @@ public class Purchases internal constructor(
      * An empty [ConfiguredAdRewards.allRewards] means configuration was resolved and no rewards are configured.
      * Unknown or invalid individual rewards use [AdRewardConfiguration.UnsupportedReward].
      */
-    @JvmSynthetic
-    @Suppress("UNUSED_PARAMETER", "UnusedParameter")
-    internal fun getAdRewards(adUnitId: String, callback: GetAdRewardsCallback) {
-        throw NotImplementedError("Configured ad rewards will be implemented in a follow-up PR.")
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    public fun getAdRewards(adUnitId: String, callback: GetAdRewardsCallback) {
+        purchasesOrchestrator.getAdRewards(adUnitId, callback)
     }
 
     @Suppress("EmptyFunctionBlock", "DeprecatedCallableAddReplaceWith")

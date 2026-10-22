@@ -28,10 +28,11 @@ import java.util.Locale
  * Cancelling the caller cancels its wait, but does not cancel shared remote configuration work.
  */
 @JvmSynthetic
-@Suppress("UNUSED_PARAMETER", "UnusedParameter")
-internal suspend fun Purchases.awaitGetAdRewards(adUnitId: String): ConfiguredAdRewards? {
-    throw NotImplementedError("Configured ad rewards will be implemented in a follow-up PR.")
-}
+@ExperimentalPreviewRevenueCatPurchasesAPI
+public suspend fun Purchases.awaitGetAdRewards(adUnitId: String): ConfiguredAdRewards? =
+    suspendCancellableCoroutine { continuation ->
+        getAdRewards(adUnitId) { rewards -> continuation.safeResume(rewards) }
+    }
 
 /**
  * Get latest available customer info.

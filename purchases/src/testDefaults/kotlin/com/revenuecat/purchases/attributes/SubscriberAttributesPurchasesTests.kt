@@ -135,6 +135,7 @@ class SubscriberAttributesPurchasesTests {
             purchaseParamsValidator = purchaseParamsValidator,
             workflowManager = mockk(relaxed = true),
             remoteConfigManager = mockk(relaxed = true),
+            configuredAdRewardsProvider = mockk(relaxed = true),
             uiConfigProvider = mockk(relaxed = true),
             workflowsConfigProvider = mockk(relaxed = true),
             checkpointsConfigProvider = mockk(relaxed = true),
