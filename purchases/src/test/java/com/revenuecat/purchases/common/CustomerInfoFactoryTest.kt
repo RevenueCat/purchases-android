@@ -45,6 +45,28 @@ class CustomerInfoFactoryTest {
     }
 
     @Test
+    fun `parses null store transaction id and display name of non subscription transactions as null`() {
+        val response = JSONObject(Responses.validFullPurchaserResponse)
+        val transactionJson = response.getJSONObject("subscriber")
+            .getJSONObject("non_subscriptions")
+            .getJSONArray("100_coins_pack")
+            .getJSONObject(0)
+            .put("store_transaction_id", JSONObject.NULL)
+            .put("display_name", JSONObject.NULL)
+        assertThat(transactionJson.isNull("display_name")).isTrue
+
+        val customerInfo = CustomerInfoFactory.buildCustomerInfo(
+            response,
+            overrideRequestDate = null,
+            verificationResult = VerificationResult.NOT_REQUESTED,
+        )
+
+        val transaction = customerInfo.nonSubscriptionTransactions.first { it.transactionIdentifier == "72c26cc69c" }
+        assertThat(transaction.storeTransactionId).isNull()
+        assertThat(transaction.displayName).isNull()
+    }
+
+    @Test
     fun `assigns active entitlements correctly`() {
         assertThat(defaultCustomerInfo.entitlements.active.keys).isEqualTo(setOf("pro", "forever_pro"))
     }
