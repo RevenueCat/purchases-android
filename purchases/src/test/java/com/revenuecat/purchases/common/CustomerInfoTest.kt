@@ -487,4 +487,30 @@ class CustomerInfoTest {
         assertThat(proSubscription.refundedAt).isEqualTo(Iso8601Utils.parse("2019-07-24T23:45:40Z"))
         assertThat(proSubscription.autoResumeDate).isEqualTo(Iso8601Utils.parse("2019-07-24T23:45:40Z"))
     }
+
+    @Test
+    fun `Test subscriptionsByProductIdentifier falls back to UNKNOWN for unrecognized ownership type`() {
+        val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
+        val subscriptions = jsonObject.getJSONObject("subscriber").getJSONObject("subscriptions")
+        subscriptions.getJSONObject("pro").put("ownership_type", "SOME_FUTURE_OWNERSHIP_TYPE")
+
+        val customerInfo = createCustomerInfo(jsonObject)
+
+        assertThat(customerInfo.subscriptionsByProductIdentifier.keys).containsExactlyInAnyOrder("pro", "basic", "paused")
+        assertThat(customerInfo.subscriptionsByProductIdentifier["pro"]!!.ownershipType)
+            .isEqualTo(OwnershipType.UNKNOWN)
+        assertThat(customerInfo.subscriptionsByProductIdentifier["basic"]!!.ownershipType)
+            .isEqualTo(OwnershipType.PURCHASED)
+    }
+
+    @Test
+    fun `Test subscriptionsByProductIdentifier skips only the subscription that fails to parse`() {
+        val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
+        val subscriptions = jsonObject.getJSONObject("subscriber").getJSONObject("subscriptions")
+        subscriptions.getJSONObject("pro").remove("purchase_date")
+
+        val customerInfo = createCustomerInfo(jsonObject)
+
+        assertThat(customerInfo.subscriptionsByProductIdentifier.keys).containsExactlyInAnyOrder("basic", "paused")
+    }
 }

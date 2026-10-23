@@ -330,7 +330,7 @@ public enum class PeriodType {
 /**
  * Enum of supported ownership types for an entitlement.
  */
-@Serializable
+@Serializable(with = OwnershipTypeSerializer::class)
 public enum class OwnershipType {
     /**
      * The purchase was made directly by this user.
@@ -356,3 +356,9 @@ public enum class OwnershipType {
     @SerialName("UNKNOWN")
     UNKNOWN,
 }
+
+internal object OwnershipTypeSerializer : EnumDeserializerWithDefault<OwnershipType>(
+    serialName = "com.revenuecat.purchases.OwnershipType",
+    defaultValue = OwnershipType.UNKNOWN,
+    typeForValue = { value -> value.name },
+)
