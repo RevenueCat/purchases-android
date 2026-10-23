@@ -15,6 +15,8 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.paywalls.components.properties.Size
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ConditionContext
@@ -131,6 +133,9 @@ internal class StackComponentState(
     val children = style.children
 
     @get:JvmSynthetic
+    val fillsAvailableHeight = style.fillsAvailableHeight
+
+    @get:JvmSynthetic
     val applyTopWindowInsets = style.applyTopWindowInsets
 
     @get:JvmSynthetic
@@ -159,7 +164,16 @@ internal class StackComponentState(
 
     @get:JvmSynthetic
     val size by derivedStateOf {
-        (presentedPartial?.partial?.size ?: style.size).addMargin(margin, layoutDirection)
+        val resolvedSize = presentedPartial?.partial?.size ?: style.size
+        val containerSize = if (style.fillsAvailableHeight) {
+            Size(
+                width = resolvedSize.width,
+                height = Fill(),
+            )
+        } else {
+            resolvedSize
+        }
+        containerSize.addMargin(margin, layoutDirection)
     }
 
     @get:JvmSynthetic
