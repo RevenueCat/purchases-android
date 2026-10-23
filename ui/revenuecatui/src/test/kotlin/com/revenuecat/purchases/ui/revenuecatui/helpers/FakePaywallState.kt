@@ -69,13 +69,18 @@ internal fun FakePaywallState(
     offeringWebCheckoutURL: URL? = null,
     viewModelActionInProgress: State<Boolean> = mutableStateOf(false),
 ): PaywallState.Loaded.Components {
-    val packageComponents = packages.map { pkg ->
-        PackageComponent(
-            packageId = pkg.identifier,
-            isSelectedByDefault = false,
-            stack = StackComponent(components = emptyList())
-        )
-    }
+    // Only synthesize a PackageComponent for packages the caller's components don't already
+    // reference: a synthesized always-visible duplicate would defeat visibility-rule tests.
+    val explicitPackageIds = components.filterIsInstance<PackageComponent>().map { it.packageId }.toSet()
+    val packageComponents = packages
+        .filter { it.identifier !in explicitPackageIds }
+        .map { pkg ->
+            PackageComponent(
+                packageId = pkg.identifier,
+                isSelectedByDefault = false,
+                stack = StackComponent(components = emptyList())
+            )
+        }
     val data = PaywallComponentsData(
         id = "paywall_id",
         templateName = "template",
