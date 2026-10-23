@@ -902,8 +902,8 @@ internal class BillingWrapper(
         if (connectedClient != null) {
             connectedClient.receivingFunction()
         } else {
-            // A request may already have left serviceRequests before the client disconnects.
-            // Complete it here so its callback isn't lost while waiting for a later reconnection.
+            // Billing can disconnect after the request is dequeued but before it runs.
+            // Reconnecting won't retry that request, so report the error here.
             log(LogIntent.GOOGLE_WARNING) { BillingStrings.BILLING_CLIENT_DISCONNECTED.format(getStackTrace()) }
             onError(PurchasesError(PurchasesErrorCode.StoreProblemError, BillingStrings.BILLING_SERVICE_DISCONNECTED))
         }
