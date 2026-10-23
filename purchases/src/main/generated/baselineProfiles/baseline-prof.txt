@@ -1595,8 +1595,9 @@ HSPLcom/revenuecat/purchases/common/networking/ETagManager$Companion;->deleteLeg
 HSPLcom/revenuecat/purchases/common/networking/ETagManager$Companion;->initializeSharedPreferences(Landroid/content/Context;)Landroid/content/SharedPreferences;
 Lcom/revenuecat/purchases/common/caching/PayloadFileStore;
 HSPLcom/revenuecat/purchases/common/caching/PayloadFileStore;-><clinit>()V
-HSPLcom/revenuecat/purchases/common/caching/PayloadFileStore;-><init>(Ljava/io/File;)V
-HSPLcom/revenuecat/purchases/common/caching/PayloadFileStore;-><init>(Ljava/io/File;Ljava/lang/String;)V
+HSPLcom/revenuecat/purchases/common/caching/PayloadFileStore;-><init>(Ljava/io/File;Z)V
+HSPLcom/revenuecat/purchases/common/caching/PayloadFileStore;-><init>(Ljava/io/File;Ljava/lang/String;Z)V
+HSPLcom/revenuecat/purchases/common/caching/PayloadFileStore;-><init>(Ljava/io/File;Ljava/lang/String;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
 Lcom/revenuecat/purchases/common/caching/PayloadFileStore$Companion;
 HSPLcom/revenuecat/purchases/common/caching/PayloadFileStore$Companion;-><init>()V
 HSPLcom/revenuecat/purchases/common/caching/PayloadFileStore$Companion;-><init>(Lkotlin/jvm/internal/DefaultConstructorMarker;)V

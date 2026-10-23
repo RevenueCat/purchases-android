@@ -5,6 +5,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.test.ext.junit.rules.activityScenarioRule
 import com.revenuecat.purchases.backup.RevenueCatBackupAgent
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.safeResume
@@ -28,6 +29,7 @@ import java.util.Date
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 abstract class BasePurchasesIntegrationTest {
@@ -50,6 +52,7 @@ abstract class BasePurchasesIntegrationTest {
     internal open val dangerousSettings: DangerousSettings? = null
 
     protected val testTimeout = 10.seconds
+    private val offeringsPersistedPollInterval = 50.milliseconds
     protected val currentTimestamp = Date().time
     protected val testUserId = "android-integration-test-$currentTimestamp"
     protected val proxyUrl get() = Constants.proxyUrl.takeIf { it.isNotEmpty() }
@@ -192,6 +195,19 @@ abstract class BasePurchasesIntegrationTest {
             entitlementVerificationMode,
             forceServerErrorStrategyDelegate,
         )
+    }
+
+    /** The response is written on a background thread, so an immediate restart would miss it. */
+    protected fun awaitOfferingsResponsePersisted() {
+        val deviceCache = DeviceCache(
+            activity.getSharedPreferences(RevenueCatBackupAgent.REVENUECAT_PREFS_FILE_NAME, Context.MODE_PRIVATE),
+            Constants.apiKey,
+        )
+        val deadline = System.currentTimeMillis() + testTimeout.inWholeMilliseconds
+        while (deviceCache.getOfferingsResponseChecksum() == null) {
+            if (System.currentTimeMillis() > deadline) fail<Unit>("Offerings response was not persisted")
+            Thread.sleep(offeringsPersistedPollInterval.inWholeMilliseconds)
+        }
     }
 
     protected fun ensureBlockFinishes(block: (CountDownLatch) -> Unit) {

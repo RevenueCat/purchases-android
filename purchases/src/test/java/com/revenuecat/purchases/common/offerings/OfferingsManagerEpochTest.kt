@@ -9,6 +9,7 @@ import com.revenuecat.purchases.common.DefaultLocaleProvider
 import com.revenuecat.purchases.common.GetOfferingsErrorHandlingBehavior
 import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.caching.PayloadFileStore
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.utils.ONE_OFFERINGS_RESPONSE
 import com.revenuecat.purchases.utils.SyncDispatcher
@@ -31,11 +32,19 @@ class OfferingsManagerEpochTest {
 
     private val offerings = stubOfferings("product").second
     private val deviceCache = mockk<DeviceCache>().apply {
-        every { cacheOfferingsResponse(any()) } just Runs
-        every { clearOfferingsResponseCache() } just Runs
-        every { getOfferingsResponseCache() } returns null
+        every { removeLegacyOfferingsResponse() } just Runs
+        every { offeringsResponseFileKey } returns "offerings_response_key"
+        every { getOfferingsResponseChecksum() } returns null
+        every { cacheOfferingsResponseChecksum(any()) } just Runs
+        every { clearOfferingsResponseChecksum() } just Runs
     }
-    private val cache = OfferingsCache(deviceCache, localeProvider = DefaultLocaleProvider())
+    private val responseStore = mockk<PayloadFileStore>(relaxed = true)
+    private val cache = OfferingsCache(
+        deviceCache,
+        responseStore = responseStore,
+        dispatcher = SyncDispatcher(),
+        localeProvider = DefaultLocaleProvider(),
+    )
     private val backend = mockk<Backend>()
     private val offeringsFactory = mockk<OfferingsFactory>().apply {
         every { createOfferings(any(), any(), any(), any(), any()) } answers {
@@ -80,7 +89,7 @@ class OfferingsManagerEpochTest {
         respond!!()
 
         assertThat(cache.cachedOfferings).isEqualTo(offerings)
-        verify { deviceCache.cacheOfferingsResponse("payload") }
+        verify { responseStore.write(any(), "payload") }
     }
 
     @Test
@@ -90,7 +99,7 @@ class OfferingsManagerEpochTest {
         respond!!()
 
         assertThat(cache.cachedOfferings).isNull()
-        verify(exactly = 0) { deviceCache.cacheOfferingsResponse(any()) }
+        verify(exactly = 0) { responseStore.write(any(), any()) }
     }
 
     @Test
@@ -107,7 +116,8 @@ class OfferingsManagerEpochTest {
     fun `a late disk fallback after an identity change is not cached`() {
         manager.fetchAndCacheOfferings("old-user", appInBackground = false)
         cache.clearCache()
-        every { deviceCache.getOfferingsResponseCache() } returns JSONObject(ONE_OFFERINGS_RESPONSE)
+        every { deviceCache.getOfferingsResponseChecksum() } returns 1L
+        every { responseStore.read(any(), 1L) } returns ONE_OFFERINGS_RESPONSE
         respondWithError!!()
 
         assertThat(cache.cachedOfferings).isNull()
