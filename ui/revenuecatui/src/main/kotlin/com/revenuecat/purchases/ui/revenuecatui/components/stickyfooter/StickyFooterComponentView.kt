@@ -28,6 +28,7 @@ internal fun StickyFooterComponentView(
     val stackStyle = style.stackComponentStyle
     val resolvedStackStyle = if (split) {
         stackStyle.copy(
+            fillsAvailableHeight = true,
             applyTopWindowInsets = true,
             scrollOrientation = stackStyle.scrollOrientation
                 ?: if (stackStyle.scrollExplicitlyDisabled) null else Orientation.Vertical,

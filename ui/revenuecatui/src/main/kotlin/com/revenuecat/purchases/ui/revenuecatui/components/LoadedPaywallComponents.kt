@@ -252,7 +252,11 @@ internal fun OverlayLayout(
             null
         } else {
             footerMeasurable?.measure(
-                constraints.copy(minWidth = footerWidth, maxWidth = footerWidth, minHeight = 0),
+                constraints.copy(
+                    minWidth = footerWidth,
+                    maxWidth = footerWidth,
+                    minHeight = if (split) constraints.maxHeight else 0,
+                ),
             )
         }
         if (hasHeader) state.headerHeightPx = headerPlaceable?.height ?: 0
@@ -265,7 +269,7 @@ internal fun OverlayLayout(
             footerPlaceable?.placeRelative(
                 x = if (!split || bodyX > 0) 0 else bodyWidth,
                 y = if (split) {
-                    (constraints.maxHeight - footerPlaceable.height) / 2
+                    0
                 } else {
                     constraints.maxHeight - footerPlaceable.height
                 },
