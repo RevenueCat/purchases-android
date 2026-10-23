@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -105,6 +106,7 @@ internal fun TabsComponentView(
     val backgroundStyle = tabsState.background?.let { rememberBackgroundStyle(it) }
     val borderStyle = tabsState.border?.let { rememberBorderStyle(border = it) }
     val shadowStyle = tabsState.shadow?.let { rememberShadowStyle(shadow = it) }
+    val tabContentStateHolder = rememberSaveableStateHolder()
 
     AnimatedContent(
         targetState = state.selectedTabIndex,
@@ -121,13 +123,17 @@ internal fun TabsComponentView(
         },
     ) { selectedTabIndex ->
         // Coerce it, just in case we get an out-of-range value.
-        val tab = tabsState.tabs[selectedTabIndex.coerceIn(0..tabsState.tabs.lastIndex)]
-        StackComponentView(
-            style = tab.stack,
-            state = state,
-            clickHandler = clickHandler,
-            componentInteractionTracker = componentInteractionTracker,
-        )
+        val tabIndex = selectedTabIndex.coerceIn(0..tabsState.tabs.lastIndex)
+        val tab = tabsState.tabs[tabIndex]
+        // Keyed by index: tab ids aren't guaranteed unique.
+        tabContentStateHolder.SaveableStateProvider(key = tabIndex) {
+            StackComponentView(
+                style = tab.stack,
+                state = state,
+                clickHandler = clickHandler,
+                componentInteractionTracker = componentInteractionTracker,
+            )
+        }
     }
 }
 

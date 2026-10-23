@@ -116,6 +116,15 @@ internal fun CarouselComponentView(
         }
     }
 
+    // The saved state includes the scroll offset, so a carousel hidden
+    // mid-transition (e.g. its tab was switched away during auto-advance)
+    // would otherwise come back stuck between two pages.
+    LaunchedEffect(pagerState) {
+        if (pagerState.currentPageOffsetFraction != 0f) {
+            pagerState.scrollToPage(pagerState.currentPage)
+        }
+    }
+
     val skipProgrammaticPageTracking = remember { ProgrammaticPageTrackingFlag() }
 
     carouselState.autoAdvance?.let { autoAdvance ->
