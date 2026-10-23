@@ -546,6 +546,13 @@ internal class StyleFactory(
                         componentStyle
                     }
                 }
+                .map { componentStyle ->
+                    if (componentStyle is StackComponentStyle) {
+                        componentStyle.copy(windowInsetsRoot = applyTopWindowInsets)
+                    } else {
+                        componentStyle
+                    }
+                }
                 .map { componentStyle -> componentStyle.applyBottomWindowInsetsIfNecessary(applyBottomWindowInsets) }
                 .map { componentStyle ->
                     componentStyle.applyHorizontalWindowInsetsIfNecessary(applyHorizontalWindowInsets)
