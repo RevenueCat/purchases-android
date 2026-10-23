@@ -133,8 +133,8 @@ import androidx.compose.ui.geometry.Size as ComposeSize
  *   "purchase in progress".
  * @param selected When non-null, exposes the stack's selected state to accessibility services.
  *   Only meaningful when [onStackClick] is non-null.
- * @param ancestorScrollOrientations Scroll axes already active above this stack. A matching scroll
- *   request is ignored because Compose cannot measure same-axis nested scroll containers.
+ * @param ancestorScrollOrientations Scroll axes already active above this stack. An unbounded
+ *   matching scroll request is ignored because Compose cannot measure same-axis nested scroll containers.
  */
 @Suppress("LongMethod", "LongParameterList")
 @Composable
@@ -641,7 +641,9 @@ private fun MainStackComponent(
     overlay: (@Composable BoxScope.() -> Unit)? = null,
 ) {
     val safeDrawingInsets = WindowInsets.safeDrawing
-    val scrollOrientation = stackState.scrollOrientation?.takeUnless { it in ancestorScrollOrientations }
+    val scrollOrientation = stackState.scrollOrientation?.takeUnless { orientation ->
+        orientation in ancestorScrollOrientations && stackState.size.mainAxis(orientation) !is Fixed
+    }
     val descendantScrollOrientations = if (scrollOrientation != null) {
         ancestorScrollOrientations + scrollOrientation
     } else {

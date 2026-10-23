@@ -192,7 +192,7 @@ internal class StackOverflowScrollTests {
     }
 
     @Test
-    fun `scrolling root disables same-axis scrolling on its child`() {
+    fun `scrolling root keeps same-axis scrolling on its bounded child`() {
         setPaywallContent(
             rootStack(
                 overflow = StackComponent.Overflow.SCROLL,
@@ -200,15 +200,31 @@ internal class StackOverflowScrollTests {
             ),
         )
 
+        assertThat(verticallyScrollableNodeCount()).isEqualTo(2)
+        val maxScrollRange = composeTestRule.onAllNodes(verticallyScrollable)
+            .fetchSemanticsNodes()
+            .maxOf { it.config[SemanticsProperties.VerticalScrollAxisRange].maxValue() }
+        assertThat(maxScrollRange).isGreaterThan(0f)
+    }
+
+    @Test
+    fun `scrolling root disables same-axis scrolling on its unbounded child`() {
+        setPaywallContent(
+            rootStack(
+                overflow = StackComponent.Overflow.SCROLL,
+                children = listOf(scrollingChild(height = SizeConstraint.Fit())),
+            ),
+        )
+
         assertThat(verticallyScrollableNodeCount()).isEqualTo(1)
     }
 
     @Test
-    fun `automatic root scroll disables same-axis scrolling on its child`() {
+    fun `automatic root scroll disables same-axis scrolling on its unbounded child`() {
         setPaywallContent(
             rootStack(
                 overflow = null,
-                children = listOf(scrollingChild()),
+                children = listOf(scrollingChild(height = SizeConstraint.Fit())),
             ),
         )
 
@@ -261,7 +277,9 @@ internal class StackOverflowScrollTests {
         overrides = overrides,
     )
 
-    private fun scrollingChild(): StackComponent = StackComponent(
+    private fun scrollingChild(
+        height: SizeConstraint = SizeConstraint.Fixed(200u),
+    ): StackComponent = StackComponent(
         components = listOf(
             StackComponent(
                 components = emptyList(),
@@ -269,7 +287,7 @@ internal class StackOverflowScrollTests {
             ),
         ),
         dimension = Dimension.Vertical(HorizontalAlignment.CENTER, FlexDistribution.START),
-        size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fixed(200u)),
+        size = Size(width = SizeConstraint.Fill(), height = height),
         overflow = StackComponent.Overflow.SCROLL,
     )
 
