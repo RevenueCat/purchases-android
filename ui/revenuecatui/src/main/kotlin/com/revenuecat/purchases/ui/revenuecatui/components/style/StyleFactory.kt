@@ -42,6 +42,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ThemeVideoUrls
 import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedButtonPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedCarouselPartial
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedFooterPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedIconPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedImagePartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedPackagePartial
@@ -646,8 +647,17 @@ internal class StyleFactory(
         // tabControlIndex is null because a sticky footer cannot be _inside_ a tab control, which means we'll never
         // have to update the sticky footer based on the tab control being selected.
         withSelectedScope(packageInfo = null, tabControlIndex = null) {
-            createStackComponentStyle(component.stack).map {
-                StickyFooterComponentStyle(stackComponentStyle = it)
+            zipOrAccumulate(
+                first = createStackComponentStyle(component.stack),
+                second = component.overrides.toPresentedOverrides(stripRules) {
+                    Result.Success(PresentedFooterPartial(layout = it.layout))
+                }.mapError { nonEmptyListOf(it) },
+            ) { stack, overrides ->
+                StickyFooterComponentStyle(
+                    stackComponentStyle = stack,
+                    layout = component.layout ?: StickyFooterComponent.Layout.NORMAL,
+                    overrides = overrides,
+                )
             }
         }
 
