@@ -260,7 +260,7 @@ internal class BillingWrapper(
             ),
             onReceive,
             onError,
-            ::withConnectedClient,
+            { withConnectedClient(onError, it) },
             ::executeRequestOnUIThread,
         )
         useCase.run()
@@ -405,7 +405,7 @@ internal class BillingWrapper(
         if (activity.intent == null) {
             log(LogIntent.WARNING) { BillingStrings.NULL_ACTIVITY_INTENT }
         }
-        withConnectedClient {
+        withConnectedClient(onError = { purchasesUpdatedListener?.onPurchasesFailedToUpdate(it) }) {
             launchBillingFlow(activity, params)
                 .takeIf { billingResult -> billingResult.responseCode != BillingClient.BillingResponseCode.OK }
                 ?.let { billingResult ->
@@ -432,7 +432,7 @@ internal class BillingWrapper(
             ),
             onReceivePurchaseHistory,
             onReceivePurchaseHistoryError,
-            ::withConnectedClient,
+            { withConnectedClient(onReceivePurchaseHistoryError, it) },
             ::executeRequestOnUIThread,
         ).run()
     }
@@ -526,7 +526,7 @@ internal class BillingWrapper(
             onError = { _ ->
                 // TODO-retry: if ITEM_NOT_OWNED queryPurchasesAsync
             },
-            ::withConnectedClient,
+            { withConnectedClient(receivingFunction = it) },
             ::executeRequestOnUIThread,
         ).run()
     }
@@ -547,7 +547,7 @@ internal class BillingWrapper(
             { _ ->
                 // TODO-retry: if ITEM_NOT_OWNED queryPurchasesAsync
             },
-            ::withConnectedClient,
+            { withConnectedClient(receivingFunction = it) },
             ::executeRequestOnUIThread,
         ).run()
     }
@@ -567,7 +567,7 @@ internal class BillingWrapper(
             ),
             onSuccess,
             onError,
-            ::withConnectedClient,
+            { withConnectedClient(onError, it) },
             ::executeRequestOnUIThread,
         ).run()
     }
@@ -600,7 +600,7 @@ internal class BillingWrapper(
                     }
                 },
                 onError,
-                ::withConnectedClient,
+                { withConnectedClient(onError, it) },
                 ::executeRequestOnUIThread,
             ).run()
         } ?: onError(
@@ -631,6 +631,10 @@ internal class BillingWrapper(
         listener: (ProductType) -> Unit,
         resultHandler: (Boolean) -> Unit,
     ) {
+        val onError: PurchasesErrorCallback = { error ->
+            errorLog(error)
+            listener(ProductType.UNKNOWN)
+        }
         QueryPurchasesByTypeUseCase(
             QueryPurchasesByTypeUseCaseParams(
                 dateProvider,
@@ -641,11 +645,8 @@ internal class BillingWrapper(
             onSuccess = { purchases ->
                 resultHandler(purchases.values.any { it.purchaseToken == purchaseToken })
             },
-            onError = { error ->
-                errorLog(error)
-                listener(ProductType.UNKNOWN)
-            },
-            withConnectedClient = ::withConnectedClient,
+            onError = onError,
+            withConnectedClient = { withConnectedClient(onError, it) },
             executeRequestOnUIThread = ::executeRequestOnUIThread,
         ).run()
     }
@@ -888,15 +889,24 @@ internal class BillingWrapper(
             deviceCache = deviceCache,
             onReceive = { billingConfig -> onSuccess(billingConfig.countryCode) },
             onError = onError,
-            withConnectedClient = ::withConnectedClient,
+            withConnectedClient = { withConnectedClient(onError, it) },
             executeRequestOnUIThread = ::executeRequestOnUIThread,
         ).run()
     }
 
-    private fun withConnectedClient(receivingFunction: BillingClient.() -> Unit) {
-        billingClient?.takeIf { it.isReady }?.let {
-            it.receivingFunction()
-        } ?: log(LogIntent.GOOGLE_WARNING) { BillingStrings.BILLING_CLIENT_DISCONNECTED.format(getStackTrace()) }
+    private fun withConnectedClient(
+        onError: PurchasesErrorCallback = { errorLog(it) },
+        receivingFunction: BillingClient.() -> Unit,
+    ) {
+        val connectedClient = billingClient?.takeIf { it.isReady }
+        if (connectedClient != null) {
+            connectedClient.receivingFunction()
+        } else {
+            // A request may already have left serviceRequests before the client disconnects.
+            // Complete it here so its callback isn't lost while waiting for a later reconnection.
+            log(LogIntent.GOOGLE_WARNING) { BillingStrings.BILLING_CLIENT_DISCONNECTED.format(getStackTrace()) }
+            onError(PurchasesError(PurchasesErrorCode.StoreProblemError, BillingStrings.BILLING_SERVICE_DISCONNECTED))
+        }
     }
 
     private fun getStackTrace(): String {
