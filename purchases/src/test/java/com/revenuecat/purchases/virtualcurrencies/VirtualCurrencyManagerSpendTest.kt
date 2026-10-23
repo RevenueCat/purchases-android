@@ -94,6 +94,36 @@ class VirtualCurrencyManagerSpendTest {
     }
 
     @Test
+    fun `a spend with too many codes returns the current balances without spending`() {
+        manager.spendVirtualCurrencies(amountsForCodes(MAX_SPEND_CODES), null, callback)
+
+        verify(exactly = 0) { backend.spendVirtualCurrencies(any(), any(), any(), any(), any()) }
+        assertThat(received).isEqualTo(balances)
+    }
+
+    @Test
+    fun `a spend just under the code limit is sent`() {
+        stubSpend(succeed = true)
+        val amounts = amountsForCodes(MAX_SPEND_CODES - 1)
+
+        manager.spendVirtualCurrencies(amounts, null, callback)
+
+        verify { backend.spendVirtualCurrencies(appUserID, amounts, null, any(), any()) }
+    }
+
+    @Test
+    fun `too many codes counts only the valid ones`() {
+        stubSpend(succeed = true)
+        val valid = amountsForCodes(MAX_SPEND_CODES - 1)
+
+        manager.spendVirtualCurrencies(valid + ("ZERO" to 0), null, callback)
+
+        verify { backend.spendVirtualCurrencies(appUserID, valid, null, any(), any()) }
+    }
+
+    private fun amountsForCodes(count: Int) = (1..count).associate { "CODE_$it" to 1 }
+
+    @Test
     fun `an empty spend returns the current balances without spending`() {
         manager.spendVirtualCurrencies(emptyMap(), null, callback)
 
@@ -213,5 +243,10 @@ class VirtualCurrencyManagerSpendTest {
                 arg<(PurchasesError) -> Unit>(4)(PurchasesError(PurchasesErrorCode.NetworkError))
             }
         }
+    }
+
+    private companion object {
+        // Mirrors VirtualCurrencyManager's limit: this many valid codes is rejected.
+        const val MAX_SPEND_CODES = 1000
     }
 }
