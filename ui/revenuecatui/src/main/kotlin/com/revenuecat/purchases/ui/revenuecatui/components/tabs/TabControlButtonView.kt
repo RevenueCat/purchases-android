@@ -3,6 +3,7 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components.tabs
 
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.revenuecat.purchases.InternalRevenueCatAPI
@@ -18,6 +19,7 @@ internal fun TabControlButtonView(
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
     componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
+    ancestorScrollOrientations: Set<Orientation> = emptySet(),
 ) {
     StackComponentView(
         style = style.stack,
@@ -26,6 +28,7 @@ internal fun TabControlButtonView(
         clickHandler = { },
         componentInteractionTracker = componentInteractionTracker,
         modifier = modifier,
+        ancestorScrollOrientations = ancestorScrollOrientations,
         onStackClick = onStackClick@{
             val ordered = style.tabIdsOrdered
             val destinationIndex = style.tabIndex
