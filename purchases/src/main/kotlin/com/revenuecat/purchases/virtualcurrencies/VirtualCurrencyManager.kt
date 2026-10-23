@@ -17,6 +17,7 @@ internal class VirtualCurrencyManager(
     private val deviceCache: DeviceCache,
     private val backend: Backend,
     private val appConfig: AppConfig,
+    private val spendQueue: PerUserSerialQueue = PerUserSerialQueue(),
 ) {
     @Synchronized
     fun virtualCurrencies(
@@ -67,22 +68,28 @@ internal class VirtualCurrencyManager(
         }
 
         val appUserID = identityManager.currentAppUserID
-        backend.spendVirtualCurrencies(
-            appUserID = appUserID,
-            amounts = resolvedAmounts,
-            reference = reference,
-            onSuccessHandler = { virtualCurrencies ->
-                log(LogIntent.RC_SUCCESS) { VirtualCurrencyStrings.VIRTUAL_CURRENCIES_SPENT_ON_NETWORK }
-                cacheVirtualCurrencies(virtualCurrencies, appUserID)
-                callback.onReceived(virtualCurrencies)
-            },
-            onErrorHandler = { error ->
-                log(LogIntent.RC_ERROR) {
-                    VirtualCurrencyStrings.VIRTUAL_CURRENCIES_SPENT_ON_NETWORK_ERROR.format(error)
-                }
-                callback.onError(error)
-            },
-        )
+        // One spend in flight per user. With a multithreaded executor, responses could otherwise arrive out of
+        // order, and an older balance would overwrite a newer one in the cache.
+        spendQueue.enqueue(appUserID) { done ->
+            backend.spendVirtualCurrencies(
+                appUserID = appUserID,
+                amounts = resolvedAmounts,
+                reference = reference,
+                onSuccessHandler = { virtualCurrencies ->
+                    log(LogIntent.RC_SUCCESS) { VirtualCurrencyStrings.VIRTUAL_CURRENCIES_SPENT_ON_NETWORK }
+                    cacheVirtualCurrencies(virtualCurrencies, appUserID)
+                    done()
+                    callback.onReceived(virtualCurrencies)
+                },
+                onErrorHandler = { error ->
+                    log(LogIntent.RC_ERROR) {
+                        VirtualCurrencyStrings.VIRTUAL_CURRENCIES_SPENT_ON_NETWORK_ERROR.format(error)
+                    }
+                    done()
+                    callback.onError(error)
+                },
+            )
+        }
     }
 
     private fun isValidSpend(code: String, amount: Int): Boolean = when {

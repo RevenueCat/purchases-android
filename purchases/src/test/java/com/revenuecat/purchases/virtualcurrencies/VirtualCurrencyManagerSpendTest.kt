@@ -1,6 +1,9 @@
+@file:OptIn(InternalRevenueCatAPI::class)
+
 package com.revenuecat.purchases.virtualcurrencies
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.AppConfig
@@ -14,6 +17,7 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
+import io.mockk.verifyOrder
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.Test
@@ -96,6 +100,47 @@ class VirtualCurrencyManagerSpendTest {
         verify(exactly = 0) { backend.spendVirtualCurrencies(any(), any(), any(), any(), any()) }
         assertThat(received).isEqualTo(balances)
     }
+
+    @Test
+    fun `a second spend waits for the first's response, so the cache ends with the newest balances`() {
+        val pendingResponses = mutableListOf<(VirtualCurrencies) -> Unit>()
+        every { backend.spendVirtualCurrencies(any(), any(), any(), any(), any()) } answers {
+            pendingResponses.add(arg(3))
+        }
+        val afterFirst = balancesWithCoin(9)
+        val afterSecond = balancesWithCoin(8)
+
+        manager.spendVirtualCurrencies(mapOf("COIN" to 1), null, callback)
+        manager.spendVirtualCurrencies(mapOf("COIN" to 1), null, callback)
+        assertThat(pendingResponses).hasSize(1)
+
+        pendingResponses[0](afterFirst)
+        assertThat(pendingResponses).hasSize(2)
+        pendingResponses[1](afterSecond)
+
+        verifyOrder {
+            deviceCache.cacheVirtualCurrencies(appUserID, afterFirst)
+            deviceCache.cacheVirtualCurrencies(appUserID, afterSecond)
+        }
+    }
+
+    @Test
+    fun `a failed spend lets the next one start`() {
+        val pendingErrors = mutableListOf<(PurchasesError) -> Unit>()
+        every { backend.spendVirtualCurrencies(any(), any(), any(), any(), any()) } answers {
+            pendingErrors.add(arg(4))
+        }
+
+        manager.spendVirtualCurrencies(mapOf("COIN" to 1), null, callback)
+        manager.spendVirtualCurrencies(mapOf("COIN" to 1), null, callback)
+        pendingErrors[0](PurchasesError(PurchasesErrorCode.NetworkError))
+
+        assertThat(pendingErrors).hasSize(2)
+    }
+
+    private fun balancesWithCoin(balance: Int) = VirtualCurrencies(
+        all = mapOf("COIN" to VirtualCurrency(balance = balance, name = "Coin", code = "COIN")),
+    )
 
     private fun stubSpend(succeed: Boolean) {
         every { backend.spendVirtualCurrencies(any(), any(), any(), any(), any()) } answers {

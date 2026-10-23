@@ -11,6 +11,8 @@ import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.Executors
 
 /** Step A: spending virtual currencies, an IAM-only, user-scoped write. */
 internal class IAMVirtualCurrencyEndToEndTest : IAMEndToEndTest() {
@@ -93,6 +95,35 @@ internal class IAMVirtualCurrencyEndToEndTest : IAMEndToEndTest() {
     }
 
     @Test
+    fun `with a multithreaded executor, spends finish in order and the cache holds the newest balance`() {
+        val executor = Executors.newFixedThreadPool(THREADS)
+        try {
+            configure(service = executor)
+            foregroundAndBootstrap()
+            val user = currentAppUserID
+            backend.setBalance(user, COIN, START)
+            // The first spend's response (balance 9) arrives late. Run concurrently, the second spend's
+            // response (balance 8) would land first, and the late 9 would then overwrite it in the cache.
+            backend.delayOnce(SPEND, LATE_MS)
+            val results = CopyOnWriteArrayList<Result<VirtualCurrencies>>()
+
+            purchases.spendVirtualCurrency(COIN, 1, callback = recordingVirtualCurrenciesCallback { results.add(it) })
+            purchases.spendVirtualCurrency(COIN, 1, callback = recordingVirtualCurrenciesCallback { results.add(it) })
+            awaitUntil("both spend results") { results.size == 2 }
+            val requestsBefore = backend.requests.size
+
+            val read = awaitVirtualCurrencies { purchases.getVirtualCurrencies(it) }
+
+            assertThat(backend.balance(user, COIN)).isEqualTo(START - 2)
+            assertThat(read.getOrThrow()[COIN]?.balance).isEqualTo(START - 2)
+            assertThat(backend.requests).hasSize(requestsBefore)
+            assertThat(results.map { it.getOrThrow()[COIN]?.balance }).containsExactly(START - 1, START - 2)
+        } finally {
+            executor.shutdownNow()
+        }
+    }
+
+    @Test
     fun `a rejected spend fails and leaves the cached balances alone`() {
         configure()
         foregroundAndBootstrap()
@@ -153,5 +184,7 @@ internal class IAMVirtualCurrencyEndToEndTest : IAMEndToEndTest() {
         private const val START = 10
         private const val IDENTIFIED = "identified-user"
         private const val SPEND = "/v1/customer/virtual_currencies/spend"
+        private const val THREADS = 4
+        private const val LATE_MS = 500L
     }
 }

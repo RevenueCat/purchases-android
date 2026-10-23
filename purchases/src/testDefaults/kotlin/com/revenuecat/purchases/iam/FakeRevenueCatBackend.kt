@@ -41,6 +41,7 @@ internal class FakeRevenueCatBackend : Dispatcher() {
     private val rejectedAccessTokens = ConcurrentHashMap.newKeySet<String>()
     private val oneOffResponses = ConcurrentHashMap<String, MutableList<() -> MockResponse>>()
     private val holds = ConcurrentHashMap<String, CountDownLatch>()
+    private val delays = ConcurrentHashMap<String, Long>()
     private val subscriptions = ConcurrentHashMap<String, MutableSet<String>>()
     private val balances = ConcurrentHashMap<String, MutableMap<String, Int>>()
     private val spendsByKey = ConcurrentHashMap<String, () -> MockResponse>()
@@ -77,6 +78,11 @@ internal class FakeRevenueCatBackend : Dispatcher() {
         holds[path] = CountDownLatch(1)
     }
 
+    /** The next response to [path] reaches the SDK [delayMs] late; the server has already handled it by then. */
+    fun delayOnce(path: String, delayMs: Long) {
+        delays[path] = delayMs
+    }
+
     fun release(path: String) {
         holds.remove(path)?.countDown()
     }
@@ -108,7 +114,9 @@ internal class FakeRevenueCatBackend : Dispatcher() {
         try {
             holds[path]?.await(HOLD_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             oneOffResponses[path]?.let { queue -> if (queue.isNotEmpty()) return queue.removeAt(0)() }
-            return route(recordedRequest)
+            val response = route(recordedRequest)
+            delays.remove(path)?.let { response.setBodyDelay(it, TimeUnit.MILLISECONDS) }
+            return response
         } finally {
             arrivals.add(recordedRequest)
         }
