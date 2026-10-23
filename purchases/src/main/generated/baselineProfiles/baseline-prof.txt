@@ -361,7 +361,7 @@ Lcom/revenuecat/purchases/PurchasesFactory;
 HSPLcom/revenuecat/purchases/PurchasesFactory;->$r8$lambda$gHcXbLOQnm0TXN_wyHIMT54PhYw(ZLcom/revenuecat/purchases/common/remoteconfig/RemoteConfigDiskCache;Lcom/revenuecat/purchases/common/remoteconfig/RemoteConfigTopic;)Lcom/revenuecat/purchases/common/remoteconfig/ConfigTopic;
 HSPLcom/revenuecat/purchases/PurchasesFactory;-><init>(Lcom/revenuecat/purchases/utils/IsDebugBuildProvider;Lcom/revenuecat/purchases/APIKeyValidator;)V
 HSPLcom/revenuecat/purchases/PurchasesFactory;-><init>(Lcom/revenuecat/purchases/utils/IsDebugBuildProvider;Lcom/revenuecat/purchases/APIKeyValidator;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-HSPLcom/revenuecat/purchases/PurchasesFactory;->blobUrlConnectionFactory(Lcom/revenuecat/purchases/ForceServerErrorStrategy;)Lcom/revenuecat/purchases/utils/UrlConnectionFactory;
+HSPLcom/revenuecat/purchases/PurchasesFactory;->forcedFailureUrlConnectionFactory(Lcom/revenuecat/purchases/ForceServerErrorStrategy;)Lcom/revenuecat/purchases/utils/UrlConnectionFactory;
 HSPLcom/revenuecat/purchases/PurchasesFactory;->createDefaultExecutor()Ljava/util/concurrent/ExecutorService;
 HSPLcom/revenuecat/purchases/PurchasesFactory;->createEventsExecutor()Ljava/util/concurrent/ExecutorService;
 HSPLcom/revenuecat/purchases/PurchasesFactory;->createEventsManager(Lcom/revenuecat/purchases/identity/IdentityManager;Lcom/revenuecat/purchases/common/Dispatcher;Lcom/revenuecat/purchases/common/Backend;Lcom/revenuecat/purchases/utils/EventsFileHelper;Lcom/revenuecat/purchases/utils/EventsFileHelper;Ljava/net/URL;)Lcom/revenuecat/purchases/common/events/EventsManager;
