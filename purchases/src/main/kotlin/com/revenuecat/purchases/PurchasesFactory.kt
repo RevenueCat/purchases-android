@@ -261,7 +261,7 @@ internal class PurchasesFactory(
             val apiSourceFailover = APISourceFailover(
                 appConfig,
                 apiSourceProvider,
-                SourceHealthChecker(),
+                SourceHealthChecker(urlConnectionFactory = forcedFailureUrlConnectionFactory(forceServerErrorStrategy)),
                 DeviceConnectivityChecker(application),
             )
 
@@ -353,7 +353,7 @@ internal class PurchasesFactory(
                     remoteConfigBlobStore,
                     apiSourceProvider,
                     timeoutManager,
-                    urlConnectionFactory = blobUrlConnectionFactory(forceServerErrorStrategy),
+                    urlConnectionFactory = forcedFailureUrlConnectionFactory(forceServerErrorStrategy),
                 ),
                 // Bootstrap source for a cold on-demand read's self-triggered sync (see blobData()); after
                 // the first identity change the manager syncs for the user clearCache() binds instead.
@@ -699,7 +699,7 @@ internal class PurchasesFactory(
         }
     }
 
-    private fun blobUrlConnectionFactory(strategy: ForceServerErrorStrategy?): UrlConnectionFactory =
+    private fun forcedFailureUrlConnectionFactory(strategy: ForceServerErrorStrategy?): UrlConnectionFactory =
         DefaultUrlConnectionFactory().let { default ->
             strategy?.let { ForcedFailureUrlConnectionFactory(default, it) } ?: default
         }
