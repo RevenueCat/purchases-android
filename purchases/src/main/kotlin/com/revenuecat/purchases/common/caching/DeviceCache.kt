@@ -658,17 +658,18 @@ public open class DeviceCache(
     }
 
     /**
-     * Drops the response body older versions stored in prefs: SharedPreferences keeps its whole file in the
-     * heap for the process lifetime, so it is removed without being read.
+     * Removes and returns the response body older versions stored in prefs. SharedPreferences keeps its whole
+     * file in the heap for the process lifetime, so reading it costs no I/O.
      */
     @Synchronized
-    internal fun removeLegacyOfferingsResponse() {
-        if (!preferences.contains(offeringsResponseCacheKey)) return
+    internal fun takeLegacyOfferingsResponse(): String? {
+        val legacyResponse = preferences.getString(offeringsResponseCacheKey, null) ?: return null
         // An older SDK ran since the checksum was stored and may have switched users without clearing it.
         preferences.edit()
             .remove(offeringsResponseCacheKey)
             .remove(offeringsResponseChecksumCacheKey)
             .apply()
+        return legacyResponse
     }
 
     // endregion
