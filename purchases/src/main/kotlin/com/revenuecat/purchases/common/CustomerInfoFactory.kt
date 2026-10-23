@@ -121,7 +121,7 @@ internal object CustomerInfoFactory {
         val subscriptionMap = mutableMapOf<String, SubscriptionInfo>()
         val subscriptions = subscriberJSONObject.getJSONObject("subscriptions")
         subscriptions.keys().forEach { productId ->
-            // Parse each subscription independently so one failure doesn't drop subsequent entries.
+            // Parse each subscription independently so one failure doesn't drop other entries.
             try {
                 val subscriptionJSONObject = subscriptions.getJSONObject(productId)
                 val subscriptionInfoResponse = JsonProvider.defaultJson.decodeFromString<SubscriptionInfoResponse>(
