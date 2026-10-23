@@ -3,10 +3,12 @@ package com.revenuecat.purchases.ui.revenuecatui.views
 import android.content.Context
 import android.util.AttributeSet
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PresentedOfferingContext
@@ -14,6 +16,8 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.CustomVariableKeyValidator
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.DismissRequestWithExitOffering
+import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent
@@ -22,6 +26,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
+import com.revenuecat.purchases.ui.revenuecatui.getPaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable
 
 /**
@@ -90,6 +95,7 @@ public class PaywallView : CompatComposeView {
     private var initialOfferingInfo: OfferingSelection.IdAndPresentedOfferingContext? = null
     private var initialFontProvider: FontProvider? = null
     private var dismissHandler: (() -> Unit)? = null
+    private var exitOfferHandler: ((Offering) -> Unit)? = null
     private var listener: PaywallListener? = null
     private var purchaseLogic: PaywallPurchaseLogic? = null
     private var shouldDisplayDismissButton: Boolean? = null
@@ -139,6 +145,17 @@ public class PaywallView : CompatComposeView {
      */
     public fun setDismissHandler(dismissHandler: (() -> Unit)?) {
         this.dismissHandler = dismissHandler
+    }
+
+    /**
+     * Sets a handler that is called instead of the dismiss handler when the paywall is closed and an exit offer
+     * should be presented. The host is responsible for presenting the given [Offering]. When not set (the default),
+     * exit offers are not shown and every dismissal goes through the dismiss handler.
+     */
+    @InternalRevenueCatAPI
+    public fun setExitOfferHandler(exitOfferHandler: ((Offering) -> Unit)?) {
+        this.exitOfferHandler = exitOfferHandler
+        paywallOptions = paywallOptions.copy(dismissRequestWithExitOffering = dismissRequestWithExitOffering())
     }
 
     /**
@@ -207,6 +224,7 @@ public class PaywallView : CompatComposeView {
             .setOfferingIdAndPresentedOfferingContext(initialOfferingInfo)
             .setShouldDisplayDismissButton(shouldDisplayDismissButton ?: false)
             .setPurchaseLogic(purchaseLogic)
+            .setDismissRequestWithExitOffering(dismissRequestWithExitOffering())
             .build()
     }
 
@@ -229,13 +247,39 @@ public class PaywallView : CompatComposeView {
         dismissHandler?.invoke()
     }
 
+    private fun dismissRequestWithExitOffering(): DismissRequestWithExitOffering? {
+        if (exitOfferHandler == null) return null
+        val request: DismissRequestWithExitOffering = { exitOffering, _, _ -> dismissOrShowExitOffer(exitOffering) }
+        return request
+    }
+
+    private fun dismissOrShowExitOffer(exitOffering: Offering?) {
+        val handler = exitOfferHandler
+        if (exitOffering != null && handler != null) {
+            handler(exitOffering)
+        } else {
+            dismiss()
+        }
+    }
+
     @Composable
     override fun Content() {
         val paywallOptions by remember {
             paywallOptionsState
         }
         RevenueCatTheme {
-            Paywall(paywallOptions)
+            if (paywallOptions.dismissRequestWithExitOffering != null) {
+                // Same as Paywall(paywallOptions), plus the exit offer preload PaywallDialog and PaywallActivity do.
+                // SideEffect rather than LaunchedEffect: the preload is a synchronous, idempotent flag, so it doesn't
+                // need to wait for the effect coroutine to be dispatched.
+                val viewModel = getPaywallViewModel(paywallOptions)
+                SideEffect {
+                    viewModel.preloadExitOffering()
+                }
+                InternalPaywall(paywallOptions, viewModel)
+            } else {
+                Paywall(paywallOptions)
+            }
         }
     }
 }
