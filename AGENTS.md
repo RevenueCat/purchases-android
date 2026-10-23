@@ -110,6 +110,26 @@ Variant names combine the flavor and build type, e.g. `defaultsDebug`, `customEn
 - **`@ExperimentalPreviewRevenueCatUIPurchasesAPI`** - Same as above but for the `:ui:revenuecatui` module
 - **`@InviteOnlyCheckpointsAPI`** - Checkpoints APIs in `:ui:revenuecatui` available to invited developers only; tracked by Metalava but hidden from Dokka
 
+## Public API Design and Review
+
+### Models and audience
+
+- Follow comparable developer-facing APIs. Check containing types and `@InternalRevenueCatAPI` annotations before choosing precedents.
+- Use `@Poko` for public value models to avoid `copy`/`componentN` compatibility obligations. See the [v9 migration](migrations/v9-MIGRATION.md) and [detekt configuration](config/detekt/detekt.yml).
+- Prefer regular interfaces over public sealed hierarchies. Do not introduce public enums; new cases can break exhaustive callers. Existing baseline exceptions are not precedents.
+
+### Asynchronous fetch contracts
+
+- Follow comparable callback APIs: non-null success values and `onError(PurchasesError)`.
+- Keep successful empty/no-match results distinct from fetch failures. Preserve error codes and diagnostics; nullable cache reads or fields do not justify nullable asynchronous fetch results.
+- Coroutine fetch APIs conventionally return non-null values and throw `PurchasesException`. Follow existing cancellation-safe helpers. Add `*Result` variants only when analogous APIs justify them.
+
+### Exposure and verification
+
+- Annotate developer-facing preview APIs and retain consumer opt-ins. Keep unfinished implementation internal; avoid public no-op stubs and unnecessary API annotations on internal scaffolding.
+- Review Kotlin and Java call sites, JVM annotations, and callback/coroutine entry points. Update and compile relevant `api-tester` consumers across applicable flavors.
+- Generate and review API signatures; do not hand-edit them. Test empty results, errors, and cancellation where applicable. Use plain JUnit when Android behavior is unnecessary.
+
 ## Code Style
 
 - **Imports over inline fully-qualified references**: Always add an `import` statement at the top of the file rather than using a fully-qualified name inline (e.g., write `import foo.Bar` and use `Bar`, not `foo.Bar` inline in the code).
