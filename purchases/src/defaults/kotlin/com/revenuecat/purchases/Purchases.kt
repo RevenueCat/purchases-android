@@ -8,6 +8,8 @@ import android.net.Uri
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.Purchases.Companion.configure
 import com.revenuecat.purchases.Purchases.Companion.debugLogsEnabled
+import com.revenuecat.purchases.ads.AdRewardConfiguration
+import com.revenuecat.purchases.ads.ConfiguredAdRewards
 import com.revenuecat.purchases.ads.events.AdCaptureMethod
 import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.ads.events.types.AdRewardEarnedUnverifiedData
@@ -42,6 +44,7 @@ import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.DeepLinkParser
 import com.revenuecat.purchases.identity.Authentication
 import com.revenuecat.purchases.interfaces.Callback
+import com.revenuecat.purchases.interfaces.GetAdRewardsCallback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetRewardVerificationResultCallback
@@ -273,6 +276,21 @@ public class Purchases internal constructor(
     @get:JvmSynthetic
     public val adTracker: AdTracker
         get() = purchasesOrchestrator.adTracker
+
+    /**
+     * Returns configured rewards for the exact, case-sensitive [adUnitId], using cached configuration when available
+     * and loading it when needed. These values are for display and may differ from the reward ultimately granted;
+     * use reward verification to determine what was granted.
+     *
+     * The callback runs on the main thread with null when configuration cannot be resolved or [adUnitId] is empty.
+     * An empty [ConfiguredAdRewards.allRewards] means configuration was resolved and no rewards are configured.
+     * Unknown or invalid individual rewards use [AdRewardConfiguration.UnsupportedReward].
+     */
+    @JvmSynthetic
+    @Suppress("UNUSED_PARAMETER", "UnusedParameter")
+    internal fun getAdRewards(adUnitId: String, callback: GetAdRewardsCallback) {
+        throw NotImplementedError("Configured ad rewards will be implemented in a follow-up PR.")
+    }
 
     @Suppress("EmptyFunctionBlock", "DeprecatedCallableAddReplaceWith")
     @Deprecated("Will be removed in next major. Logic has been moved to PurchasesOrchestrator")
