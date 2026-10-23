@@ -23,6 +23,7 @@ class EndpointTest {
         Endpoint.PostEvents,
         Endpoint.PostRedeemWebPurchase,
         Endpoint.GetVirtualCurrencies("test-user-id"),
+        Endpoint.SpendVirtualCurrencies,
         Endpoint.GetRewardVerification("test-user-id", "client-transaction-id", null),
         Endpoint.AliasUsers("test-user-id"),
         Endpoint.GetRemoteConfig("app"),
@@ -252,6 +253,7 @@ class EndpointTest {
             Endpoint.GetProductEntitlementMapping,
             Endpoint.PostRedeemWebPurchase,
             Endpoint.GetVirtualCurrencies(userId = "test-user-id"),
+            Endpoint.SpendVirtualCurrencies,
             Endpoint.GetRewardVerification("test-user-id", "client-transaction-id", null),
             Endpoint.GetRemoteConfig("app"),
             Endpoint.GetRemoteConfigFallback("app"),
@@ -302,6 +304,7 @@ class EndpointTest {
             Endpoint.PostReceipt,
             Endpoint.PostRedeemWebPurchase,
             Endpoint.GetVirtualCurrencies(userId = "test-user-id"),
+            Endpoint.SpendVirtualCurrencies,
             Endpoint.GetRewardVerification("test-user-id", "client-transaction-id", null),
             Endpoint.GetRemoteConfig("app"),
         )
@@ -351,6 +354,7 @@ class EndpointTest {
             Endpoint.PostCreateSupportTicket,
             Endpoint.PostRedeemWebPurchase,
             Endpoint.GetVirtualCurrencies("test-user-id"),
+            Endpoint.SpendVirtualCurrencies,
             Endpoint.GetRewardVerification("test-user-id", "client-transaction-id", null),
             Endpoint.WebBillingGetProducts("test-user-id", setOf("product1", "product2")),
             Endpoint.TokenLogin,
@@ -495,6 +499,13 @@ class EndpointTest {
                 .withFailMessage { "Endpoint $endpoint expected useIAMPath to be a no-op" }
                 .isEqualTo(endpoint.getPath())
         }
+    }
+
+    @Test
+    fun `SpendVirtualCurrencies uses the customer path with or without the IAM flag`() {
+        assertThat(Endpoint.SpendVirtualCurrencies.getPath()).isEqualTo("/v1/customer/virtual_currencies/spend")
+        assertThat(Endpoint.SpendVirtualCurrencies.getPath(useIAMPath = true))
+            .isEqualTo("/v1/customer/virtual_currencies/spend")
     }
 
     @Test

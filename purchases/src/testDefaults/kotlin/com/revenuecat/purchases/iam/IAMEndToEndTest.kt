@@ -36,6 +36,7 @@ import org.junit.runner.RunWith
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.ExecutorService
 
 /**
  * Base for the IAM end-to-end suite: the real SDK from `PurchasesFactory` down, with only the network
@@ -87,16 +88,18 @@ internal abstract class IAMEndToEndTest {
         iamEnabled: Boolean = true,
         apiKey: String = API_KEY,
         appUserID: String? = null,
+        service: ExecutorService? = null,
     ): Purchases {
         billing = FakeBilling(PurchasesStateCache(PurchasesState()))
-        val configuration = PurchasesConfiguration.Builder(application, apiKey)
+        val builder = PurchasesConfiguration.Builder(application, apiKey)
             .appUserID(appUserID)
             .iamEnabled(iamEnabled)
             .diagnosticsEnabled(false)
             // The fake's responses are unsigned. Verifying them fails every response, and failed responses are
             // never ETag-cached.
             .entitlementVerificationMode(EntitlementVerificationMode.DISABLED)
-            .build()
+        service?.let { builder.service(it) }
+        val configuration = builder.build()
         purchases = PurchasesFactory(isDebugBuild = { true }).createPurchases(
             configuration = configuration,
             platformInfo = PlatformInfo(flavor = "native", version = null),
