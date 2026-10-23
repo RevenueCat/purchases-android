@@ -35,7 +35,6 @@ internal object CustomerCenterConfigTestData {
                             title = "Request a refund",
                             type = CustomerCenterConfigData.HelpPath.PathType.REFUND_REQUEST,
                             promotionalOffer = CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer(
-                                androidOfferId = "offer_id",
                                 eligible = true,
                                 title = "Wait a minute...",
                                 subtitle = "Before you cancel, please consider accepting this one time offer",
@@ -59,7 +58,6 @@ internal object CustomerCenterConfigTestData {
                                         title = "Too expensive",
                                         promotionalOffer =
                                         CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer(
-                                            androidOfferId = "offer_id",
                                             eligible = true,
                                             title = "Wait a minute...",
                                             subtitle = "Before you cancel, please consider accepting this offer",

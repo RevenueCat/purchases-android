@@ -4,7 +4,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
@@ -15,6 +14,7 @@ import com.revenuecat.purchases.common.createCustomerInfo
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
 import com.revenuecat.purchases.utils.Responses
 import io.mockk.every
@@ -160,6 +160,7 @@ class BackendRedeemWebPurchaseTest {
                 body = mapOf("redemption_token" to "test-redemption-token", "app_user_id" to "test-user-id"),
                 postFieldsToSign = null,
                 any(),
+                iamAppUserID = any(),
             )
         }
     }
@@ -186,6 +187,7 @@ class BackendRedeemWebPurchaseTest {
                 any(),
                 any(),
                 any(),
+                iamAppUserID = any(),
             )
         } answers {
             if (delayMs != null) {
@@ -196,7 +198,7 @@ class BackendRedeemWebPurchaseTest {
                 responseBody,
                 HTTPResult.Origin.BACKEND,
                 requestDate = null,
-                VerificationResult.NOT_REQUESTED,
+                SignatureVerificationResult.NotRequested,
                 isLoadShedderResponse = false,
                 isFallbackURL = false,
             )

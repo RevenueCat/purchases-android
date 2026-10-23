@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.customercenter.views
 
 import android.content.res.Configuration
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -49,6 +50,7 @@ internal fun NoActiveUserManagementView(
     offering: Offering?,
     virtualCurrencies: VirtualCurrencies? = null,
     shouldShowPurchaseHistory: Boolean = false,
+    isDarkMode: Boolean = isSystemInDarkTheme(),
     onAction: (CustomerCenterAction) -> Unit,
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -81,6 +83,7 @@ internal fun NoActiveUserManagementView(
             if (virtualCurrencies.all.isNotEmpty()) {
                 VirtualCurrenciesListView(
                     virtualCurrencies = virtualCurrencies,
+                    isDarkMode = isDarkMode,
                     appearance = appearance,
                     localization = localization,
                     onAction = onAction,

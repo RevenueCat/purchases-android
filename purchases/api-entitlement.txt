@@ -231,6 +231,7 @@ package com.revenuecat.purchases {
   }
 
   @kotlinx.serialization.Serializable public enum OwnershipType {
+    enum_constant @kotlinx.serialization.SerialName("ASSIGNED") public static final com.revenuecat.purchases.OwnershipType ASSIGNED;
     enum_constant @kotlinx.serialization.SerialName("FAMILY_SHARED") public static final com.revenuecat.purchases.OwnershipType FAMILY_SHARED;
     enum_constant @kotlinx.serialization.SerialName("PURCHASED") public static final com.revenuecat.purchases.OwnershipType PURCHASED;
     enum_constant @kotlinx.serialization.SerialName("UNKNOWN") public static final com.revenuecat.purchases.OwnershipType UNKNOWN;
@@ -634,6 +635,9 @@ package com.revenuecat.purchases.ads.events {
     method public void trackAdLoaded(com.revenuecat.purchases.ads.events.types.AdLoadedData data);
     method public void trackAdOpened(com.revenuecat.purchases.ads.events.types.AdOpenedData data);
     method public void trackAdRevenue(com.revenuecat.purchases.ads.events.types.AdRevenueData data);
+    method public void trackAdRewardEarnedUnverified(com.revenuecat.purchases.ads.events.types.AdRewardEarnedUnverifiedData data);
+    method public void trackRewardedAdPromptAccepted(com.revenuecat.purchases.ads.events.types.AdRewardPromptAcceptedData data);
+    method public void trackRewardedAdPromptShown(com.revenuecat.purchases.ads.events.types.AdRewardPromptShownData data);
   }
 
 }
@@ -703,6 +707,7 @@ package com.revenuecat.purchases.ads.events.types {
     method @KotlinOnly public com.revenuecat.purchases.ads.events.types.AdMediatorName fromString(String value);
     property public com.revenuecat.purchases.ads.events.types.AdMediatorName AD_MOB;
     property public com.revenuecat.purchases.ads.events.types.AdMediatorName APP_LOVIN;
+    property public com.revenuecat.purchases.ads.events.types.AdMediatorName LEVEL_PLAY;
   }
 
   @dev.drewhamilton.poko.Poko public final class AdOpenedData {
@@ -748,6 +753,40 @@ package com.revenuecat.purchases.ads.events.types {
     property public com.revenuecat.purchases.ads.events.types.AdRevenuePrecision EXACT;
     property public com.revenuecat.purchases.ads.events.types.AdRevenuePrecision PUBLISHER_DEFINED;
     property public com.revenuecat.purchases.ads.events.types.AdRevenuePrecision UNKNOWN;
+  }
+
+  @dev.drewhamilton.poko.Poko public final class AdRewardEarnedUnverifiedData {
+    ctor @KotlinOnly public AdRewardEarnedUnverifiedData(String? networkName, com.revenuecat.purchases.ads.events.types.AdMediatorName mediatorName, com.revenuecat.purchases.ads.events.types.AdFormat adFormat, String? placement, String adUnitId, String impressionId, optional boolean rewardVerificationEnabled);
+    method @InaccessibleFromKotlin public String getAdUnitId();
+    method @InaccessibleFromKotlin public String getImpressionId();
+    method @InaccessibleFromKotlin public String? getNetworkName();
+    method @InaccessibleFromKotlin public String? getPlacement();
+    method @InaccessibleFromKotlin public boolean getRewardVerificationEnabled();
+    property public com.revenuecat.purchases.ads.events.types.AdFormat adFormat;
+    property public String adUnitId;
+    property public String impressionId;
+    property public com.revenuecat.purchases.ads.events.types.AdMediatorName mediatorName;
+    property public String? networkName;
+    property public String? placement;
+    property public boolean rewardVerificationEnabled;
+  }
+
+  @dev.drewhamilton.poko.Poko public final class AdRewardPromptAcceptedData {
+    ctor @KotlinOnly public AdRewardPromptAcceptedData(com.revenuecat.purchases.ads.events.types.AdMediatorName mediatorName, String? placement, String adUnitId);
+    method @InaccessibleFromKotlin public String getAdUnitId();
+    method @InaccessibleFromKotlin public String? getPlacement();
+    property public String adUnitId;
+    property public com.revenuecat.purchases.ads.events.types.AdMediatorName mediatorName;
+    property public String? placement;
+  }
+
+  @dev.drewhamilton.poko.Poko public final class AdRewardPromptShownData {
+    ctor @KotlinOnly public AdRewardPromptShownData(com.revenuecat.purchases.ads.events.types.AdMediatorName mediatorName, String? placement, String adUnitId);
+    method @InaccessibleFromKotlin public String getAdUnitId();
+    method @InaccessibleFromKotlin public String? getPlacement();
+    property public String adUnitId;
+    property public com.revenuecat.purchases.ads.events.types.AdMediatorName mediatorName;
+    property public String? placement;
   }
 
 }

@@ -3,8 +3,8 @@ package com.revenuecat.checkpointtester.ui.screens.softpaywall
 import androidx.lifecycle.ViewModel
 import com.revenuecat.checkpointtester.checkpoints.PaywallPresenters
 import com.revenuecat.checkpointtester.checkpoints.summary
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,11 +30,11 @@ class SoftPaywallViewModel : ViewModel() {
         if (!_state.value.hasRun) hit()
     }
 
-    @OptIn(InternalRevenueCatAPI::class)
+    @OptIn(InviteOnlyCheckpointsAPI::class)
     fun hit() {
         _state.update { it.copy(message = null, hasRun = true) }
         Purchases.sharedInstance.checkpoint("soft_paywall", PaywallPresenters.params()) { result ->
-            if (result != null && result.obtainedEntitlements.isNotEmpty()) {
+            if (result.flow?.obtainedEntitlements.orEmpty().isNotEmpty()) {
                 upgraded(result.summary())
             } else {
                 free(result.summary())

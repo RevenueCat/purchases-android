@@ -10,7 +10,9 @@ package com.revenuecat.purchases.common.remoteconfig
  *
  * On the read side, a cache **miss** resolves a value off a snapshotted generation; [isCurrent] lets the caller
  * discard that just-resolved value if an invalidation advanced past the snapshot mid-resolve, so an in-flight
- * cold read never serves the previous user's data across an identity change.
+ * cold read never serves the previous user's data across an identity change. A cache **hit** that must be
+ * current at a given generation reads through [cachedAtOrAbove], which checks the generation and returns the
+ * value under one lock hold, so a [store] cannot land between the check and the value it vouches for.
  */
 internal class GenerationGuardedCache<T : Any> {
     private val lock = Any()
@@ -34,16 +36,20 @@ internal class GenerationGuardedCache<T : Any> {
     fun isWarmAtOrAbove(generation: Int): Boolean =
         synchronized(lock) { lastGeneration >= generation && value != null }
 
+    /** The value, only if this cache acted on [generation] or newer; read atomically with that check. */
+    fun cachedAtOrAbove(generation: Int): T? = synchronized(lock) { value.takeIf { lastGeneration >= generation } }
+
     /** True while [generation] is still the newest acted-on generation (nothing newer stored/invalidated). */
     fun isCurrent(generation: Int): Boolean = synchronized(lock) { generation >= lastGeneration }
 
-    fun store(generation: Int, newValue: T) {
-        synchronized(lock) {
-            if (generation >= lastGeneration) {
-                lastGeneration = generation
-                value = newValue
-            }
+    /** Stores [newValue] unless a newer generation was already acted on; returns whether it applied. */
+    fun store(generation: Int, newValue: T): Boolean = synchronized(lock) {
+        val applies = generation >= lastGeneration
+        if (applies) {
+            lastGeneration = generation
+            value = newValue
         }
+        applies
     }
 
     fun invalidate(generation: Int) {

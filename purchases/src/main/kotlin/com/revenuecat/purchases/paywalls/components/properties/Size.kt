@@ -27,18 +27,20 @@ public sealed interface SizeConstraint {
      * Fits the content size.
      *
      * @param default Optional default size (in dp) to show during loading and initial content size calculations.
-     * @param min Optional minimum size in dp.
-     * @param max Optional maximum size in dp.
      */
     @Poko
     @Immutable
     @Serializable
     public class Fit(
         @get:JvmSynthetic @SerialName("default") public val default: UInt? = null,
-        @get:JvmSynthetic public val min: UInt? = null,
-        @get:JvmSynthetic public val max: UInt? = null,
     ) : SizeConstraint
 
+    /**
+     * Fills the available space, like a flex item with `flex-grow: 1`.
+     *
+     * @param min Optional minimum size in dp. Reserved before remaining space is shared with Fill siblings.
+     * @param max Optional maximum size in dp. Space beyond it is released to Fill siblings.
+     */
     @Poko
     @Immutable
     @Serializable

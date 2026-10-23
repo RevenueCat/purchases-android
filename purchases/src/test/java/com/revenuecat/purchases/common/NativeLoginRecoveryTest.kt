@@ -22,6 +22,8 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.networking.ETagManager
+import com.revenuecat.purchases.common.networking.TokenAPI
+import com.revenuecat.purchases.common.networking.TokenManager
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
@@ -89,6 +91,8 @@ internal class NativeLoginRecoveryTest : BaseHTTPClientTest() {
             appConfig, cache, attributesCache, attributes,
             mockk(relaxed = true), mockk(relaxed = true), backend,
             mockk(relaxed = true), dispatcher, mockk(relaxed = true),
+            TokenManager(ApplicationProvider.getApplicationContext(), "test-api-key", enabled = false),
+            mockk<TokenAPI>(),
         )
         val blockstore = mockk<BlockstoreHelper>(relaxed = true) {
             every { clearUserIdBackupIfNeeded(any()) } answers { firstArg<() -> Unit>().invoke() }
@@ -131,6 +135,8 @@ internal class NativeLoginRecoveryTest : BaseHTTPClientTest() {
             workflowsConfigProvider = mockk(relaxed = true),
             checkpointsConfigProvider = mockk(relaxed = true),
             audiencesConfigProvider = mockk(relaxed = true),
+            sdkSettingsConfigProvider = mockk(relaxed = true),
+            subscriberDimensionsConfigProvider = mockk(relaxed = true),
             tokenManager = mockk(relaxed = true),
         ))
         if (withUnsyncedAttributes) attributes.setAttributes(mapOf("campaign" to "onboarding"), oldUser)

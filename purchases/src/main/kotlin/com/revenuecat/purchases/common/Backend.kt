@@ -14,7 +14,6 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.RewardVerificationError
 import com.revenuecat.purchases.RewardVerificationPollStatus
-import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.backendName
 import com.revenuecat.purchases.common.caching.WorkflowMetadata
 import com.revenuecat.purchases.common.events.EventsRequest
@@ -32,6 +31,7 @@ import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMap
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfiguration
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterRoot
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
@@ -116,12 +116,12 @@ internal typealias RewardVerificationResultCallback =
     Pair<(RewardVerificationPollStatus) -> Unit, (RewardVerificationError) -> Unit>
 
 internal typealias RemoteConfigCallback = Pair<
-    (RCContainer?, requestDate: Date?, VerificationResult) -> Unit,
+    (RCContainer?, requestDate: Date?, SignatureVerificationResult) -> Unit,
     (PurchasesError, errorHandlingBehavior: GetRemoteConfigErrorHandlingBehavior) -> Unit,
     >
 
 internal typealias RemoteConfigFallbackCallback = Pair<
-    (RemoteConfiguration, VerificationResult) -> Unit,
+    (RemoteConfiguration, SignatureVerificationResult) -> Unit,
     (PurchasesError) -> Unit,
     >
 
@@ -262,6 +262,7 @@ internal class Backend(
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
                     fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                    iamAppUserID = appUserID,
                 )
             }
 
@@ -334,6 +335,8 @@ internal class Backend(
             "is_restore" to isRestore,
             "presented_offering_identifier" to receiptInfo.presentedOfferingContext?.offeringIdentifier,
             "presented_placement_identifier" to receiptInfo.presentedOfferingContext?.placementIdentifier,
+            "presented_checkpoint_identifier" to receiptInfo.presentedOfferingContext?.checkpointIdentifier,
+            "presented_trace_id" to receiptInfo.presentedOfferingContext?.traceId,
             "applied_targeting_rule" to receiptInfo.presentedOfferingContext?.targetingContext?.let {
                 return@let mapOf("revision" to it.revision, "rule_id" to it.ruleId)
             },
@@ -374,6 +377,7 @@ internal class Backend(
                     postFieldsToSign,
                     backendHelper.authenticationHeaders + extraHeaders,
                     fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                    iamAppUserID = appUserID,
                 )
             }
 
@@ -441,6 +445,7 @@ internal class Backend(
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
                     fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                    iamAppUserID = appUserID,
                 )
             }
 
@@ -510,6 +515,7 @@ internal class Backend(
                     postFieldsToSign,
                     backendHelper.authenticationHeaders,
                     fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                    iamAppUserID = appUserID,
                 )
             }
 
@@ -570,6 +576,7 @@ internal class Backend(
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
                     fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                    iamAppUserID = oldAppUserID,
                 )
             }
 
@@ -782,6 +789,7 @@ internal class Backend(
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
                     fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                    iamAppUserID = appUserID,
                 )
             }
 
@@ -848,6 +856,7 @@ internal class Backend(
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
                     fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                    iamAppUserID = appUserID,
                 )
             }
 
@@ -907,6 +916,7 @@ internal class Backend(
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
                     fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                    iamAppUserID = appUserID,
                 )
             }
 
@@ -983,6 +993,7 @@ internal class Backend(
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
                     fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                    iamAppUserID = appUserID,
                 )
             }
 
@@ -1047,6 +1058,7 @@ internal class Backend(
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
                     fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                    iamAppUserID = appUserID,
                 )
             }
 
@@ -1093,12 +1105,14 @@ internal class Backend(
     fun getRewardVerificationResult(
         appUserID: String,
         clientTransactionId: String,
+        adUnitId: String?,
         onSuccess: (RewardVerificationPollStatus) -> Unit,
         onError: (RewardVerificationError) -> Unit,
     ) {
         val endpoint = Endpoint.GetRewardVerification(
             userId = appUserID,
             clientTransactionId = clientTransactionId,
+            adUnitId = adUnitId,
         )
         val path = endpoint.getPath()
         val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path), appInBackground = false)
@@ -1111,6 +1125,7 @@ internal class Backend(
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
                     fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                    iamAppUserID = appUserID,
                 )
             }
 
@@ -1174,7 +1189,7 @@ internal class Backend(
         lastRefreshTime: Date?,
         prefetchedBlobs: List<String>,
         // The server's own request time, so the caller can replay it rather than a device-clock value.
-        onSuccess: (RCContainer?, Date?, VerificationResult) -> Unit,
+        onSuccess: (RCContainer?, Date?, SignatureVerificationResult) -> Unit,
         onError: (PurchasesError, GetRemoteConfigErrorHandlingBehavior) -> Unit,
     ) {
         val endpoint = Endpoint.GetRemoteConfig(domain)
@@ -1206,6 +1221,7 @@ internal class Backend(
                     body = body,
                     postFieldsToSign = null,
                     requestHeaders,
+                    iamAppUserID = appUserID,
                 )
             }
 
@@ -1284,7 +1300,7 @@ internal class Backend(
     fun getRemoteConfigFallback(
         appInBackground: Boolean,
         domain: String,
-        onSuccess: (RemoteConfiguration, VerificationResult) -> Unit,
+        onSuccess: (RemoteConfiguration, SignatureVerificationResult) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
         val fallbackURL = appConfig.fallbackBaseURLs.firstOrNull()

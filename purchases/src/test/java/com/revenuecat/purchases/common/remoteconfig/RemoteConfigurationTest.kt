@@ -2,8 +2,11 @@ package com.revenuecat.purchases.common.remoteconfig
 
 import com.revenuecat.purchases.common.JsonProvider
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.long
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Test
@@ -167,6 +170,56 @@ class RemoteConfigurationTest {
         assertThat(item.metadata["url"]?.jsonPrimitive?.content).isEqualTo("https://api.revenuecat.com")
         assertThat(item.metadata["priority"]?.jsonPrimitive?.int).isEqualTo(100)
         assertThat(item.metadata["weight"]?.jsonPrimitive?.int).isEqualTo(100)
+    }
+
+    @Test
+    fun `parses the sdk_settings default item as inline metadata`() {
+        // language=json
+        val payload = """
+            {
+              "domain": "app",
+              "manifest": "v1.1710000600.sdk_settings:etag1",
+              "active_topics": ["sdk_settings"],
+              "topics": {
+                "sdk_settings": {
+                  "default": { "diagnostics": { "enabled": true } }
+                }
+              }
+            }
+        """
+
+        val response = RemoteConfiguration.parse(payload.trimIndent().toByteArray())
+
+        val item = response.topics.getValue(RemoteConfigTopic.SdkSettings.wireName).getValue("default")
+        assertThat(item.blobRef).isNull()
+        assertThat(item.metadata["diagnostics"]?.jsonObject?.get("enabled")?.jsonPrimitive?.boolean).isTrue
+    }
+
+    @Test
+    fun `parses the subscriber_dimensions default item as inline metadata`() {
+        // language=json
+        val payload = """
+            {
+              "domain": "app",
+              "manifest": "v1.1710000600.subscriber_dimensions:etag1",
+              "active_topics": ["subscriber_dimensions"],
+              "topics": {
+                "subscriber_dimensions": {
+                  "default": {
+                    "dimensions": { "country": "ES", "subscription_status": null, "total_renewals": 0 },
+                    "as_of": 1790858464258
+                  }
+                }
+              }
+            }
+        """
+
+        val response = RemoteConfiguration.parse(payload.trimIndent().toByteArray())
+
+        val item = response.topics.getValue(RemoteConfigTopic.SubscriberDimensions.wireName).getValue("default")
+        assertThat(item.blobRef).isNull()
+        assertThat(item.metadata["dimensions"]?.jsonObject?.get("country")?.jsonPrimitive?.content).isEqualTo("ES")
+        assertThat(item.metadata["as_of"]?.jsonPrimitive?.long).isEqualTo(1790858464258L)
     }
 
     @Test

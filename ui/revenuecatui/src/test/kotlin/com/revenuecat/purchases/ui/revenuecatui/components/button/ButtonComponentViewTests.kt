@@ -63,6 +63,8 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.resolveWebCheckoutUrlForInteraction
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.awaitCancellation
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
@@ -162,6 +164,24 @@ class ButtonComponentViewTests {
         composeTestRule.waitForIdle()
 
         // Without the cleanup this stays true and every button on the paywall stays disabled.
+        assertThat(state.actionInProgress).isFalse
+    }
+
+    @Test
+    fun `a button action on a cancelled coroutine scope does not lock the paywall`() {
+        val state = FakePaywallState(TestData.Packages.annual)
+        val cancelledScope = CoroutineScope(Job().apply { cancel() })
+        var myActionInProgress = false
+        var actionHandleCalled = false
+
+        cancelledScope.launchButtonAction(
+            state = state,
+            onActionInProgressChanged = { myActionInProgress = it },
+            action = { actionHandleCalled = true },
+        )
+
+        assertThat(actionHandleCalled).isFalse
+        assertThat(myActionInProgress).isFalse
         assertThat(state.actionInProgress).isFalse
     }
 

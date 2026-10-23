@@ -14,7 +14,7 @@ import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
 
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LargeClass")
 internal object VariableProcessorV2 {
 
     internal enum class Variable(@get:JvmSynthetic val identifier: String) {
@@ -58,6 +58,13 @@ internal object VariableProcessorV2 {
         PRODUCT_SECONDARY_OFFER_PERIOD("product.secondary_offer_period"),
         PRODUCT_SECONDARY_OFFER_PERIOD_ABBREVIATED("product.secondary_offer_period_abbreviated"),
         PRODUCT_RELATIVE_DISCOUNT("product.relative_discount"),
+        PRODUCT_ABSOLUTE_DISCOUNT("product.absolute_discount"),
+        PRODUCT_OFFER_RELATIVE_DISCOUNT("product.offer_relative_discount"),
+        PRODUCT_OFFER_ABSOLUTE_DISCOUNT("product.offer_absolute_discount"),
+        PRODUCT_RELATIVE_DISCOUNT_WITH_OFFER("product.relative_discount_with_offer"),
+        PRODUCT_ABSOLUTE_DISCOUNT_WITH_OFFER("product.absolute_discount_with_offer"),
+        PRODUCT_RELATIVE_DISCOUNT_WITH_OFFER_FULL_PERIOD("product.relative_discount_with_offer_full_period"),
+        PRODUCT_ABSOLUTE_DISCOUNT_WITH_OFFER_FULL_PERIOD("product.absolute_discount_with_offer_full_period"),
         PRODUCT_STORE_PRODUCT_NAME("product.store_product_name"),
 
         COUNT_DAYS_WITH_ZERO("count_days_with_zero"),
@@ -124,6 +131,7 @@ internal object VariableProcessorV2 {
         countFrom: CountdownComponent.CountFrom = CountdownComponent.CountFrom.DAYS,
         customVariables: Map<String, CustomVariableValue> = emptyMap(),
         defaultCustomVariables: Map<String, CustomVariableValue> = emptyMap(),
+        spoken: Boolean = false,
     ): String = template.replaceVariablesWithValues { variable, functions ->
         getVariableValue(
             variableIdentifier = variable,
@@ -141,7 +149,83 @@ internal object VariableProcessorV2 {
             countFrom = countFrom,
             customVariables = customVariables,
             defaultCustomVariables = defaultCustomVariables,
+            spoken = spoken,
         )
+    }.let { rendered -> if (spoken) expandPeriodAbbreviations(rendered, localizedVariableKeys) else rendered }
+
+    /**
+     * Both sides come from the paywall's localizations, so expansion stays in its language. Long forms are
+     * included because `product.period_abbreviated` is spoken as the long form, and copy often types "/month".
+     */
+    private val spokenPeriodKeys = listOf(
+        VariableLocalizationKey.DAY_SHORT to VariableLocalizationKey.DAILY,
+        VariableLocalizationKey.WEEK_SHORT to VariableLocalizationKey.WEEKLY,
+        VariableLocalizationKey.MONTH_SHORT to VariableLocalizationKey.MONTHLY,
+        VariableLocalizationKey.YEAR_SHORT to VariableLocalizationKey.YEARLY,
+        VariableLocalizationKey.ANNUAL_SHORT to VariableLocalizationKey.ANNUALLY,
+        VariableLocalizationKey.DAY to VariableLocalizationKey.DAILY,
+        VariableLocalizationKey.WEEK to VariableLocalizationKey.WEEKLY,
+        VariableLocalizationKey.MONTH to VariableLocalizationKey.MONTHLY,
+        VariableLocalizationKey.YEAR to VariableLocalizationKey.YEARLY,
+        VariableLocalizationKey.ANNUAL to VariableLocalizationKey.ANNUALLY,
+    )
+
+    private val urlRegex = "[A-Za-z][A-Za-z0-9+.-]*://[^\\s)]+".toRegex()
+
+    /**
+     * Rewrites "$5.83/mo" as "$5.83 monthly". Paywall copy types the separator literally
+     * ("{{ product.price_per_month }}/mo"), which no variable substitution reaches.
+     */
+    fun expandPeriodAbbreviations(
+        text: String,
+        localizedVariableKeys: Map<VariableLocalizationKey, String>,
+    ): String {
+        val replacements = spokenReplacements(localizedVariableKeys)
+
+        // A URL path segment can read exactly like an abbreviation ("day" is `day_short` in English),
+        // and rewriting one breaks the link.
+        return text.transformOutsideUrls { segment ->
+            replacements.fold(segment) { partial, (regex, spokenWord) -> partial.replace(regex) { spokenWord } }
+        }
+    }
+
+    // Every text in a paywall shares the same localizations, so the compiled regexes are reused across texts
+    // and across re-processing on package selection instead of being rebuilt on each call.
+    @Volatile
+    private var cachedSpokenReplacements: Pair<List<Pair<String, String>>, List<Pair<Regex, String>>>? = null
+
+    private fun spokenReplacements(
+        localizedVariableKeys: Map<VariableLocalizationKey, String>,
+    ): List<Pair<Regex, String>> {
+        val pairs = spokenPeriodKeys
+            .mapNotNull { (writtenKey, spokenKey) ->
+                val written = localizedVariableKeys[writtenKey]?.takeIf { it.isNotEmpty() }
+                val spokenWord = localizedVariableKeys[spokenKey]?.takeIf { it.isNotEmpty() }
+                if (written != null && spokenWord != null) written to spokenWord else null
+            }
+            // Longest first, so "/month" is taken by the long form and not left to "mo".
+            .sortedByDescending { (written, _) -> written.length }
+
+        cachedSpokenReplacements?.let { (cachedPairs, replacements) ->
+            if (cachedPairs == pairs) return replacements
+        }
+
+        val replacements = pairs.map { (written, spokenWord) ->
+            // Trailing guard so "/mo" does not match inside a spelled-out "/month".
+            Regex("/\\s*${Regex.escape(written)}(?!\\p{L})", RegexOption.IGNORE_CASE) to " $spokenWord"
+        }
+        cachedSpokenReplacements = pairs to replacements
+        return replacements
+    }
+
+    private fun String.transformOutsideUrls(transform: (String) -> String): String = buildString {
+        var consumed = 0
+        urlRegex.findAll(this@transformOutsideUrls).forEach { match ->
+            append(transform(this@transformOutsideUrls.substring(consumed, match.range.first)))
+            append(match.value)
+            consumed = match.range.last + 1
+        }
+        append(transform(this@transformOutsideUrls.substring(consumed)))
     }
 
     private fun String.replaceVariablesWithValues(
@@ -187,6 +271,7 @@ internal object VariableProcessorV2 {
         countFrom: CountdownComponent.CountFrom,
         customVariables: Map<String, CustomVariableValue>,
         defaultCustomVariables: Map<String, CustomVariableValue>,
+        spoken: Boolean,
     ): String {
         val functions = functionIdentifiers.mapNotNull { findFunction(it, variableConfig.functionCompatibilityMap) }
 
@@ -206,18 +291,22 @@ internal object VariableProcessorV2 {
         return if (variable == null) {
             ""
         } else {
-            val result = variable.getValue(
-                localizedVariableKeys = localizedVariableKeys,
-                variableDataProvider = variableDataProvider,
-                packageContext = packageContext,
-                rcPackage = rcPackage,
-                subscriptionOption = subscriptionOption,
-                currencyLocale = currencyLocale,
-                dateLocale = dateLocale,
-                date = date,
-                countdownTime = countdownTime,
-                countFrom = countFrom,
-            )?.let { processedVariable ->
+            val valueOf: (Variable) -> String? = {
+                it.getValue(
+                    localizedVariableKeys = localizedVariableKeys,
+                    variableDataProvider = variableDataProvider,
+                    packageContext = packageContext,
+                    rcPackage = rcPackage,
+                    subscriptionOption = subscriptionOption,
+                    currencyLocale = currencyLocale,
+                    dateLocale = dateLocale,
+                    date = date,
+                    countdownTime = countdownTime,
+                    countFrom = countFrom,
+                )
+            }
+            val value = if (spoken) variable.getSpokenValue(rcPackage, valueOf) else valueOf(variable)
+            val result = value?.let { processedVariable ->
                 functions.fold(processedVariable) { accumulator, function ->
                     accumulator.processFunction(function, currencyLocale)
                 }
@@ -376,6 +465,23 @@ internal object VariableProcessorV2 {
             "Paywall function '$functionIdentifier' is not supported and no backwards compatible " +
                 "replacement found.",
         )
+
+    /**
+     * Spoken counterparts of the abbreviated variables: "$1.24 monthly" rather than "$1.24/mo", and "month" rather
+     * than "mo".
+     */
+    private fun Variable.getSpokenValue(rcPackage: Package?, valueOf: (Variable) -> String?): String? = when (this) {
+        Variable.PRODUCT_PRICE_PER_PERIOD,
+        Variable.PRODUCT_PRICE_PER_PERIOD_ABBREVIATED,
+        -> valueOf(Variable.PRODUCT_PRICE)?.let { price ->
+            val periodly = valueOf(Variable.PRODUCT_PERIODLY)
+            if (rcPackage?.hasNoBillingPeriod != false || periodly.isNullOrEmpty()) price else "$price $periodly"
+        }
+        Variable.PRODUCT_PERIOD_ABBREVIATED -> valueOf(Variable.PRODUCT_PERIOD)
+        Variable.PRODUCT_OFFER_PERIOD_ABBREVIATED -> valueOf(Variable.PRODUCT_OFFER_PERIOD)
+        Variable.PRODUCT_SECONDARY_OFFER_PERIOD_ABBREVIATED -> valueOf(Variable.PRODUCT_SECONDARY_OFFER_PERIOD)
+        else -> valueOf(this)
+    }
 
     @Suppress("LongMethod", "CyclomaticComplexMethod", "LongParameterList", "NestedBlockDepth")
     private fun Variable.getValue(
@@ -628,6 +734,35 @@ internal object VariableProcessorV2 {
             ) { rcPackage?.productPeriodAbbreviated(localizedVariableKeys) }
 
         Variable.PRODUCT_RELATIVE_DISCOUNT -> packageContext?.relativeDiscount(localizedVariableKeys)
+
+        Variable.PRODUCT_ABSOLUTE_DISCOUNT ->
+            rcPackage?.standardSavings(packageContext?.mostExpensivePricePerMonthMicros)
+                ?.localizedAmount(currencyLocale, packageContext)
+
+        Variable.PRODUCT_OFFER_RELATIVE_DISCOUNT ->
+            rcPackage?.offerSavings(subscriptionOption)
+                ?.let { localizedVariableKeys.percent(it.relative) }
+
+        Variable.PRODUCT_OFFER_ABSOLUTE_DISCOUNT ->
+            rcPackage?.offerSavings(subscriptionOption)
+                ?.localizedAmount(currencyLocale, packageContext)
+
+        Variable.PRODUCT_RELATIVE_DISCOUNT_WITH_OFFER ->
+            rcPackage?.offerTermSavings(subscriptionOption, packageContext?.mostExpensivePricePerMonthMicros)
+                ?.let { localizedVariableKeys.percent(it.relative) }
+
+        Variable.PRODUCT_ABSOLUTE_DISCOUNT_WITH_OFFER ->
+            rcPackage?.offerTermSavings(subscriptionOption, packageContext?.mostExpensivePricePerMonthMicros)
+                ?.localizedAmount(currencyLocale, packageContext)
+
+        Variable.PRODUCT_RELATIVE_DISCOUNT_WITH_OFFER_FULL_PERIOD ->
+            rcPackage?.fullPeriodSavings(subscriptionOption, packageContext?.mostExpensivePricePerMonthMicros)
+                ?.let { localizedVariableKeys.percent(it.relative) }
+
+        Variable.PRODUCT_ABSOLUTE_DISCOUNT_WITH_OFFER_FULL_PERIOD ->
+            rcPackage?.fullPeriodSavings(subscriptionOption, packageContext?.mostExpensivePricePerMonthMicros)
+                ?.localizedAmount(currencyLocale, packageContext)
+
         Variable.PRODUCT_STORE_PRODUCT_NAME -> rcPackage?.product?.name
 
         Variable.COUNT_DAYS_WITH_ZERO -> countdownTime?.let {
@@ -702,9 +837,11 @@ internal object VariableProcessorV2 {
     }
 
     private fun PackageContext.relativeDiscount(localizedVariableKeys: Map<VariableLocalizationKey, String>): String? =
-        discountRelativeToMostExpensivePerMonth
-            ?.let { discount -> (discount * PERCENT_SCALE).roundToInt() }
-            ?.let { discountPercentage ->
-                localizedVariableKeys.getStringOrLogError(VariableLocalizationKey.PERCENT)?.format(discountPercentage)
-            }
+        discountRelativeToMostExpensivePerMonth?.let { localizedVariableKeys.percent(it) }
+
+    private fun Map<VariableLocalizationKey, String>.percent(fraction: Double): String? =
+        getStringOrLogError(VariableLocalizationKey.PERCENT)?.format((fraction * PERCENT_SCALE).roundToInt())
+
+    private fun DiscountSavings.localizedAmount(locale: Locale, packageContext: PackageContext?): String =
+        localizedAmount(locale, showZeroDecimalPlacePrices = packageContext?.showZeroDecimalPlacePrices ?: false)
 }

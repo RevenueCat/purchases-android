@@ -38,11 +38,11 @@ internal fun PromotionalOfferScreen(
     onAccept: (SubscriptionOption) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
+    isDarkMode: Boolean = isSystemInDarkTheme(),
 ) {
-    val isDark = isSystemInDarkTheme()
-    val textColor = appearance.getColorForTheme(isDark) { it.textColor }
-    val buttonBackgroundColor = appearance.getColorForTheme(isDark) { it.buttonBackgroundColor }
-    val buttonTextColor = appearance.getColorForTheme(isDark) { it.buttonTextColor }
+    val textColor = appearance.getColorForTheme(isDarkMode) { it.textColor }
+    val buttonBackgroundColor = appearance.getColorForTheme(isDarkMode) { it.buttonBackgroundColor }
+    val buttonTextColor = appearance.getColorForTheme(isDarkMode) { it.buttonTextColor }
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,

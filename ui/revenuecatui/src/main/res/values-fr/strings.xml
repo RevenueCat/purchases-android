@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">OK</string>
+    <string name="loading">Chargement</string>
     <string name="privacy">Confidentialité</string>
     <string name="privacy_policy">Politique de confidentialité</string>
     <string name="restore">Restaurer</string>
@@ -22,4 +23,14 @@
     <string name="cannot_open_link">Lien invalide. Impossible à ouvrir.</string>
     <string name="revenuecatui_purchase">Acheter</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">Le workflow de prévisualisation n\'a pas pu être chargé. Veuillez réessayer.</string>
+    <string name="revenuecatui_checkpoint_error_network">Connexion impossible. Vérifiez votre connexion internet et réessayez.</string>
+    <string name="revenuecatui_checkpoint_error_load">Ce contenu n\'a pas pu être chargé. Veuillez réessayer plus tard.</string>
+    <string name="revenuecatui_checkpoint_error_store">Un problème est survenu avec la boutique. Veuillez réessayer plus tard.</string>
+    <string name="revenuecatui_checkpoint_error_purchase_not_allowed">Les achats ne sont pas autorisés sur cet appareil.</string>
+    <string name="revenuecatui_checkpoint_error_product_unavailable">Ce produit n\'est pas disponible pour le moment.</string>
+    <string name="revenuecatui_checkpoint_error_already_purchased">Vous possédez déjà ce produit.</string>
+    <string name="revenuecatui_checkpoint_error_payment_pending">Votre paiement est en attente. Vous y aurez accès une fois qu\'il sera approuvé.</string>
+    <string name="revenuecatui_checkpoint_error_generic">Une erreur s\'est produite. Veuillez réessayer.</string>
+    <string name="revenuecatui_checkpoint_error_sync">Vos achats n\'ont pas pu être vérifiés. Veuillez réessayer plus tard.</string>
 </resources>

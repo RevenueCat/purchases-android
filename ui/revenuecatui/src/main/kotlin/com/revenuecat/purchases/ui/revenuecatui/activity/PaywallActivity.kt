@@ -55,6 +55,28 @@ internal class PaywallActivity : ComponentActivity() {
     companion object {
         const val ARGS_EXTRA = "paywall_args"
         const val RESULT_EXTRA = "paywall_result"
+        const val NON_SERIALIZABLE_ARGS_KEY_EXTRA = "paywall_non_serializable_args_key"
+
+        fun createResultIntent(result: PaywallResult, nonSerializableArgsKey: Int?): Intent {
+            val intent = Intent().putExtra(RESULT_EXTRA, result)
+            nonSerializableArgsKey?.let { intent.putExtra(NON_SERIALIZABLE_ARGS_KEY_EXTRA, it) }
+            return intent
+        }
+
+        // Each PaywallActivity owns its own store entry and removes it when it finishes, so the exit offer
+        // paywall gets a separate entry instead of sharing the key of the paywall that launched it.
+        fun createExitOfferArgs(currentArgs: PaywallActivityArgs, exitOffering: Offering): PaywallActivityArgs {
+            val exitOfferNonSerializableArgsKey = currentArgs.nonSerializableArgsKey
+                ?.let { PaywallActivityNonSerializableArgsStore.get(it) }
+                ?.let { PaywallActivityNonSerializableArgsStore.store(it.copy()) }
+            return currentArgs.copy(
+                offeringIdAndPresentedOfferingContext = OfferingSelection.IdAndPresentedOfferingContext(
+                    offeringId = exitOffering.identifier,
+                    presentedOfferingContext = null,
+                ),
+                nonSerializableArgsKey = exitOfferNonSerializableArgsKey,
+            )
+        }
     }
 
     private val exitOfferLauncher: ActivityResultLauncher<PaywallActivityArgs> =
@@ -125,6 +147,7 @@ internal class PaywallActivity : ComponentActivity() {
             finish()
             return
         }
+        setResult(RESULT_OK, createResultIntent(PaywallResult.Cancelled))
 
         val userListener = nonSerializableArgs?.listener
         val purchaseLogic = nonSerializableArgs?.purchaseLogic
@@ -262,13 +285,7 @@ internal class PaywallActivity : ComponentActivity() {
         }
         // Launch the exit offer activity on top of this one
         // When it finishes, exitOfferLauncher callback will forward its result and finish this activity
-        val exitOfferArgs = currentArgs.copy(
-            offeringIdAndPresentedOfferingContext = OfferingSelection.IdAndPresentedOfferingContext(
-                offeringId = exitOffering.identifier,
-                presentedOfferingContext = null,
-            ),
-        )
-        exitOfferLauncher.launch(exitOfferArgs)
+        exitOfferLauncher.launch(createExitOfferArgs(currentArgs, exitOffering))
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -276,7 +293,14 @@ internal class PaywallActivity : ComponentActivity() {
         super.onSaveInstanceState(outState)
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        if (isFinishing) {
+            getArgs()?.nonSerializableArgsKey?.let { PaywallActivityNonSerializableArgsStore.remove(it) }
+        }
+    }
+
     private fun createResultIntent(result: PaywallResult): Intent {
-        return Intent().putExtra(RESULT_EXTRA, result)
+        return createResultIntent(result, getArgs()?.nonSerializableArgsKey)
     }
 }

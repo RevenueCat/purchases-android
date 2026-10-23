@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">Bine</string>
+    <string name="loading">Se încarcă</string>
     <string name="all_plans">Toate abonamentele</string>
     <string name="privacy">Confidențialitate</string>
     <string name="privacy_policy">Politica de confidențialitate</string>
@@ -22,4 +23,14 @@
     <string name="cannot_open_link">Link invalid. Nu a putut fi deschis.</string>
     <string name="revenuecatui_purchase">Cumpără</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">Fluxul de lucru pentru previzualizare nu a putut fi încărcat. Încercați din nou.</string>
+    <string name="revenuecatui_checkpoint_error_network">Nu s-a putut realiza conexiunea. Verifică conexiunea la internet și încearcă din nou.</string>
+    <string name="revenuecatui_checkpoint_error_load">Acest conținut nu a putut fi încărcat. Te rugăm să încerci din nou mai târziu.</string>
+    <string name="revenuecatui_checkpoint_error_store">A apărut o problemă cu magazinul. Te rugăm să încerci din nou mai târziu.</string>
+    <string name="revenuecatui_checkpoint_error_purchase_not_allowed">Achizițiile nu sunt permise pe acest dispozitiv.</string>
+    <string name="revenuecatui_checkpoint_error_product_unavailable">Acest produs nu este disponibil momentan.</string>
+    <string name="revenuecatui_checkpoint_error_already_purchased">Deții deja acest produs.</string>
+    <string name="revenuecatui_checkpoint_error_payment_pending">Plata ta este în așteptare. Vei avea acces după ce va fi aprobată.</string>
+    <string name="revenuecatui_checkpoint_error_generic">Ceva nu a funcționat. Te rugăm să încerci din nou.</string>
+    <string name="revenuecatui_checkpoint_error_sync">Achizițiile tale nu au putut fi verificate. Te rugăm să încerci din nou mai târziu.</string>
 </resources>

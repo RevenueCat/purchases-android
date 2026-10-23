@@ -109,7 +109,7 @@ class WorkflowEventTest {
     }
 
     @Test
-    fun `every workflow event copies the step experiment data into backend properties`() {
+    fun `every workflow event copies the step experiment data, blob ref and fallback id into backend properties`() {
         val creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date())
         val events = listOf(
             WorkflowEvent.StepStarted(
@@ -117,10 +117,11 @@ class WorkflowEventTest {
                 workflowId = "wfl_abc",
                 stepId = "step-1",
                 traceId = "trace",
+                workflowBlobRef = "blob-ref-1",
+                fallbackOriginalStepId = "step-0",
                 experiment = WorkflowEvent.ExperimentData(
                     experimentId = "exp_abc",
                     experimentVariant = "b",
-                    workflowBlobRef = "blob-ref-1",
                 ),
             ),
             WorkflowEvent.StepCompleted(
@@ -128,10 +129,11 @@ class WorkflowEventTest {
                 workflowId = "wfl_abc",
                 stepId = "step-1",
                 traceId = "trace",
+                workflowBlobRef = "blob-ref-1",
+                fallbackOriginalStepId = "step-0",
                 experiment = WorkflowEvent.ExperimentData(
                     experimentId = "exp_abc",
                     experimentVariant = "b",
-                    workflowBlobRef = "blob-ref-1",
                 ),
             ),
             WorkflowEvent.Close(
@@ -139,10 +141,11 @@ class WorkflowEventTest {
                 workflowId = "wfl_abc",
                 stepId = "step-1",
                 traceId = "trace",
+                workflowBlobRef = "blob-ref-1",
+                fallbackOriginalStepId = "step-0",
                 experiment = WorkflowEvent.ExperimentData(
                     experimentId = "exp_abc",
                     experimentVariant = "b",
-                    workflowBlobRef = "blob-ref-1",
                 ),
             ),
         )
@@ -152,7 +155,24 @@ class WorkflowEventTest {
             assertThat(properties.experimentId).`as`(event::class.simpleName).isEqualTo("exp_abc")
             assertThat(properties.experimentVariant).`as`(event::class.simpleName).isEqualTo("b")
             assertThat(properties.workflowBlobRef).`as`(event::class.simpleName).isEqualTo("blob-ref-1")
+            assertThat(properties.fallbackOriginalStepId).`as`(event::class.simpleName).isEqualTo("step-0")
         }
+    }
+
+    @Test
+    fun `blob ref is copied without experiment data`() {
+        val event = WorkflowEvent.StepStarted(
+            creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
+            workflowId = "wfl_abc",
+            stepId = "step-1",
+            traceId = "trace",
+            workflowBlobRef = "blob-ref-1",
+        )
+
+        val properties = (event.toBackendStoredEvent("user_42") as BackendStoredEvent.Workflows).event.properties
+        assertThat(properties.workflowBlobRef).isEqualTo("blob-ref-1")
+        assertThat(properties.experimentId).isNull()
+        assertThat(properties.fallbackOriginalStepId).isNull()
     }
 
     @Test

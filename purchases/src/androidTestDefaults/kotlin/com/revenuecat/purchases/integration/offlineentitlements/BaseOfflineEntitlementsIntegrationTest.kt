@@ -3,11 +3,15 @@ package com.revenuecat.purchases.integration.offlineentitlements
 import com.revenuecat.purchases.BasePurchasesIntegrationTest
 import com.revenuecat.purchases.Constants
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.common.localrules.CustomerInfoDimensionProvider
+import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.factories.StoreTransactionFactory
 import com.revenuecat.purchases.models.StoreTransaction
 import io.mockk.every
+import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions
+import java.util.Date
 
 abstract class BaseOfflineEntitlementsIntegrationTest : BasePurchasesIntegrationTest() {
 
@@ -30,6 +34,18 @@ abstract class BaseOfflineEntitlementsIntegrationTest : BasePurchasesIntegration
         } answers {
             mockActivePurchases(activePurchases)
             latestPurchasesUpdatedListener!!.onPurchasesUpdated(activePurchases.values.toList())
+        }
+    }
+
+    protected fun localRulesPurchases(customerInfo: CustomerInfo): Map<String, Map<String, RulesDimensionValue>> {
+        val provider = CustomerInfoDimensionProvider(
+            currentAppUserId = { customerInfo.originalAppUserId },
+            customerInfo = { customerInfo },
+        )
+        val dimensions = runBlocking { provider.dimensions(Date()) }
+        val purchases = dimensions[CustomerInfoDimensionProvider.KEY_PURCHASES] as RulesDimensionValue.ObjectListValue
+        return purchases.value.associateBy { purchase ->
+            (purchase[CustomerInfoDimensionProvider.KEY_PRODUCT_IDENTIFIER] as RulesDimensionValue.StringValue).value
         }
     }
 

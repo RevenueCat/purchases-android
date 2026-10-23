@@ -1,9 +1,10 @@
-@file:OptIn(InternalRevenueCatAPI::class)
+@file:OptIn(InviteOnlyCheckpointsAPI::class)
 
 package com.revenuecat.paywallstester.ui.screens.checkpoints
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.revenuecat.paywallstester.data.RecentCheckpointsStore
@@ -11,14 +12,18 @@ import com.revenuecat.paywallstester.ui.screens.checkpoints.CheckpointsViewModel
 import com.revenuecat.paywallstester.ui.screens.checkpoints.CheckpointsViewModel.UiState
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowResult
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 interface CheckpointsViewModel {
     data class CheckpointResultUi(
@@ -30,18 +35,40 @@ interface CheckpointsViewModel {
 
     data class UiState(
         val recents: List<String> = emptyList(),
+        val configured: List<String> = emptyList(),
         val waitingFor: String? = null,
         val lastResult: CheckpointResultUi? = null,
         val presentWithAppPaywall: Boolean = false,
+        val presentErrorsWithApp: Boolean = false,
+        val presentationMode: FlowPresentationMode = FlowPresentationMode.DEFAULT,
+        val customVariables: Map<String, CustomVariableValue> = DEFAULT_CUSTOM_VARIABLES,
     )
+
+    companion object {
+        val DEFAULT_CUSTOM_VARIABLES: Map<String, CustomVariableValue> = mapOf(
+            "source" to CustomVariableValue.String("paywall-tester"),
+        )
+    }
 
     val state: StateFlow<UiState>
 
     val paywallRequest: StateFlow<AppPaywallPresenter.Request?>
 
+    val errorRequest: StateFlow<AppErrorPresenter.Request?>
+
     fun hit(identifier: String)
 
+    fun refreshConfigured()
+
     fun setPresentWithAppPaywall(enabled: Boolean)
+
+    fun setPresentErrorsWithApp(enabled: Boolean)
+
+    fun setPresentationMode(mode: FlowPresentationMode)
+
+    fun saveCustomVariable(previousName: String?, name: String, value: CustomVariableValue)
+
+    fun removeCustomVariable(name: String)
 }
 
 internal class CheckpointsViewModelImpl(
@@ -67,6 +94,11 @@ internal class CheckpointsViewModelImpl(
     override val paywallRequest: StateFlow<AppPaywallPresenter.Request?>
         get() = appPaywallPresenter.request
 
+    private val appErrorPresenter = AppErrorPresenter()
+
+    override val errorRequest: StateFlow<AppErrorPresenter.Request?>
+        get() = appErrorPresenter.request
+
     // Never blocks on the previous callback: the SDK skips it when the user backs out of a paywall or when another
     // checkpoint flow is already on screen, so waiting for it would leave the screen stuck.
     override fun hit(identifier: String) {
@@ -75,16 +107,49 @@ internal class CheckpointsViewModelImpl(
         val updatedRecents = recentCheckpointsStore.recordUse(checkpointIdentifier)
         _state.update { it.copy(recents = updatedRecents, waitingFor = checkpointIdentifier) }
         val params = CheckpointParams {
-            customVariables { "source" to "paywall-tester" }
+            setCustomVariables(_state.value.customVariables)
             if (_state.value.presentWithAppPaywall) paywallPresenter(appPaywallPresenter)
+            if (_state.value.presentErrorsWithApp) errorPresenter(appErrorPresenter)
+            presentationMode(_state.value.presentationMode)
         }
         Purchases.sharedInstance.checkpoint(checkpointIdentifier, params) { result ->
             _state.update { it.copy(waitingFor = null, lastResult = result.toUi()) }
         }
     }
 
+    @OptIn(InternalRevenueCatAPI::class)
+    override fun refreshConfigured() {
+        viewModelScope.launch {
+            val configured = Purchases.sharedInstance.awaitGetCheckpointIds()
+            _state.update { it.copy(configured = configured) }
+        }
+    }
+
     override fun setPresentWithAppPaywall(enabled: Boolean) {
         _state.update { it.copy(presentWithAppPaywall = enabled) }
+    }
+
+    override fun setPresentErrorsWithApp(enabled: Boolean) {
+        _state.update { it.copy(presentErrorsWithApp = enabled) }
+    }
+
+    override fun setPresentationMode(mode: FlowPresentationMode) {
+        _state.update { it.copy(presentationMode = mode) }
+    }
+
+    override fun saveCustomVariable(previousName: String?, name: String, value: CustomVariableValue) {
+        _state.update { state ->
+            val variables = if (previousName != null && previousName != name) {
+                state.customVariables - previousName
+            } else {
+                state.customVariables
+            }
+            state.copy(customVariables = variables + (name to value))
+        }
+    }
+
+    override fun removeCustomVariable(name: String) {
+        _state.update { it.copy(customVariables = it.customVariables - name) }
     }
 
     private fun onAppPaywallFinished(result: PaywallPresenter.Completion.Result) {
@@ -103,23 +168,26 @@ internal class CheckpointsViewModelImpl(
     }
 
     // Why nothing was presented, and any failure, are in the SDK logs.
-    private fun FlowResult?.toUi(): CheckpointResultUi = if (this == null) {
-        CheckpointResultUi(
+    private fun CheckpointResult.toUi(): CheckpointResultUi {
+        val activeNow = "Active now: ${customer.entitlements.active.keys.joinToString().ifEmpty { "none" }}"
+        val raw = "flow=$flow, originalAppUserId=${customer.originalAppUserId}"
+        val flow = flow ?: return CheckpointResultUi(
             title = "Nothing presented",
-            detail = "See the logs for the reason.",
+            detail = "See the logs for the reason. $activeNow",
             isError = false,
-            raw = "null",
+            raw = raw,
         )
-    } else {
-        CheckpointResultUi(
+        return CheckpointResultUi(
             title = "Flow presented",
-            detail = if (obtainedEntitlements.isNotEmpty()) {
-                "Obtained ${obtainedEntitlements.joinToString { it.entitlementInfo.identifier }}"
+            detail = if (flow.obtainedEntitlements.isNotEmpty() || flow.obtainedProducts.isNotEmpty()) {
+                val entitlements = flow.obtainedEntitlements.joinToString { it.entitlementInfo.identifier }
+                val products = flow.obtainedProducts.joinToString { it.product.purchasingData.productId }
+                "Obtained entitlements: $entitlements, products: $products. $activeNow"
             } else {
-                "Nothing obtained"
+                "Nothing obtained. $activeNow"
             },
             isError = false,
-            raw = toString(),
+            raw = raw,
         )
     }
 }

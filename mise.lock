@@ -29,32 +29,32 @@ checksum = "sha1:e78e899e7a6449751c5431d53a9cb9ed001da90d"
 url = "https://github.com/bell-sw/Liberica/releases/download/17.0.6%2B10/bellsoft-jdk17.0.6%2B10-macos-amd64.tar.gz"
 
 [[tools.java]]
-version = "liberica-21.0.6+10"
+version = "liberica-21.0.12.1+1"
 backend = "core:java"
 
 [tools.java."platforms.linux-arm64"]
-checksum = "sha1:32b10a97672c3b0066837deaf430dd7b52618f69"
-url = "https://github.com/bell-sw/Liberica/releases/download/21.0.6%2B10/bellsoft-jdk21.0.6%2B10-linux-aarch64.tar.gz"
+checksum = "sha1:75c94bdf89d51c3a7e7836f25bf1f64a903bd3b3"
+url = "https://github.com/bell-sw/Liberica/releases/download/21.0.12.1%2B1/bellsoft-jdk21.0.12.1%2B1-linux-aarch64.tar.gz"
 
 [tools.java."platforms.linux-arm64-musl"]
-checksum = "sha1:db8bae96efe9802bd6dada15513ba087029bcb12"
-url = "https://github.com/bell-sw/Liberica/releases/download/21.0.6%2B10/bellsoft-jdk21.0.6%2B10-linux-aarch64-musl.tar.gz"
+checksum = "sha1:ae157f3935472d33fff3dbf35b96c620ffad7e18"
+url = "https://github.com/bell-sw/Liberica/releases/download/21.0.12.1%2B1/bellsoft-jdk21.0.12.1%2B1-linux-aarch64-musl.tar.gz"
 
 [tools.java."platforms.linux-x64"]
-checksum = "sha1:854e27442efaf515c9f15dbc7f4382c7a18be48b"
-url = "https://github.com/bell-sw/Liberica/releases/download/21.0.6%2B10/bellsoft-jdk21.0.6%2B10-linux-amd64.tar.gz"
+checksum = "sha1:351b0fc7ff5f7a0d250b2fc9c4c860ec3662d4de"
+url = "https://github.com/bell-sw/Liberica/releases/download/21.0.12.1%2B1/bellsoft-jdk21.0.12.1%2B1-linux-amd64.tar.gz"
 
 [tools.java."platforms.linux-x64-musl"]
-checksum = "sha1:eb2a65dc0d5f3e763e3ee5f072f247d00c2b859e"
-url = "https://github.com/bell-sw/Liberica/releases/download/21.0.6%2B10/bellsoft-jdk21.0.6%2B10-linux-x64-musl.tar.gz"
+checksum = "sha1:55c18449c581274ec34f7fdeca976ebf12342562"
+url = "https://github.com/bell-sw/Liberica/releases/download/21.0.12.1%2B1/bellsoft-jdk21.0.12.1%2B1-linux-x64-musl.tar.gz"
 
 [tools.java."platforms.macos-arm64"]
-checksum = "sha1:347d99da2efef158ce1c02c871737ef3254d1701"
-url = "https://github.com/bell-sw/Liberica/releases/download/21.0.6%2B10/bellsoft-jdk21.0.6%2B10-macos-aarch64.tar.gz"
+checksum = "sha1:ed60f307d2fcf14575eef97bdabfb8534d2d3cdd"
+url = "https://github.com/bell-sw/Liberica/releases/download/21.0.12.1%2B1/bellsoft-jdk21.0.12.1%2B1-macos-aarch64.tar.gz"
 
 [tools.java."platforms.macos-x64"]
-checksum = "sha1:1018e317ae83cf72221f8ded2ab213347802cb5c"
-url = "https://github.com/bell-sw/Liberica/releases/download/21.0.6%2B10/bellsoft-jdk21.0.6%2B10-macos-amd64.tar.gz"
+checksum = "sha1:c537a7716f7712943b88a5aa0f32af7e9390a02b"
+url = "https://github.com/bell-sw/Liberica/releases/download/21.0.12.1%2B1/bellsoft-jdk21.0.12.1%2B1-macos-amd64.tar.gz"
 
 [[tools.ruby]]
 version = "3.3.0"

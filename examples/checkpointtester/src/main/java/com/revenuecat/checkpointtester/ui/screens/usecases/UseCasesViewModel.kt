@@ -3,8 +3,8 @@ package com.revenuecat.checkpointtester.ui.screens.usecases
 import androidx.lifecycle.ViewModel
 import com.revenuecat.checkpointtester.checkpoints.PaywallPresenters
 import com.revenuecat.checkpointtester.checkpoints.summary
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,7 +24,7 @@ class UseCasesViewModel : ViewModel() {
     private val _state = MutableStateFlow(UiState())
     val state: StateFlow<UiState> = _state.asStateFlow()
 
-    @OptIn(InternalRevenueCatAPI::class)
+    @OptIn(InviteOnlyCheckpointsAPI::class)
     fun hit(identifier: String) {
         _state.update { it.copy(message = null) }
         Purchases.sharedInstance.checkpoint(identifier, PaywallPresenters.params()) { result ->

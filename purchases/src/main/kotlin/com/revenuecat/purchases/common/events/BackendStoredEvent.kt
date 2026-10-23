@@ -112,6 +112,7 @@ internal fun CheckpointEvent.toBackendStoredEvent(
         workflowID = workflowId,
         offeringID = offeringId,
         checkpointRuleID = checkpointRuleId,
+        traceID = traceId,
     ),
 )
 
@@ -267,6 +268,8 @@ internal fun AdEvent.toBackendStoredEvent(
     is AdEvent.RewardVerified -> toBackendStoredEvent(appUserID, appSessionID)
     is AdEvent.RewardGranted -> toBackendStoredEvent(appUserID, appSessionID)
     is AdEvent.RewardFailedToVerify -> toBackendStoredEvent(appUserID, appSessionID)
+    is AdEvent.RewardedAdPromptShown -> toBackendStoredEvent(appUserID, appSessionID)
+    is AdEvent.RewardedAdPromptAccepted -> toBackendStoredEvent(appUserID, appSessionID)
 }
 
 @OptIn(InternalRevenueCatAPI::class)
@@ -393,6 +396,54 @@ internal fun AdEvent.FailedToLoad.toBackendStoredEvent(
             appSessionID = appSessionID,
             captureMethod = captureMethod.value,
             mediatorErrorCode = mediatorErrorCode,
+        ),
+    )
+}
+
+@OptIn(InternalRevenueCatAPI::class)
+@JvmSynthetic
+internal fun AdEvent.RewardedAdPromptShown.toBackendStoredEvent(
+    appUserID: String,
+    appSessionID: String,
+): BackendStoredEvent {
+    return BackendStoredEvent.Ad(
+        BackendEvent.Ad(
+            id = id,
+            version = eventVersion,
+            type = type.value,
+            timestamp = timestamp,
+            mediatorName = mediatorName.value,
+            adFormat = adFormat.value,
+            placement = placement,
+            adUnitId = adUnitId,
+            impressionId = impressionId,
+            appUserID = appUserID,
+            appSessionID = appSessionID,
+            captureMethod = captureMethod.value,
+        ),
+    )
+}
+
+@OptIn(InternalRevenueCatAPI::class)
+@JvmSynthetic
+internal fun AdEvent.RewardedAdPromptAccepted.toBackendStoredEvent(
+    appUserID: String,
+    appSessionID: String,
+): BackendStoredEvent {
+    return BackendStoredEvent.Ad(
+        BackendEvent.Ad(
+            id = id,
+            version = eventVersion,
+            type = type.value,
+            timestamp = timestamp,
+            mediatorName = mediatorName.value,
+            adFormat = adFormat.value,
+            placement = placement,
+            adUnitId = adUnitId,
+            impressionId = impressionId,
+            appUserID = appUserID,
+            appSessionID = appSessionID,
+            captureMethod = captureMethod.value,
         ),
     )
 }
@@ -578,7 +629,8 @@ internal fun WorkflowEvent.toBackendStoredEvent(
             isLastStep = isLastStep,
             experimentId = experiment?.experimentId,
             experimentVariant = experiment?.experimentVariant,
-            workflowBlobRef = experiment?.workflowBlobRef,
+            workflowBlobRef = workflowBlobRef,
+            fallbackOriginalStepId = fallbackOriginalStepId,
         )
         is WorkflowEvent.StepCompleted -> BackendEvent.Workflows.Properties(
             workflowId = workflowId,
@@ -589,7 +641,8 @@ internal fun WorkflowEvent.toBackendStoredEvent(
             isLastStep = isLastStep,
             experimentId = experiment?.experimentId,
             experimentVariant = experiment?.experimentVariant,
-            workflowBlobRef = experiment?.workflowBlobRef,
+            workflowBlobRef = workflowBlobRef,
+            fallbackOriginalStepId = fallbackOriginalStepId,
         )
         is WorkflowEvent.Close -> BackendEvent.Workflows.Properties(
             workflowId = workflowId,
@@ -599,7 +652,8 @@ internal fun WorkflowEvent.toBackendStoredEvent(
             isLastStep = isLastStep,
             experimentId = experiment?.experimentId,
             experimentVariant = experiment?.experimentVariant,
-            workflowBlobRef = experiment?.workflowBlobRef,
+            workflowBlobRef = workflowBlobRef,
+            fallbackOriginalStepId = fallbackOriginalStepId,
         )
     }
     return BackendStoredEvent.Workflows(

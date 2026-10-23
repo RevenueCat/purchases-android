@@ -55,6 +55,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
+import com.revenuecat.purchases.ui.revenuecatui.PaywallErrorPresenter
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
@@ -63,6 +64,8 @@ import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicWithCallback
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointFailureKind
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
@@ -118,6 +121,8 @@ class PaywallViewModelTest {
     private val defaultOfferingParams =
         mapOf("offering" to JsonObject(mapOf("identifier" to JsonPrimitive(defaultOffering.identifier))))
     private val defaultLocaleIdentifier = LocaleId("en_US")
+    private val spanishLocaleIdentifier = LocaleId("es_ES")
+    private val localizedUrlKey = LocalizationKey("url")
     private val localizations = nonEmptyMapOf(
         defaultLocaleIdentifier to nonEmptyMapOf(
             LocalizationKey("dummy_text") to LocalizationData.Text("dummy text"),
@@ -137,6 +142,31 @@ class PaywallViewModelTest {
         ),
         componentsLocalizations = localizations,
         defaultLocaleIdentifier = defaultLocaleIdentifier,
+    )
+    private val localizedUrlComponentsConfig = ComponentsConfig(
+        base = PaywallComponentsConfig(
+            stack = StackComponent(
+                components = listOf(
+                    ButtonComponent(
+                        action = ButtonComponent.Action.NavigateTo(
+                            destination = ButtonComponent.Destination.Url(
+                                urlLid = localizedUrlKey,
+                                method = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
+                            ),
+                        ),
+                        stack = StackComponent(components = emptyList()),
+                    ),
+                    TestData.Components.monthlyPackageComponent,
+                ),
+            ),
+            background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+        ),
+    )
+    private val localizedUrlLocalizations = mapOf(
+        defaultLocaleIdentifier to mapOf(
+            localizedUrlKey to LocalizationData.Text("https://revenuecat.com"),
+        ),
+        spanishLocaleIdentifier to emptyMap(),
     )
 
     private lateinit var purchases: PurchasesType
@@ -867,6 +897,39 @@ class PaywallViewModelTest {
     }
 
     @Test
+    fun `locale changes revalidate the selected components localization`(): Unit = runBlocking {
+        val data = PaywallComponentsData(
+            id = "paywall_id",
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = localizedUrlComponentsConfig,
+            componentsLocalizations = localizedUrlLocalizations,
+            defaultLocaleIdentifier = defaultLocaleIdentifier,
+        )
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        )
+        var preferredLocale = "en_US"
+        every { purchases.preferredUILocaleOverride } answers { preferredLocale }
+        val model = create(offering = offering, mode = PaywallMode.FULL_SCREEN)
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+
+        preferredLocale = "es_ES"
+        model.refreshStateIfLocaleChanged()
+
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Legacy::class.java)
+
+        preferredLocale = "en_US"
+        model.refreshStateIfLocaleChanged()
+
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+    }
+
+    @Test
     fun `Should load fallback paywall if using components paywall in footer mode`(): Unit = runBlocking {
         // Arrange
         val offering = Offering(
@@ -1479,6 +1542,187 @@ class PaywallViewModelTest {
         assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
     }
 
+    // region Passed offering instance in workflows
+
+    private val modifiedTemplate2Offering = Offering(
+        identifier = TestData.template2Offering.identifier,
+        serverDescription = "modified",
+        metadata = mapOf("custom_key" to "custom_value"),
+        availablePackages = listOf(TestData.Packages.monthly),
+    )
+
+    private fun workflowForOffering(stepOfferingId: String, twoSteps: Boolean = false): PublishedWorkflow {
+        val workflowScreen = WorkflowScreen(
+            templateName = "template",
+            revision = 0,
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(TestData.Components.monthlyPackageComponent)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = defaultLocaleIdentifier,
+            offeringIdentifier = stepOfferingId,
+        )
+        val params = mapOf("offering" to JsonObject(mapOf("identifier" to JsonPrimitive(stepOfferingId))))
+        val stepOne = WorkflowStep(
+            id = "step-1",
+            type = "screen",
+            screenId = "screen-1",
+            triggers = listOf(
+                WorkflowTrigger(
+                    name = "Next",
+                    type = WorkflowTriggerType.ON_PRESS,
+                    actionId = "action-next",
+                    componentId = "btn-next",
+                ),
+            ),
+            triggerActions = mapOf("action-next" to WorkflowTriggerAction.Step(stepId = "step-2")),
+            paramValues = params,
+        )
+        val stepTwo = WorkflowStep(id = "step-2", type = "screen", screenId = "screen-1", paramValues = params)
+        return PublishedWorkflow(
+            id = "wfl-test",
+            displayName = "Test Workflow",
+            initialStepId = "step-1",
+            steps = if (twoSteps) mapOf("step-1" to stepOne, "step-2" to stepTwo) else mapOf("step-1" to stepOne),
+            screens = mapOf("screen-1" to workflowScreen),
+        )
+    }
+
+    private fun createWorkflowModel(passedOffering: Offering, workflow: PublishedWorkflow): PaywallViewModelImpl {
+        coEvery { purchases.resolveWorkflow(passedOffering.identifier) } returns WorkflowResolution.Found(workflow.id)
+        coEvery { purchases.awaitGetWorkflow(workflow.id) } returns workflow
+        return PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOffering(passedOffering)
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+        )
+    }
+
+    private fun loadedOffering(model: PaywallViewModelImpl): Offering {
+        val state = model.state.value
+        assertThat(state).isInstanceOf(PaywallState.Loaded.Components::class.java)
+        return (state as PaywallState.Loaded.Components).offering
+    }
+
+    @Test
+    fun `workflow step matching passed offering id renders the passed offering instance`() {
+        val model = createWorkflowModel(
+            passedOffering = modifiedTemplate2Offering,
+            workflow = workflowForOffering(modifiedTemplate2Offering.identifier),
+        )
+
+        val offering = loadedOffering(model)
+        assertThat(offering.identifier).isEqualTo(modifiedTemplate2Offering.identifier)
+        assertThat(offering.availablePackages.map { it.identifier })
+            .containsExactly(TestData.Packages.monthly.identifier)
+        assertThat(offering.metadata["custom_key"]).isEqualTo("custom_value")
+        assertThat(offering.paywallComponents).isNotNull
+    }
+
+    @Test
+    fun `workflow step referencing another offering id renders the fetched offering`() {
+        val model = createWorkflowModel(
+            passedOffering = modifiedTemplate2Offering,
+            workflow = workflowForOffering(TestData.template1Offering.identifier),
+        )
+
+        val offering = loadedOffering(model)
+        assertThat(offering.identifier).isEqualTo(TestData.template1Offering.identifier)
+        assertThat(offering.availablePackages).hasSize(TestData.template1Offering.availablePackages.size)
+        assertThat(offering.metadata).doesNotContainKey("custom_key")
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `workflow preserves presented offering context when rendering the passed offering instance`() {
+        val presentedOfferingContext = PresentedOfferingContext(
+            offeringIdentifier = modifiedTemplate2Offering.identifier,
+            placementIdentifier = "placement",
+            targetingContext = PresentedOfferingContext.TargetingContext(revision = 7, ruleId = "rule"),
+        )
+        val passedOffering = modifiedTemplate2Offering.copy(presentedOfferingContext)
+        val model = createWorkflowModel(
+            passedOffering = passedOffering,
+            workflow = workflowForOffering(modifiedTemplate2Offering.identifier),
+        )
+
+        val offering = loadedOffering(model)
+        assertThat(offering.availablePackages.map { it.identifier })
+            .containsExactly(TestData.Packages.monthly.identifier)
+        assertThat(offering.availablePackages.first().presentedOfferingContext.placementIdentifier)
+            .isEqualTo("placement")
+        assertThat(offering.availablePackages.first().presentedOfferingContext.targetingContext?.ruleId)
+            .isEqualTo("rule")
+    }
+
+    @Test
+    fun `later workflow step with the passed offering id also renders the passed instance`() {
+        val model = createWorkflowModel(
+            passedOffering = modifiedTemplate2Offering,
+            workflow = workflowForOffering(modifiedTemplate2Offering.identifier, twoSteps = true),
+        )
+        assertThat(model.workflowState.value?.currentStepId).isEqualTo("step-1")
+
+        model.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        assertThat(model.workflowState.value?.currentStepId).isEqualTo("step-2")
+        assertThat(loadedOffering(model).availablePackages.map { it.identifier })
+            .containsExactly(TestData.Packages.monthly.identifier)
+
+        model.refreshStateIfColorsChanged(
+            colorScheme = TestData.Constants.currentColorScheme.copy(primary = Color.Black),
+            isDark = true,
+        )
+        assertThat(model.workflowState.value?.currentStepId).isEqualTo("step-2")
+        assertThat(loadedOffering(model).availablePackages.map { it.identifier })
+            .containsExactly(TestData.Packages.monthly.identifier)
+    }
+
+    @Test
+    fun `starting a new workflow presentation without a developer provided offering drops the previous one`() {
+        val workflow = workflowForOffering(modifiedTemplate2Offering.identifier)
+        val model = createWorkflowModel(passedOffering = modifiedTemplate2Offering, workflow = workflow)
+        assertThat(loadedOffering(model).availablePackages).hasSize(1)
+
+        model.startWorkflowPresentationFromResult(workflow, offerings, presentedOfferingContext = null, UiConfig())
+
+        assertThat(loadedOffering(model).availablePackages)
+            .hasSize(TestData.template2Offering.availablePackages.size)
+    }
+
+    @Test
+    fun `exit offer matching the passed offering id resolves to the passed instance`() {
+        val baseWorkflow = workflowForOffering(modifiedTemplate2Offering.identifier)
+        val workflow = baseWorkflow.copy(
+            singleStepFallbackId = "step-1",
+            screens = baseWorkflow.screens.mapValues { (_, screen) ->
+                screen.copy(
+                    exitOffers = ExitOffers(dismiss = ExitOffer(offeringId = modifiedTemplate2Offering.identifier)),
+                )
+            },
+        )
+        val model = createWorkflowModel(passedOffering = modifiedTemplate2Offering, workflow = workflow)
+
+        model.preloadExitOffering()
+
+        val exitOffering = model.preloadedExitOffering
+        assertThat(exitOffering?.availablePackages?.map { it.identifier })
+            .containsExactly(TestData.Packages.monthly.identifier)
+        assertThat(exitOffering?.metadata?.get("custom_key")).isEqualTo("custom_value")
+    }
+
+    // endregion
+
     @Test
     fun `refreshStateIfColorsChanged on workflow does not trigger updateState`() {
         // updateState would re-fetch the workflow and reset the navigator; this test verifies
@@ -1531,6 +1775,51 @@ class PaywallViewModelTest {
 
         coVerify(exactly = 1) { purchases.awaitGetWorkflow(any()) }
         assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+    }
+
+    @Test
+    fun `locale changes revalidate workflow localizations without refetching`() {
+        val workflowScreen = WorkflowScreen(
+            templateName = "template",
+            revision = 0,
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = localizedUrlComponentsConfig,
+            componentsLocalizations = localizedUrlLocalizations,
+            defaultLocaleIdentifier = defaultLocaleIdentifier,
+            offeringIdentifier = defaultOffering.identifier,
+        )
+        val workflow = PublishedWorkflow(
+            id = "wfl-test",
+            displayName = "Test Workflow",
+            initialStepId = "step-1",
+            steps = mapOf(
+                "step-1" to WorkflowStep(
+                    id = "step-1",
+                    type = "screen",
+                    screenId = "screen-1",
+                    paramValues = defaultOfferingParams,
+                ),
+            ),
+            screens = mapOf("screen-1" to workflowScreen),
+        )
+        var preferredLocale = "en_US"
+        every { purchases.preferredUILocaleOverride } answers { preferredLocale }
+        coEvery { purchases.resolveWorkflow(offeringWithWPL.identifier) } returns WorkflowResolution.Found("wfl-test")
+        coEvery { purchases.awaitGetWorkflow("wfl-test") } returns workflow
+        val model = create(offering = offeringWithWPL)
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+
+        preferredLocale = "es_ES"
+        model.refreshStateIfLocaleChanged()
+
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Legacy::class.java)
+        coVerify(exactly = 1) { purchases.awaitGetWorkflow(any()) }
+
+        preferredLocale = "en_US"
+        model.refreshStateIfLocaleChanged()
+
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+        coVerify(exactly = 1) { purchases.awaitGetWorkflow(any()) }
     }
 
     @Test
@@ -3604,6 +3893,287 @@ class PaywallViewModelTest {
         assertThat(model.workflowState.value).isNull()
     }
 
+    // Error presenter
+
+    @Test
+    fun `a purchase error is handed to the error presenter instead of the dialog`() {
+        val presenter = RecordingErrorPresenter()
+        val model = create(errorPresenter = presenter)
+        val expectedError = PurchasesError(PurchasesErrorCode.ProductNotAvailableForPurchaseError)
+
+        failPurchase(model, expectedError)
+
+        assertThat(presenter.errors).containsExactly(expectedError)
+        assertThat(presenter.kinds).containsExactly(CheckpointFailureKind.FLOW_ACTION_FAILED)
+        assertThat(model.actionError.value).isNull()
+        assertThat(dismissInvoked).isFalse
+        verify(exactly = 1) { listener.onPurchaseError(expectedError) }
+    }
+
+    @Test
+    fun `a cancellation reported as an error by the app's purchase logic never reaches the error presenter`() =
+        runTest {
+            every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+            val customPurchaseCalled = MutableStateFlow(false)
+            val presenter = RecordingErrorPresenter()
+            val model = create(
+                customPurchaseLogic = TestAppPurchaseLogicWithCallbacks(
+                    customPurchaseCalled,
+                    null,
+                    PurchaseLogicResult.Error(PurchasesError(PurchasesErrorCode.PurchaseCancelledError)),
+                    null,
+                ),
+                errorPresenter = presenter,
+            )
+
+            model.purchaseSelectedPackage(activity)
+            customPurchaseCalled.first { it }
+
+            assertThat(presenter.errors).isEmpty()
+            assertThat(model.actionError.value).isNull()
+            assertThat(dismissInvoked).isFalse
+        }
+
+    @Test
+    fun `a restore error is handed to the error presenter as a restore`() {
+        val presenter = RecordingErrorPresenter()
+        val model = create(errorPresenter = presenter)
+        val expectedError = PurchasesError(PurchasesErrorCode.NetworkError)
+        coEvery { purchases.awaitRestore() } throws PurchasesException(expectedError)
+
+        model.restorePurchases()
+
+        assertThat(presenter.errors).containsExactly(expectedError)
+        assertThat(presenter.kinds).containsExactly(CheckpointFailureKind.FLOW_ACTION_FAILED)
+        assertThat(model.actionError.value).isNull()
+    }
+
+    @Test
+    fun `completing after a purchase error keeps the paywall where it was`() {
+        val presenter = RecordingErrorPresenter()
+        val model = create(errorPresenter = presenter)
+        failPurchase(model)
+
+        presenter.complete()
+
+        assertThat(dismissInvoked).isFalse
+        assertThat(model.actionError.value).isNull()
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Legacy::class.java)
+    }
+
+    @Test
+    fun `a throwing error presenter falls back to the dialog`() {
+        val model = create(errorPresenter = { _, _, _ -> error("Simulated.") })
+        val expectedError = PurchasesError(PurchasesErrorCode.ProductNotAvailableForPurchaseError)
+
+        failPurchase(model, expectedError)
+
+        assertThat(model.actionError.value).isEqualTo(expectedError)
+        assertThat(dismissInvoked).isFalse
+    }
+
+    @Test
+    fun `a loading error is handed to the error presenter as an error before the flow`() {
+        coEvery { purchases.awaitOfferings() } throws PurchasesException(PurchasesError(PurchasesErrorCode.NetworkError))
+        val presenter = RecordingErrorPresenter()
+
+        val model = create(errorPresenter = presenter)
+
+        assertThat(model.state.value).isInstanceOf(PaywallState.Error::class.java)
+        assertThat(presenter.errors.single().code).isEqualTo(PurchasesErrorCode.NetworkError)
+        assertThat(presenter.kinds).containsExactly(CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN)
+        assertThat(dismissInvoked).isFalse
+    }
+
+    @Test
+    fun `completing after a loading error closes the paywall with the error`() {
+        coEvery { purchases.awaitOfferings() } throws PurchasesException(PurchasesError(PurchasesErrorCode.NetworkError))
+        val presenter = RecordingErrorPresenter()
+        val dismissals = mutableListOf<Pair<PaywallResult?, PaywallDismissReason>>()
+        create(
+            errorPresenter = presenter,
+            dismissRequestWithExitOffering = { _, result, reason -> dismissals += result to reason },
+        )
+
+        presenter.complete()
+
+        val (result, reason) = dismissals.single()
+        assertThat((result as PaywallResult.Error).error.code).isEqualTo(PurchasesErrorCode.NetworkError)
+        assertThat(reason).isEqualTo(PaywallDismissReason.CLOSE)
+    }
+
+    @Test
+    fun `only the error presenter's first completion counts`() {
+        coEvery { purchases.awaitOfferings() } throws PurchasesException(PurchasesError(PurchasesErrorCode.NetworkError))
+        val presenter = RecordingErrorPresenter()
+        var dismissals = 0
+        create(errorPresenter = presenter, dismissRequest = { dismissals++ })
+
+        presenter.complete()
+        presenter.complete()
+
+        assertThat(dismissals).isEqualTo(1)
+    }
+
+    @Test
+    fun `an error presenter completion after the paywall closed some other way is ignored`() {
+        coEvery { purchases.awaitOfferings() } throws PurchasesException(PurchasesError(PurchasesErrorCode.NetworkError))
+        val presenter = RecordingErrorPresenter()
+        var dismissals = 0
+        val model = create(errorPresenter = presenter, dismissRequest = { dismissals++ })
+        model.closePaywall()
+        assertThat(dismissals).isEqualTo(1)
+
+        presenter.complete()
+
+        assertThat(dismissals).isEqualTo(1)
+    }
+
+    @Test
+    fun `an error presenter completion is ignored once the paywall recovered from the error`() {
+        coEvery { purchases.awaitOfferings() } throws PurchasesException(PurchasesError(PurchasesErrorCode.NetworkError))
+        val presenter = RecordingErrorPresenter()
+        val model = create(errorPresenter = presenter)
+        assertThat(model.state.value).isInstanceOf(PaywallState.Error::class.java)
+        coEvery { purchases.awaitOfferings() } returns offerings
+        model.updateOptions(
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setMode(PaywallMode.FOOTER)
+                .setErrorPresenter(presenter)
+                .build(),
+        )
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded::class.java)
+
+        presenter.complete()
+
+        assertThat(dismissInvoked).isFalse
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded::class.java)
+    }
+
+    @Test
+    fun `a throwing error presenter closes a paywall that failed to load`() {
+        coEvery { purchases.awaitOfferings() } throws PurchasesException(PurchasesError(PurchasesErrorCode.NetworkError))
+        val dismissals = mutableListOf<Pair<PaywallResult?, PaywallDismissReason>>()
+
+        create(
+            errorPresenter = { _, _, _ -> error("Simulated.") },
+            dismissRequestWithExitOffering = { _, result, reason -> dismissals += result to reason },
+        )
+
+        val (result, reason) = dismissals.single()
+        assertThat(result).isInstanceOf(PaywallResult.Error::class.java)
+        assertThat(reason).isEqualTo(PaywallDismissReason.CLOSE)
+    }
+
+    @Test
+    fun `a completion made before the error presenter throws is dropped and the dialog takes over`() {
+        var dismissals = 0
+        val model = create(
+            errorPresenter = { _, _, completion ->
+                completion.complete()
+                error("Simulated.")
+            },
+            dismissRequest = { dismissals++ },
+        )
+        val expectedError = PurchasesError(PurchasesErrorCode.ProductNotAvailableForPurchaseError)
+
+        failPurchase(model, expectedError)
+
+        assertThat(dismissals).isEqualTo(0)
+        assertThat(model.actionError.value).isEqualTo(expectedError)
+    }
+
+    @Test
+    fun `an error presenter completion from a previous presentation is ignored`() {
+        coEvery { purchases.awaitOfferings() } throws PurchasesException(PurchasesError(PurchasesErrorCode.NetworkError))
+        val presenter = RecordingErrorPresenter()
+        var dismissals = 0
+        val model = create(errorPresenter = presenter, dismissRequest = { dismissals++ })
+        model.closePaywall()
+        coEvery { purchases.awaitOfferings() } returns offerings
+        model.onPaywallPresented()
+        assertThat(dismissals).isEqualTo(1)
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded::class.java)
+
+        presenter.complete()
+
+        assertThat(dismissals).isEqualTo(1)
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded::class.java)
+    }
+
+    @Test
+    fun `an error presenter completion for an error that a newer error replaced is ignored`() {
+        coEvery { purchases.awaitOfferings() } throws PurchasesException(PurchasesError(PurchasesErrorCode.NetworkError))
+        val presenter = RecordingErrorPresenter()
+        var dismissals = 0
+        val model = create(errorPresenter = presenter, dismissRequest = { dismissals++ })
+        coEvery { purchases.awaitOfferings() } throws PurchasesException(PurchasesError(PurchasesErrorCode.StoreProblemError))
+        model.updateOptions(
+            PaywallOptions.Builder(dismissRequest = { dismissals++ })
+                .setListener(listener)
+                .setMode(PaywallMode.FOOTER)
+                .setErrorPresenter(presenter)
+                .build(),
+        )
+        assertThat(presenter.errors.map { it.code })
+            .containsExactly(PurchasesErrorCode.NetworkError, PurchasesErrorCode.StoreProblemError)
+
+        presenter.complete(index = 0)
+        assertThat(dismissals).isEqualTo(0)
+
+        presenter.complete(index = 1)
+        assertThat(dismissals).isEqualTo(1)
+    }
+
+    @Test
+    fun `a cancellation reported as an error by the app's purchase logic is tracked but not shown`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+        val customPurchaseCalled = MutableStateFlow(false)
+        val model = create(
+            customPurchaseLogic = TestAppPurchaseLogicWithCallbacks(
+                customPurchaseCalled,
+                null,
+                PurchaseLogicResult.Error(PurchasesError(PurchasesErrorCode.PurchaseCancelledError)),
+                null,
+            ),
+        )
+        model.trackPaywallImpressionIfNeeded()
+
+        model.purchaseSelectedPackage(activity)
+        customPurchaseCalled.first { it }
+
+        assertThat(model.actionError.value).isNull()
+        assertThat(dismissInvoked).isFalse
+        verifyEventTracked(PaywallEventType.PURCHASE_ERROR, 1)
+    }
+
+    private class RecordingErrorPresenter : PaywallErrorPresenter {
+        val errors = mutableListOf<PurchasesError>()
+        val kinds = mutableListOf<CheckpointFailureKind>()
+        private val completions = mutableListOf<ErrorPresenter.Completion>()
+
+        override fun present(
+            error: PurchasesError,
+            kind: CheckpointFailureKind,
+            completion: ErrorPresenter.Completion,
+        ) {
+            errors += error
+            kinds += kind
+            completions += completion
+        }
+
+        fun complete(index: Int = completions.lastIndex) = completions[index].complete()
+    }
+
+    private fun failPurchase(
+        model: PaywallViewModelImpl,
+        error: PurchasesError = PurchasesError(PurchasesErrorCode.ProductNotAvailableForPurchaseError),
+    ) {
+        coEvery { purchases.awaitPurchase(any()) } throws PurchasesException(error)
+        model.purchaseSelectedPackage(activity)
+    }
+
     /** A loaded components paywall with the monthly package selected. */
     private fun createComponentsModel(): PaywallViewModelImpl {
         val offeringId = "offering-id"
@@ -3629,6 +4199,7 @@ class PaywallViewModelTest {
         mode: PaywallMode = PaywallMode.default,
         dismissRequestWithExitOffering: ((Offering?, PaywallResult?, PaywallDismissReason) -> Unit)? = null,
         dismissRequest: () -> Unit = { dismissInvoked = true },
+        errorPresenter: PaywallErrorPresenter? = null,
         shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null,
     ): PaywallViewModelImpl {
         val builder = PaywallOptions.Builder(dismissRequest = dismissRequest)
@@ -3636,6 +4207,7 @@ class PaywallViewModelTest {
             .setOffering(offering)
             .setPurchaseLogic(customPurchaseLogic)
             .setMode(mode)
+            .setErrorPresenter(errorPresenter)
         dismissRequestWithExitOffering?.let {
             builder.setDismissRequestWithExitOffering(it)
         }

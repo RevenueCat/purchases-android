@@ -119,4 +119,41 @@ class HideInternalRevenueCatAPIPluginTest: BaseAbstractTest() {
         }
     }
 
+    @Test
+    fun `Should hide functions annotated with InviteOnlyCheckpointsAPI`() {
+        val configuration = dokkaConfiguration {
+            sourceSets {
+                sourceSet {
+                    sourceRoots = listOf("src/main/kotlin/basic/Test.kt")
+                }
+            }
+        }
+        val hideInternalPlugin = HideInternalRevenueCatAPIPlugin()
+
+        testInline(
+            """
+            |/src/main/kotlin/basic/Test.kt
+            |package com.revenuecat.purchases.ui.revenuecatui
+            |
+            |annotation class InviteOnlyCheckpointsAPI
+            |
+            |fun shouldBeVisible() {}
+            |
+            |@InviteOnlyCheckpointsAPI
+            |fun shouldBeExcludedFromDocumentation() {}
+        """.trimMargin(),
+            configuration = configuration,
+            pluginOverrides = listOf(hideInternalPlugin)
+        ) {
+            preMergeDocumentablesTransformationStage = { modules ->
+                val testModule = modules.single { it.name == "root" }
+                val testPackage = testModule.packages.single { it.name == "com.revenuecat.purchases.ui.revenuecatui" }
+
+                val packageFunctions = testPackage.functions
+                assertEquals(expected = 1, actual = packageFunctions.size)
+                assertEquals(expected = "shouldBeVisible", actual = packageFunctions[0].name)
+            }
+        }
+    }
+
 }

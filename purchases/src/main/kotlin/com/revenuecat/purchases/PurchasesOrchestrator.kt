@@ -61,18 +61,31 @@ import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
+import com.revenuecat.purchases.common.sdksettings.SdkSettings
+import com.revenuecat.purchases.common.sdksettings.SdkSettingsConfigProvider
+import com.revenuecat.purchases.common.sdksettings.SdkSettingsListener
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
+import com.revenuecat.purchases.common.subscriberdimensions.SubscriberDimensionsConfigProvider
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.warnLog
+import com.revenuecat.purchases.common.workflows.BranchResolver
+import com.revenuecat.purchases.common.workflows.BranchResolverImpl
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
+import com.revenuecat.purchases.common.workflows.WorkflowActionID
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.common.workflows.WorkflowResolution
+import com.revenuecat.purchases.common.workflows.WorkflowStep
+import com.revenuecat.purchases.common.workflows.WorkflowStepID
+import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.common.workflows.WorkflowsConfigProvider
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.WebPurchaseRedemptionHelper
 import com.revenuecat.purchases.google.isSuccessful
+import com.revenuecat.purchases.identity.Authentication
+import com.revenuecat.purchases.identity.AuthenticationReporter
+import com.revenuecat.purchases.identity.Identity
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
@@ -187,6 +200,10 @@ internal class PurchasesOrchestrator(
     @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal val audiencesConfigProvider: AudiencesConfigProvider,
     @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal val sdkSettingsConfigProvider: SdkSettingsConfigProvider,
+    @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal val subscriberDimensionsConfigProvider: SubscriberDimensionsConfigProvider,
+    @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal val tokenManager: TokenManager,
     val adTracker: AdTracker = AdTracker(adEventsManager),
     private val currentActivityTracker: CurrentActivityTracker = CurrentActivityTracker(),
@@ -203,7 +220,14 @@ internal class PurchasesOrchestrator(
         localRulesEvaluator = localRulesEvaluator,
         getOfferings = { Purchases.sharedInstance.awaitOfferings() },
     ),
-) : LifecycleDelegate, CustomActivityLifecycleHandler {
+    @OptIn(InternalRevenueCatAPI::class)
+    // With remote config off there is no audiences topic to read, so every branch takes its
+    // fallback through the provider. No separate resolver is needed for that.
+    private val branchResolver: BranchResolver = BranchResolverImpl(
+        audiencesConfigProvider = audiencesConfigProvider,
+        localRulesEvaluator = localRulesEvaluator,
+    ),
+) : LifecycleDelegate, CustomActivityLifecycleHandler, SdkSettingsListener {
 
     internal var state: PurchasesState
         get() = purchasesStateCache.purchasesState
@@ -304,17 +328,63 @@ internal class PurchasesOrchestrator(
     val preferredUILocaleOverride: String?
         get() = _preferredUILocaleOverride
 
+    // Identity-operation state, guarded by identityLock: whether a bootstrap or an explicit IAM identity change is
+    // in flight, and what waits for it, in arrival order.
+    private val identityLock = Any()
+    private var identityOperationInFlight = false
+    private val awaitingIdentity = mutableListOf<AwaitingIdentity>()
+
+    private sealed interface AwaitingIdentity {
+        class Write(val action: (bootstrapped: Boolean) -> Unit) : AwaitingIdentity
+        class Operation(val run: () -> Unit) : AwaitingIdentity
+    }
+
+    // Set while a foreground pass waits for the bootstrap, so later foregrounds don't queue another one.
+    private val foregroundPassAwaitingIdentity = AtomicBoolean(false)
+
+    private val authenticationReporter = AuthenticationReporter(
+        ::dispatch,
+        currentAppUserID = { identityManager.currentAppUserID },
+        currentAccessToken = tokenManager::currentAccessToken,
+    )
+
+    /** IAM login and logout for other RevenueCat SDKs; see [Authentication]. */
+    val authentication: Authentication by lazy {
+        Authentication(
+            authenticationReporter,
+            tokenManager,
+            currentAppUserID = { identityManager.currentAppUserID },
+            flows = object : Authentication.IdentityFlows {
+                override fun logIn(identity: Identity, callback: ReceiveCustomerInfoCallback) =
+                    this@PurchasesOrchestrator.logIn(identity, callback)
+
+                override fun logOut(callback: ReceiveCustomerInfoCallback) =
+                    this@PurchasesOrchestrator.logOut(callback)
+            },
+            customEntitlementComputation = appConfig.customEntitlementComputation,
+            mainDispatch = ::dispatch,
+        )
+    }
+
     init {
         // Initialize locale provider with the initial preferred locale override
         localeProvider.setPreferredLocaleOverride(_preferredUILocaleOverride)
 
         identityManager.configure(backingFieldAppUserID)
+        tokenManager.setTokenUpdateListener(authenticationReporter::report)
+        // At the switch itself, not after the login's follow-up: a failed CustomerInfo fetch still switched users.
+        identityManager.setIdentityChangeListener {
+            if (tokenManager.enabled) authenticationReporter.currentUserChanged()
+        }
+        sdkSettingsConfigProvider.listener = this
 
         billing.stateListener = object : BillingAbstract.StateListener {
             override fun onConnected() {
-                postPendingTransactionsHelper.syncPendingPurchaseQueue(
-                    allowSharingPlayStoreAccount,
-                )
+                // A user about to be replaced by the IAM bootstrap mustn't get these purchases; the foreground
+                // pass after the bootstrap syncs them for the new user.
+                identityManager.checkIAMLoginNeeded { needed ->
+                    if (!needed) postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
+                }
                 billing.getStorefront(
                     onSuccess = { countryCode ->
                         storefrontCountryCode = countryCode
@@ -339,6 +409,10 @@ internal class PurchasesOrchestrator(
         if (!appConfig.dangerousSettings.autoSyncPurchases) {
             log(LogIntent.WARNING) { ConfigureStrings.AUTO_SYNC_PURCHASES_DISABLED }
         }
+    }
+
+    override fun onSdkSettingsChanged(settings: SdkSettings) {
+        diagnosticsTrackerIfEnabled?.applyRemoteCollectionSetting(settings.diagnostics?.enabled)
     }
 
     /** @suppress */
@@ -370,42 +444,55 @@ internal class PurchasesOrchestrator(
         enqueue {
             if (appConfig.uiPreviewMode) return@enqueue
 
-            remoteConfigManager.refreshRemoteConfigIfStale(
+            if (!foregroundPassAwaitingIdentity.compareAndSet(false, true)) return@enqueue
+            whenIdentitySettled { bootstrapped ->
+                foregroundPassAwaitingIdentity.set(false)
+                // A successful bootstrap already fetched the new user's CustomerInfo.
+                enqueue { runForegroundWork(firstTimeInForeground, refreshCustomerInfo = !bootstrapped) }
+            }
+        }
+    }
+
+    private fun runForegroundWork(firstTimeInForeground: Boolean, refreshCustomerInfo: Boolean) {
+        remoteConfigManager.refreshRemoteConfigIfStale(
+            appInBackground = false,
+            appUserID = identityManager.currentAppUserID,
+            fetchContext = if (firstTimeInForeground) {
+                RemoteConfigFetchContext.AppStart
+            } else {
+                RemoteConfigFetchContext.Foreground
+            },
+        )
+        if (firstTimeInForeground) {
+            // After the refresh above so the resolution joins that request instead of priming its own.
+            sdkSettingsConfigProvider.ensureSettingsDelivered()
+        }
+
+        if (refreshCustomerInfo && shouldRefreshCustomerInfo(firstTimeInForeground)) {
+            log(LogIntent.DEBUG) { CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND }
+            customerInfoHelper.retrieveCustomerInfo(
+                identityManager.currentAppUserID,
+                fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
                 appInBackground = false,
-                appUserID = identityManager.currentAppUserID,
-                fetchContext = if (firstTimeInForeground) {
-                    RemoteConfigFetchContext.AppStart
-                } else {
-                    RemoteConfigFetchContext.Foreground
+                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                callback = object : ReceiveCustomerInfoCallback {
+                    override fun onReceived(customerInfo: CustomerInfo) {
+                        blockstoreHelper.storeUserIdIfNeeded(customerInfo)
+                    }
+
+                    override fun onError(error: PurchasesError) {
+                        // no-op
+                    }
                 },
             )
-
-            if (shouldRefreshCustomerInfo(firstTimeInForeground)) {
-                log(LogIntent.DEBUG) { CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND }
-                customerInfoHelper.retrieveCustomerInfo(
-                    identityManager.currentAppUserID,
-                    fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
-                    appInBackground = false,
-                    allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-                    callback = object : ReceiveCustomerInfoCallback {
-                        override fun onReceived(customerInfo: CustomerInfo) {
-                            blockstoreHelper.storeUserIdIfNeeded(customerInfo)
-                        }
-
-                        override fun onError(error: PurchasesError) {
-                            // no-op
-                        }
-                    },
-                )
-            }
-            offeringsManager.onAppForeground(identityManager.currentAppUserID)
-            postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
-            synchronizeSubscriberAttributesIfNeeded(Delay.DEFAULT)
-            offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
-            flushEvents(Delay.DEFAULT)
-            if (firstTimeInForeground && isAndroidNOrNewer()) {
-                diagnosticsSynchronizer?.syncDiagnosticsFileIfNeeded()
-            }
+        }
+        offeringsManager.onAppForeground(identityManager.currentAppUserID)
+        postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
+        synchronizeSubscriberAttributesIfNeeded(Delay.DEFAULT)
+        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
+        flushEvents(Delay.DEFAULT)
+        if (firstTimeInForeground && isAndroidNOrNewer()) {
+            diagnosticsSynchronizer?.syncDiagnosticsFileIfNeeded()
         }
     }
 
@@ -428,7 +515,7 @@ internal class PurchasesOrchestrator(
         webPurchaseRedemption: WebPurchaseRedemption,
         listener: RedeemWebPurchaseListener,
     ) {
-        webPurchaseRedemptionHelper.handleRedeemWebPurchase(webPurchaseRedemption, listener)
+        whenIdentitySettled { webPurchaseRedemptionHelper.handleRedeemWebPurchase(webPurchaseRedemption, listener) }
     }
 
     // region Public Methods
@@ -554,12 +641,14 @@ internal class PurchasesOrchestrator(
             })
             return
         }
-        syncPurchasesHelper.syncPurchases(
-            isRestore = this.allowSharingPlayStoreAccount,
-            appInBackground = this.state.appInBackground,
-            onSuccess = { listener?.onSuccess(it) },
-            onError = { listener?.onError(it) },
-        )
+        whenIdentitySettled {
+            syncPurchasesHelper.syncPurchases(
+                isRestore = this.allowSharingPlayStoreAccount,
+                appInBackground = this.state.appInBackground,
+                onSuccess = { listener?.onSuccess(it) },
+                onError = { listener?.onError(it) },
+            )
+        }
     }
 
     fun syncAmazonPurchase(
@@ -577,6 +666,20 @@ internal class PurchasesOrchestrator(
             return
         }
 
+        whenIdentitySettled {
+            postAmazonPurchase(productID, receiptID, amazonUserID, isoCurrencyCode, price, purchaseTime)
+        }
+    }
+
+    @Suppress("LongParameterList")
+    private fun postAmazonPurchase(
+        productID: String,
+        receiptID: String,
+        amazonUserID: String,
+        isoCurrencyCode: String?,
+        price: Double?,
+        purchaseTime: Long?,
+    ) {
         val appUserID = identityManager.currentAppUserID
         billing.normalizePurchaseData(
             productID,
@@ -700,6 +803,22 @@ internal class PurchasesOrchestrator(
 
     suspend fun resolveWorkflow(offeringId: String): WorkflowResolution =
         workflowManager.resolveWorkflow(offeringId)
+
+    suspend fun workflowIds(): List<String> = workflowManager.workflowIds()
+
+    suspend fun checkpointIds(): List<String> = checkpointsConfigProvider.checkpointIds()
+
+    @OptIn(InternalRevenueCatAPI::class)
+    suspend fun resolveBranches(
+        step: WorkflowStep,
+        customVariables: Map<String, RulesDimensionValue>,
+    ): Map<WorkflowActionID, WorkflowStepID> = branchResolver.resolveBranches(step, customVariables)
+
+    @OptIn(InternalRevenueCatAPI::class)
+    suspend fun resolveBranch(
+        branch: WorkflowTriggerAction.Branch,
+        customVariables: Map<String, RulesDimensionValue>,
+    ): WorkflowStepID = branchResolver.resolve(branch, customVariables)
 
     suspend fun workflowBlobRef(workflowId: String): String? =
         workflowManager.workflowBlobRef(workflowId)
@@ -825,8 +944,6 @@ internal class PurchasesOrchestrator(
         val startTime = dateProvider.now
         diagnosticsTrackerIfEnabled?.trackRestorePurchasesStarted()
 
-        val appUserID = identityManager.currentAppUserID
-
         val callbackWithTracking = if (diagnosticsTrackerIfEnabled == null) {
             callback
         } else {
@@ -851,6 +968,11 @@ internal class PurchasesOrchestrator(
             }
         }
 
+        whenIdentitySettled { restorePurchasesForCurrentUser(callbackWithTracking) }
+    }
+
+    private fun restorePurchasesForCurrentUser(callbackWithTracking: ReceiveCustomerInfoCallback) {
+        val appUserID = identityManager.currentAppUserID
         blockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded {
             billing.queryAllPurchases(
                 appUserID,
@@ -900,26 +1022,21 @@ internal class PurchasesOrchestrator(
         callback: LogInCallback? = null,
     ) {
         identityManager.currentAppUserID.takeUnless { it == newAppUserID }?.let {
-            blockstoreHelper.clearUserIdBackupIfNeeded {
-                identityManager.logIn(
-                    newAppUserID,
-                    onSuccess = { customerInfo, created ->
-                        dispatch {
-                            callback?.onReceived(customerInfo, created)
-                            customerInfoUpdateHandler.notifyListeners(customerInfo, newAppUserID)
-                        }
-                        remoteConfigManager.refreshRemoteConfig(
-                            state.appInBackground,
-                            newAppUserID,
-                            RemoteConfigFetchContext.IdentityChange,
-                        )
-                        offeringsManager.fetchAndCacheOfferings(newAppUserID, state.appInBackground)
-                        backupManager.dataChanged()
-                    },
-                    onError = { error ->
-                        dispatch { callback?.onError(error) }
-                    },
-                )
+            runIdentityOperation { finish ->
+                blockstoreHelper.clearUserIdBackupIfNeeded {
+                    identityManager.logIn(
+                        newAppUserID,
+                        onSuccess = { customerInfo, created ->
+                            dispatch { callback?.onReceived(customerInfo, created) }
+                            handleIdentityChange(customerInfo, newAppUserID)
+                            finish()
+                        },
+                        onError = { error ->
+                            dispatch { callback?.onError(error) }
+                            finish()
+                        },
+                    )
+                }
             }
         }
             ?: customerInfoHelper.retrieveCustomerInfo(
@@ -938,10 +1055,28 @@ internal class PurchasesOrchestrator(
             )
     }
 
-    fun logOut(callback: ReceiveCustomerInfoCallback? = null) {
+    /** IAM login with [identity]. Success runs the same follow-up as a login by app user ID. */
+    fun logIn(identity: Identity, callback: ReceiveCustomerInfoCallback) = runIdentityOperation { finish ->
+        identityManager.logIn(
+            identity,
+            onSuccess = { customerInfo, appUserID ->
+                dispatch { callback.onReceived(customerInfo) }
+                handleIdentityChange(customerInfo, appUserID)
+                finish()
+            },
+            onError = { error ->
+                dispatch { callback.onError(error) }
+                finish()
+            },
+        )
+    }
+
+    fun logOut(callback: ReceiveCustomerInfoCallback? = null) = runIdentityOperation { finish ->
         identityManager.logOut { error ->
             if (error != null) {
-                callback?.onError(error)
+                // IAM revoke and anonymous-login failures arrive on a background thread.
+                dispatch { callback?.onError(error) }
+                finish()
             } else {
                 synchronized(this@PurchasesOrchestrator) {
                     state = state.copy(purchaseCallbacksByProductId = Collections.emptyMap())
@@ -952,6 +1087,7 @@ internal class PurchasesOrchestrator(
                     callback,
                 )
                 backupManager.dataChanged()
+                finish()
             }
         }
     }
@@ -965,6 +1101,10 @@ internal class PurchasesOrchestrator(
         this.workflowManager.close()
         this.uiConfigProvider.close()
         this.workflowsConfigProvider.close()
+        this.checkpointsConfigProvider.close()
+        this.audiencesConfigProvider.close()
+        this.sdkSettingsConfigProvider.close()
+        this.subscriberDimensionsConfigProvider.close()
         this.tokenManager.close()
 
         billing.close()
@@ -1126,11 +1266,13 @@ internal class PurchasesOrchestrator(
     @OptIn(InternalRevenueCatAPI::class)
     fun getRewardVerificationResult(
         clientTransactionId: String,
+        adUnitId: String?,
         callback: GetRewardVerificationResultCallback,
     ) {
         backend.getRewardVerificationResult(
             appUserID = identityManager.currentAppUserID,
             clientTransactionId = clientTransactionId,
+            adUnitId = adUnitId,
             onSuccess = { callback.onReceived(it) },
             onError = { callback.onError(it) },
         )
@@ -1570,6 +1712,101 @@ internal class PurchasesOrchestrator(
         }
     }
 
+    /**
+     * Runs [action] once the current user is final, for user-scoped work that must not land on a user about to be
+     * replaced: right away when no bootstrap is needed and no identity operation is in flight, otherwise after
+     * it finishes, starting the bootstrap if needed. [action] gets whether a bootstrap just succeeded.
+     *
+     * Only for foreground or user-initiated work: it can start the bootstrap, which configure must never do.
+     */
+    private fun whenIdentitySettled(action: (bootstrapped: Boolean) -> Unit) {
+        identityManager.checkIAMLoginNeeded { neededWhenChecked ->
+            val runNow: Boolean
+            val startBootstrap: Boolean
+            synchronized(identityLock) {
+                // A bootstrap may have finished since the check; a stale "needed" would start a second one.
+                val needed = neededWhenChecked && (identityOperationInFlight || identityManager.needsIAMLogin())
+                runNow = !needed && !identityOperationInFlight
+                startBootstrap = needed && !identityOperationInFlight
+                if (!runNow) awaitingIdentity.add(AwaitingIdentity.Write(action))
+                if (startBootstrap) identityOperationInFlight = true
+            }
+            when {
+                runNow -> action(false)
+                startBootstrap -> logInThroughIAM()
+            }
+        }
+    }
+
+    // Silent bootstrap: an anonymous user without tokens gets them. Started only through whenIdentitySettled.
+    private fun logInThroughIAM() {
+        identityManager.logIn(
+            Identity.anonymous,
+            onSuccess = { customerInfo, appUserID ->
+                handleIdentityChange(customerInfo, appUserID)
+                finishIdentityOperation(bootstrapped = true)
+            },
+            onError = { error ->
+                errorLog(error)
+                // Nobody asked for this login, so the delegate is the only one who can hear it failed. A result
+                // dropped because the identity changed meanwhile isn't an authentication failure.
+                if (!IdentityManager.isIdentityChangedError(error)) {
+                    authenticationReporter.reportError(error)
+                }
+                finishIdentityOperation(bootstrapped = false)
+            },
+        )
+    }
+
+    /**
+     * Runs an explicit IAM identity change in turn with the bootstrap and other identity changes, so user-scoped
+     * writes never land on the user it replaces: [operation] starts once nothing else is in flight, and calls
+     * `finish` when its switch is done. With IAM disabled it just runs, as identity changes always have.
+     */
+    private fun runIdentityOperation(operation: (finish: () -> Unit) -> Unit) {
+        if (!tokenManager.enabled) {
+            operation {}
+            return
+        }
+        val start = { operation { finishIdentityOperation(bootstrapped = false) } }
+        val runNow = synchronized(identityLock) {
+            if (identityOperationInFlight) awaitingIdentity.add(AwaitingIdentity.Operation(start))
+            (!identityOperationInFlight).also { if (it) identityOperationInFlight = true }
+        }
+        if (runNow) start()
+    }
+
+    // Releases waiting work in arrival order, up to the next identity operation, which then starts. A failed
+    // bootstrap still releases it; that work then runs for the local anonymous user.
+    private fun finishIdentityOperation(bootstrapped: Boolean) {
+        val writes = mutableListOf<AwaitingIdentity.Write>()
+        val next = synchronized(identityLock) {
+            identityOperationInFlight = false
+            var operation: AwaitingIdentity.Operation? = null
+            while (operation == null && awaitingIdentity.isNotEmpty()) {
+                when (val waiting = awaitingIdentity.removeAt(0)) {
+                    is AwaitingIdentity.Write -> writes.add(waiting)
+                    is AwaitingIdentity.Operation -> operation = waiting
+                }
+            }
+            operation?.also { identityOperationInFlight = true }
+        }
+        writes.forEach { it.action(bootstrapped) }
+        next?.run?.invoke()
+    }
+
+    // Everything a login does after IdentityManager has switched users and fetched their CustomerInfo.
+    private fun handleIdentityChange(customerInfo: CustomerInfo, appUserID: String) {
+        dispatch { customerInfoUpdateHandler.notifyListeners(customerInfo, appUserID) }
+        remoteConfigManager.refreshRemoteConfig(
+            state.appInBackground,
+            appUserID,
+            RemoteConfigFetchContext.IdentityChange,
+        )
+        offeringsManager.fetchAndCacheOfferings(appUserID, state.appInBackground)
+        backupManager.dataChanged()
+    }
+
     private fun updateAllCaches(
         appUserID: String,
         fetchContext: RemoteConfigFetchContext,
@@ -1635,15 +1872,18 @@ internal class PurchasesOrchestrator(
                     }
                 }
 
-                postTransactionWithProductDetailsHelper.postTransactions(
-                    purchases,
-                    allowSharingPlayStoreAccount,
-                    appUserID,
-                    PostReceiptInitiationSource.PURCHASE,
-                    sdkOriginated = sdkOriginated,
-                    transactionPostSuccess = callbackPair.first,
-                    transactionPostError = callbackPair.second,
-                )
+                // appUserID is read once the identity has settled, not before.
+                whenIdentitySettled {
+                    postTransactionWithProductDetailsHelper.postTransactions(
+                        purchases,
+                        allowSharingPlayStoreAccount,
+                        appUserID,
+                        PostReceiptInitiationSource.PURCHASE,
+                        sdkOriginated = sdkOriginated,
+                        transactionPostSuccess = callbackPair.first,
+                        transactionPostError = callbackPair.second,
+                    )
+                }
 
                 // Synchronize paywall events after a new purchase
                 flushEvents(Delay.NONE)

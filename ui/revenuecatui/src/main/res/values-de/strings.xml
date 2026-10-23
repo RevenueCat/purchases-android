@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">OK</string>
+    <string name="loading">Wird geladen</string>
     <string name="all_plans">Alle Abonnements</string>
     <string name="privacy">Privatsphäre</string>
     <string name="privacy_policy">Datenschutzrichtlinie</string>
@@ -22,4 +23,14 @@
     <string name="cannot_open_link">Ungültiger Link. Konnte nicht geöffnet werden.</string>
     <string name="revenuecatui_purchase">Kaufen</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">Der Vorschau-Workflow konnte nicht geladen werden. Bitte versuche es erneut.</string>
+    <string name="revenuecatui_checkpoint_error_network">Verbindung fehlgeschlagen. Überprüfe deine Internetverbindung und versuche es erneut.</string>
+    <string name="revenuecatui_checkpoint_error_load">Dieser Inhalt konnte nicht geladen werden. Bitte versuche es später erneut.</string>
+    <string name="revenuecatui_checkpoint_error_store">Es gab ein Problem mit dem Store. Bitte versuche es später erneut.</string>
+    <string name="revenuecatui_checkpoint_error_purchase_not_allowed">Käufe sind auf diesem Gerät nicht erlaubt.</string>
+    <string name="revenuecatui_checkpoint_error_product_unavailable">Dieses Produkt ist derzeit nicht verfügbar.</string>
+    <string name="revenuecatui_checkpoint_error_already_purchased">Du besitzt dieses Produkt bereits.</string>
+    <string name="revenuecatui_checkpoint_error_payment_pending">Deine Zahlung ist ausstehend. Du erhältst Zugriff, sobald sie genehmigt wurde.</string>
+    <string name="revenuecatui_checkpoint_error_generic">Etwas ist schiefgelaufen. Bitte versuche es erneut.</string>
+    <string name="revenuecatui_checkpoint_error_sync">Deine Käufe konnten nicht überprüft werden. Bitte versuche es später erneut.</string>
 </resources>

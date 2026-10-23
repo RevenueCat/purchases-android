@@ -7,7 +7,10 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.identity.Identity
 import com.revenuecat.purchases.logInWith
 import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchases_sample.databinding.FragmentLoginBinding
@@ -42,8 +45,18 @@ class LoginFragment : Fragment() {
             }
         }
 
+        val iamEnabled = (requireActivity().application as MainApplication).iamEnabled
+        if (iamEnabled) {
+            binding.iamLoginButton.visibility = View.VISIBLE
+            binding.iamLoginButton.setOnClickListener {
+                binding.loginUsernameEditText.text?.toString()?.takeIf { it.isNotBlank() }?.let(::logInThroughIAM)
+            }
+        }
+
         binding.anonymousUserButton.setOnClickListener {
-            if (Purchases.sharedInstance.isAnonymous) {
+            if (iamEnabled) {
+                logOutThroughIAM()
+            } else if (Purchases.sharedInstance.isAnonymous) {
                 saveAppUserId(null)
                 advanceToOverviewFragment()
             } else {
@@ -71,6 +84,33 @@ class LoginFragment : Fragment() {
         }
 
         return binding.root
+    }
+
+    // The text field holds a raw OIDC ID token when testing IAM login.
+    @OptIn(InternalRevenueCatAPI::class)
+    private fun logInThroughIAM(idToken: String) {
+        lifecycleScope.launch {
+            try {
+                Purchases.sharedInstance.authentication.awaitLogIn(Identity.oidc(idToken.toByteArray()))
+                saveAppUserId(null)
+                advanceToOverviewFragment()
+            } catch (e: PurchasesException) {
+                showUserError(requireActivity(), e.error)
+            }
+        }
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    private fun logOutThroughIAM() {
+        lifecycleScope.launch {
+            try {
+                if (!Purchases.sharedInstance.isAnonymous) Purchases.sharedInstance.authentication.awaitLogOut()
+                saveAppUserId(null)
+                advanceToOverviewFragment()
+            } catch (e: PurchasesException) {
+                showUserError(requireActivity(), e.error)
+            }
+        }
     }
 
     private fun resetSdk() {

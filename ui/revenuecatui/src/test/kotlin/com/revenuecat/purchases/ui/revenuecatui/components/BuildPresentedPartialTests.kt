@@ -2638,10 +2638,10 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
         // Arrange, Act
         val actual: LocalizedTextPartial? = args.availableOverrides.buildPresentedPartial(
             windowSize = args.windowSize,
-            offerEligibility = args.offerEligibility,
-            state = args.state,
+            offerEligibility = { args.offerEligibility },
+            state = { args.state },
             conditionContext = ConditionContext(
-                selectedPackageId = args.selectedPackageId,
+                selectedPackageId = { args.selectedPackageId },
                 customVariables = args.customVariables,
                 stateReader = { key -> args.stateValues[key] ?: args.stateDefaults[key] },
                 windowDpSize = args.windowDpSize,

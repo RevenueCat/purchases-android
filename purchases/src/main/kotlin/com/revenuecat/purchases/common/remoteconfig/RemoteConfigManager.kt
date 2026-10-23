@@ -581,6 +581,16 @@ internal class RemoteConfigManager(
     }
 
     /**
+     * Whether a configuration is committed (persisted by an earlier sync), whichever topics it carries; `false`
+     * when the endpoint is [isDisabled]. Like [committedTopicOrNull], never waits for or triggers a sync. Lets a
+     * warm tell "no config yet" (stay cold) from "config without my topic" (warm the defaults). Reads disk on
+     * [ioDispatcher].
+     */
+    suspend fun hasCommittedConfig(): Boolean = withContext(ioDispatcher) {
+        !isDisabled && diskCache.read() != null
+    }
+
+    /**
      * Waits for the refresh that is currently in flight, if any, then returns the latest committed [topic].
      * Unlike [topic], this never starts a refresh. This lets a consumer avoid treating a stale-but-committed
      * empty topic as authoritative while AppStart is already fetching a newer configuration.

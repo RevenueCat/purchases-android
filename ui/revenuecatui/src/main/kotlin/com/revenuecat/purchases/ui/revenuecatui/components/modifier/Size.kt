@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
@@ -33,6 +34,8 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fi
  * forced to be wider than its contents, e.g. using [widthIn] or [requiredWidth].
  * @param verticalAlignment Alignment to apply when the provided [size]'s height is [Fit], and the component is
  * forced to be taller than its contents, e.g. using [heightIn] or [requiredHeight].
+ * @param requireFixedSize Whether fixed dimensions must be preserved when they exceed the parent's constraints.
+ * Fit and Fill dimensions continue to respect the parent's constraints.
  */
 @JvmSynthetic
 @Stable
@@ -40,21 +43,43 @@ internal fun Modifier.size(
     size: Size,
     horizontalAlignment: Alignment.Horizontal? = null,
     verticalAlignment: Alignment.Vertical? = null,
+    requireFixedSize: Boolean = false,
 ): Modifier {
     val widthModifier = when (val width = size.width) {
         is Fit -> Modifier.wrapContentWidth(align = horizontalAlignment ?: Alignment.CenterHorizontally)
-        is Fill -> Modifier.fillMaxWidth()
-        is Fixed -> Modifier.width(width.value.toInt().dp)
+        is Fill -> if (width.min != null || width.max != null) {
+            Modifier.widthIn(min = width.minDp, max = width.maxDp).fillMaxWidth()
+        } else {
+            Modifier.fillMaxWidth()
+        }
+        is Fixed -> width.widthModifier(requireFixedSize)
     }
 
     val heightModifier = when (val height = size.height) {
         is Fit -> Modifier.wrapContentHeight(align = verticalAlignment ?: Alignment.CenterVertically)
-        is Fill -> Modifier.fillMaxHeight()
-        is Fixed -> Modifier.height(height.value.toInt().dp)
+        is Fill -> if (height.min != null || height.max != null) {
+            Modifier.heightIn(min = height.minDp, max = height.maxDp).fillMaxHeight()
+        } else {
+            Modifier.fillMaxHeight()
+        }
+        is Fixed -> height.heightModifier(requireFixedSize)
     }
 
     return this then widthModifier then heightModifier
 }
+
+private fun Fixed.widthModifier(requireFixedSize: Boolean): Modifier =
+    if (requireFixedSize) Modifier.requiredWidth(value.toInt().dp) else Modifier.width(value.toInt().dp)
+
+private fun Fixed.heightModifier(requireFixedSize: Boolean): Modifier =
+    if (requireFixedSize) Modifier.requiredHeight(value.toInt().dp) else Modifier.height(value.toInt().dp)
+
+private val Fill.minDp: Dp
+    get() = min?.toInt()?.dp ?: Dp.Unspecified
+
+/** Consistent with the stack allocation: a minimum wins over a smaller maximum. */
+private val Fill.maxDp: Dp
+    get() = max?.let { maxOf(it, min ?: 0u) }?.toInt()?.dp ?: Dp.Unspecified
 
 @Composable
 private fun Size_Preview(size: Size) {

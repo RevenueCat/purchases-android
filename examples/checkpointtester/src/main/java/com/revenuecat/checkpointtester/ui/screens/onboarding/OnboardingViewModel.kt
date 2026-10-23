@@ -3,8 +3,8 @@ package com.revenuecat.checkpointtester.ui.screens.onboarding
 import androidx.lifecycle.ViewModel
 import com.revenuecat.checkpointtester.checkpoints.PaywallPresenters
 import com.revenuecat.checkpointtester.checkpoints.summary
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -61,7 +61,7 @@ class OnboardingViewModel : ViewModel() {
         _state.update { UiState() }
     }
 
-    @OptIn(InternalRevenueCatAPI::class)
+    @OptIn(InviteOnlyCheckpointsAPI::class)
     private fun runCheckpointThenFinish() {
         _state.update { it.copy(message = null) }
         Purchases.sharedInstance.checkpoint(

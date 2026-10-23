@@ -9,6 +9,8 @@ import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.VerificationResult.*
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.createResult
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult.FailureReason
 import com.revenuecat.purchases.utils.Responses
 import io.mockk.Runs
 import io.mockk.every
@@ -145,7 +147,7 @@ class ETagManagerTest {
         mockCachedHTTPResult(
             expectedETag,
             urlString,
-            httpResult = HTTPResult.createResult(origin = HTTPResult.Origin.CACHE, verificationResult = VERIFIED),
+            httpResult = HTTPResult.createResult(origin = HTTPResult.Origin.CACHE, verificationResult = SignatureVerificationResult.Verified),
         )
 
         val eTagHeaders = underTest.getETagHeaders(urlString, verificationRequested = false)
@@ -160,7 +162,7 @@ class ETagManagerTest {
         mockCachedHTTPResult(
             expectedETag,
             urlString,
-            httpResult = HTTPResult.createResult(origin = HTTPResult.Origin.CACHE, verificationResult = NOT_REQUESTED),
+            httpResult = HTTPResult.createResult(origin = HTTPResult.Origin.CACHE, verificationResult = SignatureVerificationResult.NotRequested),
         )
 
         val eTagHeaders = underTest.getETagHeaders(urlString, verificationRequested = false)
@@ -174,7 +176,7 @@ class ETagManagerTest {
         mockCachedHTTPResult(
             "etag",
             urlString,
-            httpResult = HTTPResult.createResult(origin = HTTPResult.Origin.CACHE, verificationResult = NOT_REQUESTED),
+            httpResult = HTTPResult.createResult(origin = HTTPResult.Origin.CACHE, verificationResult = SignatureVerificationResult.NotRequested),
         )
 
         val eTagHeaders = underTest.getETagHeaders(urlString, verificationRequested = true)
@@ -188,7 +190,7 @@ class ETagManagerTest {
         mockCachedHTTPResult(
             "etag",
             urlString,
-            httpResult = HTTPResult.createResult(origin = HTTPResult.Origin.CACHE, verificationResult = FAILED),
+            httpResult = HTTPResult.createResult(origin = HTTPResult.Origin.CACHE, verificationResult = SignatureVerificationResult.Failed(SignatureVerificationResult.FailureReason.PAYLOAD_SIGNATURE_MISMATCH)),
         )
 
         val eTagHeaders = underTest.getETagHeaders(urlString, verificationRequested = false)
@@ -199,11 +201,16 @@ class ETagManagerTest {
     @Test
     fun `ETag headers are not added if cached result verified on device`() {
         val urlString = "http://localhost:100/v1/subscribers/appUserID"
-        mockCachedHTTPResult(
-            "etag",
-            urlString,
-            httpResult = HTTPResult.createResult(origin = HTTPResult.Origin.CACHE, verificationResult = VERIFIED_ON_DEVICE),
+        val metadata = ETagCacheMetadata(
+            eTagData = ETagData("etag", testDate),
+            responseCode = RCHTTPStatusCodes.SUCCESS,
+            requestDate = null,
+            verificationResult = VERIFIED_ON_DEVICE,
+            isLoadShedderResponse = false,
+            isFallbackURL = false,
+            payloadChecksum = 0L,
         )
+        every { mockedPrefs.getString(urlString, null) } returns metadata.serialize()
 
         val eTagHeaders = underTest.getETagHeaders(urlString, verificationRequested = false)
         val eTagHeader = eTagHeaders[HTTPRequest.ETAG_HEADER_NAME]
@@ -307,7 +314,7 @@ class ETagManagerTest {
         val eTag = "eTag"
 
         val resultFromBackend = HTTPResult.createResult(
-            verificationResult = FAILED,
+            verificationResult = SignatureVerificationResult.Failed(SignatureVerificationResult.FailureReason.PAYLOAD_SIGNATURE_MISMATCH),
             payload = Responses.validEmptyPurchaserResponse
         )
 
@@ -322,7 +329,7 @@ class ETagManagerTest {
         val eTag = "eTag"
 
         val resultFromBackend = HTTPResult.createResult(
-            verificationResult = VERIFIED,
+            verificationResult = SignatureVerificationResult.Verified,
             payload = Responses.validEmptyPurchaserResponse
         )
 
@@ -404,7 +411,7 @@ class ETagManagerTest {
             urlString = urlString,
             refreshETag = false,
             requestDate = null,
-            verificationResult = NOT_REQUESTED,
+            verificationResult = SignatureVerificationResult.NotRequested,
             isLoadShedderResponse = false,
             isFallbackURL = false,
         )
@@ -428,7 +435,7 @@ class ETagManagerTest {
             urlString = urlString,
             refreshETag = false,
             requestDate = null,
-            verificationResult = NOT_REQUESTED,
+            verificationResult = SignatureVerificationResult.NotRequested,
             isLoadShedderResponse = false,
             isFallbackURL = false,
         )
@@ -453,7 +460,7 @@ class ETagManagerTest {
             urlString = urlString,
             refreshETag = false,
             requestDate = null,
-            verificationResult = NOT_REQUESTED,
+            verificationResult = SignatureVerificationResult.NotRequested,
             isLoadShedderResponse = false,
             isFallbackURL = false,
         )
@@ -479,7 +486,7 @@ class ETagManagerTest {
             urlString = urlString,
             refreshETag = true,
             requestDate = null,
-            verificationResult = NOT_REQUESTED,
+            verificationResult = SignatureVerificationResult.NotRequested,
             isLoadShedderResponse = false,
             isFallbackURL = false,
         )
@@ -504,7 +511,7 @@ class ETagManagerTest {
             urlString = urlString,
             refreshETag = false,
             requestDate = null,
-            verificationResult = NOT_REQUESTED,
+            verificationResult = SignatureVerificationResult.NotRequested,
             isLoadShedderResponse = false,
             isFallbackURL = false,
         )
@@ -530,7 +537,7 @@ class ETagManagerTest {
             urlString = urlString,
             refreshETag = true,
             requestDate = null,
-            verificationResult = NOT_REQUESTED,
+            verificationResult = SignatureVerificationResult.NotRequested,
             isLoadShedderResponse = false,
             isFallbackURL = false,
         )
@@ -552,12 +559,12 @@ class ETagManagerTest {
             urlString = "http://localhost:100/v1/subscribers/appUserID",
             refreshETag = false,
             requestDate = null,
-            verificationResult = VERIFIED,
+            verificationResult = SignatureVerificationResult.Verified,
             isLoadShedderResponse = false,
             isFallbackURL = false,
         )
 
-        assertThat(result?.verificationResult).isEqualTo(VERIFIED)
+        assertThat(result?.verificationResult).isEqualTo(SignatureVerificationResult.Verified)
     }
 
     @Test
@@ -571,7 +578,7 @@ class ETagManagerTest {
             urlString = "http://localhost:100/v1/subscribers/appUserID",
             refreshETag = false,
             requestDate = expectedDate,
-            verificationResult = NOT_REQUESTED,
+            verificationResult = SignatureVerificationResult.NotRequested,
             isLoadShedderResponse = false,
             isFallbackURL = false,
         )
@@ -595,7 +602,7 @@ class ETagManagerTest {
             urlString = urlString,
             refreshETag = false,
             requestDate = expectedDate,
-            verificationResult = NOT_REQUESTED,
+            verificationResult = SignatureVerificationResult.NotRequested,
             isLoadShedderResponse = false,
             isFallbackURL = false,
         )
@@ -612,7 +619,7 @@ class ETagManagerTest {
             payload = cachedPayload,
             origin = HTTPResult.Origin.CACHE,
             requestDate = Date(1000),
-            verificationResult = NOT_REQUESTED,
+            verificationResult = SignatureVerificationResult.NotRequested,
         )
         val urlString = "http://localhost:100/v1/subscribers/appUserID"
         mockCachedHTTPResult("etag", urlString, httpResult = cachedHttpResult)
@@ -624,7 +631,7 @@ class ETagManagerTest {
             urlString = urlString,
             refreshETag = false,
             requestDate = newRequestDate,
-            verificationResult = VERIFIED,
+            verificationResult = SignatureVerificationResult.Verified,
             isLoadShedderResponse = false,
             isFallbackURL = false,
         )
@@ -632,27 +639,30 @@ class ETagManagerTest {
         assertThat(result).isNotNull
         assertThat(result!!.payloadText).isEqualTo(cachedPayload)
         assertThat(result.origin).isEqualTo(HTTPResult.Origin.CACHE)
-        assertThat(result.verificationResult).isEqualTo(VERIFIED)
+        assertThat(result.verificationResult).isEqualTo(SignatureVerificationResult.Verified)
         assertThat(result.requestDate).isEqualTo(newRequestDate)
     }
 
     @Test
     fun `verificationResults are expected between cache and backend`() {
         data class TestCase(
-            val cachedVerificationResult: VerificationResult,
-            val backendVerificationResult: VerificationResult,
-            val expectedVerificationResult: VerificationResult
+            val cachedVerificationResult: SignatureVerificationResult,
+            val backendVerificationResult: SignatureVerificationResult,
+            val expectedVerificationResult: SignatureVerificationResult
             )
+        val notRequested = SignatureVerificationResult.NotRequested
+        val verified = SignatureVerificationResult.Verified
+        val failed = SignatureVerificationResult.Failed(FailureReason.PAYLOAD_SIGNATURE_MISMATCH)
         val testCases = listOf(
-            TestCase(NOT_REQUESTED, NOT_REQUESTED, NOT_REQUESTED),
-            TestCase(NOT_REQUESTED, VERIFIED, VERIFIED),
-            TestCase(NOT_REQUESTED, FAILED, FAILED),
-            TestCase(VERIFIED, NOT_REQUESTED, NOT_REQUESTED),
-            TestCase(VERIFIED, VERIFIED, VERIFIED),
-            TestCase(VERIFIED, FAILED, FAILED),
-            TestCase(FAILED, NOT_REQUESTED, NOT_REQUESTED),
-            TestCase(FAILED, VERIFIED, VERIFIED),
-            TestCase(FAILED, FAILED, FAILED)
+            TestCase(notRequested, notRequested, notRequested),
+            TestCase(notRequested, verified, verified),
+            TestCase(notRequested, failed, failed),
+            TestCase(verified, notRequested, notRequested),
+            TestCase(verified, verified, verified),
+            TestCase(verified, failed, failed),
+            TestCase(failed, notRequested, notRequested),
+            TestCase(failed, verified, verified),
+            TestCase(failed, failed, failed)
             )
         testCases.onEach {
             assertCorrectVerificationResult(
@@ -845,7 +855,7 @@ class ETagManagerTest {
                 payload = "{\"key\":\"value\"}",
                 origin = HTTPResult.Origin.BACKEND,
                 requestDate = Date(1000),
-                verificationResult = VERIFIED,
+                verificationResult = SignatureVerificationResult.Verified,
             ),
             ETagData("etag", testDate),
             payloadChecksum = 12345L,
@@ -857,13 +867,31 @@ class ETagManagerTest {
         assertThat(result.payloadText).isEqualTo("{\"key\":\"value\"}")
         assertThat(result.origin).isEqualTo(HTTPResult.Origin.CACHE)
         assertThat(result.requestDate).isEqualTo(Date(1000))
-        assertThat(result.verificationResult).isEqualTo(VERIFIED)
+        assertThat(result.verificationResult).isEqualTo(SignatureVerificationResult.Verified)
+    }
+
+    @Test
+    fun `ETagCacheMetadata toHTTPResult maps a stored FAILED to an unknown failure`() {
+        val metadata = ETagCacheMetadata(
+            eTagData = ETagData("etag", testDate),
+            responseCode = RCHTTPStatusCodes.SUCCESS,
+            requestDate = Date(1000),
+            verificationResult = FAILED,
+            isLoadShedderResponse = false,
+            isFallbackURL = false,
+            payloadChecksum = 12345L,
+        )
+
+        val result = metadata.toHTTPResult("{}")
+
+        assertThat(result.verificationResult)
+            .isEqualTo(SignatureVerificationResult.Failed(FailureReason.UNKNOWN))
     }
 
     private fun assertCorrectVerificationResult(
-        cachedVerificationResult: VerificationResult,
-        backendVerificationResult: VerificationResult,
-        expectedVerificationResult: VerificationResult
+        cachedVerificationResult: SignatureVerificationResult,
+        backendVerificationResult: SignatureVerificationResult,
+        expectedVerificationResult: SignatureVerificationResult
     ) {
         val httpResult = HTTPResult.createResult(
             origin = HTTPResult.Origin.CACHE,

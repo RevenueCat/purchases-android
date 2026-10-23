@@ -4,7 +4,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import android.content.res.Configuration
-import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -64,8 +63,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleBottomSheetScaffold
 import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleSheetState
 import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
@@ -96,7 +93,6 @@ internal fun LoadedPaywallComponents(
         handleClick(action, state, clickHandler, componentInteractionTracker)
     }
 
-    val shouldWrapMainContentInVerticalScroll = shouldWrapMainContentInVerticalScroll(state.stack)
     val mainScrollState = rememberScrollState()
     val layoutDirection = remember(state.locale) {
         state.locale.toJavaLocale().toLayoutDirection()
@@ -104,6 +100,7 @@ internal fun LoadedPaywallComponents(
 
     CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
         MeasurePaywallBounds(state, modifier) {
+            val shouldWrapMainContentInVerticalScroll = shouldWrapMainContentInVerticalScroll(state.stack, state)
             PaywallComponentsScaffold(
                 state = state,
                 headerContent = state.header?.let { headerStyle ->
@@ -292,14 +289,6 @@ internal fun Modifier.footerBottomPadding(state: PaywallState.Loaded.Components)
             placeable.placeRelative(0, 0)
         }
     }
-
-/**
- * Returns whether the caller should wrap [rootStack] in an outer `verticalScroll` modifier.
- * Returns `false` when the root stack already scrolls vertically (overflow = SCROLL on a vertical
- * dimension), because two vertical scroll modifiers on the same axis crash at runtime.
- */
-internal fun shouldWrapMainContentInVerticalScroll(rootStack: ComponentStyle): Boolean =
-    (rootStack as? StackComponentStyle)?.scrollOrientation != Orientation.Vertical
 
 internal suspend fun handleClick(
     action: PaywallAction,

@@ -370,6 +370,9 @@ public data class CustomerCenterConfigData(
             @SerialName("shared_through_family_member")
             SHARED_THROUGH_FAMILY_MEMBER,
 
+            @SerialName("assigned_through_organization")
+            ASSIGNED_THROUGH_ORGANIZATION,
+
             @SerialName("product_id")
             PRODUCT_ID,
 
@@ -519,6 +522,7 @@ public data class CustomerCenterConfigData(
                     INTRODUCTORY_PRICE -> "Introductory Price"
                     TRIAL_PERIOD -> "Trial Period"
                     SHARED_THROUGH_FAMILY_MEMBER -> "Shared through family member"
+                    ASSIGNED_THROUGH_ORGANIZATION -> "Assigned through your organization"
                     PRODUCT_ID -> "Product ID"
                     SANDBOX -> "Sandbox"
                     TRANSACTION_ID -> "Transaction ID"
@@ -548,7 +552,6 @@ public data class CustomerCenterConfigData(
         public sealed class PathDetail {
             @Serializable
             public data class PromotionalOffer(
-                @SerialName("android_offer_id") public val androidOfferId: String,
                 public val eligible: Boolean,
                 public val title: String,
                 public val subtitle: String,
@@ -557,34 +560,6 @@ public data class CustomerCenterConfigData(
                 Map<String, CrossProductPromotion> =
                     emptyMap(),
             ) : PathDetail() {
-                @Deprecated(
-                    "Use constructor with crossProductPromotions parameter",
-                    ReplaceWith(
-                        "PromotionalOffer(androidOfferId, eligible, title, subtitle, productMapping, emptyMap())",
-                    ),
-                )
-                public constructor(
-                    androidOfferId: String,
-                    eligible: Boolean,
-                    title: String,
-                    subtitle: String,
-                    productMapping: Map<String, String>,
-                ) : this(androidOfferId, eligible, title, subtitle, productMapping, emptyMap())
-
-                @Deprecated(
-                    "Use copy with crossProductPromotions parameter",
-                    ReplaceWith(
-                        "copy(androidOfferId, eligible, title, subtitle, productMapping, emptyMap())",
-                    ),
-                )
-                public fun copy(
-                    androidOfferId: String = this.androidOfferId,
-                    eligible: Boolean = this.eligible,
-                    title: String = this.title,
-                    subtitle: String = this.subtitle,
-                    productMapping: Map<String, String> = this.productMapping,
-                ): PromotionalOffer = copy(androidOfferId, eligible, title, subtitle, productMapping, emptyMap())
-
                 @Serializable
                 @Poko
                 public class CrossProductPromotion(

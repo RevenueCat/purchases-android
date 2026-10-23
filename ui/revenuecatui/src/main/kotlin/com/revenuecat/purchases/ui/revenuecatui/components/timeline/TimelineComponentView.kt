@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
@@ -39,7 +40,9 @@ import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignme
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.ui.revenuecatui.components.iconcomponent.IconComponentView
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.addMarginToFillLimits
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.overlay
+import com.revenuecat.purchases.ui.revenuecatui.components.modifier.resolveComponentSizeParentData
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
 import com.revenuecat.purchases.ui.revenuecatui.components.previewIconComponentStyle
@@ -73,9 +76,11 @@ internal fun TimelineComponentView(
         return
     }
 
+    val size = timelineState.size.addMarginToFillLimits(timelineState.margin, LocalLayoutDirection.current)
     ConstraintLayout(
         modifier = modifier
-            .size(timelineState.size)
+            .resolveComponentSizeParentData(size)
+            .size(size)
             .padding(timelineState.margin)
             .padding(timelineState.padding),
     ) {

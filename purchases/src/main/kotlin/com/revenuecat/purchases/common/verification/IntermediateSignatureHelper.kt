@@ -1,7 +1,5 @@
 package com.revenuecat.purchases.common.verification
 
-import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.fromLittleEndianBytes
 import com.revenuecat.purchases.utils.Result
@@ -49,24 +47,16 @@ internal class IntermediateSignatureHelper(
 
     fun createIntermediateKeyVerifierIfVerified(
         signature: Signature,
-    ): Result<SignatureVerifier, PurchasesError> {
-        val rootVerifier = rootSignatureVerifier.value ?: return Result.Error(
-            PurchasesError(PurchasesErrorCode.SignatureVerificationError, "Signature verifier unavailable."),
-        )
+    ): Result<SignatureVerifier, SignatureVerificationResult.FailureReason> {
+        val rootVerifier = rootSignatureVerifier.value
+            ?: return Result.Error(SignatureVerificationResult.FailureReason.UNKNOWN)
         val intermediateKeyMessageToVerify = signature.intermediateKeyExpiration + signature.intermediateKey
         return if (!rootVerifier.verify(signature.intermediateKeySignature, intermediateKeyMessageToVerify)) {
-            Result.Error(
-                PurchasesError(PurchasesErrorCode.SignatureVerificationError, "Error verifying intermediate key."),
-            )
+            Result.Error(SignatureVerificationResult.FailureReason.INVALID_INTERMEDIATE_KEY_SIGNATURE)
         } else {
             val intermediateKeyExpirationDate = getIntermediateKeyExpirationDate(signature.intermediateKeyExpiration)
             if (intermediateKeyExpirationDate.before(Date())) {
-                Result.Error(
-                    PurchasesError(
-                        PurchasesErrorCode.SignatureVerificationError,
-                        "Intermediate key expired at $intermediateKeyExpirationDate",
-                    ),
-                )
+                Result.Error(SignatureVerificationResult.FailureReason.INTERMEDIATE_KEY_EXPIRED)
             } else {
                 Result.Success(DefaultSignatureVerifier(signature.intermediateKey))
             }

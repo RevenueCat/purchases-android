@@ -19,11 +19,24 @@ internal fun Size.addMargin(margin: PaddingValues, layoutDirection: LayoutDirect
         height = height.addMargin(margin.calculateVerticalPadding().value.toUInt()),
     )
 
+/**
+ * Like [addMargin], but leaves Fixed untouched. For components whose node has historically been sized without
+ * margin (text, timeline, carousel), so that Fill limits match the other components without moving Fixed layouts.
+ */
+@JvmSynthetic
+internal fun Size.addMarginToFillLimits(margin: PaddingValues, layoutDirection: LayoutDirection): Size =
+    Size(
+        width = width.addMarginToFillLimits(margin.calculateHorizontalPadding(layoutDirection).value.toUInt()),
+        height = height.addMarginToFillLimits(margin.calculateVerticalPadding().value.toUInt()),
+    )
+
 private fun SizeConstraint.addMargin(
     margin: UInt,
 ): SizeConstraint = when (this) {
     is Fixed -> Fixed(value + margin)
-    is Fill,
-    is Fit,
-    -> this
+    is Fill -> addMarginToFillLimits(margin)
+    is Fit -> this
 }
+
+private fun SizeConstraint.addMarginToFillLimits(margin: UInt): SizeConstraint =
+    if (this is Fill) Fill(min = min?.plus(margin), max = max?.plus(margin)) else this

@@ -5,25 +5,31 @@ import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Dispatcher
-import com.revenuecat.purchases.common.events.EventsManager
+import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.networking.ConnectionErrorReason
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.verboseLog
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import com.revenuecat.purchases.utils.filterNotNullValues
 import java.io.IOException
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.time.Duration
 
 internal fun interface DiagnosticsEventTrackerListener {
     fun onEventTracked()
+
+    // Default no-op so a listener that only reacts to tracked events needn't handle the collection decision.
+    fun onCollectionEnabled() {}
 }
 
 /**
@@ -38,9 +44,21 @@ internal class DiagnosticsTracker(
     private val diagnosticsFileHelper: DiagnosticsFileHelper,
     private val diagnosticsHelper: DiagnosticsHelper,
     private val diagnosticsDispatcher: Dispatcher,
-    private val appSessionID: UUID = EventsManager.appSessionID,
+    private val enabledBySdkConfiguration: Boolean,
+    private val diagnosticsSessionID: UUID = DiagnosticsTracker.diagnosticsSessionID,
 ) {
+    private enum class CollectionState { UNDETERMINED, ENABLED, DISABLED }
+
+    // Written before the delete is enqueued and re-read on the diagnostics thread right before an append, so an
+    // event that raced the decision either lands in the file before the delete or is dropped after it.
+    private val collectionState = AtomicReference(CollectionState.UNDETERMINED)
+
+    val isCollectionEnabled: Boolean
+        get() = collectionState.get() == CollectionState.ENABLED
+
     private companion object {
+        val diagnosticsSessionID: UUID = UUID.randomUUID()
+
         const val HOST_KEY = "host"
         const val ENDPOINT_NAME_KEY = "endpoint_name"
         const val SUCCESSFUL_KEY = "successful"
@@ -48,6 +66,8 @@ internal class DiagnosticsTracker(
         const val BACKEND_ERROR_CODE_KEY = "backend_error_code"
         const val ETAG_HIT_KEY = "etag_hit"
         const val VERIFICATION_RESULT_KEY = "verification_result"
+        const val VERIFICATION_FAILURE_REASON_KEY = "verification_failure_reason"
+        const val VERIFICATION_DEVICE_CLOCK_OFFSET_MINUTES_KEY = "verification_device_clock_offset_minutes"
         const val RESPONSE_TIME_MILLIS_KEY = "response_time_millis"
         const val PRODUCT_TYPE_QUERIED_KEY = "product_type_queried"
         const val PRODUCT_ID_KEY = "product_id"
@@ -84,6 +104,32 @@ internal class DiagnosticsTracker(
 
     var listener: DiagnosticsEventTrackerListener? = null
 
+    /**
+     * Applies the remote `diagnostics.enabled` setting, falling back to
+     * [PurchasesConfiguration.Builder.diagnosticsEnabled] when the backend did not send one. The remote setting is
+     * enabled only at the developer's request or with their explicit approval. Until this is called, events are
+     * collected on disk but never synced. Disabling deletes the diagnostics file on the diagnostics thread, behind
+     * any append already queued; enabling lets the listener sync whatever was collected while the decision was
+     * pending.
+     */
+    fun applyRemoteCollectionSetting(remoteEnabled: Boolean?) {
+        val enabled = remoteEnabled ?: enabledBySdkConfiguration
+        val newState = if (enabled) CollectionState.ENABLED else CollectionState.DISABLED
+        if (collectionState.getAndSet(newState) == newState) return
+        debugLog {
+            "Diagnostics collection ${if (enabled) "enabled" else "disabled"} " +
+                "(remote setting: $remoteEnabled, SDK configuration: $enabledBySdkConfiguration)."
+        }
+        if (enabled) {
+            listener?.onCollectionEnabled()
+        } else {
+            enqueue {
+                verboseLog { "Diagnostics collection disabled. Deleting the diagnostics file." }
+                diagnosticsHelper.resetDiagnosticsStatus()
+            }
+        }
+    }
+
     @Suppress("LongParameterList")
     fun trackHttpRequestPerformed(
         host: String,
@@ -93,7 +139,8 @@ internal class DiagnosticsTracker(
         responseCode: Int,
         backendErrorCode: Int?,
         resultOrigin: HTTPResult.Origin?,
-        verificationResult: VerificationResult,
+        verificationResult: SignatureVerificationResult,
+        deviceClockOffset: Duration?,
         isRetry: Boolean,
         connectionErrorReason: ConnectionErrorReason?,
     ) {
@@ -108,7 +155,9 @@ internal class DiagnosticsTracker(
                 RESPONSE_CODE_KEY to responseCode,
                 BACKEND_ERROR_CODE_KEY to backendErrorCode,
                 ETAG_HIT_KEY to eTagHit,
-                VERIFICATION_RESULT_KEY to verificationResult.name,
+                VERIFICATION_RESULT_KEY to verificationResult.result.name,
+                VERIFICATION_FAILURE_REASON_KEY to verificationResult.failureReason?.name,
+                VERIFICATION_DEVICE_CLOCK_OFFSET_MINUTES_KEY to deviceClockOffset?.inWholeMinutes,
                 IS_RETRY to isRetry,
                 CONNECTION_ERROR_REASON_KEY to connectionErrorReason?.name,
             ).filterNotNullValues(),
@@ -290,7 +339,7 @@ internal class DiagnosticsTracker(
         val event = DiagnosticsEntry(
             name = DiagnosticsEntryName.MAX_EVENTS_STORED_LIMIT_REACHED,
             properties = commonProperties,
-            appSessionID = appSessionID,
+            diagnosticsSessionID = diagnosticsSessionID,
         )
         if (useCurrentThread) {
             trackEventInCurrentThread(event)
@@ -577,19 +626,24 @@ internal class DiagnosticsTracker(
             DiagnosticsEntry(
                 name = eventName,
                 properties = commonProperties + properties,
-                appSessionID = appSessionID,
+                diagnosticsSessionID = diagnosticsSessionID,
             ),
         )
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     fun trackEvent(diagnosticsEntry: DiagnosticsEntry) {
+        if (collectionState.get() == CollectionState.DISABLED) return
         checkAndClearDiagnosticsFileIfTooBig {
             trackEventInCurrentThread(diagnosticsEntry)
         }
     }
 
     internal fun trackEventInCurrentThread(diagnosticsEntry: DiagnosticsEntry) {
+        if (collectionState.get() == CollectionState.DISABLED) {
+            verboseLog { "Diagnostics collection is disabled. Dropping entry: ${diagnosticsEntry.name}" }
+            return
+        }
         verboseLog { "Tracking diagnostics entry: $diagnosticsEntry" }
         try {
             diagnosticsFileHelper.appendEvent(diagnosticsEntry)

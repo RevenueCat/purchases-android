@@ -1,0 +1,36 @@
+# Regression test for presenting a paywall with a developer-modified Offering instance.
+#
+# The screen loads the current offering, rebuilds it without the `$rc_monthly` package through the
+# public Offering constructor, and passes that copy to the paywall. The copy carries no paywall data,
+# so the SDK resolves it through the workflows path. The SDK used to re-fetch the offering by id
+# there and render the fetched instance, so the monthly card still appeared.
+#
+# Expected: only the annual card renders.
+#
+# Run locally against the test store:
+#   maestro test -e MAESTRO_STORE=test_store maestro/workflows/developer_provided_offering_filters_packages.yaml
+
+appId: com.revenuecat.e2etests
+name: Developer-provided Offering renders only its own packages
+env:
+  MAESTRO_STORE: ${MAESTRO_STORE || 'test_store'}
+
+---
+- launchApp:
+    clearState: true
+    arguments:
+      e2e_test_flow: open_developer_provided_offering
+- extendedWaitUntil:
+    visible: "Present Paywall"
+    timeout: 15000
+# The copy handed to the paywall only holds the annual package.
+- assertVisible: "packages: \\$rc_annual"
+- tapOn:
+    text: "Present Paywall"
+
+# The annual card renders from the passed instance; the monthly card is gone.
+- extendedWaitUntil:
+    visible: "Yearly"
+    timeout: 15000
+- assertNotVisible: "Monthly"
+- takeScreenshot: "developer_provided_offering_filters_packages - paywall"

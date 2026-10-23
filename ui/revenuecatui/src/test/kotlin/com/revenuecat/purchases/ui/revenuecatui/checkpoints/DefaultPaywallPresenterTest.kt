@@ -14,6 +14,7 @@ import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter.Completion.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import io.mockk.every
@@ -40,6 +41,7 @@ class DefaultPaywallPresenterTest {
         offering,
         "test_checkpoint",
         mapOf("goal" to CustomVariableValue.String("test")),
+        FlowPresentationMode.MODAL_FULL_SCREEN,
     )
     private val events = mutableListOf<String>()
     private val results = mutableListOf<Result>()
@@ -55,6 +57,7 @@ class DefaultPaywallPresenterTest {
     private lateinit var mockPurchases: Purchases
     private lateinit var mockWindow: CheckpointWorkflowPresenter
     private var windowCallId: String? = null
+    private var windowMode: FlowPresentationMode? = null
     private lateinit var presenter: DefaultPaywallPresenter
 
     @Before
@@ -65,8 +68,9 @@ class DefaultPaywallPresenterTest {
         mockPurchases = mockk { every { currentActivity } returns mockActivity }
         cachedActiveEntitlements()
         mockWindow = mockk(relaxed = true)
-        presenter = DefaultPaywallPresenter(mockPurchases) { callId, host ->
+        presenter = DefaultPaywallPresenter(mockPurchases, errorPresenter = { _, _ -> }) { callId, host, mode ->
             windowCallId = callId
+            windowMode = mode
             assertThat(host).isSameAs(presenter)
             mockWindow
         }
@@ -98,6 +102,52 @@ class DefaultPaywallPresenterTest {
         assertThat(options.listener).isNotNull
         assertThat(options.injectedWorkflow).isNull()
         assertThat(options.injectedWorkflowOfferings).isNull()
+    }
+
+    @Test
+    fun `the paywall hands its errors to the checkpoint's error presenter with the checkpoint's context`() {
+        val presented = mutableListOf<ErrorPresenter.Params>()
+        val completions = mutableListOf<ErrorPresenter.Completion>()
+        presenter = DefaultPaywallPresenter(
+            mockPurchases,
+            errorPresenter = { errorParams, completion ->
+                presented += errorParams
+                completions += completion
+            },
+        ) { callId, _, _ ->
+            windowCallId = callId
+            mockWindow
+        }
+        present()
+        val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "boom")
+        val completion = ErrorPresenter.Completion {}
+
+        options().errorPresenter!!.present(error, CheckpointFailureKind.FLOW_ACTION_FAILED, completion)
+
+        assertThat(presented).containsExactly(
+            ErrorPresenter.Params(
+                error,
+                params.checkpointIdentifier,
+                params.customVariables,
+                CheckpointFailureKind.FLOW_ACTION_FAILED,
+            ),
+        )
+        assertThat(completions).containsExactly(completion)
+    }
+
+    @Test
+    fun `the window is presented the way the params ask`() {
+        present()
+        assertThat(windowMode).isEqualTo(FlowPresentationMode.MODAL_FULL_SCREEN)
+
+        val sheetParams = PaywallPresenter.Params(
+            offering,
+            params.checkpointIdentifier,
+            params.customVariables,
+            FlowPresentationMode.MODAL_SHEET,
+        )
+        presenter.present(sheetParams, completion)
+        assertThat(windowMode).isEqualTo(FlowPresentationMode.MODAL_SHEET)
     }
 
     @Test
@@ -221,14 +271,79 @@ class DefaultPaywallPresenterTest {
     }
 
     @Test
-    fun `a window that could not be kept on screen reports Closed and logs the error`() {
+    fun `a window that could not be kept on screen presents the error and reports Failed once acknowledged`() {
+        val presented = mutableListOf<ErrorPresenter.Params>()
+        var errorCompletion: ErrorPresenter.Completion? = null
+        presenter = DefaultPaywallPresenter(
+            mockPurchases,
+            errorPresenter = { errorParams, completion ->
+                presented += errorParams
+                errorCompletion = completion
+            },
+        ) { callId, _, _ ->
+            windowCallId = callId
+            mockWindow
+        }
         present()
         val error = PurchasesError(PurchasesErrorCode.ConfigurationError, "Re-present failed.")
 
         presenter.onPresentationFailed(windowCallId!!, error)
 
-        assertThat(results).containsExactly(Result.Closed)
+        assertThat(presented).containsExactly(
+            ErrorPresenter.Params(
+                error,
+                params.checkpointIdentifier,
+                params.customVariables,
+                CheckpointFailureKind.FLOW_ACTION_FAILED,
+            ),
+        )
+        assertThat(results).isEmpty()
         verify(exactly = 1) { Logger.e(match { it.contains(error.toString()) }) }
+        errorCompletion!!.complete()
+        assertThat(results).hasSize(1)
+        assertThat((results.single() as Result.Failed).error).isEqualTo(error)
+    }
+
+    @Test
+    fun `a window that could not be kept on screen reports Failed right away when the error cannot be shown`() {
+        presenter = DefaultPaywallPresenter(mockPurchases, errorPresenter = { _, _ -> error("Simulated.") }) {
+                callId, _, _ ->
+            windowCallId = callId
+            mockWindow
+        }
+        present()
+        val error = PurchasesError(PurchasesErrorCode.ConfigurationError, "Re-present failed.")
+
+        presenter.onPresentationFailed(windowCallId!!, error)
+
+        assertThat((results.single() as Result.Failed).error).isEqualTo(error)
+    }
+
+    @Test
+    fun `a paywall that could not load reports Failed with its error`() {
+        present()
+        val error = PurchasesError(PurchasesErrorCode.ConfigurationError, "No packages available")
+
+        options().dismissRequestWithExitOffering!!(null, PaywallResult.Error(error), PaywallDismissReason.CLOSE)
+        assertThat(dismissals).containsExactly(false)
+        finished(navigatedBack = false)
+
+        assertThat((results.single() as Result.Failed).error).isEqualTo(error)
+    }
+
+    @Test
+    fun `a paywall that could not load after a purchase still reports Continued`() {
+        present()
+        options().listener!!.onPurchaseCompleted(customerInfoWithActive("pro"), mockk())
+
+        options().dismissRequestWithExitOffering!!(
+            null,
+            PaywallResult.Error(PurchasesError(PurchasesErrorCode.ConfigurationError, "boom")),
+            PaywallDismissReason.CLOSE,
+        )
+        finished(navigatedBack = false)
+
+        assertThat(results).containsExactly(Result.Continued)
     }
 
     @Test

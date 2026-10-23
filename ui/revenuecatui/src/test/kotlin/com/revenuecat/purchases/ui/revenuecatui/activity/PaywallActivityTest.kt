@@ -1,8 +1,10 @@
 package com.revenuecat.purchases.ui.revenuecatui.activity
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import androidx.lifecycle.Lifecycle
+import androidx.core.content.IntentCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.core.app.launchActivity
@@ -15,6 +17,7 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.common.workflows.WorkflowResolution
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
+import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModelImpl
@@ -31,6 +34,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
@@ -60,6 +64,7 @@ class PaywallActivityTest {
     @After
     fun tearDown() {
         unmockkAll()
+        PaywallActivityNonSerializableArgsStore.clear()
     }
 
     @Test
@@ -191,5 +196,96 @@ class PaywallActivityTest {
             assertThat(recreatedViewModel).isSameAs(retainedViewModel)
             assertThat(recreatedViewModel.state.value).isSameAs(renderedState)
         }
+    }
+
+    @Test
+    fun `activity dismissed by back press returns cancelled result referencing non serializable args`() {
+        val key = PaywallActivityNonSerializableArgsStore.store(
+            PaywallActivityNonSerializableArgs(listener = mockk<PaywallListener>(relaxed = true)),
+        )
+
+        val scenario = launchActivity<PaywallActivity>(intentWithNonSerializableArgsKey(key))
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+
+        scenario.onActivity { activity ->
+            activity.onBackPressedDispatcher.onBackPressed()
+
+            assertThat(activity.isFinishing).isTrue()
+            val shadowActivity = shadowOf(activity)
+            assertThat(shadowActivity.resultCode).isEqualTo(Activity.RESULT_OK)
+            val resultIntent = shadowActivity.resultIntent
+            assertThat(
+                IntentCompat.getParcelableExtra(resultIntent, PaywallActivity.RESULT_EXTRA, PaywallResult::class.java),
+            ).isEqualTo(PaywallResult.Cancelled)
+            assertThat(resultIntent.getIntExtra(PaywallActivity.NON_SERIALIZABLE_ARGS_KEY_EXTRA, 0)).isEqualTo(key)
+        }
+    }
+
+    @Test
+    fun `activity removes stored non serializable args when it finishes`() {
+        val key = PaywallActivityNonSerializableArgsStore.store(
+            PaywallActivityNonSerializableArgs(listener = mockk<PaywallListener>(relaxed = true)),
+        )
+        val scenario = launchActivity<PaywallActivity>(intentWithNonSerializableArgsKey(key))
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+
+        scenario.onActivity { activity -> activity.onBackPressedDispatcher.onBackPressed() }
+        scenario.moveToState(Lifecycle.State.DESTROYED)
+
+        assertThat(PaywallActivityNonSerializableArgsStore.get(key)).isNull()
+    }
+
+    @Test
+    fun `activity keeps stored non serializable args across recreation`() {
+        val args = PaywallActivityNonSerializableArgs(listener = mockk<PaywallListener>(relaxed = true))
+        val key = PaywallActivityNonSerializableArgsStore.store(args)
+        val scenario = launchActivity<PaywallActivity>(intentWithNonSerializableArgsKey(key))
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+
+        scenario.recreate()
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+
+        assertThat(PaywallActivityNonSerializableArgsStore.get(key)).isSameAs(args)
+        scenario.onActivity { activity -> assertThat(activity.isFinishing).isFalse() }
+    }
+
+    @Test
+    fun `exit offer args get their own stored non serializable args entry`() {
+        val args = PaywallActivityNonSerializableArgs(listener = mockk<PaywallListener>(relaxed = true))
+        val key = PaywallActivityNonSerializableArgsStore.store(args)
+        val currentArgs = PaywallActivityArgs(requiredEntitlementIdentifier = "pro", nonSerializableArgsKey = key)
+
+        val exitOfferArgs = PaywallActivity.createExitOfferArgs(currentArgs, TestData.template2Offering)
+
+        val exitOfferKey = requireNotNull(exitOfferArgs.nonSerializableArgsKey)
+        assertThat(exitOfferKey).isNotEqualTo(key)
+        assertThat(exitOfferArgs.requiredEntitlementIdentifier).isEqualTo("pro")
+        assertThat(exitOfferArgs.offeringIdAndPresentedOfferingContext?.offeringId)
+            .isEqualTo(TestData.template2Offering.identifier)
+        assertThat(PaywallActivityNonSerializableArgsStore.get(exitOfferKey)).isEqualTo(args)
+        assertThat(PaywallActivityNonSerializableArgsStore.get(key)).isSameAs(args)
+    }
+
+    @Test
+    fun `exit offer args carry no stored entry when the launching paywall has none`() {
+        val currentArgs = PaywallActivityArgs(requiredEntitlementIdentifier = "pro")
+
+        val exitOfferArgs = PaywallActivity.createExitOfferArgs(currentArgs, TestData.template2Offering)
+
+        assertThat(exitOfferArgs.nonSerializableArgsKey).isNull()
+    }
+
+    private fun intentWithNonSerializableArgsKey(key: Int): Intent {
+        val args = PaywallActivityArgs(
+            offeringIdAndPresentedOfferingContext = OfferingSelection.IdAndPresentedOfferingContext(
+                offeringId = TestData.template1Offering.identifier,
+                presentedOfferingContext = null,
+            ),
+            nonSerializableArgsKey = key,
+        )
+        return Intent(
+            ApplicationProvider.getApplicationContext<Context>(),
+            PaywallActivity::class.java,
+        ).putExtra(PaywallActivity.ARGS_EXTRA, args)
     }
 }

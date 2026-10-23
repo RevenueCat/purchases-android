@@ -16,6 +16,8 @@ import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.subscriberattributes.DeviceIdentifiersFetcher
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigCommitListener
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
+import com.revenuecat.purchases.common.sdksettings.DiagnosticsSettings
+import com.revenuecat.purchases.common.sdksettings.SdkSettings
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
 import com.revenuecat.purchases.google.toInAppStoreProduct
@@ -2330,6 +2332,26 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
         Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
         verify(exactly = 1) { mockDiagnosticsSynchronizer.syncDiagnosticsFileIfNeeded() }
+    }
+
+    @Test
+    fun `sdk settings are resolved only on first app foregrounded`() {
+        mockOfferingsManagerAppForeground()
+        Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
+        verify(exactly = 1) { mockSdkSettingsConfigProvider.ensureSettingsDelivered() }
+        Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
+        verify(exactly = 1) { mockSdkSettingsConfigProvider.ensureSettingsDelivered() }
+    }
+
+    @Test
+    fun `sdk settings changes apply the remote diagnostics setting`() {
+        val orchestrator = Purchases.sharedInstance.purchasesOrchestrator
+
+        orchestrator.onSdkSettingsChanged(SdkSettings(diagnostics = DiagnosticsSettings(enabled = false)))
+        verify(exactly = 1) { mockDiagnosticsTracker.applyRemoteCollectionSetting(false) }
+
+        orchestrator.onSdkSettingsChanged(SdkSettings.DEFAULT)
+        verify(exactly = 1) { mockDiagnosticsTracker.applyRemoteCollectionSetting(null) }
     }
 
     // endregion Diagnostics sync

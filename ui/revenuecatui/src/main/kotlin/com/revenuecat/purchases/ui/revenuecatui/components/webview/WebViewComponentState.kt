@@ -97,15 +97,14 @@ internal class WebViewComponentState(
 
     private val presentedPartial by derivedStateOf {
         val windowCondition = ScreenCondition.from(windowSize)
-        val componentState =
-            if (packageAwareDelegate.isSelected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
-
         style.overrides.buildPresentedPartial(
             windowCondition,
-            packageAwareDelegate.offerEligibility,
-            componentState,
+            offerEligibility = { packageAwareDelegate.offerEligibility },
+            state = {
+                if (packageAwareDelegate.isSelected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
+            },
             conditionContext = ConditionContext(
-                selectedPackageId = selectedPackageInfoProvider()?.rcPackage?.identifier,
+                selectedPackageId = { selectedPackageInfoProvider()?.rcPackage?.identifier },
                 customVariables = customVariablesProvider(),
                 stateReader = stateStoreProvider()::currentValueOrDefault,
                 windowDpSize = windowDpSize,

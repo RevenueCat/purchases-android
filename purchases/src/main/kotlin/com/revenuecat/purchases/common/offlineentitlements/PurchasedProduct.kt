@@ -9,4 +9,5 @@ internal data class PurchasedProduct(
     val storeTransaction: StoreTransaction,
     val entitlements: List<String>,
     val expiresDate: Date?,
+    val isSynced: Boolean,
 )

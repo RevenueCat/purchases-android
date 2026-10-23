@@ -41,6 +41,7 @@ import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
 import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.TransitionView
+import com.revenuecat.purchases.ui.revenuecatui.components.modifier.resolveComponentSizeParentData
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
 import com.revenuecat.purchases.ui.revenuecatui.components.previewStackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.previewTextComponentStyle
@@ -59,6 +60,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteract
 import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallProductIdentifier
 import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPurchaseButtonAction
 import com.revenuecat.purchases.ui.revenuecatui.helpers.resolvedWebCheckoutInteractionUrl
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -96,7 +98,10 @@ internal fun ButtonComponentView(
         return
     }
 
-    TransitionView(transition = style.transition) {
+    TransitionView(
+        transition = style.transition,
+        modifier = modifier.resolveComponentSizeParentData(stackState.size),
+    ) { outerModifier ->
         // Get a ButtonComponentState that calculates the stateful properties we should use.
         val buttonState = rememberButtonComponentState(
             style = style,
@@ -152,8 +157,6 @@ internal fun ButtonComponentView(
                     enabled = !anyActionInProgress,
                     onStackClick = onStackClick@{
                         val paywallAction = buttonState.action ?: return@onStackClick
-                        myActionInProgress = true
-                        state.update(clickScopedActionInProgress = true)
                         val actionForClick = if (style.action.isPurchaseRelated()) {
                             val currentPackage = packageForPurchaseButtonInteraction(style.action, state)
                             val componentUrl = resolvedWebCheckoutInteractionUrl(
@@ -194,26 +197,26 @@ internal fun ButtonComponentView(
                             }
                             paywallAction
                         }
-                        coroutineScope.launch {
-                            // `state` outlives this composition-scoped coroutine, so skipping the reset
-                            // on cancellation leaves every button on the paywall disabled.
-                            try {
-                                onClick(actionForClick)
-                            } finally {
-                                myActionInProgress = false
-                                state.update(clickScopedActionInProgress = false)
-                            }
-                        }
+                        coroutineScope.launchButtonAction(
+                            state = state,
+                            onActionInProgressChanged = { myActionInProgress = it },
+                            action = { onClick(actionForClick) },
+                        )
                     },
                 )
-                CircularProgressIndicator(
-                    modifier = Modifier.alpha(animatedProgressAlpha),
-                    color = progressColorFor(style.stackComponentStyle.background),
-                )
+                // The indeterminate indicator animates forever, so composing it at alpha 0 redraws the paywall
+                // every frame while idle.
+                if (animatedProgressAlpha > 0f) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.alpha(animatedProgressAlpha),
+                        color = progressColorFor(style.stackComponentStyle.background),
+                    )
+                }
             },
-            modifier = modifier,
+            modifier = outerModifier,
             measurePolicy = { measurables, constraints ->
                 val stack = measurables[0].measure(constraints)
+                val progressMeasurable = measurables.getOrNull(1)
                 // Ensure that the progress indicator is not bigger than the stack.
                 val marginStartPx = marginStart.toPx()
                 val marginEndPx = marginEnd.toPx()
@@ -227,7 +230,7 @@ internal fun ButtonComponentView(
                     stackMarginTopPx = marginTopPx,
                     stackMarginBottomPx = marginBottomPx,
                 )
-                val progress = measurables[1].measure(
+                val progress = progressMeasurable?.measure(
                     Constraints(
                         minWidth = progressSize,
                         maxWidth = progressSize,
@@ -245,13 +248,30 @@ internal fun ButtonComponentView(
                 ) {
                     stack.placeRelative(x = 0, y = 0)
                     // Center the progress indicator.
-                    progress.placeRelative(
+                    progress?.placeRelative(
                         x = marginStartPx.toInt() + ((stackWidthMinusMargin / 2f) - (progress.width / 2f)).roundToInt(),
                         y = marginTopPx.toInt() + ((stackHeightMinusMargin / 2f) - (progress.height / 2f)).roundToInt(),
                     )
                 }
             },
         )
+    }
+}
+
+internal fun CoroutineScope.launchButtonAction(
+    state: PaywallState.Loaded.Components,
+    onActionInProgressChanged: (Boolean) -> Unit,
+    action: suspend () -> Unit,
+) = launch {
+    // Keep the progress state inside the coroutine. If the scope is already cancelled, the body does not start and
+    // there is no state to clean up. Once it starts, `finally` covers cancellation after any suspension point.
+    try {
+        onActionInProgressChanged(true)
+        state.update(clickScopedActionInProgress = true)
+        action()
+    } finally {
+        onActionInProgressChanged(false)
+        state.update(clickScopedActionInProgress = false)
     }
 }
 

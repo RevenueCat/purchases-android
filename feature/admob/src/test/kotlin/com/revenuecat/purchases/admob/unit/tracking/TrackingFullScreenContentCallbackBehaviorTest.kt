@@ -103,7 +103,9 @@ class TrackingFullScreenContentCallbackBehaviorTest {
         subject.onAdShowedFullScreenContent()
 
         val slot = slot<AdDisplayedData>()
-        verify(exactly = 1) { mockAdTracker.trackAdDisplayed(capture(slot), AdCaptureMethod.ADAPTER) }
+        verify(exactly = 1) {
+            mockAdTracker.trackAdDisplayed(capture(slot), AdCaptureMethod.ANDROID_ADMOB_LEGACY_ADAPTER)
+        }
         assertEquals(
             AdDisplayedData(
                 networkName = "com.google.ads.mediation.admob.AdMobAdapter",
@@ -136,7 +138,7 @@ class TrackingFullScreenContentCallbackBehaviorTest {
         subject.onAdClicked()
 
         val slot = slot<AdOpenedData>()
-        verify(exactly = 1) { mockAdTracker.trackAdOpened(capture(slot), AdCaptureMethod.ADAPTER) }
+        verify(exactly = 1) { mockAdTracker.trackAdOpened(capture(slot), AdCaptureMethod.ANDROID_ADMOB_LEGACY_ADAPTER) }
         assertEquals(
             AdOpenedData(
                 networkName = "TestNetwork",
@@ -165,7 +167,7 @@ class TrackingFullScreenContentCallbackBehaviorTest {
 
         subject.onAdShowedFullScreenContent()
 
-        verify(exactly = 1) { mockAdTracker.trackAdDisplayed(any(), AdCaptureMethod.ADAPTER) }
+        verify(exactly = 1) { mockAdTracker.trackAdDisplayed(any(), AdCaptureMethod.ANDROID_ADMOB_LEGACY_ADAPTER) }
     }
 
     @Test
@@ -182,7 +184,7 @@ class TrackingFullScreenContentCallbackBehaviorTest {
 
         subject.onAdClicked()
 
-        verify(exactly = 1) { mockAdTracker.trackAdOpened(any(), AdCaptureMethod.ADAPTER) }
+        verify(exactly = 1) { mockAdTracker.trackAdOpened(any(), AdCaptureMethod.ANDROID_ADMOB_LEGACY_ADAPTER) }
     }
 
     @Test
@@ -240,7 +242,7 @@ class TrackingFullScreenContentCallbackBehaviorTest {
         wrapper.onAdShowedFullScreenContent()
 
         assertEquals(1, newCallback.onAdShowedCalls)
-        verify(exactly = 1) { mockAdTracker.trackAdDisplayed(any(), AdCaptureMethod.ADAPTER) }
+        verify(exactly = 1) { mockAdTracker.trackAdDisplayed(any(), AdCaptureMethod.ANDROID_ADMOB_LEGACY_ADAPTER) }
     }
 
     @Test
@@ -254,7 +256,7 @@ class TrackingFullScreenContentCallbackBehaviorTest {
 
         wrapper.onAdShowedFullScreenContent()
 
-        verify(exactly = 1) { mockAdTracker.trackAdDisplayed(any(), AdCaptureMethod.ADAPTER) }
+        verify(exactly = 1) { mockAdTracker.trackAdDisplayed(any(), AdCaptureMethod.ANDROID_ADMOB_LEGACY_ADAPTER) }
     }
 
     @Test

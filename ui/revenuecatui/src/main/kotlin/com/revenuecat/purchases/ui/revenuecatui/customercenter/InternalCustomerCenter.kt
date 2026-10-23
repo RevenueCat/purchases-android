@@ -1,5 +1,6 @@
 @file:Suppress("TooManyFunctions")
 @file:JvmSynthetic
+@file:OptIn(InternalRevenueCatAPI::class)
 
 package com.revenuecat.purchases.ui.revenuecatui.customercenter
 
@@ -48,6 +49,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
@@ -74,6 +76,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.PurchaseHis
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.RelevantPurchasesListView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.SelectedPurchaseDetailView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.VirtualCurrencyBalancesScreen
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.VirtualCurrencyBalancesScreenViewState
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
@@ -92,12 +95,13 @@ internal fun InternalCustomerCenter(
         isDarkMode = isSystemInDarkTheme(),
         listener = listener,
     ),
+    previewOptions: CustomerCenterPreviewOptions? = null,
     onDismiss: () -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    val isDark = isSystemInDarkTheme()
+    val isDark = previewOptions?.isDarkMode ?: isSystemInDarkTheme()
 
-    LaunchedEffect(colorScheme, isDark) {
+    LaunchedEffect(viewModel, colorScheme, isDark) {
         viewModel.refreshColors(colorScheme, isDark)
     }
 
@@ -105,13 +109,13 @@ internal fun InternalCustomerCenter(
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    LaunchedEffect(state !is CustomerCenterState.Success) {
+    LaunchedEffect(viewModel, state !is CustomerCenterState.Success) {
         if (state is CustomerCenterState.NotLoaded) {
             viewModel.loadCustomerCenter()
         }
     }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(viewModel) {
         viewModel.trackImpressionIfNeeded()
     }
 
@@ -123,7 +127,7 @@ internal fun InternalCustomerCenter(
     // (e.g., rotation) without triggering false refreshes.
     val lifecycleOwner = LocalLifecycleOwner.current
     val activity = context.getActivity()
-    DisposableEffect(lifecycleOwner) {
+    DisposableEffect(lifecycleOwner, viewModel, activity) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
                 Lifecycle.Event.ON_STOP -> {
@@ -158,6 +162,7 @@ internal fun InternalCustomerCenter(
     InternalCustomerCenter(
         state,
         modifier,
+        previewOptions = previewOptions,
         onAction = { action ->
             when (action) {
                 is CustomerCenterAction.PathButtonPressed -> {
@@ -210,13 +215,18 @@ internal fun InternalCustomerCenter(
 }
 
 @Composable
-private fun InternalCustomerCenter(
+internal fun InternalCustomerCenter(
     state: CustomerCenterState,
     modifier: Modifier = Modifier,
+    previewOptions: CustomerCenterPreviewOptions? = null,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
-    val colorScheme = createColorScheme(state)
+    val isDarkMode = previewOptions?.isDarkMode ?: isSystemInDarkTheme()
+    val usesExistingNavigation = previewOptions?.usesExistingNavigation == true
+    val showCloseButton = previewOptions?.showCloseButton != false
+    val colorScheme = createColorScheme(state, isDarkMode)
     val (title, navigationButtonType, shouldUseLargeTopBar) = createScaffoldState(state)
+    val isRoot = state !is CustomerCenterState.Success || !state.navigationState.canNavigateBack
 
     MaterialTheme(
         colorScheme = colorScheme,
@@ -227,7 +237,12 @@ private fun InternalCustomerCenter(
             scaffoldConfig = CustomerCenterScaffoldConfig(
                 title = title,
                 shouldUseLargeTopBar = shouldUseLargeTopBar,
-                navigationButtonType = navigationButtonType,
+                navigationButtonType = if (isRoot && usesExistingNavigation) {
+                    CustomerCenterState.NavigationButtonType.BACK
+                } else {
+                    navigationButtonType
+                },
+                showNavigationButton = !isRoot || usesExistingNavigation || showCloseButton,
             ),
             onAction = onAction,
         ) {
@@ -246,6 +261,7 @@ private fun InternalCustomerCenter(
                 is CustomerCenterState.Success -> {
                     CustomerCenterLoaded(
                         state = state,
+                        previewOptions = previewOptions,
                         onAction = onAction,
                     )
                 }
@@ -255,8 +271,7 @@ private fun InternalCustomerCenter(
 }
 
 @Composable
-private fun createColorScheme(state: CustomerCenterState): ColorScheme {
-    val isDark = isSystemInDarkTheme()
+private fun createColorScheme(state: CustomerCenterState, isDark: Boolean): ColorScheme {
     val baseColorScheme = MaterialTheme.colorScheme
 
     return remember(state, isDark, baseColorScheme) {
@@ -308,6 +323,7 @@ private fun createScaffoldState(state: CustomerCenterState): ScaffoldConfigData 
 
 @Immutable
 private data class CustomerCenterScaffoldConfig(
+    val showNavigationButton: Boolean = true,
     val title: String?,
     val shouldUseLargeTopBar: Boolean,
     val navigationButtonType: CustomerCenterState.NavigationButtonType,
@@ -368,10 +384,12 @@ private fun CustomerCenterTopBar(
                 scaffoldConfig.title?.let { Text(text = it) }
             },
             navigationIcon = {
-                CustomerCenterNavigationIcon(
-                    navigationButtonType = scaffoldConfig.navigationButtonType,
-                    onAction = onAction,
-                )
+                if (scaffoldConfig.showNavigationButton) {
+                    CustomerCenterNavigationIcon(
+                        navigationButtonType = scaffoldConfig.navigationButtonType,
+                        onAction = onAction,
+                    )
+                }
             },
             colors = colors,
             scrollBehavior = scrollBehavior,
@@ -382,10 +400,12 @@ private fun CustomerCenterTopBar(
                 scaffoldConfig.title?.let { Text(text = it) }
             },
             navigationIcon = {
-                CustomerCenterNavigationIcon(
-                    navigationButtonType = scaffoldConfig.navigationButtonType,
-                    onAction = onAction,
-                )
+                if (scaffoldConfig.showNavigationButton) {
+                    CustomerCenterNavigationIcon(
+                        navigationButtonType = scaffoldConfig.navigationButtonType,
+                        onAction = onAction,
+                    )
+                }
             },
             colors = colors,
         )
@@ -413,6 +433,7 @@ private fun CustomerCenterNavigationIcon(
 @Composable
 private fun CustomerCenterLoaded(
     state: CustomerCenterState.Success,
+    previewOptions: CustomerCenterPreviewOptions? = null,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -447,6 +468,7 @@ private fun CustomerCenterLoaded(
             CustomerCenterNavHost(
                 currentDestination = state.currentDestination,
                 customerCenterState = state,
+                previewOptions = previewOptions,
                 onAction = onAction,
             )
         }
@@ -467,6 +489,13 @@ private fun CustomerCenterLoaded(
     }
 }
 
+private fun CustomerCenterDestination.contentKey(isPreview: Boolean): Any =
+    (this as? CustomerCenterDestination.SelectedPurchaseDetail)?.takeIf { isPreview }?.purchaseInformation
+        ?.productIdentifier ?: this
+
+private fun CustomerCenterDestination.refreshed(current: CustomerCenterDestination, isPreview: Boolean) =
+    current.takeIf { isPreview && contentKey(true) == it.contentKey(true) } ?: this
+
 @Suppress("LongMethod")
 @Composable
 private fun CustomerCenterNavHost(
@@ -474,12 +503,15 @@ private fun CustomerCenterNavHost(
     customerCenterState: CustomerCenterState.Success,
     onAction: (CustomerCenterAction) -> Unit,
     modifier: Modifier = Modifier,
+    previewOptions: CustomerCenterPreviewOptions? = null,
 ) {
+    val isDarkMode = previewOptions?.isDarkMode ?: isSystemInDarkTheme()
     AnimatedContent(
         targetState = currentDestination,
+        contentKey = { it.contentKey(isPreview = previewOptions != null) },
         transitionSpec = {
             CustomerCenterAnimations.getTransitionForNavigation(
-                from = initialState,
+                from = initialState.refreshed(targetState, previewOptions != null),
                 to = targetState,
                 navigationState = customerCenterState.navigationState,
             )
@@ -491,6 +523,7 @@ private fun CustomerCenterNavHost(
             is CustomerCenterDestination.Main -> {
                 MainScreenContent(
                     state = customerCenterState,
+                    isDarkMode = isDarkMode,
                     onAction = onAction,
                 )
             }
@@ -502,6 +535,7 @@ private fun CustomerCenterNavHost(
             is CustomerCenterDestination.PromotionalOffer -> {
                 PromotionalOfferScreen(
                     promotionalOfferData = destination.data,
+                    isDarkMode = isDarkMode,
                     appearance = customerCenterState.customerCenterConfigData.appearance,
                     localization = customerCenterState.customerCenterConfigData.localization,
                     onAccept = { subscriptionOption ->
@@ -525,10 +559,22 @@ private fun CustomerCenterNavHost(
             }
 
             is CustomerCenterDestination.VirtualCurrencyBalances -> {
-                VirtualCurrencyBalancesScreen(
-                    appearance = customerCenterState.customerCenterConfigData.appearance,
-                    localization = customerCenterState.customerCenterConfigData.localization,
-                )
+                if (previewOptions != null) {
+                    VirtualCurrencyBalancesScreen(
+                        appearance = customerCenterState.customerCenterConfigData.appearance,
+                        localization = customerCenterState.customerCenterConfigData.localization,
+                        viewState = VirtualCurrencyBalancesScreenViewState.Loaded(
+                            customerCenterState.virtualCurrencies?.all?.values
+                                ?.sortedByDescending { it.balance }.orEmpty(),
+                        ),
+                        isDarkMode = isDarkMode,
+                    )
+                } else {
+                    VirtualCurrencyBalancesScreen(
+                        appearance = customerCenterState.customerCenterConfigData.appearance,
+                        localization = customerCenterState.customerCenterConfigData.localization,
+                    )
+                }
             }
 
             is CustomerCenterDestination.CreateSupportTicket -> {
@@ -581,6 +627,7 @@ private fun CustomerCenterNavHost(
 @Composable
 private fun MainScreenContent(
     state: CustomerCenterState.Success,
+    isDarkMode: Boolean = isSystemInDarkTheme(),
     onAction: (CustomerCenterAction) -> Unit,
 ) {
     val configuration = state.customerCenterConfigData
@@ -591,6 +638,7 @@ private fun MainScreenContent(
                 contactEmail = configuration.support.email,
                 virtualCurrencies = state.virtualCurrencies,
                 appearance = configuration.appearance,
+                isDarkMode = isDarkMode,
                 localization = configuration.localization,
                 supportTickets = configuration.support.supportTickets,
                 onPurchaseSelect = { purchase ->
@@ -613,6 +661,7 @@ private fun MainScreenContent(
                 screen = noActiveScreen,
                 contactEmail = configuration.support.email,
                 appearance = configuration.appearance,
+                isDarkMode = isDarkMode,
                 localization = configuration.localization,
                 supportTickets = configuration.support.supportTickets,
                 offering = state.noActiveScreenOffering,

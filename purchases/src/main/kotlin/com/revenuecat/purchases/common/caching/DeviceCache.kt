@@ -19,7 +19,6 @@ import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
-import com.revenuecat.purchases.common.responses.CustomerInfoResponseJsonKeys
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.interfaces.StorefrontProvider
@@ -247,15 +246,6 @@ public open class DeviceCache(
 
     @Synchronized
     internal fun cacheCustomerInfo(appUserID: String, info: CustomerInfo) {
-        // The dimensions sibling of `subscriber` is cached on its own because not every response carries it:
-        // the last value received stays authoritative until a response replaces it. Absent or empty keeps the
-        // previous value, and a cache-loaded info never writes so a stale copy inside the blob below can't
-        // resurrect an older value.
-        if (!info.loadedFromCache) {
-            info.rawData.optJSONObject(CustomerInfoResponseJsonKeys.DIMENSIONS)
-                ?.takeIf { it.length() > 0 }
-                ?.let { cacheSubscriberDimensions(appUserID, it.toString()) }
-        }
         val jsonObject = info.rawData.also {
             it.put(CUSTOMER_INFO_SCHEMA_VERSION_KEY, CUSTOMER_INFO_SCHEMA_VERSION)
             it.put(CUSTOMER_INFO_VERIFICATION_RESULT_KEY, info.entitlements.verification.name)
@@ -454,6 +444,13 @@ public open class DeviceCache(
     @Synchronized
     internal fun getCachedSubscriberDimensionsJson(appUserID: String): String? {
         return preferences.getString(subscriberDimensionsCacheKey(appUserID), null)
+    }
+
+    @Synchronized
+    internal fun clearSubscriberDimensions(appUserID: String) {
+        preferences.edit()
+            .remove(subscriberDimensionsCacheKey(appUserID))
+            .apply()
     }
 
     private fun SharedPreferences.Editor.clearSubscriberDimensionsCache(appUserID: String): SharedPreferences.Editor {

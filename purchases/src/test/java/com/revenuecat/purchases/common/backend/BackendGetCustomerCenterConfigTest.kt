@@ -3,7 +3,6 @@ package com.revenuecat.purchases.common.backend
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
@@ -13,6 +12,7 @@ import com.revenuecat.purchases.common.SyncDispatcher
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Screen
@@ -62,7 +62,6 @@ class BackendGetCustomerCenterConfigTest {
                         title = "Request a refund",
                         type = HelpPath.PathType.REFUND_REQUEST,
                         promotionalOffer = HelpPath.PathDetail.PromotionalOffer(
-                            androidOfferId = "rc-refund-offer",
                             eligible = true,
                             title = "Wait!",
                             subtitle = "Before you go, here's a one-time offer to continue at a discount.",
@@ -91,7 +90,6 @@ class BackendGetCustomerCenterConfigTest {
                                     id = "cancel_survey_too_expensive",
                                     title = "Too expensive",
                                     promotionalOffer = HelpPath.PathDetail.PromotionalOffer(
-                                        androidOfferId = "rc-cancel-offer",
                                         eligible = true,
                                         title = "Wait!",
                                         subtitle = "Before you go, here's a one-time offer to continue at a discount.",
@@ -108,7 +106,6 @@ class BackendGetCustomerCenterConfigTest {
                                     id = "cancel_survey_usage",
                                     title = "Don't use the app",
                                     promotionalOffer = HelpPath.PathDetail.PromotionalOffer(
-                                        androidOfferId = "rc-cancel-offer",
                                         eligible = true,
                                         title = "Wait!",
                                         subtitle = "Before you go, here's a one-time offer to continue at a discount.",
@@ -279,6 +276,7 @@ class BackendGetCustomerCenterConfigTest {
                 body = null,
                 postFieldsToSign = null,
                 requestHeaders = any(),
+                iamAppUserID = any(),
             )
         }
     }
@@ -295,6 +293,7 @@ class BackendGetCustomerCenterConfigTest {
                 any(),
                 any(),
                 fallbackBaseURLs = any(),
+                iamAppUserID = any(),
             )
         } answers {
             if (delayMs != null) {
@@ -305,7 +304,7 @@ class BackendGetCustomerCenterConfigTest {
                 loadJSON(MOCK_RESPONSE_FILENAME),
                 HTTPResult.Origin.BACKEND,
                 requestDate = null,
-                VerificationResult.NOT_REQUESTED,
+                SignatureVerificationResult.NotRequested,
                 isLoadShedderResponse = false,
                 isFallbackURL = false,
             )

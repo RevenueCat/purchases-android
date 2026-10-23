@@ -44,6 +44,15 @@ internal class GenerationGuardedCacheTest {
     }
 
     @Test
+    fun `store reports whether it applied`() {
+        val cache = GenerationGuardedCache<String>()
+
+        assertThat(cache.store(generation = 5, newValue = "high")).isTrue
+        assertThat(cache.store(generation = 2, newValue = "low")).isFalse
+        assertThat(cache.store(generation = 5, newValue = "same")).isTrue
+    }
+
+    @Test
     fun `a lower-generation store does not clobber a higher-generation value`() {
         val cache = GenerationGuardedCache<String>()
         cache.store(generation = 5, newValue = "high")
@@ -101,6 +110,20 @@ internal class GenerationGuardedCacheTest {
         // Invalidated at a newer generation: generation is current enough, but there is no value.
         cache.invalidate(generation = 6)
         assertThat(cache.isWarmAtOrAbove(6)).isFalse
+    }
+
+    @Test
+    fun `cachedAtOrAbove returns the value only when warm at or above the generation`() {
+        val cache = GenerationGuardedCache<String>()
+        assertThat(cache.cachedAtOrAbove(0)).isNull()
+
+        cache.store(generation = 4, newValue = "a")
+        assertThat(cache.cachedAtOrAbove(3)).isEqualTo("a")
+        assertThat(cache.cachedAtOrAbove(4)).isEqualTo("a")
+        assertThat(cache.cachedAtOrAbove(5)).isNull()
+
+        cache.invalidate(generation = 6)
+        assertThat(cache.cachedAtOrAbove(6)).isNull()
     }
 
     @Test

@@ -25,22 +25,30 @@ import com.revenuecat.purchases.paywalls.components.PaywallAnimation
 import com.revenuecat.purchases.paywalls.components.PaywallAnimation.AnimationType
 import com.revenuecat.purchases.paywalls.components.PaywallTransition
 import com.revenuecat.purchases.paywalls.components.PaywallTransition.TransitionType
-@Suppress("ModifierMissing")
+/**
+ * [modifier] is applied to the outermost layout node so that parent data (e.g. `weight`, the stack's size parent
+ * data) reaches the parent. Without a transition there is no wrapper node, so it is handed back to [content], which
+ * must apply it to its own root.
+ */
 @Composable
-internal fun TransitionView(transition: PaywallTransition?, content: @Composable () -> Unit) {
+internal fun TransitionView(
+    transition: PaywallTransition?,
+    modifier: Modifier = Modifier,
+    content: @Composable (modifier: Modifier) -> Unit,
+) {
     if (transition == null) {
-        content()
+        content(modifier)
     } else {
         if (transition.displacementStrategy == PaywallTransition.DisplacementStrategy.GREEDY) {
-            Box {
+            Box(modifier = modifier) {
                 Box(modifier = Modifier.hidden()) {
-                    content()
+                    content(Modifier)
                 }
 
-                transition.AnimatedVisibility { content() }
+                transition.AnimatedVisibility { content(Modifier) }
             }
         } else {
-            transition.AnimatedVisibility { content() }
+            transition.AnimatedVisibility(modifier = modifier) { content(Modifier) }
         }
     }
 }
@@ -53,15 +61,18 @@ private fun Modifier.hidden(): Modifier = this.layout { measurable, constraints 
     }
 }
 
-@Suppress("ModifierMissing")
 @Composable
-private fun PaywallTransition.AnimatedVisibility(content: @Composable () -> Unit) {
+private fun PaywallTransition.AnimatedVisibility(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
     var shouldShow by remember(this) { mutableStateOf(false) }
     LaunchedEffect(this) {
         shouldShow = true
     }
     AnimatedVisibility(
         visible = shouldShow,
+        modifier = modifier,
         enter = enterTransition(),
     ) {
         content()

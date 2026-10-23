@@ -1,8 +1,9 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import dev.drewhamilton.poko.Poko
 
 /**
@@ -11,19 +12,19 @@ import dev.drewhamilton.poko.Poko
  * [com.revenuecat.purchases.ui.revenuecatui.checkpoints.paywallPresenter]. When none is set, the SDK presents the
  * offering's configured paywall, falling back to the default paywall, through a presenter of its own.
  */
-@InternalRevenueCatAPI
+@InviteOnlyCheckpointsAPI
 public fun interface PaywallPresenter {
 
     /**
-     * Called on the main thread when a checkpoint resolves to an offering. Present [params]'s offering however
-     * the app wants and report through [completion] how the presentation ended; the checkpoint stays unresolved
-     * until then. The SDK works out what the user obtained by itself, so the app only reports how the user left
-     * its UI.
+     * Called on the main thread when a checkpoint resolves to an offering. Present [params]'s offering the way
+     * [Params.presentationMode] asks and report through [completion] how the presentation ended; the checkpoint
+     * stays unresolved until then. The SDK works out what the user obtained by itself, so the app only reports how
+     * the user left its UI.
      */
     public fun present(params: Params, completion: Completion)
 
     /** What a [PaywallPresenter] is asked to present. */
-    @InternalRevenueCatAPI
+    @InviteOnlyCheckpointsAPI
     @Poko
     public class Params internal constructor(
         /** The offering the checkpoint resolved to. */
@@ -32,6 +33,12 @@ public fun interface PaywallPresenter {
         public val checkpointIdentifier: String,
         /** The custom variables supplied to the checkpoint call. */
         public val customVariables: Map<String, CustomVariableValue>,
+        /**
+         * How the call asked for the flow to be presented, already resolved by the SDK: either
+         * [FlowPresentationMode.MODAL_FULL_SCREEN] or [FlowPresentationMode.MODAL_SHEET], never
+         * [FlowPresentationMode.DEFAULT]. The app's UI should follow it.
+         */
+        public val presentationMode: FlowPresentationMode,
     )
 
     /**
@@ -43,14 +50,14 @@ public fun interface PaywallPresenter {
      * through the SDK or through the app's own billing client are both picked up; an app that disabled automatic
      * purchase syncing must call [com.revenuecat.purchases.Purchases.syncPurchases] before reporting.
      */
-    @InternalRevenueCatAPI
+    @InviteOnlyCheckpointsAPI
     public fun interface Completion {
 
         /** Reports how the app's UI ended. */
         public fun complete(result: Result)
 
         /** The way the user left the app's UI. */
-        @InternalRevenueCatAPI
+        @InviteOnlyCheckpointsAPI
         public abstract class Result internal constructor() {
 
             /**
@@ -77,6 +84,15 @@ public fun interface PaywallPresenter {
              */
             public object NavigatedBack : Result() {
                 override fun toString(): String = "NavigatedBack"
+            }
+
+            /**
+             * The SDK's own paywall could not be shown or kept on screen, and the user obtained nothing. Reported
+             * only by [DefaultPaywallPresenter]: the checkpoint is not passed. An app presenter owns its UI's
+             * errors and reports how the user left instead.
+             */
+            internal class Failed(val error: PurchasesError) : Result() {
+                override fun toString(): String = "Failed($error)"
             }
         }
     }

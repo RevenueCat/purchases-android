@@ -6,6 +6,7 @@ import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.responses.SubscriptionInfoResponse
 import com.revenuecat.purchases.utils.getDate
 import com.revenuecat.purchases.utils.optDate
+import com.revenuecat.purchases.utils.optNullableString
 import dev.drewhamilton.poko.Poko
 import kotlinx.parcelize.Parcelize
 import org.json.JSONObject
@@ -78,11 +79,11 @@ public class Transaction(
         productIdentifier = productId,
         productId = productId,
         purchaseDate = jsonObject.getDate("purchase_date"),
-        storeTransactionId = jsonObject.optString("store_transaction_id").takeIf {
+        storeTransactionId = jsonObject.optNullableString("store_transaction_id")?.takeIf {
             it.isNotBlank()
         },
         store = jsonObject.getString("store").let { Store.fromString(it) },
-        displayName = jsonObject.optString("display_name").takeIf {
+        displayName = jsonObject.optNullableString("display_name")?.takeIf {
             it.isNotBlank()
         },
         isSandbox = jsonObject.optBoolean("is_sandbox", false),

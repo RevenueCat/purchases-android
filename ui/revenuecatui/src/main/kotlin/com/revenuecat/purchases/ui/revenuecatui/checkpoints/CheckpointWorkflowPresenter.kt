@@ -17,6 +17,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.R
+import com.revenuecat.purchases.ui.revenuecatui.composables.ModalSheetState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.EDGE_TO_EDGE_WINDOW_THEME
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.applyEdgeToEdge
@@ -48,10 +49,18 @@ internal interface CheckpointPresentationHost {
 internal class CheckpointWorkflowPresenter(
     private val callId: String,
     private val presentationHost: CheckpointPresentationHost,
-    private val createContent: (Activity, PaywallOptions) -> View = { activity, options ->
-        ComposeView(activity).apply { setContent { Paywall(options) } }
+    presentationMode: FlowPresentationMode = FlowPresentationMode.MODAL_FULL_SCREEN,
+    private val createContent: (Activity, PaywallOptions, ModalSheetState?) -> View = { activity, options, sheet ->
+        ComposeView(activity).apply {
+            setContent { if (sheet == null) Paywall(options) else SheetWorkflowContent(sheet, options) }
+        }
     },
 ) {
+
+    // One sheet per presentation, not per window: a re-presented sheet composes where the previous one was, at
+    // rest or mid-hide, and a hide that lost its window completes in the next one.
+    private val sheetState: ModalSheetState? =
+        if (presentationMode == FlowPresentationMode.MODAL_SHEET) ModalSheetState() else null
 
     // Holds the workflow window and view hierarchy (and, through them, the host activity), so nulling it on
     // every dismissal is the no-leak guarantee at host destroy. host below is only kept for identity checks
@@ -90,17 +99,17 @@ internal class CheckpointWorkflowPresenter(
         val dialog = ComponentDialog(activity, EDGE_TO_EDGE_WINDOW_THEME)
         dialog.window?.applyEdgeToEdge()
         // A re-present after a configuration change replaces a window that was already there, so it only fades out.
-        val animations = if (pendingSavedState == null) {
-            R.style.RcCheckpointWindowAnimation
-        } else {
-            R.style.RcCheckpointWindowAnimation_Represent
+        val animations = when {
+            sheetState != null -> R.style.RcCheckpointWindowAnimation_Sheet
+            pendingSavedState == null -> R.style.RcCheckpointWindowAnimation
+            else -> R.style.RcCheckpointWindowAnimation_Represent
         }
         dialog.window?.setWindowAnimations(animations)
         // Back must never fall through to the dispatcher's cancel fallback; the paywall's own BackHandler
         // decides what back does.
         dialog.setCancelable(false)
         dialog.setContentView(
-            createContent(activity, options),
+            createContent(activity, options, sheetState),
             ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
         )
         dialog.window?.decorView?.setViewTreeViewModelStoreOwner(viewModelStoreOwner)
@@ -166,8 +175,18 @@ internal class CheckpointWorkflowPresenter(
     }
 
     // The window stays up until the app has been told, so whatever the callback puts on screen is already there
-    // when the flow goes away.
+    // when the flow goes away. A sheet slides off first: its window is transparent, so what is left up meanwhile
+    // is the scrim fading with it.
     private fun requestDismiss(navigatedBack: Boolean) {
+        val sheet = sheetState
+        if (sheet == null) {
+            finishPresentation(navigatedBack)
+        } else {
+            sheet.hide { finishPresentation(navigatedBack) }
+        }
+    }
+
+    private fun finishPresentation(navigatedBack: Boolean) {
         presentationHost.onPresentationFinished(callId, navigatedBack) {
             dismissWindowOnly()
             teardown()

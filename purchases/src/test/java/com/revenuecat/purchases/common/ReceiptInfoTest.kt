@@ -541,6 +541,27 @@ class ReceiptInfoTest {
     }
 
     @Test
+    fun `ReceiptInfo preserves checkpoint identifier and trace id when serialized and deserialized`() {
+        // language=JSON
+        val serialized = """
+            {
+                "productIDs":["com.myproduct"],
+                "presentedOfferingContext":{
+                    "offeringIdentifier":"offering1",
+                    "placementIdentifier":null,
+                    "targetingContext":null,
+                    "checkpointIdentifier":"onboarding_paywall",
+                    "traceId":"trace_id"
+                }
+            }
+        """.trimIndent().lines().joinToString("") { it.trim() }
+
+        val decoded = json.decodeFromString<ReceiptInfo>(serialized)
+
+        assertThat(json.encodeToString(decoded)).isEqualTo(serialized)
+    }
+
+    @Test
     fun `ReceiptInfo with PresentedOfferingContext without targeting context can be serialized`() {
         val presentedContext = PresentedOfferingContext(
             offeringIdentifier = "offering1",
@@ -579,42 +600,17 @@ class ReceiptInfoTest {
     }
 
     @Test
-    fun `PresentedOfferingContextSerializer includes all constructor parameters`() {
-        // Get all constructors from PresentedOfferingContext using Java reflection
-        val constructors = PresentedOfferingContext::class.java.constructors
-        // Find the constructor with the most parameters (the primary constructor)
-        val primaryConstructor = constructors.maxByOrNull { it.parameterCount }
-            ?: error("PresentedOfferingContext must have at least one constructor")
-
-        val constructorParamCount = primaryConstructor.parameterCount
-
-        // Get the descriptor from the serializer
+    fun `PresentedOfferingContextSerializer includes all persisted fields`() {
         val descriptor = PresentedOfferingContextSerializer.descriptor
+        val serializedFields = (0 until descriptor.elementsCount).map(descriptor::getElementName)
 
-        // Verify the number of fields matches
-        assertThat(descriptor.elementsCount)
-            .withFailMessage(
-                "PresentedOfferingContextSerializer has ${descriptor.elementsCount} fields, " +
-                    "but PresentedOfferingContext constructor has $constructorParamCount parameters. " +
-                    "Did you forget to update the serializer?"
-            )
-            .isEqualTo(constructorParamCount)
-
-        // Get expected field names from the descriptor
-        val expectedFields = setOf("offeringIdentifier", "placementIdentifier", "targetingContext")
-
-        // Verify each expected field is in the descriptor
-        expectedFields.forEach { fieldName ->
-            val hasField = (0 until descriptor.elementsCount).any { index ->
-                descriptor.getElementName(index) == fieldName
-            }
-            assertThat(hasField)
-                .withFailMessage(
-                    "PresentedOfferingContextSerializer is missing field '$fieldName'. " +
-                        "Please add it to the serializer."
-                )
-                .isTrue()
-        }
+        assertThat(serializedFields).containsExactly(
+            "offeringIdentifier",
+            "placementIdentifier",
+            "targetingContext",
+            "checkpointIdentifier",
+            "traceId",
+        )
     }
 
     @Test

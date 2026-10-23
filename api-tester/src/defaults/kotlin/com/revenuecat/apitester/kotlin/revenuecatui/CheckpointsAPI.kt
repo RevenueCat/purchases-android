@@ -1,25 +1,30 @@
-@file:OptIn(InternalRevenueCatAPI::class)
+@file:OptIn(InviteOnlyCheckpointsAPI::class)
 
 package com.revenuecat.apitester.kotlin.revenuecatui
 
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointFailureKind
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPassedCallback
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowResult
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.errorPresenter
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.paywallPresenter
 
 @Suppress("unused", "UNUSED_VARIABLE")
 private class CheckpointsAPI {
 
     fun checkCheckpoint(purchases: Purchases, params: CheckpointParams, callback: CheckpointPassedCallback) {
-        purchases.checkpoint("checkpoint_identifier") { result: FlowResult? -> }
-        purchases.checkpoint("checkpoint_identifier", params) { result: FlowResult? -> }
-        purchases.checkpoint("checkpoint_identifier", params = null) { result: FlowResult? -> }
+        purchases.checkpoint("checkpoint_identifier") { result: CheckpointResult -> }
+        purchases.checkpoint("checkpoint_identifier", params) { result: CheckpointResult -> }
+        purchases.checkpoint("checkpoint_identifier", params = null) { result: CheckpointResult -> }
         purchases.checkpoint("checkpoint_identifier", callback)
         purchases.checkpoint(
             checkpointIdentifier = "checkpoint_identifier",
@@ -28,11 +33,13 @@ private class CheckpointsAPI {
         )
     }
 
-    fun checkParams(presenter: PaywallPresenter) {
+    fun checkParams(presenter: PaywallPresenter, errorPresenter: ErrorPresenter) {
         val fromBuilder: CheckpointParams = CheckpointParams.Builder()
             .setCustomVariables(mapOf("key" to CustomVariableValue.String("value")))
             .setPaywallPresenter(presenter)
             .setPaywallPresenter(null)
+            .setErrorPresenter(errorPresenter)
+            .setErrorPresenter(null)
             .build()
         val fromDsl: CheckpointParams = CheckpointParams {
             customVariables { "key" to "value" }
@@ -40,9 +47,14 @@ private class CheckpointsAPI {
             paywallPresenter { params: PaywallPresenter.Params, completion: PaywallPresenter.Completion ->
                 completion.complete(PaywallPresenter.Completion.Result.Closed)
             }
+            errorPresenter(errorPresenter)
+            errorPresenter { params: ErrorPresenter.Params, completion: ErrorPresenter.Completion ->
+                completion.complete()
+            }
         }
         val customVariables: Map<String, CustomVariableValue> = fromDsl.customVariables
         val paywallPresenter: PaywallPresenter? = fromDsl.paywallPresenter
+        val currentErrorPresenter: ErrorPresenter? = fromDsl.errorPresenter
     }
 
     fun checkPaywallPresenter(purchases: Purchases, presenter: PaywallPresenter) {
@@ -54,6 +66,7 @@ private class CheckpointsAPI {
             val offering: Offering = params.offering
             val checkpointIdentifier: String = params.checkpointIdentifier
             val customVariables: Map<String, CustomVariableValue> = params.customVariables
+            val presentationMode: FlowPresentationMode = params.presentationMode
             completion.complete(PaywallPresenter.Completion.Result.Continued)
             completion.complete(PaywallPresenter.Completion.Result.Closed)
             completion.complete(PaywallPresenter.Completion.Result.NavigatedBack)
@@ -66,6 +79,30 @@ private class CheckpointsAPI {
             PaywallPresenter.Completion.Result.Closed -> {}
             PaywallPresenter.Completion.Result.NavigatedBack -> {}
             // The hierarchy is closed but not sealed, so consumers must handle cases added later.
+            else -> {}
+        }
+    }
+
+    fun checkErrorPresenter(purchases: Purchases, presenter: ErrorPresenter) {
+        purchases.errorPresenter = presenter
+        purchases.errorPresenter = null
+        val currentPresenter: ErrorPresenter? = purchases.errorPresenter
+        val lambdaPresenter = ErrorPresenter {
+                params: ErrorPresenter.Params, completion: ErrorPresenter.Completion ->
+            val error: PurchasesError = params.error
+            val checkpointIdentifier: String = params.checkpointIdentifier
+            val customVariables: Map<String, CustomVariableValue> = params.customVariables
+            val kind: CheckpointFailureKind = params.kind
+            completion.complete()
+        }
+    }
+
+    fun checkCheckpointFailureKind(kind: CheckpointFailureKind) {
+        when (kind) {
+            CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN -> {}
+            CheckpointFailureKind.FLOW_ACTION_FAILED -> {}
+            CheckpointFailureKind.FLOW_RESULT_SYNC_FAILED -> {}
+            // Not an enum, so values added later must be handled too.
             else -> {}
         }
     }

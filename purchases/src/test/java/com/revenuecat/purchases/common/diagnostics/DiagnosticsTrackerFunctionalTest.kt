@@ -50,6 +50,7 @@ class DiagnosticsTrackerFunctionalTest {
             diagnosticsFileHelper = diagnosticsFileHelper,
             diagnosticsHelper = DiagnosticsHelper(applicationContext, diagnosticsFileHelper, lazy { mockk(relaxed = true) }),
             diagnosticsDispatcher = SyncDispatcher(),
+            enabledBySdkConfiguration = true,
         )
     }
 
@@ -88,7 +89,7 @@ class DiagnosticsTrackerFunctionalTest {
                 "test_key_4" to "test_value_${Random.nextInt()}",
                 "test_key_5" to "test_value_5",
             ),
-            appSessionID = UUID.randomUUID(),
+            diagnosticsSessionID = UUID.randomUUID(),
         )
     }
 

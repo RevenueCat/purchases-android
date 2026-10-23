@@ -4,7 +4,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.assertDebugLog
 import com.revenuecat.purchases.assertErrorLog
 import com.revenuecat.purchases.assertWarnLog
@@ -16,6 +15,7 @@ import com.revenuecat.purchases.common.caching.isCacheStale
 import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.networking.RCContainerFormatException
 import com.revenuecat.purchases.common.networking.RCElement
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
@@ -80,10 +80,10 @@ class RemoteConfigManagerTest {
     private var capturedLastRefreshTime: Date? = null
     private var capturedFetchContext: RemoteConfigFetchContext? = null
     private var capturedPrefetchedBlobs: List<String>? = null
-    private lateinit var onSuccess: (RCContainer?, Date?, VerificationResult) -> Unit
+    private lateinit var onSuccess: (RCContainer?, Date?, SignatureVerificationResult) -> Unit
     private lateinit var onError: (PurchasesError, GetRemoteConfigErrorHandlingBehavior) -> Unit
 
-    private lateinit var onFallbackSuccess: (RemoteConfiguration, VerificationResult) -> Unit
+    private lateinit var onFallbackSuccess: (RemoteConfiguration, SignatureVerificationResult) -> Unit
     private lateinit var onFallbackError: (PurchasesError) -> Unit
 
     @Before
@@ -303,7 +303,7 @@ class RemoteConfigManagerTest {
                 }
                 """.trimIndent(),
             ),
-            VerificationResult.VERIFIED,
+            SignatureVerificationResult.Verified,
         )
 
         // The fallback commit counts as the initial config, so later requests report their own context.
@@ -1075,6 +1075,32 @@ class RemoteConfigManagerTest {
     }
 
     @Test
+    fun `hasCommittedConfig is true once a configuration is persisted, without triggering a sync`() = runTest {
+        every { diskCache.read() } returns persisted(manifest = "m", activeTopics = emptyList(), topics = emptyMap())
+        val manager = readManager(appUserIDProvider = { TEST_APP_USER_ID })
+
+        assertThat(manager.hasCommittedConfig()).isTrue()
+        verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `hasCommittedConfig is false without a sync when nothing is committed`() = runTest {
+        every { diskCache.read() } returns null
+        val manager = readManager(appUserIDProvider = { TEST_APP_USER_ID })
+
+        assertThat(manager.hasCommittedConfig()).isFalse()
+        verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `hasCommittedConfig is false on a disabled manager even when data is cached`() = runTest {
+        every { diskCache.read() } returns persisted(manifest = "m", activeTopics = emptyList(), topics = emptyMap())
+        val manager = readManager(enabled = false)
+
+        assertThat(manager.hasCommittedConfig()).isFalse()
+    }
+
+    @Test
     fun `topic returns null on a disabled manager even when data is cached`() = runTest {
         every { diskCache.read() } returns persisted(
             manifest = "m",
@@ -1256,7 +1282,7 @@ class RemoteConfigManagerTest {
                 }
                 """.trimIndent(),
             ),
-            VerificationResult.VERIFIED,
+            SignatureVerificationResult.Verified,
         )
 
         val written = slot<PersistedRemoteConfigurationState>()
@@ -1281,7 +1307,7 @@ class RemoteConfigManagerTest {
         every { diskCache.write(capture(committed)) } returns true
         onFallbackSuccess.invoke(
             remoteConfiguration("""{"domain":"app","manifest":"v1.fallback."}"""),
-            VerificationResult.VERIFIED,
+            SignatureVerificationResult.Verified,
         )
 
         // The committed state has no refresh time, so the following request has nothing to replay.
@@ -1314,7 +1340,7 @@ class RemoteConfigManagerTest {
                 }
                 """.trimIndent(),
             ),
-            VerificationResult.VERIFIED,
+            SignatureVerificationResult.Verified,
         )
 
         // The fallback body carries no inlined elements, so no inline blob is written; the wanted blob is
@@ -2495,8 +2521,8 @@ class RemoteConfigManagerTest {
         every {
             backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any())
         } answers {
-            arg<(RCContainer?, Date?, VerificationResult) -> Unit>(7)
-                .invoke(containerWithConfig(stressResponse), Date(SERVER_MILLIS), VerificationResult.VERIFIED)
+            arg<(RCContainer?, Date?, SignatureVerificationResult) -> Unit>(7)
+                .invoke(containerWithConfig(stressResponse), Date(SERVER_MILLIS), SignatureVerificationResult.Verified)
         }
         val manager = RemoteConfigManager(
             backend,
@@ -2585,7 +2611,7 @@ class RemoteConfigManagerTest {
      * different instant from the [dateProvider] clock so an assertion on the persisted value proves which one won.
      */
     private fun deliverSuccess(container: RCContainer?, requestDate: Date? = Date(SERVER_MILLIS)) {
-        onSuccess.invoke(container, requestDate, VerificationResult.VERIFIED)
+        onSuccess.invoke(container, requestDate, SignatureVerificationResult.Verified)
     }
 
     private fun persisted(

@@ -52,7 +52,12 @@ internal constructor(
         val showNoOffering = placements.offeringIdsByPlacement.containsKey(placementId)
         val offering = offeringForPlacement ?: if (showNoOffering) null else fallbackOffering
 
-        return offering?.withPresentedContext(placementId = placementId, targeting = this.targeting)
+        return offering?.withPresentedContext(
+            placementId = placementId,
+            targeting = this.targeting,
+            checkpointIdentifier = null,
+            traceId = null,
+        )
     }
 
     /**
@@ -130,16 +135,28 @@ private data class OfferingsComparableData(
 }
 
 @OptIn(InternalRevenueCatAPI::class)
-internal fun Offering.withPresentedContext(placementId: String?, targeting: Offerings.Targeting?): Offering {
+internal fun Offering.withPresentedContext(
+    placementId: String?,
+    targeting: Offerings.Targeting?,
+    checkpointIdentifier: String?,
+    traceId: String?,
+): Offering {
     val updatedAvailablePackages = this.availablePackages.map {
         val oldContext = it.presentedOfferingContext
 
-        val newContext = oldContext.copy(
-            placementIdentifier = placementId ?: oldContext.placementIdentifier,
-            targetingContext = targeting?.let { targeting ->
-                PresentedOfferingContext.TargetingContext(targeting.revision, targeting.ruleId)
-            } ?: oldContext.targetingContext,
-        )
+        val newContext = oldContext
+            .copy(
+                placementIdentifier = placementId ?: oldContext.placementIdentifier,
+                targetingContext = targeting?.let { targeting ->
+                    PresentedOfferingContext.TargetingContext(targeting.revision, targeting.ruleId)
+                } ?: oldContext.targetingContext,
+            )
+            .let { context ->
+                checkpointIdentifier?.let(context::copyWithCheckpointIdentifier) ?: context
+            }
+            .let { context ->
+                traceId?.let(context::copyWithTraceId) ?: context
+            }
         val product = it.product.copyWithPresentedOfferingContext(newContext)
 
         Package(
@@ -161,3 +178,17 @@ internal fun Offering.withPresentedContext(placementId: String?, targeting: Offe
         webCheckoutURL = this.webCheckoutURL,
     ).also { it.hasPaywallComponents = this.hasPaywallComponents }
 }
+
+/** Returns a copy whose purchase contexts identify the checkpoint that presented this offering. */
+@InternalRevenueCatAPI
+@JvmSynthetic
+public fun Offering.withPresentedCheckpointIdentifier(
+    checkpointIdentifier: String,
+    traceId: String?,
+): Offering =
+    withPresentedContext(
+        placementId = null,
+        targeting = null,
+        checkpointIdentifier = checkpointIdentifier,
+        traceId = traceId,
+    )

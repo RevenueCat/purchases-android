@@ -343,23 +343,57 @@ internal class BillingWrapper(
                 subscriptionOptionIdForProductIDs,
             )
         }
-        executeRequestOnUIThread {
-            val result = buildPurchaseParams(
-                purchasingData,
-                replaceProductInfo,
-                appUserID,
-                isPersonalizedPrice,
-            )
-            when (result) {
-                is Result.Success -> {
-                    trackPurchaseStartIfNeeded(
-                        googlePurchasingData,
-                        replaceProductInfo?.oldPurchase?.productIds?.firstOrNull(),
-                    )
-                    launchBillingFlow(activity, result.value)
+        launchPurchaseFlow(activity, appUserID, googlePurchasingData, replaceProductInfo, isPersonalizedPrice)
+    }
+
+    private fun launchPurchaseFlow(
+        activity: Activity,
+        appUserID: String,
+        googlePurchasingData: GooglePurchasingData,
+        replaceProductInfo: ReplaceProductInfo?,
+        isPersonalizedPrice: Boolean?,
+    ) {
+        val buildParamsAndLaunch = { shouldSetObfuscatedAccountId: Boolean ->
+            executeRequestOnUIThread {
+                val result = buildPurchaseParams(
+                    googlePurchasingData,
+                    replaceProductInfo,
+                    appUserID,
+                    isPersonalizedPrice,
+                    shouldSetObfuscatedAccountId,
+                )
+                when (result) {
+                    is Result.Success -> {
+                        trackPurchaseStartIfNeeded(
+                            googlePurchasingData,
+                            replaceProductInfo?.oldPurchase?.productIds?.firstOrNull(),
+                        )
+                        launchBillingFlow(activity, result.value)
+                    }
+                    is Result.Error -> purchasesUpdatedListener?.onPurchasesFailedToUpdate(result.value)
                 }
-                is Result.Error -> purchasesUpdatedListener?.onPurchasesFailedToUpdate(result.value)
             }
+        }
+
+        when {
+            applyObfuscatedAccountIdToSubscriptionChanges -> buildParamsAndLaunch(true)
+            replaceProductInfo != null -> buildParamsAndLaunch(false)
+            googlePurchasingData is GooglePurchasingData.Subscription -> findPurchaseInPurchaseHistory(
+                appUserID,
+                ProductType.SUBS,
+                googlePurchasingData.productId,
+                onCompletion = {
+                    log(LogIntent.PURCHASE) {
+                        PurchaseStrings.NOT_SETTING_OBFUSCATED_ACCOUNT_ID_ALREADY_OWNED
+                            .format(googlePurchasingData.productId)
+                    }
+                    buildParamsAndLaunch(false)
+                },
+                // Not a real error: this is the expected path when the device has no active purchase
+                // of this subscription (never bought, or expired), so the lookup doesn't find it.
+                onError = { buildParamsAndLaunch(true) },
+            )
+            else -> buildParamsAndLaunch(true)
         }
     }
 
@@ -953,6 +987,7 @@ internal class BillingWrapper(
         replaceProductInfo: ReplaceProductInfo?,
         appUserID: String,
         isPersonalizedPrice: Boolean?,
+        shouldSetObfuscatedAccountId: Boolean,
     ): Result<BillingFlowParams, PurchasesError> {
         return when (purchaseInfo) {
             is GooglePurchasingData.InAppProduct -> {
@@ -960,7 +995,13 @@ internal class BillingWrapper(
             }
 
             is GooglePurchasingData.Subscription -> {
-                buildSubscriptionPurchaseParams(purchaseInfo, replaceProductInfo, appUserID, isPersonalizedPrice)
+                buildSubscriptionPurchaseParams(
+                    purchaseInfo,
+                    replaceProductInfo,
+                    appUserID,
+                    isPersonalizedPrice,
+                    shouldSetObfuscatedAccountId,
+                )
             }
         }
     }
@@ -999,6 +1040,7 @@ internal class BillingWrapper(
         replaceProductInfo: ReplaceProductInfo?,
         appUserID: String,
         isPersonalizedPrice: Boolean?,
+        shouldSetObfuscatedAccountId: Boolean,
     ): Result<BillingFlowParams, PurchasesError> {
         val productDetailsParamsList = buildSubscriptionProductDetailsParams(purchaseInfo = purchaseInfo)
 
@@ -1007,17 +1049,14 @@ internal class BillingWrapper(
                 BillingFlowParams.newBuilder()
                     .setProductDetailsParamsList(productDetailsParamsList)
                     .apply {
-                        // only setObfuscatedAccountId for non-upgrade/downgrades until google issue is fixed:
-                        // https://issuetracker.google.com/issues/155005449
-                        replaceProductInfo?.let {
-                            setUpgradeInfo(it)
-
-                            // Allow setting ObfuscatedAccountID in product changes
-                            // only when explicitly opted in via DangerousSettings
-                            if (applyObfuscatedAccountIdToSubscriptionChanges) {
-                                setObfuscatedAccountId(appUserID.sha256())
-                            }
-                        } ?: setObfuscatedAccountId(appUserID.sha256())
+                        // Google rejects a purchase whose obfuscatedAccountId differs from the one on the subscription
+                        // it replaces (https://issuetracker.google.com/issues/155005449), so the id is not set for
+                        // product changes or for purchases of an already owned subscription, unless explicitly
+                        // opted in via DangerousSettings.
+                        replaceProductInfo?.let { setUpgradeInfo(it) }
+                        if (shouldSetObfuscatedAccountId) {
+                            setObfuscatedAccountId(appUserID.sha256())
+                        }
 
                         isPersonalizedPrice?.let {
                             setIsOfferPersonalized(it)

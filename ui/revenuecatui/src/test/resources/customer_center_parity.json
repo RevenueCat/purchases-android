@@ -1,0 +1,486 @@
+{
+  "schemaVersion": 1,
+  "now": "2026-09-30T12:00:00Z",
+  "cases": [
+    {
+      "id": "yearly-active",
+      "product": "Annual",
+      "status": "Active",
+      "platform": "play_store",
+      "expected": {
+        "productId": "yearly",
+        "store": "APP_STORE",
+        "active": true,
+        "willRenew": true,
+        "trial": false,
+        "cancel": true,
+        "refund": true,
+        "changePlans": true
+      }
+    },
+    {
+      "id": "yearly-active-but-cancelled",
+      "product": "Annual",
+      "status": "Active But Cancelled",
+      "platform": "play_store",
+      "expected": {
+        "productId": "yearly",
+        "store": "APP_STORE",
+        "active": true,
+        "willRenew": false,
+        "trial": false,
+        "cancel": true,
+        "refund": true,
+        "changePlans": true
+      }
+    },
+    {
+      "id": "yearly-on-intro-discount-period",
+      "product": "Annual",
+      "status": "On Intro Discount Period",
+      "platform": "play_store",
+      "expected": {
+        "productId": "yearly",
+        "store": "APP_STORE",
+        "active": true,
+        "willRenew": true,
+        "trial": true,
+        "cancel": true,
+        "refund": false,
+        "changePlans": true
+      }
+    },
+    {
+      "id": "yearly-expired",
+      "product": "Annual",
+      "status": "Expired",
+      "platform": "play_store",
+      "expected": {
+        "productId": "yearly",
+        "store": "APP_STORE",
+        "active": false,
+        "willRenew": false,
+        "trial": false,
+        "cancel": false,
+        "refund": true,
+        "changePlans": false
+      }
+    },
+    {
+      "id": "6_months-active",
+      "product": "Six Month",
+      "status": "Active",
+      "platform": "play_store",
+      "expected": {
+        "productId": "6_months",
+        "store": "APP_STORE",
+        "active": true,
+        "willRenew": true,
+        "trial": false,
+        "cancel": true,
+        "refund": true,
+        "changePlans": true
+      }
+    },
+    {
+      "id": "6_months-active-but-cancelled",
+      "product": "Six Month",
+      "status": "Active But Cancelled",
+      "platform": "play_store",
+      "expected": {
+        "productId": "6_months",
+        "store": "APP_STORE",
+        "active": true,
+        "willRenew": false,
+        "trial": false,
+        "cancel": true,
+        "refund": true,
+        "changePlans": true
+      }
+    },
+    {
+      "id": "6_months-on-intro-discount-period",
+      "product": "Six Month",
+      "status": "On Intro Discount Period",
+      "platform": "play_store",
+      "expected": {
+        "productId": "6_months",
+        "store": "APP_STORE",
+        "active": true,
+        "willRenew": true,
+        "trial": true,
+        "cancel": true,
+        "refund": false,
+        "changePlans": true
+      }
+    },
+    {
+      "id": "6_months-expired",
+      "product": "Six Month",
+      "status": "Expired",
+      "platform": "play_store",
+      "expected": {
+        "productId": "6_months",
+        "store": "APP_STORE",
+        "active": false,
+        "willRenew": false,
+        "trial": false,
+        "cancel": false,
+        "refund": true,
+        "changePlans": false
+      }
+    },
+    {
+      "id": "3_months-active",
+      "product": "Three Month",
+      "status": "Active",
+      "platform": "play_store",
+      "expected": {
+        "productId": "3_months",
+        "store": "APP_STORE",
+        "active": true,
+        "willRenew": true,
+        "trial": false,
+        "cancel": true,
+        "refund": true,
+        "changePlans": true
+      }
+    },
+    {
+      "id": "3_months-active-but-cancelled",
+      "product": "Three Month",
+      "status": "Active But Cancelled",
+      "platform": "play_store",
+      "expected": {
+        "productId": "3_months",
+        "store": "APP_STORE",
+        "active": true,
+        "willRenew": false,
+        "trial": false,
+        "cancel": true,
+        "refund": true,
+        "changePlans": true
+      }
+    },
+    {
+      "id": "3_months-on-intro-discount-period",
+      "product": "Three Month",
+      "status": "On Intro Discount Period",
+      "platform": "play_store",
+      "expected": {
+        "productId": "3_months",
+        "store": "APP_STORE",
+        "active": true,
+        "willRenew": true,
+        "trial": true,
+        "cancel": true,
+        "refund": false,
+        "changePlans": true
+      }
+    },
+    {
+      "id": "3_months-expired",
+      "product": "Three Month",
+      "status": "Expired",
+      "platform": "play_store",
+      "expected": {
+        "productId": "3_months",
+        "store": "APP_STORE",
+        "active": false,
+        "willRenew": false,
+        "trial": false,
+        "cancel": false,
+        "refund": true,
+        "changePlans": false
+      }
+    },
+    {
+      "id": "2_months-active",
+      "product": "Two Month",
+      "status": "Active",
+      "platform": "play_store",
+      "expected": {
+        "productId": "2_months",
+        "store": "APP_STORE",
+        "active": true,
+        "willRenew": true,
+        "trial": false,
+        "cancel": true,
+        "refund": true,
+        "changePlans": true
+      }
+    },
+    {
+      "id": "2_months-active-but-cancelled",
+      "product": "Two Month",
+      "status": "Active But Cancelled",
+      "platform": "play_store",
+      "expected": {
+        "productId": "2_months",
+        "store": "APP_STORE",
+        "active": true,
+        "willRenew": false,
+        "trial": false,
+        "cancel": true,
+        "refund": true,
+        "changePlans": true
+      }
+    },
+    {
+      "id": "2_months-on-intro-discount-period",
+      "product": "Two Month",
+      "status": "On Intro Discount Period",
+      "platform": "play_store",
+      "expected": {
+        "productId": "2_months",
+        "store": "APP_STORE",
+        "active": true,
+        "willRenew": true,
+        "trial": true,
+        "cancel": true,
+        "refund": false,
+        "changePlans": true
+      }
+    },
+    {
+      "id": "2_months-expired",
+      "product": "Two Month",
+      "status": "Expired",
+      "platform": "play_store",
+      "expected": {
+        "productId": "2_months",
+        "store": "APP_STORE",
+        "active": false,
+        "willRenew": false,
+        "trial": false,
+        "cancel": false,
+        "refund": true,
+        "changePlans": false
+      }
+    },
+    {
+      "id": "monthly-active",
+      "product": "Monthly",
+      "status": "Active",
+      "platform": "play_store",
+      "expected": {
+        "productId": "monthly",
+        "store": "APP_STORE",
+        "active": true,
+        "willRenew": true,
+        "trial": false,
+        "cancel": true,
+        "refund": true,
+        "changePlans": true
+      }
+    },
+    {
+      "id": "monthly-active-but-cancelled",
+      "product": "Monthly",
+      "status": "Active But Cancelled",
+      "platform": "play_store",
+      "expected": {
+        "productId": "monthly",
+        "store": "APP_STORE",
+        "active": true,
+        "willRenew": false,
+        "trial": false,
+        "cancel": true,
+        "refund": true,
+        "changePlans": true
+      }
+    },
+    {
+      "id": "monthly-on-intro-discount-period",
+      "product": "Monthly",
+      "status": "On Intro Discount Period",
+      "platform": "play_store",
+      "expected": {
+        "productId": "monthly",
+        "store": "APP_STORE",
+        "active": true,
+        "willRenew": true,
+        "trial": true,
+        "cancel": true,
+        "refund": false,
+        "changePlans": true
+      }
+    },
+    {
+      "id": "monthly-expired",
+      "product": "Monthly",
+      "status": "Expired",
+      "platform": "play_store",
+      "expected": {
+        "productId": "monthly",
+        "store": "APP_STORE",
+        "active": false,
+        "willRenew": false,
+        "trial": false,
+        "cancel": false,
+        "refund": true,
+        "changePlans": false
+      }
+    },
+    {
+      "id": "weekly-active",
+      "product": "Weekly",
+      "status": "Active",
+      "platform": "play_store",
+      "expected": {
+        "productId": "weekly",
+        "store": "APP_STORE",
+        "active": true,
+        "willRenew": true,
+        "trial": false,
+        "cancel": true,
+        "refund": true,
+        "changePlans": true
+      }
+    },
+    {
+      "id": "weekly-active-but-cancelled",
+      "product": "Weekly",
+      "status": "Active But Cancelled",
+      "platform": "play_store",
+      "expected": {
+        "productId": "weekly",
+        "store": "APP_STORE",
+        "active": true,
+        "willRenew": false,
+        "trial": false,
+        "cancel": true,
+        "refund": true,
+        "changePlans": true
+      }
+    },
+    {
+      "id": "weekly-on-intro-discount-period",
+      "product": "Weekly",
+      "status": "On Intro Discount Period",
+      "platform": "play_store",
+      "expected": {
+        "productId": "weekly",
+        "store": "APP_STORE",
+        "active": true,
+        "willRenew": true,
+        "trial": true,
+        "cancel": true,
+        "refund": false,
+        "changePlans": true
+      }
+    },
+    {
+      "id": "weekly-expired",
+      "product": "Weekly",
+      "status": "Expired",
+      "platform": "play_store",
+      "expected": {
+        "productId": "weekly",
+        "store": "APP_STORE",
+        "active": false,
+        "willRenew": false,
+        "trial": false,
+        "cancel": false,
+        "refund": true,
+        "changePlans": false
+      }
+    },
+    {
+      "id": "external-play_store",
+      "product": "External Platform",
+      "status": "Active",
+      "platform": "play_store",
+      "expected": {
+        "productId": "com.revenuecat.product",
+        "store": "PLAY_STORE",
+        "active": true,
+        "willRenew": true,
+        "trial": false,
+        "cancel": true,
+        "refund": false,
+        "changePlans": false
+      }
+    },
+    {
+      "id": "external-stripe",
+      "product": "External Platform",
+      "status": "Active",
+      "platform": "stripe",
+      "expected": {
+        "productId": "com.revenuecat.product",
+        "store": "STRIPE",
+        "active": true,
+        "willRenew": true,
+        "trial": false,
+        "cancel": true,
+        "refund": false,
+        "changePlans": false
+      }
+    },
+    {
+      "id": "external-rc_billing",
+      "product": "External Platform",
+      "status": "Active",
+      "platform": "rc_billing",
+      "expected": {
+        "productId": "com.revenuecat.product",
+        "store": "RC_BILLING",
+        "active": true,
+        "willRenew": true,
+        "trial": false,
+        "cancel": true,
+        "refund": false,
+        "changePlans": false
+      }
+    },
+    {
+      "id": "external-amazon",
+      "product": "External Platform",
+      "status": "Active",
+      "platform": "amazon",
+      "expected": {
+        "productId": "com.revenuecat.product",
+        "store": "AMAZON",
+        "active": true,
+        "willRenew": true,
+        "trial": false,
+        "cancel": true,
+        "refund": false,
+        "changePlans": false
+      }
+    },
+    {
+      "id": "lifetime",
+      "product": "Lifetime",
+      "status": "Active",
+      "platform": "play_store",
+      "expected": {
+        "productId": "lifetime",
+        "store": "APP_STORE",
+        "active": true,
+        "willRenew": false,
+        "trial": false,
+        "cancel": false,
+        "refund": true,
+        "changePlans": false
+      }
+    },
+    {
+      "id": "none",
+      "product": "None",
+      "status": "Active",
+      "platform": "play_store",
+      "expected": {
+        "productId": null,
+        "store": "APP_STORE",
+        "active": false,
+        "willRenew": false,
+        "trial": false,
+        "cancel": false,
+        "refund": false,
+        "changePlans": false
+      }
+    }
+  ]
+}

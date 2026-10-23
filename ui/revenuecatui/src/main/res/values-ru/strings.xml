@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">OK</string>
+    <string name="loading">Загрузка</string>
     <string name="all_plans">Все подписки</string>
     <string name="privacy">Конфиденциальность</string>
     <string name="privacy_policy">Политика конфиденциальности</string>
@@ -22,4 +23,14 @@
     <string name="cannot_open_link">Неверная ссылка. Не удалось открыть.</string>
     <string name="revenuecatui_purchase">Купить</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">Не удалось загрузить рабочий процесс предварительного просмотра. Повторите попытку.</string>
+    <string name="revenuecatui_checkpoint_error_network">Не удалось подключиться. Проверьте подключение к интернету и попробуйте снова.</string>
+    <string name="revenuecatui_checkpoint_error_load">Не удалось загрузить это содержимое. Пожалуйста, попробуйте позже.</string>
+    <string name="revenuecatui_checkpoint_error_store">Возникла проблема с магазином. Пожалуйста, попробуйте позже.</string>
+    <string name="revenuecatui_checkpoint_error_purchase_not_allowed">Покупки на этом устройстве запрещены.</string>
+    <string name="revenuecatui_checkpoint_error_product_unavailable">Этот продукт сейчас недоступен.</string>
+    <string name="revenuecatui_checkpoint_error_already_purchased">У вас уже есть этот продукт.</string>
+    <string name="revenuecatui_checkpoint_error_payment_pending">Ваш платёж ожидает обработки. Вы получите доступ после его подтверждения.</string>
+    <string name="revenuecatui_checkpoint_error_generic">Что-то пошло не так. Пожалуйста, попробуйте снова.</string>
+    <string name="revenuecatui_checkpoint_error_sync">Не удалось проверить ваши покупки. Пожалуйста, попробуйте позже.</string>
 </resources>

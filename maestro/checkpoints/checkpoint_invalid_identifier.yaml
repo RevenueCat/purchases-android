@@ -1,0 +1,37 @@
+# A checkpoint identifier that fails validation never reaches the backend: the SDK presents its error dialog
+# (FLOW_COULD_NOT_BE_SHOWN copy) and the passed callback is not invoked, so the app keeps the user where they were.
+#
+# Run locally against the test store:
+#   maestro test -e MAESTRO_STORE=test_store maestro/checkpoints/checkpoint_invalid_identifier.yaml
+
+appId: com.revenuecat.e2etests
+name: Checkpoint with an invalid identifier shows the SDK error dialog and does not pass
+env:
+  MAESTRO_STORE: ${MAESTRO_STORE || 'test_store'}
+
+---
+- launchApp:
+    clearState: true
+    arguments:
+      e2e_test_flow: open_checkpoint
+      checkpoint_identifier: "bad id!"
+- extendedWaitUntil:
+    visible: "Hit checkpoint"
+    timeout: 15000
+- assertVisible: "Callback: not invoked"
+- tapOn:
+    text: "Hit checkpoint"
+
+# The SDK's own error dialog, with the customer-facing copy for a checkpoint that could not be served.
+- extendedWaitUntil:
+    visible: "This content couldn't be loaded. Please try again later."
+    timeout: 15000
+- takeScreenshot: "checkpoint_invalid_identifier - error dialog"
+- tapOn:
+    text: "OK"
+- assertNotVisible: "This content couldn't be loaded. Please try again later."
+
+# Acknowledging the error leaves the user where they were: the callback never fires.
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertVisible: "Callback: not invoked"

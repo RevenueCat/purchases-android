@@ -3,6 +3,7 @@
 package com.revenuecat.purchases.checkpoints
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -15,6 +16,7 @@ import com.revenuecat.purchases.common.checkpoints.CheckpointRulesResolution
 import com.revenuecat.purchases.common.checkpoints.CheckpointsConfigProvider
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.localrules.LocalRulesEvaluator
 import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
@@ -23,7 +25,9 @@ import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.common.workflows.WorkflowStep
+import com.revenuecat.purchases.withPresentedCheckpointIdentifier
 import kotlinx.coroutines.CancellationException
+import java.util.UUID
 
 /**
  * Resolves a checkpoint through the `checkpoint_rules` topic: the checkpoint's rules are read from remote config
@@ -181,10 +185,24 @@ internal class CheckpointWorkflowResolverImpl(
 
         val offering = loadOfferings(checkpointIdentifier)?.all?.get(offeringIdentifier)
             ?: return unservableRule(rule, "offering '$offeringIdentifier' was not found in offerings")
+        val matched = matchedOffering(offering, checkpointIdentifier, rule)
         debugLog {
-            "Checkpoint resolved to offering '${offering.identifier}' from workflow '${rule.workflowId}'"
+            "Checkpoint resolved to offering '${matched.offering.identifier}' from workflow '${rule.workflowId}'"
         }
-        return CheckpointResolution.MatchedOffering(offering, checkpointRuleId = rule.id)
+        return matched
+    }
+
+    private fun matchedOffering(
+        offering: Offering,
+        checkpointIdentifier: String,
+        rule: CheckpointRule,
+    ): CheckpointResolution.MatchedOffering {
+        val traceId = UUID.randomUUID().toString()
+        return CheckpointResolution.MatchedOffering(
+            offering.withPresentedCheckpointIdentifier(checkpointIdentifier, traceId),
+            checkpointRuleId = rule.id,
+            traceId = traceId,
+        )
     }
 
     private suspend fun resolveUiRule(
@@ -197,7 +215,14 @@ internal class CheckpointWorkflowResolverImpl(
             ?: return unservableRule(rule, "the offerings its steps present could not be fetched")
         debugLog { "Checkpoint resolved to workflow '${rule.workflowId}'" }
         workflowManager.prewarmWorkflowAssets(workflow, uiConfig)
-        return CheckpointResolution.MatchedWorkflow(workflow, uiConfig, offerings, checkpointRuleId = rule.id)
+        return CheckpointResolution.MatchedWorkflow(
+            workflow,
+            uiConfig,
+            offerings,
+            checkpointRuleId = rule.id,
+            traceId = UUID.randomUUID().toString(),
+            workflowBlobRef = workflowManager.workflowBlobRef(rule.workflowId),
+        )
     }
 
     private suspend fun loadOfferings(checkpointIdentifier: String): Offerings? =
@@ -219,7 +244,7 @@ internal class CheckpointWorkflowResolverImpl(
     }
 
     private fun unknownCheckpoint(identifier: String): CheckpointResolution.NoAction {
-        errorLog { "Checkpoint '$identifier' is not configured in the dashboard." }
+        infoLog { "Checkpoint '$identifier' is not configured in the dashboard." }
         return CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.UNKNOWN_CHECKPOINT)
     }
 
@@ -235,6 +260,6 @@ internal class CheckpointWorkflowResolverImpl(
         Exception("the audiences configuration could not be read")
 
     private companion object {
-        const val SIMULATED_ERROR_CHECKPOINT_ID = "error_checkpoint"
+        const val SIMULATED_ERROR_CHECKPOINT_ID = "f0rc3_3rr0r"
     }
 }

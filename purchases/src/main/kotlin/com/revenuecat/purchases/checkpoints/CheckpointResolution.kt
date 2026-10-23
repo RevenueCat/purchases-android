@@ -18,10 +18,13 @@ public sealed class CheckpointResolution {
      *
      * [checkpointRuleId] identifies the rule that was served, for the hit event to attribute. It is null when
      * the rules topic did not carry an id for that rule.
+     *
+     * [traceId] is shared by the hit event and the purchase contexts of [offering], so they can be joined.
      */
     public data class MatchedOffering(
         val offering: Offering,
         val checkpointRuleId: String?,
+        val traceId: String,
     ) : CheckpointResolution()
 
     /**
@@ -30,12 +33,19 @@ public sealed class CheckpointResolution {
      *
      * [checkpointRuleId] identifies the rule that was served, for the hit event to attribute. It is null when
      * the rules topic did not carry an id for that rule.
+     *
+     * [traceId] is shared by the hit event and every event of the workflow run, so they can be joined.
+     *
+     * [workflowBlobRef] identifies the exact workflow blob that was served, for the workflow run's events to
+     * attribute fallback steps and experiments against. It is null when it could not be read.
      */
     public data class MatchedWorkflow(
         val workflow: PublishedWorkflow,
         val uiConfig: UiConfig,
         val offerings: Offerings,
         val checkpointRuleId: String?,
+        val traceId: String,
+        val workflowBlobRef: String?,
     ) : CheckpointResolution()
 
     /** Nothing should be served for this checkpoint; the user continues uninterrupted. */

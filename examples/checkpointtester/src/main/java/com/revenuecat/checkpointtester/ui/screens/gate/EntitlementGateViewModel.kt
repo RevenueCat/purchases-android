@@ -6,10 +6,10 @@ import com.revenuecat.checkpointtester.checkpoints.PaywallPresenters
 import com.revenuecat.checkpointtester.checkpoints.summary
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.awaitCustomerInfo
+import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -40,7 +40,7 @@ class EntitlementGateViewModel : ViewModel() {
         if (!_state.value.hasRun) refresh()
     }
 
-    @OptIn(InternalRevenueCatAPI::class)
+    @OptIn(InviteOnlyCheckpointsAPI::class)
     fun refresh() {
         if (_state.value.loading) return
         _state.update {
@@ -67,7 +67,7 @@ class EntitlementGateViewModel : ViewModel() {
                 "entitlement_gate",
                 PaywallPresenters.params { customVariables { "gate" to "entitlement" } },
             ) { result ->
-                val granted = result?.obtainedEntitlements.orEmpty().map { it.entitlementInfo.identifier }
+                val granted = result.flow?.obtainedEntitlements.orEmpty().map { it.entitlementInfo.identifier }
                 _state.update {
                     it.copy(
                         message = result.summary(),

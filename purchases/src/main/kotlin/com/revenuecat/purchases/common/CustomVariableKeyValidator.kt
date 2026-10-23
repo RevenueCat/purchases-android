@@ -8,7 +8,6 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
  *
  * Valid keys:
  * - Must not be empty
- * - Must start with a letter
  * - Can only contain letters, numbers, and underscores
  *
  * The underscore-only rule is also what makes a key addressable from a rule predicate: `var` walks nested objects
@@ -17,10 +16,17 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 @InternalRevenueCatAPI
 public object CustomVariableKeyValidator {
 
-    public fun isValidKey(key: String): Boolean =
-        key.isNotEmpty() &&
-            key.first().isLetter() &&
-            key.all { it.isLetter() || it.isDigit() || it == '_' }
+    @Suppress("ReturnCount")
+    public fun isValidKey(key: String): Boolean {
+        if (key.isEmpty()) return false
+        var index = 0
+        while (index < key.length) {
+            val codePoint = key.codePointAt(index)
+            if (!codePoint.isValidKeyCodePoint()) return false
+            index += Character.charCount(codePoint)
+        }
+        return true
+    }
 
     /**
      * Returns [variables] without the entries whose key is invalid, logging a warning for each one dropped.
@@ -31,9 +37,14 @@ public object CustomVariableKeyValidator {
                 if (!valid) {
                     warnLog {
                         "Custom variable key '$key' is invalid and will be ignored. " +
-                            "Keys must start with a letter and contain only letters, numbers, and underscores."
+                            "Keys must not be empty and contain only letters, numbers, and underscores."
                     }
                 }
             }
         }
+
+    private fun Int.isValidKeyCodePoint(): Boolean =
+        Character.isAlphabetic(this) ||
+            Character.getType(this) == Character.DECIMAL_DIGIT_NUMBER.toInt() ||
+            this == '_'.code
 }

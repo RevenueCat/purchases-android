@@ -73,29 +73,17 @@ internal class SizeTests {
                     )
                 ),
                 arrayOf(
-                    "fit - minimum and maximum",
+                    "fit - minimum and maximum are ignored",
                     Args(
                         json = """
                             {
                               "type": "fit",
+                              "default": 2,
                               "min": 20,
                               "max": 100
                             }
                         """.trimIndent(),
-                        expected = SizeConstraint.Fit(min = 20u, max = 100u)
-                    )
-                ),
-                arrayOf(
-                    "fit - minimum greater than maximum",
-                    Args(
-                        json = """
-                            {
-                              "type": "fit",
-                              "min": 40,
-                              "max": 20
-                            }
-                        """.trimIndent(),
-                        expected = SizeConstraint.Fit(min = 40u, max = 20u)
+                        expected = SizeConstraint.Fit(default = 2u)
                     )
                 ),
                 arrayOf(
@@ -130,7 +118,7 @@ internal class SizeTests {
                               "min": 20
                             }
                         """.trimIndent(),
-                        expected = SizeConstraint.Fill(min = 20u)
+                        expected = SizeConstraint.Fill(min = 20u),
                     )
                 ),
                 arrayOf(
@@ -142,7 +130,7 @@ internal class SizeTests {
                               "max": 100
                             }
                         """.trimIndent(),
-                        expected = SizeConstraint.Fill(max = 100u)
+                        expected = SizeConstraint.Fill(max = 100u),
                     )
                 ),
                 arrayOf(
@@ -155,7 +143,7 @@ internal class SizeTests {
                               "max": 100
                             }
                         """.trimIndent(),
-                        expected = SizeConstraint.Fill(min = 20u, max = 100u)
+                        expected = SizeConstraint.Fill(min = 20u, max = 100u),
                     )
                 ),
                 arrayOf(

@@ -6,10 +6,14 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
+import com.revenuecat.purchases.paywalls.components.properties.ThemeVideoUrls
+import com.revenuecat.purchases.paywalls.components.properties.VideoUrls
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
+import java.net.URL
 
 internal class WorkflowModelsDeserializationTest {
 
@@ -105,6 +109,76 @@ internal class WorkflowModelsDeserializationTest {
         val step = JsonTools.json.decodeFromString(WorkflowStep.serializer(), json)
         assertThat(step.experimentId).isNull()
         assertThat(step.experimentVariant).isNull()
+    }
+
+    @Test
+    fun `WorkflowStep experiment params are read from metadata`() {
+        val json = """
+            {"id": "step_1", "type": "screen", "metadata": {"experiment_id": "exp_abc", "experiment_variant": "holdout"}}
+        """.trimIndent()
+        val step = JsonTools.json.decodeFromString(WorkflowStep.serializer(), json)
+        assertThat(step.experimentId).isEqualTo("exp_abc")
+        assertThat(step.experimentVariant).isEqualTo("holdout")
+    }
+
+    @Test
+    fun `WorkflowStep experiment params prefer metadata over param_values`() {
+        val json = """
+            {
+              "id": "step_1",
+              "type": "screen",
+              "param_values": {"experiment_id": "exp_old", "experiment_variant": "a"},
+              "metadata": {"experiment_id": "exp_new", "experiment_variant": "b"}
+            }
+        """.trimIndent()
+        val step = JsonTools.json.decodeFromString(WorkflowStep.serializer(), json)
+        assertThat(step.experimentId).isEqualTo("exp_new")
+        assertThat(step.experimentVariant).isEqualTo("b")
+    }
+
+    @Test
+    fun `PublishedWorkflow decodes a fallback copy step`() {
+        val json = """
+            {
+              "id": "wf_test",
+              "display_name": "Test",
+              "initial_step_id": "entry",
+              "steps": {
+                "entry": {
+                  "id": "entry",
+                  "type": "screen",
+                  "trigger_actions": {"btn": {"type": "step", "step_id": "paywall_a~f"}}
+                },
+                "paywall_a": {
+                  "id": "paywall_a",
+                  "type": "screen",
+                  "screen_id": "pw_123",
+                  "param_values": {"experiment_id": "exp_abc", "experiment_variant": "b"},
+                  "metadata": {"screen_type": ["paywall"]}
+                },
+                "paywall_a~f": {
+                  "id": "paywall_a~f",
+                  "type": "screen",
+                  "screen_id": "pw_123",
+                  "param_values": {},
+                  "metadata": {"screen_type": ["paywall"], "fallback_original_step_id": "paywall_a"}
+                }
+              },
+              "screens": {}
+            }
+        """.trimIndent()
+        val workflow = JsonTools.json.decodeFromString(PublishedWorkflow.serializer(), json)
+
+        val original = workflow.steps.getValue("paywall_a")
+        val copy = workflow.steps.getValue("paywall_a~f")
+        assertThat(workflow.steps.getValue("entry").triggerActions["btn"])
+            .isEqualTo(WorkflowTriggerAction.Step(stepId = "paywall_a~f"))
+        assertThat(copy.id).isEqualTo("paywall_a~f")
+        assertThat(copy.screenId).isEqualTo(original.screenId)
+        assertThat(copy.fallbackOriginalStepId).isEqualTo("paywall_a")
+        assertThat(copy.experimentId).isNull()
+        assertThat(copy.stepScreenType).containsExactly("paywall")
+        assertThat(original.fallbackOriginalStepId).isNull()
     }
 
     @Test
@@ -357,13 +431,68 @@ internal class WorkflowModelsDeserializationTest {
         assertThat(screen.zeroDecimalPlaceCountries).isEmpty()
     }
 
+    @Test
+    fun `WorkflowScreen reads components_video_localizations`() {
+        val screen = JsonTools.json.decodeFromString(
+            WorkflowScreen.serializer(),
+            workflowScreenJson(
+                componentsVideoLocalizations = """
+                    {
+                      "es_ES": {
+                        "video_lid": {
+                          "light": {"url": "https://video.pawwalls.com/es.mp4", "width": 1080, "height": 1920}
+                        }
+                      }
+                    }
+                """.trimIndent(),
+            ),
+        )
+
+        assertThat(screen.componentsVideoLocalizations).isEqualTo(
+            mapOf(
+                LocaleId("es_ES") to mapOf(
+                    LocalizationKey("video_lid") to ThemeVideoUrls(
+                        light = VideoUrls(
+                            width = 1080u,
+                            height = 1920u,
+                            url = URL("https://video.pawwalls.com/es.mp4"),
+                        ),
+                        dark = null,
+                    ),
+                ),
+            ),
+        )
+    }
+
+    @Test
+    fun `WorkflowScreen defaults components_video_localizations to empty when absent`() {
+        val screen = JsonTools.json.decodeFromString(
+            WorkflowScreen.serializer(),
+            workflowScreenJson(),
+        )
+
+        assertThat(screen.componentsVideoLocalizations).isEmpty()
+    }
+
+    @Test
+    fun `WorkflowScreen defaults components_video_localizations to empty when null`() {
+        val screen = JsonTools.json.decodeFromString(
+            WorkflowScreen.serializer(),
+            workflowScreenJson(componentsVideoLocalizations = "null"),
+        )
+
+        assertThat(screen.componentsVideoLocalizations).isEmpty()
+    }
+
     private fun workflowScreenJson(
         productChangeConfig: String? = null,
         zeroDecimalPlaceCountries: String? = null,
+        componentsVideoLocalizations: String? = null,
     ): String {
         val optionalFields = listOfNotNull(
             productChangeConfig?.let { "\"play_store_product_change_mode\": $it" },
             zeroDecimalPlaceCountries?.let { "\"zero_decimal_place_countries\": $it" },
+            componentsVideoLocalizations?.let { "\"components_video_localizations\": $it" },
         ).joinToString(",\n")
 
         return """

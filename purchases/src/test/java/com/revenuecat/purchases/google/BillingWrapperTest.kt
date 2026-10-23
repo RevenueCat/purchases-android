@@ -20,7 +20,9 @@ import com.android.billingclient.api.InAppMessageResult
 import com.android.billingclient.api.InAppMessageResult.InAppMessageResponseCode
 import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.ProductDetails
+import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
+import com.android.billingclient.api.QueryPurchasesParams
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
@@ -152,6 +154,12 @@ class BillingWrapperTest {
         } just runs
 
         mockConsumeAsync(billingClientOKResult)
+
+        every {
+            mockClient.queryPurchasesAsync(any<QueryPurchasesParams>(), any())
+        } answers {
+            secondArg<PurchasesResponseListener>().onQueryPurchasesResponse(billingClientOKResult, emptyList())
+        }
 
         every {
             mockClient.isReady
@@ -999,6 +1007,155 @@ class BillingWrapperTest {
         val expectedUserId = appUserId.sha256()
         verify {
             mockBuilder.setObfuscatedAccountId(expectedUserId)
+        }
+
+        clearStaticMockk(BillingFlowParams::class)
+    }
+
+    @Test
+    fun `obfuscatedAccountId is not set when the subscription is already owned`() {
+        val mockBuilder = setUpForObfuscatedAccountIDTests()
+        val storeProduct = createStoreProductWithoutOffers()
+        mockClient.mockQueryPurchasesAsync(
+            billingClientOKResult,
+            billingClientOKResult,
+            subPurchases = listOf(stubGooglePurchase(productIds = listOf(storeProduct.purchasingData.productId))),
+        )
+
+        wrapper.makePurchaseAsync(
+            mockActivity,
+            appUserId,
+            storeProduct.subscriptionOptions!!.first().purchasingData,
+            null,
+            null,
+        )
+
+        verify(exactly = 0) {
+            mockBuilder.setObfuscatedAccountId(any())
+        }
+        verify(exactly = 1) {
+            mockClient.launchBillingFlow(any(), any())
+        }
+
+        clearStaticMockk(BillingFlowParams::class)
+    }
+
+    @Test
+    fun `obfuscatedAccountId is set when a different subscription is owned`() {
+        val mockBuilder = setUpForObfuscatedAccountIDTests()
+        val storeProduct = createStoreProductWithoutOffers()
+        mockClient.mockQueryPurchasesAsync(
+            billingClientOKResult,
+            billingClientOKResult,
+            subPurchases = listOf(stubGooglePurchase(productIds = listOf("other_product"))),
+        )
+
+        wrapper.makePurchaseAsync(
+            mockActivity,
+            appUserId,
+            storeProduct.subscriptionOptions!!.first().purchasingData,
+            null,
+            null,
+        )
+
+        verify {
+            mockBuilder.setObfuscatedAccountId(appUserId.sha256())
+        }
+
+        clearStaticMockk(BillingFlowParams::class)
+    }
+
+    @Test
+    fun `obfuscatedAccountId is set when querying owned purchases fails`() {
+        val mockBuilder = setUpForObfuscatedAccountIDTests()
+        val storeProduct = createStoreProductWithoutOffers()
+        mockClient.mockQueryPurchasesAsync(
+            BillingClient.BillingResponseCode.DEVELOPER_ERROR.buildResult(),
+            billingClientOKResult,
+            subPurchases = emptyList(),
+        )
+
+        wrapper.makePurchaseAsync(
+            mockActivity,
+            appUserId,
+            storeProduct.subscriptionOptions!!.first().purchasingData,
+            null,
+            null,
+        )
+
+        verify {
+            mockBuilder.setObfuscatedAccountId(appUserId.sha256())
+        }
+        verify(exactly = 1) {
+            mockClient.launchBillingFlow(any(), any())
+        }
+
+        clearStaticMockk(BillingFlowParams::class)
+    }
+
+    @Test
+    fun `obfuscatedAccountId is set for owned subscription when applying to subscription changes is enabled`() {
+        every { mockClient.isReady } returns false andThen true
+
+        val enabledWrapper = BillingWrapper(
+            clientFactory = mockClientFactory,
+            mainHandler = handler,
+            backgroundHandler = handler,
+            deviceCache = mockDeviceCache,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            purchasesStateProvider = purchasesStateProvider,
+            applyObfuscatedAccountIdToSubscriptionChanges = true,
+            dateProvider = mockDateProvider,
+        )
+        enabledWrapper.purchasesUpdatedListener = mockPurchasesListener
+        enabledWrapper.startConnection()
+
+        val mockBuilder = setUpForObfuscatedAccountIDTests()
+        val storeProduct = createStoreProductWithoutOffers()
+
+        enabledWrapper.makePurchaseAsync(
+            mockActivity,
+            appUserId,
+            storeProduct.subscriptionOptions!!.first().purchasingData,
+            null,
+            null,
+        )
+
+        verify {
+            mockBuilder.setObfuscatedAccountId(appUserId.sha256())
+        }
+        verify(exactly = 0) {
+            mockClient.queryPurchasesAsync(any<QueryPurchasesParams>(), any())
+        }
+
+        clearStaticMockk(BillingFlowParams::class)
+    }
+
+    @Test
+    fun `one time purchases do not query owned purchases`() {
+        val mockBuilder = setUpForObfuscatedAccountIDTests()
+        every { mockBuilder.setObfuscatedAccountId(any()) } returns mockBuilder
+        val productDetails = mockProductDetails(
+            productId = "product_a",
+            type = inAppGoogleProductType,
+            oneTimePurchaseOfferDetails = mockOneTimePurchaseOfferDetails(),
+            subscriptionOfferDetails = null,
+        )
+        val storeProduct = productDetails.toInAppStoreProduct()!!
+
+        wrapper.makePurchaseAsync(
+            mockActivity,
+            appUserId,
+            storeProduct.purchasingData,
+            null,
+            null,
+        )
+
+        verify {
+            mockBuilder.setObfuscatedAccountId(appUserId.sha256())
+        }
+        verify(exactly = 0) {
+            mockClient.queryPurchasesAsync(any<QueryPurchasesParams>(), any())
         }
 
         clearStaticMockk(BillingFlowParams::class)

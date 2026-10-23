@@ -28,6 +28,20 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class PurchaseParamsTest {
 
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `preview purchase data preserves the chosen product and subscription option`() {
+        val product = stubStoreProduct("preview-product")
+        val option = stubSubscriptionOption("preview-base-plan", "preview-product")
+
+        for (params in listOf(
+            PurchaseParams.Builder(mockk(), product).build(),
+            PurchaseParams.Builder(mockk(), option).build(),
+        )) {
+            assertThat(params.purchasingDataForPreview).isSameAs(params.purchasingData)
+        }
+    }
+
     private val storeReplacementModes = listOf(
         StoreReplacementMode.WITHOUT_PRORATION,
         StoreReplacementMode.WITH_TIME_PRORATION,

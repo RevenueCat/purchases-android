@@ -21,6 +21,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.UiConfig.VariableConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.storage.FileRepository
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
@@ -29,7 +30,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedPackagePartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
-import com.revenuecat.purchases.ui.revenuecatui.components.ktx.getBestMatch
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.resolveLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toComposeLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
@@ -47,6 +48,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallWarning
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.ui.revenuecatui.helpers.createLocaleFromString
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
+import java.text.NumberFormat
 import java.util.Date
 import java.util.Locale
 import android.os.LocaleList as FrameworkLocaleList
@@ -160,6 +162,7 @@ internal sealed interface PaywallState {
                 @JvmSynthetic internal set
 
             val store: Store get() = purchases.store
+            val fileRepositoryOverride: FileRepository? get() = purchases.fileRepositoryOverride
 
             /** A subset of the offering: packages the paywall never shows are not in it. */
             val paywallPackages: List<Package> by lazy {
@@ -264,14 +267,18 @@ internal sealed interface PaywallState {
                 } else {
                     val deviceLanguageCode = locale.language.lowercase()
 
-                    // We pick the one with the same language as the device if available. If not, we just pick the
-                    // first. If the list is empty, we use the device locale with the storefront country.
+                    val fallbackLocale = Locale.Builder()
+                        .setLocale(locale.toJavaLocale())
+                        .setRegion(storefrontCountryCode.uppercase())
+                        .build()
+
+                    // Use a storefront locale with the same number format when possible, preserving its currency
+                    // symbol (for example, ￥ in Japan). Otherwise, keep the paywall language's number format.
                     val javaLocale = availableStorefrontCountryLocalesByLanguage[deviceLanguageCode]
-                        ?: availableStorefrontCountryLocalesByLanguage.values.firstOrNull()
-                        ?: Locale.Builder()
-                            .setLocale(locale.toJavaLocale())
-                            .setRegion(storefrontCountryCode.uppercase())
-                            .build()
+                        ?: availableStorefrontCountryLocalesByLanguage.values.firstOrNull {
+                            it.hasSameNumberFormatAs(fallbackLocale)
+                        }
+                        ?: fallbackLocale
 
                     javaLocale.toComposeLocale()
                 }
@@ -351,10 +358,11 @@ internal sealed interface PaywallState {
             /**
              * The measured height of the sticky-footer overlay in pixels. Set during the layout phase by
              * the custom Layout in [LoadedPaywallComponents], so main content can reserve bottom clearance
-             * (via [Modifier.footerBottomPadding]) in the same pass, without recomposition.
+             * (via [Modifier.footerBottomPadding]) in the same pass. This is observable so a later footer
+             * resize invalidates the main content's otherwise unchanged measurement constraints.
              */
             @get:JvmSynthetic
-            var footerHeightPx: Int = 0
+            var footerHeightPx by mutableIntStateOf(0)
                 @JvmSynthetic internal set
 
             /** Raised and cleared by the button, for the actions that begin and end with the click. */
@@ -480,8 +488,10 @@ internal sealed interface PaywallState {
                     deviceLocales
                 }
 
-                // Find the first locale we have a LocalizationDictionary for.
-                return allLocales.firstNotNullOf { locale -> locales.getBestMatch(locale) }
+                return locales.resolveLocale(
+                    preferredLocales = allLocales,
+                    defaultLocale = locales.head,
+                )
             }
 
             private fun List<AvailablePackages.Info>.mostExpensivePricePerMonthMicros(): Long? =
@@ -512,6 +522,12 @@ internal fun getAvailableStorefrontCountryLocalesByLanguage(
             }
             .associateBy { it.language.lowercase() }
     }
+
+private const val NUMBER_FORMAT_SAMPLE = 1_234_567.89
+
+private fun Locale.hasSameNumberFormatAs(other: Locale): Boolean =
+    NumberFormat.getNumberInstance(this).format(NUMBER_FORMAT_SAMPLE) ==
+        NumberFormat.getNumberInstance(other).format(NUMBER_FORMAT_SAMPLE)
 
 internal fun PaywallState.loadedLegacy(): PaywallState.Loaded.Legacy? {
     return when (val state = this) {
@@ -551,9 +567,9 @@ private fun PaywallState.Loaded.Components.AvailablePackages.Info.resolvesVisibl
 ): Boolean =
     visibilityOverrides.buildPresentedPartial(
         windowSize = ScreenCondition.COMPACT,
-        offerEligibility = offerEligibility ?: OfferEligibility.Ineligible,
-        state = ComponentViewState.DEFAULT,
-        conditionContext = ConditionContext(selectedPackageId = null, customVariables = customVariables),
+        offerEligibility = { offerEligibility ?: OfferEligibility.Ineligible },
+        state = { ComponentViewState.DEFAULT },
+        conditionContext = ConditionContext(selectedPackageId = { null }, customVariables = customVariables),
     )?.partial?.visible ?: visible
 
 /**

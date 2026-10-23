@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.views
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -42,6 +43,7 @@ internal fun RelevantPurchasesListView(
     modifier: Modifier = Modifier,
     purchases: List<PurchaseInformation> = emptyList(),
     shouldShowPurchaseHistory: Boolean = false,
+    isDarkMode: Boolean = isSystemInDarkTheme(),
 ) {
     Column(
         modifier = modifier
@@ -88,6 +90,7 @@ internal fun RelevantPurchasesListView(
 
                 VirtualCurrenciesListView(
                     virtualCurrencies = virtualCurrencies,
+                    isDarkMode = isDarkMode,
                     appearance = appearance,
                     localization = localization,
                     onAction = onAction,
