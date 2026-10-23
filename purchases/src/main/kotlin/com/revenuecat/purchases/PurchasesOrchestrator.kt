@@ -128,6 +128,7 @@ import com.revenuecat.purchases.strings.IdentityStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.strings.SyncAttributesAndOfferingsStrings
+import com.revenuecat.purchases.strings.VirtualCurrencyStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.toCustomerInfoAttributes
 import com.revenuecat.purchases.utils.CurrentActivityTracker
@@ -1621,6 +1622,21 @@ internal class PurchasesOrchestrator(
         callback: GetVirtualCurrenciesCallback,
     ) {
         virtualCurrencyManager.virtualCurrencies(callback = callback)
+    }
+
+    // IAM-only. A user-scoped write, so it waits for the identity to settle like purchases do.
+    fun spendVirtualCurrencies(
+        amounts: Map<String, Int>,
+        reference: String?,
+        callback: GetVirtualCurrenciesCallback,
+    ) {
+        if (!tokenManager.enabled) {
+            val error = PurchasesError(PurchasesErrorCode.UnsupportedError, VirtualCurrencyStrings.SPEND_REQUIRES_IAM)
+                .also { errorLog(it) }
+            dispatch { callback.onError(error) }
+            return
+        }
+        whenIdentitySettled { virtualCurrencyManager.spendVirtualCurrencies(amounts, reference, callback) }
     }
 
     fun invalidateVirtualCurrenciesCache() {
