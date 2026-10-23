@@ -246,7 +246,7 @@ internal fun OverlayLayout(
             constraints
         }
         val headerMeasurable = if (hasHeader) measurables[1] else null
-        val footerMeasurable = if (hasFooter) measurables[if (hasHeader) 2 else 1] else null
+        val footerMeasurable = if (hasFooter) measurables.getOrNull(if (hasHeader) 2 else 1) else null
         val headerPlaceable = headerMeasurable?.measure(bodyConstraints.copy(minHeight = 0))
         val footerPlaceable = if (footerLayout == StickyFooterComponent.Layout.HIDDEN) {
             null

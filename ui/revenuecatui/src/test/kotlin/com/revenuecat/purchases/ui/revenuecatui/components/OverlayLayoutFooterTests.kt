@@ -42,6 +42,21 @@ internal class OverlayLayoutFooterTests {
     @Test
     fun `leading split follows RTL`() = assertSplit(StickyFooterComponent.Layout.SPLIT_LEADING, LayoutDirection.Rtl)
 
+    @Test
+    fun `hidden footer can omit its content without a missing measurable crash`() {
+        val state = FakePaywallState(stickyFooter = StickyFooterComponent(
+            StackComponent(emptyList()), layout = StickyFooterComponent.Layout.HIDDEN,
+        ))
+        composeTestRule.setContent {
+            OverlayLayout(state, Modifier.fillMaxSize(), hasFooter = true) {
+                Box(Modifier.fillMaxSize().testTag("body"))
+                ComponentView(style = checkNotNull(state.stickyFooter), state = state, onClick = {})
+            }
+        }
+        assertThat(composeTestRule.onNodeWithTag("body").fetchSemanticsNode().boundsInRoot.width).isGreaterThan(0f)
+        assertThat(state.footerHeightPx).isZero()
+    }
+
     private fun assertSplit(layout: StickyFooterComponent.Layout, direction: LayoutDirection = LayoutDirection.Ltr) {
         val state = FakePaywallState(stickyFooter = StickyFooterComponent(StackComponent(emptyList()), layout = layout))
         composeTestRule.setContent {
