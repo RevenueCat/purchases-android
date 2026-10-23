@@ -138,6 +138,69 @@ class VirtualCurrencyManagerSpendTest {
         assertThat(pendingErrors).hasSize(2)
     }
 
+    @Test
+    fun `a fetch started during a spend waits for the spend's response`() {
+        every { deviceCache.isVirtualCurrenciesCacheStale(any(), any()) } returns true
+        val pendingSpends = captureSpends()
+        val pendingFetches = captureFetches()
+
+        manager.spendVirtualCurrencies(mapOf("COIN" to 1), null, callback)
+        manager.virtualCurrencies(callback)
+        assertThat(pendingFetches).isEmpty()
+
+        pendingSpends[0](balancesWithCoin(9))
+
+        assertThat(pendingFetches).hasSize(1)
+    }
+
+    @Test
+    fun `a spend started during a fetch waits for it, so the spend's balances are cached last`() {
+        every { deviceCache.isVirtualCurrenciesCacheStale(any(), any()) } returns true
+        val pendingSpends = captureSpends()
+        val pendingFetches = captureFetches()
+        val fetched = balancesWithCoin(10)
+        val spent = balancesWithCoin(9)
+
+        manager.virtualCurrencies(callback)
+        manager.spendVirtualCurrencies(mapOf("COIN" to 1), null, callback)
+        assertThat(pendingSpends).isEmpty()
+
+        pendingFetches[0](fetched)
+        assertThat(pendingSpends).hasSize(1)
+        pendingSpends[0](spent)
+
+        verifyOrder {
+            deviceCache.cacheVirtualCurrencies(appUserID, fetched)
+            deviceCache.cacheVirtualCurrencies(appUserID, spent)
+        }
+    }
+
+    @Test
+    fun `a failed fetch lets the next request start`() {
+        every { deviceCache.isVirtualCurrenciesCacheStale(any(), any()) } returns true
+        val pendingSpends = captureSpends()
+        val fetchErrors = mutableListOf<(PurchasesError) -> Unit>()
+        every { backend.getVirtualCurrencies(any(), any(), any(), any()) } answers { fetchErrors.add(arg(3)) }
+
+        manager.virtualCurrencies(callback)
+        manager.spendVirtualCurrencies(mapOf("COIN" to 1), null, callback)
+        fetchErrors[0](PurchasesError(PurchasesErrorCode.NetworkError))
+
+        assertThat(pendingSpends).hasSize(1)
+    }
+
+    private fun captureSpends(): List<(VirtualCurrencies) -> Unit> {
+        val pending = mutableListOf<(VirtualCurrencies) -> Unit>()
+        every { backend.spendVirtualCurrencies(any(), any(), any(), any(), any()) } answers { pending.add(arg(3)) }
+        return pending
+    }
+
+    private fun captureFetches(): List<(VirtualCurrencies) -> Unit> {
+        val pending = mutableListOf<(VirtualCurrencies) -> Unit>()
+        every { backend.getVirtualCurrencies(any(), any(), any(), any()) } answers { pending.add(arg(2)) }
+        return pending
+    }
+
     private fun balancesWithCoin(balance: Int) = VirtualCurrencies(
         all = mapOf("COIN" to VirtualCurrency(balance = balance, name = "Coin", code = "COIN")),
     )

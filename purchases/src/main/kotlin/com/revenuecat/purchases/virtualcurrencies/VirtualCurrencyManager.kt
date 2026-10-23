@@ -17,7 +17,9 @@ internal class VirtualCurrencyManager(
     private val deviceCache: DeviceCache,
     private val backend: Backend,
     private val appConfig: AppConfig,
-    private val spendQueue: PerUserSerialQueue = PerUserSerialQueue(),
+    // Network fetches and spends for a user run one at a time. With a multithreaded executor, responses could
+    // otherwise arrive out of order, and an older balance would overwrite a newer one in the cache.
+    private val requestQueue: PerUserSerialQueue = PerUserSerialQueue(),
 ) {
     @Synchronized
     fun virtualCurrencies(
@@ -42,11 +44,13 @@ internal class VirtualCurrencyManager(
         log(LogIntent.DEBUG) {
             VirtualCurrencyStrings.VIRTUAL_CURRENCIES_STALE_UPDATING_FROM_NETWORK
         }
-        fetchVirtualCurrenciesFromBackend(
-            appUserID = appUserID,
-            isAppBackgrounded = isAppBackgrounded,
-            callback = handleVirtualCurrenciesRequestResult(callback, appUserID),
-        )
+        requestQueue.enqueue(appUserID) { done ->
+            fetchVirtualCurrenciesFromBackend(
+                appUserID = appUserID,
+                isAppBackgrounded = isAppBackgrounded,
+                callback = handleVirtualCurrenciesRequestResult(callback, appUserID, done),
+            )
+        }
     }
 
     // Mirrors iOS: invalid entries are dropped, and a spend with nothing left returns the current balances.
@@ -68,9 +72,7 @@ internal class VirtualCurrencyManager(
         }
 
         val appUserID = identityManager.currentAppUserID
-        // One spend in flight per user. With a multithreaded executor, responses could otherwise arrive out of
-        // order, and an older balance would overwrite a newer one in the cache.
-        spendQueue.enqueue(appUserID) { done ->
+        requestQueue.enqueue(appUserID) { done ->
             backend.spendVirtualCurrencies(
                 appUserID = appUserID,
                 amounts = resolvedAmounts,
@@ -179,6 +181,7 @@ internal class VirtualCurrencyManager(
     private fun handleVirtualCurrenciesRequestResult(
         completion: GetVirtualCurrenciesCallback,
         appUserID: String,
+        done: () -> Unit,
     ): GetVirtualCurrenciesCallback = object : GetVirtualCurrenciesCallback {
         override fun onReceived(virtualCurrencies: VirtualCurrencies) {
             log(LogIntent.RC_SUCCESS) {
@@ -186,12 +189,14 @@ internal class VirtualCurrencyManager(
             }
 
             cacheVirtualCurrencies(virtualCurrencies, appUserID)
+            done()
             completion.onReceived(virtualCurrencies)
         }
         override fun onError(error: PurchasesError) {
             log(LogIntent.RC_ERROR) {
                 VirtualCurrencyStrings.VIRTUAL_CURRENCIES_UPDATED_FROM_NETWORK_ERROR.format(error)
             }
+            done()
             completion.onError(error)
         }
     }

@@ -124,6 +124,37 @@ internal class IAMVirtualCurrencyEndToEndTest : IAMEndToEndTest() {
     }
 
     @Test
+    fun `with a multithreaded executor, a slow fetch can't overwrite a later spend's balance`() {
+        val executor = Executors.newFixedThreadPool(THREADS)
+        try {
+            configure(service = executor)
+            foregroundAndBootstrap()
+            val user = currentAppUserID
+            backend.setBalance(user, COIN, START)
+            // The fetch's response (balance 10) arrives late. Run concurrently, the spend's response (balance 9)
+            // would land first, and the late 10 would then overwrite it in the cache.
+            backend.delayOnce(VIRTUAL_CURRENCIES, LATE_MS)
+            var fetch: Result<VirtualCurrencies>? = null
+            var spend: Result<VirtualCurrencies>? = null
+
+            purchases.getVirtualCurrencies(recordingVirtualCurrenciesCallback { fetch = it })
+            purchases.spendVirtualCurrency(COIN, 1, callback = recordingVirtualCurrenciesCallback { spend = it })
+            awaitUntil("the fetch and spend results") { fetch != null && spend != null }
+            val requestsBefore = backend.requests.size
+
+            val read = awaitVirtualCurrencies { purchases.getVirtualCurrencies(it) }
+
+            assertThat(backend.balance(user, COIN)).isEqualTo(START - 1)
+            assertThat(read.getOrThrow()[COIN]?.balance).isEqualTo(START - 1)
+            assertThat(backend.requests).hasSize(requestsBefore)
+            assertThat(fetch?.getOrThrow()?.get(COIN)?.balance).isEqualTo(START)
+            assertThat(spend?.getOrThrow()?.get(COIN)?.balance).isEqualTo(START - 1)
+        } finally {
+            executor.shutdownNow()
+        }
+    }
+
+    @Test
     fun `a rejected spend fails and leaves the cached balances alone`() {
         configure()
         foregroundAndBootstrap()
@@ -184,6 +215,7 @@ internal class IAMVirtualCurrencyEndToEndTest : IAMEndToEndTest() {
         private const val START = 10
         private const val IDENTIFIED = "identified-user"
         private const val SPEND = "/v1/customer/virtual_currencies/spend"
+        private const val VIRTUAL_CURRENCIES = "/v1/customer/virtual_currencies"
         private const val THREADS = 4
         private const val LATE_MS = 500L
     }
