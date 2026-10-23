@@ -181,6 +181,43 @@ class PaywallViewExitOfferTest {
         assertThat(dismissCount).isEqualTo(1)
     }
 
+    @Test
+    fun `re-targeting the view to the exit offering shows it and its close reaches the dismiss handler`() {
+        // Mirrors the Unity SDK's Dialog presenter, which re-targets the same PaywallView instead of swapping views.
+        var dismissCount = 0
+        val activity = Robolectric.buildActivity(PaywallViewHostActivity::class.java).setup().get()
+        val container = FrameLayout(activity)
+        activity.setContentView(container)
+        val paywallView = PaywallView(activity)
+        paywallView.setOfferingId(
+            offeringWithExitOffer.identifier,
+            PresentedOfferingContext(offeringWithExitOffer.identifier),
+        )
+        paywallView.setDismissHandler { dismissCount++ }
+        paywallView.setExitOfferHandler { exit ->
+            paywallView.setOfferingId(exit.identifier, PresentedOfferingContext(exit.identifier))
+        }
+        container.addView(paywallView)
+        shadowOf(Looper.getMainLooper()).idle()
+        val originalViewModel = viewModelFor(activity)
+
+        originalViewModel.closePaywall()
+        shadowOf(Looper.getMainLooper()).idle()
+
+        val exitViewModel = activity.viewModelStore.keys()
+            .filter { key -> key.toIntOrNull() != null }
+            .map { key -> ViewModelProvider(activity).get(key, PaywallViewModelImpl::class.java) }
+            .single { it !== originalViewModel }
+        val exitState = exitViewModel.state.value
+        assertThat(exitState).isInstanceOf(PaywallState.Loaded::class.java)
+        assertThat((exitState as PaywallState.Loaded).offering.identifier).isEqualTo(exitOffering.identifier)
+        assertThat(dismissCount).isZero()
+
+        exitViewModel.closePaywall()
+
+        assertThat(dismissCount).isEqualTo(1)
+    }
+
     private fun attachPaywallView(
         offering: Offering,
         onDismiss: () -> Unit,

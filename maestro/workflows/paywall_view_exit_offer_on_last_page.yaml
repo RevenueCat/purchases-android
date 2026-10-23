@@ -1,6 +1,6 @@
 # Navigates the workflow (offering `default_workflows`) to its last page (the exit-offer step) and closes it.
-# The workflow is hosted in a PaywallView with PaywallView.setExitOfferHandler, which swaps in a PaywallView for
-# the exit offering the way the Unity SDK's Dialog-hosted presenter does. The exit paywall must be shown.
+# The workflow is hosted in a PaywallView with PaywallView.setExitOfferHandler, which re-targets that same
+# PaywallView to the exit offering the way the Unity SDK's Dialog-hosted presenter does. The exit paywall must be shown.
 # The close control is an unlabeled icon tapped by coordinate (top-left), as in
 # workflow_exit_offer_on_last_page.yaml.
 #
@@ -30,7 +30,7 @@ env:
 - extendedWaitUntil:
     visible: "People Who Meditate Daily Sleep 40% Better"
     timeout: 15000
-# Close the last page (unlabeled close icon, top-left) -> the exit offer paywall replaces it.
+# Close the last page (unlabeled close icon, top-left) -> the same PaywallView shows the exit offer paywall.
 - tapOn: { point: "8%,6%" }
 - extendedWaitUntil:
     visible: "Unlock full access"

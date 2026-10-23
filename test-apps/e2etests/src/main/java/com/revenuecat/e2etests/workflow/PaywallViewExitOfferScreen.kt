@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.awaitOfferings
@@ -30,9 +31,9 @@ import com.revenuecat.purchases.ui.revenuecatui.views.PaywallView
 private const val WORKFLOW_OFFERING_ID = "default_workflows"
 
 /**
- * Hosts the workflow paywall in a [PaywallView] inside an app-owned container, and swaps in a fresh [PaywallView]
- * for the exit offering when the paywall reports one. This mirrors the Unity SDK's Dialog-hosted presenter and
- * exercises [PaywallView.setExitOfferHandler].
+ * Hosts the workflow paywall in a [PaywallView] inside an app-owned container, and re-targets that same
+ * [PaywallView] to the exit offering when the paywall reports one. This mirrors the Unity SDK's Dialog-hosted
+ * presenter and exercises [PaywallView.setExitOfferHandler].
  */
 @Composable
 fun PaywallViewExitOfferScreen(modifier: Modifier = Modifier) {
@@ -92,10 +93,12 @@ private fun FrameLayout.showPaywall(offeringId: String, onDismiss: () -> Unit) {
     paywallView.setOfferingId(offeringId)
     paywallView.setDismissHandler(onDismiss)
     paywallView.setExitOfferHandler { exitOffering ->
-        // Deferred so the closing PaywallView isn't removed from inside its own composition callback.
+        // Deferred so the paywall isn't re-targeted from inside its own close callback.
         post {
-            removeAllViews()
-            showPaywall(exitOffering.identifier, onDismiss)
+            paywallView.setOfferingId(
+                exitOffering.identifier,
+                PresentedOfferingContext(exitOffering.identifier),
+            )
         }
     }
     addView(

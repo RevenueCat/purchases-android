@@ -1,6 +1,7 @@
 # Closing the exit paywall dismisses the whole presentation. Navigates the workflow (offering
-# `default_workflows`) to its last page, closes it so the exit offer paywall replaces it, then closes the exit
-# paywall. Hosted in a PaywallView with PaywallView.setExitOfferHandler, like the Unity SDK's Dialog presenter.
+# `default_workflows`) to its last page, closes it so the exit offer paywall shows in its place, then closes the exit
+# paywall. Hosted in a PaywallView whose exit offer handler re-targets the same view, like the Unity SDK's Dialog
+# presenter.
 #
 # Run locally against the test store:
 #   maestro test -e MAESTRO_STORE=test_store maestro/workflows/paywall_view_exit_offer_dismisses.yaml
@@ -28,7 +29,7 @@ env:
 - extendedWaitUntil:
     visible: "People Who Meditate Daily Sleep 40% Better"
     timeout: 15000
-# Close the last page (unlabeled close icon, top-left) -> the exit offer paywall replaces it.
+# Close the last page (unlabeled close icon, top-left) -> the same PaywallView shows the exit offer paywall.
 - tapOn: { point: "8%,6%" }
 - extendedWaitUntil:
     visible: "Unlock full access"
