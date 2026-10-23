@@ -27,6 +27,9 @@ internal fun CountdownComponentView(
     modifier: Modifier = Modifier,
     componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
+    val countdownComponentState = rememberUpdatedCountdownComponentState(style, state)
+    if (!countdownComponentState.visible) return
+
     val countdownState = rememberCountdownState(style.date)
 
     val stackStyle = if (countdownState.hasEnded && style.endStackComponentStyle != null) {
@@ -65,6 +68,10 @@ private fun CountdownComponentView_Preview_Running() {
             ),
             endStackComponentStyle = null,
             fallbackStackComponentStyle = null,
+            visible = true,
+            overrides = emptyList(),
+            rcPackage = null,
+            tabIndex = null,
         ),
         state = previewEmptyState(),
         onClick = {},
@@ -100,6 +107,10 @@ private fun CountdownComponentView_Preview_TimesUp() {
                 children = listOf(endTextStyle),
             ),
             fallbackStackComponentStyle = null,
+            visible = true,
+            overrides = emptyList(),
+            rcPackage = null,
+            tabIndex = null,
         ),
         state = previewEmptyState(),
         onClick = {},

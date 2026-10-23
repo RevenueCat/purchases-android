@@ -1,6 +1,9 @@
 package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.JsonTools
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
+import kotlinx.serialization.json.JsonPrimitive
+import org.assertj.core.api.Assertions.assertThat
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.experimental.runners.Enclosed
@@ -186,6 +189,88 @@ internal class CountdownComponentTests {
             } else {
                 assertNull(countdown.fallback)
             }
+        }
+    }
+
+    class DeserializeCountdownComponentOverridesTests {
+
+        @Test
+        fun `Should deserialize CountdownComponent with no overrides by default`() {
+            @Language("json")
+            val json = """
+                {
+                  "type": "countdown",
+                  "style": {
+                    "type": "date",
+                    "date": "2025-11-20T02:06:12.634Z"
+                  },
+                  "countdown_stack": {
+                    "type": "stack",
+                    "components": []
+                  }
+                }
+                """.trimIndent()
+
+            val actual = JsonTools.json.decodeFromString<PaywallComponent>(json) as CountdownComponent
+
+            assertNull(actual.visible)
+            assertThat(actual.overrides).isEmpty()
+        }
+
+        @Test
+        fun `Should deserialize CountdownComponent with a rule-based visibility override`() {
+            @Language("json")
+            val json = """
+                {
+                  "type": "countdown",
+                  "style": {
+                    "type": "date",
+                    "date": "2025-11-20T02:06:12.634Z"
+                  },
+                  "countdown_stack": {
+                    "type": "stack",
+                    "components": []
+                  },
+                  "visible": false,
+                  "overrides": [
+                    {
+                      "conditions": [
+                        {
+                          "type": "variable_condition",
+                          "operator": "=",
+                          "variable": "show_countdown",
+                          "value": true
+                        }
+                      ],
+                      "properties": { "visible": true }
+                    },
+                    {
+                      "conditions": [{ "type": "expanded" }],
+                      "properties": { "visible": false }
+                    }
+                  ]
+                }
+                """.trimIndent()
+
+            val actual = JsonTools.json.decodeFromString<PaywallComponent>(json) as CountdownComponent
+
+            assertEquals(false, actual.visible)
+            assertThat(actual.overrides).containsExactly(
+                ComponentOverride(
+                    conditions = listOf(
+                        ComponentOverride.Condition.Variable(
+                            operator = ComponentOverride.EqualityOperator.EQUALS,
+                            variable = "show_countdown",
+                            value = JsonPrimitive(true),
+                        ),
+                    ),
+                    properties = PartialCountdownComponent(visible = true),
+                ),
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Expanded),
+                    properties = PartialCountdownComponent(visible = false),
+                ),
+            )
         }
     }
 }
