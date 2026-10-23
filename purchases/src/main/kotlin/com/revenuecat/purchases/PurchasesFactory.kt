@@ -455,6 +455,7 @@ internal class PurchasesFactory(
 
             val customerInfoUpdateHandler = CustomerInfoUpdateHandler(
                 cache,
+                subscriberAttributesManager,
                 identityManager,
                 offlineEntitlementsManager,
                 appConfig = appConfig,

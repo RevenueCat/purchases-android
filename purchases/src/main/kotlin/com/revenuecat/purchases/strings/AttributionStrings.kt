@@ -25,5 +25,12 @@ internal object AttributionStrings {
     const val TIMEOUT_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER = "TimeoutException when getting advertising " +
         "identifier. Message: %s"
     const val UNSYNCED_ATTRIBUTES_COUNT = "Found %d unsynced attributes for App User ID: %s"
+    const val REMOTE_ATTRIBUTES_UNREADABLE = "The subscriber attributes in CustomerInfo couldn't be read, " +
+        "so the cached ones were left as they are."
+    const val REMOTE_ATTRIBUTE_ENTRIES_UNREADABLE = "Some subscriber attributes in CustomerInfo couldn't be read, " +
+        "so their cached values were left as they are: %s"
+    const val MERGING_REMOTE_ATTRIBUTES_FAILED = "Couldn't merge the subscriber attributes in CustomerInfo into the " +
+        "cache for App User ID: %s"
+    const val READING_ATTRIBUTES_FAILED = "Couldn't read the cached subscriber attributes for App User ID: %s"
     const val AMAZON_COULD_NOT_GET_ADID = "Couldn't get Amazon advertising identifier. Message: %s"
 }
