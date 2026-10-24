@@ -777,7 +777,8 @@ internal class HTTPClient(
             // Responses are cached by ETagManager. An HttpResponseCache installed by the app
             // would otherwise splice stale cached bodies into our 304s and break signature verification.
             useCaches = false
-            // We leave the read timeout to the default (readTimeout = 0), which means infinite.
+            // HttpURLConnection's default readTimeout of 0 never times out a silent connected socket.
+            readTimeout = timeoutManager.getReadTimeout().toInt()
             request.headers.forEach { (key, value) ->
                 addRequestProperty(key, value)
             }

@@ -31,6 +31,9 @@ internal class HTTPTimeoutManager(
         // Proxied request
         const val DEFAULT_TIMEOUT_MS = 30000L // 30 seconds
 
+        // Bound silent socket reads independently of endpoint-specific connection timeout tiers.
+        const val READ_TIMEOUT_MS = 30000L
+
         const val TIMEOUT_RESET_INTERVAL_MS = 600000L // 10 minutes
         const val TEST_DIVIDER = 10L // When running tests, we reduce timeouts
     }
@@ -100,6 +103,12 @@ internal class HTTPTimeoutManager(
         } else {
             timeout
         }
+    }
+
+    fun getReadTimeout(): Long = if (appConfig.runningTests) {
+        READ_TIMEOUT_MS / TEST_DIVIDER
+    } else {
+        READ_TIMEOUT_MS
     }
 
     /**
