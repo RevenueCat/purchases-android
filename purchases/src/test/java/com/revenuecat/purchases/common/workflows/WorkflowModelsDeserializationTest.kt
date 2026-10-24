@@ -18,6 +18,68 @@ import java.net.URL
 internal class WorkflowModelsDeserializationTest {
 
     @Test
+    fun `WorkflowStep gating parses soft gates`() {
+        assertThat(stepWithGating("""{"type":"soft"}""").gating).isEqualTo(WorkflowStepGating.Soft)
+    }
+
+    @Test
+    fun `WorkflowStep gating parses hard gates with entitlement identifiers`() {
+        val step = stepWithGating("""{"type":"hard","entitlement_identifiers":["pro","premium"]}""")
+
+        assertThat(step.gating).isEqualTo(WorkflowStepGating.Hard(setOf("pro", "premium")))
+    }
+
+    @Test
+    fun `WorkflowStep gating is null when the key is absent`() {
+        val step = JsonTools.json.decodeFromString(
+            WorkflowStep.serializer(),
+            """{"id":"step_1","type":"screen","param_values":{"other":true}}""",
+        )
+
+        assertThat(step.gating).isNull()
+    }
+
+    @Test
+    fun `WorkflowStep gating is invalid for malformed or unknown present values`() {
+        listOf(
+            "null",
+            "true",
+            "42",
+            "\"hard\"",
+            "[]",
+            "{}",
+            """{"type":null}""",
+            """{"type":42}""",
+            """{"type":"unknown"}""",
+            """{"type":"hard"}""",
+            """{"type":"hard","entitlement_identifiers":null}""",
+            """{"type":"hard","entitlement_identifiers":"pro"}""",
+            """{"type":"hard","entitlement_identifiers":{}}""",
+            """{"type":"hard","entitlement_identifiers":[]}""",
+            """{"type":"hard","entitlement_identifiers":[""]}""",
+            """{"type":"hard","entitlement_identifiers":["  "]}""",
+            """{"type":"hard","entitlement_identifiers":["pro",null]}""",
+            """{"type":"hard","entitlement_identifiers":["pro",42]}""",
+            """{"type":"hard","entitlement_identifiers":["pro",true]}""",
+            """{"type":"hard","entitlement_identifiers":["pro",{}]}""",
+            """{"type":"hard","entitlement_identifiers":["pro",[]]}""",
+            """{"type":"hard","entitlement_identifiers":["pro","pro"]}""",
+            """{"type":"soft","extra":true}""",
+            """{"type":"soft","entitlement_identifiers":["pro"]}""",
+            """{"type":"hard","entitlement_identifiers":["pro"],"extra":true}""",
+        ).forEach { gatingJson ->
+            assertThat(stepWithGating(gatingJson).gating)
+                .describedAs(gatingJson)
+                .isEqualTo(WorkflowStepGating.Invalid)
+        }
+    }
+
+    private fun stepWithGating(gatingJson: String): WorkflowStep = JsonTools.json.decodeFromString(
+        WorkflowStep.serializer(),
+        """{"id":"step_1","type":"screen","param_values":{"gating":$gatingJson}}""",
+    )
+
+    @Test
     fun `WorkflowStep stepScreenType reads paywall from metadata`() {
         val json = """
             {"id": "step_1", "type": "screen", "metadata": {"screen_type": ["paywall"]}}

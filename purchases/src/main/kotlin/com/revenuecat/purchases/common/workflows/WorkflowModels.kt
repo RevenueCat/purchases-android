@@ -106,6 +106,16 @@ public object WorkflowScreenType {
     public const val PAYWALL: String = "paywall"
 }
 
+/** Parsed workflow gate. Unknown or malformed gates are [Invalid] and fail open. */
+@InternalRevenueCatAPI
+public sealed class WorkflowStepGating {
+    public object Soft : WorkflowStepGating()
+
+    public data class Hard(val entitlementIdentifiers: Set<String>) : WorkflowStepGating()
+
+    public object Invalid : WorkflowStepGating()
+}
+
 @InternalRevenueCatAPI
 @Serializable
 public data class WorkflowStep(
@@ -118,6 +128,11 @@ public data class WorkflowStep(
     @SerialName("trigger_actions") val triggerActions: Map<String, WorkflowTriggerAction> = emptyMap(),
     val metadata: JsonElement? = null,
 ) {
+    /** The gate in `param_values.gating`, or `null` when the key is absent. */
+    @InternalRevenueCatAPI
+    public val gating: WorkflowStepGating?
+        get() = paramValues[GATING_PARAM]?.let(::parseWorkflowStepGating)
+
     /**
      * The step's screen classification, as reported by the backend under `metadata.screen_type`.
      *
@@ -187,6 +202,36 @@ private const val OFFERING_STEP_TYPE = "offering"
 private const val OFFERING_PARAM = "offering"
 private const val OFFERING_IDENTIFIER_PARAM = "identifier"
 private const val FLAT_OFFERING_IDENTIFIER_PARAM = "offering_identifier"
+private const val GATING_PARAM = "gating"
+private const val GATING_TYPE_KEY = "type"
+private const val GATING_ENTITLEMENTS_KEY = "entitlement_identifiers"
+
+private fun parseWorkflowStepGating(value: JsonElement): WorkflowStepGating {
+    val gating = value as? JsonObject ?: return WorkflowStepGating.Invalid
+    val type = (gating[GATING_TYPE_KEY] as? JsonPrimitive)?.takeIf { it.isString }?.content
+    return when (type) {
+        "soft" -> if (gating.keys == setOf(GATING_TYPE_KEY)) {
+            WorkflowStepGating.Soft
+        } else {
+            WorkflowStepGating.Invalid
+        }
+        "hard" -> parseHardWorkflowStepGating(gating)
+        else -> WorkflowStepGating.Invalid
+    }
+}
+
+@Suppress("ReturnCount")
+private fun parseHardWorkflowStepGating(gating: JsonObject): WorkflowStepGating {
+    if (gating.keys != setOf(GATING_TYPE_KEY, GATING_ENTITLEMENTS_KEY)) return WorkflowStepGating.Invalid
+    val elements = gating[GATING_ENTITLEMENTS_KEY] as? JsonArray ?: return WorkflowStepGating.Invalid
+    val identifiers = elements.mapNotNull { element ->
+        (element as? JsonPrimitive)?.takeIf { it.isString }?.content?.takeIf { it.isNotBlank() }
+    }
+    if (identifiers.isEmpty() || identifiers.size != elements.size || identifiers.distinct().size != identifiers.size) {
+        return WorkflowStepGating.Invalid
+    }
+    return WorkflowStepGating.Hard(identifiers.toSet())
+}
 
 @InternalRevenueCatAPI
 @Serializable
