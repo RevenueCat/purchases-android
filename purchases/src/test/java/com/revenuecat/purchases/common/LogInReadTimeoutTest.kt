@@ -46,15 +46,15 @@ import java.util.concurrent.TimeUnit
 @OptIn(InternalRevenueCatAPI::class)
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-internal class NativeLoginRecoveryTest : BaseHTTPClientTest() {
+internal class LogInReadTimeoutTest : BaseHTTPClientTest() {
     @Test
-    fun `silent login returns an error and same identity owner can login again`() {
-        exerciseSilentDependency(withUnsyncedAttributes = false)
+    fun `logIn that times out reading returns a network error and can be retried`() {
+        logInAgainstSilentServer(withUnsyncedAttributes = false)
     }
 
     @Test
-    fun `silent attribute sync releases original login after its native timeout`() {
-        exerciseSilentDependency(withUnsyncedAttributes = true)
+    fun `attributes sync that times out reading does not block logIn`() {
+        logInAgainstSilentServer(withUnsyncedAttributes = true)
     }
 
     private fun awaitCallback(future: CompletableFuture<PurchasesError?>): PurchasesError? {
@@ -66,20 +66,20 @@ internal class NativeLoginRecoveryTest : BaseHTTPClientTest() {
         return future.get(1, TimeUnit.MILLISECONDS)
     }
 
-    private fun exerciseSilentDependency(withUnsyncedAttributes: Boolean) {
+    private fun logInAgainstSilentServer(withUnsyncedAttributes: Boolean) {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val preferences = context.getSharedPreferences("native-login-recovery", Context.MODE_PRIVATE)
+        val preferences = context.getSharedPreferences("login-read-timeout", Context.MODE_PRIVATE)
         preferences.edit().clear().commit()
         val cache = DeviceCache(preferences, "test-api-key")
         val oldUser = "\$RCAnonymousID:ff68f26e432648369a713849a9f93b58"
-        val newUser = "onboarding-signed-in-user"
+        val newUser = "new-app-user-id"
         cache.cacheAppUserID(oldUser)
         val attributesCache = SubscriberAttributesCache(cache)
         val appConfig = createAppConfig(context = context)
         mockSigningManager = SigningManager(SignatureVerificationMode.Disabled, appConfig, "test-api-key")
         client = createClient(appConfig = appConfig, eTagManager = ETagManager(context))
         val executor = Executors.newSingleThreadExecutor { runnable ->
-            Thread(runnable, "native-login-recovery")
+            Thread(runnable, "login-read-timeout")
         }
         val dispatcher = Dispatcher(executor)
         val helper = BackendHelper("test-api-key", dispatcher, appConfig, client)
@@ -173,7 +173,6 @@ internal class NativeLoginRecoveryTest : BaseHTTPClientTest() {
             val joined = if (withUnsyncedAttributes) null else login()
             val error = awaitCallback(completion)
             val subsequentRequest = if (withUnsyncedAttributes) server.takeRequest(2, TimeUnit.SECONDS) else null
-            println("Native completion: $error; subsequent request: ${subsequentRequest?.path}; requests=${server.requestCount}")
             if (withUnsyncedAttributes) {
                 assertThat(error).isNull()
             } else {
