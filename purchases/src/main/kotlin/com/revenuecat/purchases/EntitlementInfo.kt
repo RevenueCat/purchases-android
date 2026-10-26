@@ -2,7 +2,6 @@ package com.revenuecat.purchases
 
 import android.os.Parcelable
 import com.revenuecat.purchases.common.Constants
-import com.revenuecat.purchases.common.toOwnershipType
 import com.revenuecat.purchases.models.RawDataContainer
 import com.revenuecat.purchases.utils.JSONObjectParceler
 import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
@@ -10,16 +9,8 @@ import dev.drewhamilton.poko.Poko
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.TypeParceler
-import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.descriptors.PrimitiveKind
-import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.json.JsonDecoder
-import kotlinx.serialization.json.JsonPrimitive
 import org.json.JSONObject
 import java.util.Date
 
@@ -339,7 +330,7 @@ public enum class PeriodType {
 /**
  * Enum of supported ownership types for an entitlement.
  */
-@Serializable(with = OwnershipTypeSerializer::class)
+@Serializable
 public enum class OwnershipType {
     /**
      * The purchase was made directly by this user.
@@ -364,23 +355,4 @@ public enum class OwnershipType {
      */
     @SerialName("UNKNOWN")
     UNKNOWN,
-}
-
-internal object OwnershipTypeSerializer : KSerializer<OwnershipType> {
-    override val descriptor: SerialDescriptor =
-        PrimitiveSerialDescriptor("com.revenuecat.purchases.OwnershipType", PrimitiveKind.STRING)
-
-    override fun deserialize(decoder: Decoder): OwnershipType {
-        // Null or non-string values fall back to UNKNOWN instead of failing the enclosing object.
-        val value = if (decoder is JsonDecoder) {
-            (decoder.decodeJsonElement() as? JsonPrimitive)?.takeIf { it.isString }?.content
-        } else {
-            decoder.decodeString()
-        }
-        return value.toOwnershipType()
-    }
-
-    override fun serialize(encoder: Encoder, value: OwnershipType) {
-        encoder.encodeString(value.name)
-    }
 }

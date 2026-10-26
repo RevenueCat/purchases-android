@@ -264,7 +264,7 @@ package com.revenuecat.purchases {
     property public com.revenuecat.purchases.Offering? current;
   }
 
-  @kotlinx.serialization.Serializable(with=OwnershipTypeSerializer::class) public enum OwnershipType {
+  @kotlinx.serialization.Serializable public enum OwnershipType {
     enum_constant @kotlinx.serialization.SerialName("ASSIGNED") public static final com.revenuecat.purchases.OwnershipType ASSIGNED;
     enum_constant @kotlinx.serialization.SerialName("FAMILY_SHARED") public static final com.revenuecat.purchases.OwnershipType FAMILY_SHARED;
     enum_constant @kotlinx.serialization.SerialName("PURCHASED") public static final com.revenuecat.purchases.OwnershipType PURCHASED;

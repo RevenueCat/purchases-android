@@ -528,12 +528,27 @@ class CustomerInfoTest {
     }
 
     @Test
-    fun `Test OwnershipType serializes to its backend value`() {
-        OwnershipType.values().forEach { ownershipType ->
-            val encoded = JsonProvider.defaultJson.encodeToString(OwnershipType.serializer(), ownershipType)
-            assertThat(encoded).isEqualTo("\"${ownershipType.name}\"")
-            assertThat(JsonProvider.defaultJson.decodeFromString(OwnershipType.serializer(), encoded))
-                .isEqualTo(ownershipType)
+    fun `Test subscriptionsByProductIdentifier parses each known ownership type`() {
+        listOf(OwnershipType.PURCHASED, OwnershipType.FAMILY_SHARED, OwnershipType.ASSIGNED).forEach { ownershipType ->
+            val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
+            val subscriptions = jsonObject.getJSONObject("subscriber").getJSONObject("subscriptions")
+            subscriptions.getJSONObject("pro").put("ownership_type", ownershipType.name)
+
+            val customerInfo = createCustomerInfo(jsonObject)
+
+            assertThat(customerInfo.subscriptionsByProductIdentifier["pro"]!!.ownershipType).isEqualTo(ownershipType)
         }
+    }
+
+    @Test
+    fun `Test subscriptionsByProductIdentifier falls back to UNKNOWN for missing ownership type`() {
+        val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
+        val subscriptions = jsonObject.getJSONObject("subscriber").getJSONObject("subscriptions")
+        subscriptions.getJSONObject("pro").remove("ownership_type")
+
+        val customerInfo = createCustomerInfo(jsonObject)
+
+        assertThat(customerInfo.subscriptionsByProductIdentifier["pro"]!!.ownershipType)
+            .isEqualTo(OwnershipType.UNKNOWN)
     }
 }
