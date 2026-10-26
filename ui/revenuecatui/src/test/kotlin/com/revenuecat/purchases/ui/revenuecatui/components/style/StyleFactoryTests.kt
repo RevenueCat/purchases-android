@@ -155,8 +155,10 @@ class StyleFactoryTests {
         val destination = (buttonStyle.action as ButtonComponentStyle.Action.NavigateTo).destination
             as ButtonComponentStyle.Action.NavigateTo.Destination.Sheet
         assertThat(infos.getValue(TestData.Packages.annual.identifier).sheetPresentationKey).isNull()
+        assertThat(infos.getValue(TestData.Packages.annual.identifier).visibilityPaths).isNotEmpty()
         assertThat(infos.getValue(TestData.Packages.monthly.identifier).sheetPresentationKey)
             .isSameAs(destination.presentationKey)
+        assertThat(infos.getValue(TestData.Packages.monthly.identifier).visibilityPaths).isNotEmpty()
     }
 
     @Test

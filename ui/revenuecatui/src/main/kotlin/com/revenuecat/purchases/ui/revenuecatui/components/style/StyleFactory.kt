@@ -571,7 +571,7 @@ internal class StyleFactory(
                 .map { componentStyle ->
                     StyleResult(
                         componentStyle = componentStyle,
-                        availablePackages = packages,
+                        availablePackages = packages.withVisibilityPaths(componentStyle),
                         defaultTabIndex = defaultTabIndex,
                         heroImageDetected = heroImageDetected,
                     )
