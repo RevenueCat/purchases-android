@@ -5,9 +5,9 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * Rewards configured for an ad unit, before presentation or verification.
+ * The rewards expected for an ad unit.
  * Unknown or invalid individual rewards use [AdRewardConfiguration.UnsupportedReward].
- * A null [reward] means configuration was resolved successfully and no reward is configured for the ad unit.
+ * A null [reward] means no reward is configured for the ad unit.
  * Configured rewards describe what an app can advertise; they do not establish that a reward was granted.
  *
  * @property allRewards All rewards in configured order, primary first. Empty when no rewards are configured.
@@ -25,7 +25,7 @@ internal class ConfiguredAdRewards internal constructor(
         get() = allRewards.drop(1)
 }
 
-/** A reward configured before ad presentation. Unknown or invalid reward shapes use [UnsupportedReward]. */
+/** A reward configured before ad presentation. Unknown or invalid rewards use [UnsupportedReward]. */
 internal interface AdRewardConfiguration {
     /** A configured virtual currency reward. */
     @Poko
@@ -45,7 +45,7 @@ internal interface AdRewardConfiguration {
     public class Entitlement internal constructor(
         /** The entitlement identifier. */
         public val identifier: String,
-        /** The positive duration in whole seconds for which the entitlement will be granted. */
+        /** The positive configured duration of entitlement access, in whole seconds. */
         @get:JvmSynthetic
         public val duration: Duration,
     ) : AdRewardConfiguration {
@@ -59,6 +59,6 @@ internal interface AdRewardConfiguration {
             get() = duration.inWholeSeconds
     }
 
-    /** A configured reward with an unknown type or invalid values that this SDK version cannot model. */
+    /** A configured reward whose type is unsupported by this SDK version or whose values are invalid. */
     public object UnsupportedReward : AdRewardConfiguration
 }
