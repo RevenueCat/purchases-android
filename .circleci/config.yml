@@ -25,7 +25,7 @@ aliases:
     executor:
       name: android/android_docker
       resource_class: xlarge
-      tag: 2026.08.1
+      tag: 2026.10.1
     environment:
       JVM_OPTS: -Xmx6g
       # org.gradle.caching=false: the Gradle build cache stays on for local/worktree builds
@@ -1352,7 +1352,7 @@ workflows:
           commit_paths: "purchases/src/main/kotlin/generated/com/revenuecat/purchases/PurchasesErrorCode.kt,purchases/api-defauts.txt,purchases/api-entitlement.txt"
           executor:
             name: android/android_docker
-            tag: 2026.08.1
+            tag: 2026.10.1
             resource_class: xlarge
           update_api_steps:
             - run:
