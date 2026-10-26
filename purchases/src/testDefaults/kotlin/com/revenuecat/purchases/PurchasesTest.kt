@@ -82,6 +82,7 @@ import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult 
 import com.revenuecat.purchases.ads.rewardverification.VerifiedReward as PollReward
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationPollLauncher
 import com.revenuecat.purchases.ads.rewardverification.RewardedAdTrackingMetadata
+import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -1646,6 +1647,25 @@ internal class PurchasesTest : BasePurchasesTest() {
         }.isInstanceOf(PurchasesException::class.java)
 
         verify(exactly = 0) { mockEventsManager.track(any<CheckpointEvent>()) }
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `internal product entitlement mapping is the cached one`() {
+        val mapping = ProductEntitlementMapping(
+            mapOf("monthly" to ProductEntitlementMapping.Mapping("monthly", null, listOf("pro"))),
+        )
+        every { mockCache.getProductEntitlementMapping() } returns mapping
+
+        assertThat(purchases.internalProductEntitlementMapping()).isSameAs(mapping)
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `internal product entitlement mapping is null when none is cached`() {
+        every { mockCache.getProductEntitlementMapping() } returns null
+
+        assertThat(purchases.internalProductEntitlementMapping()).isNull()
     }
 
     @Test
