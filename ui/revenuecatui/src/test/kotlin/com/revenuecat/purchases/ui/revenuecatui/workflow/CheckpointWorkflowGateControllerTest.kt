@@ -68,7 +68,7 @@ class CheckpointWorkflowGateControllerTest {
         val invalid = step(WorkflowStepGating.Invalid)
         assertThat(controller.evaluate(invalid)).isEqualTo(WorkflowGateDecision.BLOCKED)
         assertThat(controller.blocksForwardNavigation(invalid)).isTrue()
-        assertThat(controller.update(customerInfo("pro", "premium"))).isEqualTo(WorkflowGateDecision.BLOCKED)
+        assertThat(controller.update(appUserId, customerInfo("pro", "premium"))).isEqualTo(WorkflowGateDecision.BLOCKED)
         assertThat(controller.hasUnresolvedGate).isTrue()
         assertThat(outcomes).containsExactly(CheckpointGateOutcome.NOT_APPLICABLE, CheckpointGateOutcome.NOT_PASSED)
     }
@@ -90,8 +90,8 @@ class CheckpointWorkflowGateControllerTest {
         reset(emptySet())
         controller.evaluate(hard)
         controller.evaluate(step(null))
-        assertThat(controller.update(customerInfo("unrelated"))).isEqualTo(WorkflowGateDecision.BLOCKED)
-        assertThat(controller.update(customerInfo("premium"))).isEqualTo(WorkflowGateDecision.PASSED)
+        assertThat(controller.update(appUserId, customerInfo("unrelated"))).isEqualTo(WorkflowGateDecision.BLOCKED)
+        assertThat(controller.update(appUserId, customerInfo("premium"))).isEqualTo(WorkflowGateDecision.PASSED)
         assertThat(controller.hasUnresolvedGate).isFalse()
         assertThat(controller.blocksForwardNavigation(hard)).isFalse()
         assertThat(outcomes).containsExactly(
@@ -102,7 +102,7 @@ class CheckpointWorkflowGateControllerTest {
     @Test
     fun `customer info before reaching a gate updates the entry baseline`() {
         reset(emptySet())
-        assertThat(controller.update(customerInfo("pro"))).isEqualTo(WorkflowGateDecision.NOT_GATED)
+        assertThat(controller.update(appUserId, customerInfo("pro"))).isEqualTo(WorkflowGateDecision.NOT_GATED)
         assertThat(controller.evaluate(hard)).isEqualTo(WorkflowGateDecision.PASSED)
     }
 
@@ -114,19 +114,18 @@ class CheckpointWorkflowGateControllerTest {
         controller.evaluate(step(null))
         assertThat(controller.hasUnresolvedGate).isTrue()
         assertThat(controller.blocksForwardNavigation(hard)).isTrue()
-        assertThat(controller.resolveIdentity("customer-b", customerInfo("premium")))
+        assertThat(controller.update("customer-b", customerInfo("premium")))
             .isEqualTo(WorkflowGateDecision.PASSED)
         assertThat(controller.hasUnresolvedGate).isFalse()
     }
 
     @Test
-    fun `identity change fails the gate closed until the new user's info is resolved`() {
+    fun `identity change fails the gate closed until the new user's info arrives`() {
         reset(emptySet())
         controller.evaluate(hard)
-        controller.update(customerInfo("pro"))
+        controller.update(appUserId, customerInfo("pro"))
         appUserId = "customer-b"
 
-        assertThat(controller.needsIdentityResolution()).isTrue()
         assertThat(controller.hasUnresolvedGate).isTrue()
         assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.NOT_PASSED)
         assertThat(controller.blocksForwardNavigation(hard)).isTrue()
@@ -136,12 +135,11 @@ class CheckpointWorkflowGateControllerTest {
     fun `identity change keeps passage when the new user holds the entitlement, as after an alias`() {
         reset(emptySet())
         controller.evaluate(hard)
-        controller.update(customerInfo("pro"))
+        controller.update(appUserId, customerInfo("pro"))
         appUserId = "customer-b"
 
-        assertThat(controller.resolveIdentity("customer-b", customerInfo("pro")))
+        assertThat(controller.update("customer-b", customerInfo("pro")))
             .isEqualTo(WorkflowGateDecision.PASSED)
-        assertThat(controller.needsIdentityResolution()).isFalse()
         assertThat(controller.hasUnresolvedGate).isFalse()
         assertThat(controller.blocksForwardNavigation(hard)).isFalse()
         assertThat(outcomes).containsExactly(
@@ -157,57 +155,51 @@ class CheckpointWorkflowGateControllerTest {
     fun `identity change revokes passage when the new user lacks the entitlement`() {
         reset(emptySet())
         controller.evaluate(hard)
-        controller.update(customerInfo("pro"))
+        controller.update(appUserId, customerInfo("pro"))
         appUserId = "customer-b"
 
-        assertThat(controller.resolveIdentity("customer-b", customerInfo("unrelated")))
+        assertThat(controller.update("customer-b", customerInfo("unrelated")))
             .isEqualTo(WorkflowGateDecision.BLOCKED)
-        assertThat(controller.needsIdentityResolution()).isFalse()
         assertThat(controller.hasUnresolvedGate).isTrue()
         assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.NOT_PASSED)
     }
 
     @Test
-    fun `customer info updates are ignored while the identity is unresolved`() {
+    fun `customer info read for the previous user is ignored after an identity change`() {
         reset(emptySet())
         controller.evaluate(hard)
         appUserId = "customer-b"
 
-        assertThat(controller.update(customerInfo("pro"))).isEqualTo(WorkflowGateDecision.BLOCKED)
-        assertThat(controller.needsIdentityResolution()).isTrue()
+        assertThat(controller.update("customer-a", customerInfo("pro"))).isEqualTo(WorkflowGateDecision.BLOCKED)
         assertThat(controller.hasUnresolvedGate).isTrue()
     }
 
     @Test
-    fun `resolution for an outdated user is ignored and a later one resolves`() {
+    fun `info for an outdated user is ignored and a later one applies`() {
         reset(emptySet())
         controller.evaluate(hard)
         appUserId = "customer-b"
-        controller.needsIdentityResolution()
         appUserId = "customer-c"
 
-        assertThat(controller.resolveIdentity("customer-b", customerInfo("pro")))
+        assertThat(controller.update("customer-b", customerInfo("pro")))
             .isEqualTo(WorkflowGateDecision.BLOCKED)
-        assertThat(controller.needsIdentityResolution()).isTrue()
-        assertThat(controller.resolveIdentity("customer-c", customerInfo("pro")))
+        assertThat(controller.update("customer-c", customerInfo("pro")))
             .isEqualTo(WorkflowGateDecision.PASSED)
-        assertThat(controller.needsIdentityResolution()).isFalse()
     }
 
     @Test
-    fun `resolution before a gate is reached sets the entry baseline for the new user`() {
+    fun `info after an identity change before a gate is reached sets the new user's entry baseline`() {
         reset(setOf("pro"))
         appUserId = "customer-b"
-        assertThat(controller.resolveIdentity("customer-b", customerInfo("premium")))
+        assertThat(controller.update("customer-b", customerInfo("premium")))
             .isEqualTo(WorkflowGateDecision.NOT_GATED)
         assertThat(controller.evaluate(hard)).isEqualTo(WorkflowGateDecision.PASSED)
     }
 
     @Test
-    fun `an unknown initial user id requires identity resolution`() {
+    fun `an unknown initial user id drops the cached baseline`() {
         controller.reset(CheckpointGateContext(null, setOf("pro"), outcomes::add))
         assertThat(controller.evaluate(hard)).isEqualTo(WorkflowGateDecision.BLOCKED)
-        assertThat(controller.needsIdentityResolution()).isTrue()
     }
 
     @Test
