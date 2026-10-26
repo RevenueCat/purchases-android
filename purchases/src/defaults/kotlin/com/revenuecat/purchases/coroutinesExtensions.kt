@@ -22,11 +22,9 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Locale
 
 /**
- * Coroutine friendly version of [Purchases.getAdRewards]. Returns null when configuration cannot be resolved
- * or [adUnitId] is empty, and an empty [ConfiguredAdRewards.allRewards] when no rewards are configured.
+ * Coroutine friendly version of [Purchases.getAdRewards]. Returns null when configuration is unavailable
+ * or [adUnitId] is empty. A result with an empty [ConfiguredAdRewards.allRewards] means no rewards are configured.
  * Unknown or invalid individual rewards use [AdRewardConfiguration.UnsupportedReward].
- *
- * Cancelling the caller cancels its wait, but does not cancel shared remote configuration work.
  */
 @JvmSynthetic
 @Suppress("UNUSED_PARAMETER", "UnusedParameter")

@@ -282,8 +282,8 @@ public class Purchases internal constructor(
      * and loading it when needed. These values are for display and may differ from the reward ultimately granted;
      * use reward verification to determine what was granted.
      *
-     * The callback runs on the main thread with null when configuration cannot be resolved or [adUnitId] is empty.
-     * An empty [ConfiguredAdRewards.allRewards] means configuration was resolved and no rewards are configured.
+     * The callback runs on the main thread with null when configuration is unavailable or [adUnitId] is empty.
+     * A result with an empty [ConfiguredAdRewards.allRewards] means no rewards are configured.
      * Unknown or invalid individual rewards use [AdRewardConfiguration.UnsupportedReward].
      */
     @JvmSynthetic
