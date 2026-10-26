@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">OK</string>
+    <string name="loading">Жүктелуде</string>
     <string name="all_plans">Барлық жазылымдар</string>
     <string name="privacy">Құпиялық</string>
     <string name="privacy_policy">Құпиялық саясаты</string>
@@ -22,4 +23,14 @@
     <string name="cannot_open_link">Сілтеме жарамсыз. Ашылмады.</string>
     <string name="revenuecatui_purchase">Сатып алу</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">Алдын ала қарау жұмыс процесін жүктеу мүмкін болмады. Қайталап көріңіз.</string>
+    <string name="revenuecatui_checkpoint_error_network">Қосылу мүмкін болмады. Интернет байланысын тексеріп, қайталап көріңіз.</string>
+    <string name="revenuecatui_checkpoint_error_load">Бұл мазмұнды жүктеу мүмкін болмады. Кейінірек қайталап көріңіз.</string>
+    <string name="revenuecatui_checkpoint_error_store">Дүкенде мәселе туындады. Кейінірек қайталап көріңіз.</string>
+    <string name="revenuecatui_checkpoint_error_purchase_not_allowed">Бұл құрылғыда сатып алуға рұқсат жоқ.</string>
+    <string name="revenuecatui_checkpoint_error_product_unavailable">Бұл өнім қазір қолжетімді емес.</string>
+    <string name="revenuecatui_checkpoint_error_already_purchased">Бұл өнім сізде бұрыннан бар.</string>
+    <string name="revenuecatui_checkpoint_error_payment_pending">Төлеміңіз күтуде. Ол мақұлданған соң қол жеткізе аласыз.</string>
+    <string name="revenuecatui_checkpoint_error_generic">Бірдеңе дұрыс болмады. Қайталап көріңіз.</string>
+    <string name="revenuecatui_checkpoint_error_sync">Сатып алуларыңызды тексеру мүмкін болмады. Кейінірек қайталап көріңіз.</string>
 </resources>

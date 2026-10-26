@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.paywalls.components.common
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.paywalls.components.properties.ThemeVideoUrls
 import com.revenuecat.purchases.utils.serializers.DefaultLocaleIdSerializer
 import com.revenuecat.purchases.utils.serializers.EmptyObjectToNullSerializer
 import com.revenuecat.purchases.utils.serializers.GoogleListSerializer
@@ -54,6 +55,10 @@ public class PaywallComponentsData(
     @Serializable(with = StateDeclarationMapSerializer::class)
     @SerialName("state_declarations")
     public val stateDeclarations: Map<String, StateDeclaration>? = null,
+    @get:JvmSynthetic
+    @Serializable(with = LocalizedVideoMapSerializer::class)
+    @SerialName("components_video_localizations")
+    public val componentsVideoLocalizations: Map<LocaleId, Map<LocalizationKey, ThemeVideoUrls>> = emptyMap(),
 )
 
 @OptIn(InternalRevenueCatAPI::class)

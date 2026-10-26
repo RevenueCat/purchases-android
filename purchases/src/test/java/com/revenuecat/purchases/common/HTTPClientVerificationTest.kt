@@ -204,7 +204,36 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
                 match<ByteArray> { it.contentEquals("{\"test-key\":\"test-value\"}".toByteArray()) },
                 "1234567890",
                 "test-etag",
-                postFieldsToSignHeader = null
+                postFieldsToSignHeader = null,
+                authorizationHeader = null,
+            )
+        }
+    }
+
+    @Test
+    fun `performRequest verifies against the Authorization header it sent`() {
+        val endpoint = Endpoint.GetCustomerInfo("test-user-id")
+        mockSigningResult(SignatureVerificationResult.NotRequested)
+        enqueue(endpoint.getPath(), HTTPResult.createResult())
+
+        client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            requestHeaders = mapOf("Authorization" to "Bearer test-credential"),
+        )
+
+        verify(exactly = 1) {
+            mockSigningManager.verifyResponse(
+                urlPath = endpoint.getPath(),
+                signatureString = any(),
+                nonce = any(),
+                bodyBytes = any(),
+                requestTime = any(),
+                eTag = any(),
+                postFieldsToSignHeader = any(),
+                authorizationHeader = "Bearer test-credential",
             )
         }
     }
@@ -372,6 +401,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
                 requestTime = null,
                 eTag = any(),
                 postFieldsToSignHeader = any(),
+                authorizationHeader = any(),
             )
         }
     }
@@ -523,7 +553,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
             endpoint,
             body = null,
             postFieldsToSign = null,
-            requestHeaders = emptyMap()
+            requestHeaders = mapOf("Authorization" to "Bearer test-credential"),
         )
 
         val recordedRequest = server.takeRequest()
@@ -541,6 +571,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
                 match<ByteArray> { it.contentEquals(container) },
                 "1234567890",
                 "test-etag",
+                authorizationHeader = "Bearer test-credential",
             )
         }
     }
@@ -577,7 +608,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
             endpoint,
             body = null,
             postFieldsToSign = null,
-            requestHeaders = emptyMap()
+            requestHeaders = mapOf("Authorization" to "Bearer test-credential"),
         )
 
         server.takeRequest()
@@ -593,7 +624,8 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
                 match<ByteArray> { it.isEmpty() },
                 "1234567890",
                 "test-etag",
-                postFieldsToSignHeader = null
+                postFieldsToSignHeader = null,
+                authorizationHeader = "Bearer test-credential",
             )
         }
     }
@@ -621,22 +653,22 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
 
     private fun mockSigningResult(result: SignatureVerificationResult) {
         every {
-            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any(), any())
         } returns result
     }
 
     private fun mockRCFormatSigningResult(result: SignatureVerificationResult) {
         every {
-            mockSigningManager.verifyRCFormatResponse(any(), any(), any(), any(), any(), any())
+            mockSigningManager.verifyRCFormatResponse(any(), any(), any(), any(), any(), any(), any())
         } returns result
     }
 
     private fun assertSigningNotPerformed() {
         verify(exactly = 0) {
-            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any(), any())
         }
         verify(exactly = 0) {
-            mockSigningManager.verifyRCFormatResponse(any(), any(), any(), any(), any(), any())
+            mockSigningManager.verifyRCFormatResponse(any(), any(), any(), any(), any(), any(), any())
         }
     }
 

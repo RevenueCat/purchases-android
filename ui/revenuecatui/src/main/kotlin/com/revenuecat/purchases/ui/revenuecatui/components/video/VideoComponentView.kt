@@ -48,7 +48,7 @@ internal fun VideoComponentView(
     style: VideoComponentStyle,
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
-    repository: FileRepository = Purchases.sharedInstance.fileRepository,
+    repository: FileRepository = state.fileRepositoryOverride ?: Purchases.sharedInstance.fileRepository,
 ) {
     val videoState = rememberUpdatedVideoComponentState(style, state)
 

@@ -47,6 +47,24 @@ internal class CheckpointsConfigProviderTest {
     }
 
     @Test
+    fun `checkpointIds lists every checkpoint in the topic, sorted`() = runTest {
+        coEvery { manager.topic(RemoteConfigTopic.CheckpointRules) } returns ConfigTopic(
+            listOf("paywall_gate", "onboarding").associateWith {
+                RemoteConfiguration.ConfigItem(blobRef = "blob_$it", prefetch = false)
+            },
+        )
+
+        assertThat(provider.checkpointIds()).containsExactly("onboarding", "paywall_gate")
+    }
+
+    @Test
+    fun `checkpointIds is empty without the topic`() = runTest {
+        coEvery { manager.topic(RemoteConfigTopic.CheckpointRules) } returns null
+
+        assertThat(provider.checkpointIds()).isEmpty()
+    }
+
+    @Test
     fun `resolveCheckpoint returns the parsed backend payload unchanged`() = runTest {
         returnBlob(
             "app_open",

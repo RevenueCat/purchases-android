@@ -2,6 +2,7 @@ package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.JsonTools
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -15,6 +16,7 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.ThemeVideoUrls
 import com.revenuecat.purchases.paywalls.components.properties.VideoUrls
+import org.assertj.core.api.Assertions.assertThat
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import java.net.URL
@@ -55,7 +57,7 @@ class VideoComponentTests {
           },
           "mute_audio": true,
           "name": "",
-          "override_source_lid": "abc123",
+          "override_video_lid": "abc123",
           "shadow": {
             "color": {
               "light": {
@@ -156,12 +158,58 @@ class VideoComponentTests {
                 y = 45.2,
             ),
             overrides = null,
-            overrideSourceLid = LocalizationKey("abc123"),
+            overrideVideoLid = LocalizationKey("abc123"),
         )
         // Arrange, Act
         val actual = JsonTools.json.decodeFromString<VideoComponent>(json)
 
         // Assert
         assert(actual == expected)
+    }
+
+    @Test
+    fun `deserializes override_video_lid on overrides and ignores override_source_lid`() {
+        @Language("json")
+        val json = """
+            {
+              "type": "video",
+              "source": {
+                "light": {
+                  "url": "https://RevenueCat.com/video-files/herding_cats.mp4",
+                  "width": 200,
+                  "height": 400
+                }
+              },
+              "show_controls": false,
+              "auto_play": true,
+              "loop": true,
+              "mute_audio": true,
+              "size": {
+                "width": { "type": "fill", "value": null },
+                "height": { "type": "fit", "value": null }
+              },
+              "fit_mode": "fit",
+              "override_source_lid": "legacy",
+              "overrides": [
+                {
+                  "conditions": [ { "type": "selected" } ],
+                  "properties": {
+                    "override_video_lid": "selected_video",
+                    "override_source_lid": "legacy_selected"
+                  }
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val actual = JsonTools.json.decodeFromString<VideoComponent>(json)
+
+        assertThat(actual.overrideVideoLid).isNull()
+        assertThat(actual.overrides).containsExactly(
+            ComponentOverride(
+                conditions = listOf(ComponentOverride.Condition.Selected),
+                properties = PartialVideoComponent(overrideVideoLid = LocalizationKey("selected_video")),
+            ),
+        )
     }
 }

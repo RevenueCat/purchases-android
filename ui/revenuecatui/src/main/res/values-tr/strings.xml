@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">TAMAM</string>
+    <string name="loading">Yükleniyor</string>
     <string name="all_plans">Tüm abonelikler</string>
     <string name="privacy">Gizlilik</string>
     <string name="privacy_policy">Gizlilik Politikası</string>
@@ -22,4 +23,14 @@
     <string name="cannot_open_link">Geçersiz bağlantı. Açılamadı.</string>
     <string name="revenuecatui_purchase">Satın al</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">Önizleme iş akışı yüklenemedi. Lütfen tekrar deneyin.</string>
+    <string name="revenuecatui_checkpoint_error_network">Bağlanılamadı. İnternet bağlantınızı kontrol edip tekrar deneyin.</string>
+    <string name="revenuecatui_checkpoint_error_load">Bu içerik yüklenemedi. Lütfen daha sonra tekrar deneyin.</string>
+    <string name="revenuecatui_checkpoint_error_store">Mağazayla ilgili bir sorun oluştu. Lütfen daha sonra tekrar deneyin.</string>
+    <string name="revenuecatui_checkpoint_error_purchase_not_allowed">Bu cihazda satın alma işlemlerine izin verilmiyor.</string>
+    <string name="revenuecatui_checkpoint_error_product_unavailable">Bu ürün şu anda kullanılamıyor.</string>
+    <string name="revenuecatui_checkpoint_error_already_purchased">Bu ürüne zaten sahipsiniz.</string>
+    <string name="revenuecatui_checkpoint_error_payment_pending">Ödemeniz beklemede. Onaylandığında erişim kazanacaksınız.</string>
+    <string name="revenuecatui_checkpoint_error_generic">Bir şeyler yanlış gitti. Lütfen tekrar deneyin.</string>
+    <string name="revenuecatui_checkpoint_error_sync">Satın alımlarınız doğrulanamadı. Lütfen daha sonra tekrar deneyin.</string>
 </resources>

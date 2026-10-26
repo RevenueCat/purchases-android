@@ -23,11 +23,12 @@ internal class SigningManager(
         const val NONCE_BYTES_SIZE = 12
         const val POST_PARAMS_ALGORITHM = "sha256"
         const val POST_PARAMS_SEPARATOR = 0x00.toByte()
+        const val BEARER_PREFIX = "Bearer "
     }
 
     private data class Parameters(
         val salt: ByteArray,
-        val apiKey: String,
+        val authValue: String,
         val nonce: String?,
         val urlPath: String,
         val postParamsHashHeader: String?,
@@ -42,7 +43,7 @@ internal class SigningManager(
             other as Parameters
 
             if (!salt.contentEquals(other.salt)) return false
-            if (apiKey != other.apiKey) return false
+            if (authValue != other.authValue) return false
             if (nonce != other.nonce) return false
             if (urlPath != other.urlPath) return false
             if (postParamsHashHeader != other.postParamsHashHeader) return false
@@ -60,7 +61,7 @@ internal class SigningManager(
 
         override fun hashCode(): Int {
             var result = salt.contentHashCode()
-            result = 31 * result + apiKey.hashCode()
+            result = 31 * result + authValue.hashCode()
             result = 31 * result + (nonce?.hashCode() ?: 0)
             result = 31 * result + urlPath.hashCode()
             result = 31 * result + (postParamsHashHeader?.hashCode() ?: 0)
@@ -72,7 +73,7 @@ internal class SigningManager(
 
         fun toSignatureToVerify(): ByteArray {
             return salt +
-                apiKey.toByteArray() +
+                authValue.toByteArray() +
                 (nonce?.let { Base64.decode(it, Base64.DEFAULT) } ?: byteArrayOf()) +
                 urlPath.toByteArray() +
                 (postParamsHashHeader?.toByteArray() ?: byteArrayOf()) +
@@ -120,7 +121,8 @@ internal class SigningManager(
 
     /**
      * Verifies a response signature. [bodyBytes] is the signed payload: the UTF-8 bytes of a textual
-     * (JSON) body, or an empty array for a `204 No Content` response.
+     * (JSON) body, or an empty array for a `204 No Content` response. [authorizationHeader] is the
+     * `Authorization` header the request was sent with; its Bearer value is part of the signed message.
      */
     @Suppress("LongParameterList")
     fun verifyResponse(
@@ -131,6 +133,7 @@ internal class SigningManager(
         requestTime: String?,
         eTag: String?,
         postFieldsToSignHeader: String?,
+        authorizationHeader: String?,
     ): SignatureVerificationResult = verifySignedResponse(
         urlPath = urlPath,
         signatureString = signatureString,
@@ -138,6 +141,7 @@ internal class SigningManager(
         requestTime = requestTime,
         eTag = eTag,
         postFieldsToSignHeader = postFieldsToSignHeader,
+        authorizationHeader = authorizationHeader,
     ) { Result.Success(bodyBytes) }
 
     /**
@@ -149,7 +153,8 @@ internal class SigningManager(
      * blob elements are not signed and are instead authenticated transitively by hashing against the `blob_ref`
      * in the signed config. These endpoints are not ETag-cached and send no post params, but the signature does
      * cover the request [nonce]. The signature headers are checked before [containerBytes] is parsed, so a
-     * response that is missing them reports that rather than an invalid payload.
+     * response that is missing them reports that rather than an invalid payload. [authorizationHeader] is as in
+     * [verifyResponse].
      */
     @Suppress("LongParameterList")
     fun verifyRCFormatResponse(
@@ -159,6 +164,7 @@ internal class SigningManager(
         containerBytes: ByteArray,
         requestTime: String?,
         eTag: String?,
+        authorizationHeader: String?,
     ): SignatureVerificationResult = verifySignedResponse(
         urlPath = urlPath,
         signatureString = signatureString,
@@ -166,6 +172,7 @@ internal class SigningManager(
         requestTime = requestTime,
         eTag = eTag,
         postFieldsToSignHeader = null,
+        authorizationHeader = authorizationHeader,
     ) {
         try {
             Result.Success(RCContainer.parse(containerBytes).config)
@@ -183,6 +190,7 @@ internal class SigningManager(
         requestTime: String?,
         eTag: String?,
         postFieldsToSignHeader: String?,
+        authorizationHeader: String?,
         signedPayload: () -> Result<ByteArray?, FailureReason>,
     ): SignatureVerificationResult {
         if (appConfig.forceSigningErrors) {
@@ -230,7 +238,7 @@ internal class SigningManager(
                 val intermediateKeyVerifier = result.value
                 val signatureParameters = Parameters(
                     signature.salt,
-                    apiKey,
+                    signingAuthValue(authorizationHeader),
                     nonce,
                     urlPath,
                     postFieldsToSignHeader,
@@ -253,4 +261,9 @@ internal class SigningManager(
             }
         }
     }
+
+    // The backend signs with the credential the request was authenticated with: the Bearer value of its
+    // Authorization header (an IAM access token, or the API key), else the API key. Mirrors iOS.
+    private fun signingAuthValue(authorizationHeader: String?): String =
+        authorizationHeader?.takeIf { it.startsWith(BEARER_PREFIX) }?.removePrefix(BEARER_PREFIX) ?: apiKey
 }

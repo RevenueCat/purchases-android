@@ -25,7 +25,7 @@ aliases:
     executor:
       name: android/android_docker
       resource_class: xlarge
-      tag: 2026.08.1
+      tag: 2026.10.1
     environment:
       JVM_OPTS: -Xmx6g
       # org.gradle.caching=false: the Gradle build cache stays on for local/worktree builds
@@ -43,7 +43,7 @@ aliases:
 version: 2.1
 orbs:
   android: circleci/android@3.2.0
-  revenuecat: revenuecat/sdks-common-config@4.6.2
+  revenuecat: revenuecat/sdks-common-config@4.7.0
   codecov: codecov/codecov@3.2.4
 
 parameters:
@@ -172,7 +172,7 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - accept-android-licenses
       - android-dependencies
       - android/restore_build_cache
@@ -189,7 +189,7 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - accept-android-licenses
       - android-dependencies
       - android/restore_build_cache
@@ -206,7 +206,7 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - accept-android-licenses
       - android-dependencies
       - android/restore_build_cache
@@ -223,7 +223,7 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - accept-android-licenses
       - android-dependencies
       - android/restore_build_cache
@@ -425,7 +425,7 @@ jobs:
   # Stdlib only, so no bundler. Needs full history: it compares HEAD against HEAD^.
   announce-api-changes:
     docker:
-      - image: cimg/ruby:3.2.0
+      - image: cimg/ruby:3.3
     steps:
       - checkout
       - run:
@@ -448,7 +448,7 @@ jobs:
       - install-awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/10.25.0-SNAPSHOT s3://purchases-docs/android/10.25.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/10.30.0-SNAPSHOT s3://purchases-docs/android/10.30.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -465,7 +465,7 @@ jobs:
       - revenuecat/setup-git-credentials
       - revenuecat/trust-github-key
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - prepare-signing-key
       - android/restore_gradle_cache
       - android/restore_build_cache
@@ -483,7 +483,7 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - revenuecat/setup-git-credentials
       - revenuecat/trust-github-key
       - run:
@@ -497,7 +497,7 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - android/restore_gradle_cache:
           cache_prefix: v1a
       - android/restore_build_cache:
@@ -545,7 +545,7 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - accept-android-licenses
       - android/restore_gradle_cache
       - android/restore_build_cache
@@ -573,7 +573,7 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - build-paywall-tester
 
   publish-paywall-tester-release:
@@ -586,7 +586,7 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - build-paywall-tester
       - run:
           name: Publish aab
@@ -600,7 +600,7 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - build-rct-tester
 
   publish-rct-tester-release:
@@ -613,7 +613,7 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - build-rct-tester
       - run:
           name: Publish aab
@@ -637,7 +637,7 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - android/create_avd:
           avd_name: test-purchases-integration
           system_image: system-images;android-33;google_apis;x86_64
@@ -664,7 +664,7 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - android/create_avd:
           avd_name: test-cec-integration
           system_image: system-images;android-33;google_apis;x86_64
@@ -693,14 +693,14 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - android/restore_build_cache
       - attach_workspace:
           at: .
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - android/restore_gradle_cache
       - run:
           name: Build and run purchases ui snapshot tests
@@ -708,8 +708,8 @@ jobs:
             bundle exec fastlane android emerge_purchases_ui_snapshot_tests
       - android/save_build_cache
 
-  emerge_size_analysis_tests:
-    description: "Emerge size analysis tests"
+  size_analysis_tests:
+    description: "SDK size analysis tests"
     <<: *android-executor
     steps:
       - checkout
@@ -718,13 +718,13 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - prepare-signing-key
       - android/restore_gradle_cache
       - run:
-          name: Upload size testing app to emerge
+          name: Upload size testing app to Emerge and Sentry
           command: |
-            bundle exec fastlane android emerge_sdk_size_tests
+            bundle exec fastlane android sdk_size_tests
       - android/save_build_cache
 
   run-integration-tests:
@@ -775,7 +775,7 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - android/restore_gradle_cache
       - run:
           name: Run backend integration tests
@@ -806,7 +806,7 @@ jobs:
             gem install emerge
             mise reshim
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - android/restore_gradle_cache
       - run:
           name: Records new RevenueCat UI snapshots to become the new golden
@@ -860,7 +860,7 @@ jobs:
       - revenuecat/install-mise-tools:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - android/restore_build_cache
       - run:
           name: Set GitHub token environment variable
@@ -929,14 +929,14 @@ jobs:
           name: Run Maestro tests on minified release build
           command: |
             adb install -r test-apps/e2etests/build/outputs/apk/release/e2etests-release.apk
-            maestro test --exclude-tags debug-only --format junit --output maestro/report.xml maestro/e2e_tests/ maestro/workflows/
+            maestro test --exclude-tags debug-only --format junit --output maestro/report.xml maestro/e2e_tests/ maestro/workflows/ maestro/checkpoints/
       - run:
           # Flows tagged debug-only force server errors through configureForE2ETests, which only
           # exists in the SDK's debug variant, so they run against the debug build.
           name: Run Maestro debug-only tests
           command: |
             adb install -r test-apps/e2etests/build/outputs/apk/debug/e2etests-debug.apk
-            maestro test --include-tags debug-only --format junit --output maestro/debug-report.xml maestro/workflows/
+            maestro test --include-tags debug-only --format junit --output maestro/debug-report.xml maestro/workflows/ maestro/checkpoints/
       - store_artifacts:
           path: ~/.maestro/tests/
       - store_test_results:
@@ -987,7 +987,7 @@ jobs:
       - revenuecat/setup-git-credentials
       - revenuecat/trust-github-key
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - android/restore_gradle_cache
       - android/restore_build_cache
       - run:
@@ -1003,7 +1003,7 @@ jobs:
 
   update-paywall-preview-resources-submodule:
     docker:
-      - image: cimg/ruby:3.2.0
+      - image: cimg/ruby:3.3
     steps:
       - checkout
       - revenuecat/setup-git-credentials
@@ -1011,7 +1011,7 @@ jobs:
       - checkout-submodule:
           path: upstream/paywall-preview-resources
       - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
+          cache-version: v2
       - run:
           name: Update paywall templates
           command: bundle exec fastlane android update_paywall_preview_resources_submodule
@@ -1070,7 +1070,7 @@ workflows:
         - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
       - revenuecat/danger:
-          ruby_version: "3.2.0"
+          ruby_version: "3.3"
           post-steps:
             - run:
                 name: Run api diff report unit tests
@@ -1217,7 +1217,9 @@ workflows:
       - emerge_purchases_ui_snapshot_tests:
           requires:
             - prepare-tests
-      - emerge_size_analysis_tests:
+      - size_analysis_tests:
+          context:
+            - sentry
           requires:
             - prepare-tests
       - run-maestro-tests:
@@ -1249,6 +1251,7 @@ workflows:
           type: approval
           <<: *release-branches
       - revenuecat/tag-current-branch:
+          ruby_version: "3.3"
           requires:
             - wait-for-pr-approval
             - test_defaults_debug
@@ -1288,6 +1291,7 @@ workflows:
               - docs-deploy
           <<: *release-tags
       - revenuecat/merge-release-pr:
+          ruby_version: "3.3"
           repo_name: purchases-android
           use_merge_queue: true
           requires:
@@ -1337,7 +1341,7 @@ workflows:
         - equal: [ "release-train", << pipeline.schedule.name >> ]
     jobs:
       - revenuecat/automatic-bump:
-          ruby_version: "3.2.0"
+          ruby_version: "3.3"
 
   biweekly-baseline-profiles:
     when:
@@ -1354,7 +1358,7 @@ workflows:
       equal: [ bump, << pipeline.parameters.action >> ]
     jobs:
       - revenuecat/automatic-bump:
-          ruby_version: "3.2.0"
+          ruby_version: "3.3"
 
   manual-paywall-tester-release:
     when:
@@ -1386,7 +1390,7 @@ workflows:
           commit_paths: "purchases/src/main/kotlin/generated/com/revenuecat/purchases/PurchasesErrorCode.kt,purchases/api-defauts.txt,purchases/api-entitlement.txt"
           executor:
             name: android/android_docker
-            tag: 2026.08.1
+            tag: 2026.10.1
             resource_class: xlarge
           update_api_steps:
             - run:
@@ -1397,7 +1401,7 @@ workflows:
             - revenuecat/install-mise-tools:
                 tools: java,ruby
             - revenuecat/install-gem-unix-dependencies:
-                cache-version: v1
+                cache-version: v2
             - android/restore_gradle_cache
             - run:
                 name: Update API

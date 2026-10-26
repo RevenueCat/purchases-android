@@ -5,6 +5,7 @@ import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.Store
@@ -12,7 +13,6 @@ import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.debugLog
-import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.networking.ConnectionErrorReason
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
@@ -45,7 +45,7 @@ internal class DiagnosticsTracker(
     private val diagnosticsHelper: DiagnosticsHelper,
     private val diagnosticsDispatcher: Dispatcher,
     private val enabledBySdkConfiguration: Boolean,
-    private val appSessionID: UUID = EventsManager.appSessionID,
+    private val diagnosticsSessionID: UUID = DiagnosticsTracker.diagnosticsSessionID,
 ) {
     private enum class CollectionState { UNDETERMINED, ENABLED, DISABLED }
 
@@ -57,6 +57,8 @@ internal class DiagnosticsTracker(
         get() = collectionState.get() == CollectionState.ENABLED
 
     private companion object {
+        val diagnosticsSessionID: UUID = UUID.randomUUID()
+
         const val HOST_KEY = "host"
         const val ENDPOINT_NAME_KEY = "endpoint_name"
         const val SUCCESSFUL_KEY = "successful"
@@ -103,10 +105,12 @@ internal class DiagnosticsTracker(
     var listener: DiagnosticsEventTrackerListener? = null
 
     /**
-     * Applies the remote `diagnostics.enabled` setting, falling back to the SDK configuration when the backend
-     * did not send one. Until this is called, events are collected on disk but never synced. Disabling deletes
-     * the diagnostics file on the diagnostics thread, behind any append already queued; enabling lets the
-     * listener sync whatever was collected while the decision was pending.
+     * Applies the remote `diagnostics.enabled` setting, falling back to
+     * [PurchasesConfiguration.Builder.diagnosticsEnabled] when the backend did not send one. The remote setting is
+     * enabled only at the developer's request or with their explicit approval. Until this is called, events are
+     * collected on disk but never synced. Disabling deletes the diagnostics file on the diagnostics thread, behind
+     * any append already queued; enabling lets the listener sync whatever was collected while the decision was
+     * pending.
      */
     fun applyRemoteCollectionSetting(remoteEnabled: Boolean?) {
         val enabled = remoteEnabled ?: enabledBySdkConfiguration
@@ -335,7 +339,7 @@ internal class DiagnosticsTracker(
         val event = DiagnosticsEntry(
             name = DiagnosticsEntryName.MAX_EVENTS_STORED_LIMIT_REACHED,
             properties = commonProperties,
-            appSessionID = appSessionID,
+            diagnosticsSessionID = diagnosticsSessionID,
         )
         if (useCurrentThread) {
             trackEventInCurrentThread(event)
@@ -622,7 +626,7 @@ internal class DiagnosticsTracker(
             DiagnosticsEntry(
                 name = eventName,
                 properties = commonProperties + properties,
-                appSessionID = appSessionID,
+                diagnosticsSessionID = diagnosticsSessionID,
             ),
         )
     }

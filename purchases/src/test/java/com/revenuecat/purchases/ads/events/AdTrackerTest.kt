@@ -250,7 +250,7 @@ class AdTrackerTest {
     }
 
     @Test
-    fun `trackAdRewardEarnedUnverified tracks reward earned unverified event`() {
+    fun `trackAdRewardEarnedUnverified tracks public event without reward verification`() {
         val eventSlot = slot<AdEvent.RewardEarnedUnverified>()
         every { eventsManager.track(capture(eventSlot)) } just Runs
 
@@ -262,9 +262,7 @@ class AdTrackerTest {
                 placement = "rewarded_video",
                 adUnitId = "ca-app-pub-123456",
                 impressionId = "impression-123",
-                rewardVerificationEnabled = true,
             ),
-            captureMethod = AdCaptureMethod.MANUAL,
         )
 
         verify(exactly = 1) { eventsManager.track(any<AdEvent.RewardEarnedUnverified>()) }
@@ -275,13 +273,13 @@ class AdTrackerTest {
         assertThat(eventSlot.captured.placement).isEqualTo("rewarded_video")
         assertThat(eventSlot.captured.adUnitId).isEqualTo("ca-app-pub-123456")
         assertThat(eventSlot.captured.impressionId).isEqualTo("impression-123")
-        assertThat(eventSlot.captured.rewardVerificationEnabled).isTrue()
+        assertThat(eventSlot.captured.rewardVerificationEnabled).isFalse()
         assertThat(eventSlot.captured.type).isEqualTo(AdEventType.REWARD_EARNED_UNVERIFIED)
         assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.MANUAL)
     }
 
     @Test
-    fun `trackAdRewardEarnedUnverified stamps the given capture method`() {
+    fun `internal trackAdRewardEarnedUnverified preserves verification and stamps capture method`() {
         val eventSlot = slot<AdEvent.RewardEarnedUnverified>()
         every { eventsManager.track(capture(eventSlot)) } just Runs
 
@@ -298,6 +296,7 @@ class AdTrackerTest {
             captureMethod = AdCaptureMethod.ANDROID_ADMOB_LEGACY_ADAPTER,
         )
 
+        assertThat(eventSlot.captured.rewardVerificationEnabled).isTrue()
         assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.ANDROID_ADMOB_LEGACY_ADAPTER)
     }
 

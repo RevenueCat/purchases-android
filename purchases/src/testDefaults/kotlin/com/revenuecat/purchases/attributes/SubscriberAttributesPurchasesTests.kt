@@ -89,6 +89,7 @@ class SubscriberAttributesPurchasesTests {
         )
         val identityManager = mockk<IdentityManager>(relaxed = true).apply {
             every { currentAppUserID } returns appUserId
+            every { checkIAMLoginNeeded(any()) } answers { firstArg<(Boolean) -> Unit>()(false) }
         }
         val postTransactionHelper = PostTransactionWithProductDetailsHelper(billingWrapperMock, postReceiptHelperMock)
         val postPendingTransactionsHelper = PostPendingTransactionsHelper(
@@ -139,6 +140,7 @@ class SubscriberAttributesPurchasesTests {
             checkpointsConfigProvider = mockk(relaxed = true),
             audiencesConfigProvider = mockk(relaxed = true),
             sdkSettingsConfigProvider = mockk(relaxed = true),
+            subscriberDimensionsConfigProvider = mockk(relaxed = true),
             tokenManager = mockk(relaxed = true),
         )
 

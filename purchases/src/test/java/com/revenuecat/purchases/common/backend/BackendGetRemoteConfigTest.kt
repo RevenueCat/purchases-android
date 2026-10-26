@@ -358,6 +358,7 @@ class BackendGetRemoteConfigTest {
                 postFieldsToSign = any(),
                 requestHeaders = any(),
                 fallbackBaseURLs = any(),
+                iamAppUserID = any(),
             )
         } returns HTTPResult(
             RCHTTPStatusCodes.NO_CONTENT,
@@ -462,6 +463,7 @@ class BackendGetRemoteConfigTest {
                 postFieldsToSign = any(),
                 requestHeaders = capture(headersSlot),
                 fallbackBaseURLs = any(),
+                iamAppUserID = any(),
             )
         } returns HTTPResult(
             RCHTTPStatusCodes.SUCCESS,
@@ -572,6 +574,7 @@ class BackendGetRemoteConfigTest {
                 body = any(),
                 postFieldsToSign = null,
                 requestHeaders = any(),
+                iamAppUserID = any(),
             )
         }
     }
@@ -612,6 +615,7 @@ class BackendGetRemoteConfigTest {
                 body = any(),
                 postFieldsToSign = null,
                 requestHeaders = any(),
+                iamAppUserID = any(),
             )
         }
     }
@@ -652,6 +656,7 @@ class BackendGetRemoteConfigTest {
                 body = any(),
                 postFieldsToSign = null,
                 requestHeaders = any(),
+                iamAppUserID = any(),
             )
         }
     }
@@ -716,6 +721,7 @@ class BackendGetRemoteConfigTest {
                 body = null,
                 postFieldsToSign = null,
                 requestHeaders = any(),
+                iamAppUserID = any(),
             )
         }
     }
@@ -799,6 +805,7 @@ class BackendGetRemoteConfigTest {
                 postFieldsToSign = any(),
                 requestHeaders = capture(headersSlot),
                 fallbackBaseURLs = any(),
+                iamAppUserID = any(),
             )
         } returns HTTPResult(
             RCHTTPStatusCodes.NO_CONTENT,
@@ -826,6 +833,7 @@ class BackendGetRemoteConfigTest {
                 any(),
                 any(),
                 fallbackBaseURLs = any(),
+                iamAppUserID = any(),
             )
         } answers {
             if (delayMs != null) {

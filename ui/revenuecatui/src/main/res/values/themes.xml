@@ -10,4 +10,10 @@
         <item name="android:windowEnterAnimation">@null</item>
     </style>
 
+    <!-- A sheet presentation animates itself in Compose, so its window neither fades in nor out. -->
+    <style name="RcCheckpointWindowAnimation.Sheet">
+        <item name="android:windowEnterAnimation">@null</item>
+        <item name="android:windowExitAnimation">@null</item>
+    </style>
+
 </resources>

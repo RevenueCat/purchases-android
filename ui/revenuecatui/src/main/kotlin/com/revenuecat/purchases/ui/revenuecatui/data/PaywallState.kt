@@ -21,6 +21,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.UiConfig.VariableConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.storage.FileRepository
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
@@ -29,7 +30,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedPackagePartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
-import com.revenuecat.purchases.ui.revenuecatui.components.ktx.getBestMatch
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.resolveLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toComposeLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
@@ -161,6 +162,7 @@ internal sealed interface PaywallState {
                 @JvmSynthetic internal set
 
             val store: Store get() = purchases.store
+            val fileRepositoryOverride: FileRepository? get() = purchases.fileRepositoryOverride
 
             /** A subset of the offering: packages the paywall never shows are not in it. */
             val paywallPackages: List<Package> by lazy {
@@ -486,8 +488,10 @@ internal sealed interface PaywallState {
                     deviceLocales
                 }
 
-                // Find the first locale we have a LocalizationDictionary for.
-                return allLocales.firstNotNullOf { locale -> locales.getBestMatch(locale) }
+                return locales.resolveLocale(
+                    preferredLocales = allLocales,
+                    defaultLocale = locales.head,
+                )
             }
 
             private fun List<AvailablePackages.Info>.mostExpensivePricePerMonthMicros(): Long? =

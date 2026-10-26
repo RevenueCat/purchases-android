@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">Добре</string>
+    <string name="loading">Зареждане</string>
     <string name="all_plans">Всички абонаменти</string>
     <string name="privacy">поверителност</string>
     <string name="privacy_policy">Политика за поверителност</string>
@@ -22,4 +23,14 @@
     <string name="cannot_open_link">Невалиден линк. Не може да бъде отворен.</string>
     <string name="revenuecatui_purchase">Купи</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">Работният процес за предварителен преглед не може да бъде зареден. Моля, опитайте отново.</string>
+    <string name="revenuecatui_checkpoint_error_network">Неуспешно свързване. Проверете интернет връзката си и опитайте отново.</string>
+    <string name="revenuecatui_checkpoint_error_load">Това съдържание не можа да бъде заредено. Моля, опитайте отново по-късно.</string>
+    <string name="revenuecatui_checkpoint_error_store">Възникна проблем с магазина. Моля, опитайте отново по-късно.</string>
+    <string name="revenuecatui_checkpoint_error_purchase_not_allowed">Покупките не са разрешени на това устройство.</string>
+    <string name="revenuecatui_checkpoint_error_product_unavailable">Този продукт не е наличен в момента.</string>
+    <string name="revenuecatui_checkpoint_error_already_purchased">Вече притежавате този продукт.</string>
+    <string name="revenuecatui_checkpoint_error_payment_pending">Плащането ви е в изчакване. Ще получите достъп, след като бъде одобрено.</string>
+    <string name="revenuecatui_checkpoint_error_generic">Нещо се обърка. Моля, опитайте отново.</string>
+    <string name="revenuecatui_checkpoint_error_sync">Покупките ви не можаха да бъдат проверени. Моля, опитайте отново по-късно.</string>
 </resources>

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">OK</string>
+    <string name="loading">Cargando</string>
     <string name="restore_purchases">Restaurar las compras</string>
     <string name="restore">Restaurar</string>
     <string name="terms_and_conditions">Términos y condiciones</string>
@@ -22,4 +23,14 @@
     <string name="cannot_open_link">Enlace inválido. No se pudo abrir.</string>
     <string name="revenuecatui_purchase">Comprar</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">No se pudo cargar el flujo de trabajo de vista previa. Inténtalo de nuevo.</string>
+    <string name="revenuecatui_checkpoint_error_network">No se pudo conectar. Comprueba tu conexión a internet e inténtalo de nuevo.</string>
+    <string name="revenuecatui_checkpoint_error_load">No se pudo cargar este contenido. Inténtalo de nuevo más tarde.</string>
+    <string name="revenuecatui_checkpoint_error_store">Hubo un problema con la tienda. Inténtalo de nuevo más tarde.</string>
+    <string name="revenuecatui_checkpoint_error_purchase_not_allowed">Las compras no están permitidas en este dispositivo.</string>
+    <string name="revenuecatui_checkpoint_error_product_unavailable">Este producto no está disponible en este momento.</string>
+    <string name="revenuecatui_checkpoint_error_already_purchased">Ya tienes este producto.</string>
+    <string name="revenuecatui_checkpoint_error_payment_pending">Tu pago está pendiente. Tendrás acceso cuando se apruebe.</string>
+    <string name="revenuecatui_checkpoint_error_generic">Algo salió mal. Inténtalo de nuevo.</string>
+    <string name="revenuecatui_checkpoint_error_sync">No se pudieron verificar tus compras. Inténtalo de nuevo más tarde.</string>
 </resources>

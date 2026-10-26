@@ -67,7 +67,7 @@ class EntitlementGateViewModel : ViewModel() {
                 "entitlement_gate",
                 PaywallPresenters.params { customVariables { "gate" to "entitlement" } },
             ) { result ->
-                val granted = result?.obtainedEntitlements.orEmpty().map { it.entitlementInfo.identifier }
+                val granted = result.flow?.obtainedEntitlements.orEmpty().map { it.entitlementInfo.identifier }
                 _state.update {
                     it.copy(
                         message = result.summary(),

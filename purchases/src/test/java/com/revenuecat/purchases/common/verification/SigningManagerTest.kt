@@ -361,6 +361,7 @@ class SigningManagerTest {
             requestTime = "1677005916012",
             eTag = null,
             postFieldsToSignHeader = null,
+            authorizationHeader = null,
         )
         assertThat(verified).isEqualTo(SignatureVerificationResult.Verified)
     }
@@ -386,6 +387,7 @@ class SigningManagerTest {
             requestTime = "1677005916012",
             eTag = null,
             postFieldsToSignHeader = null,
+            authorizationHeader = null,
         )
         assertThat(tampered).isEqualTo(SignatureVerificationResult.Failed(FailureReason.PAYLOAD_SIGNATURE_MISMATCH))
     }
@@ -503,6 +505,66 @@ class SigningManagerTest {
 
     // endregion
 
+    // region Auth credential
+
+    @Test
+    fun `verifyResponse verifies a response signed for the Bearer token that was sent`() {
+        val signature = createFakeSignature(apiKey = "access-token", postParamsHeader = "")
+
+        val verified = callVerifyResponse(
+            realInformationalSigningManager(),
+            signature = signature,
+            authorizationHeader = "Bearer access-token",
+        )
+
+        assertThat(verified).isEqualTo(SignatureVerificationResult.Verified)
+    }
+
+    @Test
+    fun `verifyResponse does not verify a token-signed response against the API key`() {
+        val signature = createFakeSignature(apiKey = "access-token", postParamsHeader = "")
+        val signingManager = realInformationalSigningManager()
+        val mismatch = SignatureVerificationResult.Failed(FailureReason.PAYLOAD_SIGNATURE_MISMATCH)
+
+        assertThat(callVerifyResponse(signingManager, signature = signature, authorizationHeader = null))
+            .isEqualTo(mismatch)
+        assertThat(callVerifyResponse(signingManager, signature = signature, authorizationHeader = "Bearer $apiKey"))
+            .isEqualTo(mismatch)
+    }
+
+    @Test
+    fun `verifyResponse treats a Bearer API key header the same as no header`() {
+        val signingManager = realInformationalSigningManager()
+
+        assertThat(callVerifyResponse(signingManager, authorizationHeader = "Bearer $apiKey"))
+            .isEqualTo(SignatureVerificationResult.Verified)
+    }
+
+    @Test
+    fun `verifyResponse falls back to the API key for a non-Bearer Authorization header`() {
+        val signingManager = realInformationalSigningManager()
+
+        assertThat(callVerifyResponse(signingManager, authorizationHeader = "Basic something"))
+            .isEqualTo(SignatureVerificationResult.Verified)
+    }
+
+    @Test
+    fun `verifyRCFormatResponse verifies against the Bearer token that was sent`() {
+        val salt = ByteArray(16).apply { SecureRandom().nextBytes(this) }
+        val configBytes = "{\"config\":true}".toByteArray()
+        val signature = createFakeSignatureForBytes(bodyBytes = configBytes, salt = salt, authValue = "access-token")
+        val container = RCContainerTestData.buildContainer(config = configBytes)
+        val signingManager = realInformationalSigningManager()
+
+        val sentHeader = "Bearer access-token"
+        assertThat(callVerifyRCFormatResponse(signingManager, container, signature, authorizationHeader = sentHeader))
+            .isEqualTo(SignatureVerificationResult.Verified)
+        assertThat(callVerifyRCFormatResponse(signingManager, container, signature, authorizationHeader = null))
+            .isEqualTo(SignatureVerificationResult.Failed(FailureReason.PAYLOAD_SIGNATURE_MISMATCH))
+    }
+
+    // endregion
+
     // region Helpers
 
     private fun realInformationalSigningManager() = SigningManager(
@@ -516,6 +578,7 @@ class SigningManagerTest {
         containerBytes: ByteArray,
         signature: String? = "test-signature",
         requestTime: String? = "1677005916012",
+        authorizationHeader: String? = null,
     ) = signingManager.verifyRCFormatResponse(
         urlPath = "test-url-path",
         signatureString = signature,
@@ -523,6 +586,7 @@ class SigningManagerTest {
         containerBytes = containerBytes,
         requestTime = requestTime,
         eTag = null,
+        authorizationHeader = authorizationHeader,
     )
 
     private fun informationalModeWithRootVerifier(
@@ -547,10 +611,19 @@ class SigningManagerTest {
         requestTime: String? = "1677005916012",
         eTag: String? = null,
         postParamsHeader: String? = null,
-    ) = signingManager.verifyResponse(requestPath, signature, nonce, body?.toByteArray(), requestTime, eTag, postParamsHeader)
+        authorizationHeader: String? = null,
+    ) = signingManager.verifyResponse(
+        requestPath,
+        signature,
+        nonce,
+        body?.toByteArray(),
+        requestTime,
+        eTag,
+        postParamsHeader,
+        authorizationHeader,
+    )
 
-    // We can use this function to create new signatures if we need to change the test data
-    @Suppress("Unused")
+    // Signs with the test keys. Also useful for regenerating the fixed signatures above if the test data changes.
     private fun createFakeSignature(
         rootPrivateKeyEncoded: String = "YMHMQMpepBKamtSzO8KCN2M8Z3AUW5R1JXIFtxUWFUI",
         rootPublicKeyEncoded: String = "yg2wZGAr8Af+Unt9RImQDbL7qA81txk+ga0I+ylmcyo=",
@@ -597,13 +670,14 @@ class SigningManagerTest {
         intermediatePrivateKeyEncoded: String = "fPBoIjQ7DecE89ATW6PZsqLVQNyEs5fiX3sUyS3U4YI",
         intermediatePublicKeyEncoded: String = "xoDYyUeHnIlSIAeOOzmvdNPOlbNSKK+xE0fE/ufS1fs=",
         intermediateKeyExpirationDaysBytes: ByteArray = ByteBuffer.allocate(Int.SIZE_BYTES).putInt(50_000).order(ByteOrder.LITTLE_ENDIAN).array(),
+        authValue: String = apiKey,
     ): String {
         val rootSigner = Ed25519Sign(Base64.decode(rootPrivateKeyEncoded, Base64.DEFAULT))
         val intermediatePublicKey = Base64.decode(intermediatePublicKeyEncoded, Base64.DEFAULT)
         val intermediatePublicKeySignature = rootSigner.sign(intermediateKeyExpirationDaysBytes + intermediatePublicKey)
         val intermediateSigner = Ed25519Sign(Base64.decode(intermediatePrivateKeyEncoded, Base64.DEFAULT))
         val payloadToSign = salt +
-            apiKey.toByteArray() +
+            authValue.toByteArray() +
             requestPath.toByteArray() +
             requestTime.toByteArray() +
             bodyBytes

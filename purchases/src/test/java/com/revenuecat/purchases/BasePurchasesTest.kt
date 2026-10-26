@@ -28,6 +28,7 @@ import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.audiences.AudiencesConfigProvider
 import com.revenuecat.purchases.common.sdksettings.SdkSettingsConfigProvider
+import com.revenuecat.purchases.common.subscriberdimensions.SubscriberDimensionsConfigProvider
 import com.revenuecat.purchases.common.checkpoints.CheckpointsConfigProvider
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.networking.TokenManager
@@ -79,6 +80,9 @@ internal open class BasePurchasesTest {
         shadowOf(this).grantPermissions(Manifest.permission.INTERNET)
     }
     protected val mockIdentityManager = mockk<IdentityManager>()
+
+    // What the orchestrator registered with the mocked IdentityManager; tests invoke it to simulate a switch.
+    protected var identityChangeListener: (() -> Unit)? = null
     protected val mockSubscriberAttributesManager = mockk<SubscriberAttributesManager>()
     internal val mockCustomerInfoHelper = mockk<CustomerInfoHelper>()
     internal val mockCustomerInfoUpdateHandler = mockk<CustomerInfoUpdateHandler>()
@@ -107,6 +111,7 @@ internal open class BasePurchasesTest {
     internal val mockCheckpointsConfigProvider = mockk<CheckpointsConfigProvider>(relaxed = true)
     internal val mockAudiencesConfigProvider = mockk<AudiencesConfigProvider>(relaxed = true)
     internal val mockSdkSettingsConfigProvider = mockk<SdkSettingsConfigProvider>(relaxed = true)
+    internal val mockSubscriberDimensionsConfigProvider = mockk<SubscriberDimensionsConfigProvider>(relaxed = true)
     private val mockBlockstoreHelper = mockk<BlockstoreHelper>()
     private val purchasesStateProvider = PurchasesStateCache(PurchasesState())
 
@@ -148,9 +153,9 @@ internal open class BasePurchasesTest {
         every {
             updatedCustomerInfoListener.onReceived(any())
         } just Runs
-        every {
-            mockIdentityManager.configure(any())
-        } just Runs
+        every { mockIdentityManager.configure(any()) } just Runs
+        every { mockIdentityManager.setIdentityChangeListener(any()) } answers { identityChangeListener = firstArg() }
+        every { mockIdentityManager.checkIAMLoginNeeded(any()) } answers { firstArg<(Boolean) -> Unit>()(false) }
         every {
             mockDiagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
         } just Runs
@@ -534,6 +539,7 @@ internal open class BasePurchasesTest {
             checkpointsConfigProvider = mockCheckpointsConfigProvider,
             audiencesConfigProvider = mockAudiencesConfigProvider,
             sdkSettingsConfigProvider = mockSdkSettingsConfigProvider,
+            subscriberDimensionsConfigProvider = mockSubscriberDimensionsConfigProvider,
             tokenManager = mockTokenManager,
         )
 

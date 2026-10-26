@@ -276,6 +276,7 @@ class BackendGetCustomerCenterConfigTest {
                 body = null,
                 postFieldsToSign = null,
                 requestHeaders = any(),
+                iamAppUserID = any(),
             )
         }
     }
@@ -292,6 +293,7 @@ class BackendGetCustomerCenterConfigTest {
                 any(),
                 any(),
                 fallbackBaseURLs = any(),
+                iamAppUserID = any(),
             )
         } answers {
             if (delayMs != null) {

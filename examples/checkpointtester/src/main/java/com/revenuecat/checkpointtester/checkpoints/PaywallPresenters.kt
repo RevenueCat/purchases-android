@@ -3,6 +3,7 @@ package com.revenuecat.checkpointtester.checkpoints
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.paywallPresenter
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,8 +37,9 @@ class ParkedPaywallPresenter : PaywallPresenter {
 
 /**
  * The tester's paywall presenters and the [Mode] selected on the main screen, which decides who presents the
- * offering a checkpoint resolves to. Every checkpoint call in the tester builds its params through [params] so the
- * selection applies wherever a flow is presented.
+ * offering a checkpoint resolves to, plus the [FlowPresentationMode] the SDK uses for the flows it presents
+ * itself. Every checkpoint call in the tester builds its params through [params] so both selections apply wherever
+ * a flow is presented.
  */
 @OptIn(InviteOnlyCheckpointsAPI::class)
 object PaywallPresenters {
@@ -49,12 +51,12 @@ object PaywallPresenters {
         ),
         Global(
             label = "Global",
-            description = "Purchases.paywallPresenter is set: a full-screen app paywall presents every offering.",
+            description = "Purchases.paywallPresenter is set: the app presents every offering with its own paywall.",
         ),
         Local(
             label = "Local",
             description = "Every call passes its own presenter in CheckpointParams, ahead of the registered " +
-                "global one: a bottom-sheet app paywall presents the offering.",
+                "global one, and the app presents the offering with its own paywall.",
         ),
     }
 
@@ -67,13 +69,23 @@ object PaywallPresenters {
     private val _mode = MutableStateFlow(Mode.Default)
     val mode: StateFlow<Mode> = _mode.asStateFlow()
 
+    private val _presentationMode = MutableStateFlow(FlowPresentationMode.DEFAULT)
+
+    /** How flows are presented: by the SDK for workflows and offerings in [Mode.Default], and by the app otherwise. */
+    val presentationMode: StateFlow<FlowPresentationMode> = _presentationMode.asStateFlow()
+
     fun select(mode: Mode) {
         _mode.value = mode
         Purchases.sharedInstance.paywallPresenter = if (mode == Mode.Default) null else global
     }
 
+    fun selectPresentationMode(mode: FlowPresentationMode) {
+        _presentationMode.value = mode
+    }
+
     fun params(block: CheckpointParams.Builder.() -> Unit = {}): CheckpointParams = CheckpointParams {
         block()
+        presentationMode(_presentationMode.value)
         if (_mode.value == Mode.Local) paywallPresenter(local)
         ErrorPresenters.apply(this)
     }

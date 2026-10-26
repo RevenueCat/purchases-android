@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.helpers
 
+import android.content.Context
 import android.content.res.Configuration
 import android.view.View
 import androidx.compose.ui.unit.LayoutDirection
@@ -31,12 +32,27 @@ internal fun createLocaleFromString(localeString: String): Locale {
 /**
  * Returns the Compose [LayoutDirection] matching this locale's character direction.
  */
-internal fun Locale.toLayoutDirection(): LayoutDirection {
-    val configuration = Configuration().apply { setLocale(this@toLayoutDirection) }
+internal fun Locale.toLayoutDirection(): LayoutDirection =
+    Configuration().apply { setLocale(this@toLayoutDirection) }.toLayoutDirection()
 
-    return if (configuration.layoutDirection == View.LAYOUT_DIRECTION_RTL) {
-        LayoutDirection.Rtl
-    } else {
-        LayoutDirection.Ltr
-    }
+/** Returns the Compose [LayoutDirection] this configuration lays out in. */
+internal fun Configuration.toLayoutDirection(): LayoutDirection =
+    if (layoutDirection == View.LAYOUT_DIRECTION_RTL) LayoutDirection.Rtl else LayoutDirection.Ltr
+
+/**
+ * This context with its resources localized to [localeOverride] (the SDK's preferred UI locale override), or this
+ * context itself when there is no override or it cannot be parsed.
+ */
+internal fun Context.localizedTo(localeOverride: String?): Context {
+    val locale = localeOverride?.let {
+        try {
+            createLocaleFromString(it)
+        } catch (e: IllegalArgumentException) {
+            Logger.e("Invalid preferred locale format: $it. Using system default.", e)
+            null
+        }
+    } ?: return this
+    val configuration = Configuration(resources.configuration).apply { setLocale(locale) }
+    // Context.createConfigurationContext returns `null` with Paparazzi
+    return createConfigurationContext(configuration) ?: this
 }

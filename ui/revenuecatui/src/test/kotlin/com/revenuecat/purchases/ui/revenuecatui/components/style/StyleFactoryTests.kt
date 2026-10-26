@@ -16,6 +16,7 @@ import com.revenuecat.purchases.paywalls.components.PartialImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialButtonComponent
 import com.revenuecat.purchases.paywalls.components.PartialPackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
+import com.revenuecat.purchases.paywalls.components.PartialVideoComponent
 import com.revenuecat.purchases.paywalls.components.PartialWebViewComponent
 import com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
@@ -24,6 +25,7 @@ import com.revenuecat.purchases.paywalls.components.TabControlComponent
 import com.revenuecat.purchases.paywalls.components.TabControlToggleComponent
 import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
+import com.revenuecat.purchases.paywalls.components.VideoComponent
 import com.revenuecat.purchases.paywalls.components.WebViewComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
@@ -33,13 +35,16 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
+import com.revenuecat.purchases.paywalls.components.properties.FitMode
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
+import com.revenuecat.purchases.paywalls.components.properties.ThemeVideoUrls
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
+import com.revenuecat.purchases.paywalls.components.properties.VideoUrls
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
@@ -628,6 +633,142 @@ class StyleFactoryTests {
             assertThat(overrides[4].properties.sources?.getValue(defaultLocale))
                 .isEqualTo(expectedExpandedSource)
         }
+    }
+
+    @Test
+    fun `Should resolve localized video sources for every locale`() {
+        val videoLid = LocalizationKey("video-lid")
+        val localizedVideos = videoLocales.associateWith { videoUrls(it.value) }
+        val baseFallback = imageUrls("base-fallback")
+        val component = videoComponent(
+            source = videoUrls("base"),
+            fallbackSource = baseFallback,
+            overrideVideoLid = videoLid,
+        )
+        val styleFactory = videoStyleFactory(
+            videoLocalizations = localizedVideos.mapValues { (_, video) -> mapOf(videoLid to video) },
+        )
+
+        val style = styleFactory.create(component).getOrThrow().componentStyle as VideoComponentStyle
+
+        assertThat(style.sources).isEqualTo(localizedVideos)
+        assertThat(style.fallbackSources).isEqualTo(mapOf(defaultVideoLocale to baseFallback))
+    }
+
+    @Test
+    fun `Should fail with a MissingVideoLocalization for each locale missing the video lid`() {
+        val videoLid = LocalizationKey("video-lid")
+        val component = videoComponent(source = videoUrls("base"), fallbackSource = null, overrideVideoLid = videoLid)
+        val styleFactory = videoStyleFactory(
+            videoLocalizations = mapOf(
+                defaultVideoLocale to mapOf(videoLid to videoUrls("en")),
+                LocaleId("es_ES") to mapOf(videoLid to videoUrls("es")),
+                LocaleId("de") to mapOf(videoLid to videoUrls("de")),
+                LocaleId("fr_FR") to mapOf(LocalizationKey("other-lid") to videoUrls("fr")),
+            ),
+        )
+
+        val errors = styleFactory.create(component).errorOrNull()
+
+        assertThat(errors).containsExactlyInAnyOrder(
+            PaywallValidationError.MissingVideoLocalization(videoLid, LocaleId("de_DE")),
+            PaywallValidationError.MissingVideoLocalization(videoLid, LocaleId("fr_FR")),
+        )
+    }
+
+    @Test
+    fun `Should use the video source when there is no lid`() {
+        val baseVideo = videoUrls("base")
+        val component = videoComponent(source = baseVideo, fallbackSource = null, overrideVideoLid = null)
+        val styleFactory = videoStyleFactory(videoLocalizations = emptyMap())
+
+        val style = styleFactory.create(component).getOrThrow().componentStyle as VideoComponentStyle
+
+        assertThat(style.sources).isEqualTo(mapOf(defaultVideoLocale to baseVideo))
+    }
+
+    @Test
+    fun `Should resolve localized video sources for an override lid, taking precedence over its source`() {
+        val selectedVideoLid = LocalizationKey("selected-video-lid")
+        val selectedVideos = videoLocales.associateWith { videoUrls("selected-${it.value}") }
+        val selectedFallback = imageUrls("selected-fallback")
+        val component = videoComponent(
+            source = videoUrls("base"),
+            fallbackSource = null,
+            overrideVideoLid = null,
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Selected),
+                    properties = PartialVideoComponent(
+                        source = videoUrls("selected"),
+                        fallbackSource = selectedFallback,
+                        overrideVideoLid = selectedVideoLid,
+                    ),
+                ),
+            ),
+        )
+        val styleFactory = videoStyleFactory(
+            videoLocalizations = selectedVideos.mapValues { (_, video) -> mapOf(selectedVideoLid to video) },
+        )
+
+        val style = styleFactory.create(component).getOrThrow().componentStyle as VideoComponentStyle
+
+        val selected = style.overrides.single().properties
+        assertThat(selected.sources).isEqualTo(selectedVideos)
+        assertThat(selected.fallbackSources).isEqualTo(mapOf(defaultVideoLocale to selectedFallback))
+    }
+
+    @Test
+    fun `Should fail with a MissingVideoLocalization when an override lid is missing for a locale`() {
+        val selectedVideoLid = LocalizationKey("selected-video-lid")
+        val component = videoComponent(
+            source = videoUrls("base"),
+            fallbackSource = null,
+            overrideVideoLid = null,
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Selected),
+                    properties = PartialVideoComponent(overrideVideoLid = selectedVideoLid),
+                ),
+            ),
+        )
+        val styleFactory = videoStyleFactory(
+            videoLocalizations = videoLocales
+                .filterNot { it == LocaleId("fr_FR") }
+                .associateWith { mapOf(selectedVideoLid to videoUrls(it.value)) },
+        )
+
+        val errors = styleFactory.create(component).errorOrNull()
+
+        assertThat(errors).containsExactly(
+            PaywallValidationError.MissingVideoLocalization(selectedVideoLid, LocaleId("fr_FR")),
+        )
+    }
+
+    @Test
+    fun `Should use an override's source for the default locale, or the component sources when it sets neither`() {
+        val selectedVideo = videoUrls("selected")
+        val component = videoComponent(
+            source = videoUrls("base"),
+            fallbackSource = null,
+            overrideVideoLid = null,
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Selected),
+                    properties = PartialVideoComponent(source = selectedVideo),
+                ),
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                    properties = PartialVideoComponent(visible = false),
+                ),
+            ),
+        )
+        val styleFactory = videoStyleFactory(videoLocalizations = emptyMap())
+
+        val style = styleFactory.create(component).getOrThrow().componentStyle as VideoComponentStyle
+
+        assertThat(style.overrides[0].properties.sources).isEqualTo(mapOf(defaultVideoLocale to selectedVideo))
+        assertThat(style.overrides[1].properties.sources).isNull()
     }
 
     @Test
@@ -1267,6 +1408,126 @@ class StyleFactoryTests {
     }
 
     @Test
+    fun `Should apply top window insets to the hero z-stack even when an overlay child contains a stack`() {
+        // Arrange
+        val imageUrls = ThemeImageUrls(
+            light = ImageUrls(
+                original = URL("https://assets.pawwalls.com/1151049_1732039548.png"),
+                webp = URL("https://assets.pawwalls.com/1151049_1732039548.webp"),
+                webpLowRes = URL("https://assets.pawwalls.com/1151049_low_res_1732039548.webp"),
+                width = 547.toUInt(),
+                height = 257.toUInt(),
+            ),
+        )
+        // A hero z-stack: full-width image, then a close button. The button wraps its own stack, which is
+        // built before the z-stack's style. That inner stack must not take the insets meant for the z-stack.
+        val closeButton = ButtonComponent(
+            action = ButtonComponent.Action.NavigateBack,
+            stack = StackComponent(
+                components = listOf(
+                    ImageComponent(
+                        source = imageUrls,
+                        size = Size(width = SizeConstraint.Fixed(32u), height = SizeConstraint.Fixed(32u)),
+                    ),
+                ),
+                dimension = Dimension.Vertical(
+                    alignment = HorizontalAlignment.CENTER,
+                    distribution = FlexDistribution.CENTER,
+                ),
+            ),
+        )
+        val stackComponent = StackComponent(
+            components = listOf(
+                StackComponent(
+                    components = listOf(
+                        ImageComponent(
+                            source = imageUrls,
+                            size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fixed(150u)),
+                        ),
+                        closeButton,
+                    ),
+                    dimension = Dimension.ZLayer(
+                        alignment = TwoDimensionalAlignment.TOP_TRAILING,
+                    ),
+                ),
+            ),
+            dimension = Dimension.Vertical(
+                alignment = HorizontalAlignment.LEADING,
+                distribution = FlexDistribution.START,
+            ),
+        )
+
+        // Act
+        val result = styleFactory.create(stackComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as StackComponentStyle
+        assertThat(style.applyTopWindowInsets).isFalse()
+        val zStack = style.children[0] as StackComponentStyle
+        assertThat(zStack.applyTopWindowInsets).isTrue()
+        val heroImage = zStack.children[0] as ImageComponentStyle
+        assertThat(heroImage.ignoreTopWindowInsets).isTrue()
+        val buttonStyle = zStack.children[1] as ButtonComponentStyle
+        assertThat(buttonStyle.stackComponentStyle.applyTopWindowInsets).isFalse()
+    }
+
+    @Test
+    fun `Should keep top window insets on a hero z-stack that is the root`() {
+        // Arrange
+        val imageUrls = ThemeImageUrls(
+            light = ImageUrls(
+                original = URL("https://assets.pawwalls.com/1151049_1732039548.png"),
+                webp = URL("https://assets.pawwalls.com/1151049_1732039548.webp"),
+                webpLowRes = URL("https://assets.pawwalls.com/1151049_low_res_1732039548.webp"),
+                width = 547.toUInt(),
+                height = 257.toUInt(),
+            ),
+        )
+        // The root itself is the hero z-stack. Its inset is set while building the tree, then the final
+        // root pass must not clear it just because an inset was already applied.
+        val closeButton = ButtonComponent(
+            action = ButtonComponent.Action.NavigateBack,
+            stack = StackComponent(
+                components = listOf(
+                    ImageComponent(
+                        source = imageUrls,
+                        size = Size(width = SizeConstraint.Fixed(32u), height = SizeConstraint.Fixed(32u)),
+                    ),
+                ),
+                dimension = Dimension.Vertical(
+                    alignment = HorizontalAlignment.CENTER,
+                    distribution = FlexDistribution.CENTER,
+                ),
+            ),
+        )
+        val stackComponent = StackComponent(
+            components = listOf(
+                ImageComponent(
+                    source = imageUrls,
+                    size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fixed(150u)),
+                ),
+                closeButton,
+            ),
+            dimension = Dimension.ZLayer(
+                alignment = TwoDimensionalAlignment.TOP_TRAILING,
+            ),
+        )
+
+        // Act
+        val result = styleFactory.create(stackComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as StackComponentStyle
+        assertThat(style.applyTopWindowInsets).isTrue()
+        val heroImage = style.children[0] as ImageComponentStyle
+        assertThat(heroImage.ignoreTopWindowInsets).isTrue()
+        val buttonStyle = style.children[1] as ButtonComponentStyle
+        assertThat(buttonStyle.stackComponentStyle.applyTopWindowInsets).isFalse()
+    }
+
+    @Test
     fun `Should not ignore top window insets for the first image in the first z-stack if it is not full-width`() {
         // Arrange
         val imageUrls = ThemeImageUrls(
@@ -1888,4 +2149,64 @@ class StyleFactoryTests {
         val style = result.getOrNull()!!.componentStyle as ButtonComponentStyle
         assertThat(style.action).isEqualTo(ButtonComponentStyle.Action.CloseWorkflow)
     }
+
+    private fun videoUrls(name: String) = ThemeVideoUrls(
+        light = VideoUrls(width = 100u, height = 100u, url = URL("https://video.test/$name.mp4")),
+        dark = null,
+    )
+
+    private fun imageUrls(name: String) = ThemeImageUrls(
+        light = ImageUrls(
+            original = URL("https://assets.test/$name.png"),
+            webp = URL("https://assets.test/$name.webp"),
+            webpLowRes = URL("https://assets.test/${name}_low_res.webp"),
+            width = 100u,
+            height = 100u,
+        ),
+    )
+
+    private fun videoComponent(
+        source: ThemeVideoUrls,
+        fallbackSource: ThemeImageUrls?,
+        overrideVideoLid: LocalizationKey?,
+        overrides: List<ComponentOverride<PartialVideoComponent>>? = null,
+    ) = VideoComponent(
+        source = source,
+        fallbackSource = fallbackSource,
+        visible = true,
+        showControls = false,
+        autoplay = true,
+        loop = true,
+        muteAudio = true,
+        size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fit()),
+        fitMode = FitMode.FILL,
+        maskShape = null,
+        colorOverlay = null,
+        padding = null,
+        margin = null,
+        border = null,
+        shadow = null,
+        overrides = overrides,
+        overrideVideoLid = overrideVideoLid,
+    )
+
+    private val defaultVideoLocale = LocaleId("en_US")
+
+    private val videoLocales = listOf(defaultVideoLocale, LocaleId("es_ES"), LocaleId("de_DE"), LocaleId("fr_FR"))
+
+    private fun videoStyleFactory(
+        videoLocalizations: Map<LocaleId, Map<LocalizationKey, ThemeVideoUrls>>,
+    ) = StyleFactory(
+        localizations = nonEmptyMapOf(
+            defaultVideoLocale to nonEmptyMapOf(LOCALIZATION_KEY_TEXT_1 to LocalizationData.Text("text")),
+            LocaleId("es_ES") to nonEmptyMapOf(LOCALIZATION_KEY_TEXT_1 to LocalizationData.Text("texto")),
+            LocaleId("de_DE") to nonEmptyMapOf(LOCALIZATION_KEY_TEXT_1 to LocalizationData.Text("Text")),
+            LocaleId("fr_FR") to nonEmptyMapOf(LOCALIZATION_KEY_TEXT_1 to LocalizationData.Text("texte")),
+        ),
+        videoLocalizations = videoLocalizations,
+        colorAliases = colorAliases,
+        fontAliases = fontAliases,
+        variableLocalizations = variableLocalizations,
+        offering = offering,
+    )
 }

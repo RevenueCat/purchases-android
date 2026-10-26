@@ -92,6 +92,7 @@ internal class PresentedVideoPartial(
                 margin = otherPartial?.margin ?: partial.margin,
                 border = otherPartial?.border ?: partial.border,
                 shadow = otherPartial?.shadow ?: partial.shadow,
+                overrideVideoLid = otherPartial?.overrideVideoLid ?: partial.overrideVideoLid,
             ),
         )
     }

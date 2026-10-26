@@ -7,10 +7,12 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointFailureKind
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPassedCallback
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowResult
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.errorPresenter
@@ -20,9 +22,9 @@ import com.revenuecat.purchases.ui.revenuecatui.checkpoints.paywallPresenter
 private class CheckpointsAPI {
 
     fun checkCheckpoint(purchases: Purchases, params: CheckpointParams, callback: CheckpointPassedCallback) {
-        purchases.checkpoint("checkpoint_identifier") { result: FlowResult? -> }
-        purchases.checkpoint("checkpoint_identifier", params) { result: FlowResult? -> }
-        purchases.checkpoint("checkpoint_identifier", params = null) { result: FlowResult? -> }
+        purchases.checkpoint("checkpoint_identifier") { result: CheckpointResult -> }
+        purchases.checkpoint("checkpoint_identifier", params) { result: CheckpointResult -> }
+        purchases.checkpoint("checkpoint_identifier", params = null) { result: CheckpointResult -> }
         purchases.checkpoint("checkpoint_identifier", callback)
         purchases.checkpoint(
             checkpointIdentifier = "checkpoint_identifier",
@@ -47,7 +49,7 @@ private class CheckpointsAPI {
             }
             errorPresenter(errorPresenter)
             errorPresenter { params: ErrorPresenter.Params, completion: ErrorPresenter.Completion ->
-                completion.complete(ErrorPresenter.Completion.Result.Retry)
+                completion.complete()
             }
         }
         val customVariables: Map<String, CustomVariableValue> = fromDsl.customVariables
@@ -64,6 +66,7 @@ private class CheckpointsAPI {
             val offering: Offering = params.offering
             val checkpointIdentifier: String = params.checkpointIdentifier
             val customVariables: Map<String, CustomVariableValue> = params.customVariables
+            val presentationMode: FlowPresentationMode = params.presentationMode
             completion.complete(PaywallPresenter.Completion.Result.Continued)
             completion.complete(PaywallPresenter.Completion.Result.Closed)
             completion.complete(PaywallPresenter.Completion.Result.NavigatedBack)
@@ -89,19 +92,17 @@ private class CheckpointsAPI {
             val error: PurchasesError = params.error
             val checkpointIdentifier: String = params.checkpointIdentifier
             val customVariables: Map<String, CustomVariableValue> = params.customVariables
-            val flowCanContinue: Boolean = params.flowCanContinue
-            completion.complete(ErrorPresenter.Completion.Result.Retry)
-            completion.complete(ErrorPresenter.Completion.Result.Continue)
-            completion.complete(ErrorPresenter.Completion.Result.NavigateBack)
+            val kind: CheckpointFailureKind = params.kind
+            completion.complete()
         }
     }
 
-    fun checkErrorCompletionResult(result: ErrorPresenter.Completion.Result) {
-        when (result) {
-            ErrorPresenter.Completion.Result.Retry -> {}
-            ErrorPresenter.Completion.Result.Continue -> {}
-            ErrorPresenter.Completion.Result.NavigateBack -> {}
-            // The hierarchy is closed but not sealed, so consumers must handle cases added later.
+    fun checkCheckpointFailureKind(kind: CheckpointFailureKind) {
+        when (kind) {
+            CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN -> {}
+            CheckpointFailureKind.FLOW_ACTION_FAILED -> {}
+            CheckpointFailureKind.FLOW_RESULT_SYNC_FAILED -> {}
+            // Not an enum, so values added later must be handled too.
             else -> {}
         }
     }

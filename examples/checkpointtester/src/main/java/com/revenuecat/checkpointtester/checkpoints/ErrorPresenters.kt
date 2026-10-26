@@ -10,8 +10,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * An app-owned error presenter: presenting parks the request in a StateFlow, the app root renders a dialog over
- * everything while one is set, and the dialog reports how the flow goes on through [Request.finish].
+ * An app-owned error presenter. The app shows its own dialog for the error, and the dialog calls
+ * [Request.finish] when the user closes it.
  */
 @OptIn(InviteOnlyCheckpointsAPI::class)
 class ParkedErrorPresenter : ErrorPresenter {
@@ -20,9 +20,9 @@ class ParkedErrorPresenter : ErrorPresenter {
         val params: ErrorPresenter.Params,
         private val completion: ErrorPresenter.Completion,
     ) {
-        fun finish(result: ErrorPresenter.Completion.Result) {
-            completion.complete(result)
+        fun finish() {
             _request.value = null
+            completion.complete()
         }
     }
 

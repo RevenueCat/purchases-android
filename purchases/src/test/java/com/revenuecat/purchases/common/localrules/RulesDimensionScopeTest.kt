@@ -11,6 +11,8 @@ import com.revenuecat.purchases.common.Config
 import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.LocaleProvider
+import com.revenuecat.purchases.common.subscriberdimensions.SubscriberDimensionsReceiptStore
+import com.revenuecat.purchases.common.subscriberdimensions.SubscriberDimensionsResolution
 import com.revenuecat.purchases.rules.RulesEngine
 import com.revenuecat.purchases.rules.Value
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
@@ -227,7 +229,15 @@ class RulesDimensionScopeTest {
                     customerInfo = { customerInfo },
                 ),
                 SubscriberAttributesDimensionProvider { SUBSCRIBER_ATTRIBUTES },
-                SubscriberDimensionsProvider { SUBSCRIBER_DIMENSIONS },
+                SubscriberDimensionsProvider(
+                    configDimensions = { SubscriberDimensionsResolution.NotConfigured },
+                    receiptStore = SubscriberDimensionsReceiptStore(
+                        mockk {
+                            every { getCachedSubscriberDimensionsJson(APP_USER_ID) } returns SUBSCRIBER_DIMENSIONS
+                        },
+                    ),
+                    currentAppUserId = { APP_USER_ID },
+                ),
             ),
             currentAppUserId = { APP_USER_ID },
             dateProvider = object : DateProvider {
@@ -291,11 +301,14 @@ class RulesDimensionScopeTest {
             "trialEligible" to RulesDimensionValue.BoolValue(true),
         )
 
-        /** The dimensions the backend last sent alongside the subscriber, root-level under their own names. */
+        /** The dimensions the last purchase response carried, root-level under their own names. */
         val SUBSCRIBER_DIMENSIONS = """
             {
-              "acquisition_channel": "paid_search",
-              "predicted_ltv_band": 3
+              "dimensions": {
+                "acquisition_channel": "paid_search",
+                "predicted_ltv_band": 3
+              },
+              "as_of": 1718452700000
             }
         """
 

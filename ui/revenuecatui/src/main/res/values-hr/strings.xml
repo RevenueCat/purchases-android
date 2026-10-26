@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">u redu</string>
+    <string name="loading">Učitavanje</string>
     <string name="all_plans">Sve pretplate</string>
     <string name="privacy">Privatnost</string>
     <string name="privacy_policy">Politika privatnosti</string>
@@ -22,4 +23,14 @@
     <string name="cannot_open_link">Nevažeća poveznica. Nije moguće otvoriti.</string>
     <string name="revenuecatui_purchase">Kupi</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">Tijek rada za pretpregled nije moguće učitati. Pokušajte ponovno.</string>
+    <string name="revenuecatui_checkpoint_error_network">Povezivanje nije uspjelo. Provjerite internetsku vezu i pokušajte ponovno.</string>
+    <string name="revenuecatui_checkpoint_error_load">Ovaj sadržaj nije bilo moguće učitati. Pokušajte ponovno kasnije.</string>
+    <string name="revenuecatui_checkpoint_error_store">Došlo je do problema s trgovinom. Pokušajte ponovno kasnije.</string>
+    <string name="revenuecatui_checkpoint_error_purchase_not_allowed">Kupnje nisu dopuštene na ovom uređaju.</string>
+    <string name="revenuecatui_checkpoint_error_product_unavailable">Ovaj proizvod trenutačno nije dostupan.</string>
+    <string name="revenuecatui_checkpoint_error_already_purchased">Već posjedujete ovaj proizvod.</string>
+    <string name="revenuecatui_checkpoint_error_payment_pending">Vaše plaćanje je na čekanju. Pristup ćete dobiti nakon što bude odobreno.</string>
+    <string name="revenuecatui_checkpoint_error_generic">Nešto je pošlo po zlu. Pokušajte ponovno.</string>
+    <string name="revenuecatui_checkpoint_error_sync">Vaše kupnje nije bilo moguće provjeriti. Pokušajte ponovno kasnije.</string>
 </resources>

@@ -22,6 +22,7 @@ import com.revenuecat.purchases.common.networking.APISourceFailover
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.ETagPayloadStore
 import com.revenuecat.purchases.common.networking.SourceHealthChecker
+import com.revenuecat.purchases.common.networking.disabledTokenAuthenticator
 import com.revenuecat.purchases.common.remoteconfig.ConfigTopic
 import com.revenuecat.purchases.common.remoteconfig.DefaultRemoteConfigSourceProvider
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSource
@@ -300,6 +301,7 @@ internal class BackendAPISourceFailoverIntegrationTest {
             storefrontProvider,
             apiSourceFailover,
             localeProvider = DefaultLocaleProvider(),
+            tokenAuthenticator = disabledTokenAuthenticator(),
         )
         val dispatcher = SyncDispatcher()
         val backendHelper = BackendHelper(apiKey, dispatcher, appConfig, httpClient)

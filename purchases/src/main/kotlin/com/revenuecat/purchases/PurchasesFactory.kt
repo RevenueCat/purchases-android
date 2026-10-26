@@ -6,6 +6,8 @@ import android.content.Context
 import android.content.pm.PackageManager
 import androidx.annotation.VisibleForTesting
 import androidx.core.os.UserManagerCompat
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
@@ -43,6 +45,8 @@ import com.revenuecat.purchases.common.networking.DeviceConnectivityChecker
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
 import com.revenuecat.purchases.common.networking.SourceHealthChecker
+import com.revenuecat.purchases.common.networking.TokenAPI
+import com.revenuecat.purchases.common.networking.TokenAuthenticator
 import com.revenuecat.purchases.common.networking.TokenManager
 import com.revenuecat.purchases.common.offerings.OfferingsCache
 import com.revenuecat.purchases.common.offerings.OfferingsFactory
@@ -59,6 +63,8 @@ import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopicStore
 import com.revenuecat.purchases.common.safeResume
 import com.revenuecat.purchases.common.safeResumeWithException
 import com.revenuecat.purchases.common.sdksettings.SdkSettingsConfigProvider
+import com.revenuecat.purchases.common.subscriberdimensions.SubscriberDimensionsConfigProvider
+import com.revenuecat.purchases.common.subscriberdimensions.SubscriberDimensionsReceiptStore
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
@@ -114,6 +120,8 @@ internal class PurchasesFactory(
         forceSigningError: Boolean = false,
         runningIntegrationTests: Boolean = false,
         baseUrlString: String = AppConfig.baseUrlString,
+        // Tests drive their own lifecycle; the process-wide one is shared by every instance in the JVM.
+        processLifecycleOwnerProvider: () -> LifecycleOwner = { ProcessLifecycleOwner.get() },
     ): Purchases {
         val apiKeyValidationResult = validateConfiguration(configuration)
 
@@ -228,6 +236,7 @@ internal class PurchasesFactory(
             val signingManager = SigningManager(signatureVerificationMode, appConfig, apiKey)
 
             val cache = DeviceCache(prefs, apiKey)
+            val subscriberDimensionsReceiptStore = SubscriberDimensionsReceiptStore(cache)
 
             // TokenManager owns constructing IAM's secure token storage end-to-end (context, API key,
             // iamEnabled in; a ready-or-not SecureItemStorage never leaves this class) since it's the only
@@ -257,6 +266,9 @@ internal class PurchasesFactory(
             )
 
             val timeoutManager = HTTPTimeoutManager(appConfig)
+            // IdentityManager depends on Backend, which depends on HTTPClient, so HTTPClient's current-user lookup
+            // is bound late. Nothing sends a request before it's assigned below.
+            lateinit var identityManager: IdentityManager
             val httpClient = HTTPClient(
                 appConfig,
                 eTagManager,
@@ -267,6 +279,7 @@ internal class PurchasesFactory(
                 localeProvider = localeProvider,
                 forceServerErrorStrategy = forceServerErrorStrategy,
                 timeoutManager = timeoutManager,
+                tokenAuthenticator = TokenAuthenticator(tokenManager) { identityManager.currentAppUserID },
             )
             val backendHelper = BackendHelper(apiKey, backendDispatcher, appConfig, httpClient)
             val backend = Backend(
@@ -375,11 +388,13 @@ internal class PurchasesFactory(
             val checkpointsConfigProvider = CheckpointsConfigProvider(remoteConfigManager)
             val audiencesConfigProvider = AudiencesConfigProvider(remoteConfigManager)
             val sdkSettingsConfigProvider = SdkSettingsConfigProvider(remoteConfigManager)
+            val subscriberDimensionsConfigProvider = SubscriberDimensionsConfigProvider(remoteConfigManager)
             remoteConfigManager.registerListener(uiConfigProvider)
             remoteConfigManager.registerListener(workflowsConfigProvider)
             remoteConfigManager.registerListener(checkpointsConfigProvider)
             remoteConfigManager.registerListener(audiencesConfigProvider)
             remoteConfigManager.registerListener(sdkSettingsConfigProvider)
+            remoteConfigManager.registerListener(subscriberDimensionsConfigProvider)
             // Cold-start-with-warm-disk: preload the in-memory caches from whatever is already committed on
             // disk without triggering a network config sync. A subsequent network commit re-warms with a
             // higher generation and supersedes this (store-if-newer). A no-op when the manager is disabled:
@@ -390,8 +405,9 @@ internal class PurchasesFactory(
             checkpointsConfigProvider.warmAsync(initialGeneration)
             audiencesConfigProvider.warmAsync(initialGeneration)
             sdkSettingsConfigProvider.preloadAsync(initialGeneration)
+            subscriberDimensionsConfigProvider.warmAsync(initialGeneration)
 
-            val identityManager = IdentityManager(
+            identityManager = IdentityManager(
                 appConfig,
                 cache,
                 subscriberAttributesCache,
@@ -402,6 +418,8 @@ internal class PurchasesFactory(
                 offlineEntitlementsManager,
                 dispatcher,
                 paywallAssetWarming,
+                tokenManager,
+                TokenAPI(tokenManager, httpClient, backendHelper, backendDispatcher, appConfig),
                 uiPreviewMode = appConfig.uiPreviewMode,
             )
 
@@ -426,9 +444,11 @@ internal class PurchasesFactory(
                             Purchases.sharedInstance.purchasesOrchestrator.awaitCustomerInfo(appUserID)
                         },
                     ),
-                    SubscriberDimensionsProvider {
-                        cache.getCachedSubscriberDimensionsJson(identityManager.currentAppUserID)
-                    },
+                    SubscriberDimensionsProvider(
+                        configDimensions = { subscriberDimensionsConfigProvider.getDimensions() },
+                        receiptStore = subscriberDimensionsReceiptStore,
+                        currentAppUserId = { identityManager.currentAppUserID },
+                    ),
                 ),
                 currentAppUserId = { identityManager.currentAppUserID },
             )
@@ -455,6 +475,7 @@ internal class PurchasesFactory(
                 offlineEntitlementsManager,
                 paywallPresentedCache,
                 localTransactionMetadataStore,
+                subscriberDimensionsReceiptStore,
             )
 
             val postTransactionWithProductDetailsHelper = PostTransactionWithProductDetailsHelper(
@@ -604,8 +625,10 @@ internal class PurchasesFactory(
                 checkpointsConfigProvider = checkpointsConfigProvider,
                 audiencesConfigProvider = audiencesConfigProvider,
                 sdkSettingsConfigProvider = sdkSettingsConfigProvider,
+                subscriberDimensionsConfigProvider = subscriberDimensionsConfigProvider,
                 localRulesEvaluator = localRulesEvaluator,
                 tokenManager = tokenManager,
+                processLifecycleOwnerProvider = processLifecycleOwnerProvider,
             )
 
             return Purchases(purchasesOrchestrator)

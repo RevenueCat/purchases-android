@@ -13,6 +13,7 @@ import com.revenuecat.purchases.common.caching.WorkflowMetadata
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
+import com.revenuecat.purchases.common.subscriberdimensions.SubscriberDimensionsReceiptStore
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -39,6 +40,7 @@ constructor(
     private val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val paywallPresentedCache: PaywallPresentedCache,
     private val localTransactionMetadataStore: LocalTransactionMetadataStore,
+    private val subscriberDimensionsReceiptStore: SubscriberDimensionsReceiptStore,
 ) {
     private val finishTransactions: Boolean
         get() = appConfig.finishTransactions
@@ -372,6 +374,7 @@ constructor(
                         unsyncedSubscriberAttributesByKey,
                         postReceiptResponse.body.getAttributeErrors(),
                     )
+                    subscriberDimensionsReceiptStore.store(appUserID, postReceiptResponse.body)
                     customerInfoUpdateHandler.cacheAndNotifyListeners(postReceiptResponse.customerInfo, appUserID)
                     onSuccess(postReceiptResponse)
                 },

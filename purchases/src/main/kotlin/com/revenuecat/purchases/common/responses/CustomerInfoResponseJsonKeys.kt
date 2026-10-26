@@ -5,6 +5,7 @@ internal object CustomerInfoResponseJsonKeys {
     const val REQUEST_DATE_MS = "request_date_ms"
     const val SUBSCRIBER = "subscriber"
     const val DIMENSIONS = "dimensions"
+    const val AS_OF = "as_of"
     const val ORIGINAL_APP_USER_ID = "original_app_user_id"
     const val ORIGINAL_APPLICATION_VERSION = "original_application_version"
     const val ENTITLEMENTS = "entitlements"

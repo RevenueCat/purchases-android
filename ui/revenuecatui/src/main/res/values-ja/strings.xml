@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">わかりました</string>
+    <string name="loading">読み込み中</string>
     <string name="all_plans">すべてのサブスクリプション</string>
     <string name="privacy">プライバシー</string>
     <string name="privacy_policy">プライバシーポリシー</string>
@@ -22,4 +23,14 @@
     <string name="cannot_open_link">リンクが無効です。開くことができませんでした。</string>
     <string name="revenuecatui_purchase">購入</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+    <string name="revenuecatui_preview_workflow_load_error">プレビューのワークフローを読み込めませんでした。もう一度お試しください。</string>
+    <string name="revenuecatui_checkpoint_error_network">接続できませんでした。インターネット接続を確認して、もう一度お試しください。</string>
+    <string name="revenuecatui_checkpoint_error_load">このコンテンツを読み込めませんでした。しばらくしてからもう一度お試しください。</string>
+    <string name="revenuecatui_checkpoint_error_store">ストアで問題が発生しました。しばらくしてからもう一度お試しください。</string>
+    <string name="revenuecatui_checkpoint_error_purchase_not_allowed">このデバイスでは購入が許可されていません。</string>
+    <string name="revenuecatui_checkpoint_error_product_unavailable">この商品は現在ご利用いただけません。</string>
+    <string name="revenuecatui_checkpoint_error_already_purchased">この商品はすでに購入済みです。</string>
+    <string name="revenuecatui_checkpoint_error_payment_pending">お支払いは保留中です。承認されるとご利用いただけるようになります。</string>
+    <string name="revenuecatui_checkpoint_error_generic">問題が発生しました。もう一度お試しください。</string>
+    <string name="revenuecatui_checkpoint_error_sync">ご購入内容を確認できませんでした。しばらくしてからもう一度お試しください。</string>
 </resources>

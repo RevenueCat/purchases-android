@@ -54,7 +54,6 @@ import java.io.File
 @Composable
 fun AppInfoScreen(
     tappedOnCustomerCenter: () -> Unit,
-    tappedOnCheckpoints: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: AppInfoScreenViewModel = viewModel<AppInfoScreenViewModelImpl>(
         factory = AppInfoScreenViewModelImpl.Factory,
@@ -151,11 +150,6 @@ fun AppInfoScreen(
             activity.launchCustomerCenter()
         }) {
             Text(text = "Customer Center (Activity)")
-        }
-        Button(onClick = {
-            tappedOnCheckpoints()
-        }) {
-            Text(text = "Checkpoints")
         }
         Button(onClick = {
             Purchases.sharedInstance.showManageSubscriptions(
@@ -381,7 +375,6 @@ fun AppInfoScreenPreview() {
             override fun clearAllSubscriberAttributes() {}
         },
         tappedOnCustomerCenter = {},
-        tappedOnCheckpoints = {},
     )
 }
 

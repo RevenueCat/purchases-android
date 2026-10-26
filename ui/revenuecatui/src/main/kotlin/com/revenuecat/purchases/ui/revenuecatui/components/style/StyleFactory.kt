@@ -16,6 +16,7 @@ import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
+import com.revenuecat.purchases.paywalls.components.PartialVideoComponent
 import com.revenuecat.purchases.paywalls.components.PaywallComponent
 import com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
@@ -95,10 +96,11 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.toNonEmptyListOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.zipOrAccumulate
 import java.util.Date
 
-@Suppress("TooManyFunctions", "LargeClass")
+@Suppress("TooManyFunctions", "LargeClass", "LongParameterList")
 @Immutable
 internal class StyleFactory(
     private val localizations: NonEmptyMap<LocaleId, LocalizationDictionary>,
+    private val videoLocalizations: Map<LocaleId, Map<LocalizationKey, ThemeVideoUrls>> = emptyMap(),
     private val colorAliases: Map<ColorAlias, ColorScheme>,
     private val fontAliases: Map<FontAlias, FontSpec>,
     private val variableLocalizations: NonEmptyMap<LocaleId, NonEmptyMap<VariableLocalizationKey, String>>,
@@ -163,15 +165,19 @@ internal class StyleFactory(
 
         private class WindowInsetsState {
             /**
-             * Whether the current component should apply the top window insets. This field is reset when it is read,
-             * as it should only be set on a single component.
+             * The stack that should apply the top window insets, if any. Tracked by reference rather than a flag
+             * consumed by the next stack style built, because children styles are built before their parent's. A flag
+             * intended for a hero ZLayer would otherwise be consumed by the first stack nested inside an overlay
+             * child, such as a close button's stack. That inner stack then pads its own content by the status bar,
+             * stretching the button background.
              */
-            var applyTopWindowInsets = false
-                get() {
-                    val value = field
-                    field = false
-                    return value
-                }
+            private var stackAwaitingTopWindowInsets: StackComponent? = null
+
+            /**
+             * Whether [component] should apply the top window insets.
+             */
+            fun shouldApplyTopWindowInsets(component: StackComponent): Boolean =
+                stackAwaitingTopWindowInsets === component
 
             /**
              * Whether the current component should ignore the top window insets. This field is reset when it is read,
@@ -211,17 +217,12 @@ internal class StyleFactory(
             fun handleHeaderMediaViewWindowInsets(component: PaywallComponent) {
                 when (component) {
                     is StackComponent -> if (stillLookingForHeaderMedia) {
-                        applyTopWindowInsets = when (component.dimension) {
-                            is Dimension.ZLayer -> {
-                                val hasHero = component.components.firstOrNull()?.isHeaderMedia == true
-                                topWindowInsetsApplied = hasHero
-                                heroImageDetected = hasHero
-                                hasHero
-                            }
+                        when (component.dimension) {
+                            is Dimension.ZLayer -> handleZLayerHeaderStack(component)
 
                             is Dimension.Horizontal,
                             is Dimension.Vertical,
-                            -> false
+                            -> Unit
                         }
                     }
 
@@ -240,6 +241,13 @@ internal class StyleFactory(
                     is FallbackHeaderComponent -> { /* Skip: does not affect hero image detection. */ }
                     else -> stillLookingForHeaderMedia = false
                 }
+            }
+
+            private fun handleZLayerHeaderStack(component: StackComponent) {
+                val hasHero = component.components.firstOrNull()?.isHeaderMedia == true
+                topWindowInsetsApplied = hasHero
+                heroImageDetected = hasHero
+                if (hasHero) stackAwaitingTopWindowInsets = component
             }
 
             private val PaywallComponent.isHeaderMedia: Boolean
@@ -262,9 +270,10 @@ internal class StyleFactory(
         val windowInsetsState = WindowInsetsState()
 
         /**
-         * Whether the current component should apply the top window insets.
+         * Whether [component] should apply the top window insets.
          */
-        val applyTopWindowInsets by windowInsetsState::applyTopWindowInsets
+        fun shouldApplyTopWindowInsets(component: StackComponent): Boolean =
+            windowInsetsState.shouldApplyTopWindowInsets(component)
 
         /**
          * Whether the current component should ignore the top window insets.
@@ -432,15 +441,21 @@ internal class StyleFactory(
         }
 
         /**
-         * Applies the top window insets to the provided ComponentStyle if they haven't been applied to any other
-         * component yet.
+         * Applies the top window insets to [to] if no component has taken them yet.
+         *
+         * Keeps an inset already set on [to]. The root stack can itself be the hero ZLayer, and
+         * [WindowInsetsState.topWindowInsetsApplied] is true in that case, so replacing the root's value would
+         * clear the inset.
          */
         fun applyTopWindowInsetsIfNotYetApplied(to: ComponentStyle): ComponentStyle =
             when (to) {
-                is StackComponentStyle -> to.copy(applyTopWindowInsets = !windowInsetsState.topWindowInsetsApplied)
+                is StackComponentStyle -> to.copy(
+                    applyTopWindowInsets = to.applyTopWindowInsets || !windowInsetsState.topWindowInsetsApplied,
+                )
                 is HeaderComponentStyle -> to.copy(
                     stackComponentStyle = to.stackComponentStyle.copy(
-                        applyTopWindowInsets = !windowInsetsState.topWindowInsetsApplied,
+                        applyTopWindowInsets = to.stackComponentStyle.applyTopWindowInsets ||
+                            !windowInsetsState.topWindowInsetsApplied,
                         ignoreHeaderHeight = true,
                     ),
                 )
@@ -947,6 +962,7 @@ internal class StyleFactory(
             shadow = shadowStyles,
             badge = badge,
             scrollOrientation = component.overflow?.toOrientation(component.dimension),
+            scrollExplicitlyDisabled = component.overflow == StackComponent.Overflow.NONE,
             rcPackage = rcPackage,
             resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
@@ -954,7 +970,7 @@ internal class StyleFactory(
             countdownDate = countdownDate,
             countFrom = countFrom,
             overrides = presentedOverrides,
-            applyTopWindowInsets = applyTopWindowInsets,
+            applyTopWindowInsets = shouldApplyTopWindowInsets(component),
         )
     }
 
@@ -1051,37 +1067,28 @@ internal class StyleFactory(
     private fun StyleFactoryScope.createVideoComponentStyle(
         component: VideoComponent,
     ): Result<VideoComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
-        first = component.source.withLocalizedOverrides(component.overrideSourceLid),
-        second = component.fallbackSource?.withLocalizedOverrides(component.overrideSourceLid).orSuccessfullyNull(),
-        third = component.overrides?.toPresentedOverrides(stripRules) { videoPartial ->
-            videoPartial.source
-                ?.withLocalizedOverrides(videoPartial.overrideSourceLid)
-                .orSuccessfullyNull()
-                .flatMap { sources ->
-                    PresentedVideoPartial(
-                        from = videoPartial,
-                        sources = sources,
-                        fallbackSources = videoPartial.fallbackSource
-                            ?.withLocalizedOverrides(videoPartial.overrideSourceLid)
-                            ?.let {
-                                when (it) {
-                                    is Result.Success -> it.value
-                                    else -> null
-                                }
-                            },
-                        aliases = colorAliases,
-                    )
-                }
+        first = component.overrideVideoLid
+            ?.let { key -> localizations.videoForAllLocales(key, videoLocalizations) }
+            ?: Result.Success(component.source.forDefaultLocaleOnly()),
+        second = component.overrides?.toPresentedOverrides(stripRules) { videoPartial ->
+            videoPartial.localizedVideoSources().flatMap { sources ->
+                PresentedVideoPartial(
+                    from = videoPartial,
+                    sources = sources,
+                    fallbackSources = videoPartial.fallbackSource?.forDefaultLocaleOnly(),
+                    aliases = colorAliases,
+                )
+            }
         }
             ?.mapError { nonEmptyListOf(it) }
             .orSuccessfullyNull(),
-        fourth = component.colorOverlay?.toColorStyles(aliases = colorAliases).orSuccessfullyNull(),
-        fifth = component.border?.toBorderStyles(aliases = colorAliases).orSuccessfullyNull(),
-        sixth = component.shadow?.toShadowStyles(aliases = colorAliases).orSuccessfullyNull(),
-    ) { sources, fallbackSources, presentedOverrides, overlay, border, shadow ->
+        third = component.colorOverlay?.toColorStyles(aliases = colorAliases).orSuccessfullyNull(),
+        fourth = component.border?.toBorderStyles(aliases = colorAliases).orSuccessfullyNull(),
+        fifth = component.shadow?.toShadowStyles(aliases = colorAliases).orSuccessfullyNull(),
+    ) { sources, presentedOverrides, overlay, border, shadow ->
         VideoComponentStyle(
             sources = sources,
-            fallbackSources = fallbackSources,
+            fallbackSources = component.fallbackSource?.forDefaultLocaleOnly(),
             overlay = overlay,
             border = border,
             shadow = shadow,
@@ -1389,14 +1396,19 @@ internal class StyleFactory(
             // Ensure the default source keyed by the default locale is present in the result.
             .map { nonEmptyMapOf(localizations.entry.key to this, it.orEmpty()) }
 
-    private fun ThemeVideoUrls.withLocalizedOverrides(
-        overrideSourceLid: LocalizationKey?,
-    ): Result<NonEmptyMap<LocaleId, ThemeVideoUrls>, NonEmptyList<PaywallValidationError.MissingVideoLocalization>> =
-        overrideSourceLid
-            ?.let { key -> localizations.videoForAllLocales(key) }
-            .orSuccessfullyNull()
-            // Ensure the default source keyed by the default locale is present in the result.
-            .map { nonEmptyMapOf(localizations.entry.key to this, it.orEmpty()) }
+    private fun <T> T.forDefaultLocaleOnly(): NonEmptyMap<LocaleId, T> =
+        nonEmptyMapOf(localizations.entry.key to this)
+
+    /**
+     * The override's [PartialVideoComponent.overrideVideoLid] takes precedence over its
+     * [PartialVideoComponent.source], and must be localized for every locale. Null when the override sets neither, so
+     * the component's sources apply.
+     */
+    private fun PartialVideoComponent.localizedVideoSources():
+        Result<NonEmptyMap<LocaleId, ThemeVideoUrls>?, NonEmptyList<PaywallValidationError.MissingVideoLocalization>> =
+        overrideVideoLid
+            ?.let { key -> localizations.videoForAllLocales(key, videoLocalizations) }
+            ?: Result.Success(source?.forDefaultLocaleOnly())
 
     private fun Offering.getPackageOrNull(identifier: String): Package? =
         try {

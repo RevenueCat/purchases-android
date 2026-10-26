@@ -226,6 +226,13 @@ class CustomerInfoDimensionProviderTest {
     }
 
     @Test
+    fun `an organization-assigned subscription reports its ownership type`() = runTest {
+        val purchase = provider(customerInfo(ASSIGNED_RESPONSE)).dimensions(date).purchases().single()
+
+        assertThat(purchase["ownership_type"]).isEqualTo(string("ASSIGNED"))
+    }
+
+    @Test
     fun `a subscription being served through a grace period says so`() = runTest {
         val purchase = provider(customerInfo(SUBSCRIBED_RESPONSE)).dimensions(date).purchases()
             .single { it["purchased_product_identifier"] == string("legacy:annual") }
@@ -552,6 +559,20 @@ class CustomerInfoDimensionProviderTest {
                 originalPurchaseDate = "2024-05-01T00:00:00Z",
                 expiresDate = "2100-01-01T00:00:00Z",
                 ownershipType = null,
+            )}
+                }
+            """,
+        )
+
+        val ASSIGNED_RESPONSE = subscriberResponse(
+            subscriptions = """
+                "premium": {
+                  ${subscription(
+                store = "app_store",
+                purchaseDate = "2024-05-01T00:00:00Z",
+                originalPurchaseDate = "2024-05-01T00:00:00Z",
+                expiresDate = "2100-01-01T00:00:00Z",
+                ownershipType = "ASSIGNED",
             )}
                 }
             """,

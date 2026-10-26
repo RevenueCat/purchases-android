@@ -322,6 +322,23 @@ class BackendTest {
                 body = null,
                 postFieldsToSign = null,
                 any(),
+                iamAppUserID = any(),
+            )
+        }
+    }
+
+    @Test
+    fun `getCustomerInfo binds IAM authentication to the requested app user ID`() {
+        getCustomerInfo(200, null, null)
+
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                mockBaseURL,
+                Endpoint.GetCustomerInfo(appUserID),
+                body = null,
+                postFieldsToSign = null,
+                any(),
+                iamAppUserID = appUserID,
             )
         }
     }
@@ -403,6 +420,7 @@ class BackendTest {
                 body = null,
                 postFieldsToSign = null,
                 any(),
+                iamAppUserID = any(),
             )
         }
     }
@@ -457,6 +475,7 @@ class BackendTest {
                 body = null,
                 postFieldsToSign = null,
                 any(),
+                iamAppUserID = any(),
             )
         }
     }
@@ -510,6 +529,7 @@ class BackendTest {
                 any(),
                 any(),
                 any(),
+                iamAppUserID = any(),
             )
         }
     }
@@ -849,6 +869,7 @@ class BackendTest {
                 any(),
                 any(),
                 any(),
+                iamAppUserID = any(),
             )
         }
     }
@@ -919,6 +940,7 @@ class BackendTest {
                 any(),
                 any(),
                 any(),
+                iamAppUserID = any(),
             )
         }
         verify(exactly = 2) {
@@ -928,6 +950,7 @@ class BackendTest {
                 body = null,
                 postFieldsToSign = null,
                 any(),
+                iamAppUserID = any(),
             )
         }
     }
@@ -1019,6 +1042,7 @@ class BackendTest {
                 any() as Map<String, Any?>,
                 any(),
                 any(),
+                iamAppUserID = any(),
             )
         }
     }
@@ -1075,6 +1099,7 @@ class BackendTest {
                 any() as Map<String, Any?>,
                 any(),
                 any(),
+                iamAppUserID = any(),
             )
         }
     }
@@ -1123,6 +1148,7 @@ class BackendTest {
                 any(),
                 any(),
                 any(),
+                iamAppUserID = any(),
             )
         }
     }
@@ -1170,6 +1196,7 @@ class BackendTest {
                 any() as Map<String, Any?>,
                 any(),
                 any(),
+                iamAppUserID = any(),
             )
         }
     }
@@ -1233,6 +1260,7 @@ class BackendTest {
                 any(),
                 any(),
                 any(),
+                iamAppUserID = any(),
             )
         }
     }
@@ -1416,6 +1444,7 @@ class BackendTest {
                 any(),
                 expectedPostFieldsToSign,
                 any(),
+                iamAppUserID = any(),
             )
         }
     }
@@ -1566,6 +1595,62 @@ class BackendTest {
         assertThat(requestBodySlot.isCaptured).isTrue
         assertThat(requestBodySlot.captured["presented_offering_identifier"]).isEqualTo("offering_a")
         assertThat(requestBodySlot.captured["presented_placement_identifier"]).isEqualTo("placement_a")
+        assertThat(requestBodySlot.captured.keys).doesNotContain("presented_checkpoint_identifier")
+        assertThat(requestBodySlot.captured.keys).doesNotContain("presented_trace_id")
+    }
+
+    @Test
+    fun `postReceipt passes presented_checkpoint_identifier in body`() {
+        val context = PresentedOfferingContext("offering_a")
+            .copyWithCheckpointIdentifier("onboarding_paywall")
+        val receiptInfo = createReceiptInfoFromProduct(
+            productIDs = productIDs,
+            storeProduct = storeProduct,
+            presentedOfferingContext = context,
+            storeUserID = "id",
+        )
+
+        mockPostReceiptResponseAndPost(
+            backend,
+            responseCode = 200,
+            isRestore = false,
+            clientException = null,
+            resultBody = null,
+            finishTransactions = false,
+            receiptInfo = receiptInfo,
+            initiationSource = initiationSource,
+        )
+
+        assertThat(requestBodySlot.isCaptured).isTrue
+        assertThat(requestBodySlot.captured["presented_checkpoint_identifier"])
+            .isEqualTo("onboarding_paywall")
+    }
+
+    @Test
+    fun `postReceipt passes presented_trace_id in body`() {
+        val context = PresentedOfferingContext("offering_a")
+            .copyWithCheckpointIdentifier("onboarding_paywall")
+            .copyWithTraceId("trace_a")
+        val receiptInfo = createReceiptInfoFromProduct(
+            productIDs = productIDs,
+            storeProduct = storeProduct,
+            presentedOfferingContext = context,
+            storeUserID = "id",
+        )
+
+        mockPostReceiptResponseAndPost(
+            backend,
+            responseCode = 200,
+            isRestore = false,
+            clientException = null,
+            resultBody = null,
+            finishTransactions = false,
+            receiptInfo = receiptInfo,
+            initiationSource = initiationSource,
+        )
+
+        assertThat(requestBodySlot.isCaptured).isTrue
+        assertThat(requestBodySlot.captured["presented_trace_id"]).isEqualTo("trace_a")
     }
 
     @Test
@@ -1696,6 +1781,7 @@ class BackendTest {
                 body = null,
                 postFieldsToSign = null,
                 any(),
+                iamAppUserID = any(),
             )
         }
     }
@@ -1728,6 +1814,7 @@ class BackendTest {
                 body = null,
                 postFieldsToSign = null,
                 any(),
+                iamAppUserID = any(),
             )
         }
         verify(exactly = 1) {
@@ -1737,6 +1824,7 @@ class BackendTest {
                 body = null,
                 postFieldsToSign = null,
                 any(),
+                iamAppUserID = any(),
             )
         }
     }
@@ -1791,6 +1879,7 @@ class BackendTest {
                 body = null,
                 postFieldsToSign = null,
                 any(),
+                iamAppUserID = any(),
             )
         }
     }
@@ -1829,6 +1918,7 @@ class BackendTest {
                 body = null,
                 postFieldsToSign = null,
                 any(),
+                iamAppUserID = any(),
             )
         }
     }
@@ -1865,6 +1955,7 @@ class BackendTest {
                 body,
                 any(),
                 any(),
+                iamAppUserID = any(),
             )
         }
     }
@@ -2015,6 +2106,7 @@ class BackendTest {
                 requestBody,
                 expectedPostFieldsToSign,
                 any(),
+                iamAppUserID = any(),
             )
         }
     }
@@ -2066,6 +2158,7 @@ class BackendTest {
                 requestBody,
                 any(),
                 any(),
+                iamAppUserID = any(),
             )
         }
     }
@@ -2117,6 +2210,7 @@ class BackendTest {
                 requestBody,
                 any(),
                 any(),
+                iamAppUserID = any(),
             )
         }
     }
@@ -2168,6 +2262,7 @@ class BackendTest {
                 requestBody,
                 any(),
                 any(),
+                iamAppUserID = any(),
             )
         }
     }
@@ -2603,6 +2698,7 @@ class BackendTest {
                 body = null,
                 postFieldsToSign = null,
                 requestHeaders = defaultAuthHeaders,
+                iamAppUserID = any(),
             )
         }
     }
@@ -2713,6 +2809,7 @@ class BackendTest {
                 body = null,
                 postFieldsToSign = null,
                 any(),
+                iamAppUserID = any(),
             )
         }
     }
@@ -2767,6 +2864,7 @@ class BackendTest {
                 body = null,
                 postFieldsToSign = null,
                 any(),
+                iamAppUserID = any(),
             )
         }
     }
@@ -2869,6 +2967,7 @@ class BackendTest {
                 body = null,
                 postFieldsToSign = null,
                 requestHeaders = defaultAuthHeaders,
+                iamAppUserID = any(),
             )
         }
     }
@@ -3004,6 +3103,7 @@ class BackendTest {
                 body = null,
                 postFieldsToSign = null,
                 any(),
+                iamAppUserID = any(),
             )
         }
     }
@@ -3024,6 +3124,7 @@ class BackendTest {
                 body = mapOf("app_user_id" to "test-old-app-user-id", "new_app_user_id" to "test-new-app-user-id"),
                 postFieldsToSign = null,
                 requestHeaders = defaultAuthHeaders,
+                iamAppUserID = any(),
             )
         }
     }
@@ -3111,6 +3212,7 @@ class BackendTest {
                 body = mapOf("app_user_id" to appUserID, "new_app_user_id" to "test-new-user-id"),
                 postFieldsToSign = null,
                 any(),
+                iamAppUserID = any(),
             )
         }
     }
@@ -3144,6 +3246,7 @@ class BackendTest {
                 (if (body == null) any() else capture(requestBodySlot)),
                 any(),
                 capture(headersSlot),
+                iamAppUserID = any(),
             )
         }
 
@@ -3225,6 +3328,8 @@ class BackendTest {
             "is_restore" to isRestore,
             "presented_offering_identifier" to receiptInfo.presentedOfferingContext?.offeringIdentifier,
             "presented_placement_identifier" to receiptInfo.presentedOfferingContext?.placementIdentifier,
+            "presented_checkpoint_identifier" to receiptInfo.presentedOfferingContext?.checkpointIdentifier,
+            "presented_trace_id" to receiptInfo.presentedOfferingContext?.traceId,
             "observer_mode" to !finishTransactions,
             "price" to receiptInfo.price,
             "currency" to receiptInfo.currency,
@@ -3363,6 +3468,7 @@ class BackendTest {
                 (if (body == null) any() else capture(requestBodySlot)),
                 any(),
                 capture(headersSlot),
+                iamAppUserID = any(),
             )
         }
 
@@ -3397,6 +3503,7 @@ class BackendTest {
                 null,
                 any(),
                 capture(headersSlot),
+                iamAppUserID = any(),
             )
         }
 
@@ -3429,6 +3536,7 @@ class BackendTest {
                 body,
                 any(),
                 capture(headersSlot),
+                iamAppUserID = any(),
             )
         }
 
@@ -3497,6 +3605,7 @@ class BackendTest {
                 ),
                 postFieldsToSign = null,
                 requestHeaders = defaultAuthHeaders,
+                iamAppUserID = any(),
             )
         }
     }

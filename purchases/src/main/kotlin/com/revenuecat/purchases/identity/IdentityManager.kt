@@ -16,6 +16,8 @@ import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.common.networking.TokenAPI
+import com.revenuecat.purchases.common.networking.TokenManager
 import com.revenuecat.purchases.common.offerings.OfferingsCache
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
@@ -43,6 +45,8 @@ internal class IdentityManager(
     private val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val dispatcher: Dispatcher,
     private val paywallAssetWarming: PaywallAssetWarming,
+    private val tokenManager: TokenManager,
+    private val tokenAPI: TokenAPI,
     private val uiPreviewMode: Boolean = false,
 ) {
     companion object {
@@ -52,6 +56,23 @@ internal class IdentityManager(
         fun isUserIDAnonymous(appUserID: String): Boolean {
             return anonymousIdRegex.matches(appUserID)
         }
+
+        // The one error for a result dropped because the identity changed during the request. Recognized by
+        // reference: its code also covers backend request-already-in-progress failures, which are real failures.
+        internal val identityChangedError = PurchasesError(
+            PurchasesErrorCode.OperationAlreadyInProgressError,
+            IdentityStrings.IAM_IDENTITY_CHANGED_DURING_REQUEST,
+        )
+
+        fun isIdentityChangedError(error: PurchasesError): Boolean = error === identityChangedError
+    }
+
+    @Volatile
+    private var identityChangeListener: (() -> Unit)? = null
+
+    /** Told, on the committing thread, each time the current user changes after [configure]. */
+    fun setIdentityChangeListener(listener: (() -> Unit)?) {
+        identityChangeListener = listener
     }
 
     val currentAppUserID: String
@@ -171,7 +192,7 @@ internal class IdentityManager(
                         clearRemoteConfigThenOfferingsCaches(newAppUserID)
                         subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
 
-                        deviceCache.cacheAppUserID(newAppUserID)
+                        commitAppUserID(newAppUserID)
                         deviceCache.cacheCustomerInfo(newAppUserID, customerInfo)
                         copySubscriberAttributesToNewUserIfOldIsAnonymous(oldAppUserID, newAppUserID)
                         clearPaywallWebViewStorageIfUserChanged(oldAppUserID, newAppUserID)
@@ -180,6 +201,59 @@ internal class IdentityManager(
                     onSuccess(customerInfo, created)
                 },
                 onError,
+            )
+        }
+    }
+
+    /**
+     * Logs in with [identity] through IAM, then switches to the app user ID the server assigned and fetches
+     * its [CustomerInfo]. [onSuccess] receives that app user ID.
+     */
+    fun logIn(
+        identity: Identity,
+        onSuccess: (customerInfo: CustomerInfo, appUserID: String) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        if (currentAppUserID == UI_PREVIEW_MODE_APP_USER_ID) {
+            onError(
+                PurchasesError(
+                    PurchasesErrorCode.UnsupportedError,
+                    IdentityStrings.OPERATION_NOT_SUPPORTED_IN_PREVIEW_MODE,
+                ).also { errorLog(it) },
+            )
+            return
+        }
+        if (!tokenManager.enabled) {
+            onError(PurchasesError(PurchasesErrorCode.ConfigurationError, "IAM login is not enabled."))
+            return
+        }
+        // Linking and the anonymous checks read the current user's ID token.
+        afterTokensLoad(onError) { logInThroughIAM(identity, onSuccess, onError) }
+    }
+
+    private fun logInThroughIAM(
+        identity: Identity,
+        onSuccess: (customerInfo: CustomerInfo, appUserID: String) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        val oldAppUserID = currentAppUserID
+        log(LogIntent.USER) { IdentityStrings.IAM_LOGGING_IN.format(oldAppUserID, identity.identitySource) }
+        subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
+            oldAppUserID,
+            Delay.jitterOnlyIfInBackground(appConfig.isAppBackgrounded),
+        ) {
+            tokenAPI.logIn(
+                oldAppUserID,
+                identity,
+                onSuccess = { newAppUserID ->
+                    if (switchToIAMUserIfStillCurrent(oldAppUserID, newAppUserID)) {
+                        log(LogIntent.USER) { IdentityStrings.IAM_LOG_IN_SUCCESSFUL.format(newAppUserID) }
+                        fetchCustomerInfo(newAppUserID, onSuccess, onError)
+                    } else {
+                        onError(identityChangedError)
+                    }
+                },
+                onError = onError,
             )
         }
     }
@@ -200,7 +274,6 @@ internal class IdentityManager(
         resetAndSaveUserID(newAppUserID)
     }
 
-    @Synchronized
     fun logOut(completion: ((PurchasesError?) -> Unit)) {
         if (currentAppUserID == UI_PREVIEW_MODE_APP_USER_ID) {
             completion(
@@ -211,32 +284,176 @@ internal class IdentityManager(
             )
             return
         }
+        // The anonymous check and the revoke both read tokens; before the load they'd see none.
+        afterTokensLoad(completion) { logOutAfterTokensLoad(completion) }
+    }
+
+    @Synchronized
+    private fun logOutAfterTokensLoad(completion: (PurchasesError?) -> Unit) {
         if (currentUserIsAnonymous()) {
             log(LogIntent.RC_ERROR) { IdentityStrings.LOG_OUT_CALLED_ON_ANONYMOUS_USER }
             completion(PurchasesError(PurchasesErrorCode.LogOutWithAnonymousUserError))
             return
         }
+        val oldAppUserID = currentAppUserID
         subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
-            currentAppUserID,
+            oldAppUserID,
             Delay.jitterOnlyIfInBackground(appConfig.isAppBackgrounded),
         ) {
-            resetAndSaveUserID(generateRandomID())
-            log(LogIntent.USER) { IdentityStrings.LOG_OUT_SUCCESSFUL }
-            completion(null)
+            if (tokenManager.enabled) {
+                logOutThroughIAM(oldAppUserID, completion)
+            } else {
+                resetAndSaveUserID(generateRandomID())
+                log(LogIntent.USER) { IdentityStrings.LOG_OUT_SUCCESSFUL }
+                completion(null)
+            }
         }
     }
 
     @Synchronized
     fun currentUserIsAnonymous(): Boolean {
-        val currentAppUserIDLooksAnonymous = isUserIDAnonymous(deviceCache.getCachedAppUserID() ?: "")
         val isLegacyAnonymousAppUserID =
             deviceCache.getCachedAppUserID() == deviceCache.getLegacyCachedAppUserID()
-        return currentAppUserIDLooksAnonymous || isLegacyAnonymousAppUserID
+        return isAnonymous(currentAppUserID) || isLegacyAnonymousAppUserID
     }
+
+    /**
+     * Calls [callback] with whether the current user needs an IAM login, once that can be known: right away when
+     * IAM is disabled, otherwise after the token cache load (`false` if storage is unavailable). Never evaluated
+     * before the load, since a missing token is indistinguishable from an unloaded cache.
+     */
+    fun checkIAMLoginNeeded(callback: (needed: Boolean) -> Unit) {
+        if (!tokenManager.enabled) {
+            callback(false)
+            return
+        }
+        tokenManager.onLoadFinished { loaded -> callback(loaded && needsIAMLogin()) }
+    }
+
+    /**
+     * Whether the current user needs an IAM login, from the tokens as they are now. Only meaningful once
+     * [checkIAMLoginNeeded] has answered, for re-checking that answer when acting on it later.
+     */
+    fun needsIAMLogin(): Boolean =
+        tokenManager.enabled && currentUserIsAnonymous() && !tokenManager.hasCurrentAccessToken(currentAppUserID)
 
     // endregion
 
     // region Private functions
+
+    /**
+     * Switches to [newAppUserID] only if [oldAppUserID] is still current, so a late IAM result can't undo an
+     * identity change made meanwhile. IAM paths aren't user-specific, so the URL-keyed ETag cache goes too.
+     */
+    @Synchronized
+    private fun switchToIAMUserIfStillCurrent(oldAppUserID: String, newAppUserID: String): Boolean {
+        if (currentAppUserID != oldAppUserID) return false
+        // Only clear caches if the new user id is different.
+        // Migrating a pre-IAM anonymous account can preserve the user id, and should also preserve caches
+        if (oldAppUserID != newAppUserID) {
+            deviceCache.clearCachesForAppUserID(oldAppUserID)
+            clearRemoteConfigThenOfferingsCaches(newAppUserID)
+            subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
+            commitAppUserID(newAppUserID)
+            copySubscriberAttributesToNewUserIfOldIsAnonymous(oldAppUserID, newAppUserID)
+            clearPaywallWebViewStorageIfUserChanged(oldAppUserID, newAppUserID)
+            offlineEntitlementsManager.resetOfflineCustomerInfoCache()
+            backend.clearCaches()
+        }
+        return true
+    }
+
+    /**
+     * Revokes the current user's tokens, then logs in anonymously; the server assigns the new app user ID.
+     * A revocation failure changes nothing. If the anonymous login then fails, the user falls back to a local
+     * anonymous ID with no tokens, which [checkIAMLoginNeeded] reports on the next foreground; that still counts
+     * as a successful logout, since the identity did change. Neither happens if the identity changed while the
+     * requests were in flight.
+     */
+    private fun logOutThroughIAM(oldAppUserID: String, completion: (PurchasesError?) -> Unit) {
+        // A login or switchUser finished during the attribute sync: that user isn't the one logging out.
+        if (currentAppUserID != oldAppUserID) {
+            completion(identityChangedError)
+            return
+        }
+        tokenAPI.revokeTokens(
+            oldAppUserID,
+            onSuccess = {
+                tokenAPI.logIn(
+                    oldAppUserID,
+                    Identity.anonymous,
+                    onSuccess = { newAppUserID ->
+                        if (switchToIAMUserIfStillCurrent(oldAppUserID, newAppUserID)) {
+                            log(LogIntent.USER) { IdentityStrings.LOG_OUT_SUCCESSFUL }
+                            completion(null)
+                        } else {
+                            completion(identityChangedError)
+                        }
+                    },
+                    onError = { error ->
+                        val fellBack = synchronized(this@IdentityManager) {
+                            (currentAppUserID == oldAppUserID).also {
+                                if (it) resetAndSaveUserID(generateRandomID())
+                            }
+                        }
+                        if (fellBack) {
+                            log(LogIntent.WARNING) {
+                                IdentityStrings.IAM_LOG_OUT_ANONYMOUS_LOGIN_FAILED.format(error)
+                            }
+                            log(LogIntent.USER) { IdentityStrings.LOG_OUT_SUCCESSFUL }
+                            completion(null)
+                        } else {
+                            completion(identityChangedError)
+                        }
+                    },
+                )
+            },
+            onError = completion,
+        )
+    }
+
+    /**
+     * Runs [action] once the token cache has loaded, since IAM state read before then looks empty: a missing
+     * token or ID token would be mistaken for none stored. Runs it right away when IAM is disabled, and fails
+     * through [onError] if token storage is unavailable.
+     */
+    private fun afterTokensLoad(onError: (PurchasesError) -> Unit, action: () -> Unit) {
+        if (!tokenManager.enabled) {
+            action()
+            return
+        }
+        tokenManager.onLoadFinished { loaded ->
+            if (loaded) {
+                action()
+            } else {
+                onError(
+                    PurchasesError(PurchasesErrorCode.UnknownError, IdentityStrings.IAM_TOKEN_STORAGE_UNAVAILABLE)
+                        .also { errorLog(it) },
+                )
+            }
+        }
+    }
+
+    private fun fetchCustomerInfo(
+        appUserID: String,
+        onSuccess: (CustomerInfo, String) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        backend.getCustomerInfo(
+            appUserID,
+            appConfig.isAppBackgrounded,
+            onSuccess = { customerInfo ->
+                // Like the switch itself: a result for a user who's no longer current must have no effect.
+                val stillCurrent = synchronized(this@IdentityManager) {
+                    (currentAppUserID == appUserID).also {
+                        if (it) deviceCache.cacheCustomerInfo(appUserID, customerInfo)
+                    }
+                }
+                if (stillCurrent) onSuccess(customerInfo, appUserID) else onError(identityChangedError)
+            },
+            onError = { error, _ -> onError(error) },
+        )
+    }
 
     /**
      * Clears the remote-config caches and then the offerings cache on an identity change, always in this
@@ -253,15 +470,23 @@ internal class IdentityManager(
         offeringsCache.clearCache()
     }
 
+    // Server-assigned anonymous IDs needn't match the regex. When there's an ID token, it decides: a cached
+    // CustomerInfo can be stale after linking. The cache only covers having no ID token (or none loaded yet).
+    private fun isAnonymous(appUserID: String): Boolean = when {
+        isUserIDAnonymous(appUserID) -> true
+        tokenManager.currentIdentitySources(appUserID) != null -> tokenManager.isCurrentIdentityAnonymous(appUserID)
+        else -> tokenManager.enabled && deviceCache.getCachedCustomerInfo(appUserID)?.allIdentitiesAreAnonymous == true
+    }
+
     // Anonymous is exempt: signing in mid-flow is the multipage paywall case, same customer either side.
     private fun clearPaywallWebViewStorageIfUserChanged(oldAppUserID: String, newAppUserID: String) {
-        if (oldAppUserID != newAppUserID && !isUserIDAnonymous(oldAppUserID)) {
+        if (oldAppUserID != newAppUserID && !isAnonymous(oldAppUserID)) {
             paywallAssetWarming.clearWebViewStorage()
         }
     }
 
     private fun copySubscriberAttributesToNewUserIfOldIsAnonymous(oldAppUserId: String, newAppUserId: String) {
-        if (isUserIDAnonymous(oldAppUserId)) {
+        if (isAnonymous(oldAppUserId)) {
             subscriberAttributesManager.copyUnsyncedSubscriberAttributes(oldAppUserId, newAppUserId)
         }
     }
@@ -300,8 +525,13 @@ internal class IdentityManager(
         clearRemoteConfigThenOfferingsCaches(newUserID)
         subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)
         offlineEntitlementsManager.resetOfflineCustomerInfoCache()
-        deviceCache.cacheAppUserID(newUserID)
+        commitAppUserID(newUserID)
         backend.clearCaches()
+    }
+
+    private fun commitAppUserID(newAppUserID: String) {
+        deviceCache.cacheAppUserID(newAppUserID)
+        identityChangeListener?.invoke()
     }
 
     @Synchronized

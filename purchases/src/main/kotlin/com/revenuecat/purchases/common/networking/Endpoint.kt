@@ -157,6 +157,14 @@ internal sealed class Endpoint(
         override val iamPathTemplate: String? = "/v1/customer/virtual_currencies"
     }
 
+    // IAM-only: the user comes from the access token, so there's no API-key path.
+    object SpendVirtualCurrencies : Endpoint(
+        pathTemplate = "/v1/customer/virtual_currencies/spend",
+        name = "spend_virtual_currencies",
+    ) {
+        override fun getPath(useFallback: Boolean, useIAMPath: Boolean) = pathTemplate
+    }
+
     data class GetRewardVerification(
         val userId: String,
         val clientTransactionId: String,
@@ -212,6 +220,7 @@ internal sealed class Endpoint(
             GetProductEntitlementMapping,
             PostRedeemWebPurchase,
             is GetVirtualCurrencies,
+            SpendVirtualCurrencies,
             is GetRewardVerification,
             is GetRemoteConfig,
             is GetRemoteConfigFallback,
@@ -239,6 +248,7 @@ internal sealed class Endpoint(
             PostReceipt,
             PostRedeemWebPurchase,
             is GetVirtualCurrencies,
+            SpendVirtualCurrencies,
             is GetRewardVerification,
             is GetRemoteConfig,
             ->
@@ -292,6 +302,7 @@ internal sealed class Endpoint(
             PostCreateSupportTicket,
             PostRedeemWebPurchase,
             is GetVirtualCurrencies,
+            SpendVirtualCurrencies,
             is GetRewardVerification,
             is WebBillingGetProducts,
             TokenLogin,

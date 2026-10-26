@@ -5,10 +5,17 @@ package com.revenuecat.purchases.common.localrules
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.DateProvider
+import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.subscriberdimensions.SubscriberDimensions
+import com.revenuecat.purchases.common.subscriberdimensions.SubscriberDimensionsReceiptStore
+import com.revenuecat.purchases.common.subscriberdimensions.SubscriberDimensionsResolution
 import com.revenuecat.purchases.rules.RulesEngine
+import io.mockk.every
+import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -19,129 +26,168 @@ import java.util.Date
 class SubscriberDimensionsProviderTest {
 
     private val evaluationDate = Date(1_718_452_800_000)
+    private val storedJsonByUser = mutableMapOf<String, String>()
+    private val deviceCache = mockk<DeviceCache> {
+        every { getCachedSubscriberDimensionsJson(any()) } answers { storedJsonByUser[firstArg()] }
+        every { cacheSubscriberDimensions(any(), any()) } answers { storedJsonByUser[firstArg()] = secondArg() }
+        every { clearSubscriberDimensions(any()) } answers { storedJsonByUser.remove(firstArg<String>()) }
+    }
+    private val receiptStore = SubscriberDimensionsReceiptStore(deviceCache)
 
     @Test
-    fun `every value shape a rule can read is kept`() = runTest {
-        val dimensions = provider(
-            """
-            {
-                "plan": "annual",
-                "beta": true,
-                "seats": 3,
-                "score": 0.75,
-                "profile": {"tier": "gold", "age": 42},
-                "teams": [{"id": "a"}, {"id": "b"}]
-            }
-            """.trimIndent(),
-        ).dimensions(evaluationDate)
+    fun `the config copy is used when it is the only one`() = runTest {
+        val dimensions = provider(config = dimensions(asOf = 100, "plan" to "annual")).dimensions(evaluationDate)
 
-        assertThat(dimensions).isEqualTo(
-            mapOf(
-                "plan" to RulesDimensionValue.StringValue("annual"),
-                "beta" to RulesDimensionValue.BoolValue(true),
-                "seats" to RulesDimensionValue.IntValue(3),
-                "score" to RulesDimensionValue.DoubleValue(0.75),
-                "profile" to RulesDimensionValue.ObjectValue(
-                    mapOf(
-                        "tier" to RulesDimensionValue.StringValue("gold"),
-                        "age" to RulesDimensionValue.IntValue(42),
-                    ),
-                ),
-                "teams" to RulesDimensionValue.ObjectListValue(
-                    listOf(
-                        mapOf("id" to RulesDimensionValue.StringValue("a")),
-                        mapOf("id" to RulesDimensionValue.StringValue("b")),
-                    ),
-                ),
-            ),
-        )
+        assertThat(dimensions).isEqualTo(mapOf("plan" to RulesDimensionValue.StringValue("annual")))
     }
 
     @Test
-    fun `an explicit null is kept as null, at the root and inside an object`() = runTest {
-        // The backend stated the name and chose null for it, which a rule can compare against.
-        val dimensions = provider("""{"gone": null, "profile": {"tier": null, "age": 42}}""")
-            .dimensions(evaluationDate)
+    fun `the purchase copy is used when the topic is not configured`() = runTest {
+        storeReceipt(asOf = 100, "plan" to "annual")
 
-        assertThat(dimensions).isEqualTo(
-            mapOf(
-                "gone" to RulesDimensionValue.NullValue,
-                "profile" to RulesDimensionValue.ObjectValue(
-                    mapOf(
-                        "tier" to RulesDimensionValue.NullValue,
-                        "age" to RulesDimensionValue.IntValue(42),
-                    ),
-                ),
-            ),
-        )
+        val dimensions = provider().dimensions(evaluationDate)
+
+        assertThat(dimensions).isEqualTo(mapOf("plan" to RulesDimensionValue.StringValue("annual")))
+        assertThat(receiptStore.get(USER)).isNotNull()
     }
 
     @Test
-    fun `a value no rule could read is dropped without dropping the others`() = runTest {
-        // An object list is the only collection a dimension can be — same treatment the backend predicate
-        // results get.
-        val dimensions = provider("""{"codes": [1, 2], "mixed": [{"id": "a"}, null], "plan": "annual"}""")
+    fun `the purchase copy is used when the config is unavailable`() = runTest {
+        storeReceipt(asOf = 100, "plan" to "annual")
+
+        val dimensions = provider(configResolution = SubscriberDimensionsResolution.Unavailable)
             .dimensions(evaluationDate)
+
+        assertThat(dimensions).isEqualTo(mapOf("plan" to RulesDimensionValue.StringValue("annual")))
+        assertThat(receiptStore.get(USER)).isNotNull()
+    }
+
+    @Test
+    fun `a newer purchase copy wins and is kept`() = runTest {
+        storeReceipt(asOf = 200, "plan" to "monthly")
+
+        val dimensions = provider(config = dimensions(asOf = 100, "plan" to "annual")).dimensions(evaluationDate)
+
+        assertThat(dimensions).isEqualTo(mapOf("plan" to RulesDimensionValue.StringValue("monthly")))
+        assertThat(receiptStore.get(USER)?.asOf).isEqualTo(Date(200))
+    }
+
+    @Test
+    fun `a newer config copy wins and discards the purchase copy`() = runTest {
+        storeReceipt(asOf = 100, "plan" to "monthly")
+
+        val dimensions = provider(config = dimensions(asOf = 200, "plan" to "annual")).dimensions(evaluationDate)
+
+        assertThat(dimensions).isEqualTo(mapOf("plan" to RulesDimensionValue.StringValue("annual")))
+        assertThat(receiptStore.get(USER)).isNull()
+    }
+
+    @Test
+    fun `the purchase copy wins a tie and is kept`() = runTest {
+        storeReceipt(asOf = 100, "plan" to "monthly")
+
+        val dimensions = provider(config = dimensions(asOf = 100, "plan" to "annual")).dimensions(evaluationDate)
+
+        assertThat(dimensions).isEqualTo(mapOf("plan" to RulesDimensionValue.StringValue("monthly")))
+        assertThat(receiptStore.get(USER)?.asOf).isEqualTo(Date(100))
+    }
+
+    @Test
+    fun `the copies are never merged`() = runTest {
+        storeReceipt(asOf = 100, "seats" to "3")
+
+        val dimensions = provider(config = dimensions(asOf = 200, "plan" to "annual")).dimensions(evaluationDate)
 
         assertThat(dimensions).containsOnlyKeys("plan")
     }
 
     @Test
-    fun `a cache that is not a JSON object contributes nothing`() = runTest {
-        val unreadable = listOf("not json at all", """["an", "array"]""", "\"a string\"", "42")
+    fun `nothing is contributed when neither source has dimensions`() = runTest {
+        assertThat(provider().dimensions(evaluationDate)).isEmpty()
+    }
 
-        for (json in unreadable) {
-            assertThat(provider(json).dimensions(evaluationDate)).describedAs(json).isEmpty()
+    @Test
+    fun `the app user is read once so a change during the config read discards that user's copy only`() = runTest {
+        storeReceipt(asOf = 100, "plan" to "monthly", user = USER)
+        storeReceipt(asOf = 100, "plan" to "monthly", user = OTHER_USER)
+        var currentUser = USER
+        val provider = SubscriberDimensionsProvider(
+            configDimensions = {
+                currentUser = OTHER_USER
+                SubscriberDimensionsResolution.Found(dimensions(asOf = 200, "plan" to "annual"))
+            },
+            receiptStore = receiptStore,
+            currentAppUserId = { currentUser },
+        )
+
+        provider.dimensions(evaluationDate)
+
+        assertThat(receiptStore.get(USER)).isNull()
+        assertThat(receiptStore.get(OTHER_USER)).isNotNull()
+    }
+
+    @Test
+    fun `a purchase copy stored during the config read is used`() = runTest {
+        val provider = SubscriberDimensionsProvider(
+            configDimensions = {
+                storeReceipt(asOf = 300, "plan" to "monthly")
+                SubscriberDimensionsResolution.Found(dimensions(asOf = 200, "plan" to "annual"))
+            },
+            receiptStore = receiptStore,
+            currentAppUserId = { USER },
+        )
+
+        val dimensions = provider.dimensions(evaluationDate)
+
+        assertThat(dimensions).isEqualTo(mapOf("plan" to RulesDimensionValue.StringValue("monthly")))
+        assertThat(receiptStore.get(USER)?.asOf).isEqualTo(Date(300))
+    }
+
+    @Test
+    fun `a purchase copy that cannot be read leaves the config copy and the other dimensions usable`() = runTest {
+        val failingCache = mockk<DeviceCache> {
+            every { getCachedSubscriberDimensionsJson(any()) } throws IllegalStateException("no cache")
         }
-    }
-
-    @Test
-    fun `a customer with no cached dimensions contributes nothing`() = runTest {
-        assertThat(provider(null).dimensions(evaluationDate)).isEmpty()
-    }
-
-    @Test
-    fun `a cache that cannot be read leaves the other dimensions usable`() = runTest {
         val snapshot = resolver(
             deviceProvider("platform" to "android"),
-            SubscriberDimensionsProvider { throw IllegalStateException("no cache") },
+            SubscriberDimensionsProvider(
+                configDimensions = { SubscriberDimensionsResolution.Found(dimensions(asOf = 100, "plan" to "annual")) },
+                receiptStore = SubscriberDimensionsReceiptStore(failingCache),
+                currentAppUserId = { USER },
+            ),
         ).snapshot()
 
         assertThat(snapshot.isSuccess).isTrue()
-        assertThat(snapshot.getOrThrow().values).containsOnlyKeys("evaluated_at", "platform")
-    }
-
-    @Test
-    fun `the cache is read on every evaluation`() = runTest {
-        var json: String? = """{"plan": "annual"}"""
-        val provider = SubscriberDimensionsProvider { json }
-
-        assertThat(provider.dimensions(evaluationDate))
-            .containsEntry("plan", RulesDimensionValue.StringValue("annual"))
-
-        json = """{"plan": "monthly"}"""
-
-        assertThat(provider.dimensions(evaluationDate))
-            .containsEntry("plan", RulesDimensionValue.StringValue("monthly"))
+        assertThat(snapshot.getOrThrow().values).containsOnlyKeys("evaluated_at", "platform", "plan")
     }
 
     @Test
     fun `a dimension colliding with an SDK-provided one fails the snapshot`() = runTest {
         // Same treatment as any other source: the root names are one contract, and the backend's side of it is
         // to not claim a name the SDK already exposes.
-        val error = resolver(
-            deviceProvider("platform" to "android"),
-            provider("""{"platform": "spoofed", "plan": "annual"}"""),
-        ).snapshot().exceptionOrNull()
+        storeReceipt(asOf = 100, "platform" to "spoofed", "plan" to "annual")
+
+        val error = resolver(deviceProvider("platform" to "android"), provider()).snapshot().exceptionOrNull()
 
         assertThat(error).isEqualTo(RulesDimensionResolutionException.ConflictingDimension("platform"))
     }
 
     @Test
     fun `the dimensions are readable by a predicate`() = runTest {
-        val values = resolver(
-            provider("""{"plan": "annual", "seats": 3, "profile": {"tier": "gold"}, "gone": null}"""),
-        ).snapshot().getOrThrow().values
+        receiptStore.store(
+            USER,
+            JSONObject()
+                .put(
+                    "dimensions",
+                    JSONObject()
+                        .put("plan", "annual")
+                        .put("seats", 3)
+                        .put("profile", JSONObject().put("tier", "gold"))
+                        .put("gone", JSONObject.NULL),
+                )
+                .put("as_of", 100),
+        )
+        val values = resolver(provider()).snapshot().getOrThrow().values
 
         val matching = listOf(
             """{"==": [{"var": "plan"}, "annual"]}""",
@@ -165,11 +211,29 @@ class SubscriberDimensionsProviderTest {
         }
     }
 
-    private fun provider(json: String?) = SubscriberDimensionsProvider { json }
+    private fun storeReceipt(asOf: Long, vararg values: Pair<String, String>, user: String = USER) {
+        val dimensions = JSONObject().also { json -> values.forEach { (key, value) -> json.put(key, value) } }
+        receiptStore.store(user, JSONObject().put("dimensions", dimensions).put("as_of", asOf))
+    }
+
+    private fun dimensions(asOf: Long, vararg values: Pair<String, String>) = SubscriberDimensions(
+        values = values.associate { (key, value) -> key to RulesDimensionValue.StringValue(value) },
+        asOf = Date(asOf),
+    )
+
+    private fun provider(
+        config: SubscriberDimensions? = null,
+        configResolution: SubscriberDimensionsResolution =
+            config?.let { SubscriberDimensionsResolution.Found(it) } ?: SubscriberDimensionsResolution.NotConfigured,
+    ) = SubscriberDimensionsProvider(
+        configDimensions = { configResolution },
+        receiptStore = receiptStore,
+        currentAppUserId = { USER },
+    )
 
     private fun resolver(vararg providers: RulesDimensionProvider) = RulesDimensionResolver(
         providers = providers.toList(),
-        currentAppUserId = { "user" },
+        currentAppUserId = { USER },
         dateProvider = object : DateProvider {
             override val now: Date = evaluationDate
         },
@@ -179,5 +243,10 @@ class SubscriberDimensionsProviderTest {
         override val name = "device"
         override suspend fun dimensions(date: Date) =
             values.associate { (key, value) -> key to RulesDimensionValue.StringValue(value) }
+    }
+
+    private companion object {
+        const val USER = "user"
+        const val OTHER_USER = "other-user"
     }
 }
