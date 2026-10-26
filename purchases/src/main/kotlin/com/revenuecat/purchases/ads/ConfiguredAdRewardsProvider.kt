@@ -43,20 +43,21 @@ internal class ConfiguredAdRewardsProvider(
         scope.cancel()
     }
 
-    suspend fun rewards(adUnitId: String): ConfiguredAdRewards? = try {
+    suspend fun rewards(adUnitId: String): ConfiguredAdRewards? {
         if (adUnitId.isEmpty()) {
-            throw PurchasesException(
-                PurchasesError(PurchasesErrorCode.ConfigurationError, "The ad unit ID must not be empty."),
-            )
+            warnLog { "Configured ad rewards unavailable: The ad unit ID must not be empty." }
+            return null
         }
-        val resolution = manager.readConsistent(what = { "configured rewards for ad unit '$adUnitId'" }) { _ ->
-            resolve(adUnitId)
+        return try {
+            val resolution = manager.readConsistent(what = { "configured rewards for ad unit '$adUnitId'" }) { _ ->
+                resolve(adUnitId)
+            }
+            resolution?.getOrThrow()
+                ?: throw unavailable("Remote configuration changed while resolving configured ad rewards.")
+        } catch (e: PurchasesException) {
+            warnLog { "Configured ad rewards unavailable: ${e.underlyingErrorMessage}" }
+            null
         }
-        resolution?.getOrThrow()
-            ?: throw unavailable("Remote configuration changed while resolving configured ad rewards.")
-    } catch (e: PurchasesException) {
-        warnLog { "Configured ad rewards unavailable: ${e.underlyingErrorMessage}" }
-        null
     }
 
     // Keep failures inside the generation check too, so a superseded failure can be retried.
