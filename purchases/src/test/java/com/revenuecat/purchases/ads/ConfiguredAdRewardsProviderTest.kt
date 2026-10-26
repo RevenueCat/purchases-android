@@ -2,7 +2,6 @@ package com.revenuecat.purchases.ads
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.LogHandler
-import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.remoteconfig.ConfigTopic
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
@@ -111,7 +110,7 @@ class ConfiguredAdRewardsProviderTest {
     fun `provider resolves through the shared blob API without a second cache`() = runTest {
         var payload: String? = currencyBlob
         coEvery { blobRead() } answers {
-            payload?.let { thirdArg<(ByteArray) -> Result<ConfiguredAdRewards>?>()(it.toByteArray()) }
+            payload?.toByteArray()
         }
         assertThat(provider.rewards("unit")).isEqualTo(configured)
         payload = "{}"
@@ -123,13 +122,13 @@ class ConfiguredAdRewardsProviderTest {
 
     @Test
     fun `malformed JSON returns null and logs decoding diagnostics`() = runTest {
-        val decodingError = assertFailsWith<PurchasesException> {
-            ConfiguredAdRewardsProvider.decode("not JSON", "unit")
-        }
         returnBlob("not JSON")
         assertThat(provider.rewards("unit")).isNull()
         verify {
-            logHandler.w(any(), "Configured ad rewards unavailable: ${decodingError.underlyingErrorMessage}")
+            logHandler.w(any(), match {
+                it.startsWith("Configured ad rewards unavailable: Configured ad rewards contain invalid JSON:") &&
+                    it.contains("Unexpected JSON token")
+            })
         }
     }
 
@@ -142,23 +141,24 @@ class ConfiguredAdRewardsProviderTest {
                 generation = 1
                 currencyBlob
             } else "{}"
-            thirdArg<(ByteArray) -> Result<ConfiguredAdRewards>?>()(bytes.toByteArray())
+            bytes.toByteArray()
         }
         assertThat(provider.rewards("unit")).isEqualTo(ConfiguredAdRewards(emptyList()))
         coVerify(exactly = 2) { blobRead() }
     }
 
     @Test
-    fun `superseded malformed read retries rather than reporting an obsolete error`() = runTest {
+    fun `superseded malformed read logs the failure and retries`() = runTest {
         var generation = 0
         every { manager.configGeneration } answers { generation }
         coEvery { blobRead() } answers {
             val bytes = if (generation == 0) "not JSON" else currencyBlob
             generation = 1
-            thirdArg<(ByteArray) -> Result<ConfiguredAdRewards>?>()(bytes.toByteArray())
+            bytes.toByteArray()
         }
         assertThat(provider.rewards("unit")).isEqualTo(configured)
         coVerify(exactly = 2) { blobRead() }
+        verify(exactly = 1) { logHandler.w(any(), match { it.contains("invalid JSON") }) }
     }
 
     @Test
@@ -167,10 +167,9 @@ class ConfiguredAdRewardsProviderTest {
         every { manager.configGeneration } answers { generation }
         coEvery { blobRead() } answers {
             generation++
-            thirdArg<(ByteArray) -> Result<ConfiguredAdRewards>?>()(currencyBlob.toByteArray())
+            currencyBlob.toByteArray()
         }
         assertThat(provider.rewards("unit")).isNull()
-        verify { logHandler.w(any(), match { it.contains("changed while resolving") }) }
         coVerify(exactly = 2) { blobRead() }
     }
 
@@ -184,7 +183,7 @@ class ConfiguredAdRewardsProviderTest {
                 started.complete(Unit)
                 release.await()
             }
-            thirdArg<(ByteArray) -> Result<ConfiguredAdRewards>?>()(currencyBlob.toByteArray())
+            currencyBlob.toByteArray()
         }
         val first = async { provider.rewards("unit") }
         started.await()
@@ -211,7 +210,7 @@ class ConfiguredAdRewardsProviderTest {
         val results = mutableListOf<ConfiguredAdRewards?>()
         var payload: String? = "{}"
         coEvery { blobRead() } answers {
-            payload?.let { thirdArg<(ByteArray) -> Result<ConfiguredAdRewards>?>()(it.toByteArray()) }
+            payload?.toByteArray()
         }
         callbackProvider.getRewards("unit") { results.add(it) }
         payload = null
@@ -228,12 +227,12 @@ class ConfiguredAdRewardsProviderTest {
         verify(exactly = 0) { manager.close() }
     }
 
-    private suspend fun MockKMatcherScope.blobRead(): Result<ConfiguredAdRewards>? =
-        manager.blobData(RemoteConfigTopic.AdRewards, "default", any<(ByteArray) -> Result<ConfiguredAdRewards>?>())
+    private suspend fun MockKMatcherScope.blobRead(): ByteArray? =
+        manager.blobData(RemoteConfigTopic.AdRewards, "default", any<(ByteArray) -> ByteArray?>())
 
     private fun returnBlob(json: String) {
         coEvery { blobRead() } answers {
-            thirdArg<(ByteArray) -> Result<ConfiguredAdRewards>?>()(json.toByteArray())
+            json.toByteArray()
         }
     }
 }
