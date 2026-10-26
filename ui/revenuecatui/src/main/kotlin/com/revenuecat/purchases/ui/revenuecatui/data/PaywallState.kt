@@ -248,8 +248,11 @@ internal sealed interface PaywallState {
                 currentDate = dateProvider(),
             )
 
+            private val initialPackageCandidates = packages.packagesOutsideTabs +
+                packages.packagesByTab[initialSelectedTabIndex ?: 0].orEmpty()
+
             private val initialSelectedPackageOutsideTabs = packages.packagesOutsideTabs
-                .firstOrNull { it.isSelectedByDefault && it.resolvesVisible(initialVisibilityContext) }
+                .authoredDefaultSelection(initialVisibilityContext, initialPackageCandidates)
                 ?.uniqueId
 
             /**
@@ -258,7 +261,7 @@ internal sealed interface PaywallState {
              */
             private val visibleFallbackForHiddenDefaultOutsideTabs = packages.packagesOutsideTabs
                 .takeIf { infos -> infos.any { it.isSelectedByDefault } }
-                ?.firstOrNull { it.resolvesVisible(initialVisibilityContext) }
+                ?.firstOrNull { it.canSelect(initialVisibilityContext, initialPackageCandidates) }
                 ?.uniqueId
             private val tabsByUniqueId: Map<String, Set<Int>> = mutableMapOf<String, Set<Int>>().apply {
                 packages.packagesByTab.forEach { (tabIndex, packagesList) ->
@@ -312,7 +315,10 @@ internal sealed interface PaywallState {
             private val selectedPackageByTab = mutableStateMapOf<Int, String?>().apply {
                 putAll(
                     packages.packagesByTab.mapValues { (index, packagesList) ->
-                        packagesList.defaultSelection(initialVisibilityContext.withSelectedTab(index))?.uniqueId
+                        packagesList.defaultSelection(
+                            initialVisibilityContext.withSelectedTab(index),
+                            packages.packagesOutsideTabs + packagesList,
+                        )?.uniqueId
                     },
                 )
             }
@@ -322,7 +328,6 @@ internal sealed interface PaywallState {
 
             private val initialSelectedPackageUniqueId: String? = initialSelectedPackageOutsideTabs
                 ?: selectedPackageByTab[selectedTabIndex]
-                ?: packages.packagesByTab[selectedTabIndex]?.defaultSelection(initialVisibilityContext)?.uniqueId
                 // Last, so a default declared inside a tab still wins.
                 ?: visibleFallbackForHiddenDefaultOutsideTabs
 
