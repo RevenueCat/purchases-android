@@ -706,6 +706,87 @@ internal class TextComponentViewVariablesTests(
                     "83%"
                 )
 
+                Variable.PRODUCT_ABSOLUTE_DISCOUNT -> arrayOf(
+                    "{{ ${variableName.identifier} }}",
+                    Args(
+                        packages = listOf(packageYearlyUsdTwoOffers, packageMonthlyUsdOneOffer),
+                        locale = "en_US",
+                        storefrontCountryCode = "US",
+                        variableLocalizations = variableLocalizationKeysForEnUs(),
+                    ),
+                    // 1.00 * 12 - 2.00
+                    "\$10.00"
+                )
+
+                Variable.PRODUCT_OFFER_RELATIVE_DISCOUNT -> arrayOf(
+                    "{{ ${variableName.identifier} }}",
+                    Args(
+                        packages = listOf(packageYearlyUsdTwoOffers, packageMonthlyUsdOneOffer),
+                        locale = "en_US",
+                        storefrontCountryCode = "US",
+                        variableLocalizations = variableLocalizationKeysForEnUs(),
+                    ),
+                    // The intro month costs more than a month of the plan, so the first year saves nothing.
+                    ""
+                )
+
+                Variable.PRODUCT_OFFER_ABSOLUTE_DISCOUNT -> arrayOf(
+                    "{{ ${variableName.identifier} }}",
+                    Args(
+                        packages = listOf(packageYearlyUsdTwoOffers, packageMonthlyUsdOneOffer),
+                        locale = "en_US",
+                        storefrontCountryCode = "US",
+                        variableLocalizations = variableLocalizationKeysForEnUs(),
+                    ),
+                    ""
+                )
+
+                Variable.PRODUCT_RELATIVE_DISCOUNT_WITH_OFFER -> arrayOf(
+                    "{{ ${variableName.identifier} }}",
+                    Args(
+                        packages = listOf(packageYearlyUsdTwoOffers, packageMonthlyUsdOneOffer),
+                        locale = "en_US",
+                        storefrontCountryCode = "US",
+                        variableLocalizations = variableLocalizationKeysForEnUs(),
+                    ),
+                    // The 1.00 intro month costs the same as a month of the most expensive package.
+                    ""
+                )
+
+                Variable.PRODUCT_ABSOLUTE_DISCOUNT_WITH_OFFER -> arrayOf(
+                    "{{ ${variableName.identifier} }}",
+                    Args(
+                        packages = listOf(packageYearlyUsdTwoOffers, packageMonthlyUsdOneOffer),
+                        locale = "en_US",
+                        storefrontCountryCode = "US",
+                        variableLocalizations = variableLocalizationKeysForEnUs(),
+                    ),
+                    ""
+                )
+
+                Variable.PRODUCT_RELATIVE_DISCOUNT_WITH_OFFER_FULL_PERIOD -> arrayOf(
+                    "{{ ${variableName.identifier} }}",
+                    Args(
+                        packages = listOf(packageYearlyUsdTwoOffers, packageMonthlyUsdOneOffer),
+                        locale = "en_US",
+                        storefrontCountryCode = "US",
+                        variableLocalizations = variableLocalizationKeysForEnUs(),
+                    ),
+                    "77%"
+                )
+
+                Variable.PRODUCT_ABSOLUTE_DISCOUNT_WITH_OFFER_FULL_PERIOD -> arrayOf(
+                    "{{ ${variableName.identifier} }}",
+                    Args(
+                        packages = listOf(packageYearlyUsdTwoOffers, packageMonthlyUsdOneOffer),
+                        locale = "en_US",
+                        storefrontCountryCode = "US",
+                        variableLocalizations = variableLocalizationKeysForEnUs(),
+                    ),
+                    // 1.00 * 12 - (free week + 1.00 intro month + 2.00 * 328 / 365)
+                    "\$9.20"
+                )
+
                 Variable.PRODUCT_STORE_PRODUCT_NAME -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(

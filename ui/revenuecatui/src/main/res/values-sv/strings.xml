@@ -24,4 +24,13 @@
     <string name="revenuecatui_purchase">Köp</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
     <string name="revenuecatui_preview_workflow_load_error">Förhandsvisningens arbetsflöde kunde inte läsas in. Försök igen.</string>
+    <string name="revenuecatui_checkpoint_error_network">Det gick inte att ansluta. Kontrollera din internetanslutning och försök igen.</string>
+    <string name="revenuecatui_checkpoint_error_load">Det här innehållet kunde inte läsas in. Försök igen senare.</string>
+    <string name="revenuecatui_checkpoint_error_store">Det uppstod ett problem med butiken. Försök igen senare.</string>
+    <string name="revenuecatui_checkpoint_error_purchase_not_allowed">Köp är inte tillåtna på den här enheten.</string>
+    <string name="revenuecatui_checkpoint_error_product_unavailable">Den här produkten är inte tillgänglig just nu.</string>
+    <string name="revenuecatui_checkpoint_error_already_purchased">Du äger redan den här produkten.</string>
+    <string name="revenuecatui_checkpoint_error_payment_pending">Din betalning väntar på behandling. Du får åtkomst när den har godkänts.</string>
+    <string name="revenuecatui_checkpoint_error_generic">Något gick fel. Försök igen.</string>
+    <string name="revenuecatui_checkpoint_error_sync">Dina köp kunde inte verifieras. Försök igen senare.</string>
 </resources>

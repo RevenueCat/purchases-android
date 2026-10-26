@@ -370,6 +370,9 @@ public data class CustomerCenterConfigData(
             @SerialName("shared_through_family_member")
             SHARED_THROUGH_FAMILY_MEMBER,
 
+            @SerialName("assigned_through_organization")
+            ASSIGNED_THROUGH_ORGANIZATION,
+
             @SerialName("product_id")
             PRODUCT_ID,
 
@@ -519,6 +522,7 @@ public data class CustomerCenterConfigData(
                     INTRODUCTORY_PRICE -> "Introductory Price"
                     TRIAL_PERIOD -> "Trial Period"
                     SHARED_THROUGH_FAMILY_MEMBER -> "Shared through family member"
+                    ASSIGNED_THROUGH_ORGANIZATION -> "Assigned through your organization"
                     PRODUCT_ID -> "Product ID"
                     SANDBOX -> "Sandbox"
                     TRANSACTION_ID -> "Transaction ID"

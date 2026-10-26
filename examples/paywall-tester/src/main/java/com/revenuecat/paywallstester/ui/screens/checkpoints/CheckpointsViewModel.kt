@@ -4,23 +4,26 @@ package com.revenuecat.paywallstester.ui.screens.checkpoints
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.revenuecat.paywallstester.data.RecentCheckpointsStore
 import com.revenuecat.paywallstester.ui.screens.checkpoints.CheckpointsViewModel.CheckpointResultUi
 import com.revenuecat.paywallstester.ui.screens.checkpoints.CheckpointsViewModel.UiState
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowPresentationMode
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowResult
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 interface CheckpointsViewModel {
     data class CheckpointResultUi(
@@ -32,6 +35,7 @@ interface CheckpointsViewModel {
 
     data class UiState(
         val recents: List<String> = emptyList(),
+        val configured: List<String> = emptyList(),
         val waitingFor: String? = null,
         val lastResult: CheckpointResultUi? = null,
         val presentWithAppPaywall: Boolean = false,
@@ -53,6 +57,8 @@ interface CheckpointsViewModel {
     val errorRequest: StateFlow<AppErrorPresenter.Request?>
 
     fun hit(identifier: String)
+
+    fun refreshConfigured()
 
     fun setPresentWithAppPaywall(enabled: Boolean)
 
@@ -111,6 +117,14 @@ internal class CheckpointsViewModelImpl(
         }
     }
 
+    @OptIn(InternalRevenueCatAPI::class)
+    override fun refreshConfigured() {
+        viewModelScope.launch {
+            val configured = Purchases.sharedInstance.awaitGetCheckpointIds()
+            _state.update { it.copy(configured = configured) }
+        }
+    }
+
     override fun setPresentWithAppPaywall(enabled: Boolean) {
         _state.update { it.copy(presentWithAppPaywall = enabled) }
     }
@@ -154,23 +168,26 @@ internal class CheckpointsViewModelImpl(
     }
 
     // Why nothing was presented, and any failure, are in the SDK logs.
-    private fun FlowResult?.toUi(): CheckpointResultUi = if (this == null) {
-        CheckpointResultUi(
+    private fun CheckpointResult.toUi(): CheckpointResultUi {
+        val activeNow = "Active now: ${customer.entitlements.active.keys.joinToString().ifEmpty { "none" }}"
+        val raw = "flow=$flow, originalAppUserId=${customer.originalAppUserId}"
+        val flow = flow ?: return CheckpointResultUi(
             title = "Nothing presented",
-            detail = "See the logs for the reason.",
+            detail = "See the logs for the reason. $activeNow",
             isError = false,
-            raw = "null",
+            raw = raw,
         )
-    } else {
-        CheckpointResultUi(
+        return CheckpointResultUi(
             title = "Flow presented",
-            detail = if (obtainedEntitlements.isNotEmpty()) {
-                "Obtained ${obtainedEntitlements.joinToString { it.entitlementInfo.identifier }}"
+            detail = if (flow.obtainedEntitlements.isNotEmpty() || flow.obtainedProducts.isNotEmpty()) {
+                val entitlements = flow.obtainedEntitlements.joinToString { it.entitlementInfo.identifier }
+                val products = flow.obtainedProducts.joinToString { it.product.purchasingData.productId }
+                "Obtained entitlements: $entitlements, products: $products. $activeNow"
             } else {
-                "Nothing obtained"
+                "Nothing obtained. $activeNow"
             },
             isError = false,
-            raw = toString(),
+            raw = raw,
         )
     }
 }

@@ -345,6 +345,12 @@ public enum class OwnershipType {
     FAMILY_SHARED,
 
     /**
+     * The purchase has been assigned to this user through an organization.
+     */
+    @SerialName("ASSIGNED")
+    ASSIGNED,
+
+    /**
      * The purchase has no or an unknown ownership type.
      */
     @SerialName("UNKNOWN")

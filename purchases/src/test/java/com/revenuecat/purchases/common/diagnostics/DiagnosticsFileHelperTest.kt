@@ -23,7 +23,7 @@ class DiagnosticsFileHelperTest {
     private val testDiagnosticsEntry = DiagnosticsEntry(
         name = DiagnosticsEntryName.HTTP_REQUEST_PERFORMED,
         properties = emptyMap(),
-        appSessionID = UUID.randomUUID(),
+        diagnosticsSessionID = UUID.randomUUID(),
     )
     private val diagnosticsFilePath = DiagnosticsFileHelper.DIAGNOSTICS_FILE_PATH
 

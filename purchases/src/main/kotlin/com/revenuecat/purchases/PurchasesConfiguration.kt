@@ -215,10 +215,15 @@ public open class PurchasesConfiguration(builder: Builder) {
         }
 
         /**
-         * Enabling diagnostics will send some performance and debugging information from the SDK to our servers.
-         * Examples of this information include response times, cache hits or error codes.
+         * Enabling diagnostics sends performance and debugging information from the SDK to RevenueCat,
+         * including response times, cache hits, and error codes.
          * No personal identifiable information will be collected.
-         * The default value is false.
+         *
+         * Diagnostics are not sent to RevenueCat by default. They can be enabled locally by calling this method
+         * with `true`, or remotely only at the developer's request or with their explicit approval. A remote
+         * setting takes precedence over the value configured here.
+         *
+         * Defaults to `false`.
          */
         public fun diagnosticsEnabled(diagnosticsEnabled: Boolean): Builder = apply {
             this.diagnosticsEnabled = diagnosticsEnabled

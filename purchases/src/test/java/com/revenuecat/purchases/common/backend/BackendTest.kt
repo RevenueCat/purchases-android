@@ -75,12 +75,14 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.io.IOException
+import java.net.SocketTimeoutException
 import java.net.URL
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 private const val API_KEY = "TEST_API_KEY"
 
@@ -1595,6 +1597,62 @@ class BackendTest {
         assertThat(requestBodySlot.isCaptured).isTrue
         assertThat(requestBodySlot.captured["presented_offering_identifier"]).isEqualTo("offering_a")
         assertThat(requestBodySlot.captured["presented_placement_identifier"]).isEqualTo("placement_a")
+        assertThat(requestBodySlot.captured.keys).doesNotContain("presented_checkpoint_identifier")
+        assertThat(requestBodySlot.captured.keys).doesNotContain("presented_trace_id")
+    }
+
+    @Test
+    fun `postReceipt passes presented_checkpoint_identifier in body`() {
+        val context = PresentedOfferingContext("offering_a")
+            .copyWithCheckpointIdentifier("onboarding_paywall")
+        val receiptInfo = createReceiptInfoFromProduct(
+            productIDs = productIDs,
+            storeProduct = storeProduct,
+            presentedOfferingContext = context,
+            storeUserID = "id",
+        )
+
+        mockPostReceiptResponseAndPost(
+            backend,
+            responseCode = 200,
+            isRestore = false,
+            clientException = null,
+            resultBody = null,
+            finishTransactions = false,
+            receiptInfo = receiptInfo,
+            initiationSource = initiationSource,
+        )
+
+        assertThat(requestBodySlot.isCaptured).isTrue
+        assertThat(requestBodySlot.captured["presented_checkpoint_identifier"])
+            .isEqualTo("onboarding_paywall")
+    }
+
+    @Test
+    fun `postReceipt passes presented_trace_id in body`() {
+        val context = PresentedOfferingContext("offering_a")
+            .copyWithCheckpointIdentifier("onboarding_paywall")
+            .copyWithTraceId("trace_a")
+        val receiptInfo = createReceiptInfoFromProduct(
+            productIDs = productIDs,
+            storeProduct = storeProduct,
+            presentedOfferingContext = context,
+            storeUserID = "id",
+        )
+
+        mockPostReceiptResponseAndPost(
+            backend,
+            responseCode = 200,
+            isRestore = false,
+            clientException = null,
+            resultBody = null,
+            finishTransactions = false,
+            receiptInfo = receiptInfo,
+            initiationSource = initiationSource,
+        )
+
+        assertThat(requestBodySlot.isCaptured).isTrue
+        assertThat(requestBodySlot.captured["presented_trace_id"]).isEqualTo("trace_a")
     }
 
     @Test
@@ -1719,6 +1777,68 @@ class BackendTest {
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
+            mockClient.performRequest(
+                mockBaseURL,
+                Endpoint.GetOfferings(appUserID),
+                body = null,
+                postFieldsToSign = null,
+                any(),
+                iamAppUserID = any(),
+            )
+        }
+    }
+
+    @Test
+    fun `timed out offerings request releases coalesced callers and allows a later request`() {
+        val firstRequestStarted = CountDownLatch(1)
+        val releaseFirstRequest = CountDownLatch(1)
+        val requestCount = AtomicInteger(0)
+        every {
+            mockClient.performRequest(
+                mockBaseURL,
+                Endpoint.GetOfferings(appUserID),
+                body = null,
+                postFieldsToSign = null,
+                any(),
+                iamAppUserID = any(),
+            )
+        } answers {
+            if (requestCount.incrementAndGet() == 1) {
+                firstRequestStarted.countDown()
+                assertThat(releaseFirstRequest.await(defaultTimeout, TimeUnit.MILLISECONDS)).isTrue()
+                throw SocketTimeoutException("Read timed out")
+            }
+            HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS, noOfferingsResponse)
+        }
+
+        val coalescedErrors = CountDownLatch(2)
+        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _, _ ->
+            fail<Unit>("Should be error")
+        }, onError = { _, _ ->
+            coalescedErrors.countDown()
+        })
+        assertThat(firstRequestStarted.await(defaultTimeout, TimeUnit.MILLISECONDS)).isTrue()
+        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _, _ ->
+            fail<Unit>("Should be error")
+        }, onError = { _, _ ->
+            coalescedErrors.countDown()
+        })
+
+        releaseFirstRequest.countDown()
+
+        assertThat(coalescedErrors.await(defaultTimeout, TimeUnit.MILLISECONDS)).isTrue()
+        assertThat(requestCount).hasValue(1)
+
+        val laterSuccess = CountDownLatch(1)
+        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _, _ ->
+            laterSuccess.countDown()
+        }, onError = { _, _ ->
+            fail<Unit>("Should be success")
+        })
+
+        assertThat(laterSuccess.await(defaultTimeout, TimeUnit.MILLISECONDS)).isTrue()
+        assertThat(requestCount).hasValue(2)
+        verify(exactly = 2) {
             mockClient.performRequest(
                 mockBaseURL,
                 Endpoint.GetOfferings(appUserID),
@@ -3272,6 +3392,8 @@ class BackendTest {
             "is_restore" to isRestore,
             "presented_offering_identifier" to receiptInfo.presentedOfferingContext?.offeringIdentifier,
             "presented_placement_identifier" to receiptInfo.presentedOfferingContext?.placementIdentifier,
+            "presented_checkpoint_identifier" to receiptInfo.presentedOfferingContext?.checkpointIdentifier,
+            "presented_trace_id" to receiptInfo.presentedOfferingContext?.traceId,
             "observer_mode" to !finishTransactions,
             "price" to receiptInfo.price,
             "currency" to receiptInfo.currency,

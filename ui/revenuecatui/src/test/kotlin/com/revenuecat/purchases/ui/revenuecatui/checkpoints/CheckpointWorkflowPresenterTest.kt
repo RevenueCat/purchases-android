@@ -3,6 +3,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
 import android.app.Activity
+import androidx.activity.ComponentDialog
 import android.os.Looper
 import android.view.View
 import android.view.WindowManager
@@ -11,6 +12,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
@@ -64,18 +66,19 @@ class CheckpointWorkflowPresenterTest {
         controller = Robolectric.buildActivity(Activity::class.java).setup()
         mockPurchases = mockk {
             every { currentActivity } answers { controller.get() }
+            every { preferredUILocaleOverride } returns null
             coEvery { internalResolveCp(any(), any()) } returns
                 CheckpointResolution.MatchedWorkflow(
                     mockk(),
                     mockk(),
-                    mockk(),
+                    mockk<Offerings> { every { all } returns emptyMap() },
                     checkpointRuleId = null,
                     traceId = "trace-id",
                     workflowBlobRef = null,
                 )
-            every { getCustomerInfo(CacheFetchPolicy.CACHE_ONLY, any()) } answers {
+            every { getCustomerInfo(CacheFetchPolicy.CACHED_OR_FETCHED, any()) } answers {
                 secondArg<ReceiveCustomerInfoCallback>()
-                    .onError(PurchasesError(PurchasesErrorCode.CustomerInfoError, "No cache."))
+                    .onReceived(mockk { every { entitlements.active } returns emptyMap() })
             }
         }
         manager = CheckpointsManager(
@@ -115,7 +118,7 @@ class CheckpointWorkflowPresenterTest {
         val resolution = CheckpointResolution.MatchedWorkflow(
             mockk(),
             mockk(),
-            mockk(),
+            mockk<Offerings> { every { all } returns emptyMap() },
             checkpointRuleId = null,
             traceId = "trace-id",
             workflowBlobRef = null,
@@ -332,11 +335,19 @@ class CheckpointWorkflowPresenterTest {
     }
 
     @Test
-    fun `a failed re-present with no recorded outcome completes with an error instead of a dismissal`() {
+    fun `a failed re-present with no recorded outcome presents the error and completes with it once acknowledged`() {
         launchCheckpoint()
         contentFactory = { throw IllegalStateException("content failed") }
 
         controller.recreate()
+
+        assertThat(result).isNull()
+        // The SDK's error dialog is a Compose dialog (a ComponentDialog subclass) inside a plain ComponentDialog
+        // window of its own; cancelling that window acknowledges the error, as the dialog's OK does.
+        val errorWindow = ShadowDialog.getShownDialogs()
+            .last { it.isShowing && it::class.java == ComponentDialog::class.java }
+        errorWindow.cancel()
+        shadowOf(Looper.getMainLooper()).idle()
 
         val outcome = paywallOutcome()
         assertThat(outcome).isInstanceOf(CheckpointFlowOutcome.Error::class.java)

@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.sdksettings
 
 import com.revenuecat.purchases.JsonTools
+import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.common.errorLog
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
@@ -39,5 +40,12 @@ internal data class SdkSettings(
 
 @Serializable
 internal data class DiagnosticsSettings(
+    /**
+     * The remotely configured diagnostics preference.
+     *
+     * This value is set only at the developer's request or with their explicit approval. When present, it takes
+     * precedence over [PurchasesConfiguration.Builder.diagnosticsEnabled]. `null` leaves the local configuration
+     * unchanged.
+     */
     val enabled: Boolean? = null,
 )

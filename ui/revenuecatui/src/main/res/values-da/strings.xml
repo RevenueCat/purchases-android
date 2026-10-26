@@ -24,4 +24,13 @@
     <string name="revenuecatui_purchase">Køb</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
     <string name="revenuecatui_preview_workflow_load_error">Forhåndsvisningens workflow kunne ikke indlæses. Prøv igen.</string>
+    <string name="revenuecatui_checkpoint_error_network">Kunne ikke oprette forbindelse. Tjek din internetforbindelse, og prøv igen.</string>
+    <string name="revenuecatui_checkpoint_error_load">Dette indhold kunne ikke indlæses. Prøv igen senere.</string>
+    <string name="revenuecatui_checkpoint_error_store">Der opstod et problem med butikken. Prøv igen senere.</string>
+    <string name="revenuecatui_checkpoint_error_purchase_not_allowed">Køb er ikke tilladt på denne enhed.</string>
+    <string name="revenuecatui_checkpoint_error_product_unavailable">Dette produkt er ikke tilgængeligt lige nu.</string>
+    <string name="revenuecatui_checkpoint_error_already_purchased">Du ejer allerede dette produkt.</string>
+    <string name="revenuecatui_checkpoint_error_payment_pending">Din betaling afventer. Du får adgang, når den er godkendt.</string>
+    <string name="revenuecatui_checkpoint_error_generic">Noget gik galt. Prøv igen.</string>
+    <string name="revenuecatui_checkpoint_error_sync">Dine køb kunne ikke bekræftes. Prøv igen senere.</string>
 </resources>

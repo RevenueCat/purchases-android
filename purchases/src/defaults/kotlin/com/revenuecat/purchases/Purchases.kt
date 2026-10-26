@@ -40,6 +40,7 @@ import com.revenuecat.purchases.common.workflows.WorkflowStepID
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.DeepLinkParser
+import com.revenuecat.purchases.identity.Authentication
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
@@ -136,6 +137,14 @@ public class Purchases internal constructor(
      */
     public val appUserID: String
         @Synchronized get() = purchasesOrchestrator.appUserID
+
+    /**
+     * IAM login and logout, for other RevenueCat SDKs. Requires
+     * `PurchasesConfiguration.Builder.iamEnabled(true)`; see [Authentication].
+     */
+    @InternalRevenueCatAPI
+    public val authentication: Authentication
+        get() = purchasesOrchestrator.authentication
 
     /**
      * The storefront country code in ISO-3166-1 alpha2.
@@ -473,6 +482,16 @@ public class Purchases internal constructor(
     @Throws(PurchasesException::class)
     public suspend fun awaitGetUiConfig(): UiConfig = purchasesOrchestrator.getUiConfig()
 
+    /** Every workflow id in the synced config, including ones that claim no offering. For internal test apps. */
+    @InternalRevenueCatAPI
+    @JvmSynthetic
+    public suspend fun awaitGetWorkflowIds(): List<String> = purchasesOrchestrator.workflowIds()
+
+    /** Every checkpoint id in the synced config. For internal test apps. */
+    @InternalRevenueCatAPI
+    @JvmSynthetic
+    public suspend fun awaitGetCheckpointIds(): List<String> = purchasesOrchestrator.checkpointIds()
+
     @InternalRevenueCatAPI
     @JvmSynthetic
     public suspend fun resolveWorkflow(offeringId: String): WorkflowResolution =
@@ -685,6 +704,38 @@ public class Purchases internal constructor(
         callback: GetVirtualCurrenciesCallback,
     ) {
         purchasesOrchestrator.getVirtualCurrencies(callback = callback)
+    }
+
+    /**
+     * Spends virtual currencies for the current subscriber. Requires the SDK to be configured with
+     * [PurchasesConfiguration.Builder.iamEnabled]; otherwise the callback receives an
+     * [PurchasesErrorCode.UnsupportedError].
+     *
+     * @param amounts How much of each currency to spend, keyed by currency code. Non-positive amounts are ignored;
+     * if none are left, nothing is spent and the callback receives the current balances.
+     * @param reference An optional app-specific reference for this transaction.
+     * @param callback Called with the subscriber's balances after the spend.
+     */
+    @InternalRevenueCatAPI
+    public fun spendVirtualCurrencies(
+        amounts: Map<String, Int>,
+        reference: String? = null,
+        callback: GetVirtualCurrenciesCallback,
+    ) {
+        purchasesOrchestrator.spendVirtualCurrencies(amounts, reference, callback)
+    }
+
+    /**
+     * Spends [amount] of the virtual currency [code]. See [spendVirtualCurrencies].
+     */
+    @InternalRevenueCatAPI
+    public fun spendVirtualCurrency(
+        code: String,
+        amount: Int,
+        reference: String? = null,
+        callback: GetVirtualCurrenciesCallback,
+    ) {
+        spendVirtualCurrencies(mapOf(code to amount), reference, callback)
     }
 
     /**
