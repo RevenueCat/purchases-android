@@ -17,7 +17,6 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
 import com.revenuecat.purchases.common.localrules.RulesDimensionValue
-import com.revenuecat.purchases.common.workflows.WorkflowStep
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
@@ -27,8 +26,6 @@ import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
-import com.revenuecat.purchases.ui.revenuecatui.workflow.CheckpointWorkflowGateController
-import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowGateDecision
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
@@ -47,8 +44,6 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonObject
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -405,16 +400,10 @@ class CheckpointsManagerTest {
         every { mockPurchases.appUserID } returns "customer-b"
         val customerInfo = customerInfoWithActive("pro")
         cacheResult.captured.onReceived(customerInfo)
-        val controller = CheckpointWorkflowGateController { mockPurchases.appUserID }
-        controller.reset(manager.paywallOptions(currentCallId()) {}!!.checkpointGateContext)
-        val step = WorkflowStep(
-            id = "hard", type = "screen", screenId = "screen",
-            paramValues = mapOf("gating" to Json.parseToJsonElement(
-                """{"type":"hard","entitlement_identifiers":["pro"]}""",
-            ).jsonObject),
-        )
+        val context = manager.paywallOptions(currentCallId()) {}!!.checkpointGateContext!!
+        assertThat(context.initialAppUserId).isEqualTo("customer-a")
 
-        assertThat(controller.evaluate(step)).isEqualTo(WorkflowGateDecision.BLOCKED)
+        context.onOutcomeChanged(CheckpointGateOutcome.NOT_PASSED)
         finishPaywall(outcome = CheckpointFlowOutcome.Restored(customerInfo), navigatedBack = true)
         call.join()
 
