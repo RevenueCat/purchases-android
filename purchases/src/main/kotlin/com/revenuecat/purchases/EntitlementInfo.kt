@@ -2,6 +2,7 @@ package com.revenuecat.purchases
 
 import android.os.Parcelable
 import com.revenuecat.purchases.common.Constants
+import com.revenuecat.purchases.common.toOwnershipType
 import com.revenuecat.purchases.models.RawDataContainer
 import com.revenuecat.purchases.utils.JSONObjectParceler
 import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
@@ -9,8 +10,14 @@ import dev.drewhamilton.poko.Poko
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.TypeParceler
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import org.json.JSONObject
 import java.util.Date
 
@@ -357,8 +364,15 @@ public enum class OwnershipType {
     UNKNOWN,
 }
 
-internal object OwnershipTypeSerializer : EnumDeserializerWithDefault<OwnershipType>(
-    serialName = "com.revenuecat.purchases.OwnershipType",
-    defaultValue = OwnershipType.UNKNOWN,
-    typeForValue = { value -> value.name },
-)
+internal object OwnershipTypeSerializer : KSerializer<OwnershipType> {
+    override val descriptor: SerialDescriptor =
+        PrimitiveSerialDescriptor("com.revenuecat.purchases.OwnershipType", PrimitiveKind.STRING)
+
+    override fun deserialize(decoder: Decoder): OwnershipType {
+        return decoder.decodeString().toOwnershipType()
+    }
+
+    override fun serialize(encoder: Encoder, value: OwnershipType) {
+        throw NotImplementedError("Serialization is not implemented because it is not needed.")
+    }
+}
