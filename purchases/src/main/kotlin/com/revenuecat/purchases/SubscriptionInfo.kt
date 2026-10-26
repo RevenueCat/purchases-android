@@ -2,7 +2,6 @@ package com.revenuecat.purchases
 
 import android.net.Uri
 import com.revenuecat.purchases.common.responses.SubscriptionInfoResponse
-import com.revenuecat.purchases.common.toOwnershipType
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.utils.DateHelper
 import com.revenuecat.purchases.utils.EntitlementInfoHelper
@@ -267,7 +266,7 @@ public class SubscriptionInfo(
         unsubscribeDetectedAt = response.unsubscribeDetectedAt,
         billingIssuesDetectedAt = response.billingIssuesDetectedAt,
         gracePeriodExpiresDate = response.gracePeriodExpiresDate,
-        ownershipType = response.ownershipType.toOwnershipType(),
+        ownershipType = OwnershipType.fromString(response.ownershipType),
         periodType = response.periodType,
         refundedAt = response.refundedAt,
         storeTransactionId = response.storeTransactionId,

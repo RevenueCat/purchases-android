@@ -529,10 +529,14 @@ class CustomerInfoTest {
 
     @Test
     fun `Test subscriptionsByProductIdentifier parses each known ownership type`() {
-        listOf(OwnershipType.PURCHASED, OwnershipType.FAMILY_SHARED, OwnershipType.ASSIGNED).forEach { ownershipType ->
+        mapOf(
+            "PURCHASED" to OwnershipType.PURCHASED,
+            "FAMILY_SHARED" to OwnershipType.FAMILY_SHARED,
+            "ASSIGNED" to OwnershipType.ASSIGNED,
+        ).forEach { (rawOwnershipType, ownershipType) ->
             val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
             val subscriptions = jsonObject.getJSONObject("subscriber").getJSONObject("subscriptions")
-            subscriptions.getJSONObject("pro").put("ownership_type", ownershipType.name)
+            subscriptions.getJSONObject("pro").put("ownership_type", rawOwnershipType)
 
             val customerInfo = createCustomerInfo(jsonObject)
 

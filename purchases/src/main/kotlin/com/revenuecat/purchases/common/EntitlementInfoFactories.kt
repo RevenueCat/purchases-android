@@ -64,14 +64,7 @@ internal fun JSONObject.optPeriodType(name: String) = when (optString(name)) {
     else -> PeriodType.NORMAL
 }
 
-internal fun JSONObject.optOwnershipType(name: String) = optString(name).toOwnershipType()
-
-internal fun String?.toOwnershipType() = when (this) {
-    "PURCHASED" -> OwnershipType.PURCHASED
-    "FAMILY_SHARED" -> OwnershipType.FAMILY_SHARED
-    "ASSIGNED" -> OwnershipType.ASSIGNED
-    else -> OwnershipType.UNKNOWN
-}
+internal fun JSONObject.optOwnershipType(name: String) = OwnershipType.fromString(optString(name))
 
 internal fun JSONObject.buildEntitlementInfo(
     identifier: String,
