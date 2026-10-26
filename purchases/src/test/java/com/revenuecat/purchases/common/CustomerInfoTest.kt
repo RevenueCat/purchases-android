@@ -515,6 +515,19 @@ class CustomerInfoTest {
     }
 
     @Test
+    fun `Test subscriptionsByProductIdentifier falls back to UNKNOWN for null ownership type`() {
+        val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
+        val subscriptions = jsonObject.getJSONObject("subscriber").getJSONObject("subscriptions")
+        subscriptions.getJSONObject("pro").put("ownership_type", JSONObject.NULL)
+
+        val customerInfo = createCustomerInfo(jsonObject)
+
+        assertThat(customerInfo.subscriptionsByProductIdentifier.keys).containsExactlyInAnyOrder("pro", "basic", "paused")
+        assertThat(customerInfo.subscriptionsByProductIdentifier["pro"]!!.ownershipType)
+            .isEqualTo(OwnershipType.UNKNOWN)
+    }
+
+    @Test
     fun `Test OwnershipType serializes to its backend value`() {
         OwnershipType.values().forEach { ownershipType ->
             val encoded = JsonProvider.defaultJson.encodeToString(OwnershipType.serializer(), ownershipType)

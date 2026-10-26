@@ -18,6 +18,8 @@ import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonPrimitive
 import org.json.JSONObject
 import java.util.Date
 
@@ -369,7 +371,13 @@ internal object OwnershipTypeSerializer : KSerializer<OwnershipType> {
         PrimitiveSerialDescriptor("com.revenuecat.purchases.OwnershipType", PrimitiveKind.STRING)
 
     override fun deserialize(decoder: Decoder): OwnershipType {
-        return decoder.decodeString().toOwnershipType()
+        // Null or non-string values fall back to UNKNOWN instead of failing the enclosing object.
+        val value = if (decoder is JsonDecoder) {
+            (decoder.decodeJsonElement() as? JsonPrimitive)?.takeIf { it.isString }?.content
+        } else {
+            decoder.decodeString()
+        }
+        return value.toOwnershipType()
     }
 
     override fun serialize(encoder: Encoder, value: OwnershipType) {
