@@ -46,17 +46,20 @@ internal fun PaywallState.Loaded.Components.heroInsetsFor(style: ComponentStyle)
 internal data class ResolvedHeroInsets(
     val root: StackComponentStyle,
     val hero: ComponentStyle?,
-    val owner: StackComponentStyle?,
+    val zLayerBranches: List<Pair<StackComponentStyle, ComponentStyle>>,
     val firstVisibleChildren: List<Pair<StackComponentStyle, ComponentStyle>>,
     private val identities: List<ComponentStyleIdentity> =
-        (listOfNotNull(root, hero, owner) + firstVisibleChildren.flatMap { listOf(it.first, it.second) })
+        (listOfNotNull(root, hero) + firstVisibleChildren.flatMap { listOf(it.first, it.second) })
             .map(::ComponentStyleIdentity),
 ) {
     fun firstVisibleChildFor(stack: StackComponentStyle): ComponentStyle? =
         firstVisibleChildren.firstOrNull { it.first === stack }?.second
 
+    fun exemptChildFor(stack: StackComponentStyle): ComponentStyle? =
+        zLayerBranches.firstOrNull { it.first === stack }?.second
+
     fun appliesTo(stack: StackComponentStyle): Boolean =
-        stack === owner || (stack === root && root.windowInsetsRoot == true && owner == null)
+        if (hero != null) exemptChildFor(stack) != null else stack === root && root.windowInsetsRoot == true
 }
 
 private data class FirstVisibleLeaf(
@@ -71,15 +74,18 @@ internal fun resolveHeroInsets(
     root: ComponentStyle,
     state: PaywallState.Loaded.Components,
 ): ResolvedHeroInsets? {
-    if (root !is StackComponentStyle) return null
+    // Header paywalls retain their existing overlay policy. Other layout roots resolve independently.
+    if (root !is StackComponentStyle || root.windowInsetsRoot != true || state.header != null) return null
     val leaf = firstVisibleLeaf(root, state)
     val firstChildren = leaf?.ancestors.orEmpty()
     val hero = leaf?.takeIf { it.fullWidthMedia }?.style
-    var owner: StackComponentStyle? = null
-    for ((stack, child) in firstChildren) {
-        if (child === hero && rememberDimensionIsZLayer(stack, state)) owner = stack
+    val zLayerBranches = mutableListOf<Pair<StackComponentStyle, ComponentStyle>>()
+    if (hero != null) {
+        for ((stack, child) in firstChildren) {
+            if (rememberDimensionIsZLayer(stack, state)) zLayerBranches.add(stack to child)
+        }
     }
-    val insets = ResolvedHeroInsets(root, hero, owner, firstChildren)
+    val insets = ResolvedHeroInsets(root, hero, zLayerBranches, firstChildren)
     val entries = mutableMapOf<ComponentStyleIdentity, ResolvedHeroInsets>()
     recordInsets(root, insets, entries)
     state.resolvedHeroInsets = state.resolvedHeroInsets + entries
@@ -95,8 +101,7 @@ private fun recordInsets(
     entries[ComponentStyleIdentity(style)] = insets
     // Wrapper stacks render in this same tree and must not fall back to stale factory inset hints.
     val children = when (style) {
-        is StackComponentStyle -> style.children + listOfNotNull(style.badge?.stackStyle) +
-            style.overrides.mapNotNull { it.properties.badgeStyle?.stackStyle }
+        is StackComponentStyle -> style.children
         is ButtonComponentStyle -> listOf(style.stackComponentStyle)
         is PackageComponentStyle -> listOf(style.stackComponentStyle)
         is CountdownComponentStyle -> listOfNotNull(

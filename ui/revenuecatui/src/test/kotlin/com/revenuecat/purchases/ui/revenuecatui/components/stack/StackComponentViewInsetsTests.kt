@@ -20,6 +20,7 @@ import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.unit.dp
 import androidx.core.graphics.Insets
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -59,13 +60,15 @@ class StackComponentViewInsetsTests {
 
     private val text = "dummyText"
     private val textKey = LocalizationKey("dummyKey")
+    private val innerTextKey = LocalizationKey("innerKey")
     private val localizations = nonEmptyMapOf(
-        LocaleId("en_US") to nonEmptyMapOf(textKey to LocalizationData.Text(text)),
+        LocaleId("en_US") to nonEmptyMapOf(
+            textKey to LocalizationData.Text(text),
+            innerTextKey to LocalizationData.Text("innerText"),
+        ),
     )
     private val styleFactory = StyleFactory(localizations = localizations)
 
-    // The root ZLayer of a paywall with a hero image offsets its other children below the status bar. The
-    // flag that enables this is set directly below, so the hero itself is not needed.
     private val component = StackComponent(
         components = listOf(
             TextComponent(text = textKey, color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb()))),
@@ -99,29 +102,84 @@ class StackComponentViewInsetsTests {
         assertEdgeBadgeInsets(TwoDimensionalAlignment.TOP_LEADING)
     }
 
-    private fun assertEdgeBadgeInsets(alignment: TwoDimensionalAlignment) = with(composeTestRule) {
+    @Test
+    fun `nested hero preserves overlay clearance at every ancestor ZLayer`() {
+        val nestedHero = StackComponent(
+            components = listOf(hero(), TextComponent(
+                text = innerTextKey, color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+            )),
+            dimension = Dimension.ZLayer(TwoDimensionalAlignment.TOP),
+        )
+        val hiddenSide = StackComponent(
+            visible = false,
+            components = listOf(hero(width = SizeConstraint.Fixed(120u))),
+        )
+        val root = StackComponent(
+            components = listOf(hiddenSide, StackComponent(components = listOf(nestedHero)), component),
+            dimension = Dimension.ZLayer(TwoDimensionalAlignment.TOP),
+        )
+        assertThat(composeTestRule.textTopOnFirstFrame(false, root)).isEqualTo(STATUS_BAR_PX)
+        val innerTop = composeTestRule.onNodeWithText("innerText").getUnclippedBoundsInRoot().top
+        assertThat(with(composeTestRule.density) { innerTop.roundToPx() }).isEqualTo(STATUS_BAR_PX)
+    }
+
+    @Test
+    fun `unrelated nested card below a hero does not gain safe area padding`() {
+        val root = StackComponent(components = listOf(
+            hero(),
+            StackComponent(
+                components = listOf(hero(), component),
+                dimension = Dimension.ZLayer(TwoDimensionalAlignment.TOP),
+            ),
+        ))
+        val expectedTop = with(composeTestRule.density) { 240.dp.roundToPx() }
+        assertThat(composeTestRule.textTopOnFirstFrame(false, root)).isEqualTo(expectedTop)
+    }
+
+    @Test
+    fun `top badge on hero stack retains its status bar clearance`() {
+        val root = StackComponent(
+            components = listOf(hero()),
+            dimension = Dimension.ZLayer(TwoDimensionalAlignment.TOP),
+            badge = Badge(stack = component, style = Badge.Style.EdgeToEdge, alignment = TwoDimensionalAlignment.TOP),
+        )
+        assertThat(composeTestRule.textTopOnFirstFrame(false, root)).isEqualTo(STATUS_BAR_PX)
+    }
+
+    @Test
+    fun `ancestor clearance is consumed before measuring a badge on a nested overlay`() {
+        assertEdgeBadgeInsets(TwoDimensionalAlignment.TOP, statusBarConsumedAbove = true)
+    }
+
+    private fun hero(width: SizeConstraint = SizeConstraint.Fill()): ImageComponent {
         val imageUrl = URL("https://example.com/hero.png")
-        val hero = ImageComponent(
+        return ImageComponent(
             source = ThemeImageUrls(light = ImageUrls(
                 original = imageUrl, webp = imageUrl, webpLowRes = imageUrl, width = 400u, height = 240u,
             )),
-            size = Size(SizeConstraint.Fill(), SizeConstraint.Fixed(240u)),
+            size = Size(width, SizeConstraint.Fixed(240u)),
         )
+    }
+
+    private fun assertEdgeBadgeInsets(
+        alignment: TwoDimensionalAlignment,
+        statusBarConsumedAbove: Boolean = false,
+    ) = with(composeTestRule) {
         val overlay = StackComponent(
             components = emptyList(),
             size = Size(SizeConstraint.Fill(), SizeConstraint.Fixed(160u)),
             badge = Badge(stack = component, style = Badge.Style.EdgeToEdge, alignment = alignment),
         )
         val root = StackComponent(
-            components = listOf(hero, overlay),
+            components = listOf(hero(), overlay),
             dimension = Dimension.ZLayer(TwoDimensionalAlignment.TOP),
         )
         val textTopPx = textTopOnFirstFrame(
-            statusBarConsumedAbove = false,
+            statusBarConsumedAbove = statusBarConsumedAbove,
             componentUnderTest = root,
             verifyStyle = { rootStyle ->
                 val overlayStyle = rootStyle.children[1] as StackComponentStyle
-                // The renderer copies this stack; its legacy inset hint must not be applied again.
+                // Consumed ancestor insets must prevent this legacy hint from adding padding twice.
                 assertThat(overlayStyle.badge!!.stackStyle.applyTopWindowInsets).isTrue()
             },
         )
@@ -152,7 +210,7 @@ class StackComponentViewInsetsTests {
             if (showStack) {
                 val stack: @Composable () -> Unit = {
                     StackComponentView(
-                        style = style.copy(applyTopWindowInsets = true),
+                        style = style,
                         state = state,
                         clickHandler = { },
                     )

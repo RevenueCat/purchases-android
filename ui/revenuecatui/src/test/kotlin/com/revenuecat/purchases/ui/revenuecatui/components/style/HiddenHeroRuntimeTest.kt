@@ -8,6 +8,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
+import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
@@ -56,28 +57,27 @@ internal class HiddenHeroRuntimeTest {
     }
 
     @Test
-    fun `nested vertical fill media preserves root top inset behavior`() {
+    fun `nested vertical fill media stays edge to edge`() {
         assertRootInsets(
             StackComponent(components = listOf(StackComponent(components = listOf(media())))),
             expectedHero = true,
-            expectedRootInsets = true,
-        )
-    }
-
-    @Test
-    fun `root configured without top insets keeps them disabled for ordinary content`() {
-        assertRootInsets(
-            StackComponent(components = listOf(StackComponent(components = emptyList()))),
-            expectedHero = false,
             expectedRootInsets = false,
-            requestedTopInsets = false,
         )
     }
 
     @Test
-    fun `identical media styles in body and header retain independent hero ownership`() {
+    fun `root configured without top insets retains its existing policy`() {
+        val root = StyleFactory().create(heroStack(), applyTopWindowInsets = false)
+            .getOrThrow().componentStyle as StackComponentStyle
+        val state = FakePaywallState()
+        composeTestRule.setContent { assertThat(resolveHeroInsets(root, state)).isNull() }
+        composeTestRule.runOnIdle { assertThat(state.heroInsetsFor(root)).isNull() }
+    }
+
+    @Test
+    fun `identical media styles in independent roots retain their own hero paths`() {
         val body = StyleFactory().create(heroStack()).getOrThrow().componentStyle as StackComponentStyle
-        val header = StyleFactory().create(heroStack(), applyTopWindowInsets = false)
+        val header = StyleFactory().create(heroStack())
             .getOrThrow().componentStyle as StackComponentStyle
         val bodyHero = body.children.single()
         val headerHero = header.children.single()
@@ -124,16 +124,91 @@ internal class HiddenHeroRuntimeTest {
                 resolveHeroInsets(root, state)
             }
         }
-        fun assertOwner(owner: StackComponentStyle) = composeTestRule.runOnIdle {
+        fun assertHeroBranch(owner: StackComponentStyle) = composeTestRule.runOnIdle {
             val insets = state.heroInsetsFor(root)!!
-            assertThat(insets.owner === owner).isTrue()
+            assertThat(insets.exemptChildFor(owner) === owner.children.single()).isTrue()
             assertThat(insets.hero === owner.children.single()).isTrue()
         }
-        assertOwner(first)
+        assertHeroBranch(first)
         composeTestRule.runOnIdle { width.value = 1000.dp }
-        assertOwner(second)
+        assertHeroBranch(second)
         composeTestRule.runOnIdle { width.value = 500.dp }
-        assertOwner(first)
+        assertHeroBranch(first)
+    }
+
+    @Test
+    fun `nested hero only exempts its branch at each ancestor ZLayer`() {
+        val hidden = StackComponent(visible = false, components = emptyList())
+        val hero = heroStack()
+        val wrapper = StackComponent(components = listOf(hidden, hero))
+        val root = StyleFactory().create(StackComponent(
+            components = listOf(hidden, wrapper, heroStack()),
+            dimension = Dimension.ZLayer(TwoDimensionalAlignment.TOP),
+        )).getOrThrow().componentStyle as StackComponentStyle
+        val wrapperStyle = root.children[1] as StackComponentStyle
+        val heroStyle = wrapperStyle.children[1] as StackComponentStyle
+        val unrelatedStyle = root.children[2] as StackComponentStyle
+        val state = FakePaywallState()
+        composeTestRule.setContent { resolveHeroInsets(root, state) }
+        composeTestRule.runOnIdle {
+            val insets = state.heroInsetsFor(root)!!
+            assertThat(insets.exemptChildFor(root) === wrapperStyle).isTrue()
+            assertThat(insets.exemptChildFor(heroStyle) === heroStyle.children.single()).isTrue()
+            assertThat(insets.appliesTo(wrapperStyle)).isFalse()
+            assertThat(insets.appliesTo(unrelatedStyle)).isFalse()
+        }
+    }
+
+    @Test
+    fun `header paywalls retain authored hero detection and insets across resizing`() {
+        val state = FakePaywallState(
+            components = listOf(
+                StackComponent(visible = false, components = listOf(media(width = SizeConstraint.Fixed(120u)))),
+                heroStack(),
+            ),
+            header = HeaderComponent(stack = StackComponent(components = emptyList())),
+        )
+        val originalHero = state.mainStackHasHeroImage
+        val width = mutableStateOf(500.dp)
+        composeTestRule.setContent {
+            MeasurePaywallBounds(state, Modifier.requiredSize(width.value, 1000.dp)) {
+                resolveHeroInsets(state.stack, state)
+            }
+        }
+        for (size in listOf(1000.dp, 500.dp)) {
+            composeTestRule.runOnIdle {
+                assertThat(state.heroInsetsFor(state.stack)).isNull()
+                assertThat(state.mainStackHasHeroImage).isEqualTo(originalHero)
+                width.value = size
+            }
+        }
+    }
+
+    @Test
+    fun `resolved dimensions determine which ancestors pad their overlays`() {
+        val root = StyleFactory().create(StackComponent(
+            components = listOf(media()),
+            overrides = listOf(ComponentOverride(
+                conditions = listOf(ComponentOverride.Condition.WindowWidthRule(
+                    ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL, 800.0,
+                )),
+                properties = PartialStackComponent(dimension = Dimension.ZLayer(TwoDimensionalAlignment.TOP)),
+            )),
+        )).getOrThrow().componentStyle as StackComponentStyle
+        val state = FakePaywallState()
+        val width = mutableStateOf(500.dp)
+        composeTestRule.setContent {
+            MeasurePaywallBounds(state, Modifier.requiredSize(width.value, 1000.dp)) {
+                resolveHeroInsets(root, state)
+            }
+        }
+        composeTestRule.runOnIdle {
+            assertThat(state.heroInsetsFor(root)!!.exemptChildFor(root)).isNull()
+            width.value = 1000.dp
+        }
+        composeTestRule.runOnIdle {
+            assertThat(state.heroInsetsFor(root)!!.exemptChildFor(root) === root.children.single()).isTrue()
+        }
     }
 
     @Test
@@ -226,9 +301,8 @@ internal class HiddenHeroRuntimeTest {
         component: StackComponent,
         expectedHero: Boolean,
         expectedRootInsets: Boolean,
-        requestedTopInsets: Boolean = true,
     ) {
-        val root = StyleFactory().create(component, applyTopWindowInsets = requestedTopInsets)
+        val root = StyleFactory().create(component)
             .getOrThrow().componentStyle as StackComponentStyle
         val state = FakePaywallState()
         composeTestRule.setContent { resolveHeroInsets(root, state) }
@@ -239,7 +313,7 @@ internal class HiddenHeroRuntimeTest {
         }
     }
 
-    private fun media() = ImageComponent(
+    private fun media(width: SizeConstraint = SizeConstraint.Fill()) = ImageComponent(
             source = ThemeImageUrls(light = ImageUrls(
                 original = URL("https://example.com/hero.png"),
                 webp = URL("https://example.com/hero.webp"),
@@ -247,7 +321,7 @@ internal class HiddenHeroRuntimeTest {
                 width = 400u,
                 height = 240u,
             )),
-            size = Size(SizeConstraint.Fill(), SizeConstraint.Fixed(240u)),
+            size = Size(width, SizeConstraint.Fixed(240u)),
         )
 
     private fun assertResponsiveOwnership(baseVisible: Boolean, wideVisible: Boolean, mobileHero: Boolean) {
@@ -281,7 +355,7 @@ internal class HiddenHeroRuntimeTest {
             val insets = state.heroInsetsFor(root)!!
             assertThat(insets.hero != null).isEqualTo(expected)
             assertThat(state.mainStackHasHeroImage).isEqualTo(expected)
-            assertThat(insets.owner === heroStack).isEqualTo(expected)
+            assertThat(insets.exemptChildFor(heroStack) === heroStack.children.single()).isEqualTo(expected)
             assertThat(insets.appliesTo(root)).isEqualTo(!expected)
             assertThat(insets.firstVisibleChildFor(root)).isEqualTo(root.children[if (expected) 1 else 0])
         }

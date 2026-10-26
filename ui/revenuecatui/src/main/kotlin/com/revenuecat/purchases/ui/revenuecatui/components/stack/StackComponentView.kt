@@ -345,7 +345,6 @@ private fun StackWithLongEdgeToEdgeBadge(
                     size = Size(width = Fill(), height = badgeStack.size.height),
                     border = null,
                     margin = PaddingValues(0.dp),
-                    applyTopWindowInsets = badgeStack.applyTopWindowInsets && state.heroInsetsFor(badgeStack) == null,
                 ),
                 state,
                 clickHandler,
@@ -569,10 +568,7 @@ private fun StackWithShortEdgeToEdgeBadge(
         interactionSource = interactionSource,
     ) {
         StackComponentView(
-            badgeStack.copy(
-                shape = Shape.Rectangle(adjustedCornerRadiuses),
-                applyTopWindowInsets = badgeStack.applyTopWindowInsets && state.heroInsetsFor(badgeStack) == null,
-            ),
+            badgeStack.copy(shape = Shape.Rectangle(adjustedCornerRadiuses)),
             state,
             clickHandler,
             componentInteractionTracker = componentInteractionTracker,
@@ -675,7 +671,8 @@ private fun MainStackComponent(
                             componentInteractionTracker = componentInteractionTracker,
                             modifier = childModifier
                                 .conditional(
-                                    stackState.appliesTopInsets(state) && !child.ignoresTopInsets(state),
+                                    stackState.appliesTopInsets(state) &&
+                                        !stackState.childIgnoresTopInsets(child, state),
                                 ) {
                                     windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
                                 }
@@ -715,7 +712,7 @@ private fun MainStackComponent(
                                     // first child, except when that child has `ignoreTopWindowInsets` set to true.
                                     stackState.appliesTopInsets(state) &&
                                         stackState.isFirstVisibleChild(child, index, state) &&
-                                        !child.ignoresTopInsets(state),
+                                        !stackState.childIgnoresTopInsets(child, state),
                                 ) {
                                     windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
                                 }
@@ -725,13 +722,15 @@ private fun MainStackComponent(
                 }
 
                 is Dimension.ZLayer -> {
-                    // Unlike windowInsetsPadding, a direct inset read does not see what an
+                    // Legacy header padding reads insets directly and does not see what an
                     // ancestor already consumed (e.g. a sheet sitting below the status bar), so
                     // that part is tracked here. The callback fires on attach, before the first
                     // measure, and the value is only read inside the layout block: the first
                     // frame is already right, and inset changes remeasure rather than recompose.
                     val density = LocalDensity.current
                     val consumedTopInsetPx = remember { mutableIntStateOf(0) }
+                    val useWindowInsetsPadding =
+                        stackState.ignoreHeaderHeight || state.heroInsetsFor(stackState.style) != null
                     Box(
                         modifier = outerModifier
                             .onConsumedWindowInsetsChanged { consumedTopInsetPx.intValue = it.getTop(density) }
@@ -748,20 +747,21 @@ private fun MainStackComponent(
                     ) {
                         stackState.children.forEach { child ->
                             val applyTopInsets =
-                                stackState.appliesTopInsets(state) && !child.ignoresTopInsets(state)
+                                stackState.appliesTopInsets(state) && !stackState.childIgnoresTopInsets(child, state)
                             ComponentView(
                                 style = child,
                                 state = state,
                                 onClick = clickHandler,
                                 componentInteractionTracker = componentInteractionTracker,
                                 modifier = Modifier
-                                    .conditional(applyTopInsets && !stackState.ignoreHeaderHeight) {
+                                    .conditional(applyTopInsets && !useWindowInsetsPadding) {
                                         // Read header height at layout time. If set (hero case),
                                         // it already includes status bar padding. Otherwise fall
                                         // back to the unconsumed safe-drawing top inset.
                                         headerOrInsetsTopPadding(state, safeDrawingInsets, consumedTopInsetPx)
                                     }
-                                    .conditional(applyTopInsets && stackState.ignoreHeaderHeight) {
+                                    .conditional(applyTopInsets && useWindowInsetsPadding) {
+                                        // Consume clearance so nested controls and badges cannot add it again.
                                         windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
                                     }
                                     .contentAlpha(contentAlpha),
@@ -1003,8 +1003,10 @@ internal val FlexDistribution.usesAllAvailableSpace: Boolean
 private fun StackComponentState.appliesTopInsets(state: PaywallState.Loaded.Components): Boolean =
     state.heroInsetsFor(style)?.appliesTo(style) ?: applyTopWindowInsets
 
-private fun ComponentStyle.ignoresTopInsets(state: PaywallState.Loaded.Components): Boolean =
-    state.heroInsetsFor(this)?.let { it.hero === this } ?: shouldIgnoreTopWindowInsets
+private fun StackComponentState.childIgnoresTopInsets(
+    child: ComponentStyle,
+    state: PaywallState.Loaded.Components,
+): Boolean = state.heroInsetsFor(style)?.let { it.exemptChildFor(style) === child } ?: child.shouldIgnoreTopWindowInsets
 
 private fun StackComponentState.isFirstVisibleChild(
     child: ComponentStyle,
