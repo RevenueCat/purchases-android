@@ -878,31 +878,8 @@ jobs:
           paths:
             - ~/emerge-cli
       - run:
-          # The record jobs each run an explicit --tests list, so a snapshot test class that none of them names
-          # silently drops its snapshots from Emerge. Paparazzi names every image <package>_<class>_<method>.
-          name: Check every snapshot test class was recorded
-          command: |
-            missing=""
-            for file in $(grep -rl '@Test' ui/revenuecatui/src/test*/kotlin/com/revenuecat/purchases/ui/revenuecatui/snapshottests); do
-              class=$(basename "$file" .kt)
-              if ! ls paparazzi-snapshots/*/revenuecatui/*"_${class}_"*.png >/dev/null 2>&1; then
-                missing="$missing $class"
-              fi
-            done
-            if [ -n "$missing" ]; then
-              echo "No snapshots were recorded for:$missing"
-              echo "Add each class to the revenuecatui_tests patterns of a record-paparazzi-* job in .circleci/config.yml"
-              exit 1
-            fi
-      - run:
-          name: Merge recorded snapshots
-          command: |
-            rm -rf ui/revenuecatui/src/test/snapshots/images ui/debugview/src/test/snapshots/images
-            mkdir -p ui/revenuecatui/src/test/snapshots/images ui/debugview/src/test/snapshots/images
-            for dir in paparazzi-snapshots/*/revenuecatui; do cp -r "$dir"/. ui/revenuecatui/src/test/snapshots/images/; done
-            for dir in paparazzi-snapshots/*/debugview; do cp -r "$dir"/. ui/debugview/src/test/snapshots/images/; done
-            echo "revenuecatui: $(find ui/revenuecatui/src/test/snapshots/images -name '*.png' | wc -l) snapshots"
-            echo "debugview: $(find ui/debugview/src/test/snapshots/images -name '*.png' | wc -l) snapshots"
+          name: Check and merge recorded snapshots
+          command: ./scripts/merge-paparazzi-snapshots.sh
       - store_artifacts:
           path: paparazzi-snapshots
       - run:
