@@ -631,8 +631,7 @@ internal class BillingWrapper(
         listener: (ProductType) -> Unit,
         resultHandler: (Boolean) -> Unit,
     ) {
-        val onError: PurchasesErrorCallback = { error ->
-            errorLog(error)
+        val onError: PurchasesErrorCallback = {
             listener(ProductType.UNKNOWN)
         }
         QueryPurchasesByTypeUseCase(
@@ -895,7 +894,7 @@ internal class BillingWrapper(
     }
 
     private fun withConnectedClient(
-        onError: PurchasesErrorCallback = { errorLog(it) },
+        onError: PurchasesErrorCallback = {},
         receivingFunction: BillingClient.() -> Unit,
     ) {
         val connectedClient = billingClient?.takeIf { it.isReady }
