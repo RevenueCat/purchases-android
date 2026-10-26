@@ -14,13 +14,16 @@ import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedPackagePartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.previewStackComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.show
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.SheetPresentationKey
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptySetOf
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
@@ -753,7 +756,7 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
     }
 
     @Test
-    fun `Reconcile can keep a selection visible in the open sheet`() {
+    fun `Reconcile follows the currently open sheet`() {
         val sheetKey = SheetPresentationKey()
         val hiddenRootCopy = packageInfo(
             TestData.Packages.monthly,
@@ -771,12 +774,29 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
             packagesByTab = emptyMap(),
             initialSelectedTabIndex = null,
         )
+        state.paywallBoundsDp = DpSize(800.dp, 600.dp)
         state.update(selectedPackageUniqueId = hiddenRootCopy.uniqueId)
         state.sheet.show(backgroundBlur = false, content = {}, presentationKey = sheetKey)
 
-        state.reconcileSelectionForWindowSize(DpSize(800.dp, 600.dp))
+        state.reconcileSelectionForWindowSize(state.paywallBoundsDp)
 
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
+
+        state.sheet.show(
+            sheet = ButtonComponentStyle.Action.NavigateTo.Destination.Sheet(
+                id = "second-sheet",
+                presentationKey = SheetPresentationKey(),
+                name = null,
+                stack = previewStackComponentStyle(children = emptyList()),
+                backgroundBlur = false,
+                size = null,
+            ),
+            state = state,
+            componentInteractionTracker = PaywallComponentInteractionTracker { },
+            onClick = {},
+        )
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
     }
 
     @Test
