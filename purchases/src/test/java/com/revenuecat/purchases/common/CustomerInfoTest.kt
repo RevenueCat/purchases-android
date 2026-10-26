@@ -513,4 +513,14 @@ class CustomerInfoTest {
 
         assertThat(customerInfo.subscriptionsByProductIdentifier.keys).containsExactlyInAnyOrder("basic", "paused")
     }
+
+    @Test
+    fun `Test OwnershipType serializes to its backend value`() {
+        OwnershipType.values().forEach { ownershipType ->
+            val encoded = JsonProvider.defaultJson.encodeToString(OwnershipType.serializer(), ownershipType)
+            assertThat(encoded).isEqualTo("\"${ownershipType.name}\"")
+            assertThat(JsonProvider.defaultJson.decodeFromString(OwnershipType.serializer(), encoded))
+                .isEqualTo(ownershipType)
+        }
+    }
 }

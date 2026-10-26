@@ -373,6 +373,6 @@ internal object OwnershipTypeSerializer : KSerializer<OwnershipType> {
     }
 
     override fun serialize(encoder: Encoder, value: OwnershipType) {
-        throw NotImplementedError("Serialization is not implemented because it is not needed.")
+        encoder.encodeString(value.name)
     }
 }
