@@ -421,6 +421,21 @@ class CheckpointsManagerTest {
         }
 
     @Test
+    fun `the workflow window's options count every active entitlement as new when none was held before`() =
+        runTest(dispatcher) {
+            customerInfoBeforeHasActive()
+            resolvesToWorkflow()
+            val call = launch { runCheckpoint() }
+
+            val shouldDisplay = manager.paywallOptions(currentCallId()) {}!!.shouldDisplayBlock!!
+            assertThat(shouldDisplay(customerInfoWithActive("plus"))).isFalse
+            assertThat(shouldDisplay(customerInfoWithActive())).isTrue
+
+            finishPaywall(outcome = null)
+            call.join()
+        }
+
+    @Test
     fun `the SDK's own paywall without a started activity fails and presents nothing`() = runTest(dispatcher) {
         every { mockPurchases.currentActivity } returns null
         resolvesTo(CheckpointResolution.MatchedOffering(offering(), checkpointRuleId = null, traceId = "trace_id"))
