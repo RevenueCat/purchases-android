@@ -16,6 +16,7 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
+import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
@@ -67,9 +68,10 @@ class CheckpointWorkflowPresenterTest {
         mockPurchases = mockk {
             every { currentActivity } answers { controller.get() }
             every { preferredUILocaleOverride } returns null
+            every { internalProductEntitlementMapping() } returns null
             coEvery { internalResolveCp(any(), any()) } returns
                 CheckpointResolution.MatchedWorkflow(
-                    mockk(),
+                    mockk<PublishedWorkflow> { every { steps } returns emptyMap() },
                     mockk(),
                     mockk<Offerings> { every { all } returns emptyMap() },
                     checkpointRuleId = null,
@@ -116,7 +118,7 @@ class CheckpointWorkflowPresenterTest {
     @Test
     fun `the workflow is presented against the offerings the checkpoint resolved to`() {
         val resolution = CheckpointResolution.MatchedWorkflow(
-            mockk(),
+            mockk<PublishedWorkflow> { every { steps } returns emptyMap() },
             mockk(),
             mockk<Offerings> { every { all } returns emptyMap() },
             checkpointRuleId = null,
