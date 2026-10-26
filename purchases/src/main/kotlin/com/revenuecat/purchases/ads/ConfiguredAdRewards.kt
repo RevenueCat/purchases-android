@@ -25,7 +25,7 @@ internal class ConfiguredAdRewards internal constructor(
         get() = allRewards.drop(1)
 }
 
-/** A reward configured before ad presentation. Unknown or invalid rewards use [UnsupportedReward]. */
+/** A reward expected for an ad unit. Unknown or invalid rewards use [UnsupportedReward]. */
 internal interface AdRewardConfiguration {
     /** A configured virtual currency reward. */
     @Poko
