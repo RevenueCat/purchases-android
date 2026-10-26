@@ -346,9 +346,10 @@ internal class PurchasesFactory(
                     OFFERINGS_RESPONSE_DIRECTORY_NAME,
                     syncWrites = true,
                 ),
-                dispatcher = dispatcher,
+                ioDispatcher = dispatcher,
                 localeProvider = localeProvider,
             )
+            cache.removeLegacyOfferingsResponse()
 
             val remoteConfigBlobStore = RemoteConfigBlobStore(contextForStorage)
             val remoteConfigManager = RemoteConfigManager(

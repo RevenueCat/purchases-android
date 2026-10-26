@@ -32,7 +32,6 @@ class OfferingsManagerEpochTest {
 
     private val offerings = stubOfferings("product").second
     private val deviceCache = mockk<DeviceCache>().apply {
-        every { removeLegacyOfferingsResponse() } just Runs
         every { offeringsResponseFileKey } returns "offerings_response_key"
         every { getOfferingsResponseChecksum() } returns null
         every { cacheOfferingsResponseChecksum(any()) } just Runs
@@ -42,7 +41,7 @@ class OfferingsManagerEpochTest {
     private val cache = OfferingsCache(
         deviceCache,
         responseStore = responseStore,
-        dispatcher = SyncDispatcher(),
+        ioDispatcher = SyncDispatcher(),
         localeProvider = DefaultLocaleProvider(),
     )
     private val backend = mockk<Backend>()

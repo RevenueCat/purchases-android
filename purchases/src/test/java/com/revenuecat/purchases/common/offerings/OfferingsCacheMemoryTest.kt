@@ -52,7 +52,7 @@ class OfferingsCacheMemoryTest {
         offeringsCache = OfferingsCache(
             DeviceCache(sharedPreferences, "api_key"),
             responseStore = PayloadFileStore(temporaryFolder.newFolder()),
-            dispatcher = SyncDispatcher(),
+            ioDispatcher = SyncDispatcher(),
             localeProvider = DefaultLocaleProvider(),
         )
         payload = buildOfferingsLikePayload()

@@ -45,14 +45,13 @@ class OfferingsSourceTest {
         offeringParser = GoogleOfferingParser()
         deviceCache = mockk()
         every { deviceCache.cacheOfferingsResponseChecksum(any()) } returns Unit
-        every { deviceCache.removeLegacyOfferingsResponse() } returns Unit
         every { deviceCache.getOfferingsResponseChecksum() } returns null
         every { deviceCache.offeringsResponseFileKey } returns "offerings_response_key"
         responseDirectory = temporaryFolder.newFolder()
         offeringsCache = OfferingsCache(
             deviceCache,
             responseStore = PayloadFileStore(responseDirectory),
-            dispatcher = SyncDispatcher(),
+            ioDispatcher = SyncDispatcher(),
             localeProvider = DefaultLocaleProvider(),
         )
     }

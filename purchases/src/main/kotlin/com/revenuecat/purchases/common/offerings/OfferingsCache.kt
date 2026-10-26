@@ -19,7 +19,7 @@ import org.json.JSONObject
 internal class OfferingsCache(
     private val deviceCache: DeviceCache,
     private val responseStore: PayloadFileStore,
-    private val dispatcher: Dispatcher,
+    private val ioDispatcher: Dispatcher,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     private val offeringsCachedObject: InMemoryCachedObject<Offerings> = InMemoryCachedObject(
         dateProvider = dateProvider,
@@ -34,10 +34,6 @@ internal class OfferingsCache(
         private set
 
     private var pendingResponse: String? = null
-
-    init {
-        deviceCache.removeLegacyOfferingsResponse()
-    }
 
     @Synchronized
     fun clearCache() {
@@ -98,7 +94,7 @@ internal class OfferingsCache(
 
     private fun persistInBackground(responsePayload: String) {
         pendingResponse = responsePayload
-        dispatcher.enqueue({ persistPendingResponse() })
+        ioDispatcher.enqueue({ persistPendingResponse() })
     }
 
     private fun persistPendingResponse() {

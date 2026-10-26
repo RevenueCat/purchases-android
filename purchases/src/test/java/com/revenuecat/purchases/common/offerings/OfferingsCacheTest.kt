@@ -495,10 +495,11 @@ class OfferingsCacheTest {
     }
 
     @Test
-    fun `creating the cache drops the legacy response stored in shared preferences`() {
+    fun `removing the legacy response drops it from shared preferences`() {
         sharedPreferences.edit().putString(legacyOfferingsResponseKey, ONE_OFFERINGS_RESPONSE).commit()
 
         val offeringsCache = createOfferingsCache()
+        deviceCache.removeLegacyOfferingsResponse()
 
         assertThat(sharedPreferences.contains(legacyOfferingsResponseKey)).isFalse
         assertThat(offeringsCache.cachedOfferingsResponse).isNull()
@@ -509,6 +510,7 @@ class OfferingsCacheTest {
         offeringsCache.cacheOfferings(mockk<Offerings>(), ONE_OFFERINGS_RESPONSE)
         sharedPreferences.edit().putString(legacyOfferingsResponseKey, ONE_OFFERINGS_RESPONSE).commit()
 
+        deviceCache.removeLegacyOfferingsResponse()
         val reloaded = createOfferingsCache()
 
         assertThat(reloaded.cachedOfferingsResponse).isNull()
@@ -555,7 +557,7 @@ class OfferingsCacheTest {
     ) = OfferingsCache(
         deviceCache,
         responseStore = responseStore,
-        dispatcher = dispatcher,
+        ioDispatcher = dispatcher,
         dateProvider = dateProvider,
         localeProvider = localeProvider,
     )
