@@ -80,6 +80,9 @@ internal open class BasePurchasesTest {
         shadowOf(this).grantPermissions(Manifest.permission.INTERNET)
     }
     protected val mockIdentityManager = mockk<IdentityManager>()
+
+    // What the orchestrator registered with the mocked IdentityManager; tests invoke it to simulate a switch.
+    protected var identityChangeListener: (() -> Unit)? = null
     protected val mockSubscriberAttributesManager = mockk<SubscriberAttributesManager>()
     internal val mockCustomerInfoHelper = mockk<CustomerInfoHelper>()
     internal val mockCustomerInfoUpdateHandler = mockk<CustomerInfoUpdateHandler>()
@@ -150,9 +153,9 @@ internal open class BasePurchasesTest {
         every {
             updatedCustomerInfoListener.onReceived(any())
         } just Runs
-        every {
-            mockIdentityManager.configure(any())
-        } just Runs
+        every { mockIdentityManager.configure(any()) } just Runs
+        every { mockIdentityManager.setIdentityChangeListener(any()) } answers { identityChangeListener = firstArg() }
+        every { mockIdentityManager.checkIAMLoginNeeded(any()) } answers { firstArg<(Boolean) -> Unit>()(false) }
         every {
             mockDiagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
         } just Runs

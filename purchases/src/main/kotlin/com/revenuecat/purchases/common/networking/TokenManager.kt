@@ -4,6 +4,7 @@ package com.revenuecat.purchases.common.networking
 
 import android.content.Context
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.JWT
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.security.EncryptedItemStorage
@@ -48,9 +49,14 @@ internal class TokenManager(
 ) {
 
     // Identifier -> value. A null value is a deletion made before the load finished, so the load doesn't
-    // resurrect it. Guarded by `this`, along with isLoaded.
+    // resurrect it. Guarded by `this`, along with the load state and loadCallbacks.
     private val cache = mutableMapOf<String, String?>()
     private var isLoaded = false
+    private var isLoadFinished = false
+    private val loadCallbacks = mutableListOf<(Boolean) -> Unit>()
+
+    @Volatile
+    private var updateListener: ((TokenUpdate) -> Unit)? = null
 
     // Drained in order by a single coroutine, once storage is built and loaded.
     private val pendingWrites = Channel<PendingWrite>(Channel.UNLIMITED)
@@ -59,12 +65,26 @@ internal class TokenManager(
         if (enabled) {
             scope.launch {
                 val storage = createStorage(context, apiKey, computationDispatcher, ioDispatcher)
-                if (storage != null) load(storage)
+                finishLoad(storage?.let { readStoredTokens(it) })
                 for (write in pendingWrites) {
                     if (storage != null) persist(storage, write)
                 }
             }
         }
+    }
+
+    /**
+     * Runs [callback] once loading has finished, with whether the cache loaded (`false` when storage is
+     * unavailable): immediately on the calling thread if it already has, otherwise on [scope]. Never runs when
+     * disabled.
+     */
+    fun onLoadFinished(callback: (loaded: Boolean) -> Unit) {
+        if (!enabled) return
+        val loaded = synchronized(this) {
+            if (!isLoadFinished) loadCallbacks.add(callback)
+            isLoaded.takeIf { isLoadFinished }
+        }
+        loaded?.let(callback)
     }
 
     // region Read access
@@ -141,6 +161,7 @@ internal class TokenManager(
         write(accessTokenKey(appUserID), accessToken)
         write(refreshTokenKey(appUserID), refreshToken)
         write(idTokenKey(appUserID), idToken)
+        report(TokenUpdate.AccessToken(appUserID, accessToken))
     }
 
     /** Clears all three token slots for [appUserID], e.g. for a full logout. */
@@ -148,6 +169,7 @@ internal class TokenManager(
         write(accessTokenKey(appUserID), null)
         write(refreshTokenKey(appUserID), null)
         write(idTokenKey(appUserID), null)
+        report(TokenUpdate.AccessToken(appUserID, null))
     }
 
     /**
@@ -160,6 +182,32 @@ internal class TokenManager(
 
     // endregion
 
+    // region Updates
+
+    /** What the update listener hears: a new access token (`null` = cleared), or a refresh that failed. */
+    /** A change to [appUserID]'s tokens, who may no longer be (or not yet be) the current user. */
+    sealed interface TokenUpdate {
+        val appUserID: String
+
+        data class AccessToken(override val appUserID: String, val accessToken: String?) : TokenUpdate
+        data class RefreshFailed(override val appUserID: String, val error: PurchasesError) : TokenUpdate
+    }
+
+    /**
+     * Sets the one listener told about every save and delete, mirroring iOS's `reportTokenUpdate`. Called on
+     * the writing thread; `null` removes it. Never called when disabled.
+     */
+    fun setTokenUpdateListener(listener: ((TokenUpdate) -> Unit)?) {
+        updateListener = listener
+    }
+
+    /** Tells the listener [appUserID]'s refresh failed; the refresh itself lives in `TokenAuthenticator`. */
+    fun reportRefreshFailure(appUserID: String, error: PurchasesError) {
+        report(TokenUpdate.RefreshFailed(appUserID, error))
+    }
+
+    // endregion
+
     /** The tokens a successful `/auth/login` or `/auth/token` call produced. */
     data class TokenSet(val accessToken: String, val refreshToken: String?, val idToken: String?)
 
@@ -167,6 +215,10 @@ internal class TokenManager(
     fun close() {
         pendingWrites.close()
         scope.cancel()
+    }
+
+    private fun report(update: TokenUpdate) {
+        if (enabled) updateListener?.invoke(update)
     }
 
     private fun read(identifier: String): String? =
@@ -181,14 +233,14 @@ internal class TokenManager(
         }
     }
 
-    private fun load(storage: SecureItemStorage) {
+    private fun readStoredTokens(storage: SecureItemStorage): List<Pair<String, String>> {
         val identifiers = try {
             storage.allItemIdentifiers()
         } catch (e: SecureStorageException) {
             errorLog(e) { "Failed to list IAM tokens; treating storage as empty." }
             emptyList()
         }
-        val stored = identifiers.mapNotNull { identifier ->
+        return identifiers.mapNotNull { identifier ->
             try {
                 storage.readItem(identifier)?.let { identifier to it.toString(Charsets.UTF_8) }
             } catch (e: SecureStorageException) {
@@ -196,11 +248,18 @@ internal class TokenManager(
                 null
             }
         }
-        synchronized(this) {
+    }
+
+    // [stored] is null when storage is unavailable: the cache stays unloaded, but waiters are released.
+    private fun finishLoad(stored: List<Pair<String, String>>?) {
+        val callbacks = synchronized(this) {
             // Writes made while loading are newer than what's on disk.
-            stored.forEach { (identifier, value) -> if (!cache.containsKey(identifier)) cache[identifier] = value }
-            isLoaded = true
+            stored?.forEach { (identifier, value) -> if (!cache.containsKey(identifier)) cache[identifier] = value }
+            isLoaded = stored != null
+            isLoadFinished = true
+            loadCallbacks.toList().also { loadCallbacks.clear() }
         }
+        callbacks.forEach { it(stored != null) }
     }
 
     private fun persist(storage: SecureItemStorage, write: PendingWrite) {

@@ -229,6 +229,7 @@ internal class CustomerInfoDimensionProvider(
             get() = when (this) {
                 OwnershipType.PURCHASED -> "PURCHASED"
                 OwnershipType.FAMILY_SHARED -> "FAMILY_SHARED"
+                OwnershipType.ASSIGNED -> "ASSIGNED"
                 OwnershipType.UNKNOWN -> null
             }
 

@@ -169,15 +169,19 @@ internal class StyleFactory(
 
         private class WindowInsetsState {
             /**
-             * Whether the current component should apply the top window insets. This field is reset when it is read,
-             * as it should only be set on a single component.
+             * The stack that should apply the top window insets, if any. Tracked by reference rather than a flag
+             * consumed by the next stack style built, because children styles are built before their parent's. A flag
+             * intended for a hero ZLayer would otherwise be consumed by the first stack nested inside an overlay
+             * child, such as a close button's stack. That inner stack then pads its own content by the status bar,
+             * stretching the button background.
              */
-            var applyTopWindowInsets = false
-                get() {
-                    val value = field
-                    field = false
-                    return value
-                }
+            private var stackAwaitingTopWindowInsets: StackComponent? = null
+
+            /**
+             * Whether [component] should apply the top window insets.
+             */
+            fun shouldApplyTopWindowInsets(component: StackComponent): Boolean =
+                stackAwaitingTopWindowInsets === component
 
             /**
              * Whether the current component should ignore the top window insets. This field is reset when it is read,
@@ -217,17 +221,12 @@ internal class StyleFactory(
             fun handleHeaderMediaViewWindowInsets(component: PaywallComponent) {
                 when (component) {
                     is StackComponent -> if (stillLookingForHeaderMedia) {
-                        applyTopWindowInsets = when (component.dimension) {
-                            is Dimension.ZLayer -> {
-                                val hasHero = component.components.firstOrNull()?.isHeaderMedia == true
-                                topWindowInsetsApplied = hasHero
-                                heroImageDetected = hasHero
-                                hasHero
-                            }
+                        when (component.dimension) {
+                            is Dimension.ZLayer -> handleZLayerHeaderStack(component)
 
                             is Dimension.Horizontal,
                             is Dimension.Vertical,
-                            -> false
+                            -> Unit
                         }
                     }
 
@@ -246,6 +245,13 @@ internal class StyleFactory(
                     is FallbackHeaderComponent -> { /* Skip: does not affect hero image detection. */ }
                     else -> stillLookingForHeaderMedia = false
                 }
+            }
+
+            private fun handleZLayerHeaderStack(component: StackComponent) {
+                val hasHero = component.components.firstOrNull()?.isHeaderMedia == true
+                topWindowInsetsApplied = hasHero
+                heroImageDetected = hasHero
+                if (hasHero) stackAwaitingTopWindowInsets = component
             }
 
             private val PaywallComponent.isHeaderMedia: Boolean
@@ -268,9 +274,10 @@ internal class StyleFactory(
         val windowInsetsState = WindowInsetsState()
 
         /**
-         * Whether the current component should apply the top window insets.
+         * Whether [component] should apply the top window insets.
          */
-        val applyTopWindowInsets by windowInsetsState::applyTopWindowInsets
+        fun shouldApplyTopWindowInsets(component: StackComponent): Boolean =
+            windowInsetsState.shouldApplyTopWindowInsets(component)
 
         /**
          * Whether the current component should ignore the top window insets.
@@ -451,15 +458,21 @@ internal class StyleFactory(
         }
 
         /**
-         * Applies the top window insets to the provided ComponentStyle if they haven't been applied to any other
-         * component yet.
+         * Applies the top window insets to [to] if no component has taken them yet.
+         *
+         * Keeps an inset already set on [to]. The root stack can itself be the hero ZLayer, and
+         * [WindowInsetsState.topWindowInsetsApplied] is true in that case, so replacing the root's value would
+         * clear the inset.
          */
         fun applyTopWindowInsetsIfNotYetApplied(to: ComponentStyle): ComponentStyle =
             when (to) {
-                is StackComponentStyle -> to.copy(applyTopWindowInsets = !windowInsetsState.topWindowInsetsApplied)
+                is StackComponentStyle -> to.copy(
+                    applyTopWindowInsets = to.applyTopWindowInsets || !windowInsetsState.topWindowInsetsApplied,
+                )
                 is HeaderComponentStyle -> to.copy(
                     stackComponentStyle = to.stackComponentStyle.copy(
-                        applyTopWindowInsets = !windowInsetsState.topWindowInsetsApplied,
+                        applyTopWindowInsets = to.stackComponentStyle.applyTopWindowInsets ||
+                            !windowInsetsState.topWindowInsetsApplied,
                         ignoreHeaderHeight = true,
                     ),
                 )
@@ -971,6 +984,7 @@ internal class StyleFactory(
             shadow = shadowStyles,
             badge = badge,
             scrollOrientation = component.overflow?.toOrientation(component.dimension),
+            scrollExplicitlyDisabled = component.overflow == StackComponent.Overflow.NONE,
             rcPackage = rcPackage,
             resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
@@ -978,7 +992,7 @@ internal class StyleFactory(
             countdownDate = countdownDate,
             countFrom = countFrom,
             overrides = presentedOverrides,
-            applyTopWindowInsets = applyTopWindowInsets,
+            applyTopWindowInsets = shouldApplyTopWindowInsets(component),
         )
     }
 

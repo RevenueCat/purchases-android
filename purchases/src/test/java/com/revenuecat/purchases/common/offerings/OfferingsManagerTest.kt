@@ -61,7 +61,7 @@ class OfferingsManagerTest {
 
     @Before
     fun setUp() {
-        cache = mockk()
+        cache = mockk<OfferingsCache>().apply { every { epoch } returns 0 }
         backend = mockk()
         offeringsFactory = mockk()
         offeringImagePreDownloader = mockk<OfferingImagePreDownloader>().apply {
@@ -115,7 +115,7 @@ class OfferingsManagerTest {
         offeringsManager.fetchAndCacheOfferings(appUserId, appInBackground = false)
 
         // Verbatim, not a re-serialization of the parsed JSON: that allocation is what OOMed.
-        verify(exactly = 1) { cache.cacheOfferings(testOfferings, ONE_OFFERINGS_RESPONSE) }
+        verify(exactly = 1) { cache.cacheOfferings(testOfferings, ONE_OFFERINGS_RESPONSE, any()) }
     }
 
     @Test
@@ -129,7 +129,7 @@ class OfferingsManagerTest {
         offeringsManager.clearInMemoryOfferingsCache()
         onSuccessSlot.captured.invoke(OfferingsResultData(testOfferings, setOf(productId), emptySet()))
 
-        verify(exactly = 1) { cache.cacheOfferings(any(), any()) }
+        verify(exactly = 1) { cache.cacheOfferings(any(), any(), any()) }
     }
 
     // region onAppForeground
@@ -216,7 +216,7 @@ class OfferingsManagerTest {
             cache.cachedOfferings
         } returns null
         every {
-            cache.cacheOfferings(any(), any())
+            cache.cacheOfferings(any(), any(), any())
         } just Runs
 
         mockDeviceCache()
@@ -235,7 +235,7 @@ class OfferingsManagerTest {
             backend.getOfferings(appUserId, appInBackground = false, onSuccess = any(), onError = any())
         }
         verify(exactly = 1) {
-            cache.cacheOfferings(any(), any())
+            cache.cacheOfferings(any(), any(), any())
         }
     }
 
@@ -248,7 +248,7 @@ class OfferingsManagerTest {
             cache.cachedOfferings
         } returns null
         every {
-            cache.cacheOfferings(any(), any())
+            cache.cacheOfferings(any(), any(), any())
         } just Runs
 
         var receivedOfferings: Offerings? = null
@@ -265,7 +265,7 @@ class OfferingsManagerTest {
             backend.getOfferings(appUserId, appInBackground = true, onSuccess = any(), onError = any())
         }
         verify(exactly = 1) {
-            cache.cacheOfferings(any(), any())
+            cache.cacheOfferings(any(), any(), any())
         }
     }
 
@@ -277,7 +277,7 @@ class OfferingsManagerTest {
             cache.cachedOfferings
         } returns null
         every {
-            cache.cacheOfferings(any(), any())
+            cache.cacheOfferings(any(), any(), any())
         } just Runs
 
         mockDeviceCache()
@@ -351,7 +351,7 @@ class OfferingsManagerTest {
             cache.cachedOfferings
         } returns null
         every {
-            cache.cacheOfferings(any(), any())
+            cache.cacheOfferings(any(), any(), any())
         } just Runs
         mockDeviceCache()
         val (_, offerings) = stubOfferings(productId)
@@ -368,7 +368,7 @@ class OfferingsManagerTest {
         assertThat(receivedOfferings).isNotNull
         assertThat(receivedOfferings).isEqualTo(offerings)
         verify {
-            cache.cacheOfferings(offerings, any())
+            cache.cacheOfferings(offerings, any(), any())
         }
     }
 
@@ -378,7 +378,7 @@ class OfferingsManagerTest {
             cache.cachedOfferings
         } returns null
         every {
-            cache.cacheOfferings(any(), any())
+            cache.cacheOfferings(any(), any(), any())
         } just Runs
 
         mockBackendResponseError()
@@ -405,7 +405,7 @@ class OfferingsManagerTest {
             cache.cachedOfferings
         } returns null
         every {
-            cache.cacheOfferings(any(), any())
+            cache.cacheOfferings(any(), any(), any())
         } just Runs
 
         mockBackendResponseError()
@@ -426,7 +426,7 @@ class OfferingsManagerTest {
 
         // Null payload: the response came from the disk cache, so it must not be re-serialized and
         // written back on every failed fetch.
-        verify(exactly = 1) { cache.cacheOfferings(testOfferings, null) }
+        verify(exactly = 1) { cache.cacheOfferings(testOfferings, null, any()) }
         verify(exactly = 1) {
             offeringsFactory.createOfferings(
                 offeringsJSON = backendResponse,
@@ -444,7 +444,7 @@ class OfferingsManagerTest {
             cache.cachedOfferings
         } returns null
         every {
-            cache.cacheOfferings(any(), any())
+            cache.cacheOfferings(any(), any(), any())
         } just Runs
 
         val expectedError = PurchasesError(PurchasesErrorCode.NetworkError)
@@ -477,7 +477,7 @@ class OfferingsManagerTest {
             cache.cachedOfferings
         } returns null
         every {
-            cache.cacheOfferings(any(), any())
+            cache.cacheOfferings(any(), any(), any())
         } just Runs
 
         mockBackendResponseError()
@@ -546,7 +546,7 @@ class OfferingsManagerTest {
             cache.cachedOfferings
         } returns null
         every {
-            cache.cacheOfferings(any(), any())
+            cache.cacheOfferings(any(), any(), any())
         } just Runs
 
         mockBackendResponseError()
@@ -1081,7 +1081,7 @@ class OfferingsManagerTest {
 
     private fun mockDeviceCache(wasSuccessful: Boolean = true) {
         if (wasSuccessful) {
-            every { cache.cacheOfferings(any(), any()) } just Runs
+            every { cache.cacheOfferings(any(), any(), any()) } just Runs
         } else {
             every { cache.forceCacheStale() } just Runs
         }

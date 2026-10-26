@@ -87,7 +87,7 @@ private val INLINE_USE_CASES = listOf(
             "Resolves without presenting anything: the callback receives null.",
     ),
     InlineUseCase(
-        identifier = "error_checkpoint",
+        identifier = "f0rc3_3rr0r",
         title = "Simulated error",
         description = "The checkpoint call throws a ConfigurationError.",
     ),

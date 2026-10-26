@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">OK</string>
+    <string name="loading">Yüklənir</string>
     <string name="restore_purchases">Satın almaları bərpa et</string>
     <string name="restore">Bərpa et</string>
     <string name="terms_and_conditions">Şərtlər və qaydalar</string>
@@ -23,4 +24,13 @@
     <string name="revenuecatui_purchase">Satın al</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
     <string name="revenuecatui_preview_workflow_load_error">Önizləmə iş axınını yükləmək mümkün olmadı. Yenidən cəhd edin.</string>
+    <string name="revenuecatui_checkpoint_error_network">Qoşulmaq mümkün olmadı. İnternet bağlantınızı yoxlayın və yenidən cəhd edin.</string>
+    <string name="revenuecatui_checkpoint_error_load">Bu məzmunu yükləmək mümkün olmadı. Zəhmət olmasa, daha sonra yenidən cəhd edin.</string>
+    <string name="revenuecatui_checkpoint_error_store">Mağaza ilə bağlı problem yarandı. Zəhmət olmasa, daha sonra yenidən cəhd edin.</string>
+    <string name="revenuecatui_checkpoint_error_purchase_not_allowed">Bu cihazda alışlara icazə verilmir.</string>
+    <string name="revenuecatui_checkpoint_error_product_unavailable">Bu məhsul hazırda mövcud deyil.</string>
+    <string name="revenuecatui_checkpoint_error_already_purchased">Bu məhsul artıq sizindir.</string>
+    <string name="revenuecatui_checkpoint_error_payment_pending">Ödənişiniz gözləmədədir. Təsdiqləndikdən sonra girişiniz olacaq.</string>
+    <string name="revenuecatui_checkpoint_error_generic">Nəsə səhv getdi. Zəhmət olmasa, yenidən cəhd edin.</string>
+    <string name="revenuecatui_checkpoint_error_sync">Alışlarınızı yoxlamaq mümkün olmadı. Zəhmət olmasa, daha sonra yenidən cəhd edin.</string>
 </resources>

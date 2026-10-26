@@ -1,3 +1,108 @@
+## 10.29.0
+## RevenueCat SDK
+### 🐞 Bugfixes
+* [ONCALL-1803] Skip the Blockstore alias path when the Blockstore client is unavailable (#4459) via Toni Rico (@tonidero)
+
+## RevenueCatUI SDK
+### ✨ New Features
+* feat: handle OwnershipType.assigned (#4483) via Will Taylor (@fire-at-will)
+### 🐞 Bugfixes
+* Fix(Paywalls) Don't fallback for inactive localization issues (#4456) via Jacob Rakidzich (@JZDesign)
+* Fix(paywalls) Prevent nested stacks from insetting by the safe area (#4457) via Jacob Rakidzich (@JZDesign)
+### Paywallsv2
+#### ✨ New Features
+* feat(paywalls): add discount variables (#4461) via andsolleiro (@andsolleiro)
+
+### 🔄 Other Changes
+* other(paywall-tester): list the project's checkpoints in the Checkpoints tab (#4486) via Facundo Menzella (@facumenzella)
+* [SDK-4552] Add ForbiddenPublicConstructor detekt rule (#4480) via Toni Rico (@tonidero)
+* Expect api.rc-backup.com in the production API sources topic (#4476) via Antonio Pallares (@ajpallares)
+* Use a dedicated session id for diagnostics events (#4477) via Toni Rico (@tonidero)
+* Cover the checkpoint result's obtained products and lookups with Maestro (#4472) via Toni Rico (@tonidero)
+* Report obtained products and add lookups to the checkpoint result (#4470) via Toni Rico (@tonidero)
+* Add the customer's information to CheckpointResult (#4466) via Toni Rico (@tonidero)
+* IAM Phase 7.2: Sequencing identity mutations (#4445) via Dave DeLong (@davedelong)
+* IAM Phase 7.1: Public Authentication APIs (#4444) via Dave DeLong (@davedelong)
+* other: attribute checkpoint offering purchases to their hit (#4474) via Facundo Menzella (@facumenzella)
+* build(deps): bump fastlane from 2.241.0 to 2.241.1 (#4475) via dependabot[bot] (@dependabot[bot])
+* Update baseline profiles (#4473) via RevenueCat Git Bot (@RCGitBot)
+* Rename simulated error checkpoint identifier (#4465) via JayShortway (@JayShortway)
+
+## 10.28.1
+### 🔄 Other Changes
+* WFL-735 - Send checkpoint identifier with purchase receipts (#4449) via Cesar de la Vega (@vegaro)
+* docs(remote-config): clarify when diagnostics are enabled (#4458) via Rick (@rickvdl)
+* Wrap the checkpoint callback result in a non-null CheckpointResult (#4460) via Toni Rico (@tonidero)
+* Add Maestro flows for the checkpoint error dialog before a flow is presented (#4440) via Toni Rico (@tonidero)
+* Hand every checkpoint failure to the ErrorPresenter and never pass on failure (#4437) via Toni Rico (@tonidero)
+* Simplify the checkpoint ErrorPresenter completion and add CheckpointFailureKind (#4436) via Toni Rico (@tonidero)
+* chore: route CODEOWNERS review requests to owning teams (#4412) via Cesar de la Vega (@vegaro)
+* Paywall tester: list and open flows by id (#4421) via Facundo Menzella (@facumenzella)
+* other(workflows): maestro flow for the experiment variant after a log in (#4396) via Facundo Menzella (@facumenzella)
+* build(deps): bump fastlane from 2.240.1 to 2.241.0 (#4447) via dependabot[bot] (@dependabot[bot])
+
+## 10.28.0
+## RevenueCat SDK
+### ✨ New Features
+* Add LevelPlay manual ad tracking sample (#4340) via Pol Miro (@polmiro)
+
+## RevenueCatUI SDK
+### 🐞 Bugfixes
+* Fix(paywalls) Transparent progress indicator caused idle redraws (#4442) via Jacob Rakidzich (@JZDesign)
+* [EXTERNAL] Fix PaywallView crash when recomposing after detaching inside a pooling container (#4420) via @ceydaakin (#4433) via Cesar de la Vega (@vegaro)
+### Paywallsv2
+#### ✨ New Features
+* Honor explicit `default` stack overflow to disable scrolling (#4210) via Josh Holtz (@joshdholtz)
+
+### 🔄 Other Changes
+* IAM P6: Wiring through login/logout methods (#4392) via Dave DeLong (@davedelong)
+
+## 10.27.1
+## RevenueCat SDK
+### 📦 Dependency Updates
+* [RENOVATE] Update dependency gradle to v8.14.6 (#4418) via RevenueCat Git Bot (@RCGitBot)
+
+## RevenueCatUI SDK
+### Paywallsv2
+#### 🐞 Bugfixes
+* Use the screen's offering when a workflow step has none (#4424) via Facundo Menzella (@facumenzella)
+
+### 🔄 Other Changes
+* feat(ads): add new capture methods (#4425) via Peter Porfy (@peterporfy)
+* Update baseline profiles (#4426) via RevenueCat Git Bot (@RCGitBot)
+
+## 10.27.0
+## RevenueCat SDK
+### ✨ New Features
+* feat(ads): allow manual rewarded ad earned tracking (#4416) via Pol Miro (@polmiro)
+### 🐞 Bugfixes
+* Fix IAM retries when switching users (#4393) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Bump CI to Ruby 3.3 (#4417) via Josh Holtz (@joshdholtz)
+* Lower unknown checkpoint log level from error to info (#4415) via Toni Rico (@tonidero)
+* Require the workflow blob ref on workflow presentation (#4413) via Facundo Menzella (@facumenzella)
+* Fix experiments for checkpoint flows (#4406) via Cesar de la Vega (@vegaro)
+* other(workflows): route the first step with the workflow's initial trigger (#4388) via Facundo Menzella (@facumenzella)
+* Checkpoints: dismissing the sheet closes the flow instead of backing out (#4407) via Toni Rico (@tonidero)
+
+## 10.26.0
+## RevenueCat SDK
+### ✨ New Features
+* feat(paywalls): introduce video localization support for Android (#4389) via Sufi Gaffar (@sufigaffar)
+
+## RevenueCatUI SDK
+### 🐞 Bugfixes
+* Render the developer-passed Offering instance in workflow paywalls (#4401) via Toni Rico (@tonidero)
+### Paywallsv2
+#### 🐞 Bugfixes
+* PWENG-243 | Render paywall screens without text instead of the fallback paywall (#4370) via Facundo Menzella (@facumenzella)
+
+### 🔄 Other Changes
+* Resolve workflow offerings through a single WorkflowOfferings wrapper (#4404) via Toni Rico (@tonidero)
+* Add Maestro flow for developer-provided offering filtering packages (#4403) via Toni Rico (@tonidero)
+* other: send fallback_original_step_id and always send blob_ref on workflow events (#4351) via Facundo Menzella (@facumenzella)
+
 ## 10.25.0
 ## RevenueCatUI SDK
 ### 🐞 Bugfixes
@@ -64,7 +169,7 @@
 ### 🔄 Other Changes
 * Resolve the diagnostics collection decision at configure when remote config is disabled (#4353) via Toni Rico (@tonidero)
 * Chore(Paywalls): Support min/max on Fill sizes only (#4280) via Jacob Rakidzich (@JZDesign)
-* Drive diagnostics collection from the sdk_settings remote config (#4322) via Toni Rico (@tonidero)
+* feat(diagnostics): support collection through SDK settings with explicit developer approval (#4322) via Toni Rico (@tonidero)
 
 ## 10.23.4
 ## RevenueCatUI SDK

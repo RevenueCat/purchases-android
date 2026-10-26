@@ -115,7 +115,7 @@ internal fun AppPaywall(
                 .fillMaxSize()
                 .background(Color.Black.copy(alpha = 0.5f))
                 .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {
-                    finish(PaywallPresenter.Completion.Result.NavigatedBack)
+                    finish(PaywallPresenter.Completion.Result.Closed)
                 },
             contentAlignment = Alignment.BottomCenter,
         ) {

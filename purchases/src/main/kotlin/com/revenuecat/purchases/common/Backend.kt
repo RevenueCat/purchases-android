@@ -50,6 +50,7 @@ import org.json.JSONException
 import org.json.JSONObject
 import java.net.URL
 import java.util.Date
+import java.util.UUID
 
 internal const val ATTRIBUTES_ERROR_RESPONSE_KEY = "attributes_error_response"
 internal const val ATTRIBUTE_ERRORS_KEY = "attribute_errors"
@@ -262,6 +263,7 @@ internal class Backend(
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
                     fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                    iamAppUserID = appUserID,
                 )
             }
 
@@ -334,6 +336,8 @@ internal class Backend(
             "is_restore" to isRestore,
             "presented_offering_identifier" to receiptInfo.presentedOfferingContext?.offeringIdentifier,
             "presented_placement_identifier" to receiptInfo.presentedOfferingContext?.placementIdentifier,
+            "presented_checkpoint_identifier" to receiptInfo.presentedOfferingContext?.checkpointIdentifier,
+            "presented_trace_id" to receiptInfo.presentedOfferingContext?.traceId,
             "applied_targeting_rule" to receiptInfo.presentedOfferingContext?.targetingContext?.let {
                 return@let mapOf("revision" to it.revision, "rule_id" to it.ruleId)
             },
@@ -374,6 +378,7 @@ internal class Backend(
                     postFieldsToSign,
                     backendHelper.authenticationHeaders + extraHeaders,
                     fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                    iamAppUserID = appUserID,
                 )
             }
 
@@ -441,6 +446,7 @@ internal class Backend(
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
                     fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                    iamAppUserID = appUserID,
                 )
             }
 
@@ -510,6 +516,7 @@ internal class Backend(
                     postFieldsToSign,
                     backendHelper.authenticationHeaders,
                     fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                    iamAppUserID = appUserID,
                 )
             }
 
@@ -570,6 +577,7 @@ internal class Backend(
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
                     fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                    iamAppUserID = oldAppUserID,
                 )
             }
 
@@ -782,6 +790,7 @@ internal class Backend(
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
                     fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                    iamAppUserID = appUserID,
                 )
             }
 
@@ -848,6 +857,7 @@ internal class Backend(
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
                     fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                    iamAppUserID = appUserID,
                 )
             }
 
@@ -907,6 +917,7 @@ internal class Backend(
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
                     fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                    iamAppUserID = appUserID,
                 )
             }
 
@@ -983,6 +994,7 @@ internal class Backend(
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
                     fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                    iamAppUserID = appUserID,
                 )
             }
 
@@ -1030,6 +1042,53 @@ internal class Backend(
         }
     }
 
+    // Not deduplicated: each spend is a separate transaction, keyed by its own Idempotency-Key across retries.
+    fun spendVirtualCurrencies(
+        appUserID: String,
+        amounts: Map<String, Int>,
+        reference: String?,
+        onSuccessHandler: (VirtualCurrencies) -> Unit,
+        onErrorHandler: (PurchasesError) -> Unit,
+    ) {
+        val body = buildMap<String, Any?> {
+            put("adjustments", amounts)
+            reference?.let { put("reference", it) }
+        }
+        val headers = backendHelper.authenticationHeaders + ("Idempotency-Key" to UUID.randomUUID().toString())
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPResult = httpClient.performRequest(
+                appConfig.baseURL,
+                Endpoint.SpendVirtualCurrencies,
+                body,
+                postFieldsToSign = null,
+                headers,
+                fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                iamAppUserID = appUserID,
+            )
+
+            override fun onError(error: PurchasesError) {
+                onErrorHandler(error)
+            }
+
+            override fun onCompletion(result: HTTPResult) {
+                if (!result.isSuccessful()) {
+                    onErrorHandler(result.toPurchasesError().also { errorLog(it) })
+                    return
+                }
+                try {
+                    onSuccessHandler(VirtualCurrenciesFactory.buildVirtualCurrencies(httpResult = result))
+                } catch (e: JSONException) {
+                    onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                } catch (e: SerializationException) {
+                    onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                } catch (e: IllegalArgumentException) {
+                    onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                }
+            }
+        }
+        backendHelper.enqueue(call, dispatcher)
+    }
+
     fun getWebBillingProducts(
         appUserID: String,
         productIds: Set<String>,
@@ -1047,6 +1106,7 @@ internal class Backend(
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
                     fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                    iamAppUserID = appUserID,
                 )
             }
 
@@ -1113,6 +1173,7 @@ internal class Backend(
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
                     fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                    iamAppUserID = appUserID,
                 )
             }
 
@@ -1208,6 +1269,7 @@ internal class Backend(
                     body = body,
                     postFieldsToSign = null,
                     requestHeaders,
+                    iamAppUserID = appUserID,
                 )
             }
 

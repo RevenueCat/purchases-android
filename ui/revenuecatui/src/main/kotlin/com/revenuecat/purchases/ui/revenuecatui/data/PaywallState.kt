@@ -30,7 +30,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedPackagePartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
-import com.revenuecat.purchases.ui.revenuecatui.components.ktx.getBestMatch
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.resolveLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toComposeLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
@@ -646,8 +646,10 @@ internal sealed interface PaywallState {
                     deviceLocales
                 }
 
-                // Find the first locale we have a LocalizationDictionary for.
-                return allLocales.firstNotNullOf { locale -> locales.getBestMatch(locale) }
+                return locales.resolveLocale(
+                    preferredLocales = allLocales,
+                    defaultLocale = locales.head,
+                )
             }
 
             private fun List<AvailablePackages.Info>.mostExpensivePricePerMonthMicros(): Long? =

@@ -11,7 +11,10 @@ import com.revenuecat.purchases.common.CallbackCacheKey
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.debugLog
+import com.revenuecat.purchases.common.networking.TokenLoginOperation.LinkedIdentity
 import com.revenuecat.purchases.identity.Identity
+import com.revenuecat.purchases.identity.IdentityAuthToken
+import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.strings.NetworkStrings
 
 /**
@@ -31,8 +34,9 @@ internal class TokenAPI(
     private val revokeCallbacks = mutableMapOf<CallbackCacheKey, MutableList<RevokeCallback>>()
 
     /**
-     * Exchanges [identity] for tokens, linking it to [currentAppUserID]'s identity when that user has an ID
-     * token. [onSuccess] receives the app user ID the new tokens belong to.
+     * Exchanges [identity] for tokens. An anonymous login migrates [currentAppUserID] when it's a pre-IAM
+     * anonymous ID; any other login links to [currentAppUserID]'s ID token, if it has one. [onSuccess] receives
+     * the app user ID the new tokens belong to.
      */
     fun logIn(
         currentAppUserID: String,
@@ -49,7 +53,7 @@ internal class TokenAPI(
             onError(PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "Invalid identity token."))
             return
         }
-        val body = TokenLoginOperation.body(token, linkToID = tokenManager.currentIDToken(currentAppUserID))
+        val body = TokenLoginOperation.body(token, linkedIdentity(currentAppUserID, token))
         val cacheKey = listOf(currentAppUserID, token.cacheIdentifier)
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult = post(Endpoint.TokenLogin, body)
@@ -114,6 +118,14 @@ internal class TokenAPI(
         }
         enqueue(revokeCallbacks, cacheKey, call, RevokeCallback(onSuccess, onError))
     }
+
+    // An anonymous login only adopts an app user ID that's itself anonymous, never an identified user's.
+    private fun linkedIdentity(currentAppUserID: String, token: IdentityAuthToken): LinkedIdentity? =
+        if (token == IdentityAuthToken.Anonymous) {
+            currentAppUserID.takeIf { IdentityManager.isUserIDAnonymous(it) }?.let(LinkedIdentity::AppUserID)
+        } else {
+            tokenManager.currentIDToken(currentAppUserID)?.let(LinkedIdentity::IDToken)
+        }
 
     private fun post(endpoint: Endpoint, body: Map<String, Any?>): HTTPResult =
         httpClient.performRequest(

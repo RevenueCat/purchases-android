@@ -28,14 +28,25 @@ internal object TokenLoginOperation {
         class Error(val error: PurchasesError) : Result
     }
 
+    /** What a login links the new identity to: a pre-IAM anonymous app user ID, or the current user's ID token. */
+    sealed interface LinkedIdentity {
+        class AppUserID(val appUserID: String) : LinkedIdentity
+        class IDToken(val idToken: String) : LinkedIdentity
+    }
+
     /**
-     * The request body for [token], linking the new identity to [linkToID] (the current user's ID token)
-     * when present. Absent optional fields are omitted, as iOS's encoding does.
+     * The request body for [token]. An anonymous login migrates a [LinkedIdentity.AppUserID] via `app_user_id`;
+     * other logins link to a [LinkedIdentity.IDToken] via `link_to_id`. Absent optional fields are omitted, as
+     * iOS's encoding does.
      */
-    fun body(token: IdentityAuthToken, linkToID: String?): Map<String, Any?> {
+    fun body(token: IdentityAuthToken, linkedIdentity: LinkedIdentity?): Map<String, Any?> {
         val method = token.authenticationMethod.rawValue
         val idToken = when (token) {
-            IdentityAuthToken.Anonymous -> return mapOf(METHOD to method, SCOPE to SCOPE_VALUE)
+            IdentityAuthToken.Anonymous -> return mapOf(
+                METHOD to method,
+                SCOPE to SCOPE_VALUE,
+                APP_USER_ID to (linkedIdentity as? LinkedIdentity.AppUserID)?.appUserID,
+            ).filterNotNullValues()
             is IdentityAuthToken.Oidc -> token.identityToken
             is IdentityAuthToken.Google -> token.identityToken
             is IdentityAuthToken.SignInWithApple -> token.identityToken
@@ -47,7 +58,7 @@ internal object TokenLoginOperation {
             SCOPE to SCOPE_VALUE,
             ID_TOKEN to idTokenString(idToken),
             EMAIL to (token as? IdentityAuthToken.Facebook)?.email,
-            LINK_TO_ID to linkToID,
+            LINK_TO_ID to (linkedIdentity as? LinkedIdentity.IDToken)?.idToken,
         ).filterNotNullValues()
     }
 
@@ -80,6 +91,7 @@ internal object TokenLoginOperation {
     private const val ID_TOKEN = "id_token"
     private const val EMAIL = "email"
     private const val LINK_TO_ID = "link_to_id"
+    private const val APP_USER_ID = "app_user_id"
     private const val SCOPE_VALUE = "openid offline_access"
 }
 

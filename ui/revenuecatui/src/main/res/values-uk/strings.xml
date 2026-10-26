@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">в порядку</string>
+    <string name="loading">Завантаження</string>
     <string name="all_plans">Всі підписки</string>
     <string name="privacy">Конфіденційність</string>
     <string name="privacy_policy">Політика конфіденційності</string>
@@ -23,4 +24,13 @@
     <string name="revenuecatui_purchase">Купити</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
     <string name="revenuecatui_preview_workflow_load_error">Не вдалося завантажити робочий процес попереднього перегляду. Спробуйте ще раз.</string>
+    <string name="revenuecatui_checkpoint_error_network">Не вдалося підключитися. Перевірте підключення до інтернету та спробуйте ще раз.</string>
+    <string name="revenuecatui_checkpoint_error_load">Не вдалося завантажити цей вміст. Будь ласка, спробуйте пізніше.</string>
+    <string name="revenuecatui_checkpoint_error_store">Виникла проблема з магазином. Будь ласка, спробуйте пізніше.</string>
+    <string name="revenuecatui_checkpoint_error_purchase_not_allowed">Покупки на цьому пристрої заборонені.</string>
+    <string name="revenuecatui_checkpoint_error_product_unavailable">Цей продукт зараз недоступний.</string>
+    <string name="revenuecatui_checkpoint_error_already_purchased">У вас уже є цей продукт.</string>
+    <string name="revenuecatui_checkpoint_error_payment_pending">Ваш платіж очікує на обробку. Ви отримаєте доступ після його підтвердження.</string>
+    <string name="revenuecatui_checkpoint_error_generic">Щось пішло не так. Будь ласка, спробуйте ще раз.</string>
+    <string name="revenuecatui_checkpoint_error_sync">Не вдалося перевірити ваші покупки. Будь ласка, спробуйте пізніше.</string>
 </resources>

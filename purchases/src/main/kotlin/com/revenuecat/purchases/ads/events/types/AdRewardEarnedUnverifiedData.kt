@@ -1,10 +1,9 @@
 package com.revenuecat.purchases.ads.events.types
 
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import dev.drewhamilton.poko.Poko
 
 /**
- * Data for tracking when a reward-verification poll starts.
+ * Data for the moment an ad SDK reports that the user earned a reward, before backend verification.
  *
  * @property networkName The name of the ad network, or null if unknown.
  * @property mediatorName The name of the ad mediator. See [AdMediatorName] for common values.
@@ -14,7 +13,6 @@ import dev.drewhamilton.poko.Poko
  * @property impressionId The impression ID.
  * @property rewardVerificationEnabled Whether server-side reward verification is enabled for this ad.
  */
-@InternalRevenueCatAPI
 @Poko
 public class AdRewardEarnedUnverifiedData(
     public val networkName: String?,
@@ -23,5 +21,5 @@ public class AdRewardEarnedUnverifiedData(
     public val placement: String?,
     public val adUnitId: String,
     public val impressionId: String,
-    public val rewardVerificationEnabled: Boolean,
+    public val rewardVerificationEnabled: Boolean = false,
 )

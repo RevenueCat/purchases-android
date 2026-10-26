@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">OK</string>
+    <string name="loading">Laden</string>
     <string name="all_plans">Alle abonnementen</string>
     <string name="privacy">Privacy</string>
     <string name="privacy_policy">Privacybeleid</string>
@@ -23,4 +24,13 @@
     <string name="revenuecatui_purchase">Kopen</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
     <string name="revenuecatui_preview_workflow_load_error">De previewworkflow kon niet worden geladen. Probeer het opnieuw.</string>
+    <string name="revenuecatui_checkpoint_error_network">Kan geen verbinding maken. Controleer je internetverbinding en probeer het opnieuw.</string>
+    <string name="revenuecatui_checkpoint_error_load">Deze inhoud kon niet worden geladen. Probeer het later opnieuw.</string>
+    <string name="revenuecatui_checkpoint_error_store">Er is een probleem met de store. Probeer het later opnieuw.</string>
+    <string name="revenuecatui_checkpoint_error_purchase_not_allowed">Aankopen zijn niet toegestaan op dit apparaat.</string>
+    <string name="revenuecatui_checkpoint_error_product_unavailable">Dit product is momenteel niet beschikbaar.</string>
+    <string name="revenuecatui_checkpoint_error_already_purchased">Je hebt dit product al.</string>
+    <string name="revenuecatui_checkpoint_error_payment_pending">Je betaling is in behandeling. Je krijgt toegang zodra deze is goedgekeurd.</string>
+    <string name="revenuecatui_checkpoint_error_generic">Er is iets misgegaan. Probeer het opnieuw.</string>
+    <string name="revenuecatui_checkpoint_error_sync">Je aankopen konden niet worden geverifieerd. Probeer het later opnieuw.</string>
 </resources>

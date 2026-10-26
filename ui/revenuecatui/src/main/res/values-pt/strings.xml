@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">OK</string>
+    <string name="loading">Carregando</string>
     <string name="privacy">Privacidade</string>
     <string name="privacy_policy">Política de Privacidade</string>
     <string name="restore">Restaurar</string>
@@ -23,4 +24,13 @@
     <string name="revenuecatui_purchase">Comprar</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
     <string name="revenuecatui_preview_workflow_load_error">Não foi possível carregar o fluxo de trabalho da prévia. Tente novamente.</string>
+    <string name="revenuecatui_checkpoint_error_network">Não foi possível conectar. Verifique sua conexão com a internet e tente novamente.</string>
+    <string name="revenuecatui_checkpoint_error_load">Não foi possível carregar este conteúdo. Tente novamente mais tarde.</string>
+    <string name="revenuecatui_checkpoint_error_store">Ocorreu um problema com a loja. Tente novamente mais tarde.</string>
+    <string name="revenuecatui_checkpoint_error_purchase_not_allowed">Compras não são permitidas neste dispositivo.</string>
+    <string name="revenuecatui_checkpoint_error_product_unavailable">Este produto não está disponível no momento.</string>
+    <string name="revenuecatui_checkpoint_error_already_purchased">Você já possui este produto.</string>
+    <string name="revenuecatui_checkpoint_error_payment_pending">Seu pagamento está pendente. Você terá acesso assim que for aprovado.</string>
+    <string name="revenuecatui_checkpoint_error_generic">Algo deu errado. Tente novamente.</string>
+    <string name="revenuecatui_checkpoint_error_sync">Não foi possível verificar suas compras. Tente novamente mais tarde.</string>
 </resources>

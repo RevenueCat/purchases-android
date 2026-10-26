@@ -572,7 +572,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         val mockCreated = Random.nextBoolean()
         every { mockIdentityManager.currentAppUserID } returns "oldAppUserID"
         every {
-            mockIdentityManager.logIn(any(), onSuccess = captureLambda(), any())
+            mockIdentityManager.logIn(any<String>(), onSuccess = captureLambda(), any())
         } answers {
             lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
         }
@@ -594,7 +594,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         val purchasesError = PurchasesError(PurchasesErrorCode.InvalidCredentialsError)
 
         every {
-            mockIdentityManager.logIn(any(), any(), onError = captureLambda())
+            mockIdentityManager.logIn(any<String>(), any(), onError = captureLambda())
         } answers {
             lambda<(PurchasesError) -> Unit>().captured.invoke(purchasesError)
         }
@@ -614,7 +614,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         every { mockIdentityManager.currentAppUserID } returns "oldAppUserID"
 
         every {
-            mockIdentityManager.logIn(any(), onSuccess = captureLambda(), any())
+            mockIdentityManager.logIn(any<String>(), onSuccess = captureLambda(), any())
         } answers {
             lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
         }
@@ -636,7 +636,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         every { mockIdentityManager.currentAppUserID } returns "oldAppUserID"
 
         every {
-            mockIdentityManager.logIn(any(), onSuccess = captureLambda(), any())
+            mockIdentityManager.logIn(any<String>(), onSuccess = captureLambda(), any())
         } answers {
             lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
         }
@@ -660,7 +660,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         every { mockIdentityManager.currentAppUserID } returns "oldAppUserID"
 
         every {
-            mockIdentityManager.logIn(any(), onSuccess = captureLambda(), any())
+            mockIdentityManager.logIn(any<String>(), onSuccess = captureLambda(), any())
         } answers {
             lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
         }
@@ -682,7 +682,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         every { mockIdentityManager.currentAppUserID } returns "oldAppUserID"
 
         every {
-            mockIdentityManager.logIn(any(), onSuccess = captureLambda(), any())
+            mockIdentityManager.logIn(any<String>(), onSuccess = captureLambda(), any())
         } answers {
             lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
         }
@@ -704,7 +704,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         every { mockIdentityManager.currentAppUserID } returns "oldAppUserID"
 
         every {
-            mockIdentityManager.logIn(any(), onSuccess = captureLambda(), any())
+            mockIdentityManager.logIn(any<String>(), onSuccess = captureLambda(), any())
         } answers {
             lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
         }
@@ -1640,9 +1640,9 @@ internal class PurchasesTest : BasePurchasesTest() {
     fun `resolving checkpoint tracks nothing when resolution throws`() = runTest {
         every { mockEventsManager.track(any<CheckpointEvent>()) } just Runs
 
-        // "error_checkpoint" is the resolver's simulated-error hook, the only path that throws.
+        // "f0rc3_3rr0r" is the resolver's simulated-error hook, the only path that throws.
         assertThatThrownBy {
-            runBlocking { purchases.internalResolveCp("error_checkpoint") }
+            runBlocking { purchases.internalResolveCp("f0rc3_3rr0r") }
         }.isInstanceOf(PurchasesException::class.java)
 
         verify(exactly = 0) { mockEventsManager.track(any<CheckpointEvent>()) }

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">OK</string>
+    <string name="loading">Laster</string>
     <string name="all_plans">Alle abonnementer</string>
     <string name="privacy">Personvern</string>
     <string name="privacy_policy">Personvernerklæring</string>
@@ -23,4 +24,13 @@
     <string name="revenuecatui_purchase">Kjøp</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
     <string name="revenuecatui_preview_workflow_load_error">Arbeidsflyten for forhåndsvisning kunne ikke lastes inn. Prøv igjen.</string>
+    <string name="revenuecatui_checkpoint_error_network">Kunne ikke koble til. Sjekk internettforbindelsen din og prøv igjen.</string>
+    <string name="revenuecatui_checkpoint_error_load">Dette innholdet kunne ikke lastes inn. Prøv igjen senere.</string>
+    <string name="revenuecatui_checkpoint_error_store">Det oppsto et problem med butikken. Prøv igjen senere.</string>
+    <string name="revenuecatui_checkpoint_error_purchase_not_allowed">Kjøp er ikke tillatt på denne enheten.</string>
+    <string name="revenuecatui_checkpoint_error_product_unavailable">Dette produktet er ikke tilgjengelig akkurat nå.</string>
+    <string name="revenuecatui_checkpoint_error_already_purchased">Du eier allerede dette produktet.</string>
+    <string name="revenuecatui_checkpoint_error_payment_pending">Betalingen din venter. Du får tilgang når den er godkjent.</string>
+    <string name="revenuecatui_checkpoint_error_generic">Noe gikk galt. Prøv igjen.</string>
+    <string name="revenuecatui_checkpoint_error_sync">Kjøpene dine kunne ikke bekreftes. Prøv igjen senere.</string>
 </resources>

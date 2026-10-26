@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">好的</string>
+    <string name="loading">載入中</string>
     <string name="privacy">隱私</string>
     <string name="privacy_policy">隱私權政策</string>
     <string name="restore">恢復</string>
@@ -23,4 +24,13 @@
     <string name="revenuecatui_purchase">購買</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
     <string name="revenuecatui_preview_workflow_load_error">無法載入預覽工作流程。請重試。</string>
+    <string name="revenuecatui_checkpoint_error_network">無法連線。請檢查您的網絡連線，然後再試一次。</string>
+    <string name="revenuecatui_checkpoint_error_load">無法載入此內容。請稍後再試。</string>
+    <string name="revenuecatui_checkpoint_error_store">商店發生問題。請稍後再試。</string>
+    <string name="revenuecatui_checkpoint_error_purchase_not_allowed">此裝置不允許購買。</string>
+    <string name="revenuecatui_checkpoint_error_product_unavailable">此產品目前無法使用。</string>
+    <string name="revenuecatui_checkpoint_error_already_purchased">您已擁有此產品。</string>
+    <string name="revenuecatui_checkpoint_error_payment_pending">您的付款正在處理中。核准後即可使用。</string>
+    <string name="revenuecatui_checkpoint_error_generic">發生錯誤。請再試一次。</string>
+    <string name="revenuecatui_checkpoint_error_sync">無法驗證您的購買。請稍後再試。</string>
 </resources>

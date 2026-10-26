@@ -77,9 +77,13 @@ class CheckpointEventTest {
     }
 
     @Test
-    fun `every other result reports its own trace id`() {
-        val resolutions = listOf(matchedOffering(checkpointRuleId = null)) +
-            CheckpointResolution.NoAction.Reason.values().map { CheckpointResolution.NoAction(it) }
+    fun `a matched offering reports the trace id its purchases use`() {
+        assertThat(matchedOffering(checkpointRuleId = null).toEvent().traceId).isEqualTo("trace_default")
+    }
+
+    @Test
+    fun `every no-action result reports its own trace id`() {
+        val resolutions = CheckpointResolution.NoAction.Reason.values().map { CheckpointResolution.NoAction(it) }
 
         resolutions.forEach { resolution ->
             val first = resolution.toEvent().traceId
@@ -99,11 +103,13 @@ class CheckpointEventTest {
         offerings = mockk(),
         checkpointRuleId = checkpointRuleId,
         traceId = "trace_wf1234",
+        workflowBlobRef = null,
     )
 
     private fun matchedOffering(checkpointRuleId: String?) = CheckpointResolution.MatchedOffering(
         offering = offering("default"),
         checkpointRuleId = checkpointRuleId,
+        traceId = "trace_default",
     )
 
     private fun workflow(id: String) = mockk<PublishedWorkflow> {

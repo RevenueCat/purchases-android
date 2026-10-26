@@ -6,6 +6,8 @@ import android.content.Context
 import android.content.pm.PackageManager
 import androidx.annotation.VisibleForTesting
 import androidx.core.os.UserManagerCompat
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
@@ -43,6 +45,7 @@ import com.revenuecat.purchases.common.networking.DeviceConnectivityChecker
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
 import com.revenuecat.purchases.common.networking.SourceHealthChecker
+import com.revenuecat.purchases.common.networking.TokenAPI
 import com.revenuecat.purchases.common.networking.TokenAuthenticator
 import com.revenuecat.purchases.common.networking.TokenManager
 import com.revenuecat.purchases.common.offerings.OfferingsCache
@@ -117,6 +120,8 @@ internal class PurchasesFactory(
         forceSigningError: Boolean = false,
         runningIntegrationTests: Boolean = false,
         baseUrlString: String = AppConfig.baseUrlString,
+        // Tests drive their own lifecycle; the process-wide one is shared by every instance in the JVM.
+        processLifecycleOwnerProvider: () -> LifecycleOwner = { ProcessLifecycleOwner.get() },
     ): Purchases {
         val apiKeyValidationResult = validateConfiguration(configuration)
 
@@ -413,6 +418,8 @@ internal class PurchasesFactory(
                 offlineEntitlementsManager,
                 dispatcher,
                 paywallAssetWarming,
+                tokenManager,
+                TokenAPI(tokenManager, httpClient, backendHelper, backendDispatcher, appConfig),
                 uiPreviewMode = appConfig.uiPreviewMode,
             )
 
@@ -621,6 +628,7 @@ internal class PurchasesFactory(
                 subscriberDimensionsConfigProvider = subscriberDimensionsConfigProvider,
                 localRulesEvaluator = localRulesEvaluator,
                 tokenManager = tokenManager,
+                processLifecycleOwnerProvider = processLifecycleOwnerProvider,
             )
 
             return Purchases(purchasesOrchestrator)

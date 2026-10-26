@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">ठीक है</string>
+    <string name="loading">लोड हो रहा है</string>
     <string name="all_plans">सभी सदस्यताएँ</string>
     <string name="privacy">गोपनीयता</string>
     <string name="privacy_policy">गोपनीयता नीति</string>
@@ -23,4 +24,13 @@
     <string name="revenuecatui_purchase">खरीदें</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
     <string name="revenuecatui_preview_workflow_load_error">प्रीव्यू वर्कफ़्लो लोड नहीं हो सका। कृपया फिर से कोशिश करें।</string>
+    <string name="revenuecatui_checkpoint_error_network">कनेक्ट नहीं हो सका। अपना इंटरनेट कनेक्शन जांचें और फिर से कोशिश करें।</string>
+    <string name="revenuecatui_checkpoint_error_load">यह सामग्री लोड नहीं हो सकी। कृपया बाद में फिर से कोशिश करें।</string>
+    <string name="revenuecatui_checkpoint_error_store">स्टोर में कोई समस्या हुई। कृपया बाद में फिर से कोशिश करें।</string>
+    <string name="revenuecatui_checkpoint_error_purchase_not_allowed">इस डिवाइस पर खरीदारी की अनुमति नहीं है।</string>
+    <string name="revenuecatui_checkpoint_error_product_unavailable">यह उत्पाद अभी उपलब्ध नहीं है।</string>
+    <string name="revenuecatui_checkpoint_error_already_purchased">यह उत्पाद पहले से आपके पास है।</string>
+    <string name="revenuecatui_checkpoint_error_payment_pending">आपका भुगतान लंबित है। स्वीकृत होने पर आपको एक्सेस मिल जाएगा।</string>
+    <string name="revenuecatui_checkpoint_error_generic">कुछ गलत हो गया। कृपया फिर से कोशिश करें।</string>
+    <string name="revenuecatui_checkpoint_error_sync">आपकी खरीदारी सत्यापित नहीं हो सकी। कृपया बाद में फिर से कोशिश करें।</string>
 </resources>

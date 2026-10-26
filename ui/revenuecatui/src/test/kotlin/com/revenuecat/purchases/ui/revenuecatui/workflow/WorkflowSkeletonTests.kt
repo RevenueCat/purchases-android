@@ -4,6 +4,11 @@ import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
+import com.revenuecat.purchases.paywalls.components.ButtonComponent
+import com.revenuecat.purchases.paywalls.components.PartialButtonComponent
+import com.revenuecat.purchases.paywalls.components.PartialImageComponent
+import com.revenuecat.purchases.paywalls.components.PartialStackComponent
+import com.revenuecat.purchases.paywalls.components.PartialTabsComponent
 import com.revenuecat.purchases.paywalls.components.PaywallComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.TabsComponent
@@ -11,6 +16,7 @@ import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.VideoComponent
 import com.revenuecat.purchases.paywalls.components.WebViewComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.ExitOffer
 import com.revenuecat.purchases.paywalls.components.common.ExitOffers
@@ -67,7 +73,7 @@ class WorkflowSkeletonTests {
         WorkflowSkeleton.transform(dataWith(*components)).componentsConfig.base.stack.components
 
     @Test
-    fun `removes leaves that have no grey stand-in`() {
+    fun `removes leaves that have no grey skeleton`() {
         val children = transformedChildren(
             IconComponent(baseUrl = "https://example.com", iconName = "star", formats = iconFormats()),
             WebViewComponent(
@@ -121,11 +127,14 @@ class WorkflowSkeletonTests {
         val children = transformedChildren(text)
 
         assertThat(children).hasSize(1)
-        assertThat((children.first() as TextComponent).color).isNotEqualTo(green)
+        val color = (children.first() as TextComponent).color
+        assertThat(color).isNotEqualTo(green)
+        // An inverted contentHidden makes every label invisible and still not green.
+        assertThat(color).isNotEqualTo(clear)
     }
 
     @Test
-    fun `drops exit offers so the stand-in cannot trigger one`() {
+    fun `drops exit offers so the skeleton cannot trigger one`() {
         val data = dataWith(StackComponent(components = emptyList()))
         // Guard the fixture: without this the assertion below holds whether or not the transform runs.
         assertThat(data.exitOffers).isNotNull
@@ -201,7 +210,7 @@ class WorkflowSkeletonTests {
         val card = transformedChildren(badged).first() as StackComponent
 
         assertThat(card.badge).isNotNull
-        // The badge is a stand-in too, so it must not keep the real colour.
+        // The badge is a skeleton too, so it must not keep the real colour.
         val badgeText = card.badge!!.stack.components.first() as TextComponent
         assertThat(badgeText.color).isNotEqualTo(green)
     }
@@ -230,27 +239,131 @@ class WorkflowSkeletonTests {
         assertThat(keptTab.components).hasSize(1)
     }
 
-    private fun videoComponent(size: Size = Size(SizeConstraint.Fill(), SizeConstraint.Fit())) = VideoComponent(
-        source = ThemeVideoUrls(
-            light = VideoUrls(width = 1280u, height = 720u, url = URL("https://example.com/v.mp4")),
-            dark = null,
-        ),
-        fallbackSource = imageUrls,
-        visible = null,
-        showControls = false,
-        autoplay = true,
-        loop = true,
-        muteAudio = true,
-        size = size,
-        fitMode = FitMode.FIT,
-        maskShape = null,
-        colorOverlay = null,
-        padding = null,
-        margin = null,
-        border = null,
-        shadow = null,
-        overrides = null,
-    )
+    @Test
+    fun `keeps an override so the skeleton can take the shape the rules will pick`() {
+        val overridden = StackComponent(
+            components = emptyList(),
+            backgroundColor = green,
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Compact),
+                    properties = PartialStackComponent(
+                        size = Size(SizeConstraint.Fixed(42u), SizeConstraint.Fixed(42u)),
+                        backgroundColor = green,
+                    ),
+                ),
+            ),
+        )
+
+        val card = transformedChildren(overridden).first() as StackComponent
+
+        assertThat(card.overrides).hasSize(1)
+        val partial = card.overrides.first().properties
+        // The size decides the shape, so it survives. The colour must not.
+        assertThat(partial.size?.width).isEqualTo(SizeConstraint.Fixed(42u))
+        assertThat(partial.backgroundColor).isNotEqualTo(green)
+    }
+
+
+    @Test
+    fun `keeps a button's own override, not only the override on its stack`() {
+        val button = ButtonComponent(
+            stack = StackComponent(components = emptyList()),
+            action = ButtonComponent.Action.NavigateBack,
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Compact),
+                    properties = PartialButtonComponent(visible = false),
+                ),
+            ),
+        )
+
+        val card = transformedChildren(button).first() as StackComponent
+
+        // The rule hides the button on compact, so the skeleton must reserve nothing there either.
+        assertThat(card.overrides).hasSize(1)
+        assertThat(card.overrides.first().properties.visible).isFalse
+        // The button's rule stays a level above its stack, the way the real tree nests them.
+        val innerStack = card.components.single() as StackComponent
+        assertThat(innerStack.overrides).isEmpty()
+        assertThat(card.size).isEqualTo(innerStack.size)
+    }
+
+    @Test
+    fun `the wrapper follows the size its stack takes by condition`() {
+        val button = ButtonComponent(
+            stack = StackComponent(
+                components = emptyList(),
+                overrides = listOf(
+                    ComponentOverride(
+                        conditions = listOf(ComponentOverride.Condition.Compact),
+                        properties = PartialStackComponent(
+                            size = Size(SizeConstraint.Fixed(42u), SizeConstraint.Fixed(42u)),
+                        ),
+                    ),
+                ),
+            ),
+            action = ButtonComponent.Action.NavigateBack,
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Medium),
+                    properties = PartialButtonComponent(visible = false),
+                ),
+            ),
+        )
+
+        val card = transformedChildren(button).first() as StackComponent
+
+        // The wrapper has to resize with its stack, or it would hold the base size around it.
+        val sized = card.overrides.single { it.conditions == listOf(ComponentOverride.Condition.Compact) }
+        assertThat(sized.properties.size?.width).isEqualTo(SizeConstraint.Fixed(42u))
+        // visible defaults to true, so a size-only partial must say null or it overrides the rule.
+        assertThat(sized.properties.visible).isNull()
+        val hidden = card.overrides.single { it.conditions == listOf(ComponentOverride.Condition.Medium) }
+        assertThat(hidden.properties.visible).isFalse
+    }
+
+    @Test
+    fun `keeps a tabs block's own size override`() {
+        val tabs = TabsComponent(
+            control = TabsComponent.TabControl.Buttons(stack = StackComponent(components = emptyList())),
+            tabs = listOf(TabsComponent.Tab(id = "a", stack = StackComponent(components = emptyList()))),
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Compact),
+                    properties = PartialTabsComponent(size = Size(SizeConstraint.Fixed(42u), SizeConstraint.Fixed(42u))),
+                ),
+            ),
+        )
+
+        val card = transformedChildren(tabs).first() as StackComponent
+
+        assertThat(card.overrides).hasSize(1)
+        assertThat(card.overrides.first().properties.size?.width).isEqualTo(SizeConstraint.Fixed(42u))
+    }
+
+    @Test
+    fun `keeps an image override opaque so a matching rule cannot expose the bitmap`() {
+        val card = StackComponent(
+            components = listOf(
+                ImageComponent(
+                    source = imageUrls,
+                    overrides = listOf(
+                        ComponentOverride(
+                            conditions = listOf(ComponentOverride.Condition.Compact),
+                            properties = PartialImageComponent(size = Size(SizeConstraint.Fixed(10u), SizeConstraint.Fixed(10u))),
+                        ),
+                    ),
+                ),
+            ),
+            backgroundColor = green,
+        )
+
+        val image = (transformedChildren(card).first() as StackComponent).components.first() as ImageComponent
+
+        // A clear overlay on a matching override draws the real photo inside the grey card.
+        assertThat(image.overrides.first().properties.colorOverlay).isNotEqualTo(clear)
+    }
 
     private fun iconFormats() = IconComponent.Formats(
         webp = "star.webp",

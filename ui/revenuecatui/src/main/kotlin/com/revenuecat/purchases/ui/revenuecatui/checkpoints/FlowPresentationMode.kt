@@ -26,7 +26,7 @@ public class FlowPresentationMode private constructor(private val name: String) 
 
         /**
          * The flow is a modal sheet over the app's content: it slides up to just below the status bar, and swiping it
-         * down or tapping outside it dismisses it as if the user had navigated back.
+         * down or tapping outside it closes the flow, like a close action would.
          */
         @JvmField
         public val MODAL_SHEET: FlowPresentationMode = FlowPresentationMode("MODAL_SHEET")

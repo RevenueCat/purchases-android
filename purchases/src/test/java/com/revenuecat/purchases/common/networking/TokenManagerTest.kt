@@ -7,6 +7,8 @@ import android.util.Base64
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.identity.IdentitySource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -512,6 +514,125 @@ class TokenManagerTest {
         manager.deleteAccessToken("user")
 
         assertThat(manager.currentRefreshToken("user")).isEqualTo("refresh")
+    }
+
+    // endregion
+
+    // region onLoadFinished
+
+    @Test
+    fun `onLoadFinished runs the callback once, after the load`() = runTest {
+        val manager = unloadedManager()
+        val results = mutableListOf<Boolean>()
+        var tokenSeenByCallback: String? = null
+        manager.saveTokens("user", accessToken = "access", refreshToken = null, idToken = null)
+
+        manager.onLoadFinished {
+            results.add(it)
+            tokenSeenByCallback = manager.currentAccessToken("user")
+        }
+        assertThat(results).isEmpty()
+
+        advanceUntilIdle()
+        assertThat(results).containsExactly(true)
+        assertThat(tokenSeenByCallback).isEqualTo("access")
+
+        manager.saveTokens("user", accessToken = "other", refreshToken = null, idToken = null)
+        advanceUntilIdle()
+        assertThat(results).containsExactly(true)
+    }
+
+    @Test
+    fun `onLoadFinished runs the callback immediately when already loaded`() = runTest {
+        val manager = manager()
+        val results = mutableListOf<Boolean>()
+
+        manager.onLoadFinished { results.add(it) }
+
+        assertThat(results).containsExactly(true)
+    }
+
+    @Test
+    fun `onLoadFinished runs every callback registered before the load`() = runTest {
+        val manager = unloadedManager()
+        val calls = mutableListOf<Int>()
+
+        manager.onLoadFinished { calls.add(1) }
+        manager.onLoadFinished { calls.add(2) }
+        advanceUntilIdle()
+
+        assertThat(calls).containsExactly(1, 2)
+    }
+
+    @Test
+    fun `onLoadFinished never runs the callback when disabled`() = runTest {
+        val manager = TokenManager(context, "test_api_key", enabled = false, scope = testScope())
+        var calls = 0
+
+        manager.onLoadFinished { calls++ }
+        advanceUntilIdle()
+
+        assertThat(calls).isZero()
+    }
+
+    @Test
+    fun `onLoadFinished reports false when storage is unavailable, and the cache stays unloaded`() = runTest {
+        val manager = unloadedManager(apiKey = "   ")
+        val results = mutableListOf<Boolean>()
+
+        manager.onLoadFinished { results.add(it) }
+        advanceUntilIdle()
+        manager.onLoadFinished { results.add(it) }
+        manager.saveTokens("user", accessToken = "access", refreshToken = null, idToken = null)
+
+        assertThat(results).containsExactly(false, false)
+        assertThat(manager.currentAccessToken("user")).isNull()
+    }
+
+    // endregion
+
+    // region update listener
+
+    @Test
+    fun `the update listener hears every save and delete`() = runTest {
+        val manager = manager()
+        val updates = mutableListOf<TokenManager.TokenUpdate>()
+        manager.setTokenUpdateListener { updates.add(it) }
+
+        manager.saveTokens("user", accessToken = "access", refreshToken = "refresh", idToken = null)
+        manager.deleteTokens("user")
+        manager.reportRefreshFailure("user", PurchasesError(PurchasesErrorCode.NetworkError))
+
+        assertThat(updates).containsExactly(
+            TokenManager.TokenUpdate.AccessToken("user", "access"),
+            TokenManager.TokenUpdate.AccessToken("user", null),
+            TokenManager.TokenUpdate.RefreshFailed("user", PurchasesError(PurchasesErrorCode.NetworkError)),
+        )
+    }
+
+    @Test
+    fun `the update listener can be removed`() = runTest {
+        val manager = manager()
+        val updates = mutableListOf<TokenManager.TokenUpdate>()
+        manager.setTokenUpdateListener { updates.add(it) }
+        manager.setTokenUpdateListener(null)
+
+        manager.saveTokens("user", accessToken = "access", refreshToken = null, idToken = null)
+
+        assertThat(updates).isEmpty()
+    }
+
+    @Test
+    fun `the update listener never hears anything when disabled`() = runTest {
+        val manager = TokenManager(context, "test_api_key", enabled = false, scope = testScope())
+        val updates = mutableListOf<TokenManager.TokenUpdate>()
+        manager.setTokenUpdateListener { updates.add(it) }
+
+        manager.saveTokens("user", accessToken = "access", refreshToken = null, idToken = null)
+        manager.deleteTokens("user")
+        manager.reportRefreshFailure("user", PurchasesError(PurchasesErrorCode.NetworkError))
+
+        assertThat(updates).isEmpty()
     }
 
     // endregion

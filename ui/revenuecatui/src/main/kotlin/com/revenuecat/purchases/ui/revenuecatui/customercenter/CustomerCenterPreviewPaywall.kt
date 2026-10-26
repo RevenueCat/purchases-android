@@ -154,7 +154,15 @@ internal fun previewPaywallOptions(
     onDismiss: () -> Unit,
 ): PaywallOptions = PaywallOptions.Builder(onDismiss).setOffering(offering)
     .setShouldDisplayDismissButton(true).apply {
-        workflow?.let { injectedWorkflow(it.workflow, it.offerings, it.uiConfig) }
+        workflow?.let {
+            injectedWorkflow(
+                it.workflow,
+                it.offerings,
+                it.uiConfig,
+                traceId = null,
+                workflowBlobRef = null,
+            )
+        }
     }.build()
 
 internal sealed interface PreviewWorkflowState {

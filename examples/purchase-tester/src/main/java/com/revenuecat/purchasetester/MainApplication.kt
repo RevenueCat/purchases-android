@@ -12,14 +12,20 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.identity.AuthenticationDelegate
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 
-class MainApplication : Application(), UpdatedCustomerInfoListener {
+@OptIn(InternalRevenueCatAPI::class)
+class MainApplication : Application(), UpdatedCustomerInfoListener, AuthenticationDelegate {
 
     val logHandler = TesterLogHandler(this)
+
+    // Whether the SDK was last configured with IAM login.
+    var iamEnabled: Boolean = false
 
     // This should live in a repository, but for the sake of simplicity we'll keep it here
     val lastCustomerInfoLiveData: LiveData<CustomerInfo?>
@@ -32,6 +38,14 @@ class MainApplication : Application(), UpdatedCustomerInfoListener {
         Purchases.logLevel = LogLevel.DEBUG
 
         Purchases.logHandler = logHandler
+    }
+
+    override fun authenticatorDidEncounterError(error: PurchasesError) {
+        Log.w("Authentication", "IAM error: $error")
+    }
+
+    override fun authenticatorDidUpdateAccessToken(newAccessToken: String?) {
+        Log.d("Authentication", "IAM access token ${if (newAccessToken == null) "cleared" else "updated"}")
     }
 
     override fun onReceived(customerInfo: CustomerInfo) {

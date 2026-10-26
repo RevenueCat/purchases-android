@@ -1,30 +1,28 @@
-## RevenueCatUI SDK
+## RevenueCat SDK
 ### 🐞 Bugfixes
-* Fix(paywalls) Skip Underlines in Code Blocks (#4391) via Jacob Rakidzich (@JZDesign)
-* Bound concurrent workflow asset prewarm loads to 4 (#4395) via Toni Rico (@tonidero)
+* [ONCALL-1803] Skip the Blockstore alias path when the Blockstore client is unavailable (#4459) via Toni Rico (@tonidero)
+
+## RevenueCatUI SDK
+### ✨ New Features
+* feat: handle OwnershipType.assigned (#4483) via Will Taylor (@fire-at-will)
+### 🐞 Bugfixes
+* Fix(Paywalls) Don't fallback for inactive localization issues (#4456) via Jacob Rakidzich (@JZDesign)
+* Fix(paywalls) Prevent nested stacks from insetting by the safe area (#4457) via Jacob Rakidzich (@JZDesign)
 ### Paywallsv2
 #### ✨ New Features
-* FEAT(Paywalls) Enable min/max size clamps (#4379) via Jacob Rakidzich (@JZDesign)
+* feat(paywalls): add discount variables (#4461) via andsolleiro (@andsolleiro)
 
 ### 🔄 Other Changes
-* Paywall tester: make Checkpoints its own tab with editable custom variables (#4399) via Toni Rico (@tonidero)
-* build(deps): bump fastlane-plugin-sentry from 2.6.1 to 2.8.0 (#4398) via dependabot[bot] (@dependabot[bot])
-* build(deps): bump fastlane-plugin-revenuecat_internal from `c3e3afe` to `4c49d48` (#4397) via dependabot[bot] (@dependabot[bot])
-* other(paywalls): extract prototype skeleton UI (#4387) via Facundo Menzella (@facumenzella)
-* Paywall tester: move checkpoint options to an overflow menu and make the screen scroll (#4394) via Toni Rico (@tonidero)
-* Use shared Sentry CI metadata action (#4342) via Rick (@rickvdl)
-* Upload Android size analysis builds to Sentry (#4333) via Rick (@rickvdl)
-* Evaluate rules against the fresher subscriber dimensions copy (#4360) via Toni Rico (@tonidero)
-* other(workflows): route a branch trigger action to the step its audiences pick (#4341) via Facundo Menzella (@facumenzella)
-* IAM Signature verification (#4390) via Dave DeLong (@davedelong)
-* Add a presentation mode to checkpoint flows: full screen or sheet (#4346) via Toni Rico (@tonidero)
-* IAM P5.4: Introduce tokens into HTTPClient (#4368) via Dave DeLong (@davedelong)
-* IAM P5.3: Add TokenAPI for IAM login and logout (#4367) via Dave DeLong (@davedelong)
-* IAM P5.2: Token Operations (#4365) via Dave DeLong (@davedelong)
-* IAM P5.1: Improve TokenManager (#4364) via Dave DeLong (@davedelong)
-* Add the subscriber_dimensions remote config topic (#4359) via Toni Rico (@tonidero)
-* Support paywalls and workflows in Customer Center previews (#4378) via Monika Mateska (@MonikaMateska)
-* Render Customer Center previews with iOS parity and live updates (#4376) via Monika Mateska (@MonikaMateska)
-* Add isolated Customer Center preview sessions and action routing (#4375) via Monika Mateska (@MonikaMateska)
-* build(deps): bump fastlane-plugin-revenuecat_internal from `9f7a03e` to `c3e3afe` (#4384) via dependabot[bot] (@dependabot[bot])
-* refactor(customer-center): remove unused PromotionalOffer.androidOfferId (#4339) via Álvaro Brey (@AlvaroBrey)
+* other(paywall-tester): list the project's checkpoints in the Checkpoints tab (#4486) via Facundo Menzella (@facumenzella)
+* [SDK-4552] Add ForbiddenPublicConstructor detekt rule (#4480) via Toni Rico (@tonidero)
+* Expect api.rc-backup.com in the production API sources topic (#4476) via Antonio Pallares (@ajpallares)
+* Use a dedicated session id for diagnostics events (#4477) via Toni Rico (@tonidero)
+* Cover the checkpoint result's obtained products and lookups with Maestro (#4472) via Toni Rico (@tonidero)
+* Report obtained products and add lookups to the checkpoint result (#4470) via Toni Rico (@tonidero)
+* Add the customer's information to CheckpointResult (#4466) via Toni Rico (@tonidero)
+* IAM Phase 7.2: Sequencing identity mutations (#4445) via Dave DeLong (@davedelong)
+* IAM Phase 7.1: Public Authentication APIs (#4444) via Dave DeLong (@davedelong)
+* other: attribute checkpoint offering purchases to their hit (#4474) via Facundo Menzella (@facumenzella)
+* build(deps): bump fastlane from 2.241.0 to 2.241.1 (#4475) via dependabot[bot] (@dependabot[bot])
+* Update baseline profiles (#4473) via RevenueCat Git Bot (@RCGitBot)
+* Rename simulated error checkpoint identifier (#4465) via JayShortway (@JayShortway)

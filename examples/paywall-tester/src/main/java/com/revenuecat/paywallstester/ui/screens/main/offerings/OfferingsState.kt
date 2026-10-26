@@ -8,6 +8,7 @@ sealed class OfferingsState {
         val offerings: Offerings,
         val searchQuery: String = "",
         val recentOfferingIds: List<String> = emptyList(),
+        val flows: List<FlowRow> = emptyList(),
     ) : OfferingsState()
     object Loading : OfferingsState()
     data class Error(val purchasesError: PurchasesError) : OfferingsState()

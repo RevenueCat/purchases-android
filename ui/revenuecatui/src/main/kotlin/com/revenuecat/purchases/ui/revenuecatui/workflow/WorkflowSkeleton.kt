@@ -10,6 +10,10 @@ import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
+import com.revenuecat.purchases.paywalls.components.PartialComponent
+import com.revenuecat.purchases.paywalls.components.PartialImageComponent
+import com.revenuecat.purchases.paywalls.components.PartialStackComponent
+import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.PaywallComponent
 import com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
@@ -23,6 +27,7 @@ import com.revenuecat.purchases.paywalls.components.TimelineComponent
 import com.revenuecat.purchases.paywalls.components.VideoComponent
 import com.revenuecat.purchases.paywalls.components.WebViewComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
@@ -45,6 +50,9 @@ internal class WorkflowSkeleton private constructor(
         stack: StackComponent,
         contentHidden: Boolean = false,
         forceBlock: Boolean = false,
+        // A component rewritten as a stack keeps its own overrides only if they move onto that stack.
+        // Colours stay out: the stack already carries the grey tone.
+        outerOverrides: List<ComponentOverride<PartialStackComponent>> = emptyList(),
     ): StackComponent {
         val isBlock = forceBlock || hasFill(stack.background, stack.backgroundColor, stack.border)
         return StackComponent(
@@ -58,7 +66,10 @@ internal class WorkflowSkeleton private constructor(
             margin = stack.margin,
             shape = stack.shape,
             border = stack.border?.let { Border(color = if (contentHidden) CLEAR else tone, width = it.width) },
-            // A badge adds to the measured size, so it stays, with its own stack as a stand-in too.
+            // Overrides change size and visibility by condition, so the skeleton keeps them.
+            overrides = stack.overrides.map { override(it) { partial -> stackPartial(partial, contentHidden) } } +
+                outerOverrides,
+            // A badge adds to the measured size, so it stays, with its own stack as a skeleton too.
             badge = stack.badge?.let { Badge(this.stack(it.stack, contentHidden), it.style, it.alignment) },
             overflow = stack.overflow,
         )
@@ -84,22 +95,31 @@ internal class WorkflowSkeleton private constructor(
                     size = component.size,
                     padding = component.padding,
                     margin = component.margin,
+                    overrides = component.overrides.map { override(it) { p -> textPartial(p, contentHidden) } },
                 )
             } else {
                 null
             }
             is StackComponent -> stack(component, contentHidden)
-            is ButtonComponent -> if (component.visible == false) null else stack(component.stack, contentHidden)
+            is ButtonComponent -> if (component.visible == false) {
+                null
+            } else {
+                visibilityWrapper(component.overrides.map { it.conditions to it.properties.visible }) {
+                    stack(component.stack, contentHidden)
+                }
+            }
             is PackageComponent -> if (component.visible == false) {
                 null
             } else {
-                stack(component.stack, contentHidden, forceBlock = true)
+                visibilityWrapper(component.overrides.map { it.conditions to it.properties.visible }) {
+                    stack(component.stack, contentHidden, forceBlock = true)
+                }
             }
             is PurchaseButtonComponent -> stack(component.stack, contentHidden, forceBlock = true)
             is StickyFooterComponent -> stack(component.stack, contentHidden)
             is HeaderComponent -> stack(component.stack, contentHidden)
             is ImageComponent -> image(component, contentHidden)
-            // A stand-in has no density, so it cannot turn the source's pixels into a height. The
+            // The skeleton has no density, so it cannot turn the source's pixels into a height. The
             // fallback image goes through the normal image sizing instead. The video url is not an
             // image, so it never reaches the loader.
             is VideoComponent -> component.fallbackSource?.let { fallback ->
@@ -142,6 +162,17 @@ internal class WorkflowSkeleton private constructor(
                     border = component.border,
                 ),
                 contentHidden,
+                outerOverrides = component.overrides.map {
+                    ComponentOverride(
+                        it.conditions,
+                        PartialStackComponent(
+                            visible = it.properties.visible,
+                            size = it.properties.size,
+                            padding = it.properties.padding,
+                            margin = it.properties.margin,
+                        ),
+                    )
+                },
             )
             is CarouselComponent -> stack(
                 StackComponent(
@@ -157,6 +188,16 @@ internal class WorkflowSkeleton private constructor(
                     border = component.border,
                 ),
                 contentHidden,
+                outerOverrides = component.overrides.map {
+                    ComponentOverride(
+                        it.conditions,
+                        PartialStackComponent(
+                            visible = it.properties.visible,
+                            size = it.properties.size,
+                            spacing = it.properties.pageSpacing,
+                        ),
+                    )
+                },
             )
             is CountdownComponent -> stack(component.countdownStack, contentHidden)
             is TimelineComponent -> stack(
@@ -174,8 +215,20 @@ internal class WorkflowSkeleton private constructor(
                     margin = component.margin,
                 ),
                 contentHidden,
+                outerOverrides = component.overrides.map {
+                    ComponentOverride(
+                        it.conditions,
+                        PartialStackComponent(
+                            visible = it.properties.visible,
+                            size = it.properties.size,
+                            spacing = it.properties.itemSpacing?.toFloat(),
+                            padding = it.properties.padding,
+                            margin = it.properties.margin,
+                        ),
+                    )
+                },
             )
-            // These draw their own live content and have no meaningful grey stand-in.
+            // These draw their own live content and have no meaningful grey skeleton.
             is IconComponent,
             is WebViewComponent,
             is TabControlComponent,
@@ -184,6 +237,55 @@ internal class WorkflowSkeleton private constructor(
             FallbackHeaderComponent,
             -> null
         }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    private fun <T : PartialComponent> override(
+        source: ComponentOverride<T>,
+        transform: (T) -> T,
+    ): ComponentOverride<T> = ComponentOverride(source.conditions, transform(source.properties))
+
+    @OptIn(InternalRevenueCatAPI::class)
+    private fun stackPartial(partial: PartialStackComponent, contentHidden: Boolean) = PartialStackComponent(
+        visible = partial.visible,
+        dimension = partial.dimension,
+        size = partial.size,
+        spacing = partial.spacing,
+        backgroundColor = partial.backgroundColor?.let { if (contentHidden) CLEAR else tone },
+        padding = partial.padding,
+        margin = partial.margin,
+        shape = partial.shape,
+        border = partial.border?.let { Border(color = if (contentHidden) CLEAR else tone, width = it.width) },
+        overflow = partial.overflow,
+    )
+
+    @OptIn(InternalRevenueCatAPI::class)
+    private fun textPartial(partial: PartialTextComponent, contentHidden: Boolean) = PartialTextComponent(
+        visible = partial.visible,
+        text = partial.text,
+        color = partial.color?.let { if (contentHidden) CLEAR else tone },
+        fontName = partial.fontName,
+        fontWeight = partial.fontWeight,
+        fontWeightInt = partial.fontWeightInt,
+        fontSize = partial.fontSize,
+        horizontalAlignment = partial.horizontalAlignment,
+        size = partial.size,
+        padding = partial.padding,
+        margin = partial.margin,
+    )
+
+    @OptIn(InternalRevenueCatAPI::class)
+    private fun imagePartial(partial: PartialImageComponent, contentHidden: Boolean) = PartialImageComponent(
+        visible = partial.visible,
+        source = partial.source,
+        size = partial.size,
+        overrideSourceLid = partial.overrideSourceLid,
+        fitMode = partial.fitMode,
+        maskShape = partial.maskShape,
+        colorOverlay = tone,
+        padding = partial.padding,
+        margin = partial.margin,
+        border = partial.border?.let { Border(color = if (contentHidden) CLEAR else tone, width = it.width) },
+    )
 
     @OptIn(InternalRevenueCatAPI::class)
     private fun image(image: ImageComponent, contentHidden: Boolean): ImageComponent =
@@ -199,6 +301,7 @@ internal class WorkflowSkeleton private constructor(
             padding = image.padding,
             margin = image.margin,
             border = image.border?.let { Border(color = if (contentHidden) CLEAR else tone, width = it.width) },
+            overrides = image.overrides.map { override(it) { p -> imagePartial(p, contentHidden) } },
         )
 
     @OptIn(InternalRevenueCatAPI::class)
@@ -335,4 +438,29 @@ internal class WorkflowSkeleton private constructor(
             }
         }
     }
+}
+
+/**
+ * Keeps a component's own visibility a level above its stack's overrides, the way the real tree nests
+ * them. Merging both onto one stack would let the inner rules decide the outer visibility.
+ */
+@OptIn(InternalRevenueCatAPI::class)
+private fun visibilityWrapper(
+    rules: List<Pair<List<ComponentOverride.Condition>, Boolean?>>,
+    content: () -> StackComponent,
+): StackComponent {
+    val inner = content()
+    if (rules.isEmpty()) return inner
+    return StackComponent(
+        components = listOf(inner),
+        // Mirrors the stack it wraps, so the extra level changes no measurement.
+        size = inner.size,
+        // `visible = null` is what keeps these from deciding visibility: the field defaults to true,
+        // so a size-only partial would make the wrapper visible against the rule below.
+        overrides = inner.overrides.map {
+            ComponentOverride(it.conditions, PartialStackComponent(visible = null, size = it.properties.size))
+        } + rules.map { (conditions, visible) ->
+            ComponentOverride(conditions, PartialStackComponent(visible = visible))
+        },
+    )
 }

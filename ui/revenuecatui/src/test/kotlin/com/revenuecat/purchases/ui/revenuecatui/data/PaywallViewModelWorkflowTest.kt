@@ -14,6 +14,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchaseResult
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
@@ -56,6 +57,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointFailureKind
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter
 import com.revenuecat.purchases.ui.revenuecatui.components.style.WebViewComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.webview.webViewContextSnapshot
@@ -77,6 +79,7 @@ import io.mockk.verify
 import io.mockk.verifyOrder
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
+import com.revenuecat.purchases.common.workflows.WorkflowStepID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -90,6 +93,8 @@ import kotlinx.coroutines.test.setMain
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
+import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
+import com.revenuecat.purchases.withPresentedCheckpointIdentifier
 import kotlinx.serialization.json.JsonPrimitive
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
@@ -254,6 +259,195 @@ class PaywallViewModelWorkflowTest {
         assertThat(resolves).isOne()
     }
 
+    @Test
+    fun `an audience-routed first step shows a skeleton until the branch resolves`() {
+        val gate = CompletableDeferred<WorkflowStepID>()
+        coEvery { purchases.resolveBranch(any(), any()) } coAnswers { gate.await() }
+        val wfl = workflow.copy(
+            initialTrigger = WorkflowTriggerAction.Branch(routes = emptyList(), fallbackStepId = "step-1"),
+        )
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, testOfferings, null, uiConfig)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Nothing is known yet, so the fallback renders as a skeleton and does not count as a real visit.
+        assertThat(vm.workflowState.value?.isSkeleton).isTrue
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+
+        gate.complete("step-2")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertThat(vm.workflowState.value?.isSkeleton).isFalse
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-2")
+    }
+
+    @Test
+    fun `a first step with no branch renders straight away`() {
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertThat(vm.workflowState.value?.isSkeleton).isFalse
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+        coVerify(exactly = 0) { purchases.resolveBranch(any(), any()) }
+    }
+
+    @Test
+    fun `a skeleton does not record a paywall impression for a step nobody reached`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        val gate = CompletableDeferred<WorkflowStepID>()
+        coEvery { purchases.resolveBranch(any(), any()) } coAnswers { gate.await() }
+        val wfl = workflow.copy(
+            initialTrigger = WorkflowTriggerAction.Branch(routes = emptyList(), fallbackStepId = "step-1"),
+        )
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, testOfferings, null, uiConfig)
+        testDispatcher.scheduler.advanceUntilIdle()
+        vm.trackPaywallImpressionIfNeeded()
+
+        assertThat(captured.filterIsInstance<PaywallEvent>()).isEmpty()
+
+        // The branch lands on its own fallback, which is the usual no-match outcome.
+        gate.complete("step-1")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Composition asks again once the real step is on screen, and that one must land.
+        vm.trackPaywallImpressionIfNeeded()
+        assertThat(captured.filterIsInstance<PaywallEvent>()).hasSize(1)
+    }
+
+    @Test
+    fun `a colour rebuild during the wait keeps the skeleton`() {
+        val gate = CompletableDeferred<WorkflowStepID>()
+        var resolves = 0
+        coEvery { purchases.resolveBranch(any(), any()) } coAnswers { resolves++; gate.await() }
+        val wfl = workflow.copy(
+            initialTrigger = WorkflowTriggerAction.Branch(routes = emptyList(), fallbackStepId = "step-1"),
+        )
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, testOfferings, null, uiConfig)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        vm.refreshStateIfColorsChanged(
+            colorScheme = TestData.Constants.currentColorScheme.copy(primary = Color.Black),
+            isDark = true,
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // The live fallback takes taps on a screen the audience can still route away from.
+        assertThat(vm.workflowState.value?.isSkeleton).isTrue
+        assertThat(resolves).isOne()
+
+        gate.complete("step-1")
+        testDispatcher.scheduler.advanceUntilIdle()
+    }
+
+    @Test
+    fun `a dismiss while the skeleton is up attributes no step to the fallback`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        val gate = CompletableDeferred<WorkflowStepID>()
+        coEvery { purchases.resolveBranch(any(), any()) } coAnswers { gate.await() }
+        val wfl = workflow.copy(
+            initialTrigger = WorkflowTriggerAction.Branch(routes = emptyList(), fallbackStepId = "step-1"),
+        )
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, testOfferings, null, uiConfig)
+        testDispatcher.scheduler.advanceUntilIdle()
+        vm.closePaywall()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Nobody saw step-1, so it completed nothing.
+        assertThat(captured.filterIsInstance<WorkflowEvent.StepCompleted>()).isEmpty()
+
+        gate.complete("step-1")
+        testDispatcher.scheduler.advanceUntilIdle()
+    }
+
+    @Test
+    fun `the step a branch picks reports itself as the first step`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        coEvery { purchases.resolveBranch(any(), any()) } returns "step-2"
+        val wfl = workflow.copy(
+            initialTrigger = WorkflowTriggerAction.Branch(routes = emptyList(), fallbackStepId = "step-1"),
+        )
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, testOfferings, null, uiConfig)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // step-2 is not initialStepId, but it is the first screen the user sees.
+        val started = captured.filterIsInstance<WorkflowEvent.StepStarted>().single()
+        assertThat(started.stepId).isEqualTo("step-2")
+        assertThat(started.isFirstStep).isTrue
+    }
+
+    @Test
+    fun `a step routed past the package step still gets its default package`() {
+        val (base, offerings) = makeContextPackageWorkflow()
+        // The package step is also the first step, so nothing else prebuilds it.
+        val wfl = base.copy(
+            initialStepId = "step-2",
+            initialTrigger = WorkflowTriggerAction.Branch(routes = emptyList(), fallbackStepId = "step-2"),
+        )
+        coEvery { purchases.resolveBranch(any(), any()) } returns "step-1"
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, offerings, null, uiConfig)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val routed = vm.workflowState.value?.stepStates?.get("step-1")
+        assertThat(routed?.selectedPackageInfo?.rcPackage?.identifier)
+            .isEqualTo(PackageType.MONTHLY.identifier)
+    }
+
+    @Test
+    fun `a broken fallback step does not stop the step the branch picks`() {
+        // step-1 has no screen, so it cannot render. The audience routes past it.
+        val wfl = workflow.copy(
+            screens = mapOf(screenId2 to makeScreen(screenId2)),
+            initialTrigger = WorkflowTriggerAction.Branch(routes = emptyList(), fallbackStepId = "step-1"),
+        )
+        coEvery { purchases.resolveBranch(any(), any()) } returns "step-2"
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, testOfferings, null, uiConfig)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-2")
+        assertThat(vm.workflowState.value?.isSkeleton).isFalse
+    }
+
+    @Test
+    fun `a key two screens declare differently resolves by screen id, not by build order`() {
+        // screen-1 sorts first, so its default wins wherever the workflow starts.
+        val declared = { value: String ->
+            mapOf("tier" to StateDeclaration(StateDeclaration.ValueType.STRING, JsonPrimitive(value)))
+        }
+        // Starting on step-2, and it is also the package step, so nothing builds screen-1 first.
+        val wfl = workflow.copy(
+            initialStepId = "step-2",
+            singleStepFallbackId = "step-2",
+            screens = mapOf(
+                screenId1 to makeScreen(screenId1).copy(stateDeclarations = declared("one")),
+                screenId2 to makeScreen(screenId2).copy(stateDeclarations = declared("two")),
+            ),
+        )
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, testOfferings, null, uiConfig)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = vm.workflowState.value?.stepStates?.get("step-2") as PaywallState.Loaded.Components
+        assertThat(state.stateStore.currentValueOrDefault("tier")).isEqualTo(JsonPrimitive("one"))
+    }
+
     private fun makeTwoPackageWorkflow(): Pair<PublishedWorkflow, Offerings> {
         val screen1 = makeScreen(screenId1).copy(componentsConfig = twoPackageComponentsConfig)
         val screen2 = makeScreen(screenId2).copy(componentsConfig = twoPackageComponentsConfig)
@@ -279,7 +473,10 @@ class PaywallViewModelWorkflowTest {
         JsonObject(mapOf(WorkflowScreenType.METADATA_KEY to JsonArray(types.map { JsonPrimitive(it) })))
 
     private fun makeContextPackageWorkflow(): Pair<PublishedWorkflow, Offerings> {
-        val earlyScreen = makeScreen(screenId1).copy(componentsConfig = noPackagesComponentsConfig)
+        val earlyScreen = makeScreen(screenId1).copy(
+            componentsConfig = noPackagesComponentsConfig,
+            offeringIdentifier = null,
+        )
         val terminalScreen = makeScreen(screenId2).copy(componentsConfig = twoPackageComponentsConfig)
 
         val earlyStep = WorkflowStep(
@@ -295,7 +492,7 @@ class PaywallViewModelWorkflowTest {
                 ),
             ),
             triggerActions = mapOf("action-next" to WorkflowTriggerAction.Step(stepId = "step-2")),
-            // Like the backend, only the paywall step carries an offering; this one renders without one.
+            // Neither this step nor its screen names an offering, so it renders without one.
             paramValues = emptyMap(),
             // Context (non-paywall) step: tagged with an empty screen_type so it suppresses paywall events.
             metadata = screenTypeMetadata(),
@@ -567,12 +764,16 @@ class PaywallViewModelWorkflowTest {
         )
     }
 
-    private fun TestScope.createInjectedWorkflowVm(traceId: String?): PaywallViewModelImpl {
+    private fun TestScope.createInjectedWorkflowVm(
+        traceId: String?,
+        injectedWorkflow: PublishedWorkflow = workflow,
+        workflowBlobRef: String? = null,
+    ): PaywallViewModelImpl {
         val vm = PaywallViewModelImpl(
             resourceProvider = MockResourceProvider(),
             purchases = purchases,
             options = PaywallOptions.Builder(dismissRequest = {})
-                .injectedWorkflow(workflow, testOfferings, uiConfig, traceId)
+                .injectedWorkflow(injectedWorkflow, testOfferings, uiConfig, traceId, workflowBlobRef)
                 .build(),
             colorScheme = TestData.Constants.currentColorScheme,
             isDarkMode = false,
@@ -1374,6 +1575,25 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
+    fun `workflow load from a checkpoint offering uses the checkpoint trace id`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers {
+            captured.add(firstArg())
+        }
+        val checkpointContext = testOfferings.all.values.first()
+            .withPresentedCheckpointIdentifier("app_start", traceId = "hit_trace")
+            .availablePackages.first().presentedOfferingContext
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, checkpointContext, uiConfig)
+        advanceUntilIdle()
+
+        assertThat(captured.filterIsInstance<WorkflowEvent.StepStarted>().single().traceId).isEqualTo("hit_trace")
+        val loadedOffering = (vm.state.value as PaywallState.Loaded.Components).offering
+        assertThat(loadedOffering.availablePackages.first().presentedOfferingContext.traceId).isEqualTo("hit_trace")
+    }
+
+    @Test
     fun `color scheme rebuild during workflow does not track another StepStarted`() {
         val captured = mutableListOf<FeatureEvent>()
         every { purchases.track(any()) } answers { captured.add(firstArg()) }
@@ -1820,19 +2040,19 @@ class PaywallViewModelWorkflowTest {
     fun `a failed purchase during a workflow is handed to the error presenter`() = runTest {
         coEvery { purchases.awaitPurchase(any()) } throws
             PurchasesException(PurchasesError(PurchasesErrorCode.StoreProblemError))
-        val presented = mutableListOf<Boolean>()
-        val vm = createVm(errorPresenter = { _, flowCanContinue, _ -> presented += flowCanContinue })
+        val presented = mutableListOf<CheckpointFailureKind>()
+        val vm = createVm(errorPresenter = { _, kind, _ -> presented += kind })
         vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
         advanceUntilIdle()
 
         vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
 
-        assertThat(presented).containsExactly(true)
+        assertThat(presented).containsExactly(CheckpointFailureKind.FLOW_ACTION_FAILED)
         assertThat(vm.actionError.value).isNull()
     }
 
     @Test
-    fun `NavigateBack from the error presenter mid-flow goes to the previous step`() = runTest {
+    fun `completing the error presenter mid-flow keeps the current step`() = runTest {
         coEvery { purchases.awaitPurchase(any()) } throws
             PurchasesException(PurchasesError(PurchasesErrorCode.StoreProblemError))
         var completion: ErrorPresenter.Completion? = null
@@ -1847,32 +2067,12 @@ class PaywallViewModelWorkflowTest {
         advanceUntilIdle()
         vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
 
-        completion!!.complete(ErrorPresenter.Completion.Result.NavigateBack)
+        completion!!.complete()
         advanceUntilIdle()
 
         assertThat(dismissals).isEmpty()
-        assertThat(vm.workflowState.value?.pendingTransition?.direction).isEqualTo(NavigationDirection.BACKWARD)
-        assertThat(vm.workflowState.value?.pendingTransition?.fromStepId).isEqualTo("step-2")
-    }
-
-    @Test
-    fun `NavigateBack from the error presenter on the first step leaves the flow`() = runTest {
-        coEvery { purchases.awaitPurchase(any()) } throws
-            PurchasesException(PurchasesError(PurchasesErrorCode.StoreProblemError))
-        var completion: ErrorPresenter.Completion? = null
-        val dismissals = mutableListOf<PaywallDismissReason>()
-        val vm = createVm(
-            dismissRequestWithExitOffering = { _, _, reason -> dismissals += reason },
-            errorPresenter = { _, _, c -> completion = c },
-        )
-        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
-        advanceUntilIdle()
-        vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
-
-        completion!!.complete(ErrorPresenter.Completion.Result.NavigateBack)
-        advanceUntilIdle()
-
-        assertThat(dismissals).containsExactly(PaywallDismissReason.NAVIGATED_BACK)
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-2")
+        assertThat(vm.workflowState.value?.pendingTransition).isNull()
     }
 
     @Test
@@ -2128,7 +2328,7 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
-    fun `error during navigation clears workflow state and fires StepCompleted with null toStepId`() {
+    fun `a step that cannot be shown keeps the current step and fires no navigation events`() {
         val captured = mutableListOf<FeatureEvent>()
         every { purchases.track(any()) } answers { captured.add(firstArg()) }
 
@@ -2136,24 +2336,51 @@ class PaywallViewModelWorkflowTest {
         vm.startWorkflowPresentationFromResult(fetchResultToError, testOfferingsWithEmpty, null, uiConfig)
         captured.clear() // clear load event
 
-        // Navigate to step-3 — computeStateForStep returns Error since its offering has no packages
+        // Navigate to step-3: computeStateForStep returns Error since its offering has no packages
         vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
 
-        val workflowEvents = captured.filterIsInstance<WorkflowEvent>()
-        // StepCompleted for step-1 must be fired when _workflowState is cleared due to error
-        val completed = workflowEvents.filterIsInstance<WorkflowEvent.StepCompleted>()
-        assertThat(completed).hasSize(1)
-        assertThat(completed[0].stepId).isEqualTo("step-1")
-        assertThat(completed[0].toStepId).isNull()
+        assertThat(captured.filterIsInstance<WorkflowEvent>()).isEmpty()
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+        assertThat(vm.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+        assertThat(vm.actionError.value?.underlyingErrorMessage).contains("No packages available")
     }
 
     @Test
-    fun `initial step without an offering renders without one even when its screen names one`() {
+    fun `initial step without an offering uses its screen's offering`() {
         val stepWithoutOffering = step1.copy(paramValues = emptyMap())
         val workflowWithoutOffering = workflow.copy(steps = mapOf("step-1" to stepWithoutOffering, "step-2" to step2))
 
         val vm = createVm()
         vm.startWorkflowPresentationFromResult(workflowWithoutOffering, testOfferings, null, uiConfig)
+
+        val loaded = vm.state.value as PaywallState.Loaded.Components
+        assertThat(loaded.workflowScreen?.hasOffering).isTrue
+        assertThat(loaded.offering.identifier).isEqualTo(offeringId)
+        assertThat(loaded.offering.availablePackages).isEqualTo(testOffering.availablePackages)
+    }
+
+    @Test
+    fun `step's own offering takes precedence over its screen's offering`() {
+        val stepWithOwnOffering = step1.copy(paramValues = offeringParams(exitOfferingId))
+        val wfl = workflow.copy(steps = mapOf("step-1" to stepWithOwnOffering, "step-2" to step2))
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, testOfferingsWithExitOffer, null, uiConfig)
+
+        val loaded = vm.state.value as PaywallState.Loaded.Components
+        assertThat(loaded.offering.identifier).isEqualTo(exitOfferingId)
+    }
+
+    @Test
+    fun `initial step renders without an offering when neither the step nor its screen names one`() {
+        val stepWithoutOffering = step1.copy(paramValues = emptyMap())
+        val wfl = workflow.copy(
+            steps = mapOf("step-1" to stepWithoutOffering, "step-2" to step2),
+            screens = workflow.screens + (screenId1 to makeScreen(screenId1).copy(offeringIdentifier = null)),
+        )
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, testOfferings, null, uiConfig)
 
         assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
         val loaded = vm.state.value as PaywallState.Loaded.Components
@@ -2238,7 +2465,7 @@ class PaywallViewModelWorkflowTest {
             resourceProvider = MockResourceProvider(),
             purchases = purchases,
             options = PaywallOptions.Builder(dismissRequest = {})
-                .injectedWorkflow(twoOfferingWorkflow, offerings, uiConfig)
+                .injectedWorkflow(twoOfferingWorkflow, offerings, uiConfig, traceId = null, workflowBlobRef = null)
                 .build(),
             colorScheme = TestData.Constants.currentColorScheme,
             isDarkMode = false,
@@ -2255,52 +2482,104 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
-    fun `navigation to a step whose offering is not in offerings fails the workflow with an error`() {
-        val stepWithUnknownOffering = step2.copy(paramValues = offeringParams("unknown_offering"))
-        val workflowToStepWithUnknownOffering =
-            workflow.copy(steps = mapOf("step-1" to step1, "step-2" to stepWithUnknownOffering))
+    fun `a checkpoint workflow adds its identifier only to the offering resolved for a step`() = runTest {
+        val checkpointIdentifier = "test_checkpoint"
+        val unrelatedOffering = Offering(
+            identifier = "unrelated_offering",
+            serverDescription = "",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly),
+        )
+        val sourceOfferings = Offerings(
+            current = testOffering,
+            all = mapOf(
+                testOffering.identifier to testOffering,
+                unrelatedOffering.identifier to unrelatedOffering,
+            ),
+        )
+        val vm = PaywallViewModelImpl(
+            resourceProvider = MockResourceProvider(),
+            purchases = purchases,
+            options = PaywallOptions.Builder(dismissRequest = {})
+                .injectedWorkflow(
+                    workflow,
+                    sourceOfferings,
+                    uiConfig,
+                    traceId = null,
+                    workflowBlobRef = null,
+                    checkpointIdentifier = checkpointIdentifier,
+                )
+                .build(),
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+            backgroundDispatcher = testDispatcher,
+        )
+        advanceUntilIdle()
 
-        val captured = mutableListOf<FeatureEvent>()
-        every { purchases.track(any()) } answers { captured.add(firstArg()) }
-        val vm = createVm()
-        vm.startWorkflowPresentationFromResult(workflowToStepWithUnknownOffering, testOfferings, null, uiConfig)
-        captured.clear()
-
-        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
-
-        assertThat(vm.workflowState.value).isNull()
-        val error = vm.state.value as PaywallState.Error
-        assertThat(error.errorMessage).contains("Offering 'unknown_offering' not found for step 'step-2'")
-        assertThat(error.toPaywallResult().error.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
-        val workflowEvents = captured.filterIsInstance<WorkflowEvent>()
-        assertThat(workflowEvents).hasSize(2)
-        val completed = workflowEvents[0] as WorkflowEvent.StepCompleted
-        assertThat(completed.stepId).isEqualTo("step-1")
-        assertThat(completed.toStepId).isNull()
-        val close = workflowEvents[1] as WorkflowEvent.Close
-        assertThat(close.stepId).isEqualTo("step-1")
-        assertThat(close.traceId).isEqualTo(completed.traceId)
+        val loadedOffering = (vm.state.value as PaywallState.Loaded.Components).offering
+        assertThat(loadedOffering.presentedOfferingContext?.checkpointIdentifierForTest())
+            .isEqualTo(checkpointIdentifier)
+        assertThat(sourceOfferings.all.values.map { it.presentedOfferingContext?.checkpointIdentifierForTest() })
+            .containsOnlyNulls()
     }
 
     @Test
-    fun `dismissing the error after a failed navigation does not repeat the workflow events`() {
+    fun `navigation to a step whose offering is not in offerings keeps the current step with the error`() {
         val stepWithUnknownOffering = step2.copy(paramValues = offeringParams("unknown_offering"))
         val workflowToStepWithUnknownOffering =
             workflow.copy(steps = mapOf("step-1" to step1, "step-2" to stepWithUnknownOffering))
+
         val captured = mutableListOf<FeatureEvent>()
         every { purchases.track(any()) } answers { captured.add(firstArg()) }
         val vm = createVm()
         vm.startWorkflowPresentationFromResult(workflowToStepWithUnknownOffering, testOfferings, null, uiConfig)
-        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
         captured.clear()
 
-        vm.closePaywall(result = (vm.state.value as PaywallState.Error).toPaywallResult())
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
 
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+        assertThat(vm.workflowState.value?.pendingTransition).isNull()
+        val error = vm.actionError.value!!
+        assertThat(error.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
+        assertThat(error.underlyingErrorMessage).contains("Offering 'unknown_offering' not found for step 'step-2'")
         assertThat(captured.filterIsInstance<WorkflowEvent>()).isEmpty()
     }
 
+    private fun PresentedOfferingContext.checkpointIdentifierForTest(): String? {
+        val field = PresentedOfferingContext::class.java.getDeclaredField("checkpointIdentifier")
+        field.isAccessible = true
+        return field.get(this) as String?
+    }
+
     @Test
-    fun `navigation to a step whose screen is missing fails the workflow with an error`() {
+    fun `a step that cannot be shown is handed to the error presenter as an error during the flow`() {
+        val stepWithUnknownOffering = step2.copy(paramValues = offeringParams("unknown_offering"))
+        val workflowToStepWithUnknownOffering =
+            workflow.copy(steps = mapOf("step-1" to step1, "step-2" to stepWithUnknownOffering))
+        val presented = mutableListOf<CheckpointFailureKind>()
+        var completion: ErrorPresenter.Completion? = null
+        val dismissals = mutableListOf<PaywallDismissReason>()
+        val vm = createVm(
+            dismissRequestWithExitOffering = { _, _, reason -> dismissals += reason },
+            errorPresenter = { _, kind, c ->
+                presented += kind
+                completion = c
+            },
+        )
+        vm.startWorkflowPresentationFromResult(workflowToStepWithUnknownOffering, testOfferings, null, uiConfig)
+
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        completion!!.complete()
+
+        assertThat(presented).containsExactly(CheckpointFailureKind.FLOW_ACTION_FAILED)
+        assertThat(vm.actionError.value).isNull()
+        assertThat(dismissals).isEmpty()
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+    }
+
+    @Test
+    fun `navigation to a step whose screen is missing keeps the current step with the error`() {
         val stepWithMissingScreen = step2.copy(screenId = "missing-screen")
         val workflowToMissingScreen =
             workflow.copy(steps = mapOf("step-1" to step1, "step-2" to stepWithMissingScreen))
@@ -2310,10 +2589,8 @@ class PaywallViewModelWorkflowTest {
 
         vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
 
-        assertThat(vm.workflowState.value).isNull()
-        val error = vm.state.value as PaywallState.Error
-        assertThat(error.errorMessage).contains("Screen 'missing-screen' not found")
-        assertThat(error.error?.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+        assertThat(vm.actionError.value?.underlyingErrorMessage).contains("Screen 'missing-screen' not found")
     }
 
     @Test
@@ -2388,6 +2665,43 @@ class PaywallViewModelWorkflowTest {
         val impression = captured.filterIsInstance<PaywallEvent>()
             .single { it.type == PaywallEventType.IMPRESSION }
         assertThat(impression.data.traceId).isEqualTo("checkpoint-trace")
+    }
+
+    @Test
+    fun `an injected workflow's step events carry its blob ref and experiment data`() = runTest {
+        val experimentStep1 = step1.copy(
+            paramValues = mapOf(
+                "experiment_id" to JsonPrimitive("exp_abc"),
+                "experiment_variant" to JsonPrimitive("b"),
+            ),
+        )
+        val experimentWorkflow = workflow.copy(steps = mapOf("step-1" to experimentStep1, "step-2" to step2))
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createInjectedWorkflowVm(
+            traceId = "checkpoint-trace",
+            injectedWorkflow = experimentWorkflow,
+            workflowBlobRef = "blob-ref-1",
+        )
+        vm.closePaywall(result = null)
+
+        val workflowEvents = captured.filterIsInstance<WorkflowEvent>()
+        assertThat(workflowEvents.map { it::class }).containsExactlyInAnyOrder(
+            WorkflowEvent.StepStarted::class,
+            WorkflowEvent.StepCompleted::class,
+            WorkflowEvent.Close::class,
+        )
+        workflowEvents.forEach { event ->
+            val (blobRef, experiment) = when (event) {
+                is WorkflowEvent.StepStarted -> event.workflowBlobRef to event.experiment
+                is WorkflowEvent.StepCompleted -> event.workflowBlobRef to event.experiment
+                is WorkflowEvent.Close -> event.workflowBlobRef to event.experiment
+            }
+            assertThat(blobRef).`as`(event::class.simpleName).isEqualTo("blob-ref-1")
+            assertThat(experiment?.experimentId).`as`(event::class.simpleName).isEqualTo("exp_abc")
+            assertThat(experiment?.experimentVariant).`as`(event::class.simpleName).isEqualTo("b")
+        }
     }
 
     @Test

@@ -41,6 +41,7 @@ internal class SubscriberAttributesPoster(
                     onErrorHandler(error, successfullySynced, attributeErrors)
                 } ?: onSuccessHandler()
             },
+            iamAppUserID = appUserID,
         )
     }
 }

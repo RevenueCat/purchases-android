@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="OK">OK</string>
+    <string name="loading">Loading</string>
     <string name="restore_purchases">Restore purchases</string>
     <string name="restore">Restore</string>
     <string name="terms_and_conditions">Terms and conditions</string>
@@ -24,4 +25,13 @@
     <string name="revenuecatui_purchase">Purchase</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
     <string name="revenuecatui_preview_workflow_load_error">The preview workflow could not be loaded. Please try again.</string>
+    <string name="revenuecatui_checkpoint_error_network">Couldn\'t connect. Check your internet connection and try again.</string>
+    <string name="revenuecatui_checkpoint_error_load">This content couldn\'t be loaded. Please try again later.</string>
+    <string name="revenuecatui_checkpoint_error_store">There was a problem with the store. Please try again later.</string>
+    <string name="revenuecatui_checkpoint_error_purchase_not_allowed">Purchases aren\'t allowed on this device.</string>
+    <string name="revenuecatui_checkpoint_error_product_unavailable">This product isn\'t available right now.</string>
+    <string name="revenuecatui_checkpoint_error_already_purchased">You already own this product.</string>
+    <string name="revenuecatui_checkpoint_error_payment_pending">Your payment is pending. You\'ll get access once it\'s approved.</string>
+    <string name="revenuecatui_checkpoint_error_generic">Something went wrong. Please try again.</string>
+    <string name="revenuecatui_checkpoint_error_sync">Your purchases couldn\'t be verified. Please try again later.</string>
 </resources>
