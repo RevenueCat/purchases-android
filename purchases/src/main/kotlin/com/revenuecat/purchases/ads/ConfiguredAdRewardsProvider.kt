@@ -1,13 +1,9 @@
 package com.revenuecat.purchases.ads
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
 import com.revenuecat.purchases.common.remoteconfig.readConsistent
-import com.revenuecat.purchases.common.toPurchasesError
 import com.revenuecat.purchases.common.warnLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -45,94 +41,78 @@ internal class ConfiguredAdRewardsProvider(
 
     suspend fun rewards(adUnitId: String): ConfiguredAdRewards? {
         if (adUnitId.isEmpty()) {
-            warnLog { "Configured ad rewards unavailable: The ad unit ID must not be empty." }
-            return null
+            return unavailable("The ad unit ID must not be empty.")
         }
-        return try {
-            val resolution = manager.readConsistent(what = { "configured rewards for ad unit '$adUnitId'" }) { _ ->
-                resolve(adUnitId)
-            }
-            resolution?.getOrThrow()
-                ?: throw unavailable("Remote configuration changed while resolving configured ad rewards.")
-        } catch (e: PurchasesException) {
-            warnLog { "Configured ad rewards unavailable: ${e.underlyingErrorMessage}" }
-            null
+        return manager.readConsistent(what = { "configured rewards for ad unit '$adUnitId'" }) { _ ->
+            resolve(adUnitId)
         }
     }
 
-    // Keep failures inside the generation check too, so a superseded failure can be retried.
-    private suspend fun resolve(adUnitId: String): Result<ConfiguredAdRewards> {
+    private suspend fun resolve(adUnitId: String): ConfiguredAdRewards? {
         if (manager.isDisabled) {
-            return Result.failure(
-                PurchasesException(
-                    PurchasesError(PurchasesErrorCode.ConfigurationError, "Remote configuration is disabled."),
-                ),
-            )
+            return unavailable("Remote configuration is disabled.")
         }
         val topic = manager.awaitTopicAndPrefetchBlobsReady(RemoteConfigTopic.AdRewards)
         return when {
             topic == null -> if (manager.hasCommittedConfig()) {
-                Result.success(ConfiguredAdRewards(emptyList()))
+                ConfiguredAdRewards(emptyList())
             } else {
-                Result.failure(unavailable("No committed remote configuration is available for configured ad rewards."))
+                unavailable("No committed remote configuration is available for configured ad rewards.")
             }
             topic[ITEM_DEFAULT]?.blobRef == null ->
-                Result.failure(invalidConfiguration("The ad_rewards topic has no default blob reference."))
-            else -> manager.blobData(RemoteConfigTopic.AdRewards, ITEM_DEFAULT) { bytes ->
-                try {
-                    Result.success(decode(bytes.decodeToString(), adUnitId))
-                } catch (e: PurchasesException) {
-                    Result.failure(e)
+                unavailable("The ad_rewards topic has no default blob reference.")
+            else -> {
+                val bytes = manager.blobData(RemoteConfigTopic.AdRewards, ITEM_DEFAULT) { it }
+                if (bytes == null) {
+                    unavailable("The configured ad rewards blob could not be resolved.")
+                } else {
+                    decode(bytes.decodeToString(), adUnitId)
                 }
-            } ?: Result.failure(unavailable("The configured ad rewards blob could not be resolved."))
+            }
         }
     }
-
-    private fun unavailable(message: String): PurchasesException =
-        PurchasesException(PurchasesError(PurchasesErrorCode.UnknownError, message))
 
     internal companion object {
         private const val ITEM_DEFAULT = "default"
 
-        fun decode(data: String, adUnitId: String): ConfiguredAdRewards {
+        private fun unavailable(message: String): ConfiguredAdRewards? {
+            warnLog { "Configured ad rewards unavailable: $message" }
+            return null
+        }
+
+        @Suppress("ReturnCount")
+        fun decode(data: String, adUnitId: String): ConfiguredAdRewards? {
             val payload = try {
                 Json.parseToJsonElement(data)
             } catch (e: SerializationException) {
-                throw PurchasesException(e.toPurchasesError()).apply { initCause(e) }
+                return unavailable("Configured ad rewards contain invalid JSON: ${e.message}")
             }
             if (payload !is JsonObject) {
-                throw invalidConfiguration("Configured ad rewards must be a JSON object.")
+                return unavailable("Configured ad rewards must be a JSON object.")
             }
             val entry = payload[adUnitId] ?: return ConfiguredAdRewards(emptyList())
             return decodeAdUnit(entry, adUnitId)
         }
 
-        private fun decodeAdUnit(value: JsonElement, adUnitId: String): ConfiguredAdRewards {
+        @Suppress("ReturnCount")
+        private fun decodeAdUnit(value: JsonElement, adUnitId: String): ConfiguredAdRewards? {
             if (value !is JsonObject) {
-                throw invalidConfiguration("Configured rewards for ad unit '$adUnitId' must be an object.")
+                return unavailable("Configured rewards for ad unit '$adUnitId' must be an object.")
             }
-            val moreRewards = decodeMoreRewards(value["more_rewards"], adUnitId)
+            val moreRewards = when (val more = value["more_rewards"]) {
+                null, JsonNull -> emptyList()
+                is JsonArray -> more.mapNotNull(::decodeReward)
+                else -> return unavailable("more_rewards for ad unit '$adUnitId' must be an array or null.")
+            }
             val reward = decodeReward(value["reward"])
             return when {
                 reward != null -> ConfiguredAdRewards(listOf(reward) + moreRewards)
                 moreRewards.isEmpty() -> ConfiguredAdRewards(emptyList())
-                else -> throw invalidConfiguration(
+                else -> unavailable(
                     "Ad unit '$adUnitId' has additional rewards without a primary reward.",
                 )
             }
         }
-
-        private fun decodeMoreRewards(
-            value: JsonElement?,
-            adUnitId: String,
-        ): List<AdRewardConfiguration> = when (value) {
-            null, JsonNull -> emptyList()
-            is JsonArray -> value.mapNotNull(::decodeReward)
-            else -> throw invalidConfiguration("more_rewards for ad unit '$adUnitId' must be an array or null.")
-        }
-
-        private fun invalidConfiguration(message: String): PurchasesException =
-            PurchasesException(PurchasesError(PurchasesErrorCode.UnknownError, message))
 
         private fun decodeReward(value: JsonElement?): AdRewardConfiguration? {
             if (value == null || value == JsonNull) return null
