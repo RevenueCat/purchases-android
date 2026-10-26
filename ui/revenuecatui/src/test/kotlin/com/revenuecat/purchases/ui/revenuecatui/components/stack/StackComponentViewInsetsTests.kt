@@ -40,6 +40,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
+import com.revenuecat.purchases.ui.revenuecatui.components.resolveHeroInsets
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.StyleFactory
@@ -209,6 +210,7 @@ class StackComponentViewInsetsTests {
             WindowInsets.safeDrawing
             if (showStack) {
                 val stack: @Composable () -> Unit = {
+                    resolveHeroInsets(style, state)
                     StackComponentView(
                         style = style,
                         state = state,

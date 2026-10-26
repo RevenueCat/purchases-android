@@ -26,6 +26,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
+import com.revenuecat.purchases.ui.revenuecatui.components.resolveHeroInsets
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.StyleFactory
@@ -89,7 +90,9 @@ internal class HiddenHeroLayoutReproductionTest {
             view = LocalView.current
             WindowInsets.safeDrawing
             if (showContent.value) {
-                StackComponentView(if (withSide.value) changed else baseline, state, { })
+                val style = if (withSide.value) changed else baseline
+                resolveHeroInsets(style, state)
+                StackComponentView(style, state, { })
             }
         }
         composeTestRule.waitForIdle()

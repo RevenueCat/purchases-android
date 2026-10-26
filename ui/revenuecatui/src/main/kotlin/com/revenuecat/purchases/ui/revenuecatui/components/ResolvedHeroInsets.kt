@@ -68,7 +68,7 @@ private data class FirstVisibleLeaf(
     val ancestors: List<Pair<StackComponentStyle, ComponentStyle>> = emptyList(),
 )
 
-/** Resolve after MeasurePaywallBounds, using the same visibility and size states as rendering. */
+/** Resolve once in the paywall container after MeasurePaywallBounds; descendant stacks share this result. */
 @Composable
 internal fun resolveHeroInsets(
     root: ComponentStyle,
