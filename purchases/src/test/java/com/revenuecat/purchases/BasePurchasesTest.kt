@@ -482,6 +482,7 @@ internal open class BasePurchasesTest {
         enableSimulatedStore: Boolean = false,
         store: Store = Store.PLAY_STORE,
         subscriberAttributesManager: SubscriberAttributesManager = mockSubscriberAttributesManager,
+        diagnosticsEnabled: Boolean = true,
     ) {
         appConfig = AppConfig(
             context = mockContext,
@@ -511,7 +512,7 @@ internal open class BasePurchasesTest {
             customerInfoHelper = mockCustomerInfoHelper,
             customerInfoUpdateHandler = mockCustomerInfoUpdateHandler,
             diagnosticsSynchronizer = mockDiagnosticsSynchronizer,
-            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker.takeIf { diagnosticsEnabled },
             dateProvider = mockDateProvider,
             offlineEntitlementsManager = mockOfflineEntitlementsManager,
             postReceiptHelper = mockPostReceiptHelper,

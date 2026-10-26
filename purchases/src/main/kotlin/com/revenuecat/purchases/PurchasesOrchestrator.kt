@@ -1855,11 +1855,16 @@ internal class PurchasesOrchestrator(
         }
     }
 
-    private fun getPurchaseCallback(productId: String): PurchaseCallback? {
-        return state.purchaseCallbacksByProductId[productId].also {
-            state = state.copy(
-                purchaseCallbacksByProductId = state.purchaseCallbacksByProductId.filterNot { it.key == productId },
-            )
+    // A distinct instance identifies each launch even when the app reuses its listener.
+    private class PurchaseAttemptCallback(callback: PurchaseCallback) : PurchaseCallback by callback
+
+    private fun getPurchaseCallback(productId: String, expectedCallback: PurchaseCallback?): PurchaseCallback? {
+        return synchronized(this) {
+            state.purchaseCallbacksByProductId[productId]?.takeIf { it === expectedCallback }?.also {
+                state = state.copy(
+                    purchaseCallbacksByProductId = state.purchaseCallbacksByProductId.filterNot { it.key == productId },
+                )
+            }
         }
     }
 
@@ -1889,7 +1894,7 @@ internal class PurchasesOrchestrator(
                         callbackPair = getProductChangeCompletedCallbacks(deprecatedProductChangeListener)
                     } else {
                         deprecatedProductChangeListener = null
-                        callbackPair = getPurchaseCompletedCallbacks()
+                        callbackPair = getPurchaseCompletedCallbacks(state.purchaseCallbacksByProductId)
                     }
                 }
 
@@ -1928,14 +1933,18 @@ internal class PurchasesOrchestrator(
         }
     }
 
-    private fun getPurchaseCompletedCallbacks(): Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback> {
+    private fun getPurchaseCompletedCallbacks(
+        purchaseCallbacksByProductId: Map<String, PurchaseCallback>,
+    ): Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback> {
+        // Capture attempts before posting receipts. Responses must not resolve a launch registered later.
         val onSuccess: SuccessfulPurchaseCallback = { storeTransaction, info ->
             // This lets the backup manager know a change in data happened that would be good to backup.
             // In this case, we want to make sure that if there is a purchase, we schedule a backup.
             backupManager.dataChanged()
             blockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded {
                 blockstoreHelper.storeUserIdIfNeeded(info)
-                getPurchaseCallback(storeTransaction.productIds[0])?.let { purchaseCallback ->
+                val productId = storeTransaction.productIds[0]
+                getPurchaseCallback(productId, purchaseCallbacksByProductId[productId])?.let { purchaseCallback ->
                     val billedBasePlanId = billedBasePlanIdOfEarlierLaunch(storeTransaction, info)
                     if (billedBasePlanId == null) {
                         dispatch {
@@ -1960,7 +1969,8 @@ internal class PurchasesOrchestrator(
             }
         }
         val onError: ErrorPurchaseCallback = { purchase, error ->
-            getPurchaseCallback(purchase.productIds[0])?.dispatch(error)
+            val productId = purchase.productIds[0]
+            getPurchaseCallback(productId, purchaseCallbacksByProductId[productId])?.dispatch(error)
         }
 
         return Pair(onSuccess, onError)
@@ -1989,6 +1999,15 @@ internal class PurchasesOrchestrator(
 
     private fun wasLaunchedInThisSession(productId: String, basePlanId: String): Boolean = synchronized(this) {
         launchedBasePlanIdsByProductId[productId]?.contains(basePlanId) == true
+    }
+
+    private fun recordLaunchedBasePlan(purchasingData: PurchasingData) {
+        val subscription = purchasingData as? GooglePurchasingData.Subscription ?: return
+        synchronized(this) {
+            launchedBasePlanIdsByProductId
+                .getOrPut(subscription.productId) { mutableSetOf() }
+                .add(basePlanIdOf(subscription.optionId))
+        }
     }
 
     // Option ids are basePlanId or basePlanId:offerId.
@@ -2061,15 +2080,13 @@ internal class PurchasesOrchestrator(
                 log(LogIntent.WARNING) { PurchaseStrings.PURCHASE_FINISH_TRANSACTION_FALSE }
             }
             if (!state.purchaseCallbacksByProductId.containsKey(purchasingData.productId)) {
-                val mapOfProductIdToListener = mapOf(purchasingData.productId to listenerWithDiagnostics)
+                val mapOfProductIdToListener = mapOf(
+                    purchasingData.productId to PurchaseAttemptCallback(listenerWithDiagnostics),
+                )
                 state = state.copy(
                     purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener,
                 )
-                (purchasingData as? GooglePurchasingData.Subscription)?.let { subscription ->
-                    launchedBasePlanIdsByProductId
-                        .getOrPut(subscription.productId) { mutableSetOf() }
-                        .add(basePlanIdOf(subscription.optionId))
-                }
+                recordLaunchedBasePlan(purchasingData)
                 userPurchasing = identityManager.currentAppUserID
             }
         }
@@ -2157,10 +2174,11 @@ internal class PurchasesOrchestrator(
                 } else {
                     purchasingData.productId
                 }
-                val mapOfProductIdToListener = mapOf(productId to callbackWithDiagnostics)
+                val mapOfProductIdToListener = mapOf(productId to PurchaseAttemptCallback(callbackWithDiagnostics))
                 state = state.copy(
                     purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener,
                 )
+                recordLaunchedBasePlan(purchasingData)
                 userPurchasing = identityManager.currentAppUserID
             }
         }

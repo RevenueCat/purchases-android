@@ -25,6 +25,7 @@ import com.revenuecat.purchases.google.toInAppStoreProduct
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
+import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.models.GoogleStoreProduct
@@ -1553,6 +1554,75 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         )
 
         assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.ProductAlreadyPurchasedError)
+    }
+
+    @Test
+    fun `late purchase of a cancelled product change fails the pending product change`() {
+        val (planA, planB) = mockQueryingSubscriptionWithTwoBasePlans()
+        val oldProductId = mockPurchaseFound().productIds.first()
+        purchases.purchaseWith(
+            getPurchaseParams(planA, oldProductId, storeReplacementMode = StoreReplacementMode.WITH_TIME_PRORATION),
+            onError = { _, _ -> },
+        ) { _, _ ->
+            fail("plan A was cancelled")
+        }
+        capturedPurchasesUpdatedListener.captured.onPurchasesFailedToUpdate(
+            PurchasesError(PurchasesErrorCode.PurchaseCancelledError),
+        )
+        var receivedError: PurchasesError? = null
+        purchases.purchaseWith(
+            getPurchaseParams(planB, oldProductId, storeReplacementMode = StoreReplacementMode.WITH_TIME_PRORATION),
+            onError = { error, _ -> receivedError = error },
+        ) { _, _ -> fail("the product change must not complete with plan A's purchase") }
+
+        deliverSubscriptionPurchase(
+            orderId = "GPA.plan-a",
+            stampedOptionId = planB.id,
+            customerInfo = customerInfoWithSubscription(storeTransactionId = "GPA.plan-a", basePlanId = "plan-a"),
+            replacementMode = StoreReplacementMode.WITH_TIME_PRORATION,
+        )
+
+        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.ProductAlreadyPurchasedError)
+    }
+
+    @Test
+    fun `late receipt success does not complete a newer purchase`() {
+        assertReceiptResponseDoesNotResolveNewPurchase(cancelBeforeReceiptPost = true, receiptSucceeds = true)
+    }
+
+    @Test
+    fun `late receipt failure does not fail a newer purchase`() {
+        assertReceiptResponseDoesNotResolveNewPurchase(cancelBeforeReceiptPost = true, receiptSucceeds = false)
+    }
+
+    @Test
+    fun `receipt success for a cancelled purchase does not complete a newer purchase`() {
+        assertReceiptResponseDoesNotResolveNewPurchase(cancelBeforeReceiptPost = false, receiptSucceeds = true)
+    }
+
+    @Test
+    fun `receipt failure for a cancelled purchase does not fail a newer purchase`() {
+        assertReceiptResponseDoesNotResolveNewPurchase(cancelBeforeReceiptPost = false, receiptSucceeds = false)
+    }
+
+    @Test
+    fun `late receipt response does not resolve a newer purchase reusing the same callback`() {
+        buildPurchases(anonymous = false, diagnosticsEnabled = false)
+        assertReceiptResponseDoesNotResolveNewPurchase(
+            cancelBeforeReceiptPost = false,
+            receiptSucceeds = true,
+            reuseCallback = true,
+        )
+    }
+
+    @Test
+    fun `pending receipt success completes the original purchase once`() {
+        assertReceiptResponseResolvesOriginalPurchase(receiptSucceeds = true)
+    }
+
+    @Test
+    fun `pending receipt failure fails the original purchase once`() {
+        assertReceiptResponseResolvesOriginalPurchase(receiptSucceeds = false)
     }
 
     @Test
@@ -3560,6 +3630,93 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         return completed
     }
 
+    private fun assertReceiptResponseResolvesOriginalPurchase(receiptSucceeds: Boolean) {
+        val (planA, _) = mockQueryingSubscriptionWithTwoBasePlans()
+        var completed = 0
+        var failed = 0
+        purchases.purchaseWith(
+            getPurchaseParams(planA),
+            onError = { error, userCancelled ->
+                assertThat(error.code).isEqualTo(PurchasesErrorCode.NetworkError)
+                assertThat(userCancelled).isFalse
+                failed++
+            },
+        ) { _, _ -> completed++ }
+        val pendingReceipt = deliverSubscriptionPurchase(
+            orderId = "GPA.plan-a",
+            stampedOptionId = planA.id,
+            customerInfo = customerInfoWithSubscription(storeTransactionId = "GPA.plan-a", basePlanId = "plan-a"),
+            completeReceiptImmediately = false,
+        )
+
+        repeat(2) {
+            if (receiptSucceeds) pendingReceipt.complete() else {
+                pendingReceipt.fail(PurchasesError(PurchasesErrorCode.NetworkError))
+            }
+        }
+
+        assertThat(completed).isEqualTo(if (receiptSucceeds) 1 else 0)
+        assertThat(failed).isEqualTo(if (receiptSucceeds) 0 else 1)
+    }
+
+    private fun assertReceiptResponseDoesNotResolveNewPurchase(
+        cancelBeforeReceiptPost: Boolean,
+        receiptSucceeds: Boolean,
+        reuseCallback: Boolean = false,
+    ) {
+        val (planA, planB) = mockQueryingSubscriptionWithTwoBasePlans()
+        var completed = 0
+        var cancelled = 0
+        var failed = 0
+        fun callback() = object : PurchaseCallback {
+            override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {
+                completed++
+            }
+
+            override fun onError(error: PurchasesError, userCancelled: Boolean) {
+                if (userCancelled) cancelled++ else failed++
+            }
+        }
+        val planACallback = callback()
+        purchases.purchase(getPurchaseParams(planA), planACallback)
+        fun cancelPlanA() {
+            capturedPurchasesUpdatedListener.captured.onPurchasesFailedToUpdate(
+                PurchasesError(PurchasesErrorCode.PurchaseCancelledError),
+            )
+        }
+        if (cancelBeforeReceiptPost) cancelPlanA()
+        val pendingReceipt = deliverSubscriptionPurchase(
+            orderId = "GPA.plan-a",
+            stampedOptionId = planA.id,
+            customerInfo = customerInfoWithSubscription(storeTransactionId = "GPA.plan-a", basePlanId = "plan-a"),
+            completeReceiptImmediately = false,
+        )
+        if (!cancelBeforeReceiptPost) cancelPlanA()
+        purchases.purchase(getPurchaseParams(planB), if (reuseCallback) planACallback else callback())
+
+        if (receiptSucceeds) {
+            pendingReceipt.complete()
+        } else {
+            pendingReceipt.fail(PurchasesError(PurchasesErrorCode.NetworkError))
+        }
+
+        assertThat(completed).isZero()
+        assertThat(failed).isZero()
+        assertThat(cancelled).isEqualTo(1)
+
+        // B's callback must remain registered and complete only when B's own receipt succeeds.
+        deliverSubscriptionPurchase(
+            orderId = "GPA.plan-b",
+            stampedOptionId = planB.id,
+            customerInfo = customerInfoWithSubscription(storeTransactionId = "GPA.plan-b", basePlanId = "plan-b"),
+        )
+        assertThat(completed).isEqualTo(1)
+        assertThat(failed).isZero()
+        assertThat(cancelled).isEqualTo(1)
+    }
+
+    private class PendingReceiptPost(val complete: () -> Unit, val fail: (PurchasesError) -> Unit)
+
     private fun deliverSubscriptionPurchase(
         orderId: String,
         stampedOptionId: String,
@@ -3567,7 +3724,8 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         productId: String = "sub",
         replacementMode: StoreReplacementMode? = null,
         acknowledged: Boolean = false,
-    ) {
+        completeReceiptImmediately: Boolean = true,
+    ): PendingReceiptPost {
         val transaction = stubGooglePurchase(
             productIds = listOf(productId),
             purchaseToken = "token-$orderId",
@@ -3578,6 +3736,8 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             subscriptionOptionId = stampedOptionId,
             replacementMode = replacementMode,
         )
+        val onSuccess = slot<SuccessfulPurchaseCallback>()
+        val onError = slot<ErrorPurchaseCallback>()
         every {
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = transaction,
@@ -3587,13 +3747,17 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 appUserID = any(),
                 initiationSource = any(),
                 sdkOriginated = any(),
-                onSuccess = captureLambda(),
-                onError = any(),
+                onSuccess = capture(onSuccess),
+                onError = capture(onError),
             )
         } answers {
-            lambda<SuccessfulPurchaseCallback>().captured.invoke(transaction, customerInfo)
+            if (completeReceiptImmediately) onSuccess.captured.invoke(transaction, customerInfo)
         }
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(transaction))
+        return PendingReceiptPost(
+            complete = { onSuccess.captured.invoke(transaction, customerInfo) },
+            fail = { onError.captured.invoke(transaction, it) },
+        )
     }
 
     private fun customerInfoWithSubscription(
