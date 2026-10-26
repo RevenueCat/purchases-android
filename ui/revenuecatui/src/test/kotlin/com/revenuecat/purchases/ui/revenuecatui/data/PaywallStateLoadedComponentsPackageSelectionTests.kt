@@ -17,6 +17,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.previewStackComponent
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.style.SheetPresentationKey
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
@@ -726,6 +727,84 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
     }
 
     @Test
+    fun `Reconcile ignores a visible copy of the selection in a closed sheet`() {
+        val sheetKey = SheetPresentationKey()
+        val hiddenRootCopy = packageInfo(
+            TestData.Packages.monthly,
+            isSelectedByDefault = false,
+            visibilityOverrides = listOf(hiddenWhenWiderThanOverride(width = 700.0)),
+        )
+        val visibleSheetCopy = packageInfo(
+            TestData.Packages.monthly,
+            isSelectedByDefault = false,
+            sheetPresentationKey = sheetKey,
+        )
+        val visibleRootReplacement = packageInfo(TestData.Packages.annual, isSelectedByDefault = false)
+        val state = paywallState(
+            packagesOutsideTabs = listOf(hiddenRootCopy, visibleSheetCopy, visibleRootReplacement),
+            packagesByTab = emptyMap(),
+            initialSelectedTabIndex = null,
+        )
+        state.update(selectedPackageUniqueId = hiddenRootCopy.uniqueId)
+
+        state.reconcileSelectionForWindowSize(DpSize(800.dp, 600.dp))
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
+    @Test
+    fun `Reconcile can keep a selection visible in the open sheet`() {
+        val sheetKey = SheetPresentationKey()
+        val hiddenRootCopy = packageInfo(
+            TestData.Packages.monthly,
+            isSelectedByDefault = false,
+            visibilityOverrides = listOf(hiddenWhenWiderThanOverride(width = 700.0)),
+        )
+        val visibleSheetCopy = packageInfo(
+            TestData.Packages.monthly,
+            isSelectedByDefault = false,
+            sheetPresentationKey = sheetKey,
+        )
+        val visibleRootReplacement = packageInfo(TestData.Packages.annual, isSelectedByDefault = false)
+        val state = paywallState(
+            packagesOutsideTabs = listOf(hiddenRootCopy, visibleSheetCopy, visibleRootReplacement),
+            packagesByTab = emptyMap(),
+            initialSelectedTabIndex = null,
+        )
+        state.update(selectedPackageUniqueId = hiddenRootCopy.uniqueId)
+        state.sheet.show(backgroundBlur = false, content = {}, presentationKey = sheetKey)
+
+        state.reconcileSelectionForWindowSize(DpSize(800.dp, 600.dp))
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
+    }
+
+    @Test
+    fun `Reconcile does not choose an authored default from a closed sheet`() {
+        val hiddenRootSelection = packageInfo(
+            TestData.Packages.weekly,
+            isSelectedByDefault = false,
+            visibilityOverrides = listOf(hiddenWhenWiderThanOverride(width = 700.0)),
+        )
+        val closedSheetDefault = packageInfo(
+            TestData.Packages.monthly,
+            isSelectedByDefault = true,
+            sheetPresentationKey = SheetPresentationKey(),
+        )
+        val visibleRootReplacement = packageInfo(TestData.Packages.annual, isSelectedByDefault = false)
+        val state = paywallState(
+            packagesOutsideTabs = listOf(hiddenRootSelection, closedSheetDefault, visibleRootReplacement),
+            packagesByTab = emptyMap(),
+            initialSelectedTabIndex = null,
+        )
+        state.update(selectedPackageUniqueId = hiddenRootSelection.uniqueId)
+
+        state.reconcileSelectionForWindowSize(DpSize(800.dp, 600.dp))
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
+    @Test
     fun `Peek after sheet dismiss skips a default hidden at the measured bounds`() {
         val hiddenDefault = packageInfo(
             TestData.Packages.monthly,
@@ -784,11 +863,13 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
         isSelectedByDefault: Boolean,
         visible: Boolean = true,
         visibilityOverrides: List<PresentedOverride<PresentedPackagePartial>> = emptyList(),
+        sheetPresentationKey: SheetPresentationKey? = null,
     ) = PaywallState.Loaded.Components.AvailablePackages.Info(
         pkg = pkg,
         isSelectedByDefault = isSelectedByDefault,
         visible = visible,
         visibilityOverrides = visibilityOverrides,
+        sheetPresentationKey = sheetPresentationKey,
     )
 
     private fun paywallState(

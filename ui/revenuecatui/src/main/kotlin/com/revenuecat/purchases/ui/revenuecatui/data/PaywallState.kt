@@ -36,6 +36,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.SheetPresentationKey
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleSheetState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.ProcessedLocalizedConfiguration
@@ -195,6 +196,8 @@ internal sealed interface PaywallState {
                     val visible: Boolean = true,
                     val visibilityOverrides: List<PresentedOverride<PresentedPackagePartial>> = emptyList(),
                     val offerEligibility: OfferEligibility? = null,
+                    /** Null for root content; otherwise identifies the sheet containing this component. */
+                    val sheetPresentationKey: SheetPresentationKey? = null,
                 ) {
                     /**
                      * Unique identifier combining package ID and offer ID.
@@ -439,6 +442,19 @@ internal sealed interface PaywallState {
                 if (currentTabContainsThisPackage) selectedPackageByTab[currentTabIndex] = selectedPackageUniqueId
             }
 
+            private val AvailablePackages.Info.isInActivePresentation: Boolean
+                get() = sheetPresentationKey == null ||
+                    (sheet.visible && sheet.presentationKey === sheetPresentationKey)
+
+            private fun activePackagesOutsideTabs(): List<AvailablePackages.Info> =
+                packages.packagesOutsideTabs.filter { it.isInActivePresentation }
+
+            private fun activePackagesInSelectedTab(): List<AvailablePackages.Info> =
+                packages.packagesByTab[selectedTabIndex].orEmpty().filter { it.isInActivePresentation }
+
+            private fun activePackages(): List<AvailablePackages.Info> =
+                activePackagesOutsideTabs() + activePackagesInSelectedTab()
+
             /**
              * Moves the selection off a package that is hidden at the measured window size, so a
              * hidden package can't stay selected and purchasable. Initial selection is resolved
@@ -455,14 +471,12 @@ internal sealed interface PaywallState {
             fun reconcileSelectionForWindowSize(windowDpSize: DpSize?) {
                 if (windowDpSize == null) return
                 val screenCondition = windowScreenCondition
-                // Tab-scoped: the same uniqueId can exist in several tabs with different rules,
-                // and only the active tab's copy (or an outside-tabs copy) is on screen. The
-                // selection stays as long as ANY on-screen copy renders visible.
-                val activeContext = packages.packagesOutsideTabs +
-                    packages.packagesByTab[selectedTabIndex].orEmpty()
+                // The same uniqueId can exist in several tabs or sheets with different rules. Keep
+                // the selection as long as any copy in the selected tab/root/open sheet renders.
+                val activeContext = activePackages()
                 val uid = selectedPackageUniqueId ?: return
                 val copies = activeContext.filter { it.uniqueId == uid }
-                val currentRendersVisible = copies.isEmpty() || copies.any { copy ->
+                val currentRendersVisible = copies.any { copy ->
                     copy.resolvesVisible(
                         customVariables = mergedCustomVariables,
                         windowDpSize = windowDpSize,
@@ -475,7 +489,7 @@ internal sealed interface PaywallState {
                     // Past the shared defaults, any visible package beats keeping a hidden one
                     // selected and purchasable.
                     val replacement = visibleDefaultUniqueId(windowDpSize, screenCondition)
-                        ?: packages.packagesOutsideTabs
+                        ?: activePackagesOutsideTabs()
                             .filter { it.rendersWhenSelected(windowDpSize, screenCondition) }
                             .firstVisible(mergedCustomVariables, windowDpSize, screenCondition)
                             ?.uniqueId
@@ -496,17 +510,18 @@ internal sealed interface PaywallState {
                 windowDpSize: DpSize?,
                 screenCondition: ScreenCondition,
             ): String? {
-                val tabPackages = packages.packagesByTab[selectedTabIndex]
-                    ?.filter { it.rendersWhenSelected(windowDpSize, screenCondition) }
-                val outside = packages.packagesOutsideTabs
+                val tabPackages = activePackagesInSelectedTab()
                     .filter { it.rendersWhenSelected(windowDpSize, screenCondition) }
-                return tabPackages?.authoredDefaultIfVisible(mergedCustomVariables, windowDpSize, screenCondition)
+                val activeOutside = activePackagesOutsideTabs()
+                val outside = activeOutside
+                    .filter { it.rendersWhenSelected(windowDpSize, screenCondition) }
+                return tabPackages.authoredDefaultIfVisible(mergedCustomVariables, windowDpSize, screenCondition)
                     ?.uniqueId
                     ?: outside.authoredDefaultIfVisible(mergedCustomVariables, windowDpSize, screenCondition)?.uniqueId
                     ?: uniqueIdIfVisibleAtBounds(selectedPackageByTab[selectedTabIndex], windowDpSize, screenCondition)
-                    ?: tabPackages?.firstVisible(mergedCustomVariables, windowDpSize, screenCondition)?.uniqueId
+                    ?: tabPackages.firstVisible(mergedCustomVariables, windowDpSize, screenCondition)?.uniqueId
                     ?: outside
-                        .takeIf { packages.packagesOutsideTabs.any { it.isSelectedByDefault } }
+                        .takeIf { activeOutside.any { info -> info.isSelectedByDefault } }
                         ?.firstVisible(mergedCustomVariables, windowDpSize, screenCondition)
                         ?.uniqueId
             }
@@ -543,7 +558,11 @@ internal sealed interface PaywallState {
                     ?: selectedPackageUniqueId.takeIf {
                         windowDpSize != null && !anyPackageRendersVisible(windowDpSize, screenCondition)
                     }
-                    ?: visibleFallbackForHiddenDefaultOutsideTabs
+                    ?: uniqueIdIfVisibleAtBounds(
+                        visibleFallbackForHiddenDefaultOutsideTabs,
+                        windowDpSize,
+                        screenCondition,
+                    )
             }
 
             private fun anyPackageRendersVisible(
@@ -551,7 +570,7 @@ internal sealed interface PaywallState {
                 screenCondition: ScreenCondition,
             ): Boolean {
                 val selectedId = selectedPackageInfo?.rcPackage?.identifier
-                return (packages.packagesOutsideTabs + packages.packagesByTab[selectedTabIndex].orEmpty()).any { info ->
+                return activePackages().any { info ->
                     info.resolvesVisible(
                         customVariables = mergedCustomVariables,
                         windowDpSize = windowDpSize,
@@ -572,9 +591,7 @@ internal sealed interface PaywallState {
                 windowDpSize: DpSize?,
                 screenCondition: ScreenCondition,
             ): String? = uniqueId?.takeIf { uid ->
-                val copies = (packages.packagesOutsideTabs + packages.packagesByTab[selectedTabIndex].orEmpty())
-                    .filter { it.uniqueId == uid }
-                copies.isEmpty() || copies.any {
+                activePackages().filter { it.uniqueId == uid }.any {
                     it.resolvesVisible(
                         customVariables = mergedCustomVariables,
                         windowDpSize = windowDpSize,
