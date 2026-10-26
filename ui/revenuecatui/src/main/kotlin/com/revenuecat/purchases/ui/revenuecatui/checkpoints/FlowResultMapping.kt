@@ -106,7 +106,10 @@ internal val CheckpointResolution.presentedOfferings: List<Offering>
  */
 internal fun List<Offering>.entitlementsGrantedBy(mapping: ProductEntitlementMapping?): Set<String> {
     if (mapping == null) {
-        Logger.d("No product-entitlement mapping is cached: a restore cannot be tied to the presented products.")
+        Logger.d(
+            "No product-entitlement mapping is cached: a restore during the flow " +
+                "cannot be tied to the presented products.",
+        )
         return emptySet()
     }
     val unmapped = mutableListOf<String>()
@@ -117,9 +120,6 @@ internal fun List<Offering>.entitlementsGrantedBy(mapping: ProductEntitlementMap
             productMapping?.entitlements.orEmpty()
         }
         .toSet()
-    if (unmapped.isNotEmpty()) {
-        Logger.d("Presented products with no product-entitlement mapping: $unmapped")
-    }
     return entitlements
 }
 
