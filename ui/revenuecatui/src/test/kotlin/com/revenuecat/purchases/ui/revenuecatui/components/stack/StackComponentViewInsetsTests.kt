@@ -140,6 +140,18 @@ class StackComponentViewInsetsTests {
     }
 
     @Test
+    fun `top badge on a card below the hero does not gain safe area padding`() {
+        val card = StackComponent(
+            components = emptyList(),
+            size = Size(SizeConstraint.Fill(), SizeConstraint.Fixed(160u)),
+            badge = Badge(stack = component, style = Badge.Style.EdgeToEdge, alignment = TwoDimensionalAlignment.TOP),
+        )
+        val root = StackComponent(components = listOf(hero(), card))
+        val expectedTop = with(composeTestRule.density) { 240.dp.roundToPx() }
+        assertThat(composeTestRule.textTopOnFirstFrame(false, root)).isEqualTo(expectedTop)
+    }
+
+    @Test
     fun `top badge on hero stack retains its status bar clearance`() {
         val root = StackComponent(
             components = listOf(hero()),
@@ -189,11 +201,6 @@ class StackComponentViewInsetsTests {
         val textTopPx = textTopOnFirstFrame(
             statusBarConsumedAbove = statusBarConsumedAbove,
             componentUnderTest = root,
-            verifyStyle = { rootStyle ->
-                val overlayStyle = rootStyle.children[1] as StackComponentStyle
-                // Consumed ancestor insets must prevent this legacy hint from adding padding twice.
-                assertThat(overlayStyle.badge!!.stackStyle.applyTopWindowInsets).isTrue()
-            },
         )
         assertThat(textTopPx).isEqualTo(STATUS_BAR_PX)
     }
@@ -205,11 +212,9 @@ class StackComponentViewInsetsTests {
     private fun ComposeContentTestRule.textTopOnFirstFrame(
         statusBarConsumedAbove: Boolean,
         componentUnderTest: StackComponent = component,
-        verifyStyle: (StackComponentStyle) -> Unit = {},
     ): Int {
         mainClock.autoAdvance = false
         val style = styleFactory.create(componentUnderTest).getOrThrow().componentStyle as StackComponentStyle
-        verifyStyle(style)
         val state = FakePaywallState(components = listOf(componentUnderTest))
         var showStack by mutableStateOf(false)
         lateinit var view: View

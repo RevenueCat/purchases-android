@@ -160,7 +160,19 @@ internal fun StackComponentView(
     }
 
     val resolvedModifier = modifier.resolveComponentSizeParentData(stackState.size)
-    val badge = stackState.badge
+    val heroInsets = state.heroInsetsFor(style)
+    val badge = stackState.badge?.let { badge ->
+        // A badge on the hero path sits outside the main stack's child padding.
+        if (badge.alignment.isTop && heroInsets?.isOnHeroPath(style) == true) {
+            BadgeStyle(
+                stackStyle = badge.stackStyle.copy(applyTopWindowInsets = true, ignoreHeaderHeight = true),
+                style = badge.style,
+                alignment = badge.alignment,
+            )
+        } else {
+            badge
+        }
+    }
     if (badge != null) {
         when (badge.style) {
             Badge.Style.Overlay -> {

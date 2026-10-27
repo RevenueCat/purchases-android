@@ -3,8 +3,10 @@ package com.revenuecat.purchases.ui.revenuecatui.components.style
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
@@ -21,18 +23,23 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
+import com.revenuecat.purchases.ui.revenuecatui.components.ComponentStyleIdentity
 import com.revenuecat.purchases.ui.revenuecatui.components.MeasurePaywallBounds
+import com.revenuecat.purchases.ui.revenuecatui.components.ResolvedHeroInsets
+import com.revenuecat.purchases.ui.revenuecatui.components.countdown.CountdownComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.heroInsetsFor
+import com.revenuecat.purchases.ui.revenuecatui.components.previewStackComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.previewTextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.resolveHeroInsets
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import org.assertj.core.api.Assertions.assertThat
-import java.net.URL
-import java.util.Date
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.net.URL
+import java.util.Date
 
 @RunWith(AndroidJUnit4::class)
 internal class HiddenHeroRuntimeTest {
@@ -207,8 +214,6 @@ internal class HiddenHeroRuntimeTest {
             dimension = Dimension.ZLayer(TwoDimensionalAlignment.TOP),
         )).getOrThrow().componentStyle as StackComponentStyle
         val button = root.children[1] as ButtonComponentStyle
-        // The old factory hint leaks into wrapper stacks; resolved ownership must override it.
-        assertThat(button.stackComponentStyle.applyTopWindowInsets).isTrue()
         val state = FakePaywallState()
         composeTestRule.setContent { resolveHeroInsets(root, state) }
         composeTestRule.runOnIdle {
@@ -217,6 +222,37 @@ internal class HiddenHeroRuntimeTest {
             assertThat(buttonInsets!!.appliesTo(button.stackComponentStyle)).isFalse()
             assertThat(state.heroInsetsFor(root)!!.appliesTo(root)).isTrue()
         }
+    }
+
+    @Test
+    fun `countdown renders the same active stack used for hero resolution`() {
+        val running = previewStackComponentStyle(children = listOf(previewTextComponentStyle(text = "Running")))
+        val ended = previewStackComponentStyle(children = listOf(previewTextComponentStyle(text = "Expired")))
+        val countdown = CountdownComponentStyle(
+            date = Date(Long.MAX_VALUE),
+            countFrom = CountdownComponent.CountFrom.DAYS,
+            countdownStackComponentStyle = running,
+            endStackComponentStyle = ended,
+            fallbackStackComponentStyle = null,
+        )
+        val state = FakePaywallState()
+        val root = state.stack as StackComponentStyle
+        fun select(stack: StackComponentStyle) {
+            val insets = ResolvedHeroInsets(
+                root = root,
+                hero = null,
+                zLayerBranches = emptyList(),
+                firstVisibleChildren = emptyList(),
+                activeCountdownStacks = mapOf(ComponentStyleIdentity(countdown) to stack),
+            )
+            state.resolvedHeroInsets = mapOf(ComponentStyleIdentity(countdown) to insets)
+        }
+        // A separate timer would pick Running from the date, disagreeing with the resolved branch.
+        select(ended)
+        composeTestRule.setContent { CountdownComponentView(countdown, state, onClick = {}) }
+        composeTestRule.onNodeWithText("Expired").assertIsDisplayed()
+        composeTestRule.runOnIdle { select(running) }
+        composeTestRule.onNodeWithText("Running").assertIsDisplayed()
     }
 
     @Test

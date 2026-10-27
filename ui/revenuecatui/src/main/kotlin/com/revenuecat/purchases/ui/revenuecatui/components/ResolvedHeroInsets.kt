@@ -48,6 +48,7 @@ internal data class ResolvedHeroInsets(
     val hero: ComponentStyle?,
     val zLayerBranches: List<Pair<StackComponentStyle, ComponentStyle>>,
     val firstVisibleChildren: List<Pair<StackComponentStyle, ComponentStyle>>,
+    val activeCountdownStacks: Map<ComponentStyleIdentity, StackComponentStyle> = emptyMap(),
     private val identities: List<ComponentStyleIdentity> =
         (listOfNotNull(root, hero) + firstVisibleChildren.flatMap { listOf(it.first, it.second) })
             .map(::ComponentStyleIdentity),
@@ -57,6 +58,9 @@ internal data class ResolvedHeroInsets(
 
     fun exemptChildFor(stack: StackComponentStyle): ComponentStyle? =
         zLayerBranches.firstOrNull { it.first === stack }?.second
+
+    fun isOnHeroPath(stack: StackComponentStyle): Boolean =
+        hero != null && (stack === root || firstVisibleChildFor(stack) != null)
 
     fun appliesTo(stack: StackComponentStyle): Boolean =
         if (hero != null) exemptChildFor(stack) != null else stack === root && root.windowInsetsRoot == true
@@ -76,7 +80,8 @@ internal fun resolveHeroInsets(
 ): ResolvedHeroInsets? {
     // Header paywalls retain their existing overlay policy. Other layout roots resolve independently.
     if (root !is StackComponentStyle || root.windowInsetsRoot != true || state.header != null) return null
-    val leaf = firstVisibleLeaf(root, state)
+    val countdownStacks = mutableMapOf<ComponentStyleIdentity, StackComponentStyle>()
+    val leaf = firstVisibleLeaf(root, state, countdownStacks)
     val firstChildren = leaf?.ancestors.orEmpty()
     val hero = leaf?.takeIf { it.fullWidthMedia }?.style
     val zLayerBranches = mutableListOf<Pair<StackComponentStyle, ComponentStyle>>()
@@ -85,7 +90,7 @@ internal fun resolveHeroInsets(
             if (rememberDimensionIsZLayer(stack, state)) zLayerBranches.add(stack to child)
         }
     }
-    val insets = ResolvedHeroInsets(root, hero, zLayerBranches, firstChildren)
+    val insets = ResolvedHeroInsets(root, hero, zLayerBranches, firstChildren, countdownStacks)
     val entries = mutableMapOf<ComponentStyleIdentity, ResolvedHeroInsets>()
     recordInsets(root, insets, entries)
     state.resolvedHeroInsets = state.resolvedHeroInsets + entries
@@ -123,14 +128,15 @@ private fun recordInsets(
 private fun rememberDimensionIsZLayer(stack: StackComponentStyle, state: PaywallState.Loaded.Components): Boolean =
     rememberUpdatedStackComponentState(stack, state).dimension is Dimension.ZLayer
 
-@Suppress("CyclomaticComplexMethod")
+@Suppress("CyclomaticComplexMethod", "MutableParams")
 @Composable
 private fun firstVisibleLeaf(
     style: ComponentStyle,
     state: PaywallState.Loaded.Components,
+    countdownStacks: MutableMap<ComponentStyleIdentity, StackComponentStyle>,
 ): FirstVisibleLeaf? {
     return when (style) {
-        is StackComponentStyle -> firstVisibleStackLeaf(style, state)
+        is StackComponentStyle -> firstVisibleStackLeaf(style, state, countdownStacks)
         is ImageComponentStyle -> rememberUpdatedImageComponentState(style, state).let {
             if (it.visible) FirstVisibleLeaf(style, it.size.width is SizeConstraint.Fill) else null
         }
@@ -155,7 +161,11 @@ private fun firstVisibleLeaf(
         is PackageComponentStyle -> rememberUpdatedPackageComponentState(style, state).let {
             if (it.visible) firstVisibleWrapperLeaf(style, style.stackComponentStyle, state) else null
         }
-        is CountdownComponentStyle -> firstVisibleWrapperLeaf(style, rememberActiveCountdownStack(style), state)
+        is CountdownComponentStyle -> {
+            val stack = rememberActiveCountdownStack(style)
+            countdownStacks[ComponentStyleIdentity(style)] = stack
+            firstVisibleWrapperLeaf(style, stack, state)
+        }
         is TabsComponentStyle -> rememberUpdatedTabsComponentState(style, state).let {
             if (it.visible) FirstVisibleLeaf(style, false) else null
         }
@@ -166,16 +176,18 @@ private fun firstVisibleLeaf(
     }
 }
 
+@Suppress("MutableParams")
 @Composable
 private fun firstVisibleStackLeaf(
     style: StackComponentStyle,
     state: PaywallState.Loaded.Components,
+    countdownStacks: MutableMap<ComponentStyleIdentity, StackComponentStyle>,
 ): FirstVisibleLeaf? {
     val stack = rememberUpdatedStackComponentState(style, state)
     if (!stack.visible) return null
     var first: FirstVisibleLeaf? = null
     for (child in stack.children) {
-        val leaf = firstVisibleLeaf(child, state)
+        val leaf = firstVisibleLeaf(child, state, countdownStacks)
         if (leaf != null) {
             // A row can bleed only when the hero is its sole visible child.
             val hasVisibleSibling = first != null

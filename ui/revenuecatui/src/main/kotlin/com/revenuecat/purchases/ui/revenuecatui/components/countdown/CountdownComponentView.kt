@@ -7,7 +7,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
+import com.revenuecat.purchases.ui.revenuecatui.components.ComponentStyleIdentity
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
+import com.revenuecat.purchases.ui.revenuecatui.components.heroInsetsFor
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
 import com.revenuecat.purchases.ui.revenuecatui.components.previewStackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.previewTextComponentStyle
@@ -27,7 +29,9 @@ internal fun CountdownComponentView(
     modifier: Modifier = Modifier,
     componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
-    val stackStyle = rememberActiveCountdownStack(style)
+    // Reuse the resolver's selection so visibility and safe-area ownership change together.
+    val stackStyle = state.heroInsetsFor(style)?.activeCountdownStacks?.get(ComponentStyleIdentity(style))
+        ?: rememberActiveCountdownStack(style)
     StackComponentView(
         style = stackStyle,
         state = state,
