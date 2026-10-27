@@ -25,6 +25,13 @@ class ProductionAPISourcesExhaustedIntegrationTest : BaseAPISourcesIntegrationTe
         val offerings = Purchases.sharedInstance.awaitOfferings()
 
         assertThat(offerings.all).isNotEmpty
-        assertThat(recorder.hosts<Endpoint.GetOfferings>()).contains(APIHosts.BACKUP, APIHosts.FALLBACK)
+        // Requests share the source list, so whichever exhausts it first (e.g. /v1/config, which runs on its own
+        // thread) is the one that tries the backup; offerings may then go straight to the static fallback.
+        assertThat(recorder.requests.map { it.host })
+            .describedAs("Requests: ${recorder.requests}")
+            .contains(APIHosts.BACKUP)
+        assertThat(recorder.hosts<Endpoint.GetOfferings>())
+            .describedAs("Requests: ${recorder.requests}")
+            .contains(APIHosts.FALLBACK)
     }
 }
