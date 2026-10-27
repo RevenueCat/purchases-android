@@ -30,7 +30,7 @@ class CurrentActivityTrackerInitializerTest {
     // The tracker is process-wide, so leave it as found.
     @After
     fun tearDown() {
-        CurrentActivityTracker.shared.onActivityStopped(startedActivity)
+        CurrentActivityTracker.onActivityStopped(startedActivity)
     }
 
     @Test
@@ -39,7 +39,7 @@ class CurrentActivityTrackerInitializerTest {
 
         callbacks.captured.onActivityStarted(startedActivity)
 
-        assertThat(CurrentActivityTracker.shared.currentActivity).isEqualTo(startedActivity)
+        assertThat(CurrentActivityTracker.currentActivity).isEqualTo(startedActivity)
     }
 
     @Test
@@ -49,7 +49,7 @@ class CurrentActivityTrackerInitializerTest {
 
         callbacks.captured.onActivityStopped(startedActivity)
 
-        assertThat(CurrentActivityTracker.shared.currentActivity).isNull()
+        assertThat(CurrentActivityTracker.currentActivity).isNull()
     }
 
     @Test
