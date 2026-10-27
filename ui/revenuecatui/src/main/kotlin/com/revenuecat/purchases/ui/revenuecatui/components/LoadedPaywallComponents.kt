@@ -64,6 +64,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.SheetPresentationKey
 import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleBottomSheetScaffold
 import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleSheetState
 import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
@@ -351,6 +352,7 @@ internal fun SimpleSheetState.show(
             )
         },
         contentKey = sheet.id,
+        presentationKey = sheet.presentationKey,
         onDismiss = {
             val sheetSelected = state.selectedPackageInfo
             val resulting = state.peekSelectedPackageInfoAfterSheetDismiss()
@@ -364,6 +366,7 @@ internal fun SimpleSheetState.show(
             state.resetToDefaultPackage()
         },
     )
+    state.reconcileSelectionForWindowSize(state.paywallBoundsDp)
 }
 
 @Suppress("LongMethod")
@@ -687,6 +690,7 @@ private fun previewBottomSheet(
 ) =
     ButtonComponentStyle.Action.NavigateTo.Destination.Sheet(
         id = "",
+        presentationKey = SheetPresentationKey(),
         name = "",
         stack = previewStackComponentStyle(
             children = listOf(
