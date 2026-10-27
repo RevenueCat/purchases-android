@@ -908,6 +908,27 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     }
 
     @Test
+    fun `server error strategy is honored outside integration test mode`() {
+        val client = createClient(
+            appConfig = createAppConfig(runningTests = false),
+            forceServerErrorStrategy = object : ForceServerErrorStrategy {
+                override val serverErrorURL: String
+                    get() = server.url("force-server-error").toString()
+                override fun shouldForceServerError(baseURL: URL, endpoint: Endpoint): Boolean = true
+            },
+        )
+        enqueue(
+            "force-server-error",
+            expectedResult = HTTPResult.createResult(responseCode = 502, payload = "Some error xml")
+        )
+
+        val result = client.performRequest(baseURL, Endpoint.LogIn, body = null, postFieldsToSign = null, mapOf("" to ""))
+
+        assertThat(server.takeRequest().requestUrl?.toString()).isEqualTo("${server.url("")}force-server-error")
+        assertThat(result.responseCode).isEqualTo(502)
+    }
+
+    @Test
     fun `when forceServerErrorsStrategy returns false, original url is used`() {
         val client = createClient(
             forceServerErrorStrategy = object : ForceServerErrorStrategy {

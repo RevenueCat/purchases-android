@@ -36,8 +36,11 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.paywallstester.Constants
 import com.revenuecat.paywallstester.MainActivity
+import com.revenuecat.paywallstester.data.SimulatedFailuresMode
+import com.revenuecat.paywallstester.data.SimulatedFailuresStore
 import com.revenuecat.paywallstester.ui.screens.main.appinfo.AppInfoScreenViewModel.UiState
 import com.revenuecat.paywallstester.ui.screens.main.createCustomerCenterListener
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.interfaces.ManageSubscriptionsCallback
@@ -50,6 +53,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
+@OptIn(InternalRevenueCatAPI::class)
 @SuppressWarnings("LongMethod")
 @Composable
 fun AppInfoScreen(
@@ -63,6 +67,7 @@ fun AppInfoScreen(
     var showLogInDialog by remember { mutableStateOf(false) }
     var showApiKeyDialog by remember { mutableStateOf(false) }
     var showSubscriberAttributesDialog by remember { mutableStateOf(false) }
+    var showSimulatedFailuresDialog by remember { mutableStateOf(false) }
     var showCustomerCenterView by remember { mutableStateOf(false) }
     var isClearingFileCache by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -109,6 +114,9 @@ fun AppInfoScreen(
         }
         Button(onClick = { showApiKeyDialog = true }) {
             Text(text = "Switch API key")
+        }
+        Button(onClick = { showSimulatedFailuresDialog = true }) {
+            Text(text = "Simulate API failures")
         }
         Button(
             enabled = !isClearingFileCache,
@@ -189,6 +197,17 @@ fun AppInfoScreen(
             onClearAll = viewModel::clearAllSubscriberAttributes,
             onDismiss = { showSubscriberAttributesDialog = false },
         )
+    }
+    if (showSimulatedFailuresDialog) {
+        val store = remember(context) { SimulatedFailuresStore(context) }
+        SimulatedFailuresDialog(
+            current = store.get(),
+            onModeClick = { mode ->
+                Purchases.internalSimulatedHostFailures = mode.hostFailures()
+                store.set(mode)
+                showSimulatedFailuresDialog = false
+            },
+        ) { showSimulatedFailuresDialog = false }
     }
     if (showApiKeyDialog) {
         ApiKeyDialog(
@@ -284,6 +303,44 @@ private fun ApiKeyDialog(onApiKeyClick: (String) -> Unit, onDismissed: () -> Uni
                 )
 
                 Spacer(Modifier.size(4.dp))
+                Row(
+                    Modifier
+                        .padding(8.dp)
+                        .fillMaxWidth(),
+                    Arrangement.spacedBy(8.dp, Alignment.End),
+                ) {
+                    TextButton(onClick = { onDismissed() }) {
+                        Text("CANCEL")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SimulatedFailuresDialog(
+    current: SimulatedFailuresMode,
+    onModeClick: (SimulatedFailuresMode) -> Unit,
+    onDismissed: () -> Unit,
+) {
+    Dialog(onDismissRequest = { onDismissed() }) {
+        Surface(shape = MaterialTheme.shapes.medium) {
+            Column(Modifier.padding(all = 16.dp)) {
+                Text(
+                    text = "Ignored when a proxy URL is set.",
+                    style = MaterialTheme.typography.labelSmall,
+                )
+                Spacer(Modifier.size(8.dp))
+                SimulatedFailuresMode.values().forEach { mode ->
+                    Button(
+                        onClick = { onModeClick(mode) },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(text = if (mode == current) "${mode.label} (current)" else mode.label)
+                    }
+                    Spacer(Modifier.size(8.dp))
+                }
                 Row(
                     Modifier
                         .padding(8.dp)
