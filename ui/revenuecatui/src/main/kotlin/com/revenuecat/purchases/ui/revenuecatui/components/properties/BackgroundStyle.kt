@@ -193,16 +193,17 @@ private fun rememberAsyncImagePainter(imageUrls: ImageUrls, contentScale: Conten
         imageLoader = imageLoader,
         placeholder = if (isInPreviewMode && previewImageLoader != null) {
             imageLoader.getPreviewPlaceholderBlocking(imageRequest)
-        } else if (placeholderUrl != url) {
+        } else {
+            // Coil retains this painter while loading, including when the URLs initially match.
             rememberAsyncImagePainter(
-                model = getImageRequest(context, placeholderUrl, CachePolicy.ENABLED),
+                model = placeholderUrl.takeUnless { it == url }?.let {
+                    getImageRequest(context, it, CachePolicy.ENABLED)
+                },
                 imageLoader = imageLoader,
                 error = null,
                 fallback = null,
                 contentScale = contentScale,
             )
-        } else {
-            null
         },
         error = null,
         fallback = null,
