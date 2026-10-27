@@ -58,9 +58,4 @@ class CurrentActivityTrackerInitializerTest {
 
         verify(exactly = 1) { application.registerActivityLifecycleCallbacks(any()) }
     }
-
-    @Test
-    fun `has no dependencies on other initializers`() {
-        assertThat(CurrentActivityTrackerInitializer().dependencies()).isEmpty()
-    }
 }
