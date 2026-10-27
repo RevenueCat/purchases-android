@@ -1,28 +1,29 @@
 ## RevenueCat SDK
+### ✨ New Features
+* Parse paywall gating in checkpoint workflows (#4452) via Cesar de la Vega (@vegaro)
 ### 🐞 Bugfixes
-* [ONCALL-1803] Skip the Blockstore alias path when the Blockstore client is unavailable (#4459) via Toni Rico (@tonidero)
+* fix(checkpoints): track started Activities from process start (#4518) via Cesar de la Vega (@vegaro)
+* fix: keep the cached offerings response out of SharedPreferences to reduce memory usage (#4455) via Álvaro Brey (@AlvaroBrey)
+* Fix dropped Billing callbacks after disconnection (#4511) via Cesar de la Vega (@vegaro)
+* [EXTERNAL] Fix requests hanging indefinitely when the server stops responding (#3925) via @aelaguiz (#4513) via Álvaro Brey (@AlvaroBrey)
+* [EXTERNAL] Fix non-subscription transactions reporting "null" display name and store transaction ID (#4485) via @RaphaelFakhri (#4500) via Álvaro Brey (@AlvaroBrey)
+### 📦 Dependency Updates
+* [RENOVATE] Update cimg/android Docker tag to v2026.10.1 (#4514) via RevenueCat Git Bot (@RCGitBot)
 
 ## RevenueCatUI SDK
-### ✨ New Features
-* feat: handle OwnershipType.assigned (#4483) via Will Taylor (@fire-at-will)
-### 🐞 Bugfixes
-* Fix(Paywalls) Don't fallback for inactive localization issues (#4456) via Jacob Rakidzich (@JZDesign)
-* Fix(paywalls) Prevent nested stacks from insetting by the safe area (#4457) via Jacob Rakidzich (@JZDesign)
 ### Paywallsv2
-#### ✨ New Features
-* feat(paywalls): add discount variables (#4461) via andsolleiro (@andsolleiro)
+#### 🐞 Bugfixes
+* fix(paywalls): PWENG-305 preserve fixed icon sizes with overflowing margins (#4427) via Azat Valiev (@azvaliev)
 
 ### 🔄 Other Changes
-* other(paywall-tester): list the project's checkpoints in the Checkpoints tab (#4486) via Facundo Menzella (@facumenzella)
-* [SDK-4552] Add ForbiddenPublicConstructor detekt rule (#4480) via Toni Rico (@tonidero)
-* Expect api.rc-backup.com in the production API sources topic (#4476) via Antonio Pallares (@ajpallares)
-* Use a dedicated session id for diagnostics events (#4477) via Toni Rico (@tonidero)
-* Cover the checkpoint result's obtained products and lookups with Maestro (#4472) via Toni Rico (@tonidero)
-* Report obtained products and add lookups to the checkpoint result (#4470) via Toni Rico (@tonidero)
-* Add the customer's information to CheckpointResult (#4466) via Toni Rico (@tonidero)
-* IAM Phase 7.2: Sequencing identity mutations (#4445) via Dave DeLong (@davedelong)
-* IAM Phase 7.1: Public Authentication APIs (#4444) via Dave DeLong (@davedelong)
-* other: attribute checkpoint offering purchases to their hit (#4474) via Facundo Menzella (@facumenzella)
-* build(deps): bump fastlane from 2.241.0 to 2.241.1 (#4475) via dependabot[bot] (@dependabot[bot])
-* Update baseline profiles (#4473) via RevenueCat Git Bot (@RCGitBot)
-* Rename simulated error checkpoint identifier (#4465) via JayShortway (@JayShortway)
+* Migrate the cached offerings response out of SharedPreferences instead of dropping it (#4488) via Álvaro Brey (@AlvaroBrey)
+* Rename ETagPayloadStore to PayloadFileStore (#4487) via Álvaro Brey (@AlvaroBrey)
+* Add Maestro SDK update tests verifying persisted state (#4381) via Antonio Pallares (@ajpallares)
+* Let the tester apps simulate API source outages (#4521) via Toni Rico (@tonidero)
+* Remove the usesRemoteConfigAPISources dangerous setting and enable API sources for everyone (#4520) via Toni Rico (@tonidero)
+* Add API source integration tests with a normal Purchases instance (#4508) via Antonio Pallares (@ajpallares)
+* Let ForceServerErrorStrategy fail API source health checks (#4507) via Antonio Pallares (@ajpallares)
+* Exclude non-shipping modules from Danger's production lines check (#4522) via Antonio Pallares (@ajpallares)
+* Add Internal APIs to spend in-app currencies (#4495) via Dave DeLong (@davedelong)
+* other(e2etests): add an app presenter and an attribute to the checkpoint screen (#4490) via Facundo Menzella (@facumenzella)
+* Tests only: End-to-end IAM test suite (#4479) via Dave DeLong (@davedelong)
