@@ -24,4 +24,13 @@
     <string name="revenuecatui_purchase">לרכוש</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
     <string name="revenuecatui_preview_workflow_load_error">לא ניתן היה לטעון את תהליך העבודה של התצוגה המקדימה. יש לנסות שוב.</string>
+    <string name="revenuecatui_checkpoint_error_network">לא ניתן להתחבר. בדקו את חיבור האינטרנט ונסו שוב.</string>
+    <string name="revenuecatui_checkpoint_error_load">לא ניתן לטעון את התוכן הזה. נסו שוב מאוחר יותר.</string>
+    <string name="revenuecatui_checkpoint_error_store">אירעה בעיה בחנות. נסו שוב מאוחר יותר.</string>
+    <string name="revenuecatui_checkpoint_error_purchase_not_allowed">רכישות אינן מותרות במכשיר זה.</string>
+    <string name="revenuecatui_checkpoint_error_product_unavailable">המוצר הזה אינו זמין כרגע.</string>
+    <string name="revenuecatui_checkpoint_error_already_purchased">המוצר הזה כבר ברשותכם.</string>
+    <string name="revenuecatui_checkpoint_error_payment_pending">התשלום שלכם ממתין לאישור. תקבלו גישה לאחר שיאושר.</string>
+    <string name="revenuecatui_checkpoint_error_generic">משהו השתבש. נסו שוב.</string>
+    <string name="revenuecatui_checkpoint_error_sync">לא ניתן לאמת את הרכישות שלכם. נסו שוב מאוחר יותר.</string>
 </resources>

@@ -85,7 +85,7 @@ internal fun CheckpointResolution.toCheckpointEvent(identifier: String, timestam
             result = CheckpointHitResult.RETURN_DATA,
             offeringId = offering.identifier,
             checkpointRuleId = checkpointRuleId,
-            traceId = UUID.randomUUID().toString(),
+            traceId = traceId,
             timestamp = timestamp,
         )
         // A NoAction carries no rule id by construction: CONFIGURATION_UNAVAILABLE is about this SDK's state

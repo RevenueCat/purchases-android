@@ -24,4 +24,13 @@
     <string name="revenuecatui_purchase">Koupit</string>
     <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
     <string name="revenuecatui_preview_workflow_load_error">Pracovní postup náhledu se nepodařilo načíst. Zkuste to prosím znovu.</string>
+    <string name="revenuecatui_checkpoint_error_network">Nepodařilo se připojit. Zkontrolujte připojení k internetu a zkuste to znovu.</string>
+    <string name="revenuecatui_checkpoint_error_load">Tento obsah se nepodařilo načíst. Zkuste to prosím později.</string>
+    <string name="revenuecatui_checkpoint_error_store">Došlo k problému s obchodem. Zkuste to prosím později.</string>
+    <string name="revenuecatui_checkpoint_error_purchase_not_allowed">Nákupy nejsou na tomto zařízení povoleny.</string>
+    <string name="revenuecatui_checkpoint_error_product_unavailable">Tento produkt momentálně není k dispozici.</string>
+    <string name="revenuecatui_checkpoint_error_already_purchased">Tento produkt již vlastníte.</string>
+    <string name="revenuecatui_checkpoint_error_payment_pending">Vaše platba čeká na zpracování. Přístup získáte po jejím schválení.</string>
+    <string name="revenuecatui_checkpoint_error_generic">Něco se pokazilo. Zkuste to prosím znovu.</string>
+    <string name="revenuecatui_checkpoint_error_sync">Vaše nákupy se nepodařilo ověřit. Zkuste to prosím později.</string>
 </resources>

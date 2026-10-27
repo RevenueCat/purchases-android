@@ -13,6 +13,7 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.data.LogInResult
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetRewardVerificationResultCallback
+import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.ManageSubscriptionsCallback
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -332,6 +333,57 @@ public suspend fun Purchases.awaitGetVirtualCurrencies(): VirtualCurrencies {
         )
     }
 }
+
+/**
+ * Spends virtual currencies for the current subscriber.
+ *
+ * Coroutine friendly version of [Purchases.spendVirtualCurrencies].
+ *
+ * @throws [PurchasesException] with a [PurchasesError] if the spend failed, or if IAM is disabled.
+ *
+ * @return The subscriber's [VirtualCurrencies] after the spend.
+ */
+@InternalRevenueCatAPI
+@JvmSynthetic
+@Throws(PurchasesException::class)
+public suspend fun Purchases.awaitSpendVirtualCurrencies(
+    amounts: Map<String, Int>,
+    reference: String? = null,
+): VirtualCurrencies {
+    return suspendCancellableCoroutine { continuation ->
+        spendVirtualCurrencies(
+            amounts,
+            reference,
+            object : GetVirtualCurrenciesCallback {
+                override fun onReceived(virtualCurrencies: VirtualCurrencies) {
+                    continuation.safeResume(virtualCurrencies)
+                }
+
+                override fun onError(error: PurchasesError) {
+                    continuation.safeResumeWithException(PurchasesException(error))
+                }
+            },
+        )
+    }
+}
+
+/**
+ * Spends [amount] of the virtual currency [code].
+ *
+ * Coroutine friendly version of [Purchases.spendVirtualCurrency].
+ *
+ * @throws [PurchasesException] with a [PurchasesError] if the spend failed, or if IAM is disabled.
+ *
+ * @return The subscriber's [VirtualCurrencies] after the spend.
+ */
+@InternalRevenueCatAPI
+@JvmSynthetic
+@Throws(PurchasesException::class)
+public suspend fun Purchases.awaitSpendVirtualCurrency(
+    code: String,
+    amount: Int,
+    reference: String? = null,
+): VirtualCurrencies = awaitSpendVirtualCurrencies(mapOf(code to amount), reference)
 
 /**
  * This method will try to obtain the Store (Google/Amazon) locale. **Note:** this locale only has a region set.

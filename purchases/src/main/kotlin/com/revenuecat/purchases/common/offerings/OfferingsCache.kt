@@ -4,15 +4,22 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
+import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.LocaleProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.InMemoryCachedObject
+import com.revenuecat.purchases.common.caching.PayloadFileStore
 import com.revenuecat.purchases.common.caching.isCacheStale
+import com.revenuecat.purchases.common.debugLog
+import com.revenuecat.purchases.strings.OfferingStrings
+import org.json.JSONException
 import org.json.JSONObject
 
 @OptIn(InternalRevenueCatAPI::class)
 internal class OfferingsCache(
     private val deviceCache: DeviceCache,
+    private val responseStore: PayloadFileStore,
+    private val ioDispatcher: Dispatcher,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     private val offeringsCachedObject: InMemoryCachedObject<Offerings> = InMemoryCachedObject(
         dateProvider = dateProvider,
@@ -21,21 +28,45 @@ internal class OfferingsCache(
 ) {
     private var cachedLanguageTags: String? = null
 
+    // Bumped by clearCache() on identity changes, so a fetch started for the previous user can't cache over it.
+    @get:Synchronized
+    var epoch: Int = 0
+        private set
+
+    private var pendingResponse: String? = null
+
+    @Synchronized
+    fun migrateLegacyResponse() {
+        pendingResponse = deviceCache.takeLegacyOfferingsResponse() ?: return
+        ioDispatcher.enqueue({ persistPendingResponse() })
+    }
+
     @Synchronized
     fun clearCache() {
+        epoch++
         offeringsCachedObject.clearCache()
-        deviceCache.clearOfferingsResponseCache()
+        pendingResponse = null
+        deviceCache.clearOfferingsResponseChecksum()
+        responseStore.delete(responseKey)
         cachedLanguageTags = null
     }
 
     /**
      * [responsePayload] is null when [offerings] was parsed from the disk cache, whose response is already
-     * on disk: re-writing it would re-serialize a multi-MB payload on every failed fetch.
+     * on disk: re-writing it would rewrite a multi-MB file on every failed fetch.
+     * Nothing is cached when [requestEpoch] predates the last [clearCache].
      */
     @Synchronized
-    fun cacheOfferings(offerings: Offerings, responsePayload: String?) {
+    fun cacheOfferings(offerings: Offerings, responsePayload: String?, requestEpoch: Int = epoch) {
+        if (requestEpoch != epoch) {
+            debugLog { OfferingStrings.DROPPING_OFFERINGS_FROM_PREVIOUS_USER }
+            return
+        }
         offeringsCachedObject.cacheInstance(offerings)
-        responsePayload?.let { deviceCache.cacheOfferingsResponse(it) }
+        if (responsePayload != null) {
+            pendingResponse = responsePayload
+            ioDispatcher.enqueue({ persistPendingResponse() })
+        }
         offeringsCachedObject.updateCacheTimestamp(dateProvider.now)
         cachedLanguageTags = String(localeProvider.currentLocalesLanguageTags.toCharArray())
     }
@@ -67,11 +98,61 @@ internal class OfferingsCache(
 
     // endregion Offerings cache
 
+    private val responseKey: String
+        get() = deviceCache.offeringsResponseFileKey
+
+    private fun persistPendingResponse() {
+        val (responsePayload, requestEpoch) = synchronized(this) { (pendingResponse ?: return) to epoch }
+        val persisted = isAlreadyStored(responsePayload) ||
+            responseStore.write(responseKey, responsePayload)?.also { checksum ->
+                synchronized(this) {
+                    if (requestEpoch == epoch) {
+                        deviceCache.cacheOfferingsResponseChecksum(checksum)
+                    } else {
+                        responseStore.delete(responseKey)
+                    }
+                }
+            } != null
+        if (persisted) {
+            synchronized(this) {
+                if (requestEpoch == epoch && pendingResponse === responsePayload) pendingResponse = null
+            }
+        }
+    }
+
+    // A 304 from the ETag cache hands back the same payload on every refresh.
+    private fun isAlreadyStored(responsePayload: String): Boolean {
+        val storedChecksum = deviceCache.getOfferingsResponseChecksum() ?: return false
+        return responseStore.contains(responseKey) && responseStore.checksumOf(responsePayload) == storedChecksum
+    }
+
     // region Offerings response cache
 
     val cachedOfferingsResponse: JSONObject?
-        @Synchronized
-        get() = deviceCache.getOfferingsResponseCache()
+        get() = synchronized(this) { pendingResponse }?.let(::parseOrNull) ?: readStoredResponse()
+
+    private fun readStoredResponse(): JSONObject? {
+        val checksum = deviceCache.getOfferingsResponseChecksum() ?: return null
+        return responseStore.read(responseKey, checksum)
+            ?.let(::parseOrNull)
+            .also { if (it == null) forgetUnreadableResponse(checksum) }
+    }
+
+    @Synchronized
+    private fun forgetUnreadableResponse(checksum: Long) {
+        if (deviceCache.getOfferingsResponseChecksum() == checksum) {
+            deviceCache.clearOfferingsResponseChecksum()
+        }
+    }
 
     // endregion Offerings response cache
+}
+
+@Suppress("SwallowedException")
+private fun parseOrNull(response: String): JSONObject? {
+    return try {
+        JSONObject(response)
+    } catch (exception: JSONException) {
+        null
+    }
 }

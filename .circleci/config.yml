@@ -25,7 +25,7 @@ aliases:
     executor:
       name: android/android_docker
       resource_class: xlarge
-      tag: 2026.08.1
+      tag: 2026.10.1
     environment:
       JVM_OPTS: -Xmx6g
       # org.gradle.caching=false: the Gradle build cache stays on for local/worktree builds
@@ -57,14 +57,6 @@ parameters:
     default: alpha
 
 commands:
-  android-dependencies:
-    steps:
-      - android/restore_gradle_cache
-      - run:
-          name: Download Dependencies
-          command: ./gradlew androidDependencies
-      - android/save_gradle_cache
-
   prepare-signing-key:
     steps:
       - run:
@@ -174,7 +166,7 @@ jobs:
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v2
       - accept-android-licenses
-      - android-dependencies
+      - android/restore_gradle_cache
       - android/restore_build_cache
       - run:
           name: Build sample app
@@ -191,7 +183,7 @@ jobs:
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v2
       - accept-android-licenses
-      - android-dependencies
+      - android/restore_gradle_cache
       - android/restore_build_cache
       - run:
           name: Build sample app
@@ -208,7 +200,7 @@ jobs:
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v2
       - accept-android-licenses
-      - android-dependencies
+      - android/restore_gradle_cache
       - android/restore_build_cache
       - run:
           name: Build sample app
@@ -225,7 +217,7 @@ jobs:
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v2
       - accept-android-licenses
-      - android-dependencies
+      - android/restore_gradle_cache
       - android/restore_build_cache
       - run:
           name: Build sample app
@@ -448,7 +440,7 @@ jobs:
       - install-awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/10.28.0-SNAPSHOT s3://purchases-docs/android/10.28.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/11.1.0-SNAPSHOT s3://purchases-docs/android/11.1.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -929,20 +921,53 @@ jobs:
           name: Run Maestro tests on minified release build
           command: |
             adb install -r test-apps/e2etests/build/outputs/apk/release/e2etests-release.apk
-            maestro test --exclude-tags debug-only --format junit --output maestro/report.xml maestro/e2e_tests/ maestro/workflows/
+            maestro test --exclude-tags debug-only --format junit --output maestro/report.xml maestro/e2e_tests/ maestro/workflows/ maestro/checkpoints/
       - run:
           # Flows tagged debug-only force server errors through configureForE2ETests, which only
           # exists in the SDK's debug variant, so they run against the debug build.
           name: Run Maestro debug-only tests
           command: |
             adb install -r test-apps/e2etests/build/outputs/apk/debug/e2etests-debug.apk
-            maestro test --include-tags debug-only --format junit --output maestro/debug-report.xml maestro/workflows/
+            maestro test --include-tags debug-only --format junit --output maestro/debug-report.xml maestro/workflows/ maestro/checkpoints/
       - store_artifacts:
           path: ~/.maestro/tests/
       - store_test_results:
           path: maestro/report.xml
       - store_test_results:
           path: maestro/debug-report.xml
+
+  run-sdk-update-test:
+    <<: *android-machine-emulator
+    steps:
+      - checkout
+      - revenuecat/install-mise-tools:
+          tools: java,ruby
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - android/restore_gradle_cache
+      - android/create_avd:
+          avd_name: test-sdk-update-tester
+          system_image: system-images;android-32;google_apis;x86_64
+          install: true
+      - android/start_emulator:
+          avd_name: test-sdk-update-tester
+          post_emulator_launch_assemble_command: bundle exec fastlane build_sdk_update_test_apps
+      - revenuecat/install-maestro
+      - run:
+          name: Run SDK update test (anonymous_user)
+          command: bundle exec fastlane run_sdk_update_test test_case:anonymous_user
+          no_output_timeout: 15m
+      - run:
+          name: Run SDK update test (logged_in_user)
+          command: bundle exec fastlane run_sdk_update_test test_case:logged_in_user
+          no_output_timeout: 15m
+          when: always
+      - store_test_results:
+          path: fastlane/test_output/sdk_update_tests/anonymous_user/junit
+      - store_test_results:
+          path: fastlane/test_output/sdk_update_tests/logged_in_user/junit
+      - store_artifacts:
+          path: fastlane/test_output/sdk_update_tests
 
   generate-baseline-profiles:
     description: "Generate baseline profiles using Gradle Managed Devices and open a PR"
@@ -1195,6 +1220,10 @@ workflows:
           requires:
             - prepare-tests
           <<: *non-main-branches
+      - run-sdk-update-test:
+          <<: *release-branches
+          context:
+            - maestro
       - run-integration-tests:
           requires:
             - prepare-tests
@@ -1225,6 +1254,7 @@ workflows:
             - assemble-paywall-tester-release
             - run-backend-integration-tests
             - run-maestro-tests
+            - run-sdk-update-test
             - run-revenuecatui-ui-tests
             - run-integration-tests
             - run-purchases-integration-tests
@@ -1352,7 +1382,7 @@ workflows:
           commit_paths: "purchases/src/main/kotlin/generated/com/revenuecat/purchases/PurchasesErrorCode.kt,purchases/api-defauts.txt,purchases/api-entitlement.txt"
           executor:
             name: android/android_docker
-            tag: 2026.08.1
+            tag: 2026.10.1
             resource_class: xlarge
           update_api_steps:
             - run:

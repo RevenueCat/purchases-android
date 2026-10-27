@@ -11,6 +11,8 @@
     <string name="galaxy">Galaxy</string>
     <string name="revenuecat">RevenueCat</string>
     <string name="continue_text">Continue</string>
+    <string name="iam_login_internal">IAM login (internal)</string>
+    <string name="iam_login_with_oidc_token">Login with OIDC ID token (IAM)</string>
     <string name="loving_cat">😻</string>
     <string name="logs">Logs</string>
     <string name="google_store_is_unavailable">Google Store is unavailable in this build. Download a version from the Play Store or build locally to enable it.</string>
@@ -26,4 +28,6 @@
     <string name="find_placement">Find Placement</string>
     <string name="purchases_completed_by">Purchases are completed by</string>
     <string name="my_app">My app</string>
+    <string name="simulated_api_failures">Simulated API failures (ignored when a proxy URL is set)</string>
+    <string name="simulated_failures">Failures</string>
 </resources>

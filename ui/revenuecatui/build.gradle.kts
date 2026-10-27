@@ -52,6 +52,10 @@ android {
             isIncludeAndroidResources = true
         }
     }
+
+    lint {
+        baseline = file("lint-baseline.xml")
+    }
 }
 
 metalava {
@@ -138,16 +142,16 @@ dependencies {
     androidTestImplementation(libs.mockk.android)
     androidTestImplementation(libs.mockk.agent)
     androidTestImplementation(libs.androidx.test.compose)
+    // RecyclerView 1.3.0+ is a pooling container, which tests use to reproduce views detached into its cache.
+    androidTestImplementation(libs.androidx.recyclerview)
 
     baselineProfile(project(":baselineprofile"))
 }
 
 dokka {
     dokkaSourceSets {
-        named("defaults") {
-            dependentSourceSets.addLater(dokkaSourceSets.named("main").flatMap { it.sourceSetId })
-        }
-        named("main") {
+        // AGP registers variant source sets after this block runs, so they can only be reached lazily.
+        matching { it.name == "defaultsRelease" }.configureEach {
             reportUndocumented.set(true)
             skipDeprecated.set(true)
 

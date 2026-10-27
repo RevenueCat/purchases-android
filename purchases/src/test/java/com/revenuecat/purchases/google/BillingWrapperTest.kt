@@ -428,6 +428,139 @@ class BillingWrapperTest {
     }
 
     @Test
+    fun `product details returns an error if billing disconnects after scheduling`() {
+        val requests = captureScheduledBillingRequests()
+        val errors = mutableListOf<PurchasesError>()
+        wrapper.queryProductDetailsAsync(
+            ProductType.SUBS,
+            setOf("product_a"),
+            { fail("shouldn't receive products") },
+            { errors.add(it) },
+        )
+
+        every { mockClient.isReady } returns false
+        requests.single().run()
+
+        assertThat(errors.map { it.code }).containsExactly(PurchasesErrorCode.StoreProblemError)
+        verify(exactly = 0) { mockClient.queryProductDetailsAsync(any(), any()) }
+    }
+
+    @Test
+    fun `product details returns an error if billing client is cleared after scheduling`() {
+        val requests = captureScheduledBillingRequests()
+        val errors = mutableListOf<PurchasesError>()
+        wrapper.queryProductDetailsAsync(
+            ProductType.SUBS,
+            setOf("product_a"),
+            { fail("shouldn't receive products") },
+            { errors.add(it) },
+        )
+
+        wrapper.billingClient = null
+        requests.single().run()
+
+        assertThat(errors.map { it.code }).containsExactly(PurchasesErrorCode.StoreProblemError)
+    }
+
+    @Test
+    fun `query purchases returns an error if billing disconnects before the initial request executes`() {
+        assertQueryPurchasesDisconnectedAfterScheduling(requestIndex = 0)
+    }
+
+    @Test
+    fun `query purchases returns an error if billing disconnects before subscriptions are queried`() {
+        assertQueryPurchasesDisconnectedAfterScheduling(requestIndex = 1)
+    }
+
+    @Test
+    fun `query purchases returns an error if billing disconnects before inapps are queried`() {
+        assertQueryPurchasesDisconnectedAfterScheduling(requestIndex = 2)
+    }
+
+    @Test
+    fun `purchase history returns an error if billing disconnects after scheduling`() {
+        val requests = captureScheduledBillingRequests()
+        val errors = mutableListOf<PurchasesError>()
+        wrapper.queryPurchaseHistoryAsync(
+            BillingClient.ProductType.SUBS,
+            { fail("shouldn't receive purchases") },
+            { errors.add(it) },
+        )
+
+        every { mockClient.isReady } returns false
+        requests.single().run()
+
+        assertThat(errors.map { it.code }).containsExactly(PurchasesErrorCode.StoreProblemError)
+    }
+
+    @Test
+    fun `storefront returns an error if billing disconnects after scheduling`() {
+        val requests = captureScheduledBillingRequests()
+        val errors = mutableListOf<PurchasesError>()
+        wrapper.getStorefront(
+            { fail("shouldn't receive storefront") },
+            { errors.add(it) },
+        )
+
+        every { mockClient.isReady } returns false
+        requests.single().run()
+
+        assertThat(errors.map { it.code }).containsExactly(PurchasesErrorCode.StoreProblemError)
+    }
+
+    private fun captureScheduledBillingRequests(): MutableList<Runnable> {
+        every { mockClient.isReady } returns true
+        val requests = mutableListOf<Runnable>()
+        every { handler.post(capture(requests)) } returns true
+        every { handler.postDelayed(capture(requests), any()) } returns true
+        return requests
+    }
+
+    private fun assertQueryPurchasesDisconnectedAfterScheduling(requestIndex: Int) {
+        val requests = captureScheduledBillingRequests()
+        val errors = mutableListOf<PurchasesError>()
+        wrapper.queryPurchases(
+            appUserId,
+            { fail("shouldn't receive purchases") },
+            { errors.add(it) },
+        )
+        repeat(requestIndex) { requests[it].run() }
+
+        every { mockClient.isReady } returns false
+        requests[requestIndex].run()
+
+        assertThat(errors.map { it.code }).containsExactly(PurchasesErrorCode.StoreProblemError)
+        mockRunnables()
+        every { mockClient.isReady } returns true
+        wrapper.onBillingSetupFinished(billingClientOKResult)
+        assertThat(errors).hasSize(1)
+    }
+
+    @Test
+    fun `purchase returns an error if billing disconnects after scheduling`() {
+        val requests = captureScheduledBillingRequests()
+        val errors = mutableListOf<PurchasesError>()
+        every { mockPurchasesListener.onPurchasesFailedToUpdate(any()) } answers {
+            errors.add(firstArg())
+            Unit
+        }
+        val purchasingData = createStoreProductWithoutOffers().subscriptionOptions!!.first().purchasingData
+        wrapper.makePurchaseAsync(
+            mockActivity,
+            appUserId,
+            purchasingData,
+            mockReplaceSkuInfo(),
+            PresentedOfferingContext("offering_a"),
+        )
+
+        every { mockClient.isReady } returns false
+        requests.single().run()
+
+        assertThat(errors.map { it.code }).containsExactly(PurchasesErrorCode.StoreProblemError)
+        verify(exactly = 0) { mockClient.launchBillingFlow(any(), any()) }
+    }
+
+    @Test
     fun `If starting connection throws an IllegalStateException, error is forwarded`() {
         every { mockClient.isReady } returns false
         every {
@@ -1947,10 +2080,9 @@ class BillingWrapperTest {
         }
 
         assertThat(listenerSlot.captured).isNotNull
-        val purchaseToken = null
         assertVerboseLog(BillingStrings.BILLING_INAPP_MESSAGE_NONE) {
             listenerSlot.captured.onInAppMessageResponse(
-                InAppMessageResult(InAppMessageResponseCode.NO_ACTION_NEEDED, purchaseToken)
+                mockInAppMessageResult(InAppMessageResponseCode.NO_ACTION_NEEDED)
             )
         }
     }
@@ -1967,10 +2099,9 @@ class BillingWrapperTest {
         }
 
         assertThat(listenerSlot.captured).isNotNull
-        val purchaseToken = null
         assertDebugLog(BillingStrings.BILLING_INAPP_MESSAGE_UPDATE) {
             listenerSlot.captured.onInAppMessageResponse(
-                InAppMessageResult(InAppMessageResponseCode.SUBSCRIPTION_STATUS_UPDATED, purchaseToken)
+                mockInAppMessageResult(InAppMessageResponseCode.SUBSCRIPTION_STATUS_UPDATED)
             )
         }
         assertThat(subscriptionStatusChanged).isTrue
@@ -2265,6 +2396,13 @@ class BillingWrapperTest {
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
 
         return mockBuilder
+    }
+
+    private fun mockInAppMessageResult(
+        @InAppMessageResponseCode responseCode: Int,
+    ): InAppMessageResult = mockk {
+        every { this@mockk.responseCode } returns responseCode
+        every { purchaseToken } returns null
     }
 
     private fun Int.buildResult(): BillingResult {

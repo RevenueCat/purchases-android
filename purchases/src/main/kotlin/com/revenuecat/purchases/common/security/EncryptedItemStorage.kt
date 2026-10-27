@@ -75,7 +75,7 @@ internal class EncryptedItemStorage private constructor(
 
         // All of this SDK's files on disk are grouped under this subfolder, rather than sitting
         // loose at the root of the app's storage directories, mirroring the convention already used
-        // by ETagPayloadStore/RemoteConfigDiskCache/RemoteConfigBlobStore.
+        // by the SDK's other file stores.
         private const val VENDOR_DIRECTORY = "RevenueCat"
 
         /**

@@ -117,6 +117,7 @@ private class EntitlementInfoAPI {
         when (type) {
             OwnershipType.PURCHASED,
             OwnershipType.FAMILY_SHARED,
+            OwnershipType.ASSIGNED,
             OwnershipType.UNKNOWN,
             -> {}
         }.exhaustive

@@ -6,6 +6,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.LogMessage
+import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.assertLogs
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
@@ -31,6 +34,9 @@ import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.common.workflows.WorkflowStep
 import com.revenuecat.purchases.common.workflows.WorkflowTrigger
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
+import com.revenuecat.purchases.models.Period
+import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.models.TestStoreProduct
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -41,6 +47,7 @@ import io.mockk.verify
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -81,15 +88,12 @@ class CheckpointWorkflowResolverImplTest {
         mockAudiencesConfigProvider = mockk()
         mockWorkflow = uiWorkflow("wf1234")
         mockUiConfig = mockk()
-        mockOffering = mockk {
-            every { identifier } returns "default"
-        }
-        mockOfferings = mockk()
+        mockOffering = offering("default")
+        mockOfferings = Offerings(mockOffering, mapOf("default" to mockOffering))
         coEvery { mockWorkflowManager.getWorkflowBody(any()) } answers { uiWorkflow(firstArg()) }
         every { mockWorkflowManager.prewarmWorkflowAssets(any(), any()) } just Runs
         coEvery { mockWorkflowManager.workflowBlobRef(any()) } returns null
         coEvery { mockUiConfigProvider.getUiConfig() } returns mockUiConfig
-        every { mockOfferings.all } returns mapOf("default" to mockOffering)
         configureAudiences(
             alwaysMatching("aud_wf1234"),
             alwaysMatching("aud_wf5678"),
@@ -116,7 +120,7 @@ class CheckpointWorkflowResolverImplTest {
     @Test
     fun `simulated error checkpoint throws ConfigurationError`() = runTest {
         val errorCode = try {
-            resolver.resolve("error_checkpoint", emptyMap())
+            resolver.resolve("f0rc3_3rr0r", emptyMap())
             null
         } catch (e: PurchasesException) {
             e.code
@@ -176,9 +180,29 @@ class CheckpointWorkflowResolverImplTest {
 
         assertThat(resolution.workflow).isEqualTo(mockWorkflow)
         assertThat(resolution.uiConfig).isEqualTo(mockUiConfig)
-        assertThat(resolution.offerings).isEqualTo(mockOfferings)
+        assertThat(resolution.offerings.all.keys).containsExactlyElementsOf(mockOfferings.all.keys)
+        assertThat(resolution.offerings.current?.identifier).isEqualTo(mockOfferings.current?.identifier)
         assertThat(offeringsFetched).isEqualTo(1)
         verify(exactly = 1) { mockWorkflowManager.prewarmWorkflowAssets(mockWorkflow, mockUiConfig) }
+    }
+
+    @Test
+    fun `a matched workflow leaves fetched offering contexts unchanged`() = runTest {
+        val secondaryOffering = offering("secondary")
+        mockOfferings = Offerings(
+            current = mockOffering,
+            all = mapOf(
+                mockOffering.identifier to mockOffering,
+                secondaryOffering.identifier to secondaryOffering,
+            ),
+        )
+
+        val resolution = resolve() as CheckpointResolution.MatchedWorkflow
+
+        assertThat(resolution.offerings).isSameAs(mockOfferings)
+        assertThat(resolution.offerings.all.values.map { it.presentedOfferingContext?.checkpointIdentifier })
+            .containsOnlyNulls()
+        assertThat(resolution.offerings.current?.presentedOfferingContext?.checkpointIdentifier).isNull()
     }
 
     @Test
@@ -209,7 +233,7 @@ class CheckpointWorkflowResolverImplTest {
         val resolution = resolve() as CheckpointResolution.MatchedWorkflow
 
         assertThat(resolution.workflow).isEqualTo(workflow)
-        assertThat(resolution.offerings).isEqualTo(mockOfferings)
+        assertThat(resolution.offerings.all.keys).containsExactlyElementsOf(mockOfferings.all.keys)
         verify(exactly = 1) { mockWorkflowManager.prewarmWorkflowAssets(workflow, mockUiConfig) }
     }
 
@@ -236,6 +260,33 @@ class CheckpointWorkflowResolverImplTest {
         val resolution = resolve() as CheckpointResolution.MatchedOffering
 
         assertThat(resolution.checkpointRuleId).isEqualTo("rule_wf1234")
+    }
+
+    @Test
+    fun `a matched offering adds the checkpoint identifier to its purchase contexts`() = runTest {
+        coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns offeringWorkflow("wf1234", "default")
+
+        val resolution = resolve() as CheckpointResolution.MatchedOffering
+
+        assertOfferingCheckpointContext(resolution.offering)
+    }
+
+    @Test
+    fun `a matched offering adds its trace id to its purchase contexts`() = runTest {
+        coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns offeringWorkflow("wf1234", "default")
+
+        val resolution = resolve() as CheckpointResolution.MatchedOffering
+
+        val packageObject = resolution.offering.availablePackages.single()
+        val product = packageObject.product
+        val contexts = buildList {
+            add(packageObject.presentedOfferingContext)
+            add(product.presentedOfferingContext)
+            add(product.defaultOption?.presentedOfferingContext)
+            addAll(product.subscriptionOptions.orEmpty().map { it.presentedOfferingContext })
+        }
+        assertThat(resolution.traceId).isNotBlank
+        assertThat(contexts.map { it?.traceId }).containsOnly(resolution.traceId)
     }
 
     @Test
@@ -486,7 +537,7 @@ class CheckpointWorkflowResolverImplTest {
     fun `offering checkpoint resolves CONFIGURATION_UNAVAILABLE when the fetched offerings lack its identifier`() =
         runTest {
             coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns offeringWorkflow("wf1234", "default")
-            every { mockOfferings.all } returns emptyMap()
+            mockOfferings = Offerings(current = null, all = emptyMap())
 
             assertThat(noActionReason(resolve()))
                 .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
@@ -549,7 +600,7 @@ class CheckpointWorkflowResolverImplTest {
 
         val resolution = resolve() as CheckpointResolution.MatchedOffering
 
-        assertThat(resolution.offering).isEqualTo(mockOffering)
+        assertThat(resolution.offering.identifier).isEqualTo(mockOffering.identifier)
         assertThat(offeringsFetched).isEqualTo(1)
         coVerify(exactly = 1) { mockUiConfigProvider.getUiConfig() }
         verify(exactly = 0) { mockWorkflowManager.prewarmWorkflowAssets(any(), any()) }
@@ -653,6 +704,51 @@ class CheckpointWorkflowResolverImplTest {
     }
 
     @Test
+    fun `a workflow with an invalid gate on any step does not fall through to a later rule`() = runTest {
+        val invalidGates = listOf(
+            JsonNull,
+            JsonPrimitive("hard"),
+            JsonObject(mapOf("type" to JsonPrimitive("unknown"))),
+            JsonObject(mapOf("type" to JsonPrimitive("hard"))),
+        )
+        configureRules(rule("wf-invalid"), rule("wf1234"))
+        coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns uiWorkflow("wf1234")
+
+        invalidGates.forEach { gate ->
+            coEvery { mockWorkflowManager.getWorkflowBody("wf-invalid") } returns workflow(
+                "wf-invalid",
+                screenStep("first", "default"),
+                screenStep("second", "default").gated(gate),
+            )
+
+            assertThat(noActionReason(resolve()))
+                .describedAs(gate.toString())
+                .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
+        }
+        assertThat(offeringsFetched).isZero()
+        coVerify(exactly = 0) { mockWorkflowManager.getWorkflowBody("wf1234") }
+    }
+
+    @Test
+    fun `a workflow with soft and hard gates resolves`() = runTest {
+        val workflow = workflow(
+            "wf1234",
+            screenStep("soft", "default").gated(JsonObject(mapOf("type" to JsonPrimitive("soft")))),
+            screenStep("hard", "default").gated(
+                JsonObject(
+                    mapOf(
+                        "type" to JsonPrimitive("hard"),
+                        "entitlement_identifiers" to JsonArray(listOf(JsonPrimitive("pro"))),
+                    ),
+                ),
+            ),
+        )
+        coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns workflow
+
+        assertThat(matchedWorkflow(resolve()).workflow).isEqualTo(workflow)
+    }
+
+    @Test
     fun `UI rule without UI config does not fall through to a later offering rule`() = runTest {
         configureRules(rule("wf-ui"), rule("wf-offering"))
         coEvery { mockWorkflowManager.getWorkflowBody("wf-ui") } returns uiWorkflow("wf-ui")
@@ -710,6 +806,60 @@ class CheckpointWorkflowResolverImplTest {
     )
 
     private fun alwaysMatching(audienceId: String) = Audience(id = audienceId, rules = "true")
+
+    private fun offering(
+        identifier: String,
+        placementIdentifier: String? = "test_placement",
+        targetingRuleId: String? = "test_targeting_rule",
+    ): Offering {
+        val context = PresentedOfferingContext(
+            offeringIdentifier = identifier,
+            placementIdentifier = placementIdentifier,
+            targetingContext = targetingRuleId?.let {
+                PresentedOfferingContext.TargetingContext(
+                    revision = 1,
+                    ruleId = it,
+                )
+            },
+        )
+        val product = TestStoreProduct(
+            id = "product_$identifier",
+            name = "Test product",
+            title = "Test product",
+            description = "Test product",
+            price = Price("$4.99", 4_990_000, "USD"),
+            period = Period(1, Period.Unit.MONTH, "P1M"),
+            presentedOfferingContext = context,
+        )
+        val packageObject = Package(
+            identifier = PackageType.MONTHLY.identifier!!,
+            packageType = PackageType.MONTHLY,
+            product = product,
+            presentedOfferingContext = context,
+        )
+        return Offering(
+            identifier = identifier,
+            serverDescription = "Test offering",
+            metadata = emptyMap(),
+            availablePackages = listOf(packageObject),
+        )
+    }
+
+    private fun assertOfferingCheckpointContext(offering: Offering) {
+        val packageObject = offering.availablePackages.single()
+        val product = packageObject.product
+        val contexts = buildList {
+            add(packageObject.presentedOfferingContext)
+            add(product.presentedOfferingContext)
+            add(product.defaultOption?.presentedOfferingContext)
+            addAll(product.subscriptionOptions.orEmpty().map { it.presentedOfferingContext })
+        }
+
+        assertThat(contexts).doesNotContainNull()
+        assertThat(contexts.map { it?.checkpointIdentifier }).containsOnly(checkpointId)
+        assertThat(contexts.map { it?.placementIdentifier }).containsOnly("test_placement")
+        assertThat(contexts.map { it?.targetingContext?.ruleId }).containsOnly("test_targeting_rule")
+    }
 
     private fun configureAudiences(vararg audiences: Audience) {
         coEvery { mockAudiencesConfigProvider.getAudiences() } returns audiences.associateBy { it.id }
@@ -820,6 +970,8 @@ class CheckpointWorkflowResolverImplTest {
         screenId = "screen-id",
         paramValues = offeringParams(offeringIdentifier),
     )
+
+    private fun WorkflowStep.gated(gate: JsonElement): WorkflowStep = copy(paramValues = paramValues + ("gating" to gate))
 
     private fun offeringParams(offeringIdentifier: String?) =
         offeringIdentifier?.let { offeringParams(JsonPrimitive(it)) }.orEmpty()
