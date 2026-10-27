@@ -27,13 +27,16 @@ end
 
 # Fail PRs that change too many lines of production Kotlin/Java code.
 # Large PRs are hard to review well, so we cap the churn (insertions + deletions)
-# across real .kt/.java files, excluding test sources and generated/build output.
+# across real .kt/.java files, excluding test sources, generated/build output, and
+# modules that don't ship (sample and test apps, API tester, baseline profile generator).
 # Authors who legitimately need a large PR can add the bypass label.
 PROD_LINES_LIMIT = 300
 SKIP_SIZE_LABEL = "skip-pr-lines-changed-check"
+NON_SHIPPING_DIRS = %w[examples/ test-apps/ api-tester/ baselineprofile/ integration-tests/].freeze
 
 prod_code_files = (git.modified_files + git.added_files).uniq.select do |f|
   next false unless f.end_with?(".kt") || f.end_with?(".java")
+  next false if f.start_with?(*NON_SHIPPING_DIRS)
   next false if f.include?("/src/test/") || f.include?("/src/androidTest/") ||
                 f.include?("/src/testFixtures/")
   next false if f.include?("/build/") || f.include?("/generated/")
