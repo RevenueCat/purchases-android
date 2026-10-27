@@ -6,6 +6,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.APIKeyValidator
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.DangerousSettings
+import com.revenuecat.purchases.ForceServerErrorStrategy
+import com.revenuecat.purchases.ForcedFailureUrlConnectionFactory
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -20,6 +22,7 @@ import com.revenuecat.purchases.common.SyncDispatcher
 import com.revenuecat.purchases.common.getLocale
 import com.revenuecat.purchases.common.networking.APISourceFailover
 import com.revenuecat.purchases.common.networking.ETagManager
+import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.ETagPayloadStore
 import com.revenuecat.purchases.common.networking.SourceHealthChecker
 import com.revenuecat.purchases.common.networking.disabledTokenAuthenticator
@@ -31,6 +34,7 @@ import com.revenuecat.purchases.common.remoteconfig.RemoteConfiguration
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.interfaces.StorefrontProvider
+import com.revenuecat.purchases.utils.DefaultUrlConnectionFactory
 import com.revenuecat.purchases.utils.Responses
 import io.mockk.Runs
 import io.mockk.every
@@ -53,6 +57,7 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.net.URL
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
@@ -249,6 +254,31 @@ internal class BackendAPISourceFailoverIntegrationTest {
         assertThat(sourceBServer.recordedPaths()).containsExactly(customerInfoPath)
     }
 
+    @Test
+    fun `getCustomerInfo fails over when the force server error strategy fails the source's health check`() {
+        // Source A's real health check would pass, so failing over proves the forced connection failure was used.
+        sourceAServer.routeResponses(endpoint = response(500), health = response(200))
+        sourceBServer.routeResponses(endpoint = customerInfoResponse(), health = response(200))
+        val sourceAHealthUrl = sourceAServer.url(healthPath).toString()
+        val strategy = object : ForceServerErrorStrategy {
+            override fun shouldForceServerError(baseURL: URL, endpoint: Endpoint): Boolean = false
+            override fun shouldForceConnectionFailure(url: String): Boolean = url == sourceAHealthUrl
+        }
+        val backend = createBackend(
+            sourceUrls = listOf(sourceAServer.url("/").toString(), sourceBServer.url("/").toString()),
+            deviceOffline = { false },
+            sourceHealthChecker = SourceHealthChecker(
+                urlConnectionFactory = ForcedFailureUrlConnectionFactory(DefaultUrlConnectionFactory(), strategy),
+            ),
+        )
+
+        val result = fetchCustomerInfo(backend)
+
+        assertThat(result).isInstanceOf(FetchResult.Success::class.java)
+        assertThat(sourceAServer.recordedPaths()).containsExactly(customerInfoPath)
+        assertThat(sourceBServer.recordedPaths()).containsExactly(customerInfoPath)
+    }
+
     // region Helpers
 
     private fun fetchCustomerInfo(backend: Backend): FetchResult {
@@ -263,16 +293,23 @@ internal class BackendAPISourceFailoverIntegrationTest {
     }
 
     /** Wires the full real stack: sources come from a `sources` topic pointing at [sourceUrls] in order. */
-    private fun createBackend(vararg sourceUrls: String, deviceOffline: () -> Boolean = { false }): Backend {
+    private fun createBackend(vararg sourceUrls: String, deviceOffline: () -> Boolean = { false }): Backend =
+        createBackend(sourceUrls.toList(), deviceOffline, SourceHealthChecker(DefaultUrlConnectionFactory()))
+
+    private fun createBackend(
+        sourceUrls: List<String>,
+        deviceOffline: () -> Boolean,
+        sourceHealthChecker: SourceHealthChecker,
+    ): Backend {
         val appConfig = createAppConfig()
-        val topic = sourcesTopic(sourceUrls.toList())
+        val topic = sourcesTopic(sourceUrls)
         val sourceProvider = DefaultRemoteConfigSourceProvider(
             { requestedTopic -> topic.takeIf { requestedTopic == RemoteConfigTopic.Sources } },
         )
         val apiSourceFailover = APISourceFailover(
             appConfig,
             sourceProvider,
-            SourceHealthChecker(),
+            sourceHealthChecker,
             mockk { every { isDeviceOffline() } answers { deviceOffline() } },
         )
         val sharedPreferencesEditor = mockk<SharedPreferences.Editor>().apply {
