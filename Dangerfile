@@ -28,7 +28,7 @@ end
 # Fail PRs that change too many lines of production Kotlin/Java code.
 # Large PRs are hard to review well, so we cap the churn (insertions + deletions)
 # across real .kt/.java files, excluding test sources, generated/build output, and
-# modules that don't ship (sample and test apps, API tester, baseline profile generator).
+# sample/test apps.
 # Authors who legitimately need a large PR can add the bypass label.
 PROD_LINES_LIMIT = 300
 SKIP_SIZE_LABEL = "skip-pr-lines-changed-check"
