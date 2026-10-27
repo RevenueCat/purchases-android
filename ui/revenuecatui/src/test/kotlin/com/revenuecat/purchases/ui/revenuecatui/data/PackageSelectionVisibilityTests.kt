@@ -14,8 +14,6 @@ import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TabControlComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
-import com.revenuecat.purchases.paywalls.components.properties.Badge
-import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.show
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
@@ -393,31 +391,6 @@ internal class PackageSelectionVisibilityTests {
                 style = CountdownComponent.CountdownStyle(type = "date", date = Date(0)),
                 countdownStack = StackComponent(emptyList()),
                 fallback = StackComponent(listOf(pkg(monthly))),
-            ),
-        )
-
-        state.reconcileSelectionForWindowSize(wide)
-
-        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
-    }
-
-    @Test
-    fun `a replaced badge cannot keep an invisible selection alive`() {
-        fun badge(vararg children: PaywallComponent) = Badge(
-            stack = StackComponent(children.toList()),
-            style = Badge.Style.Overlay,
-            alignment = TwoDimensionalAlignment.TOP,
-        )
-        val state = state(
-            hiddenStack(pkg(monthly, default = true)),
-            pkg(annual),
-            StackComponent(
-                components = emptyList(),
-                badge = badge(pkg(monthly)),
-                overrides = listOf(ComponentOverride(
-                    conditions = listOf(wideCondition),
-                    properties = PartialStackComponent(badge = badge()),
-                )),
             ),
         )
 

@@ -52,22 +52,7 @@ private class PackageVisibilityPathCollector {
                     .add(PackageVisibilityPath(path + style.stackComponentStyle, branches))
                 child(style.stackComponentStyle)
             }
-            is StackComponentStyle -> {
-                style.children.forEach { child(it) }
-                val badges = listOfNotNull(style.badge) + style.overrides.mapNotNull { it.properties.badgeStyle }
-                badges.distinct().forEach { badge ->
-                    visit(
-                        badge.stackStyle,
-                        path,
-                        tabIndex,
-                        sheet,
-                        branches + { context ->
-                            val resolved = context.resolve(style.overrides, style, readsState = true)
-                            (resolved?.badgeStyle ?: style.badge) === badge
-                        },
-                    )
-                }
-            }
+            is StackComponentStyle -> style.children.forEach { child(it) }
             is ButtonComponentStyle -> {
                 child(style.stackComponentStyle)
                 val destination = (style.action as? ButtonComponentStyle.Action.NavigateTo)?.destination
