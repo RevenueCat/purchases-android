@@ -1,29 +1,29 @@
 ## RevenueCat SDK
-### ✨ New Features
-* Parse paywall gating in checkpoint workflows (#4452) via Cesar de la Vega (@vegaro)
+
+> [!WARNING]
+> Your app, and any library module that depends on the SDK, must now compile against API 35 or later. This requirement comes from `androidx.core` 1.15.0, which Play Billing Library 9 depends on. `minSdk` and `targetSdk` are not affected.
+
+### 💥 Breaking Changes
+This release updates the SDK to Google Play Billing Library 9.1.0. The RevenueCat API is unchanged, but the new dependencies raise the build requirements of your app. You can check the full list of Billing Library changes here: https://developer.android.com/google/play/billing/release-notes#9-0-0
+
+We have also updated Kotlin to 2.2.21, Jetpack Compose to BOM 2026.06.01, kotlinx-coroutines to 1.9.0 and kotlinx-serialization to 1.7.3. The minimum Android version stays at Android 6 (API 23).
+
+See the [v11 migration guide](https://github.com/RevenueCat/purchases-android/blob/main/migrations/v11-MIGRATION.md) for details.
+
+* Update to Play Billing Library 9.1.0 (#4118) via @Climbatize (#4192) via Álvaro Brey (@AlvaroBrey)
+* Update to AGP 9 (AGP 9.2.1, Gradle 9.4.1, Kotlin 2.2.21) (#3964) via Álvaro Brey (@AlvaroBrey)
 ### 🐞 Bugfixes
-* fix(checkpoints): track started Activities from process start (#4518) via Cesar de la Vega (@vegaro)
-* fix: keep the cached offerings response out of SharedPreferences to reduce memory usage (#4455) via Álvaro Brey (@AlvaroBrey)
-* Fix dropped Billing callbacks after disconnection (#4511) via Cesar de la Vega (@vegaro)
-* [EXTERNAL] Fix requests hanging indefinitely when the server stops responding (#3925) via @aelaguiz (#4513) via Álvaro Brey (@AlvaroBrey)
-* [EXTERNAL] Fix non-subscription transactions reporting "null" display name and store transaction ID (#4485) via @RaphaelFakhri (#4500) via Álvaro Brey (@AlvaroBrey)
+* Fix paywall image localization parsing under kotlinx-serialization 1.7.3 (#4258) via Álvaro Brey (@AlvaroBrey)
 ### 📦 Dependency Updates
-* [RENOVATE] Update cimg/android Docker tag to v2026.10.1 (#4514) via RevenueCat Git Bot (@RCGitBot)
+* Update kotlinx-coroutines to 1.9.0 (#4261) via Álvaro Brey (@AlvaroBrey)
 
 ## RevenueCatUI SDK
-### Paywallsv2
-#### 🐞 Bugfixes
-* fix(paywalls): PWENG-305 preserve fixed icon sizes with overflowing margins (#4427) via Azat Valiev (@azvaliev)
+### 💥 Breaking Changes
+* Update Compose to BOM 2026.06.01 (#4253) via Álvaro Brey (@AlvaroBrey)
 
 ### 🔄 Other Changes
-* Migrate the cached offerings response out of SharedPreferences instead of dropping it (#4488) via Álvaro Brey (@AlvaroBrey)
-* Rename ETagPayloadStore to PayloadFileStore (#4487) via Álvaro Brey (@AlvaroBrey)
-* Add Maestro SDK update tests verifying persisted state (#4381) via Antonio Pallares (@ajpallares)
-* Let the tester apps simulate API source outages (#4521) via Toni Rico (@tonidero)
-* Remove the usesRemoteConfigAPISources dangerous setting and enable API sources for everyone (#4520) via Toni Rico (@tonidero)
-* Add API source integration tests with a normal Purchases instance (#4508) via Antonio Pallares (@ajpallares)
-* Let ForceServerErrorStrategy fail API source health checks (#4507) via Antonio Pallares (@ajpallares)
-* Exclude non-shipping modules from Danger's production lines check (#4522) via Antonio Pallares (@ajpallares)
-* Add Internal APIs to spend in-app currencies (#4495) via Dave DeLong (@davedelong)
-* other(e2etests): add an app presenter and an attribute to the checkpoint screen (#4490) via Facundo Menzella (@facumenzella)
-* Tests only: End-to-end IAM test suite (#4479) via Dave DeLong (@davedelong)
+* Complete the v11 migration guide (#4439) via Álvaro Brey (@AlvaroBrey)
+* Fix 11.0-dev test failures from the kotlinx-serialization and Compose bumps (#4432) via Álvaro Brey (@AlvaroBrey)
+* Move sdksizetesting to AGP 9 (#4128) via Álvaro Brey (@AlvaroBrey)
+* Drop the AGP 9 built-in Kotlin opt-out (#4120) via Álvaro Brey (@AlvaroBrey)
+* Move MagicWeatherCompose and CustomEntitlementComputationSample to AGP 9 (#4115) via Álvaro Brey (@AlvaroBrey)
