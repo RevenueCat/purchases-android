@@ -4,6 +4,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components.countdown
 
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
@@ -30,7 +31,13 @@ internal fun CountdownComponentView(
     componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
     ancestorScrollOrientations: Set<Orientation> = emptySet(),
 ) {
-    val countdownState = rememberCountdownState(style.date)
+    val countdownState = rememberCountdownState(style.date, dateProvider = { state.currentDate })
+
+    LaunchedEffect(state, style, countdownState.hasEnded) {
+        if (countdownState.hasEnded && style.endStackComponentStyle != null) {
+            state.reconcileSelectionForWindowSize(state.paywallBoundsDp)
+        }
+    }
 
     val stackStyle = if (countdownState.hasEnded && style.endStackComponentStyle != null) {
         style.endStackComponentStyle

@@ -32,6 +32,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.validatePaywallComponentsDataOrNull
 import java.net.URL
+import java.util.Date
 
 internal fun FakePaywallState(vararg pkg: Package): PaywallState.Loaded.Components =
     FakePaywallState(packages = pkg.toList())
@@ -71,6 +72,7 @@ internal fun FakePaywallState(
     viewModelActionInProgress: State<Boolean> = mutableStateOf(false),
     addPackageComponents: Boolean = true,
     stateDeclarations: Map<String, StateDeclaration> = emptyMap(),
+    dateProvider: () -> Date = { Date() },
 ): PaywallState.Loaded.Components {
     // Only synthesize a PackageComponent for packages the caller's components don't already
     // reference: a synthesized always-visible duplicate would defeat visibility-rule tests.
@@ -112,6 +114,7 @@ internal fun FakePaywallState(
     val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
     return offering.toComponentsPaywallState(
         validated,
+        dateProvider = dateProvider,
         purchases = purchases,
         customVariables = customVariables,
         viewModelActionInProgress = viewModelActionInProgress,
