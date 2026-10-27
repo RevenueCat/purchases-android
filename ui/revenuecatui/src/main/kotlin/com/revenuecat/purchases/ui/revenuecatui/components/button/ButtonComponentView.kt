@@ -4,6 +4,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.button
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
@@ -75,7 +76,7 @@ private const val BRIGHTNESS_CUTOFF = 0.6f
 
 private const val ALPHA_DISABLED = 0.6f
 
-@Suppress("LongMethod")
+@Suppress("LongMethod", "LongParameterList")
 @Composable
 internal fun ButtonComponentView(
     style: ButtonComponentStyle,
@@ -83,6 +84,7 @@ internal fun ButtonComponentView(
     onClick: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
     componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
+    ancestorScrollOrientations: Set<Orientation> = emptySet(),
 ) {
     val stackState = rememberUpdatedStackComponentState(
         style = style.stackComponentStyle,
@@ -155,6 +157,7 @@ internal fun ButtonComponentView(
                     componentInteractionTracker = componentInteractionTracker,
                     contentAlpha = contentAlphaProvider,
                     enabled = !anyActionInProgress,
+                    ancestorScrollOrientations = ancestorScrollOrientations,
                     onStackClick = onStackClick@{
                         val paywallAction = buttonState.action ?: return@onStackClick
                         val actionForClick = if (style.action.isPurchaseRelated()) {

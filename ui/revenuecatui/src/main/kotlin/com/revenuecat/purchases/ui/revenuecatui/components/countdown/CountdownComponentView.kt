@@ -2,6 +2,7 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components.countdown
 
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -19,6 +20,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 import java.util.Date
 
+@Suppress("LongParameterList")
 @Composable
 internal fun CountdownComponentView(
     style: CountdownComponentStyle,
@@ -26,6 +28,7 @@ internal fun CountdownComponentView(
     onClick: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
     componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
+    ancestorScrollOrientations: Set<Orientation> = emptySet(),
 ) {
     val countdownState = rememberCountdownState(style.date)
 
@@ -40,6 +43,7 @@ internal fun CountdownComponentView(
         clickHandler = onClick,
         modifier = modifier,
         componentInteractionTracker = componentInteractionTracker,
+        ancestorScrollOrientations = ancestorScrollOrientations,
     )
 }
 

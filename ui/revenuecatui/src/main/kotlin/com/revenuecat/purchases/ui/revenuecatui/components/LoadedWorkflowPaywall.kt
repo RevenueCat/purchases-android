@@ -4,6 +4,7 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components
 
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -305,6 +306,11 @@ private fun WorkflowStepContent(
                     state = stepState,
                     onClick = onClick,
                     componentInteractionTracker = tracker,
+                    ancestorScrollOrientations = if (shouldWrapMainContentInVerticalScroll) {
+                        setOf(Orientation.Vertical)
+                    } else {
+                        emptySet()
+                    },
                     modifier = Modifier
                         .fillMaxSize()
                         .conditional(shouldWrapMainContentInVerticalScroll) {

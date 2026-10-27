@@ -4,6 +4,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import android.content.res.Configuration
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -100,7 +101,7 @@ internal fun LoadedPaywallComponents(
 
     CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
         MeasurePaywallBounds(state, modifier) {
-            val shouldWrapMainContentInVerticalScroll = shouldWrapMainContentInVerticalScroll(state.stack, state)
+            val wrapInVerticalScroll = shouldWrapMainContentInVerticalScroll(state.stack, state)
             PaywallComponentsScaffold(
                 state = state,
                 headerContent = state.header?.let { headerStyle ->
@@ -130,9 +131,10 @@ internal fun LoadedPaywallComponents(
                     state = state,
                     onClick = onClick,
                     componentInteractionTracker = componentInteractionTracker,
+                    ancestorScrollOrientations = setOfNotNull(Orientation.Vertical.takeIf { wrapInVerticalScroll }),
                     modifier = Modifier
                         .fillMaxSize()
-                        .conditional(shouldWrapMainContentInVerticalScroll) {
+                        .conditional(wrapInVerticalScroll) {
                             verticalScroll(mainScrollState)
                         }
                         .conditional(state.header != null && !state.mainStackHasHeroImage) {
