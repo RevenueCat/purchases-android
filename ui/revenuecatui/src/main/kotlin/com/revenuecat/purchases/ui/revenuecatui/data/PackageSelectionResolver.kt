@@ -13,8 +13,9 @@ internal class PackageSelectionResolver(
     presentedSheet: SheetPresentationKey?,
     private val context: ComponentVisibilityContext,
 ) {
-    // A default authored in a sheet still establishes a root fallback after that sheet closes.
-    private val hasAuthoredDefaultOutsideTabs = packages.packagesOutsideTabs.any { it.isSelectedByDefault }
+    // Defaults in a closed sheet still establish a root fallback for the selected tab / root context.
+    private val hasAuthoredDefault = packages.packagesOutsideTabs.any { it.isSelectedByDefault } ||
+        packages.packagesByTab[selectedTabIndex].orEmpty().any { it.isSelectedByDefault }
     private val outside = packages.packagesOutsideTabs.inPresentation(presentedSheet)
     private val tab = packages.packagesByTab[selectedTabIndex].orEmpty().inPresentation(presentedSheet)
     private val active = outside + tab
@@ -26,8 +27,8 @@ internal class PackageSelectionResolver(
 
     fun reconcile(current: String?, remembered: String?): String? = when {
         current != null && rendersWhenSelected(current) -> current
-        // No default outside tabs means the paywall deliberately starts unselected.
-        current == null && tab.isEmpty() && outside.none { it.isSelectedByDefault } -> null
+        // No default in this context means the paywall deliberately starts unselected.
+        current == null && tab.isEmpty() && !hasAuthoredDefault -> null
         else -> defaultSelection(remembered)
             ?: outside.firstOrNull { canSelect(it) }?.uniqueId.takeIf { current != null }
             // Keep the existing all-hidden behavior, including workflow fallbacks owned elsewhere.
@@ -45,7 +46,7 @@ internal class PackageSelectionResolver(
             ?: outside.authoredDefaultSelection(context, active)?.uniqueId
             ?: remembered?.takeIf { rendersWhenSelected(it) }
             ?: tab.firstOrNull { canSelect(it) }?.uniqueId
-            ?: outside.takeIf { hasAuthoredDefaultOutsideTabs }
+            ?: outside.takeIf { hasAuthoredDefault }
                 ?.firstOrNull { canSelect(it) }?.uniqueId
 
     private fun rendersWhenSelected(uniqueId: String): Boolean = active.rendersWhenSelected(uniqueId, context)
@@ -78,12 +79,17 @@ internal fun AvailablePackages.Info.canSelect(
     visiblePackages: List<AvailablePackages.Info>,
 ): Boolean = resolvesVisible(context.withSelection(null)) && visiblePackages.rendersWhenSelected(uniqueId, context)
 
-/** Authored defaults may reveal their content when selected, but must stay visible in that state. */
+/** The authored card must render before or after selection, and some copy must remain visible once selected. */
 internal fun List<AvailablePackages.Info>.authoredDefaultSelection(
     context: ComponentVisibilityContext,
     visiblePackages: List<AvailablePackages.Info> = this,
-): AvailablePackages.Info? = firstOrNull {
-    it.isSelectedByDefault && visiblePackages.rendersWhenSelected(it.uniqueId, context)
+): AvailablePackages.Info? = firstOrNull { info ->
+    info.isSelectedByDefault &&
+        (
+            info.resolvesVisible(context.withSelection(null)) ||
+                info.resolvesVisible(context.withSelection(info.selectionInfo()))
+            ) &&
+        visiblePackages.rendersWhenSelected(info.uniqueId, context)
 }
 
 internal fun List<AvailablePackages.Info>.defaultSelection(

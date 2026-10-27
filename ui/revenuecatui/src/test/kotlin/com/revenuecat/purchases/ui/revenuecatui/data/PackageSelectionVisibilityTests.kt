@@ -20,6 +20,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.show
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.TabsComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
@@ -169,6 +170,65 @@ internal class PackageSelectionVisibilityTests {
         state.resetToDefaultPackage()
 
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthly)
+    }
+
+    @Test
+    fun `a hidden root default cannot borrow default status from a visible copy`() {
+        val state = state(
+            PackageComponent(
+                packageId = monthly.identifier,
+                isSelectedByDefault = true,
+                visible = false,
+                stack = StackComponent(emptyList()),
+            ),
+            pkg(monthly),
+            tabsWithDefault(annual),
+        )
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
+    }
+
+    @Test
+    fun `a default under a hidden parent cannot borrow default status from a visible copy`() {
+        val state = state(
+            StackComponent(components = listOf(pkg(monthly, default = true)), visible = false),
+            pkg(monthly),
+            tabsWithDefault(annual),
+        )
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
+    }
+
+    @Test
+    fun `resize and reset skip a hidden tab default even when a non-default copy is visible`() {
+        val state = state(
+            pkg(annual, default = true),
+            hiddenStack(pkg(weekly)),
+            TabsComponent(
+                tabs = listOf(TabsComponent.Tab(
+                    id = "plans",
+                    stack = StackComponent(listOf(
+                        PackageComponent(
+                            packageId = monthly.identifier,
+                            isSelectedByDefault = true,
+                            visible = false,
+                            stack = StackComponent(emptyList()),
+                        ),
+                        pkg(monthly),
+                    )),
+                )),
+                control = TabsComponent.TabControl.Buttons(StackComponent(emptyList())),
+            ),
+        )
+        state.paywallBoundsDp = wide
+        state.update(selectedPackageUniqueId = weekly.identifier)
+
+        state.reconcileSelectionForWindowSize(wide)
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
+        state.update(selectedPackageUniqueId = monthly.identifier)
+        state.resetToDefaultPackage()
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
     }
 
     @Test
@@ -446,6 +506,62 @@ internal class PackageSelectionVisibilityTests {
 
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(weekly)
     }
+
+    @Test
+    fun `dismissing the only default sheet inside the selected tab restores a root fallback`() {
+        val state = state(
+            pkg(monthly),
+            TabsComponent(
+                tabs = listOf(TabsComponent.Tab(
+                    id = "plans",
+                    stack = StackComponent(listOf(packageSheet(pkg(annual, default = true)))),
+                )),
+                control = TabsComponent.TabControl.Buttons(StackComponent(emptyList())),
+            ),
+        )
+        state.paywallBoundsDp = wide
+        val tabs = (state.stack as StackComponentStyle).children[1] as TabsComponentStyle
+        val button = tabs.tabs[0].stack.children[0] as ButtonComponentStyle
+        val sheet = (button.action as ButtonComponentStyle.Action.NavigateTo).destination
+            as ButtonComponentStyle.Action.NavigateTo.Destination.Sheet
+        state.sheet.show(sheet, state, PaywallComponentInteractionTracker { }, onClick = {})
+        state.update(selectedPackageUniqueId = annual.identifier)
+
+        state.sheet.hide()
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthly)
+        assertThat(state.peekSelectedPackageInfoAfterSheetDismiss()?.rcPackage).isEqualTo(monthly)
+    }
+
+    @Test
+    fun `a default in another tab does not establish a root fallback for an unselected tab`() {
+        val state = state(
+            pkg(monthly),
+            TabsComponent(
+                tabs = listOf(
+                    TabsComponent.Tab(id = "first", stack = StackComponent(emptyList())),
+                    TabsComponent.Tab(
+                        id = "second",
+                        stack = StackComponent(listOf(packageSheet(pkg(annual, default = true)))),
+                    ),
+                ),
+                control = TabsComponent.TabControl.Buttons(StackComponent(emptyList())),
+            ),
+        )
+        state.paywallBoundsDp = wide
+        state.reconcileSelectionForWindowSize(wide)
+        assertThat(state.selectedPackageInfo).isNull()
+        state.update(selectedPackageUniqueId = monthly.identifier)
+
+        state.resetToDefaultPackage()
+
+        assertThat(state.selectedPackageInfo).isNull()
+    }
+
+    private fun tabsWithDefault(pkg: Package) = TabsComponent(
+        tabs = listOf(TabsComponent.Tab(id = "plans", stack = StackComponent(listOf(pkg(pkg, default = true))))),
+        control = TabsComponent.TabControl.Buttons(StackComponent(emptyList())),
+    )
 
     private fun selectedOnlyContent() = StackComponent(
         components = emptyList(),
