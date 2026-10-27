@@ -197,6 +197,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime)
     implementation(libs.androidx.lifecycle.common)
     implementation(libs.androidx.lifecycle.process)
+    implementation(libs.androidx.startup.runtime)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.google.blockstore)
     implementation(libs.tink)

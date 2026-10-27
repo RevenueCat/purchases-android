@@ -52,6 +52,7 @@ samsungIap = "6.5.2"
 kover = "0.9.9"
 legacyCoreUi = "1.0.0"
 lifecycle = "2.5.0"
+startup = "1.1.1"
 material = "1.6.0"
 mavenPublish = "0.33.0"
 metalava = "0.5.0"
@@ -100,6 +101,7 @@ androidx-legacy-core-ui = { module = "androidx.legacy:legacy-support-core-ui", v
 androidx-lifecycle-common = { module = "androidx.lifecycle:lifecycle-common", version.ref = "lifecycle" }
 androidx-lifecycle-livedata = { module = "androidx.lifecycle:lifecycle-livedata-ktx", version.ref = "lifecycle" }
 androidx-lifecycle-process = { module = "androidx.lifecycle:lifecycle-process", version.ref = "lifecycle" }
+androidx-startup-runtime = { module = "androidx.startup:startup-runtime", version.ref = "startup" }
 androidx-lifecycle-runtime = { module = "androidx.lifecycle:lifecycle-runtime", version.ref = "lifecycle" }
 androidx-lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycle" }
 androidx-lifecycle-viewmodel = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycle" }

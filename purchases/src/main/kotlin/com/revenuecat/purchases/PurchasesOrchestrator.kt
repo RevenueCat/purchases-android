@@ -207,7 +207,7 @@ internal class PurchasesOrchestrator(
     @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal val tokenManager: TokenManager,
     val adTracker: AdTracker = AdTracker(adEventsManager),
-    private val currentActivityTracker: CurrentActivityTracker = CurrentActivityTracker(),
+    private val currentActivityTracker: CurrentActivityTracker = CurrentActivityTracker,
     private val localRulesEvaluator: LocalRulesEvaluator = LocalRulesEvaluator(
         providers = emptyList(),
         currentAppUserId = { identityManager.currentAppUserID },
