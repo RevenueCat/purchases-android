@@ -653,10 +653,11 @@ private fun MainStackComponent(
                         mainAxisUnbounded = mainAxisUnbounded.value,
                         modifier = outerModifier
                             .size(stackState.size, verticalAlignment = dimension.alignment.toAlignment())
+                            .then(if (stackState.fillsAvailableHeight) rootModifier else Modifier)
                             .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
-                                scrollable(state, orientation)
+                                scrollable(state, orientation, fillViewport = stackState.fillsAvailableHeight)
                             }
-                            .then(rootModifier)
+                            .then(if (stackState.fillsAvailableHeight) Modifier else rootModifier)
                             .conditional(hasFillWidthChild) {
                                 trackMainAxisUnbounded(isHorizontal = true, unboundedState = mainAxisUnbounded)
                             },
@@ -689,10 +690,11 @@ private fun MainStackComponent(
                         mainAxisUnbounded = mainAxisUnbounded.value,
                         modifier = outerModifier
                             .size(stackState.size, horizontalAlignment = dimension.alignment.toAlignment())
+                            .then(if (stackState.fillsAvailableHeight) rootModifier else Modifier)
                             .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
-                                scrollable(state, orientation)
+                                scrollable(state, orientation, fillViewport = stackState.fillsAvailableHeight)
                             }
-                            .then(rootModifier)
+                            .then(if (stackState.fillsAvailableHeight) Modifier else rootModifier)
                             .conditional(hasFillHeightChild) {
                                 trackMainAxisUnbounded(isHorizontal = false, unboundedState = mainAxisUnbounded)
                             },
@@ -733,10 +735,11 @@ private fun MainStackComponent(
                                 horizontalAlignment = dimension.alignment.toHorizontalAlignmentOrNull(),
                                 verticalAlignment = dimension.alignment.toVerticalAlignmentOrNull(),
                             )
+                            .then(if (stackState.fillsAvailableHeight) rootModifier else Modifier)
                             .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
-                                scrollable(state, orientation)
+                                scrollable(state, orientation, fillViewport = stackState.fillsAvailableHeight)
                             }
-                            .then(rootModifier),
+                            .then(if (stackState.fillsAvailableHeight) Modifier else rootModifier),
                         contentAlignment = dimension.alignment.toAlignment(),
                     ) {
                         stackState.children.forEach { child ->

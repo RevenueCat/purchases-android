@@ -381,7 +381,13 @@ internal class WorkflowSkeleton private constructor(
                     base = PaywallComponentsConfig(
                         stack = transform.stack(base.stack),
                         background = Background.Color(background),
-                        stickyFooter = base.stickyFooter?.let { StickyFooterComponent(transform.stack(it.stack)) },
+                        stickyFooter = base.stickyFooter?.let {
+                            StickyFooterComponent(
+                                transform.stack(it.stack),
+                                layout = it.layout,
+                                overrides = it.overrides,
+                            )
+                        },
                         header = base.header?.let {
                             HeaderComponent(transform.stack(it.stack))
                         },

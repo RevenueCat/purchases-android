@@ -54,6 +54,8 @@ internal data class StackComponentStyle(
      */
     @get:JvmSynthetic
     val scrollExplicitlyDisabled: Boolean = false,
+    @get:JvmSynthetic
+    val fillsAvailableHeight: Boolean = false,
     /**
      * If this is non-null and equal to the currently selected package, the `selected` [overrides] will be used if
      * available.
