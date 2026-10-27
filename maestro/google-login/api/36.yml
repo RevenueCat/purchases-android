@@ -1,0 +1,55 @@
+# We could save a few steps in this flow by immediately opening the Add Account screen in the Settings app:
+# adb shell am start -a android.settings.ADD_ACCOUNT_SETTINGS -n com.android.settings/.accounts.AddAccountSettings;
+
+# This flow requires passing the user name and password as parameters like so:
+# maestro test -e USERNAME=user@example.com -e PASSWORD=123 google-login.yml
+
+appId: "com.android.settings"
+---
+- launchApp
+- scrollUntilVisible:
+    element: "Passwords, passkeys & accounts"
+- tapOn: "Passwords, passkeys & accounts"
+- runFlow:
+    when:
+      notVisible: ${USERNAME}
+    commands:
+      - runFlow:
+          label: "Ensure auto-fill is disabled"
+          when:
+            notVisible: "None selected"
+          commands:
+            - tapOn: "Change"
+            - tapOn: "None"
+            - tapOn: "Turn off"
+            - back
+      - tapOn: "Add account"
+      - tapOn: "Google"
+      - tapOn:
+          id: identifierId
+      - inputText: ${USERNAME}
+      - tapOn: NEXT
+      - assertVisible: "Show password"
+      - inputText: ${PASSWORD}
+      - tapOn: NEXT
+      - tapOn: "I agree"
+      - waitForAnimationToEnd
+      # Skip and cancel whatever Google asks us
+      - repeat:
+          while:
+            visible: "Cancel"
+          commands:
+            - tapOn: "Cancel"
+      - repeat:
+          while:
+            visible: "Skip"
+          commands:
+            - tapOn: "Skip"
+      - runFlow:
+          label: "Ensure Auto Backup is disabled"
+          when:
+            visible: "Back up device data"
+          commands:
+            - tapOn:
+                checked: true
+            - tapOn: "Accept"
