@@ -390,6 +390,7 @@ package com.revenuecat.purchases {
     method @InaccessibleFromKotlin @Deprecated public static boolean getDebugLogsEnabled();
     method @InaccessibleFromKotlin @Deprecated @kotlin.jvm.Synchronized public boolean getFinishTransactions();
     method @InaccessibleFromKotlin public static String getFrameworkVersion();
+    method @InaccessibleFromKotlin public static com.revenuecat.purchases.SimulatedHostFailures? getInternalSimulatedHostFailures();
     method @InaccessibleFromKotlin @kotlin.jvm.Synchronized public static com.revenuecat.purchases.LogHandler getLogHandler();
     method @InaccessibleFromKotlin public static com.revenuecat.purchases.LogLevel getLogLevel();
     method @Deprecated public void getNonSubscriptionSkus(java.util.List<java.lang.String> productIds, com.revenuecat.purchases.interfaces.GetStoreProductsCallback callback);
@@ -450,6 +451,7 @@ package com.revenuecat.purchases {
     method public void setFBAnonymousID(String? fbAnonymousID);
     method @InaccessibleFromKotlin @Deprecated @kotlin.jvm.Synchronized public void setFinishTransactions(boolean);
     method public void setFirebaseAppInstanceID(String? firebaseAppInstanceID);
+    method @InaccessibleFromKotlin public static void setInternalSimulatedHostFailures(com.revenuecat.purchases.SimulatedHostFailures?);
     method public void setKeyword(String? keyword);
     method public void setKochavaDeviceID(String? kochavaDeviceID);
     method @InaccessibleFromKotlin @kotlin.jvm.Synchronized public static void setLogHandler(com.revenuecat.purchases.LogHandler);

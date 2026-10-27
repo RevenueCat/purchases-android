@@ -1721,6 +1721,18 @@ public class Purchases internal constructor(
             set(value) { PurchasesOrchestrator.proxyURL = value }
 
         /**
+         * API hosts to treat as failing, so API source failover can be tested by hand from a test app.
+         * Set it before calling [configure] to arm the hook (an instance with empty sets arms it without failing
+         * anything); later assignments take effect on the next request. Leaving it null at configure time
+         * leaves the instance without the hook. Never set this in production.
+         */
+        @InternalRevenueCatAPI
+        @JvmStatic
+        public var internalSimulatedHostFailures: SimulatedHostFailures?
+            get() = PurchasesOrchestrator.internalSimulatedHostFailures
+            set(value) { PurchasesOrchestrator.internalSimulatedHostFailures = value }
+
+        /**
          * True if [configure] has been called and [Purchases.sharedInstance] is set
          */
         @JvmStatic
@@ -1752,6 +1764,9 @@ public class Purchases internal constructor(
                 configuration,
                 platformInfo,
                 proxyURL,
+                forceServerErrorStrategy = internalSimulatedHostFailures?.let {
+                    SimulatedHostFailures.strategy { internalSimulatedHostFailures }
+                },
             ).also {
                 @SuppressLint("RestrictedApi")
                 sharedInstance = it
