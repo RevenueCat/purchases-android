@@ -47,7 +47,6 @@ internal fun PaywallData.Companion.createDefaultForIdentifiers(
         config = PaywallData.Configuration(
             packageIds = packageIdentifiers,
             images = PaywallData.Configuration.Images(
-                background = PaywallData.defaultBackgroundPlaceholder,
                 icon = PaywallData.defaultAppIconPlaceholder,
             ),
             colors = PaywallData.defaultColors(currentColors),
@@ -70,9 +69,6 @@ internal val PaywallData.Companion.defaultTemplate: PaywallTemplate
 
 internal val PaywallData.Companion.defaultAppIconPlaceholder: String
     get() = "revenuecatui_default_paywall_app_icon"
-
-internal val PaywallData.Companion.defaultBackgroundPlaceholder: String
-    get() = "revenuecatui_default_paywall_background"
 
 // endregion
 
