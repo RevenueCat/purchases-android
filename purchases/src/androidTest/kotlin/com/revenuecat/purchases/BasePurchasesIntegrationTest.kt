@@ -52,7 +52,7 @@ abstract class BasePurchasesIntegrationTest {
     protected val testTimeout = 10.seconds
     protected val currentTimestamp = Date().time
     protected val testUserId = "android-integration-test-$currentTimestamp"
-    protected val proxyUrl get() = Constants.proxyUrl.takeIf { it.isNotEmpty() }
+    protected open val proxyUrl: String? get() = Constants.proxyUrl.takeIf { it.isNotEmpty() }
 
     internal lateinit var mockBillingAbstract: BillingAbstract
 
@@ -152,9 +152,8 @@ abstract class BasePurchasesIntegrationTest {
             }
             mockActivePurchases(initialActivePurchases)
 
-            proxyUrl?.let { urlString ->
-                Purchases.proxyURL = URL(urlString)
-            }
+            // Always assigned: it's static, so a previous test's proxy would otherwise leak into this one.
+            Purchases.proxyURL = proxyUrl?.let { urlString -> URL(urlString) }
 
             Purchases.configureSdk(
                 it,
