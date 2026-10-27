@@ -17,7 +17,7 @@ import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.SyncDispatcher
 import com.revenuecat.purchases.common.getLocale
 import com.revenuecat.purchases.common.networking.ETagManager
-import com.revenuecat.purchases.common.networking.ETagPayloadStore
+import com.revenuecat.purchases.common.caching.PayloadFileStore
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.disabledTokenAuthenticator
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
@@ -171,7 +171,7 @@ internal class BackendSubscriberAttributesIntegrationTest {
         val eTagManager = ETagManager(
             mockk(),
             lazy { preferences },
-            payloadStore = ETagPayloadStore(temporaryFolder.newFolder()),
+            payloadStore = PayloadFileStore(temporaryFolder.newFolder()),
         )
         val httpClient = HTTPClient(
             appConfig,

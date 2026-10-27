@@ -8,7 +8,7 @@ import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createCustomerInfo
 import com.revenuecat.purchases.common.networking.ETagManager
-import com.revenuecat.purchases.common.networking.ETagPayloadStore
+import com.revenuecat.purchases.common.caching.PayloadFileStore
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.networking.buildPostReceiptResponse
@@ -216,7 +216,7 @@ class CustomerInfoSubscriberAttributesTest {
         val eTagManager = ETagManager(
             mockk(),
             lazy { preferences },
-            payloadStore = ETagPayloadStore(temporaryFolder.newFolder()),
+            payloadStore = PayloadFileStore(temporaryFolder.newFolder()),
         )
         val url = "https://api.revenuecat.com/v1/subscribers/waldo"
         eTagManager.getHTTPResultFromCacheOrBackend(
