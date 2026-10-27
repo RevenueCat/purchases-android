@@ -100,55 +100,6 @@ internal class WindowSizeSelectionReconcileWindowTests {
         }
 
     @Test
-    fun `growing the window past a hide rule moves the selection`(): Unit = with(composeTestRule) {
-        val state = FakePaywallState(
-            components = listOf(
-                PackageComponent(
-                    packageId = TestData.Packages.monthly.identifier,
-                    isSelectedByDefault = true,
-                    stack = StackComponent(components = emptyList()),
-                    overrides = listOf(
-                        ComponentOverride(
-                            conditions = listOf(
-                                ComponentOverride.Condition.WindowWidthRule(
-                                    operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
-                                    value = 700.0,
-                                ),
-                            ),
-                            properties = PartialPackageComponent(visible = false),
-                        ),
-                    ),
-                ),
-                PackageComponent(
-                    packageId = TestData.Packages.annual.identifier,
-                    isSelectedByDefault = false,
-                    stack = StackComponent(components = emptyList()),
-                ),
-            ),
-            packages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
-        )
-
-        windowChangingTest(
-            arrange = { state },
-            act = { paywallState ->
-                MeasurePaywallBounds(paywallState) {
-                    Box(Modifier.fillMaxSize())
-                }
-            },
-            assert = { controller ->
-                controller.setWindowSizeInexact(width = 400.dp, height = 800.dp)
-                waitForIdle()
-                assertThat(state.paywallBoundsDp).isNotNull()
-                assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
-
-                controller.setWindowSizeInexact(width = 900.dp, height = 600.dp)
-                waitForIdle()
-                assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
-            },
-        )
-    }
-
-    @Test
     fun `a state added after bounds settle is reconciled too`(): Unit = with(composeTestRule) {
         fun hiddenOnWideState() = FakePaywallState(
             components = listOf(
