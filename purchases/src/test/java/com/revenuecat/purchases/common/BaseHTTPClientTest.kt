@@ -91,7 +91,6 @@ internal abstract class BaseHTTPClientTest {
         storefrontProvider,
         apiSourceProvider?.let {
             APISourceFailover(
-                appConfig,
                 it,
                 sourceHealthChecker,
                 mockk { every { isDeviceOffline() } returns deviceOffline },
@@ -114,7 +113,6 @@ internal abstract class BaseHTTPClientTest {
         isDebugBuild: Boolean = false,
         customEntitlementComputation: Boolean = false,
         uiPreviewMode: Boolean = false,
-        usesRemoteConfigAPISources: Boolean = false,
         forceSigningErrors: Boolean = false,
         baseUrlString: String = AppConfig.baseUrlString,
         runningTests: Boolean = true,
@@ -131,7 +129,6 @@ internal abstract class BaseHTTPClientTest {
             dangerousSettings = DangerousSettings(
                 customEntitlementComputation = customEntitlementComputation,
                 uiPreviewMode = uiPreviewMode,
-                usesRemoteConfigAPISources = usesRemoteConfigAPISources,
             ),
             runningTests = runningTests,
             forceSigningErrors = forceSigningErrors,

@@ -219,7 +219,6 @@ internal class RemoteConfigBlobFetcher(
             isFallback = false,
             fallbackAvailable = false,
             isProxied = false,
-            reTieredTimeoutsEnabled = true,
         ).toInt()
 
         var connection: UrlConnection? = null

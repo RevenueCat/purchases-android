@@ -54,13 +54,11 @@ internal class HTTPTimeoutManagerTest {
         isFallback: Boolean = false,
         fallbackAvailable: Boolean = false,
         isProxied: Boolean = false,
-        reTieredTimeoutsEnabled: Boolean = true,
     ): Long = timeoutManager.getTimeoutForRequest(
         host = host,
         isFallback = isFallback,
         fallbackAvailable = fallbackAvailable,
         isProxied = isProxied,
-        reTieredTimeoutsEnabled = reTieredTimeoutsEnabled,
     )
 
     @Test
@@ -307,50 +305,10 @@ internal class HTTPTimeoutManagerTest {
                 isFallback = false,
                 fallbackAvailable = true,
                 isProxied = false,
-                reTieredTimeoutsEnabled = true,
             )
         ).isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
     }
 
     // endregion
 
-    // region Re-tiered timeouts disabled (e.g. main-API requests with API sources off)
-
-    @Test
-    fun `no-fallback endpoint uses the legacy flat timeout when re-tiered timeouts are disabled`() {
-        assertThat(timeout(host = HOST_A, fallbackAvailable = false, reTieredTimeoutsEnabled = false))
-            .isEqualTo(HTTPTimeoutManager.DEFAULT_TIMEOUT_MS)
-    }
-
-    @Test
-    fun `no-fallback endpoint stays flat after a recent timeout when re-tiered timeouts are disabled`() {
-        timeoutManager.recordRequestResult(HOST_A, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
-
-        assertThat(timeout(host = HOST_A, fallbackAvailable = false, reTieredTimeoutsEnabled = false))
-            .isEqualTo(HTTPTimeoutManager.DEFAULT_TIMEOUT_MS)
-    }
-
-    @Test
-    fun `fallback-supporting endpoint tiers are unaffected by the re-tiered flag`() {
-        assertThat(timeout(host = HOST_A, fallbackAvailable = true, reTieredTimeoutsEnabled = false))
-            .isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS)
-
-        timeoutManager.recordRequestResult(HOST_A, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
-
-        assertThat(timeout(host = HOST_A, fallbackAvailable = true, reTieredTimeoutsEnabled = false))
-            .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS)
-    }
-
-    @Test
-    fun `no-fallback endpoint uses the re-tiered timeout when enabled (e_g_ blob-source downloads)`() {
-        assertThat(timeout(host = HOST_A, fallbackAvailable = false, reTieredTimeoutsEnabled = true))
-            .isEqualTo(HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS)
-
-        timeoutManager.recordRequestResult(HOST_A, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
-
-        assertThat(timeout(host = HOST_A, fallbackAvailable = false, reTieredTimeoutsEnabled = true))
-            .isEqualTo(HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_REDUCED_TIMEOUT_MS)
-    }
-
-    // endregion
 }

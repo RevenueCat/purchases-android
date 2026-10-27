@@ -307,7 +307,6 @@ internal class BackendAPISourceFailoverIntegrationTest {
             { requestedTopic -> topic.takeIf { requestedTopic == RemoteConfigTopic.Sources } },
         )
         val apiSourceFailover = APISourceFailover(
-            appConfig,
             sourceProvider,
             sourceHealthChecker,
             mockk { every { isDeviceOffline() } answers { deviceOffline() } },
@@ -354,7 +353,7 @@ internal class BackendAPISourceFailoverIntegrationTest {
         store = Store.PLAY_STORE,
         isDebugBuild = false,
         apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
-        dangerousSettings = DangerousSettings(usesRemoteConfigAPISources = true),
+        dangerousSettings = DangerousSettings(),
         runningTests = true,
     )
 

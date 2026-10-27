@@ -216,7 +216,6 @@ internal class HTTPClient(
                 requestBaseURL = source?.url ?: baseURL,
                 isFallbackURL = fallbackURLIndex > 0,
                 isMainBackend = isMainBackend,
-                fallbackAvailable = canUseFallback(),
                 endpoint = endpoint,
                 body = body,
                 postFieldsToSign = postFieldsToSign,
@@ -338,7 +337,6 @@ internal class HTTPClient(
         requestBaseURL: URL,
         isFallbackURL: Boolean,
         isMainBackend: Boolean,
-        fallbackAvailable: Boolean,
         endpoint: Endpoint,
         body: Map<String, Any?>?,
         postFieldsToSign: List<Pair<String, String>>?,
@@ -372,12 +370,7 @@ internal class HTTPClient(
             callSuccessful = true
         } catch (e: IOException) {
             exceptionHit = e
-            // With remote-config API sources enabled, record a timeout for any main-source attempt that timed
-            // out, regardless of fallback-URL support. When disabled, keep the legacy behavior of only arming
-            // the fail-fast memory for endpoints that support fallback URLs.
-            val timedOutOnMainSource = e is SocketTimeoutException && isMainBackend
-            val shouldArmFailFastMemory = appConfig.usesRemoteConfigAPISources || fallbackAvailable
-            if (timedOutOnMainSource && shouldArmFailFastMemory) {
+            if (e is SocketTimeoutException && isMainBackend) {
                 requestResult = HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT
             }
         } finally {
@@ -491,9 +484,6 @@ internal class HTTPClient(
                 isFallback = isFallbackURL || endpoint.targetsFallbackHost,
                 fallbackAvailable = endpoint.supportsFallbackBaseURLs && appConfig.fallbackBaseURLs.isNotEmpty(),
                 isProxied = appConfig.hasProxyURL,
-                // The re-tiered fail-fast timeouts for main-API requests only apply when API sources are
-                // enabled. Blob-source downloads opt in independently of this setting.
-                reTieredTimeoutsEnabled = appConfig.usesRemoteConfigAPISources,
             )
 
             connection = getConnection(httpRequest, timeout)

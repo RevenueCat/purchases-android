@@ -259,7 +259,6 @@ internal class PurchasesFactory(
             }
             val apiSourceProvider = DefaultRemoteConfigSourceProvider(remoteConfigTopicStore)
             val apiSourceFailover = APISourceFailover(
-                appConfig,
                 apiSourceProvider,
                 SourceHealthChecker(urlConnectionFactory = sourceUrlConnectionFactory(forceServerErrorStrategy)),
                 DeviceConnectivityChecker(application),

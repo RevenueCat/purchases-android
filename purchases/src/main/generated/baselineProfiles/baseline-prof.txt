@@ -119,7 +119,6 @@ HSPLcom/revenuecat/purchases/DangerousSettings;->getApplyObfuscatedAccountIdToSu
 HSPLcom/revenuecat/purchases/DangerousSettings;->getAutoSyncPurchases()Z
 HSPLcom/revenuecat/purchases/DangerousSettings;->getCustomEntitlementComputation$purchases_defaultsRelease()Z
 HSPLcom/revenuecat/purchases/DangerousSettings;->getUiPreviewMode$purchases_defaultsRelease()Z
-HSPLcom/revenuecat/purchases/DangerousSettings;->getUsesRemoteConfigAPISources$purchases_defaultsRelease()Z
 Lcom/revenuecat/purchases/DangerousSettings$Companion;
 HSPLcom/revenuecat/purchases/DangerousSettings$Companion;-><init>()V
 HSPLcom/revenuecat/purchases/DangerousSettings$Companion;-><init>(Lkotlin/jvm/internal/DefaultConstructorMarker;)V
@@ -686,7 +685,6 @@ HSPLcom/revenuecat/purchases/common/AppConfig;->getRunningTests()Z
 HSPLcom/revenuecat/purchases/common/AppConfig;->getShowInAppMessagesAutomatically()Z
 HSPLcom/revenuecat/purchases/common/AppConfig;->getStore()Lcom/revenuecat/purchases/Store;
 HSPLcom/revenuecat/purchases/common/AppConfig;->getUiPreviewMode()Z
-HSPLcom/revenuecat/purchases/common/AppConfig;->getUsesRemoteConfigAPISources()Z
 HSPLcom/revenuecat/purchases/common/AppConfig;->getVersionName()Ljava/lang/String;
 HSPLcom/revenuecat/purchases/common/AppConfig;->isAppBackgrounded()Z
 HSPLcom/revenuecat/purchases/common/AppConfig;->isDebugBuild()Z
