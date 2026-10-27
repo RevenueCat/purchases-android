@@ -86,7 +86,8 @@ private fun CountdownComponentView_Preview_Running() {
 @Preview(name = "CountdownTimesUp")
 @Composable
 private fun CountdownComponentView_Preview_TimesUp() {
-    val countdownDate = Date(System.currentTimeMillis() - 2 * 24 * 60 * 60 * 1000)
+    val state = previewEmptyState()
+    val countdownDate = Date(state.currentDate.time - 2 * 24 * 60 * 60 * 1000L)
     val countdownTextStyle = previewTextComponentStyle(
         text = "{{ count_days_without_zero }}d {{ count_hours_without_zero }}h " +
             "{{ count_minutes_without_zero }}m {{ count_seconds_without_zero }}s",
@@ -112,7 +113,7 @@ private fun CountdownComponentView_Preview_TimesUp() {
             ),
             fallbackStackComponentStyle = null,
         ),
-        state = previewEmptyState(),
+        state = state,
         onClick = {},
     )
 }
