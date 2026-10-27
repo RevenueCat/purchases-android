@@ -131,45 +131,37 @@ private fun Image(
         .build()
 
     val previewPlaceholder = if (isInPreviewMode()) imageLoader.getPreviewPlaceholderBlocking(imageRequest) else null
-    val placeholder = placeholderSource?.takeUnless { it == source }?.let {
-        rememberAsyncImagePainter(
-            model = it.data,
-            placeholder = previewPlaceholder,
-            imageLoader = imageLoader,
-            contentScale = contentScale,
-            onError = { errorState -> Logger.e("Error loading placeholder image", errorState.result.throwable) },
-        )
-    } ?: previewPlaceholder
+    val placeholderSourceToLoad = placeholderSource?.takeUnless { it == source }
+    // Coil retains this painter while loading, so keep it even when its model starts empty.
+    val placeholder = rememberAsyncImagePainter(
+        model = placeholderSourceToLoad?.data,
+        placeholder = previewPlaceholder,
+        imageLoader = imageLoader,
+        contentScale = contentScale,
+        onError = { errorState ->
+            if (placeholderSourceToLoad != null) {
+                Logger.e("Error loading placeholder image", errorState.result.throwable)
+            }
+        },
+    )
 
-    if (cachePolicy == CachePolicy.ENABLED) {
-        AsyncImage(
-            source = source,
-            imageRequest = imageRequest,
-            contentDescription = contentDescription,
-            imageLoader = imageLoader,
-            modifier = modifier,
-            placeholder = placeholder,
-            contentScale = contentScale,
-            alpha = alpha,
-            colorFilter = colorFilter,
-            onError = {
+    AsyncImage(
+        source = source,
+        imageRequest = imageRequest,
+        contentDescription = contentDescription,
+        imageLoader = imageLoader,
+        modifier = modifier,
+        placeholder = placeholder,
+        contentScale = contentScale,
+        alpha = alpha,
+        colorFilter = colorFilter,
+        onError = {
+            if (cachePolicy == CachePolicy.ENABLED) {
                 Logger.w("Image failed to load. Will try again disabling cache")
                 cachePolicy = CachePolicy.WRITE_ONLY
-            },
-        )
-    } else {
-        AsyncImage(
-            source = source,
-            imageRequest = imageRequest,
-            contentDescription = contentDescription,
-            imageLoader = imageLoader,
-            modifier = modifier,
-            placeholder = placeholder,
-            contentScale = contentScale,
-            alpha = alpha,
-            colorFilter = colorFilter,
-        )
-    }
+            }
+        },
+    )
 }
 
 @SuppressWarnings("LongParameterList")

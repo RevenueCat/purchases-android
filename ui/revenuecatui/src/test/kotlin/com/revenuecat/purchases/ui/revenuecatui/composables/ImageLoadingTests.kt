@@ -135,6 +135,27 @@ internal class ImageLoadingTests(private val imageType: ImageType) {
     }
 
     @Test
+    fun `Changing identical placeholder URL while full image loads shows new placeholder`() {
+        val placeholderUrl = "https://assets.pawwalls.com/image_low_res.webp"
+        val sources = mutableStateOf(Sources(imageUrl, imageUrl))
+        delayedUrl = imageUrl
+        responseGate = CompletableDeferred()
+        render(sources)
+        waitForRequests(imageUrl, count = 1)
+
+        try {
+            composeTestRule.runOnIdle { sources.value = Sources(imageUrl, placeholderUrl) }
+            waitForRequests(placeholderUrl, count = 1)
+
+            assertImageIsBlue()
+            assertThat(requests.map { it.data }).containsExactlyInAnyOrder(imageUrl, placeholderUrl)
+            assertCacheEnabled(requests.single { it.data == placeholderUrl })
+        } finally {
+            responseGate?.complete(Unit)
+        }
+    }
+
+    @Test
     fun `Full image retry keeps separate placeholder cached`() {
         val placeholderUrl = "https://assets.pawwalls.com/image_low_res.webp"
         delayedUrl = failedUrl
