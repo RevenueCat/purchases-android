@@ -100,7 +100,6 @@ internal fun TabsComponentView(
         lastPublishedTabId.value = selectedTabId
         style.stateUpdates?.takeIf { it.isNotEmpty() }?.let { updates ->
             state.stateStore.applyUpdates(updates, payload = JsonPrimitive(selectedTabId))
-            state.reconcileSelectionForWindowSize(state.paywallBoundsDp)
         }
     }
 

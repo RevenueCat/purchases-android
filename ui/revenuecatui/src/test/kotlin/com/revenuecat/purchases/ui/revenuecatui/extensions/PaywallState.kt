@@ -6,7 +6,6 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.data.PaywallStateStore
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
@@ -28,7 +27,6 @@ internal fun Offering.toComponentsPaywallState(
     purchases: PurchasesType = MockPurchasesType(),
     customVariables: Map<String, CustomVariableValue> = emptyMap(),
     viewModelActionInProgress: State<Boolean> = mutableStateOf(false),
-    stateStore: PaywallStateStore? = null,
 ): PaywallState.Loaded.Components =
     actualToComponentsPaywallState(
         validationResult = validationResult,
@@ -37,7 +35,6 @@ internal fun Offering.toComponentsPaywallState(
         purchases = purchases,
         customVariables = customVariables,
         viewModelActionInProgress = viewModelActionInProgress,
-        stateStore = stateStore,
     )
 
 /**

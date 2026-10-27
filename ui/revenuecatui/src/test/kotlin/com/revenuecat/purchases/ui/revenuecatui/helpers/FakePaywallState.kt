@@ -27,7 +27,6 @@ import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.LocalizationDictionary
 import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.data.PaywallStateStore
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toComponentsPaywallState
@@ -74,7 +73,6 @@ internal fun FakePaywallState(
     addPackageComponents: Boolean = true,
     stateDeclarations: Map<String, StateDeclaration> = emptyMap(),
     dateProvider: () -> Date = { Date() },
-    stateStore: PaywallStateStore? = null,
 ): PaywallState.Loaded.Components {
     // Only synthesize a PackageComponent for packages the caller's components don't already
     // reference: a synthesized always-visible duplicate would defeat visibility-rule tests.
@@ -120,6 +118,5 @@ internal fun FakePaywallState(
         purchases = purchases,
         customVariables = customVariables,
         viewModelActionInProgress = viewModelActionInProgress,
-        stateStore = stateStore,
     )
 }
