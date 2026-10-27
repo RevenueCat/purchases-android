@@ -4,9 +4,7 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.revenuecat.purchases.BasePurchasesIntegrationTest
 import com.revenuecat.purchases.Constants
 import com.revenuecat.purchases.CustomerInfo
-import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.ForceServerErrorStrategy
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.awaitPurchase
@@ -30,9 +28,6 @@ abstract class BaseAPISourcesIntegrationTest : BasePurchasesIntegrationTest() {
     }
 
     override val environmentConfig get() = Constants.production
-
-    @OptIn(InternalRevenueCatAPI::class)
-    override val dangerousSettings: DangerousSettings = DangerousSettings(usesRemoteConfigAPISources = true)
 
     // A proxy pins every request to its host, bypassing API sources.
     override val proxyUrl: String? = null

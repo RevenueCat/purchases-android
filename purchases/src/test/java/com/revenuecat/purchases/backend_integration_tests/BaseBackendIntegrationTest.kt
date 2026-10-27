@@ -118,7 +118,6 @@ internal abstract class BaseBackendIntegrationTest {
             every { fallbackBaseURLs } returns listOf(AppConfig.fallbackURL)
             every { runningTests } returns true
             every { hasProxyURL } returns false
-            every { usesRemoteConfigAPISources } returns false
         }
         dispatcher = Dispatcher(Executors.newSingleThreadScheduledExecutor(), runningIntegrationTests = true)
         diagnosticsDispatcher = Dispatcher(Executors.newSingleThreadScheduledExecutor(), runningIntegrationTests = true)
