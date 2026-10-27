@@ -22,6 +22,7 @@ import com.revenuecat.purchases.common.SharedPreferencesManager
 import com.revenuecat.purchases.common.audiences.AudiencesConfigProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.LocalTransactionMetadataStore
+import com.revenuecat.purchases.common.caching.PayloadFileStore
 import com.revenuecat.purchases.common.checkpoints.CheckpointsConfigProvider
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsFileHelper
@@ -100,6 +101,8 @@ import java.net.URL
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.ThreadFactory
+
+private const val OFFERINGS_RESPONSE_DIRECTORY_NAME = "offerings_response"
 
 internal class PurchasesFactory(
     private val isDebugBuild: IsDebugBuildProvider,
@@ -338,8 +341,15 @@ internal class PurchasesFactory(
 
             val offeringsCache = OfferingsCache(
                 deviceCache = cache,
+                responseStore = PayloadFileStore(
+                    contextForStorage.noBackupFilesDir,
+                    OFFERINGS_RESPONSE_DIRECTORY_NAME,
+                    syncWrites = true,
+                ),
+                ioDispatcher = dispatcher,
                 localeProvider = localeProvider,
             )
+            cache.removeLegacyOfferingsResponse()
 
             val remoteConfigBlobStore = RemoteConfigBlobStore(contextForStorage)
             val remoteConfigManager = RemoteConfigManager(

@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.backup.RevenueCatBackupAgent
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsFileHelper
@@ -393,6 +394,19 @@ class PurchasesFactoryTest {
     }
 
     // endregion
+
+    @Test
+    fun `creating purchases removes the offerings response older versions stored in shared preferences`() {
+        val legacyKey = "com.revenuecat.purchases.fakeApiKey.offeringsResponse"
+        val preferences = ApplicationProvider.getApplicationContext<Application>()
+            .getSharedPreferences(RevenueCatBackupAgent.REVENUECAT_PREFS_FILE_NAME, Context.MODE_PRIVATE)
+        preferences.edit().putString(legacyKey, "{}").commit()
+
+        val purchases = createPurchases { }
+
+        assertThat(preferences.contains(legacyKey)).isFalse
+        purchases.close()
+    }
 
     private fun createEmptyDiagnosticsFile(): File {
         val filesDir = ApplicationProvider.getApplicationContext<Application>().filesDir
