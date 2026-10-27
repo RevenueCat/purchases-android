@@ -5,7 +5,6 @@ import android.app.Activity;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.android.billingclient.api.SkuDetails;
 import com.revenuecat.purchases.CustomerInfo;
 import com.revenuecat.purchases.Package;
 import com.revenuecat.purchases.Purchases;
@@ -20,7 +19,6 @@ import com.revenuecat.purchases.models.SubscriptionOption;
 final class DeprecatedPurchasesAPI {
     static void check(final Purchases purchases,
                       final Activity activity,
-                      final SkuDetails skuDetails,
                       final StoreProduct storeProduct,
                       final Package packageToPurchase,
                       final SubscriptionOption subscriptionOption) {

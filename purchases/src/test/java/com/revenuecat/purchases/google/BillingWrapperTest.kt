@@ -2080,10 +2080,9 @@ class BillingWrapperTest {
         }
 
         assertThat(listenerSlot.captured).isNotNull
-        val purchaseToken = null
         assertVerboseLog(BillingStrings.BILLING_INAPP_MESSAGE_NONE) {
             listenerSlot.captured.onInAppMessageResponse(
-                InAppMessageResult(InAppMessageResponseCode.NO_ACTION_NEEDED, purchaseToken)
+                mockInAppMessageResult(InAppMessageResponseCode.NO_ACTION_NEEDED)
             )
         }
     }
@@ -2100,10 +2099,9 @@ class BillingWrapperTest {
         }
 
         assertThat(listenerSlot.captured).isNotNull
-        val purchaseToken = null
         assertDebugLog(BillingStrings.BILLING_INAPP_MESSAGE_UPDATE) {
             listenerSlot.captured.onInAppMessageResponse(
-                InAppMessageResult(InAppMessageResponseCode.SUBSCRIPTION_STATUS_UPDATED, purchaseToken)
+                mockInAppMessageResult(InAppMessageResponseCode.SUBSCRIPTION_STATUS_UPDATED)
             )
         }
         assertThat(subscriptionStatusChanged).isTrue
@@ -2398,6 +2396,13 @@ class BillingWrapperTest {
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
 
         return mockBuilder
+    }
+
+    private fun mockInAppMessageResult(
+        @InAppMessageResponseCode responseCode: Int,
+    ): InAppMessageResult = mockk {
+        every { this@mockk.responseCode } returns responseCode
+        every { purchaseToken } returns null
     }
 
     private fun Int.buildResult(): BillingResult {
