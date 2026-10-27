@@ -32,6 +32,9 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.io.File
 import java.util.Date
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.minutes
 
 @RunWith(AndroidJUnit4::class)
@@ -363,6 +366,64 @@ class OfferingsCacheTest {
     }
 
     @Test
+    fun `a replacement cache persists a queued legacy migration from the replaced cache`() {
+        val replacedDispatcher = CapturingDispatcher()
+        val replacementDispatcher = CapturingDispatcher()
+        sharedPreferences.edit().putString(legacyOfferingsResponseKey, ONE_OFFERINGS_RESPONSE).commit()
+        val replacedCache = createOfferingsCache(dispatcher = replacedDispatcher)
+        replacedCache.migrateLegacyResponse()
+
+        val replacementCache = createOfferingsCache(dispatcher = replacementDispatcher)
+        replacementCache.migrateLegacyResponse()
+        replacedDispatcher.runAll()
+        replacementDispatcher.runAll()
+
+        assertThat(createOfferingsCache().cachedOfferingsResponse.toString())
+            .isEqualTo(JSONObject(ONE_OFFERINGS_RESPONSE).toString())
+    }
+
+    @Test
+    fun `a replacement cache finishes an in-flight legacy migration from the replaced cache`() {
+        val replacedWriteStarted = CountDownLatch(1)
+        val allowReplacedWrite = CountDownLatch(1)
+        val replacedWriteFinished = CountDownLatch(1)
+        val responseStore = spyk(PayloadFileStore(responseDirectory))
+        val replacedDispatcher = Dispatcher(Executors.newSingleThreadExecutor())
+        val replacementDispatcher = CapturingDispatcher()
+        every { responseStore.write(any(), ONE_OFFERINGS_RESPONSE) } answers {
+            replacedWriteStarted.countDown()
+            check(allowReplacedWrite.await(5, TimeUnit.SECONDS))
+            callOriginal()
+        }
+        sharedPreferences.edit().putString(legacyOfferingsResponseKey, ONE_OFFERINGS_RESPONSE).commit()
+
+        try {
+            val replacedCache = createOfferingsCache(
+                dispatcher = replacedDispatcher,
+                responseStore = responseStore,
+            )
+            replacedCache.migrateLegacyResponse()
+            replacedDispatcher.enqueue(Runnable { replacedWriteFinished.countDown() })
+            check(replacedWriteStarted.await(5, TimeUnit.SECONDS))
+
+            val replacementCache = createOfferingsCache(
+                dispatcher = replacementDispatcher,
+                responseStore = responseStore,
+            )
+            replacementCache.migrateLegacyResponse()
+            allowReplacedWrite.countDown()
+            check(replacedWriteFinished.await(5, TimeUnit.SECONDS))
+            replacementDispatcher.runAll()
+
+            assertThat(createOfferingsCache().cachedOfferingsResponse.toString())
+                .isEqualTo(JSONObject(ONE_OFFERINGS_RESPONSE).toString())
+        } finally {
+            allowReplacedWrite.countDown()
+            replacedDispatcher.close()
+        }
+    }
+
+    @Test
     fun `a read during a write uses the response being written`() {
         val responseStore = spyk(PayloadFileStore(responseDirectory))
         val offeringsCache = createOfferingsCache(responseStore = responseStore)
@@ -450,6 +511,122 @@ class OfferingsCacheTest {
         dispatcher.runAll(reversed = true)
 
         assertThat(offeringsCache.cachedOfferingsResponse?.getString("marker")).isEqualTo("newer")
+    }
+
+    @Test
+    fun `a write from a replaced cache instance does not overwrite the replacement response`() {
+        val replacedDispatcher = CapturingDispatcher()
+        val replacementDispatcher = CapturingDispatcher()
+        val replacedCache = createOfferingsCache(dispatcher = replacedDispatcher)
+        val replacementCache = createOfferingsCache(dispatcher = replacementDispatcher)
+        val replacedResponse = JSONObject(ONE_OFFERINGS_RESPONSE).put("marker", "replaced").toString()
+        val replacementResponse = JSONObject(ONE_OFFERINGS_RESPONSE).put("marker", "replacement").toString()
+
+        replacedCache.cacheOfferings(mockk<Offerings>(), replacedResponse)
+        replacementCache.cacheOfferings(mockk<Offerings>(), replacementResponse)
+        replacementDispatcher.runAll()
+        replacedDispatcher.runAll()
+
+        assertThat(createOfferingsCache().cachedOfferingsResponse?.getString("marker")).isEqualTo("replacement")
+    }
+
+    @Test
+    fun `a replacement cache persists a queued response from the replaced cache without refetching`() {
+        val replacedDispatcher = CapturingDispatcher()
+        val replacementDispatcher = CapturingDispatcher()
+        val replacedCache = createOfferingsCache(dispatcher = replacedDispatcher)
+        val replacedResponse = JSONObject(ONE_OFFERINGS_RESPONSE).put("marker", "replaced").toString()
+        replacedCache.cacheOfferings(mockk<Offerings>(), replacedResponse)
+
+        val replacementCache = createOfferingsCache(dispatcher = replacementDispatcher)
+        replacementCache.migrateLegacyResponse()
+        replacedDispatcher.runAll()
+        replacementDispatcher.runAll()
+
+        assertThat(createOfferingsCache().cachedOfferingsResponse?.getString("marker")).isEqualTo("replaced")
+    }
+
+    @Test
+    fun `an in-flight write from a replaced cache instance finishes before the replacement write`() {
+        val replacedResponse = JSONObject(ONE_OFFERINGS_RESPONSE).put("marker", "replaced").toString()
+        val replacementResponse = JSONObject(ONE_OFFERINGS_RESPONSE).put("marker", "replacement").toString()
+        val replacedWriteStarted = CountDownLatch(1)
+        val allowReplacedWrite = CountDownLatch(1)
+        val replacementWriteFinished = CountDownLatch(1)
+        val responseStore = spyk(PayloadFileStore(responseDirectory))
+        val replacedDispatcher = Dispatcher(Executors.newSingleThreadExecutor())
+        val replacementDispatcher = Dispatcher(Executors.newSingleThreadExecutor())
+        every { responseStore.write(any(), replacedResponse) } answers {
+            replacedWriteStarted.countDown()
+            check(allowReplacedWrite.await(5, TimeUnit.SECONDS))
+            callOriginal()
+        }
+
+        try {
+            val replacedCache = createOfferingsCache(
+                dispatcher = replacedDispatcher,
+                responseStore = responseStore,
+            )
+            replacedCache.cacheOfferings(mockk<Offerings>(), replacedResponse)
+            check(replacedWriteStarted.await(5, TimeUnit.SECONDS))
+            val replacementCache = createOfferingsCache(
+                dispatcher = replacementDispatcher,
+                responseStore = responseStore,
+            )
+
+            replacementCache.cacheOfferings(mockk<Offerings>(), replacementResponse)
+            replacementDispatcher.enqueue(Runnable { replacementWriteFinished.countDown() })
+
+            assertThat(replacementWriteFinished.await(100, TimeUnit.MILLISECONDS)).isFalse
+            allowReplacedWrite.countDown()
+            check(replacementWriteFinished.await(5, TimeUnit.SECONDS))
+            assertThat(createOfferingsCache().cachedOfferingsResponse?.getString("marker"))
+                .isEqualTo("replacement")
+        } finally {
+            allowReplacedWrite.countDown()
+            replacedDispatcher.close()
+            replacementDispatcher.close()
+        }
+    }
+
+    @Test
+    fun `a replacement cache finishes an in-flight response from the replaced cache without refetching`() {
+        val replacedResponse = JSONObject(ONE_OFFERINGS_RESPONSE).put("marker", "replaced").toString()
+        val replacedWriteStarted = CountDownLatch(1)
+        val allowReplacedWrite = CountDownLatch(1)
+        val replacedWriteFinished = CountDownLatch(1)
+        val responseStore = spyk(PayloadFileStore(responseDirectory))
+        val replacedDispatcher = Dispatcher(Executors.newSingleThreadExecutor())
+        val replacementDispatcher = CapturingDispatcher()
+        every { responseStore.write(any(), replacedResponse) } answers {
+            replacedWriteStarted.countDown()
+            check(allowReplacedWrite.await(5, TimeUnit.SECONDS))
+            callOriginal()
+        }
+
+        try {
+            val replacedCache = createOfferingsCache(
+                dispatcher = replacedDispatcher,
+                responseStore = responseStore,
+            )
+            replacedCache.cacheOfferings(mockk<Offerings>(), replacedResponse)
+            replacedDispatcher.enqueue(Runnable { replacedWriteFinished.countDown() })
+            check(replacedWriteStarted.await(5, TimeUnit.SECONDS))
+
+            val replacementCache = createOfferingsCache(
+                dispatcher = replacementDispatcher,
+                responseStore = responseStore,
+            )
+            replacementCache.migrateLegacyResponse()
+            allowReplacedWrite.countDown()
+            check(replacedWriteFinished.await(5, TimeUnit.SECONDS))
+            replacementDispatcher.runAll()
+
+            assertThat(createOfferingsCache().cachedOfferingsResponse?.getString("marker")).isEqualTo("replaced")
+        } finally {
+            allowReplacedWrite.countDown()
+            replacedDispatcher.close()
+        }
     }
 
     @Test

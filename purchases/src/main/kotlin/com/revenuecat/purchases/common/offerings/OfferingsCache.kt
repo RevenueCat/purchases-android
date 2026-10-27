@@ -14,6 +14,10 @@ import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.strings.OfferingStrings
 import org.json.JSONException
 import org.json.JSONObject
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 @OptIn(InternalRevenueCatAPI::class)
 internal class OfferingsCache(
@@ -26,6 +30,42 @@ internal class OfferingsCache(
     ),
     private val localeProvider: LocaleProvider,
 ) {
+
+    private class ResponseWriterState {
+        val lock = ReentrantLock()
+        private val currentGeneration = AtomicLong()
+        private var pendingResponse: String? = null
+
+        fun register(): Long = currentGeneration.incrementAndGet()
+
+        fun isCurrent(generation: Long): Boolean = currentGeneration.get() == generation
+
+        @Synchronized
+        fun remember(response: String, generation: Long) {
+            if (isCurrent(generation)) pendingResponse = response
+        }
+
+        @Synchronized
+        fun pending(): String? = pendingResponse
+
+        @Synchronized
+        fun clear(expectedResponse: String? = null) {
+            if (expectedResponse == null || pendingResponse === expectedResponse) pendingResponse = null
+        }
+    }
+
+    private companion object {
+        // Purchases.configure() builds the replacement before closing the previous instance. Coordinate writers
+        // process-wide so an old instance cannot commit after, or write the same temp file alongside, its replacement.
+        val responseWriterStates = ConcurrentHashMap<String, ResponseWriterState>()
+
+        fun responseWriterStateFor(key: String): ResponseWriterState {
+            responseWriterStates[key]?.let { return it }
+            val newState = ResponseWriterState()
+            return responseWriterStates.putIfAbsent(key, newState) ?: newState
+        }
+    }
+
     private var cachedLanguageTags: String? = null
 
     // Bumped by clearCache() on identity changes, so a fetch started for the previous user can't cache over it.
@@ -35,9 +75,14 @@ internal class OfferingsCache(
 
     private var pendingResponse: String? = null
 
+    private val responseWriterState = responseWriterStateFor(responseKey)
+    private val responseWriterGeneration = responseWriterState.register()
+
     @Synchronized
     fun migrateLegacyResponse() {
-        pendingResponse = deviceCache.takeLegacyOfferingsResponse() ?: return
+        val legacyResponse = deviceCache.takeLegacyOfferingsResponse()
+        if (legacyResponse != null) responseWriterState.remember(legacyResponse, responseWriterGeneration)
+        pendingResponse = legacyResponse ?: responseWriterState.pending() ?: return
         ioDispatcher.enqueue({ persistPendingResponse() })
     }
 
@@ -46,6 +91,7 @@ internal class OfferingsCache(
         epoch++
         offeringsCachedObject.clearCache()
         pendingResponse = null
+        responseWriterState.clear()
         deviceCache.clearOfferingsResponseChecksum()
         responseStore.delete(responseKey)
         cachedLanguageTags = null
@@ -65,6 +111,7 @@ internal class OfferingsCache(
         offeringsCachedObject.cacheInstance(offerings)
         if (responsePayload != null) {
             pendingResponse = responsePayload
+            responseWriterState.remember(responsePayload, responseWriterGeneration)
             ioDispatcher.enqueue({ persistPendingResponse() })
         }
         offeringsCachedObject.updateCacheTimestamp(dateProvider.now)
@@ -102,20 +149,35 @@ internal class OfferingsCache(
         get() = deviceCache.offeringsResponseFileKey
 
     private fun persistPendingResponse() {
-        val (responsePayload, requestEpoch) = synchronized(this) { (pendingResponse ?: return) to epoch }
-        val persisted = isAlreadyStored(responsePayload) ||
-            responseStore.write(responseKey, responsePayload)?.also { checksum ->
-                synchronized(this) {
-                    if (requestEpoch == epoch) {
-                        deviceCache.cacheOfferingsResponseChecksum(checksum)
-                    } else {
-                        responseStore.delete(responseKey)
-                    }
-                }
-            } != null
-        if (persisted) {
+        val (responsePayload, requestEpoch) = synchronized(this) {
+            pendingResponse?.let { it to epoch }
+        } ?: return
+        fun discardPendingResponse() {
             synchronized(this) {
-                if (requestEpoch == epoch && pendingResponse === responsePayload) pendingResponse = null
+                if (pendingResponse === responsePayload) pendingResponse = null
+            }
+        }
+        responseWriterState.lock.withLock {
+            if (!responseWriterState.isCurrent(responseWriterGeneration)) {
+                discardPendingResponse()
+            } else {
+                val persisted = isAlreadyStored(responsePayload) ||
+                    responseStore.write(responseKey, responsePayload)?.also { checksum ->
+                        if (!responseWriterState.isCurrent(responseWriterGeneration)) return@also
+                        synchronized(this) {
+                            if (requestEpoch == epoch) {
+                                deviceCache.cacheOfferingsResponseChecksum(checksum)
+                            } else {
+                                responseStore.delete(responseKey)
+                            }
+                        }
+                    } != null
+                if (!responseWriterState.isCurrent(responseWriterGeneration)) {
+                    discardPendingResponse()
+                } else if (persisted && requestEpoch == epoch) {
+                    responseWriterState.clear(responsePayload)
+                    discardPendingResponse()
+                }
             }
         }
     }
