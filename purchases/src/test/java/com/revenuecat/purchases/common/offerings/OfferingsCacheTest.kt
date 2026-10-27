@@ -342,6 +342,75 @@ class OfferingsCacheTest {
     }
 
     @Test
+    fun `a response not yet written is used as the fallback`() {
+        val offeringsCache = createOfferingsCache(dispatcher = CapturingDispatcher())
+
+        offeringsCache.cacheOfferings(mockk<Offerings>(), ONE_OFFERINGS_RESPONSE)
+
+        assertThat(offeringsCache.cachedOfferingsResponse.toString())
+            .isEqualTo(JSONObject(ONE_OFFERINGS_RESPONSE).toString())
+    }
+
+    @Test
+    fun `a legacy response not yet written is used as the fallback`() {
+        sharedPreferences.edit().putString(legacyOfferingsResponseKey, ONE_OFFERINGS_RESPONSE).commit()
+
+        val offeringsCache = createOfferingsCache(dispatcher = CapturingDispatcher())
+        offeringsCache.migrateLegacyResponse()
+
+        assertThat(offeringsCache.cachedOfferingsResponse.toString())
+            .isEqualTo(JSONObject(ONE_OFFERINGS_RESPONSE).toString())
+    }
+
+    @Test
+    fun `a read during a write uses the response being written`() {
+        val responseStore = spyk(PayloadFileStore(responseDirectory))
+        val offeringsCache = createOfferingsCache(responseStore = responseStore)
+        val newerResponse = JSONObject(ONE_OFFERINGS_RESPONSE).put("marker", "newer").toString()
+        offeringsCache.cacheOfferings(mockk<Offerings>(), ONE_OFFERINGS_RESPONSE)
+        var readDuringWrite: JSONObject? = null
+        every { responseStore.write(any(), newerResponse) } answers {
+            callOriginal().also { readDuringWrite = offeringsCache.cachedOfferingsResponse }
+        }
+
+        offeringsCache.cacheOfferings(mockk<Offerings>(), newerResponse)
+
+        assertThat(readDuringWrite?.getString("marker")).isEqualTo("newer")
+        assertThat(offeringsCache.cachedOfferingsResponse?.getString("marker")).isEqualTo("newer")
+    }
+
+    @Test
+    fun `a skipped unchanged write does not keep the response in memory`() {
+        offeringsCache.cacheOfferings(mockk<Offerings>(), ONE_OFFERINGS_RESPONSE)
+        offeringsCache.cacheOfferings(mockk<Offerings>(), String(ONE_OFFERINGS_RESPONSE.toCharArray()))
+        responseDirectory.listFiles().orEmpty().single().writeText("{}")
+
+        assertThat(offeringsCache.cachedOfferingsResponse).isNull()
+    }
+
+    @Test
+    fun `a write superseded by clearCache keeps the next identical response pending`() {
+        val dispatcher = CapturingDispatcher()
+        val responseStore = spyk(PayloadFileStore(responseDirectory))
+        val offeringsCache = createOfferingsCache(dispatcher = dispatcher, responseStore = responseStore)
+        var identityChanged = false
+        every { responseStore.write(any(), any()) } answers {
+            if (!identityChanged) {
+                identityChanged = true
+                offeringsCache.clearCache()
+                offeringsCache.cacheOfferings(mockk<Offerings>(), ONE_OFFERINGS_RESPONSE)
+            }
+            callOriginal()
+        }
+
+        offeringsCache.cacheOfferings(mockk<Offerings>(), ONE_OFFERINGS_RESPONSE)
+        dispatcher.runAll()
+        dispatcher.runAll()
+
+        assertThat(deviceCache.getOfferingsResponseChecksum()).isNotNull
+    }
+
+    @Test
     fun `a write enqueued before clearCache does not restore the response`() {
         val dispatcher = CapturingDispatcher()
         val offeringsCache = createOfferingsCache(dispatcher = dispatcher)
@@ -407,7 +476,7 @@ class OfferingsCacheTest {
     }
 
     @Test
-    fun `a failed write keeps the previous response`() {
+    fun `a failed write keeps the newer response pending`() {
         val responseStore = spyk(PayloadFileStore(responseDirectory))
         val offeringsCache = createOfferingsCache(responseStore = responseStore)
         val newerResponse = JSONObject(ONE_OFFERINGS_RESPONSE).put("marker", "newer").toString()
@@ -418,8 +487,60 @@ class OfferingsCacheTest {
         offeringsCache.cacheOfferings(mockk<Offerings>(), newerResponse)
 
         assertThat(deviceCache.getOfferingsResponseChecksum()).isEqualTo(storedChecksum)
+        assertThat(offeringsCache.cachedOfferingsResponse?.getString("marker")).isEqualTo("newer")
+    }
+
+    @Test
+    fun `a response cached during a write is persisted after it`() {
+        val dispatcher = CapturingDispatcher()
+        val responseStore = spyk(PayloadFileStore(responseDirectory))
+        val offeringsCache = createOfferingsCache(dispatcher = dispatcher, responseStore = responseStore)
+        val newerResponse = JSONObject(ONE_OFFERINGS_RESPONSE).put("marker", "newer").toString()
+        var cachedDuringWrite = false
+        every { responseStore.write(any(), ONE_OFFERINGS_RESPONSE) } answers {
+            if (!cachedDuringWrite) {
+                cachedDuringWrite = true
+                offeringsCache.cacheOfferings(mockk<Offerings>(), newerResponse)
+            }
+            callOriginal()
+        }
+        offeringsCache.cacheOfferings(mockk<Offerings>(), ONE_OFFERINGS_RESPONSE)
+
+        dispatcher.runAll()
+        assertThat(offeringsCache.cachedOfferingsResponse?.getString("marker")).isEqualTo("newer")
+        dispatcher.runAll()
+
+        assertThat(createOfferingsCache().cachedOfferingsResponse?.getString("marker")).isEqualTo("newer")
+    }
+
+    @Test
+    fun `a failed migrated write keeps the legacy response for the fallback`() {
+        val responseStore = spyk(PayloadFileStore(responseDirectory))
+        val offeringsCache = createOfferingsCache(responseStore = responseStore)
+        offeringsCache.cacheOfferings(mockk<Offerings>(), JSONObject(ONE_OFFERINGS_RESPONSE).put("marker", "newer_sdk").toString())
+        sharedPreferences.edit().putString(legacyOfferingsResponseKey, ONE_OFFERINGS_RESPONSE).commit()
+        every { responseStore.write(any(), ONE_OFFERINGS_RESPONSE) } returns null
+
+        offeringsCache.migrateLegacyResponse()
+
+        assertThat(deviceCache.getOfferingsResponseChecksum()).isNull()
         assertThat(offeringsCache.cachedOfferingsResponse.toString())
             .isEqualTo(JSONObject(ONE_OFFERINGS_RESPONSE).toString())
+    }
+
+    @Test
+    fun `clearCache before a migrated write lands restores nothing`() {
+        val dispatcher = CapturingDispatcher()
+        val offeringsCache = createOfferingsCache(dispatcher = dispatcher)
+        sharedPreferences.edit().putString(legacyOfferingsResponseKey, ONE_OFFERINGS_RESPONSE).commit()
+        offeringsCache.migrateLegacyResponse()
+
+        offeringsCache.clearCache()
+        dispatcher.runAll()
+
+        assertThat(offeringsCache.cachedOfferingsResponse).isNull()
+        assertThat(deviceCache.getOfferingsResponseChecksum()).isNull()
+        assertThat(responseDirectory.listFiles().orEmpty()).isEmpty()
     }
 
     @Test
@@ -495,25 +616,61 @@ class OfferingsCacheTest {
     }
 
     @Test
-    fun `removing the legacy response drops it from shared preferences`() {
+    fun `migrating moves the legacy response from shared preferences into the file`() {
         sharedPreferences.edit().putString(legacyOfferingsResponseKey, ONE_OFFERINGS_RESPONSE).commit()
 
         val offeringsCache = createOfferingsCache()
-        deviceCache.removeLegacyOfferingsResponse()
+        offeringsCache.migrateLegacyResponse()
 
         assertThat(sharedPreferences.contains(legacyOfferingsResponseKey)).isFalse
-        assertThat(offeringsCache.cachedOfferingsResponse).isNull()
+        assertThat(offeringsCache.cachedOfferingsResponse.toString())
+            .isEqualTo(JSONObject(ONE_OFFERINGS_RESPONSE).toString())
+        assertThat(deviceCache.getOfferingsResponseChecksum()).isNotNull
+        assertThat(createOfferingsCache().cachedOfferingsResponse.toString())
+            .isEqualTo(JSONObject(ONE_OFFERINGS_RESPONSE).toString())
     }
 
     @Test
-    fun `a legacy response written by an older SDK invalidates the stored response`() {
+    fun `migrating without a legacy response keeps the stored response`() {
         offeringsCache.cacheOfferings(mockk<Offerings>(), ONE_OFFERINGS_RESPONSE)
-        sharedPreferences.edit().putString(legacyOfferingsResponseKey, ONE_OFFERINGS_RESPONSE).commit()
+        val storedChecksum = deviceCache.getOfferingsResponseChecksum()
 
-        deviceCache.removeLegacyOfferingsResponse()
         val reloaded = createOfferingsCache()
+        reloaded.migrateLegacyResponse()
 
-        assertThat(reloaded.cachedOfferingsResponse).isNull()
+        assertThat(deviceCache.getOfferingsResponseChecksum()).isEqualTo(storedChecksum)
+        assertThat(reloaded.cachedOfferingsResponse.toString())
+            .isEqualTo(JSONObject(ONE_OFFERINGS_RESPONSE).toString())
+    }
+
+    @Test
+    fun `a response cached before the migrated write runs wins on disk`() {
+        val dispatcher = CapturingDispatcher()
+        val responseStore = spyk(PayloadFileStore(responseDirectory))
+        val offeringsCache = createOfferingsCache(dispatcher = dispatcher, responseStore = responseStore)
+        val olderSdkResponse = JSONObject(ONE_OFFERINGS_RESPONSE).put("marker", "older_sdk").toString()
+        val freshResponse = JSONObject(ONE_OFFERINGS_RESPONSE).put("marker", "fresh").toString()
+        sharedPreferences.edit().putString(legacyOfferingsResponseKey, olderSdkResponse).commit()
+        offeringsCache.migrateLegacyResponse()
+        offeringsCache.cacheOfferings(mockk<Offerings>(), freshResponse)
+
+        dispatcher.runAll(reversed = true)
+
+        verify(exactly = 1) { responseStore.write(any(), any()) }
+        assertThat(createOfferingsCache().cachedOfferingsResponse?.getString("marker")).isEqualTo("fresh")
+    }
+
+    @Test
+    fun `a legacy response written by an older SDK replaces the stored response`() {
+        offeringsCache.cacheOfferings(mockk<Offerings>(), ONE_OFFERINGS_RESPONSE)
+        val olderSdkResponse = JSONObject(ONE_OFFERINGS_RESPONSE).put("marker", "older_sdk").toString()
+        sharedPreferences.edit().putString(legacyOfferingsResponseKey, olderSdkResponse).commit()
+
+        val reloaded = createOfferingsCache()
+        reloaded.migrateLegacyResponse()
+
+        assertThat(reloaded.cachedOfferingsResponse?.getString("marker")).isEqualTo("older_sdk")
+        assertThat(createOfferingsCache().cachedOfferingsResponse?.getString("marker")).isEqualTo("older_sdk")
     }
 
     @Test

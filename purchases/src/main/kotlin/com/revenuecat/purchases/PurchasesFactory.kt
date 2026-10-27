@@ -100,8 +100,12 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import java.net.URL
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadFactory
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
+private const val OFFERINGS_CACHE_THREAD_KEEP_ALIVE_SECONDS = 30L
 private const val OFFERINGS_RESPONSE_DIRECTORY_NAME = "offerings_response"
 
 internal class PurchasesFactory(
@@ -346,10 +350,10 @@ internal class PurchasesFactory(
                     OFFERINGS_RESPONSE_DIRECTORY_NAME,
                     syncWrites = true,
                 ),
-                ioDispatcher = dispatcher,
+                ioDispatcher = Dispatcher(createOfferingsCacheExecutor()),
                 localeProvider = localeProvider,
             )
-            cache.removeLegacyOfferingsResponse()
+            offeringsCache.migrateLegacyResponse()
 
             val remoteConfigBlobStore = RemoteConfigBlobStore(contextForStorage)
             val remoteConfigManager = RemoteConfigManager(
@@ -725,6 +729,19 @@ internal class PurchasesFactory(
 
     private fun createEventsExecutor(): ExecutorService {
         return Executors.newSingleThreadScheduledExecutor(LowPriorityThreadFactory("revenuecat-events-thread"))
+    }
+
+    // Nothing closes this executor on reconfigure, so its thread must exit once idle.
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    fun createOfferingsCacheExecutor(): ThreadPoolExecutor {
+        return ThreadPoolExecutor(
+            1,
+            1,
+            OFFERINGS_CACHE_THREAD_KEEP_ALIVE_SECONDS,
+            TimeUnit.SECONDS,
+            LinkedBlockingQueue(),
+            LowPriorityThreadFactory("revenuecat-offerings-cache-thread"),
+        ).apply { allowCoreThreadTimeOut(true) }
     }
 
     private fun createRemoteConfigExecutor(): ExecutorService {

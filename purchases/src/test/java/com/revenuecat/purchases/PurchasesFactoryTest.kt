@@ -10,6 +10,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.backup.RevenueCatBackupAgent
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.PlatformInfo
+import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsFileHelper
 import com.revenuecat.purchases.common.sdksettings.DiagnosticsSettings
 import com.revenuecat.purchases.common.sdksettings.SdkSettings
@@ -44,6 +45,7 @@ class PurchasesFactoryTest {
     private companion object {
         const val FILE_DELETION_TIMEOUT_MS = 1_000L
         const val FILE_DELETION_POLL_MS = 20L
+        const val BACKGROUND_WRITE_TIMEOUT_MS = 5_000L
     }
 
     @Before
@@ -376,6 +378,15 @@ class PurchasesFactoryTest {
         purchases.close()
     }
 
+    @Test
+    fun `offerings cache executor runs one task at a time and lets its idle thread exit`() {
+        val executor = purchasesFactory.createOfferingsCacheExecutor()
+
+        assertThat(executor.maximumPoolSize).isEqualTo(1)
+        assertThat(executor.allowsCoreThreadTimeOut()).isTrue
+        executor.shutdown()
+    }
+
     @OptIn(InternalRevenueCatAPI::class)
     @Test
     fun `ui preview mode has no diagnostics to act on a remote disabled setting`() {
@@ -396,15 +407,21 @@ class PurchasesFactoryTest {
     // endregion
 
     @Test
-    fun `creating purchases removes the offerings response older versions stored in shared preferences`() {
+    fun `creating purchases migrates the offerings response older versions stored in shared preferences`() {
         val legacyKey = "com.revenuecat.purchases.fakeApiKey.offeringsResponse"
         val preferences = ApplicationProvider.getApplicationContext<Application>()
             .getSharedPreferences(RevenueCatBackupAgent.REVENUECAT_PREFS_FILE_NAME, Context.MODE_PRIVATE)
         preferences.edit().putString(legacyKey, "{}").commit()
+        val deviceCache = DeviceCache(preferences, "fakeApiKey")
 
         val purchases = createPurchases { }
 
         assertThat(preferences.contains(legacyKey)).isFalse
+        val deadline = System.currentTimeMillis() + BACKGROUND_WRITE_TIMEOUT_MS
+        while (deviceCache.getOfferingsResponseChecksum() == null && System.currentTimeMillis() < deadline) {
+            Thread.sleep(FILE_DELETION_POLL_MS)
+        }
+        assertThat(deviceCache.getOfferingsResponseChecksum()).isNotNull
         purchases.close()
     }
 
