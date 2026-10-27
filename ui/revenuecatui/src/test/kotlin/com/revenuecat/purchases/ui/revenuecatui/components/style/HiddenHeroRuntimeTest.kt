@@ -14,11 +14,13 @@ import com.revenuecat.purchases.paywalls.components.PartialStackComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
+import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
+import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.MeasurePaywallBounds
 import com.revenuecat.purchases.ui.revenuecatui.components.heroInsetsFor
 import com.revenuecat.purchases.ui.revenuecatui.components.resolveHeroInsets
@@ -63,6 +65,48 @@ internal class HiddenHeroRuntimeTest {
             expectedHero = true,
             expectedRootInsets = false,
         )
+    }
+
+    @Test
+    fun `horizontal hero stops bleeding when a sibling appears and restores when hidden`() {
+        val hidden = StackComponent(visible = false, components = emptyList())
+        val sibling = StackComponent(
+            visible = false,
+            components = emptyList(),
+            overrides = listOf(ComponentOverride(
+                conditions = listOf(ComponentOverride.Condition.WindowWidthRule(
+                    ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL, 800.0,
+                )),
+                properties = PartialStackComponent(visible = true),
+            )),
+        )
+        val row = StackComponent(
+            components = listOf(hidden, heroStack(), sibling),
+            dimension = Dimension.Horizontal(VerticalAlignment.TOP, FlexDistribution.START),
+        )
+        val state = FakePaywallState(components = listOf(StackComponent(
+            components = listOf(hidden, row, media()),
+            dimension = Dimension.ZLayer(TwoDimensionalAlignment.TOP),
+        )))
+        val zLayer = (state.stack as StackComponentStyle).children.single() as StackComponentStyle
+        val rowStyle = zLayer.children[1]
+        val width = mutableStateOf(500.dp)
+        composeTestRule.setContent {
+            MeasurePaywallBounds(state, Modifier.requiredSize(width.value, 1000.dp)) {
+                resolveHeroInsets(state.stack, state)
+            }
+        }
+        fun assertHero(expectedHero: Boolean) = composeTestRule.runOnIdle {
+            val insets = state.heroInsetsFor(state.stack)!!
+            assertThat(state.mainStackHasHeroImage).isEqualTo(expectedHero)
+            assertThat(insets.hero != null).isEqualTo(expectedHero)
+            assertThat(insets.exemptChildFor(zLayer) === rowStyle).isEqualTo(expectedHero)
+        }
+        assertHero(true)
+        composeTestRule.runOnIdle { width.value = 1000.dp }
+        assertHero(false)
+        composeTestRule.runOnIdle { width.value = 500.dp }
+        assertHero(true)
     }
 
     @Test

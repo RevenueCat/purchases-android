@@ -130,19 +130,7 @@ private fun firstVisibleLeaf(
     state: PaywallState.Loaded.Components,
 ): FirstVisibleLeaf? {
     return when (style) {
-        is StackComponentStyle -> {
-            val stack = rememberUpdatedStackComponentState(style, state)
-            if (!stack.visible) return null
-            var first: FirstVisibleLeaf? = null
-            for (child in stack.children) {
-                first = firstVisibleLeaf(child, state)
-                if (first != null) {
-                    first = first.copy(ancestors = first.ancestors + (style to child))
-                    break
-                }
-            }
-            first ?: FirstVisibleLeaf(style, false)
-        }
+        is StackComponentStyle -> firstVisibleStackLeaf(style, state)
         is ImageComponentStyle -> rememberUpdatedImageComponentState(style, state).let {
             if (it.visible) FirstVisibleLeaf(style, it.size.width is SizeConstraint.Fill) else null
         }
@@ -176,6 +164,27 @@ private fun firstVisibleLeaf(
         }
         else -> if (style.visible) FirstVisibleLeaf(style, false) else null
     }
+}
+
+@Composable
+private fun firstVisibleStackLeaf(
+    style: StackComponentStyle,
+    state: PaywallState.Loaded.Components,
+): FirstVisibleLeaf? {
+    val stack = rememberUpdatedStackComponentState(style, state)
+    if (!stack.visible) return null
+    var first: FirstVisibleLeaf? = null
+    for (child in stack.children) {
+        val leaf = firstVisibleLeaf(child, state)
+        if (leaf != null) {
+            // A row can bleed only when the hero is its sole visible child.
+            val hasVisibleSibling = first != null
+            first = first?.copy(fullWidthMedia = false)
+                ?: leaf.copy(ancestors = leaf.ancestors + (style to child))
+            if (hasVisibleSibling || stack.dimension !is Dimension.Horizontal || !leaf.fullWidthMedia) break
+        }
+    }
+    return first ?: FirstVisibleLeaf(style, false)
 }
 
 @Composable

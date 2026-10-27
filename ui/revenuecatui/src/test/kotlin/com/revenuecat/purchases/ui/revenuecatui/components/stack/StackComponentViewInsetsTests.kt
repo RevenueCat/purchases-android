@@ -35,11 +35,13 @@ import com.revenuecat.purchases.paywalls.components.properties.Badge
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
+import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
+import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.resolveHeroInsets
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
@@ -150,6 +152,15 @@ class StackComponentViewInsetsTests {
     @Test
     fun `ancestor clearance is consumed before measuring a badge on a nested overlay`() {
         assertEdgeBadgeInsets(TwoDimensionalAlignment.TOP, statusBarConsumedAbove = true)
+    }
+
+    @Test
+    fun `horizontal image with a visible sibling keeps text below the status bar`() {
+        val root = StackComponent(
+            components = listOf(hero(), component),
+            dimension = Dimension.Horizontal(VerticalAlignment.TOP, FlexDistribution.START),
+        )
+        assertThat(composeTestRule.textTopOnFirstFrame(false, root)).isEqualTo(STATUS_BAR_PX)
     }
 
     private fun hero(width: SizeConstraint = SizeConstraint.Fill()): ImageComponent {
