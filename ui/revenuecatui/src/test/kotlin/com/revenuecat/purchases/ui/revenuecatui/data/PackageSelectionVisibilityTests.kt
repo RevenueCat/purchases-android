@@ -558,6 +558,27 @@ internal class PackageSelectionVisibilityTests {
         assertThat(state.selectedPackageInfo).isNull()
     }
 
+    @Test
+    fun `first visit retains a tab default when the current bounds hide all its packages`() {
+        val state = state(
+            TabsComponent(
+                tabs = listOf(
+                    TabsComponent.Tab(id = "first", stack = StackComponent(listOf(pkg(annual, default = true)))),
+                    TabsComponent.Tab(
+                        id = "second",
+                        stack = StackComponent(listOf(hiddenStack(pkg(monthly, default = true), pkg(weekly)))),
+                    ),
+                ),
+                control = TabsComponent.TabControl.Buttons(StackComponent(emptyList())),
+            ),
+        )
+        state.paywallBoundsDp = wide
+
+        state.update(selectedTabIndex = 1)
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthly)
+    }
+
     private fun tabsWithDefault(pkg: Package) = TabsComponent(
         tabs = listOf(TabsComponent.Tab(id = "plans", stack = StackComponent(listOf(pkg(pkg, default = true))))),
         control = TabsComponent.TabControl.Buttons(StackComponent(emptyList())),

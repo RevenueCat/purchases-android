@@ -21,6 +21,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.UiConfig.VariableConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.StateUpdate
 import com.revenuecat.purchases.storage.FileRepository
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
@@ -49,6 +50,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallWarning
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.ui.revenuecatui.helpers.createLocaleFromString
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
+import kotlinx.serialization.json.JsonPrimitive
 import java.text.NumberFormat
 import java.util.Date
 import java.util.Locale
@@ -313,14 +315,14 @@ internal sealed interface PaywallState {
             }
 
             private val selectedPackageByTab = mutableStateMapOf<Int, String?>().apply {
-                putAll(
-                    packages.packagesByTab.mapValues { (index, packagesList) ->
-                        packagesList.defaultSelection(
-                            initialVisibilityContext.withSelectedTab(index),
-                            packages.packagesOutsideTabs + packagesList,
-                        )?.uniqueId
-                    },
-                )
+                // Other tabs must resolve their defaults after publishing their own state, on first visit.
+                val index = initialSelectedTabIndex ?: 0
+                packages.packagesByTab[index]?.let { packagesList ->
+                    put(
+                        index,
+                        packagesList.defaultSelection(initialVisibilityContext, initialPackageCandidates)?.uniqueId,
+                    )
+                }
             }
 
             var selectedTabIndex by mutableIntStateOf(initialSelectedTabIndex ?: 0)
@@ -408,6 +410,14 @@ internal sealed interface PaywallState {
 
             val sheet = initialSheetState
 
+            fun selectTab(index: Int, tabId: String?, stateUpdates: List<StateUpdate>) {
+                if (index != selectedTabIndex && tabId != null) {
+                    // Visibility rules must see the destination tab's state before selection is resolved.
+                    stateStore.applyUpdates(stateUpdates, payload = JsonPrimitive(tabId))
+                }
+                update(selectedTabIndex = index)
+            }
+
             fun update(
                 localeList: FrameworkLocaleList? = null,
                 selectedTabIndex: Int? = null,
@@ -417,10 +427,15 @@ internal sealed interface PaywallState {
 
                 if (selectedTabIndex != null) {
                     this.selectedTabIndex = selectedTabIndex
+                    val tabPackages = packages.packagesByTab[selectedTabIndex].orEmpty()
                     val resolved = selectionResolver().switchTab(
                         current = selectedPackageUniqueId,
                         remembered = selectedPackageByTab[selectedTabIndex],
-                    )
+                    ) ?: tabPackages.defaultSelection(
+                        // Preserve the tab's initial choice when the current bounds hide every candidate.
+                        visibilityContext(windowDpSize = null),
+                        packages.packagesOutsideTabs + tabPackages,
+                    )?.uniqueId
                     selectedPackageUniqueId = resolved
                     if (resolved != null) update(selectedPackageUniqueId = resolved)
                 }
@@ -445,16 +460,18 @@ internal sealed interface PaywallState {
                 packages = packages,
                 selectedTabIndex = selectedTabIndex,
                 presentedSheet = sheet.presentationKey.takeIf { sheet.visible },
-                context = ComponentVisibilityContext(
-                    screenCondition = windowScreenCondition,
-                    windowDpSize = windowDpSize,
-                    selectedPackage = { selectedPackageInfo },
-                    selectedTabIndex = { selectedTabIndex },
-                    customVariables = mergedCustomVariables,
-                    selectedOfferEligibility = { selectedOfferEligibility },
-                    stateReader = stateStore::currentValueOrDefault,
-                    currentDate = dateProvider(),
-                ),
+                context = visibilityContext(windowDpSize),
+            )
+
+            private fun visibilityContext(windowDpSize: DpSize?) = ComponentVisibilityContext(
+                screenCondition = windowScreenCondition,
+                windowDpSize = windowDpSize,
+                selectedPackage = { selectedPackageInfo },
+                selectedTabIndex = { selectedTabIndex },
+                customVariables = mergedCustomVariables,
+                selectedOfferEligibility = { selectedOfferEligibility },
+                stateReader = stateStore::currentValueOrDefault,
+                currentDate = dateProvider(),
             )
 
             fun reconcileSelectionForWindowSize(windowDpSize: DpSize?) {

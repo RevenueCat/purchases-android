@@ -20,6 +20,7 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
+import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
@@ -69,6 +70,7 @@ internal fun FakePaywallState(
     offeringWebCheckoutURL: URL? = null,
     viewModelActionInProgress: State<Boolean> = mutableStateOf(false),
     addPackageComponents: Boolean = true,
+    stateDeclarations: Map<String, StateDeclaration> = emptyMap(),
 ): PaywallState.Loaded.Components {
     // Only synthesize a PackageComponent for packages the caller's components don't already
     // reference: a synthesized always-visible duplicate would defeat visibility-rule tests.
@@ -97,6 +99,7 @@ internal fun FakePaywallState(
         ),
         componentsLocalizations = localizations,
         defaultLocaleIdentifier = defaultLocaleIdentifier,
+        stateDeclarations = stateDeclarations,
     )
     val offering = Offering(
         identifier = "identifier",

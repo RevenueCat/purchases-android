@@ -39,17 +39,6 @@ internal class ComponentVisibilityContext(
         currentDate = currentDate,
     )
 
-    fun withSelectedTab(index: Int): ComponentVisibilityContext = ComponentVisibilityContext(
-        screenCondition = screenCondition,
-        windowDpSize = windowDpSize,
-        selectedPackage = selectedPackage,
-        selectedTabIndex = { index },
-        customVariables = customVariables,
-        selectedOfferEligibility = selectedOfferEligibility,
-        stateReader = stateReader,
-        currentDate = currentDate,
-    )
-
     fun <T : PresentedPartial<T>> resolve(
         overrides: List<PresentedOverride<T>>,
         packageContext: PackageContext? = null,

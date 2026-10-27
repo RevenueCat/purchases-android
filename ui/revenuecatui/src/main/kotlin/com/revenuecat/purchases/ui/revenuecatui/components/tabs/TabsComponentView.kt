@@ -87,8 +87,8 @@ internal fun TabsComponentView(
         paywallState = state,
     )
 
-    // State-driven paywalls: publish the selected tab id into the state store so components that react to it via a
-    // `state_condition` override recompose. Gated behind visibility (parity with iOS): a hidden Tabs never
+    // Seed state and cover programmatic changes; controls also publish synchronously before resolving selection.
+    // Gated behind visibility (parity with iOS): a hidden Tabs never
     // publishes. Seeds once and then publishes only when the selection actually changes. Remembering the last
     // published id above the visibility gate keeps a hidden -> visible transition from republishing and
     // clobbering a value another component already set (mirrors iOS's didSeedInitialState). The declared state
