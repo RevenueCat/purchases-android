@@ -294,7 +294,7 @@ internal class BackendAPISourceFailoverIntegrationTest {
 
     /** Wires the full real stack: sources come from a `sources` topic pointing at [sourceUrls] in order. */
     private fun createBackend(vararg sourceUrls: String, deviceOffline: () -> Boolean = { false }): Backend =
-        createBackend(sourceUrls.toList(), deviceOffline, SourceHealthChecker())
+        createBackend(sourceUrls.toList(), deviceOffline, SourceHealthChecker(DefaultUrlConnectionFactory()))
 
     private fun createBackend(
         sourceUrls: List<String>,

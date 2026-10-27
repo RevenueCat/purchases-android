@@ -20,6 +20,7 @@ import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceProvider
 import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.interfaces.StorefrontProvider
+import com.revenuecat.purchases.utils.DefaultUrlConnectionFactory
 import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
@@ -76,7 +77,7 @@ internal abstract class BaseHTTPClientTest {
         signingManager: SigningManager? = null,
         storefrontProvider: StorefrontProvider = mockStorefrontProvider,
         apiSourceProvider: RemoteConfigSourceProvider? = null,
-        sourceHealthChecker: SourceHealthChecker = SourceHealthChecker(),
+        sourceHealthChecker: SourceHealthChecker = SourceHealthChecker(DefaultUrlConnectionFactory()),
         deviceOffline: Boolean = false,
         localeProvider: LocaleProvider = DefaultLocaleProvider(),
         forceServerErrorStrategy: ForceServerErrorStrategy? = null,
