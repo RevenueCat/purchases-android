@@ -438,18 +438,14 @@ internal class HTTPClient(
         val postFieldsToSignHeader: String?
         val fullURL: URL
 
-        if (appConfig.runningTests) {
-            forceServerErrorStrategy?.fakeResponseWithoutPerformingRequest(baseURL, endpoint)?.let {
-                warnLog { "Faking response for request to ${endpoint.getPath()}" }
-                return it
-            }
+        forceServerErrorStrategy?.fakeResponseWithoutPerformingRequest(baseURL, endpoint)?.let {
+            warnLog { "Faking response for request to ${endpoint.getPath()}" }
+            return it
         }
 
         try {
             val requestURL = URL(baseURL, path)
-            fullURL = if (appConfig.runningTests &&
-                forceServerErrorStrategy?.shouldForceServerError(baseURL, endpoint) == true
-            ) {
+            fullURL = if (forceServerErrorStrategy?.shouldForceServerError(baseURL, endpoint) == true) {
                 warnLog { "Forcing server error for request to ${URL(baseURL, path)}" }
                 URL(forceServerErrorStrategy.serverErrorURL)
             } else {
@@ -496,7 +492,7 @@ internal class HTTPClient(
         val payloadBytes: ByteArray?
         val responseCode: Int
         try {
-            debugLog { NetworkStrings.API_REQUEST_STARTED.format(connection.requestMethod, path) }
+            debugLog { NetworkStrings.API_REQUEST_STARTED.format(connection.requestMethod, baseURL.host, path) }
             responseCode = connection.responseCode
             payloadBytes = inputStream?.let { readBytesFully(it) }
             if (enableExtraRequestLogging) {
@@ -521,7 +517,9 @@ internal class HTTPClient(
             throw IOException(NetworkStrings.HTTP_RESPONSE_NO_STATUS_CODE)
         }
 
-        debugLog { NetworkStrings.API_REQUEST_COMPLETED.format(connection.requestMethod, path, responseCode) }
+        debugLog {
+            NetworkStrings.API_REQUEST_COMPLETED.format(connection.requestMethod, baseURL.host, path, responseCode)
+        }
         // The response arrived in full. Everything below only inspects it, so failures from here on say
         // nothing about how responsive the host is.
         onResponseReceived(responseCode)

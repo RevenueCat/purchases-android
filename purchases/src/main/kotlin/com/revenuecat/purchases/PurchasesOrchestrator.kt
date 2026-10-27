@@ -2308,6 +2308,9 @@ internal class PurchasesOrchestrator(
 
         var proxyURL: URL? = null
 
+        @Volatile
+        var internalSimulatedHostFailures: SimulatedHostFailures? = null
+
         /**
          * Note: This method only works for the Google Play Store. There is no Amazon equivalent at this time.
          * Calling from an Amazon-configured app will return true.

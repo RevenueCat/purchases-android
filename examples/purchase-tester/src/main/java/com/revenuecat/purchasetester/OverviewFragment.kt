@@ -68,6 +68,7 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
 
         binding.logsButton.setOnClickListener { navigateToLogsFragment() }
         binding.proxyButton.setOnClickListener { navigateToProxyFragment() }
+        binding.simulatedFailuresButton.setOnClickListener { showSimulatedFailuresDialog(dataStoreUtils) }
         binding.getProductsButton.setOnClickListener { showGetProductsDialog() }
         binding.purchaseProductIdButton.setOnClickListener { showPurchaseProductIdDialog() }
         binding.findByPlacementButton.setOnClickListener { showFindPlacementDialog() }
