@@ -8,6 +8,7 @@ import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.LogIntent
+import com.revenuecat.purchases.common.caching.PayloadFileStore
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.verification.SignatureVerificationResult
@@ -25,7 +26,7 @@ internal data class ETagData(
 
 /**
  * Everything the ETag cache persists about a response except its payload, stored as a small flat JSON
- * under the URL key; the payload lives in an [ETagPayloadStore] file. The prefs file name is versioned,
+ * under the URL key; the payload lives in a [PayloadFileStore] file. The prefs file name is versioned,
  * which keeps downgrades safe: older SDKs read their own file and simply refetch, and their file is
  * deleted, unparsed, at the next upgraded launch ([ETagManager.deleteLegacyPreferencesFile]).
  *
@@ -143,7 +144,7 @@ internal class ETagManager(
         initializeSharedPreferences(context)
     },
     private val dateProvider: DateProvider = DefaultDateProvider(),
-    private val payloadStore: ETagPayloadStore = ETagPayloadStore(context),
+    private val payloadStore: PayloadFileStore = PayloadFileStore(context.cacheDir, PAYLOAD_DIRECTORY_NAME),
 ) {
 
     internal fun getETagHeaders(
@@ -275,6 +276,7 @@ internal class ETagManager(
     companion object {
         private const val LEGACY_PREFERENCES_FILE_SUFFIX = "_preferences_etags"
         private const val PREFERENCES_FILE_SUFFIX = "_preferences_etags_v2"
+        private const val PAYLOAD_DIRECTORY_NAME = "etag_payloads"
 
         /**
          * Deletes the pre-split-format prefs file without ever loading it, so its multi-MB payload
