@@ -116,7 +116,7 @@ private fun Image(
         return ImageForPreviews(modifier)
     }
 
-    var cachePolicy by remember { mutableStateOf(CachePolicy.ENABLED) }
+    var cachePolicy by remember(source) { mutableStateOf(CachePolicy.ENABLED) }
     val applicationContext = LocalContext.current.applicationContext
     val imageLoader = previewImageLoader.takeIf { isInPreviewMode } ?: remember(applicationContext) {
         PaywallImageLoader.get(applicationContext)
@@ -131,7 +131,7 @@ private fun Image(
         .build()
 
     val previewPlaceholder = if (isInPreviewMode()) imageLoader.getPreviewPlaceholderBlocking(imageRequest) else null
-    val placeholder = placeholderSource?.let {
+    val placeholder = placeholderSource?.takeUnless { it == source }?.let {
         rememberAsyncImagePainter(
             model = it.data,
             placeholder = previewPlaceholder,
