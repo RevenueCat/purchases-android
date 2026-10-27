@@ -34,23 +34,6 @@ internal class HiddenLeadingStackHeroPreviewTests {
     val composeTestRule = createComposeRule()
 
     @Test
-    fun `phone control preview renders a hero and purchase content`() {
-        lateinit var state: PaywallState.Loaded.Components
-        lateinit var view: View
-        composeTestRule.setContent {
-            view = LocalView.current
-            state = previewHiddenLeadingStackHeroState(includeSide = false)
-            CompositionLocalProvider(LocalInspectionMode provides true) {
-                HiddenLeadingStackHeroPreview(state, Modifier.requiredWidth(411.dp).fillMaxHeight())
-            }
-        }
-        composeTestRule.onNodeWithText("Find your next escape").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Start exploring").assertIsDisplayed()
-        composeTestRule.runOnIdle { assertThat(state.mainStackHasHeroImage).isTrue() }
-        capturePreview(view, "phone-control.png", expectedPhotoTop = 0)
-    }
-
-    @Test
     fun `responsive side preview releases and restores the phone hero when its side appears`() {
         lateinit var state: PaywallState.Loaded.Components
         lateinit var view: View

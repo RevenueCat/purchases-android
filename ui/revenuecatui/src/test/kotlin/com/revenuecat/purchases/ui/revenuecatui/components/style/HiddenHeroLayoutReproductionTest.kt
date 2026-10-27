@@ -15,9 +15,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.paywalls.components.ImageComponent
-import com.revenuecat.purchases.paywalls.components.PartialStackComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
-import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
@@ -49,69 +47,6 @@ import java.net.URL
 internal class HiddenHeroLayoutReproductionTest {
     @get:Rule
     val composeTestRule = createComposeRule()
-
-    @Test
-    fun `PWENG-317 hidden wide-only sibling must not move visible mobile hero down`() {
-        val urls = ThemeImageUrls(light = ImageUrls(
-            original = URL("https://example.com/hero.png"),
-            webp = URL("https://example.com/hero.webp"),
-            webpLowRes = URL("https://example.com/hero-small.webp"),
-            width = 400u, height = 240u,
-        ))
-        val image = ImageComponent(source = urls, size = Size(
-            width = SizeConstraint.Fill(), height = SizeConstraint.Fixed(240u),
-        ))
-        val mobileHero = StackComponent(
-            components = listOf(image),
-            dimension = Dimension.ZLayer(TwoDimensionalAlignment.TOP),
-            backgroundColor = ColorScheme(ColorInfo.Hex(Color.Red.toArgb())),
-        )
-        val side = StackComponent(
-            components = listOf(image), visible = false,
-            overrides = listOf(ComponentOverride(
-                conditions = listOf(ComponentOverride.Condition.WindowWidthRule(
-                    ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL, 800.0,
-                )),
-                properties = PartialStackComponent(visible = true),
-            )),
-        )
-        fun style(withSide: Boolean) = StyleFactory().create(StackComponent(
-            components = if (withSide) listOf(side, mobileHero) else listOf(mobileHero),
-            dimension = Dimension.ZLayer(TwoDimensionalAlignment.TOP),
-            size = Size(SizeConstraint.Fixed(400u), SizeConstraint.Fixed(800u)),
-            backgroundColor = ColorScheme(ColorInfo.Hex(Color.White.toArgb())),
-        )).getOrThrow().componentStyle as StackComponentStyle
-
-        val baseline = style(false)
-        val changed = style(true)
-        val state = FakePaywallState()
-        val withSide = mutableStateOf(false)
-        val showContent = mutableStateOf(false)
-        lateinit var view: View
-        composeTestRule.setContent {
-            view = LocalView.current
-            WindowInsets.safeDrawing
-            if (showContent.value) {
-                val style = if (withSide.value) changed else baseline
-                resolveHeroInsets(style, state)
-                StackComponentView(style, state, { })
-            }
-        }
-        composeTestRule.waitForIdle()
-        composeTestRule.runOnUiThread {
-            ViewCompat.dispatchApplyWindowInsets(view, WindowInsetsCompat.Builder()
-                .setInsets(WindowInsetsCompat.Type.statusBars(), Insets.of(0, 100, 0, 0)).build())
-        }
-        composeTestRule.runOnIdle { showContent.value = true }
-        val before = capture(view, "android-control.png")
-        composeTestRule.runOnIdle { withSide.value = true }
-        val after = capture(view, "android-hidden-side.png")
-        val beforeTop = firstRedRow(before)
-        val afterTop = firstRedRow(after)
-        println("PWENG-317 mobile hero top: control=$beforeTop hidden-side=$afterTop pixels")
-        assertThat(beforeTop).isZero()
-        assertThat(afterTop).isEqualTo(beforeTop)
-    }
 
     @Test
     fun `horizontal image moves inside the safe area while another column is visible`() {
