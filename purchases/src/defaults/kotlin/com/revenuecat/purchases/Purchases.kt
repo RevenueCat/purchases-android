@@ -286,7 +286,7 @@ public class Purchases internal constructor(
      * A result with a null [ConfiguredAdRewards.reward] means no rewards are configured.
      * Unknown or invalid individual rewards use [AdRewardConfiguration.UnsupportedReward].
      */
-    @InternalRevenueCatAPI
+    @ExperimentalPreviewRevenueCatPurchasesAPI
     public fun getAdRewards(adUnitId: String, callback: GetAdRewardsCallback) {
         purchasesOrchestrator.getAdRewards(adUnitId, callback)
     }

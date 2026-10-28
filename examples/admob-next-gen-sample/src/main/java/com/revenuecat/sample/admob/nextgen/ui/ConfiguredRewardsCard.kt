@@ -17,13 +17,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.ads.AdRewardConfiguration
 import com.revenuecat.purchases.ads.ConfiguredAdRewards
 import com.revenuecat.purchases.awaitGetAdRewards
 
-@OptIn(InternalRevenueCatAPI::class)
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 internal fun ConfiguredRewardsCard(adUnitId: String) {
     var lookup by remember(adUnitId) { mutableIntStateOf(0) }
@@ -58,7 +58,7 @@ internal fun ConfiguredRewardsCard(adUnitId: String) {
     }
 }
 
-@OptIn(InternalRevenueCatAPI::class)
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 private fun ConfiguredAdRewards?.description(): String {
     val primary = this?.reward
     return when {
@@ -73,7 +73,7 @@ private fun ConfiguredAdRewards?.description(): String {
     }
 }
 
-@OptIn(InternalRevenueCatAPI::class)
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 private fun AdRewardConfiguration.description(): String = when (this) {
     is AdRewardConfiguration.VirtualCurrency -> "$amount $code"
     is AdRewardConfiguration.Entitlement -> "$identifier for $durationInSeconds seconds"

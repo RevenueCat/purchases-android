@@ -27,7 +27,7 @@ import java.util.Locale
  * Unknown or invalid individual rewards use [AdRewardConfiguration.UnsupportedReward].
  */
 @JvmSynthetic
-@InternalRevenueCatAPI
+@ExperimentalPreviewRevenueCatPurchasesAPI
 public suspend fun Purchases.awaitGetAdRewards(adUnitId: String): ConfiguredAdRewards? =
     suspendCancellableCoroutine { continuation ->
         getAdRewards(adUnitId) { rewards -> continuation.safeResume(rewards) }
