@@ -9,20 +9,18 @@ import kotlin.time.Duration.Companion.seconds
  * Unknown or invalid individual rewards use [AdRewardConfiguration.UnsupportedReward].
  * A null [reward] means no reward is configured for the ad unit.
  * Configured rewards describe what an app can advertise; they do not establish that a reward was granted.
- *
- * @property allRewards All rewards in configured order, primary first. Empty when no rewards are configured.
  */
 @Poko
 internal class ConfiguredAdRewards internal constructor(
-    public val allRewards: List<AdRewardConfiguration>,
+    private val rewards: List<AdRewardConfiguration>,
 ) {
     /** The primary reward, or null when no reward is configured. */
     public val reward: AdRewardConfiguration?
-        get() = allRewards.firstOrNull()
+        get() = rewards.firstOrNull()
 
     /** Additional rewards in configured order, excluding [reward]. Empty when there are no additional rewards. */
     public val moreRewards: List<AdRewardConfiguration>
-        get() = allRewards.drop(1)
+        get() = rewards.drop(1)
 }
 
 /** A reward expected for an ad unit. Unknown or invalid rewards use [UnsupportedReward]. */

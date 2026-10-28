@@ -23,7 +23,7 @@ import java.util.Locale
 
 /**
  * Coroutine friendly version of [Purchases.getAdRewards]. Returns null when configuration is unavailable
- * or [adUnitId] is empty. A result with an empty [ConfiguredAdRewards.allRewards] means no rewards are configured.
+ * or [adUnitId] is empty. A result with a null [ConfiguredAdRewards.reward] means no rewards are configured.
  * Unknown or invalid individual rewards use [AdRewardConfiguration.UnsupportedReward].
  */
 @JvmSynthetic
