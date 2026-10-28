@@ -47,6 +47,7 @@ import io.mockk.verify
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -703,6 +704,51 @@ class CheckpointWorkflowResolverImplTest {
     }
 
     @Test
+    fun `a workflow with an invalid gate on any step does not fall through to a later rule`() = runTest {
+        val invalidGates = listOf(
+            JsonNull,
+            JsonPrimitive("hard"),
+            JsonObject(mapOf("type" to JsonPrimitive("unknown"))),
+            JsonObject(mapOf("type" to JsonPrimitive("hard"))),
+        )
+        configureRules(rule("wf-invalid"), rule("wf1234"))
+        coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns uiWorkflow("wf1234")
+
+        invalidGates.forEach { gate ->
+            coEvery { mockWorkflowManager.getWorkflowBody("wf-invalid") } returns workflow(
+                "wf-invalid",
+                screenStep("first", "default"),
+                screenStep("second", "default").gated(gate),
+            )
+
+            assertThat(noActionReason(resolve()))
+                .describedAs(gate.toString())
+                .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
+        }
+        assertThat(offeringsFetched).isZero()
+        coVerify(exactly = 0) { mockWorkflowManager.getWorkflowBody("wf1234") }
+    }
+
+    @Test
+    fun `a workflow with soft and hard gates resolves`() = runTest {
+        val workflow = workflow(
+            "wf1234",
+            screenStep("soft", "default").gated(JsonObject(mapOf("type" to JsonPrimitive("soft")))),
+            screenStep("hard", "default").gated(
+                JsonObject(
+                    mapOf(
+                        "type" to JsonPrimitive("hard"),
+                        "entitlement_identifiers" to JsonArray(listOf(JsonPrimitive("pro"))),
+                    ),
+                ),
+            ),
+        )
+        coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns workflow
+
+        assertThat(matchedWorkflow(resolve()).workflow).isEqualTo(workflow)
+    }
+
+    @Test
     fun `UI rule without UI config does not fall through to a later offering rule`() = runTest {
         configureRules(rule("wf-ui"), rule("wf-offering"))
         coEvery { mockWorkflowManager.getWorkflowBody("wf-ui") } returns uiWorkflow("wf-ui")
@@ -924,6 +970,8 @@ class CheckpointWorkflowResolverImplTest {
         screenId = "screen-id",
         paramValues = offeringParams(offeringIdentifier),
     )
+
+    private fun WorkflowStep.gated(gate: JsonElement): WorkflowStep = copy(paramValues = paramValues + ("gating" to gate))
 
     private fun offeringParams(offeringIdentifier: String?) =
         offeringIdentifier?.let { offeringParams(JsonPrimitive(it)) }.orEmpty()

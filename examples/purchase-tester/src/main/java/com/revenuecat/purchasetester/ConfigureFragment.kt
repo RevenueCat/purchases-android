@@ -57,18 +57,7 @@ class ConfigureFragment : Fragment() {
         setupSupportedStoresRadioButtons()
 
         lifecycleScope.launch {
-            dataStoreUtils.getSdkConfig().onEach { sdkConfiguration ->
-                binding.apiKeyInput.setText(sdkConfiguration.apiKey)
-                binding.proxyUrlInput.setText(sdkConfiguration.proxyUrl)
-                val storeToCheckId =
-                    when (sdkConfiguration.store) {
-                        Store.AMAZON -> R.id.amazon_store_radio_id
-                        Store.GALAXY -> R.id.galaxy_store_radio_id
-                        Store.GOOGLE -> R.id.google_store_radio_id
-                    }
-                binding.storeRadioGroup.check(storeToCheckId)
-                updateGalaxyWarningVisibility()
-            }.collect()
+            dataStoreUtils.getSdkConfig().onEach { showStoredConfiguration(it) }.collect()
         }
 
         @Suppress("EmptyFunctionBlock")
@@ -113,6 +102,10 @@ class ConfigureFragment : Fragment() {
             navigateToProxyFragment()
         }
 
+        binding.simulatedFailuresButton.setOnClickListener {
+            showSimulatedFailuresDialog(dataStoreUtils)
+        }
+
         binding.amazonStoreRadioId.setOnCheckedChangeListener { _, isChecked ->
             // Disable PurchasesAreCompletedBy options if Amazon
             with(binding.purchaseCompletionRadioGroup) {
@@ -155,8 +148,12 @@ class ConfigureFragment : Fragment() {
         }
 
         val application = (requireActivity().application as MainApplication)
+        // Preserve the separately-entered app user ID and the simulated failures mode because this screen only
+        // edits SDK configuration fields.
+        val existingConfiguration = dataStoreUtils.getSdkConfig().first()
 
         if (proxyUrl.isNotEmpty()) Purchases.proxyURL = URL(proxyUrl)
+        Purchases.internalSimulatedHostFailures = existingConfiguration.simulatedFailuresMode.hostFailures()
 
         Purchases.logLevel = LogLevel.VERBOSE
 
@@ -192,17 +189,23 @@ class ConfigureFragment : Fragment() {
 
         Purchases.sharedInstance.updatedCustomerInfoListener = application
 
-        // Preserve the separately-entered app user ID because this screen only edits SDK configuration fields.
-        val existingConfiguration = dataStoreUtils.getSdkConfig().first()
         dataStoreUtils.saveSdkConfig(
-            SdkConfiguration(
-                apiKey = apiKey,
-                proxyUrl = proxyUrl,
-                store = selectedStore,
-                appUserId = existingConfiguration.appUserId,
-            ),
+            existingConfiguration.copy(apiKey = apiKey, proxyUrl = proxyUrl, store = selectedStore),
         )
         return true
+    }
+
+    private fun showStoredConfiguration(sdkConfiguration: SdkConfiguration) {
+        binding.apiKeyInput.setText(sdkConfiguration.apiKey)
+        binding.proxyUrlInput.setText(sdkConfiguration.proxyUrl)
+        val storeToCheckId =
+            when (sdkConfiguration.store) {
+                Store.AMAZON -> R.id.amazon_store_radio_id
+                Store.GALAXY -> R.id.galaxy_store_radio_id
+                Store.GOOGLE -> R.id.google_store_radio_id
+            }
+        binding.storeRadioGroup.check(storeToCheckId)
+        updateGalaxyWarningVisibility()
     }
 
     private fun setupSupportedStoresRadioButtons() {
