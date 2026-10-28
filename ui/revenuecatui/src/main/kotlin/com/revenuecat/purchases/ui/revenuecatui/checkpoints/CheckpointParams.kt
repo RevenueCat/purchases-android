@@ -50,6 +50,8 @@ public class CheckpointParams private constructor(
     public val paywallPresenter: PaywallPresenter?,
     public val errorPresenter: ErrorPresenter?,
     public val presentationMode: FlowPresentationMode,
+    @InternalRevenueCatAPI
+    public val errorDialogFactory: ErrorDialogFactory?,
 ) {
 
     /**
@@ -61,28 +63,42 @@ public class CheckpointParams private constructor(
     public val customVariables: Map<String, CustomVariableValue> =
         CustomVariableKeyValidator.validateAndFilter(customVariables)
 
+    @OptIn(InternalRevenueCatAPI::class)
     override fun equals(other: Any?): Boolean =
         other is CheckpointParams &&
             other.customVariables == customVariables &&
             other.paywallPresenter == paywallPresenter &&
             other.errorPresenter == errorPresenter &&
-            other.presentationMode == presentationMode
+            other.presentationMode == presentationMode &&
+            other.errorDialogFactory == errorDialogFactory
 
-    override fun hashCode(): Int =
-        31 * (31 * (31 * customVariables.hashCode() + paywallPresenter.hashCode()) + errorPresenter.hashCode()) +
-            presentationMode.hashCode()
+    @OptIn(InternalRevenueCatAPI::class)
+    override fun hashCode(): Int {
+        var result = customVariables.hashCode()
+        result = 31 * result + paywallPresenter.hashCode()
+        result = 31 * result + errorPresenter.hashCode()
+        result = 31 * result + presentationMode.hashCode()
+        result = 31 * result + errorDialogFactory.hashCode()
+        return result
+    }
 
+    @OptIn(InternalRevenueCatAPI::class)
     override fun toString(): String =
         "CheckpointParams(customVariables=$customVariables, paywallPresenter=$paywallPresenter, " +
-            "errorPresenter=$errorPresenter, presentationMode=$presentationMode)"
+            "errorPresenter=$errorPresenter, presentationMode=$presentationMode, " +
+            "errorDialogFactory=$errorDialogFactory)"
 
     @CheckpointParamsDsl
+    @Suppress("TooManyFunctions")
     public class Builder {
 
         private var customVariables: Map<String, CustomVariableValue> = emptyMap()
         private var paywallPresenter: PaywallPresenter? = null
         private var errorPresenter: ErrorPresenter? = null
         private var presentationMode: FlowPresentationMode = FlowPresentationMode.DEFAULT
+
+        @InternalRevenueCatAPI
+        private var errorDialogFactory: ErrorDialogFactory? = null
 
         /** Replaces any previously set custom variables. */
         public fun setCustomVariables(customVariables: Map<String, CustomVariableValue>): Builder = apply {
@@ -124,8 +140,24 @@ public class CheckpointParams private constructor(
         public fun presentationMode(presentationMode: FlowPresentationMode): Builder =
             setPresentationMode(presentationMode)
 
+        /**
+         * Provides custom dialog content for errors of this call; null lets the SDK pick the content itself.
+         * Takes effect only when no [ErrorPresenter] is set for this call or registered globally: the factory
+         * sits between those and the SDK's own dialog.
+         */
+        @InternalRevenueCatAPI
+        public fun setErrorDialogFactory(factory: ErrorDialogFactory?): Builder = apply {
+            this.errorDialogFactory = factory
+        }
+
+        /** Provides custom dialog content for errors of this call, ahead of the SDK's own localized copy. */
+        @JvmSynthetic
+        @InternalRevenueCatAPI
+        public fun errorDialogFactory(factory: ErrorDialogFactory): Builder = setErrorDialogFactory(factory)
+
+        @OptIn(InternalRevenueCatAPI::class)
         public fun build(): CheckpointParams =
-            CheckpointParams(customVariables, paywallPresenter, errorPresenter, presentationMode)
+            CheckpointParams(customVariables, paywallPresenter, errorPresenter, presentationMode, errorDialogFactory)
     }
 
     /**

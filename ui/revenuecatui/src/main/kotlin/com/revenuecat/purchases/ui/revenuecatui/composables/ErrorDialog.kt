@@ -16,6 +16,7 @@ import com.revenuecat.purchases.ui.revenuecatui.R
 @JvmSynthetic internal fun ErrorDialog(
     dismissRequest: () -> Unit,
     error: String,
+    confirmButtonText: String = stringResource(id = R.string.OK),
 ) {
     AlertDialog(
         onDismissRequest = dismissRequest,
@@ -24,7 +25,7 @@ import com.revenuecat.purchases.ui.revenuecatui.R
                 onClick = dismissRequest,
             ) {
                 Text(
-                    text = stringResource(id = R.string.OK),
+                    text = confirmButtonText,
                     textAlign = TextAlign.Center,
                 )
             }

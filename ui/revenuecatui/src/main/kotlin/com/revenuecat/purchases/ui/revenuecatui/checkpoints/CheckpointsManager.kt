@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
@@ -124,6 +125,28 @@ internal class CheckpointsManager(
     private val failed = CheckpointRun(flowOutcome = null, backedOut = false, failed = true)
 
     /**
+     * The app's error presenter for a call, or null when the SDK's own should be used. Precedence: per-call
+     * errorPresenter > per-call errorDialogFactory > registered errorPresenter.
+     */
+    @OptIn(InternalRevenueCatAPI::class)
+    private fun appErrorPresenter(
+        purchases: Purchases,
+        params: CheckpointParams?,
+        sdkErrorPresenter: () -> ErrorPresenter,
+    ): ErrorPresenter? {
+        val factoryPresenter = params?.errorDialogFactory?.asErrorPresenter(scope) { dialog ->
+            if (dialog != null) {
+                DefaultErrorPresenter(purchases) { activity, resources, _, onAcknowledged ->
+                    factoryErrorDialogContent(activity, resources, dialog, onAcknowledged)
+                }
+            } else {
+                sdkErrorPresenter()
+            }
+        }
+        return params?.errorPresenter ?: factoryPresenter ?: errorPresenter
+    }
+
+    /**
      * Runs a checkpoint hit: resolves the checkpoint and presents whatever it resolved to, suspending until the
      * presented flow finishes. Never throws: a failure to resolve or present is logged, handed to the error
      * presenter, and comes back as a failed run once the app's error UI is done. Completion is reported by
@@ -145,9 +168,10 @@ internal class CheckpointsManager(
         // Resolved lazily: an app paywall presenter owns its own errors and may never need one. Whichever presenter
         // it is, the queue hands it one error at a time, and the SDK's own stands in for an app presenter that throws.
         val sdkErrorPresenter = { defaultErrorPresenterFactory(purchases) }
+        val appErrorPresenter = appErrorPresenter(purchases, params, sdkErrorPresenter)
         val errorPresenter: () -> ErrorPresenter = {
             errorPresentationQueue.serialized(
-                (params?.errorPresenter ?: errorPresenter)?.withFallback(sdkErrorPresenter) ?: sdkErrorPresenter(),
+                appErrorPresenter?.withFallback(sdkErrorPresenter) ?: sdkErrorPresenter(),
             )
         }
         val presentationMode = resolvePresentationMode(params?.presentationMode)
