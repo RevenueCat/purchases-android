@@ -2,6 +2,7 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components.header
 
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
@@ -15,6 +16,13 @@ internal fun HeaderComponentView(
     state: PaywallState.Loaded.Components,
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
+    ancestorScrollOrientations: Set<Orientation> = emptySet(),
 ) {
-    StackComponentView(style.stackComponentStyle, state, clickHandler, modifier)
+    StackComponentView(
+        style = style.stackComponentStyle,
+        state = state,
+        clickHandler = clickHandler,
+        modifier = modifier,
+        ancestorScrollOrientations = ancestorScrollOrientations,
+    )
 }

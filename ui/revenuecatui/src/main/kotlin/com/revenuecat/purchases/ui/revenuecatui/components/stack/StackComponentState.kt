@@ -16,13 +16,11 @@ import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
-import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
-import com.revenuecat.purchases.ui.revenuecatui.components.ConditionContext
+import com.revenuecat.purchases.ui.revenuecatui.components.ComponentVisibilityContext
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
-import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.addMargin
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
-import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageAwareDelegate
+import com.revenuecat.purchases.ui.revenuecatui.components.resolveVisibility
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -89,7 +87,7 @@ internal class StackComponentState(
     initialWindowSize: WindowWidthSizeClass,
     initialWindowDpSize: DpSize?,
     initialLayoutDirection: LayoutDirection,
-    private val style: StackComponentStyle,
+    val style: StackComponentStyle,
     private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     private val selectedTabIndexProvider: () -> Int,
     private val selectedOfferEligibilityProvider: () -> OfferEligibility,
@@ -100,32 +98,23 @@ internal class StackComponentState(
     private var windowDpSize by mutableStateOf(initialWindowDpSize)
     private var layoutDirection by mutableStateOf(initialLayoutDirection)
 
-    private val packageAwareDelegate = PackageAwareDelegate(
-        style = style,
-        selectedPackageInfoProvider = selectedPackageInfoProvider,
-        selectedTabIndexProvider = selectedTabIndexProvider,
-        selectedOfferEligibilityProvider = selectedOfferEligibilityProvider,
-    )
+    private val visibilityContext: ComponentVisibilityContext
+        get() = ComponentVisibilityContext(
+            screenCondition = ScreenCondition.from(windowSize),
+            windowDpSize = windowDpSize,
+            selectedPackage = selectedPackageInfoProvider,
+            selectedTabIndex = selectedTabIndexProvider,
+            customVariables = customVariablesProvider(),
+            selectedOfferEligibility = selectedOfferEligibilityProvider,
+            stateReader = { stateStoreProvider().currentValueOrDefault(it) },
+        )
 
     private val presentedPartial by derivedStateOf {
-        val windowCondition = ScreenCondition.from(windowSize)
-        style.overrides.buildPresentedPartial(
-            windowCondition,
-            offerEligibility = { packageAwareDelegate.offerEligibility },
-            state = {
-                if (packageAwareDelegate.isSelected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
-            },
-            conditionContext = ConditionContext(
-                selectedPackageId = { selectedPackageInfoProvider()?.rcPackage?.identifier },
-                customVariables = customVariablesProvider(),
-                stateReader = stateStoreProvider()::currentValueOrDefault,
-                windowDpSize = windowDpSize,
-            ),
-        )
+        visibilityContext.resolve(style.overrides, style, readsState = true)
     }
 
     @get:JvmSynthetic
-    val visible by derivedStateOf { presentedPartial?.partial?.visible ?: style.visible }
+    val visible by derivedStateOf { style.resolveVisibility(presentedPartial) }
 
     @get:JvmSynthetic
     val children = style.children
