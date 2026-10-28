@@ -15,13 +15,12 @@ private class ConfiguredAdRewardsAPI {
             if (rewards != null) {
                 val primary: AdRewardConfiguration? = rewards.reward
                 val additional: List<AdRewardConfiguration> = rewards.moreRewards
-                val all: List<AdRewardConfiguration> = rewards.allRewards
             }
         }
         val result: ConfiguredAdRewards? = purchases.awaitGetAdRewards("unit")
         val duration: Duration = entitlement.duration
         val seconds: Long = entitlement.durationInSeconds
         val unavailable: Boolean = result == null
-        val noReward: Boolean = result?.allRewards?.isEmpty() == true
+        val noReward: Boolean = result != null && result.reward == null
     }
 }

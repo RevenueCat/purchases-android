@@ -17,7 +17,6 @@ final class ConfiguredAdRewardsAPI {
                 if (rewards == null) return;
                 AdRewardConfiguration primary = rewards.getReward();
                 List<AdRewardConfiguration> additional = rewards.getMoreRewards();
-                List<AdRewardConfiguration> all = rewards.getAllRewards();
                 boolean noReward = rewards.getReward() == null;
             }
         });
