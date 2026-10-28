@@ -13,6 +13,8 @@ import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.models.PricingPhase
+import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
@@ -49,9 +51,9 @@ class TabControlDiscountTests {
 
     private val localizations = mutableMapOf<LocalizationKey, LocalizationData>()
     private val annual = productPackage("essential_annual", 94_990_000, true)
-    private val otherAnnual = productPackage("other_annual", 69_990_000, true)
+    private val otherAnnual = productPackage("other_annual", 69_990_000, true, introMicros = 1_990_000)
     private val monthly = productPackage("essential_monthly", 13_990_000, false)
-    private val sheetAnnual = productPackage("premium_annual", 129_990_000, true)
+    private val sheetAnnual = productPackage("premium_annual", 129_990_000, true, introMicros = 4_990_000)
     private val sheetMonthly = productPackage("premium_monthly", 19_990_000, false)
 
     @Test
@@ -71,10 +73,13 @@ class TabControlDiscountTests {
         render()
         compose.onNodeWithText("Other annual").performClick()
         compose.onNodeWithText("Yearly: 58%", useUnmergedTree = true).assertExists()
+        compose.onNodeWithText("Yearly offer: $1.99", useUnmergedTree = true).assertExists()
         compose.onNodeWithText("All plans").performClick()
         compose.onNodeWithText("Premium annual").performClick()
 
         compose.onNodeWithText("Selected: $129.99", useUnmergedTree = true).assertExists()
+        compose.onNodeWithText("Selected offer: $4.99", useUnmergedTree = true).assertExists()
+        compose.onNodeWithText("Yearly offer: $1.99", useUnmergedTree = true).assertExists()
         compose.onNodeWithText("Yearly: 58%", useUnmergedTree = true).assertExists()
     }
 
@@ -101,7 +106,10 @@ class TabControlDiscountTests {
                     TabControlButtonComponent(
                         tabIndex = 0,
                         tabId = "annual",
-                        stack = StackComponent(components = listOf(text("Yearly: {{ product.relative_discount }}"))),
+                        stack = StackComponent(components = listOf(
+                            text("Yearly: {{ product.relative_discount }}"),
+                            text("Yearly offer: {{ product.offer_price }}"),
+                        )),
                     ),
                     TabControlButtonComponent(
                         tabIndex = 1,
@@ -128,7 +136,9 @@ class TabControlDiscountTests {
             )),
             stack = StackComponent(components = listOf(text("All plans"))),
         )
-        val root = StackComponent(components = listOf(tabs, sheet, text("Selected: {{ product.price }}")))
+        val root = StackComponent(components = listOf(
+            tabs, sheet, text("Selected: {{ product.price }}"), text("Selected offer: {{ product.offer_price }}"),
+        ))
         val data = PaywallComponentsData(
             templateName = "components", assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(base = PaywallComponentsConfig(
@@ -160,13 +170,21 @@ class TabControlDiscountTests {
         return TextComponent(text = key, color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())))
     }
 
-    private fun productPackage(id: String, micros: Long, annual: Boolean) = Package(
+    private fun productPackage(id: String, micros: Long, annual: Boolean, introMicros: Long? = null) = Package(
         identifier = id, packageType = PackageType.CUSTOM,
         presentedOfferingContext = PresentedOfferingContext("offering"),
         product = TestStoreProduct(
             id = id, name = id, title = id, description = id,
             price = Price(amountMicros = micros, currencyCode = "USD", formatted = "$${micros / 1_000_000.0}"),
             period = Period(1, if (annual) Period.Unit.YEAR else Period.Unit.MONTH, if (annual) "P1Y" else "P1M"),
+            introPricePricingPhase = introMicros?.let {
+                PricingPhase(
+                    billingPeriod = Period(1, Period.Unit.MONTH, "P1M"),
+                    recurrenceMode = RecurrenceMode.FINITE_RECURRING,
+                    billingCycleCount = 1,
+                    price = Price(amountMicros = it, currencyCode = "USD", formatted = "$${it / 1_000_000.0}"),
+                )
+            },
         ),
     )
 }
