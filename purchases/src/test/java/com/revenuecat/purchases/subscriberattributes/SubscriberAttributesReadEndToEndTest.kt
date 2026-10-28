@@ -5,7 +5,7 @@ package com.revenuecat.purchases.subscriberattributes
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.CustomerAttribute
 import com.revenuecat.purchases.CustomerInfoUpdateHandler
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.caching.DeviceCache
@@ -134,6 +134,6 @@ class SubscriberAttributesReadEndToEndTest {
         assertThat(readable()).isEmpty()
     }
 
-    private fun readable(): List<CustomerInfo.Attribute> =
-        attributesManager.getStoredAttributes(appUserID).toCustomerInfoAttributes()
+    private fun readable(): List<CustomerAttribute> =
+        attributesManager.getStoredAttributes(appUserID).toCustomerAttributes()
 }

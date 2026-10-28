@@ -130,7 +130,7 @@ import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.strings.SyncAttributesAndOfferingsStrings
 import com.revenuecat.purchases.strings.VirtualCurrencyStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
-import com.revenuecat.purchases.subscriberattributes.toCustomerInfoAttributes
+import com.revenuecat.purchases.subscriberattributes.toCustomerAttributes
 import com.revenuecat.purchases.utils.CurrentActivityTracker
 import com.revenuecat.purchases.utils.CustomActivityLifecycleHandler
 import com.revenuecat.purchases.utils.PurchaseParamsValidator
@@ -1282,8 +1282,8 @@ internal class PurchasesOrchestrator(
 
     // region Subscriber Attributes
 
-    val attributesForCurrentUser: List<CustomerInfo.Attribute>
-        get() = subscriberAttributesManager.getStoredAttributes(appUserID).toCustomerInfoAttributes()
+    val attributesForCurrentUser: List<CustomerAttribute>
+        get() = subscriberAttributesManager.getStoredAttributes(appUserID).toCustomerAttributes()
 
     // region Special Attributes
 

@@ -6,8 +6,8 @@ import android.app.Application
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.APIKeyValidator
 import com.revenuecat.purchases.CacheFetchPolicy
+import com.revenuecat.purchases.CustomerAttribute
 import com.revenuecat.purchases.CustomerInfoHelper
-import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.CustomerInfoUpdateHandler
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PostPendingTransactionsHelper
@@ -306,7 +306,7 @@ class SubscriberAttributesPurchasesTests {
         val attributes = underTest.attributesForCurrentUser
 
         assertThat(attributes).hasSize(1)
-        val attribute: CustomerInfo.Attribute = attributes.single()
+        val attribute: CustomerAttribute = attributes.single()
         assertThat(attribute.key).isEqualTo("\$email")
         assertThat(attribute.value).isEqualTo("user@example.com")
         assertThat(attribute.lastUpdatedDate).isEqualTo(setTime)

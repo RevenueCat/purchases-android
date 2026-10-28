@@ -8,6 +8,7 @@ import androidx.annotation.NonNull;
 
 import com.revenuecat.purchases.AmazonLWAConsentStatus;
 import com.revenuecat.purchases.CacheFetchPolicy;
+import com.revenuecat.purchases.CustomerAttribute;
 import com.revenuecat.purchases.CustomerInfo;
 import com.revenuecat.purchases.EntitlementVerificationMode;
 import com.revenuecat.purchases.Offering;
@@ -213,8 +214,8 @@ final class PurchasesAPI {
 
     @OptIn(markerClass = InternalRevenueCatAPI.class)
     static void checkAttributesForCurrentUser(final Purchases purchases) {
-        final List<CustomerInfo.Attribute> attributes = purchases.getAttributesForCurrentUser();
-        final CustomerInfo.Attribute attribute = attributes.get(0);
+        final List<CustomerAttribute> attributes = purchases.getAttributesForCurrentUser();
+        final CustomerAttribute attribute = attributes.get(0);
         final String key = attribute.getKey();
         final String value = attribute.getValue();
         final Date lastUpdatedDate = attribute.getLastUpdatedDate();

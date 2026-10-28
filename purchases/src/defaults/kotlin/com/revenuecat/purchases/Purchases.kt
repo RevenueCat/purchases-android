@@ -1138,7 +1138,7 @@ public class Purchases internal constructor(
      * [CustomerInfo] was fetched. Deleted attributes are not included.
      */
     @InternalRevenueCatAPI
-    public val attributesForCurrentUser: List<CustomerInfo.Attribute>
+    public val attributesForCurrentUser: List<CustomerAttribute>
         get() = purchasesOrchestrator.attributesForCurrentUser
 
     // region Special Attributes

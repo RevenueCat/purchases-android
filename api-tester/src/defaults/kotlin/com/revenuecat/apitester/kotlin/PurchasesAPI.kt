@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import com.revenuecat.purchases.AmazonLWAConsentStatus
 import com.revenuecat.purchases.CacheFetchPolicy
+import com.revenuecat.purchases.CustomerAttribute
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementVerificationMode
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
@@ -315,8 +316,8 @@ private class PurchasesAPI {
 
     @OptIn(InternalRevenueCatAPI::class)
     fun checkAttributesForCurrentUser(purchases: Purchases) {
-        val attributes: List<CustomerInfo.Attribute> = purchases.attributesForCurrentUser
-        val attribute: CustomerInfo.Attribute = attributes[0]
+        val attributes: List<CustomerAttribute> = purchases.attributesForCurrentUser
+        val attribute: CustomerAttribute = attributes[0]
         val key: String = attribute.key
         val value: String = attribute.value
         val lastUpdatedDate: Date = attribute.lastUpdatedDate
