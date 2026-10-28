@@ -130,6 +130,9 @@ internal class ConfiguredAdRewardsProvider(
             val code = payload.string("code")
             val amount = payload.number("amount")?.intOrNull
             return if (code.isNullOrEmpty() || amount == null || amount <= 0) {
+                warnLog {
+                    "Invalid configured virtual currency reward: expected a non-empty code and positive integer amount."
+                }
                 AdRewardConfiguration.UnsupportedReward
             } else {
                 AdRewardConfiguration.VirtualCurrency(code, amount)
@@ -141,6 +144,10 @@ internal class ConfiguredAdRewardsProvider(
             val duration = payload.number("duration_in_seconds")?.longOrNull
                 ?.takeIf { it > 0 }?.seconds?.takeIf { it.isFinite() }
             return if (identifier.isNullOrEmpty() || duration == null) {
+                warnLog {
+                    "Invalid configured entitlement reward: expected a non-empty identifier and " +
+                        "a positive, finite duration in whole seconds."
+                }
                 AdRewardConfiguration.UnsupportedReward
             } else {
                 AdRewardConfiguration.Entitlement(identifier, duration)
