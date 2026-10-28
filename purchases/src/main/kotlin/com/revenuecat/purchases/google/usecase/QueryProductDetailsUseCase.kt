@@ -34,6 +34,7 @@ constructor(
     val productIds: Set<String>,
     val productType: ProductType,
     override val appInBackground: Boolean,
+    val logUnfetchedProducts: Boolean = true,
 ) : UseCaseParams
 
 @OptIn(InternalRevenueCatAPI::class)
@@ -84,7 +85,7 @@ internal class QueryProductDetailsUseCase(
         log(LogIntent.PURCHASE) {
             OfferingStrings.RETRIEVED_PRODUCTS.format(received.productDetailsList.joinToString { it.toString() })
         }
-        received.unfetchedProductList.takeIf { it.isNotEmpty() }?.let {
+        received.unfetchedProductList.takeIf { useCaseParams.logUnfetchedProducts && it.isNotEmpty() }?.let {
             log(LogIntent.INFO) {
                 OfferingStrings.MISSING_PRODUCT_DETAILS.format(
                     received.unfetchedProductList.joinToString { it.toString() },
@@ -95,7 +96,7 @@ internal class QueryProductDetailsUseCase(
         received.productDetailsList.takeUnless { it.isEmpty() }?.forEach {
             log(LogIntent.PURCHASE) { OfferingStrings.LIST_PRODUCTS.format(it.productId, it) }
         }
-        received.unfetchedProductList.takeUnless { it.isEmpty() }?.forEach {
+        received.unfetchedProductList.takeIf { useCaseParams.logUnfetchedProducts && it.isNotEmpty() }?.forEach {
             log(LogIntent.INFO) {
                 OfferingStrings.LIST_UNFETCHED_PRODUCTS.format(
                     it.productId,

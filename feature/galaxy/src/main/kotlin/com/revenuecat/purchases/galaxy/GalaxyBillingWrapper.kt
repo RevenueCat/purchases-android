@@ -156,6 +156,7 @@ internal class GalaxyBillingWrapper(
     override fun queryProductDetailsAsync(
         productType: ProductType,
         productIds: Set<String>,
+        logUnfetchedProducts: Boolean,
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback,
     ) {
@@ -167,6 +168,7 @@ internal class GalaxyBillingWrapper(
             productDataHandler.getProductDetails(
                 productIds = productIds,
                 productType = productType,
+                logUnfetchedProducts = logUnfetchedProducts,
                 onReceive = {
                     onReceive(it)
                     finish()

@@ -168,7 +168,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         val productIds = subProductIds + inappProductIds
 
         val subStoreProducts = mockStoreProduct(productIds, subProductIds, ProductType.SUBS)
-        val inappStoreProducts = mockStoreProduct(productIds, inappProductIds, ProductType.INAPP)
+        val inappStoreProducts = mockStoreProduct(inappProductIds, inappProductIds, ProductType.INAPP)
         val storeProducts = subStoreProducts + inappStoreProducts
 
         purchases.getProducts(productIds,
@@ -184,6 +184,107 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         assertThat(receivedProducts).isEqualTo(storeProducts)
         assertThat(receivedProducts?.size).isEqualTo(productIds.size)
+    }
+
+    @Test
+    fun `getProducts queries only remaining IDs and logs unfetched products for the final product type query`() {
+        val subscriptionProductId = "subscription"
+        val unfetchedProductId = "unfetched"
+        val productIds = listOf(subscriptionProductId, unfetchedProductId)
+        mockStoreProduct(productIds, listOf(subscriptionProductId), ProductType.SUBS)
+        mockStoreProduct(listOf(unfetchedProductId), emptyList(), ProductType.INAPP)
+
+        purchases.getProducts(
+            productIds,
+            object : GetStoreProductsCallback {
+                override fun onReceived(storeProducts: List<StoreProduct>) = Unit
+                override fun onError(error: PurchasesError) = fail("shouldn't be error")
+            },
+        )
+
+        verifyOrder {
+            mockBillingAbstract.queryProductDetailsAsync(
+                ProductType.SUBS,
+                productIds.toSet(),
+                false,
+                any(),
+                any(),
+            )
+            mockBillingAbstract.queryProductDetailsAsync(
+                ProductType.INAPP,
+                setOf(unfetchedProductId),
+                true,
+                any(),
+                any(),
+            )
+        }
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGetProductsResult(
+                requestedProductIds = productIds.toSet(),
+                notFoundProductIds = setOf(unfetchedProductId),
+                errorMessage = null,
+                errorCode = null,
+                responseTime = any(),
+            )
+        }
+    }
+
+    @Test
+    fun `getProducts does not query the next product type when all IDs were found`() {
+        val productIds = listOf("subscription")
+        mockStoreProduct(productIds, productIds, ProductType.SUBS)
+
+        purchases.getProducts(
+            productIds,
+            object : GetStoreProductsCallback {
+                override fun onReceived(storeProducts: List<StoreProduct>) = Unit
+                override fun onError(error: PurchasesError) = fail("shouldn't be error")
+            },
+        )
+
+        verify(exactly = 1) {
+            mockBillingAbstract.queryProductDetailsAsync(
+                ProductType.SUBS,
+                productIds.toSet(),
+                false,
+                any(),
+                any(),
+            )
+        }
+        verify(exactly = 0) {
+            mockBillingAbstract.queryProductDetailsAsync(
+                ProductType.INAPP,
+                any(),
+                any(),
+                any(),
+                any(),
+            )
+        }
+    }
+
+    @Test
+    fun `getProducts logs unfetched products for a single product type query`() {
+        val productIds = listOf("product")
+        mockStoreProduct(productIds, emptyList(), ProductType.SUBS)
+
+        purchases.getProducts(
+            productIds,
+            ProductType.SUBS,
+            object : GetStoreProductsCallback {
+                override fun onReceived(storeProducts: List<StoreProduct>) = Unit
+                override fun onError(error: PurchasesError) = fail("shouldn't be error")
+            },
+        )
+
+        verify(exactly = 1) {
+            mockBillingAbstract.queryProductDetailsAsync(
+                ProductType.SUBS,
+                productIds.toSet(),
+                true,
+                any(),
+                any(),
+            )
+        }
     }
 
     @Test
@@ -280,6 +381,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             mockBillingAbstract.queryProductDetailsAsync(
                 ProductType.SUBS,
                 setOf(normalizedProductId),
+                any(),
                 captureLambda(),
                 any(),
             )
@@ -291,6 +393,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             mockBillingAbstract.queryProductDetailsAsync(
                 ProductType.INAPP,
                 setOf(normalizedProductId),
+                any(),
                 captureLambda(),
                 any(),
             )
@@ -358,6 +461,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             mockBillingAbstract.queryProductDetailsAsync(
                 ProductType.SUBS,
                 setOf(normalizedProductId),
+                any(),
                 captureLambda(),
                 any(),
             )
@@ -429,6 +533,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             mockBillingAbstract.queryProductDetailsAsync(
                 ProductType.SUBS,
                 setOf(normalizedProductId, productIdWithoutBasePlan),
+                any(),
                 captureLambda(),
                 any(),
             )
@@ -439,7 +544,8 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         every {
             mockBillingAbstract.queryProductDetailsAsync(
                 ProductType.INAPP,
-                setOf(normalizedProductId, productIdWithoutBasePlan),
+                setOf(productIdWithoutBasePlan),
+                any(),
                 captureLambda(),
                 any(),
             )
@@ -536,6 +642,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             mockBillingAbstract.queryProductDetailsAsync(
                 ProductType.SUBS,
                 setOf(normalizedProductId),
+                any(),
                 captureLambda(),
                 any(),
             )
@@ -547,6 +654,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             mockBillingAbstract.queryProductDetailsAsync(
                 ProductType.INAPP,
                 setOf(normalizedProductId),
+                any(),
                 captureLambda(),
                 any(),
             )
@@ -644,6 +752,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             mockBillingAbstract.queryProductDetailsAsync(
                 ProductType.SUBS,
                 setOf(normalizedProductId),
+                any(),
                 captureLambda(),
                 any(),
             )
@@ -655,6 +764,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             mockBillingAbstract.queryProductDetailsAsync(
                 ProductType.INAPP,
                 setOf(normalizedProductId),
+                any(),
                 captureLambda(),
                 any(),
             )
@@ -751,6 +861,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             mockBillingAbstract.queryProductDetailsAsync(
                 ProductType.SUBS,
                 setOf(normalizedProductId),
+                any(),
                 captureLambda(),
                 any(),
             )
@@ -762,6 +873,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             mockBillingAbstract.queryProductDetailsAsync(
                 ProductType.INAPP,
                 setOf(normalizedProductId),
+                any(),
                 captureLambda(),
                 any(),
             )
@@ -2629,6 +2741,54 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     @Test
+    fun `getProducts tracks diagnostics with INAPP and SUBS queries`() {
+        val subscriptionProductId = "subscription"
+        val inAppProductId = "inapp"
+        val productIds = listOf(subscriptionProductId, inAppProductId)
+
+        every { mockDateProvider.now } returnsMany listOf(
+            Date(0),
+            Date(123),
+        )
+        mockStoreProduct(productIds, listOf(subscriptionProductId), ProductType.SUBS)
+        mockStoreProduct(listOf(inAppProductId), listOf(inAppProductId), ProductType.INAPP)
+
+        purchases.getProducts(
+            productIds,
+            object : GetStoreProductsCallback {
+                override fun onReceived(storeProducts: List<StoreProduct>) = Unit
+                override fun onError(error: PurchasesError) = fail("shouldn't be error")
+            },
+        )
+
+        verifyOrder {
+            mockBillingAbstract.queryProductDetailsAsync(
+                ProductType.SUBS,
+                productIds.toSet(),
+                false,
+                any(),
+                any(),
+            )
+            mockBillingAbstract.queryProductDetailsAsync(
+                ProductType.INAPP,
+                setOf(inAppProductId),
+                true,
+                any(),
+                any(),
+            )
+        }
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGetProductsResult(
+                requestedProductIds = productIds.toSet(),
+                notFoundProductIds = emptySet(),
+                errorMessage = null,
+                errorCode = null,
+                responseTime = 123.milliseconds,
+            )
+        }
+    }
+
+    @Test
     fun `getProducts tracks diagnostics on error`() {
         val productIds = setOf("product_1", "product_2")
         val error = PurchasesError(PurchasesErrorCode.ConfigurationError, "Test error")
@@ -2642,6 +2802,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             mockBillingAbstract.queryProductDetailsAsync(
                 productType = ProductType.SUBS,
                 productIds = productIds,
+                logUnfetchedProducts = any(),
                 onReceive = any(),
                 onError = captureLambda()
             )
@@ -3527,6 +3688,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             mockBillingAbstract.queryProductDetailsAsync(
                 productType = storeProduct.type,
                 productIds = setOf(productId),
+                logUnfetchedProducts = any(),
                 onReceive = captureLambda(),
                 onError = any(),
             )

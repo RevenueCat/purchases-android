@@ -150,6 +150,9 @@ internal class OfferingsFactory(
         billing.queryProductDetailsAsync(
             productType = ProductType.SUBS,
             productIds = productIds,
+            // A product missing from the SUBS query may be an INAPP product, so defer logging
+            // unfetched products until we've checked for INAPP products as well
+            logUnfetchedProducts = false,
             onReceive = { subscriptionProducts ->
                 dispatcher.enqueue(command = {
                     val productsById = subscriptionProducts
@@ -162,6 +165,7 @@ internal class OfferingsFactory(
                         billing.queryProductDetailsAsync(
                             productType = ProductType.INAPP,
                             productIds = inAppProductIds,
+                            logUnfetchedProducts = true,
                             onReceive = { inAppProducts ->
                                 dispatcher.enqueue(command = {
                                     productsById.putAll(inAppProducts.map { it.purchasingData.productId to listOf(it) })
