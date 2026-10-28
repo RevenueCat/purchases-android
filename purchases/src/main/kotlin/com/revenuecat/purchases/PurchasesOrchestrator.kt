@@ -319,7 +319,8 @@ internal class PurchasesOrchestrator(
     @SuppressWarnings("MagicNumber")
     private val preferredLocaleOverrideRateLimiter = RateLimiter(2, 60.seconds)
 
-    // Guarded by this. Base plans launched in this session, per subscription.
+    // Guarded by this. Base plans launched in this session, per subscription. Never cleared: a late purchase arrives
+    // after its own launch has ended, e.g. a checkout cancelled and approved later. Bounded by the app's base plans.
     private val launchedBasePlanIdsByProductId = mutableMapOf<String, MutableSet<String>>()
 
     var storefrontCountryCode: String? = null
