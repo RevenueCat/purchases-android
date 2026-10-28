@@ -139,6 +139,8 @@ private fun CheckpointResult.details(): List<String> {
 private val ObtainedProduct.offeringIdentifier: String?
     get() = product.presentedOfferingContext?.offeringIdentifier
 
+// A custom subscriber attribute, not an SDK setting. The `[donottouch] Subs Attr. should_use_custom_ui true`
+// audience of the `donottouch_sdk_*` checkpoint rules matches on it, so the name must stay the same.
 private const val ATTRIBUTE_KEY = "should_use_custom_ui"
 
 private const val ENTITLEMENT_ID = "pro"
