@@ -88,15 +88,16 @@ class ConfiguredAdRewardsProviderTest {
 
     @Test
     fun `missing default item or blob reference returns null`() = runTest {
+        coEvery { blobRead() } returns null
         listOf(
             ConfigTopic(emptyMap()),
             ConfigTopic(mapOf("default" to RemoteConfiguration.ConfigItem())),
         ).forEach { topic ->
             coEvery { manager.awaitTopicAndPrefetchBlobsReady(RemoteConfigTopic.AdRewards) } returns topic
             assertThat(provider.rewards("unit")).isNull()
-            verify { logHandler.w(any(), match { it.contains("default blob reference") }) }
+            verify { logHandler.w(any(), match { it.contains("blob could not be resolved") }) }
         }
-        coVerify(exactly = 0) { blobRead() }
+        coVerify(exactly = 2) { blobRead() }
     }
 
     @Test
