@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+
 package com.revenuecat.sample.admob.nextgen.ui
 
 import androidx.compose.foundation.layout.Arrangement
@@ -17,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.ads.AdRewardConfiguration
 import com.revenuecat.purchases.ads.ConfiguredAdRewards

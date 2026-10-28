@@ -1,9 +1,11 @@
 package com.revenuecat.purchases.ads
 
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import kotlin.time.Duration.Companion.seconds
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 class ConfiguredAdRewardsTest {
     @Test
     fun `resolved empty configuration has no primary or additional rewards`() {
