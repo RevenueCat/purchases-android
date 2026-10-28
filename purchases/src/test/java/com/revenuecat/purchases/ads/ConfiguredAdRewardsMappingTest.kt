@@ -23,8 +23,9 @@ class ConfiguredAdRewardsMappingTest {
         currentLogHandler = originalLogHandler
     }
 
-    private val currency = """{"type":"virtual_currency","code":"coins","amount":10}"""
-    private val entitlement = """{"type":"entitlement","identifier":"pro","duration_in_seconds":1800}"""
+    private val currency = """{"type":"virtual_currency","code":"coins","amount":10,"extra":{"ignored":true}}"""
+    private val entitlement =
+        """{"type":"entitlement","identifier":"pro","duration_in_seconds":1800,"extra":{"ignored":true}}"""
 
     @Test
     fun `maps primary and ordered additional rewards ignoring unknown fields`() {
@@ -78,6 +79,13 @@ class ConfiguredAdRewardsMappingTest {
             """{"type":"virtual_currency","code":"coins","amount":1.5}""",
             """{"type":"virtual_currency","code":"coins","amount":"10"}""",
             """{"type":"virtual_currency","code":"coins","amount":2147483648}""",
+            """{"type":"virtual_currency","amount":10}""",
+            """{"type":"virtual_currency","code":null,"amount":10}""",
+            """{"type":"virtual_currency","code":123,"amount":10}""",
+            """{"type":"virtual_currency","code":[],"amount":10}""",
+            """{"type":"virtual_currency","code":"coins","amount":null}""",
+            """{"type":"virtual_currency","code":"coins","amount":true}""",
+            """{"type":"virtual_currency","code":"coins","amount":{}}""",
             """{"type":"entitlement","identifier":"pro","duration":1800}""",
             """{"type":"entitlement","identifier":"pro","duration_in_seconds":0}""",
             """{"type":"entitlement","identifier":"pro","duration_in_seconds":-1}""",
@@ -85,9 +93,24 @@ class ConfiguredAdRewardsMappingTest {
             """{"type":"entitlement","identifier":"pro","duration_in_seconds":"1"}""",
             """{"type":"entitlement","identifier":"pro","duration_in_seconds":1.5}""",
             """{"type":"entitlement","identifier":"pro","duration_in_seconds":9223372036854775807}""",
+            """{"type":"entitlement","duration_in_seconds":60}""",
+            """{"type":"entitlement","identifier":null,"duration_in_seconds":60}""",
+            """{"type":"entitlement","identifier":123,"duration_in_seconds":60}""",
+            """{"type":"entitlement","identifier":{},"duration_in_seconds":60}""",
+            """{"type":"entitlement","identifier":"pro","duration_in_seconds":null}""",
+            """{"type":"entitlement","identifier":"pro","duration_in_seconds":true}""",
+            """{"type":"entitlement","identifier":"pro","duration_in_seconds":[]}""",
         ).forEach { reward ->
             assertThat(decode("""{"reward":$reward}""")?.reward)
                 .describedAs(reward).isEqualTo(AdRewardConfiguration.UnsupportedReward)
+            val withAdditionalRewards = requireNotNull(
+                decode("""{"reward":$currency,"more_rewards":[$entitlement,$reward,$currency]}"""),
+            )
+            assertThat(withAdditionalRewards.moreRewards).describedAs(reward).containsExactly(
+                AdRewardConfiguration.Entitlement("pro", 1800.seconds),
+                AdRewardConfiguration.UnsupportedReward,
+                AdRewardConfiguration.VirtualCurrency("coins", 10),
+            )
         }
     }
 
