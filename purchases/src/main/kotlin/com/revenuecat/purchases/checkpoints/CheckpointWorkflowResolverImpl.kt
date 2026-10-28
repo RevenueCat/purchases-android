@@ -25,6 +25,7 @@ import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.common.workflows.WorkflowStep
+import com.revenuecat.purchases.common.workflows.WorkflowStepGating
 import com.revenuecat.purchases.withPresentedCheckpointIdentifier
 import kotlinx.coroutines.CancellationException
 import java.util.UUID
@@ -33,8 +34,8 @@ import java.util.UUID
  * Resolves a checkpoint through the `checkpoint_rules` topic: the checkpoint's rules are read from remote config
  * and evaluated in order against locally collected dimensions, and the first rule whose audience matches wins.
  *
- * The winner is final. If its workflow turns out to be unservable — its body unavailable, or the offerings its
- * steps present unfetchable — the checkpoint resolves to
+ * The winner is final. If its workflow turns out to be unservable — its body unavailable, a step's gate
+ * unreadable, or the offerings its steps present unfetchable — the checkpoint resolves to
  * [CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE] rather than falling through to a rule the
  * customer was not the first choice for. Which offering each UI step presents is not checked here: the workflow is
  * presented against the fetched offerings and a step whose offering is missing fails when it is reached.
@@ -161,6 +162,9 @@ internal class CheckpointWorkflowResolverImpl(
         }
         val initialStep = workflow.steps[workflow.initialStepId]
             ?: return unservableRule(rule, "its initial step was not found")
+        workflow.steps.values.firstOrNull { it.gating == WorkflowStepGating.Invalid }?.let { step ->
+            return unservableRule(rule, "step '${step.id}' has invalid gating")
+        }
         return if (initialStep.isOfferingStep) {
             if (workflow.steps.size != 1) {
                 unservableRule(rule, "an offering step cannot be mixed with other steps")

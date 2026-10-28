@@ -83,6 +83,7 @@ import com.revenuecat.purchases.common.workflows.WorkflowsConfigProvider
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.WebPurchaseRedemptionHelper
 import com.revenuecat.purchases.google.isSuccessful
+import com.revenuecat.purchases.google.originalGooglePurchase
 import com.revenuecat.purchases.identity.Authentication
 import com.revenuecat.purchases.identity.AuthenticationReporter
 import com.revenuecat.purchases.identity.Identity
@@ -114,6 +115,7 @@ import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.models.toStoreReplacementModeOrNull
 import com.revenuecat.purchases.paywalls.DownloadedFontFamily
 import com.revenuecat.purchases.paywalls.FontLoader
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
@@ -128,6 +130,7 @@ import com.revenuecat.purchases.strings.IdentityStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.strings.SyncAttributesAndOfferingsStrings
+import com.revenuecat.purchases.strings.VirtualCurrencyStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.utils.CurrentActivityTracker
 import com.revenuecat.purchases.utils.CustomActivityLifecycleHandler
@@ -206,7 +209,7 @@ internal class PurchasesOrchestrator(
     @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal val tokenManager: TokenManager,
     val adTracker: AdTracker = AdTracker(adEventsManager),
-    private val currentActivityTracker: CurrentActivityTracker = CurrentActivityTracker(),
+    private val currentActivityTracker: CurrentActivityTracker = CurrentActivityTracker,
     private val localRulesEvaluator: LocalRulesEvaluator = LocalRulesEvaluator(
         providers = emptyList(),
         currentAppUserId = { identityManager.currentAppUserID },
@@ -315,6 +318,10 @@ internal class PurchasesOrchestrator(
 
     @SuppressWarnings("MagicNumber")
     private val preferredLocaleOverrideRateLimiter = RateLimiter(2, 60.seconds)
+
+    // Guarded by this. Base plans launched in this session, per subscription. Never cleared: a late purchase arrives
+    // after its own launch has ended, e.g. a checkout cancelled and approved later. Bounded by the app's base plans.
+    private val launchedBasePlanIdsByProductId = mutableMapOf<String, MutableSet<String>>()
 
     var storefrontCountryCode: String? = null
         private set
@@ -805,6 +812,8 @@ internal class PurchasesOrchestrator(
         workflowManager.resolveWorkflow(offeringId)
 
     suspend fun workflowIds(): List<String> = workflowManager.workflowIds()
+
+    suspend fun checkpointIds(): List<String> = checkpointsConfigProvider.checkpointIds()
 
     @OptIn(InternalRevenueCatAPI::class)
     suspend fun resolveBranches(
@@ -1616,6 +1625,21 @@ internal class PurchasesOrchestrator(
         virtualCurrencyManager.virtualCurrencies(callback = callback)
     }
 
+    // IAM-only. A user-scoped write, so it waits for the identity to settle like purchases do.
+    fun spendVirtualCurrencies(
+        amounts: Map<String, Int>,
+        reference: String?,
+        callback: GetVirtualCurrenciesCallback,
+    ) {
+        if (!tokenManager.enabled) {
+            val error = PurchasesError(PurchasesErrorCode.UnsupportedError, VirtualCurrencyStrings.SPEND_REQUIRES_IAM)
+                .also { errorLog(it) }
+            dispatch { callback.onError(error) }
+            return
+        }
+        whenIdentitySettled { virtualCurrencyManager.spendVirtualCurrencies(amounts, reference, callback) }
+    }
+
     fun invalidateVirtualCurrenciesCache() {
         virtualCurrencyManager.invalidateVirtualCurrenciesCache()
     }
@@ -1832,11 +1856,16 @@ internal class PurchasesOrchestrator(
         }
     }
 
-    private fun getPurchaseCallback(productId: String): PurchaseCallback? {
-        return state.purchaseCallbacksByProductId[productId].also {
-            state = state.copy(
-                purchaseCallbacksByProductId = state.purchaseCallbacksByProductId.filterNot { it.key == productId },
-            )
+    // A distinct instance identifies each launch even when the app reuses its listener.
+    private class PurchaseAttemptCallback(callback: PurchaseCallback) : PurchaseCallback by callback
+
+    private fun getPurchaseCallback(productId: String, expectedCallback: PurchaseCallback?): PurchaseCallback? {
+        return synchronized(this) {
+            state.purchaseCallbacksByProductId[productId]?.takeIf { it === expectedCallback }?.also {
+                state = state.copy(
+                    purchaseCallbacksByProductId = state.purchaseCallbacksByProductId.filterNot { it.key == productId },
+                )
+            }
         }
     }
 
@@ -1866,7 +1895,7 @@ internal class PurchasesOrchestrator(
                         callbackPair = getProductChangeCompletedCallbacks(deprecatedProductChangeListener)
                     } else {
                         deprecatedProductChangeListener = null
-                        callbackPair = getPurchaseCompletedCallbacks()
+                        callbackPair = getPurchaseCompletedCallbacks(state.purchaseCallbacksByProductId)
                     }
                 }
 
@@ -1905,26 +1934,85 @@ internal class PurchasesOrchestrator(
         }
     }
 
-    private fun getPurchaseCompletedCallbacks(): Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback> {
+    private fun getPurchaseCompletedCallbacks(
+        purchaseCallbacksByProductId: Map<String, PurchaseCallback>,
+    ): Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback> {
+        // Capture attempts before posting receipts. Responses must not resolve a launch registered later.
         val onSuccess: SuccessfulPurchaseCallback = { storeTransaction, info ->
             // This lets the backup manager know a change in data happened that would be good to backup.
             // In this case, we want to make sure that if there is a purchase, we schedule a backup.
             backupManager.dataChanged()
             blockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded {
                 blockstoreHelper.storeUserIdIfNeeded(info)
-                getPurchaseCallback(storeTransaction.productIds[0])?.let { purchaseCallback ->
-                    dispatch {
-                        purchaseCallback.onCompleted(storeTransaction, info)
+                val productId = storeTransaction.productIds[0]
+                getPurchaseCallback(productId, purchaseCallbacksByProductId[productId])?.let { purchaseCallback ->
+                    val billedBasePlanId = billedBasePlanIdOfEarlierLaunch(storeTransaction, info)
+                    if (billedBasePlanId == null) {
+                        dispatch {
+                            purchaseCallback.onCompleted(storeTransaction, info)
+                        }
+                    } else {
+                        // Fail rather than wait: if Play returned this purchase as the launch's own result, no other
+                        // result will come.
+                        purchaseCallback.dispatch(
+                            PurchasesError(
+                                PurchasesErrorCode.ProductAlreadyPurchasedError,
+                                PurchaseStrings.PURCHASE_COMPLETED_FOR_ANOTHER_BASE_PLAN.format(
+                                    storeTransaction.orderId,
+                                    billedBasePlanId,
+                                    storeTransaction.productIds[0],
+                                    storeTransaction.subscriptionOptionId,
+                                ),
+                            ).also { errorLog(it) },
+                        )
                     }
                 }
             }
         }
         val onError: ErrorPurchaseCallback = { purchase, error ->
-            getPurchaseCallback(purchase.productIds[0])?.dispatch(error)
+            val productId = purchase.productIds[0]
+            getPurchaseCallback(productId, purchaseCallbacksByProductId[productId])?.dispatch(error)
         }
 
         return Pair(onSuccess, onError)
     }
+
+    // Play purchases don't carry the base plan, so a late purchase of another base plan of the same subscription
+    // arrives stamped with the pending launch's option. It only counts when the backend, which knows the billed plan,
+    // reports for this exact order another plan launched earlier in this session. Skipped when Play may have handed
+    // back the existing purchase (a DEFERRED change, or an acknowledged purchase for Play's default one), and for apps
+    // that acknowledge purchases themselves, since they need the purchase.
+    private fun billedBasePlanIdOfEarlierLaunch(transaction: StoreTransaction, customerInfo: CustomerInfo): String? {
+        val isNewPlayPurchase = store == Store.PLAY_STORE &&
+            appConfig.finishTransactions &&
+            transaction.replacementMode.toStoreReplacementModeOrNull() != StoreReplacementMode.DEFERRED &&
+            transaction.originalGooglePurchase?.isAcknowledged == false
+        val launchedBasePlanId = transaction.subscriptionOptionId
+            ?.takeIf { isNewPlayPurchase }
+            ?.let { basePlanIdOf(it) }
+            ?: return null
+        val productId = transaction.productIds[0]
+        return customerInfo.subscriptionsByProductIdentifier[productId]
+            ?.takeIf { it.storeTransactionId != null && it.storeTransactionId == transaction.orderId }
+            ?.productPlanIdentifier
+            ?.takeIf { it != launchedBasePlanId && wasLaunchedInThisSession(productId, it) }
+    }
+
+    private fun wasLaunchedInThisSession(productId: String, basePlanId: String): Boolean = synchronized(this) {
+        launchedBasePlanIdsByProductId[productId]?.contains(basePlanId) == true
+    }
+
+    private fun recordLaunchedBasePlan(purchasingData: PurchasingData) {
+        val subscription = purchasingData as? GooglePurchasingData.Subscription ?: return
+        synchronized(this) {
+            launchedBasePlanIdsByProductId
+                .getOrPut(subscription.productId) { mutableSetOf() }
+                .add(basePlanIdOf(subscription.optionId))
+        }
+    }
+
+    // Option ids are basePlanId or basePlanId:offerId.
+    private fun basePlanIdOf(subscriptionOptionId: String): String = subscriptionOptionId.substringBefore(':')
 
     private fun getProductChangeCompletedCallbacks(
         productChangeListener: ProductChangeCallback?,
@@ -1993,10 +2081,13 @@ internal class PurchasesOrchestrator(
                 log(LogIntent.WARNING) { PurchaseStrings.PURCHASE_FINISH_TRANSACTION_FALSE }
             }
             if (!state.purchaseCallbacksByProductId.containsKey(purchasingData.productId)) {
-                val mapOfProductIdToListener = mapOf(purchasingData.productId to listenerWithDiagnostics)
+                val mapOfProductIdToListener = mapOf(
+                    purchasingData.productId to PurchaseAttemptCallback(listenerWithDiagnostics),
+                )
                 state = state.copy(
                     purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener,
                 )
+                recordLaunchedBasePlan(purchasingData)
                 userPurchasing = identityManager.currentAppUserID
             }
         }
@@ -2084,10 +2175,11 @@ internal class PurchasesOrchestrator(
                 } else {
                     purchasingData.productId
                 }
-                val mapOfProductIdToListener = mapOf(productId to callbackWithDiagnostics)
+                val mapOfProductIdToListener = mapOf(productId to PurchaseAttemptCallback(callbackWithDiagnostics))
                 state = state.copy(
                     purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener,
                 )
+                recordLaunchedBasePlan(purchasingData)
                 userPurchasing = identityManager.currentAppUserID
             }
         }
@@ -2289,6 +2381,9 @@ internal class PurchasesOrchestrator(
         const val frameworkVersion = Config.frameworkVersion
 
         var proxyURL: URL? = null
+
+        @Volatile
+        var internalSimulatedHostFailures: SimulatedHostFailures? = null
 
         /**
          * Note: This method only works for the Google Play Store. There is no Amazon equivalent at this time.

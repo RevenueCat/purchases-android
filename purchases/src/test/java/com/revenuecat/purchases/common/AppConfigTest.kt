@@ -522,7 +522,6 @@ class AppConfigTest {
                 "customEntitlementComputation=false, " +
                 "uiPreviewMode=false, " +
                 "applyObfuscatedAccountIdToSubscriptionChanges=false, " +
-                "usesRemoteConfigAPISources=false, " +
                 "allowTestStoreInReleaseBuild=false), " +
                 "languageTag='', " +
                 "versionName='', " +

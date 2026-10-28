@@ -19,4 +19,5 @@ data class SdkConfiguration(
     val proxyUrl: String?,
     val store: Store,
     val appUserId: String?,
+    val simulatedFailuresMode: SimulatedFailuresMode,
 )

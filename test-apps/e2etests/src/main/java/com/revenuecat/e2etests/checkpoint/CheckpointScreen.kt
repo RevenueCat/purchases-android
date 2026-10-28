@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -18,24 +19,34 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ObtainedProduct
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint
 
 /**
  * Hits a checkpoint and reports what its callback received. The SDK presents whatever the checkpoint resolves to
  * (a flow, or its error dialog) over this activity; Maestro asserts on that and on the status line here, which
  * counts the invocations so a flow can tell a callback that fired once from one that fired earlier too.
+ *
+ * With [useAppPresenter], an app-owned paywall presenter replaces the SDK's, so a flow can read which offering the
+ * checkpoint resolved to. [attribute], when set, is the `should_use_custom_ui` attribute set before the hit.
  */
 @OptIn(InviteOnlyCheckpointsAPI::class)
 @Composable
 fun CheckpointScreen(
     identifier: String,
     modifier: Modifier = Modifier,
+    useAppPresenter: Boolean = false,
+    attribute: String? = null,
 ) {
     var status by remember { mutableStateOf("Callback: not invoked") }
     var details by remember { mutableStateOf(emptyList<String>()) }
     var invocations by remember { mutableIntStateOf(0) }
+    var presenterInvocations by remember { mutableIntStateOf(0) }
+    var presentedOffering by remember { mutableStateOf<String?>(null) }
+    var presentedCompletion by remember { mutableStateOf<PaywallPresenter.Completion?>(null) }
 
     Column(
         modifier = modifier
@@ -48,7 +59,17 @@ fun CheckpointScreen(
         Text(text = "Identifier: $identifier")
         Button(
             onClick = {
-                Purchases.sharedInstance.checkpoint(identifier) { result ->
+                attribute?.let { Purchases.sharedInstance.setAttributes(mapOf(ATTRIBUTE_KEY to it)) }
+                val params = if (useAppPresenter) {
+                    appPresenterParams { offeringIdentifier, completion ->
+                        presenterInvocations++
+                        presentedOffering = offeringIdentifier
+                        presentedCompletion = completion
+                    }
+                } else {
+                    null
+                }
+                Purchases.sharedInstance.checkpoint(identifier, params) { result ->
                     invocations++
                     status = "${result.describe()} (call #$invocations)"
                     details = result.details()
@@ -59,7 +80,38 @@ fun CheckpointScreen(
         }
         Text(text = status)
         details.forEach { Text(text = it) }
+        if (useAppPresenter) {
+            Text(text = "Presenter invocations: $presenterInvocations")
+            Text(text = "Presented offering: ${presentedOffering ?: "none"}")
+        }
     }
+
+    presentedCompletion?.let { completion ->
+        AppPresenterDialog(offeringIdentifier = presentedOffering) {
+            presentedCompletion = null
+            completion.complete(PaywallPresenter.Completion.Result.Closed)
+        }
+    }
+}
+
+@OptIn(InviteOnlyCheckpointsAPI::class)
+private fun appPresenterParams(
+    onPresent: (offeringIdentifier: String, completion: PaywallPresenter.Completion) -> Unit,
+): CheckpointParams = CheckpointParams {
+    paywallPresenter { params, completion -> onPresent(params.offering.identifier, completion) }
+}
+
+@Composable
+private fun AppPresenterDialog(offeringIdentifier: String?, onClose: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = {},
+        title = { Text(text = "App presenter offering: $offeringIdentifier") },
+        confirmButton = {
+            Button(onClick = onClose) {
+                Text("Close")
+            }
+        },
+    )
 }
 
 @OptIn(InviteOnlyCheckpointsAPI::class)
@@ -86,6 +138,8 @@ private fun CheckpointResult.details(): List<String> {
 @OptIn(InviteOnlyCheckpointsAPI::class)
 private val ObtainedProduct.offeringIdentifier: String?
     get() = product.presentedOfferingContext?.offeringIdentifier
+
+private const val ATTRIBUTE_KEY = "should_use_custom_ui"
 
 private const val ENTITLEMENT_ID = "pro"
 

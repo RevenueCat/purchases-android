@@ -2,6 +2,7 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components
 
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.revenuecat.purchases.ui.revenuecatui.components.button.ButtonComponentView
@@ -53,6 +54,7 @@ internal fun ComponentView(
     onClick: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
     componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
+    ancestorScrollOrientations: Set<Orientation> = emptySet(),
 ) = when (style) {
     is StackComponentStyle -> StackComponentView(
         style = style,
@@ -60,6 +62,7 @@ internal fun ComponentView(
         clickHandler = onClick,
         componentInteractionTracker = componentInteractionTracker,
         modifier = modifier,
+        ancestorScrollOrientations = ancestorScrollOrientations,
     )
     is TextComponentStyle -> TextComponentView(
         style = style,
@@ -86,12 +89,14 @@ internal fun ComponentView(
         onClick = onClick,
         modifier = modifier,
         componentInteractionTracker = componentInteractionTracker,
+        ancestorScrollOrientations = ancestorScrollOrientations,
     )
     is HeaderComponentStyle -> HeaderComponentView(
         style = style,
         state = state,
         clickHandler = onClick,
         modifier = modifier,
+        ancestorScrollOrientations = ancestorScrollOrientations,
     )
     is StickyFooterComponentStyle -> StickyFooterComponentView(
         style = style,
@@ -99,6 +104,7 @@ internal fun ComponentView(
         clickHandler = onClick,
         componentInteractionTracker = componentInteractionTracker,
         modifier = modifier,
+        ancestorScrollOrientations = ancestorScrollOrientations,
     )
     is PackageComponentStyle -> PackageComponentView(
         style = style,
@@ -106,6 +112,7 @@ internal fun ComponentView(
         clickHandler = onClick,
         componentInteractionTracker = componentInteractionTracker,
         modifier = modifier,
+        ancestorScrollOrientations = ancestorScrollOrientations,
     )
     is IconComponentStyle -> IconComponentView(style = style, state = state, modifier = modifier)
     is TimelineComponentStyle -> TimelineComponentView(style = style, state = state, modifier = modifier)
@@ -115,6 +122,7 @@ internal fun ComponentView(
         clickHandler = onClick,
         componentInteractionTracker = componentInteractionTracker,
         modifier = modifier,
+        ancestorScrollOrientations = ancestorScrollOrientations,
     )
     is TabsComponentStyle -> TabsComponentView(
         style = style,
@@ -122,6 +130,7 @@ internal fun ComponentView(
         clickHandler = onClick,
         componentInteractionTracker = componentInteractionTracker,
         modifier = modifier,
+        ancestorScrollOrientations = ancestorScrollOrientations,
     )
     // This is a special Stack that has TabControlButtonComponentStyle children.
     is TabControlStyle.Buttons -> StackComponentView(
@@ -130,6 +139,7 @@ internal fun ComponentView(
         clickHandler = onClick,
         componentInteractionTracker = componentInteractionTracker,
         modifier = modifier,
+        ancestorScrollOrientations = ancestorScrollOrientations,
     )
     // This is a special Stack that has a TabControlToggleComponentStyle child.
     is TabControlStyle.Toggle -> StackComponentView(
@@ -138,12 +148,14 @@ internal fun ComponentView(
         clickHandler = onClick,
         componentInteractionTracker = componentInteractionTracker,
         modifier = modifier,
+        ancestorScrollOrientations = ancestorScrollOrientations,
     )
     is TabControlButtonComponentStyle -> TabControlButtonView(
         style = style,
         state = state,
         componentInteractionTracker = componentInteractionTracker,
         modifier = modifier,
+        ancestorScrollOrientations = ancestorScrollOrientations,
     )
     is TabControlToggleComponentStyle -> TabControlToggleView(
         style = style,
@@ -157,5 +169,6 @@ internal fun ComponentView(
         onClick = onClick,
         componentInteractionTracker = componentInteractionTracker,
         modifier = modifier,
+        ancestorScrollOrientations = ancestorScrollOrientations,
     )
 }

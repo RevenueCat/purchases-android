@@ -21,7 +21,6 @@ import java.net.URL
  * network, no source can be reached anyway, so the health check is skipped and no failover happens.
  */
 internal class APISourceFailover(
-    private val appConfig: AppConfig,
     private val sourceProvider: RemoteConfigSourceProvider,
     private val healthChecker: SourceHealthChecker,
     private val connectivityChecker: DeviceConnectivityChecker,
@@ -49,13 +48,12 @@ internal class APISourceFailover(
 
     /**
      * The source a request to [endpoint] should target, or null to keep using [baseURL]. Sources apply
-     * only when the `usesRemoteConfigAPISources` dangerous setting is enabled, this is not an endpoint
-     * fallback-host attempt, the endpoint opts in via [Endpoint.usesAPISources], and [baseURL] is still
-     * the default host (a proxy or an overridden base URL pins the host and bypasses API sources).
+     * only when this is not an endpoint fallback-host attempt, the endpoint opts in via
+     * [Endpoint.usesAPISources], and [baseURL] is still the default host (a proxy or an overridden base
+     * URL pins the host and bypasses API sources).
      */
     fun currentSource(endpoint: Endpoint, baseURL: URL, isFallbackAttempt: Boolean): ResolvedSource? {
-        val eligible = appConfig.usesRemoteConfigAPISources &&
-            !isFallbackAttempt &&
+        val eligible = !isFallbackAttempt &&
             endpoint.usesAPISources &&
             baseURL.toString() == AppConfig.baseUrlString
         return if (eligible) currentResolvedSource() else null

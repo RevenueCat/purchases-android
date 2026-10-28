@@ -6,6 +6,8 @@ import android.content.Context
 import android.content.pm.PackageManager
 import androidx.annotation.VisibleForTesting
 import androidx.core.os.UserManagerCompat
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
@@ -20,6 +22,7 @@ import com.revenuecat.purchases.common.SharedPreferencesManager
 import com.revenuecat.purchases.common.audiences.AudiencesConfigProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.LocalTransactionMetadataStore
+import com.revenuecat.purchases.common.caching.PayloadFileStore
 import com.revenuecat.purchases.common.checkpoints.CheckpointsConfigProvider
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsFileHelper
@@ -97,7 +100,13 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import java.net.URL
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadFactory
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
+
+private const val OFFERINGS_CACHE_THREAD_KEEP_ALIVE_SECONDS = 30L
+private const val OFFERINGS_RESPONSE_DIRECTORY_NAME = "offerings_response"
 
 internal class PurchasesFactory(
     private val isDebugBuild: IsDebugBuildProvider,
@@ -118,6 +127,8 @@ internal class PurchasesFactory(
         forceSigningError: Boolean = false,
         runningIntegrationTests: Boolean = false,
         baseUrlString: String = AppConfig.baseUrlString,
+        // Tests drive their own lifecycle; the process-wide one is shared by every instance in the JVM.
+        processLifecycleOwnerProvider: () -> LifecycleOwner = { ProcessLifecycleOwner.get() },
     ): Purchases {
         val apiKeyValidationResult = validateConfiguration(configuration)
 
@@ -255,9 +266,8 @@ internal class PurchasesFactory(
             }
             val apiSourceProvider = DefaultRemoteConfigSourceProvider(remoteConfigTopicStore)
             val apiSourceFailover = APISourceFailover(
-                appConfig,
                 apiSourceProvider,
-                SourceHealthChecker(),
+                SourceHealthChecker(urlConnectionFactory = sourceUrlConnectionFactory(forceServerErrorStrategy)),
                 DeviceConnectivityChecker(application),
             )
 
@@ -335,8 +345,15 @@ internal class PurchasesFactory(
 
             val offeringsCache = OfferingsCache(
                 deviceCache = cache,
+                responseStore = PayloadFileStore(
+                    contextForStorage.noBackupFilesDir,
+                    OFFERINGS_RESPONSE_DIRECTORY_NAME,
+                    syncWrites = true,
+                ),
+                ioDispatcher = Dispatcher(createOfferingsCacheExecutor()),
                 localeProvider = localeProvider,
             )
+            offeringsCache.migrateLegacyResponse()
 
             val remoteConfigBlobStore = RemoteConfigBlobStore(contextForStorage)
             val remoteConfigManager = RemoteConfigManager(
@@ -349,7 +366,7 @@ internal class PurchasesFactory(
                     remoteConfigBlobStore,
                     apiSourceProvider,
                     timeoutManager,
-                    urlConnectionFactory = blobUrlConnectionFactory(forceServerErrorStrategy),
+                    urlConnectionFactory = sourceUrlConnectionFactory(forceServerErrorStrategy),
                 ),
                 // Bootstrap source for a cold on-demand read's self-triggered sync (see blobData()); after
                 // the first identity change the manager syncs for the user clearCache() binds instead.
@@ -624,6 +641,7 @@ internal class PurchasesFactory(
                 subscriberDimensionsConfigProvider = subscriberDimensionsConfigProvider,
                 localRulesEvaluator = localRulesEvaluator,
                 tokenManager = tokenManager,
+                processLifecycleOwnerProvider = processLifecycleOwnerProvider,
             )
 
             return Purchases(purchasesOrchestrator)
@@ -694,7 +712,7 @@ internal class PurchasesFactory(
         }
     }
 
-    private fun blobUrlConnectionFactory(strategy: ForceServerErrorStrategy?): UrlConnectionFactory =
+    private fun sourceUrlConnectionFactory(strategy: ForceServerErrorStrategy?): UrlConnectionFactory =
         DefaultUrlConnectionFactory().let { default ->
             strategy?.let { ForcedFailureUrlConnectionFactory(default, it) } ?: default
         }
@@ -711,6 +729,19 @@ internal class PurchasesFactory(
 
     private fun createEventsExecutor(): ExecutorService {
         return Executors.newSingleThreadScheduledExecutor(LowPriorityThreadFactory("revenuecat-events-thread"))
+    }
+
+    // Nothing closes this executor on reconfigure, so its thread must exit once idle.
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    fun createOfferingsCacheExecutor(): ThreadPoolExecutor {
+        return ThreadPoolExecutor(
+            1,
+            1,
+            OFFERINGS_CACHE_THREAD_KEEP_ALIVE_SECONDS,
+            TimeUnit.SECONDS,
+            LinkedBlockingQueue(),
+            LowPriorityThreadFactory("revenuecat-offerings-cache-thread"),
+        ).apply { allowCoreThreadTimeOut(true) }
     }
 
     private fun createRemoteConfigExecutor(): ExecutorService {

@@ -71,6 +71,7 @@ abstract class BaseCachedOfferingsUsageIntegrationTest : BasePurchasesIntegratio
     ) {
         val networkOfferings = Purchases.sharedInstance.awaitOfferings()
 
+        awaitOfferingsResponsePersisted()
         simulateSdkRestart(activity, forceServerErrorsStrategy = ForceServerErrorStrategy.failAll)
 
         val cachedOfferings = Purchases.sharedInstance.awaitOfferings()
@@ -84,6 +85,7 @@ abstract class BaseCachedOfferingsUsageIntegrationTest : BasePurchasesIntegratio
     ) {
         val networkOfferings = Purchases.sharedInstance.awaitOfferings()
 
+        awaitOfferingsResponsePersisted()
         simulateSdkRestart(activity, forceServerErrorsStrategy = apiUnreachable)
 
         val cachedOfferings = Purchases.sharedInstance.awaitOfferings()
@@ -103,6 +105,7 @@ abstract class BaseCachedOfferingsUsageIntegrationTest : BasePurchasesIntegratio
         // Config blobs cached by the first fetch would let the readiness gate resolve without the network,
         // hiding the very wait this test exists to catch.
         RemoteConfigBlobStore(activity).clear()
+        awaitOfferingsResponsePersisted()
         simulateSdkRestart(activity, forceServerErrorsStrategy = fullyOffline)
 
         val cachedOfferings = Purchases.sharedInstance.awaitOfferings()
@@ -116,6 +119,7 @@ abstract class BaseCachedOfferingsUsageIntegrationTest : BasePurchasesIntegratio
     ) {
         Purchases.sharedInstance.awaitOfferings()
 
+        awaitOfferingsResponsePersisted()
         simulateSdkRestart(
             activity,
             forceServerErrorsStrategy = object : ForceServerErrorStrategy {
