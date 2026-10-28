@@ -4,6 +4,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components.countdown
 
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
@@ -34,7 +35,13 @@ internal fun CountdownComponentView(
 ) {
     // Reuse the resolver's selection so visibility and safe-area ownership change together.
     val stackStyle = state.heroInsetsFor(style)?.activeCountdownStacks?.get(ComponentStyleIdentity(style))
-        ?: rememberActiveCountdownStack(style)
+        ?: rememberActiveCountdownStack(style, dateProvider = { state.currentDate })
+
+    LaunchedEffect(state, style, stackStyle) {
+        if (style.endStackComponentStyle != null && stackStyle === style.endStackComponentStyle) {
+            state.reconcileSelectionForWindowSize(state.paywallBoundsDp)
+        }
+    }
     StackComponentView(
         style = stackStyle,
         state = state,
@@ -77,7 +84,8 @@ private fun CountdownComponentView_Preview_Running() {
 @Preview(name = "CountdownTimesUp")
 @Composable
 private fun CountdownComponentView_Preview_TimesUp() {
-    val countdownDate = Date(System.currentTimeMillis() - 2 * 24 * 60 * 60 * 1000)
+    val state = previewEmptyState()
+    val countdownDate = Date(state.currentDate.time - 2 * 24 * 60 * 60 * 1000L)
     val countdownTextStyle = previewTextComponentStyle(
         text = "{{ count_days_without_zero }}d {{ count_hours_without_zero }}h " +
             "{{ count_minutes_without_zero }}m {{ count_seconds_without_zero }}s",
@@ -103,7 +111,7 @@ private fun CountdownComponentView_Preview_TimesUp() {
             ),
             fallbackStackComponentStyle = null,
         ),
-        state = previewEmptyState(),
+        state = state,
         onClick = {},
     )
 }

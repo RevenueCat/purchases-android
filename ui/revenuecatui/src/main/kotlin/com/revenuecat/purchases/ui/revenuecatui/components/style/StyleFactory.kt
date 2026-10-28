@@ -32,6 +32,7 @@ import com.revenuecat.purchases.paywalls.components.WebViewComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
+import com.revenuecat.purchases.paywalls.components.common.StateUpdate
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
@@ -143,6 +144,7 @@ internal class StyleFactory(
          */
         var enclosingTabsComponentName: String? = null,
         var enclosingTabsOrderedTabIds: List<String> = emptyList(),
+        var enclosingTabsStateUpdates: List<StateUpdate> = emptyList(),
         var enclosingTabContextNamesById: Map<String, String> = emptyMap(),
         var enclosingTabsDefaultTabIndexForInteraction: Int = 0,
         /**
@@ -379,14 +381,17 @@ internal class StyleFactory(
             tabsComponentName: String?,
             tabs: List<TabsComponent.Tab>,
             defaultTabId: String?,
+            stateUpdates: List<StateUpdate>,
             block: StyleFactoryScope.() -> T,
         ): T {
             val previousName = enclosingTabsComponentName
             val previousIds = enclosingTabsOrderedTabIds
+            val previousStateUpdates = enclosingTabsStateUpdates
             val previousContextNames = enclosingTabContextNamesById
             val previousDefaultForInteraction = enclosingTabsDefaultTabIndexForInteraction
             enclosingTabsComponentName = tabsComponentName?.takeUnless { it.isBlank() }
             enclosingTabsOrderedTabIds = tabs.map { it.id }
+            enclosingTabsStateUpdates = stateUpdates
             enclosingTabContextNamesById = tabs.mapNotNull { tab ->
                 tab.name?.takeUnless { it.isBlank() }?.let { tab.id to it }
             }.toMap()
@@ -400,6 +405,7 @@ internal class StyleFactory(
             } finally {
                 enclosingTabsComponentName = previousName
                 enclosingTabsOrderedTabIds = previousIds
+                enclosingTabsStateUpdates = previousStateUpdates
                 enclosingTabContextNamesById = previousContextNames
                 enclosingTabsDefaultTabIndexForInteraction = previousDefaultForInteraction
             }
@@ -578,7 +584,7 @@ internal class StyleFactory(
                 .map { componentStyle ->
                     StyleResult(
                         componentStyle = componentStyle,
-                        availablePackages = packages,
+                        availablePackages = packages.withVisibilityPaths(componentStyle),
                         defaultTabIndex = defaultTabIndex,
                         heroImageDetected = heroImageDetected,
                     )
@@ -1295,6 +1301,7 @@ internal class StyleFactory(
                         tabIdsOrdered = enclosingTabsOrderedTabIds,
                         tabContextNamesById = enclosingTabContextNamesById,
                         tabsDefaultTabIndex = enclosingTabsDefaultTabIndexForInteraction,
+                        stateUpdates = enclosingTabsStateUpdates,
                     )
                 }
         }
@@ -1315,6 +1322,8 @@ internal class StyleFactory(
                 trackColorOn = trackColorOn,
                 trackColorOff = trackColorOff,
                 componentName = enclosingTabsComponentName ?: component.name,
+                tabIdsOrdered = enclosingTabsOrderedTabIds,
+                stateUpdates = enclosingTabsStateUpdates,
             )
         }
 
@@ -1325,6 +1334,7 @@ internal class StyleFactory(
             tabsComponentName = component.name,
             tabs = component.tabs,
             defaultTabId = component.defaultTabId,
+            stateUpdates = component.stateUpdates.orEmpty(),
         ) {
             createTabsComponentStyleTabControl(component.control).flatMap { control ->
                 // Find the index of the defaultTabId.

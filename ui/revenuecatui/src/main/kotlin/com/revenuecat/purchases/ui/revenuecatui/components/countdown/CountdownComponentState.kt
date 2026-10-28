@@ -5,8 +5,10 @@ package com.revenuecat.purchases.ui.revenuecatui.components.countdown
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -27,8 +29,11 @@ private const val SECONDS_IN_MINUTE = 60
 private const val MILLIS_IN_SECOND = 1000
 
 @Composable
-internal fun rememberActiveCountdownStack(style: CountdownComponentStyle): StackComponentStyle {
-    val countdownState = rememberCountdownState(style.date)
+internal fun rememberActiveCountdownStack(
+    style: CountdownComponentStyle,
+    dateProvider: () -> Date = { Date() },
+): StackComponentStyle {
+    val countdownState = rememberCountdownState(style.date, dateProvider)
     return if (countdownState.hasEnded && style.endStackComponentStyle != null) {
         style.endStackComponentStyle
     } else {
@@ -67,12 +72,13 @@ internal data class CountdownTime(
 }
 
 @Composable
-internal fun rememberCountdownState(targetDate: Date): CountdownState {
-    val initialDelta = remember(targetDate) { targetDate.time - Date().time }
-    var countdownTime by remember(targetDate) {
-        mutableStateOf(
-            if (initialDelta <= 0) CountdownTime.ZERO else CountdownTime.fromInterval(initialDelta),
-        )
+internal fun rememberCountdownState(
+    targetDate: Date,
+    dateProvider: () -> Date = { Date() },
+): CountdownState {
+    val currentDateProvider by rememberUpdatedState(dateProvider)
+    var remainingMillis by remember(targetDate) {
+        mutableLongStateOf(targetDate.time - currentDateProvider().time)
     }
     var isCountingEnabled by remember { mutableStateOf(true) }
 
@@ -90,15 +96,13 @@ internal fun rememberCountdownState(targetDate: Date): CountdownState {
 
         while (coroutineContext.isActive) {
             if (isCountingEnabled) {
-                val now = Date().time
+                val now = currentDateProvider().time
                 val delta = targetDate.time - now
+                remainingMillis = delta
 
                 if (delta <= 0) {
-                    countdownTime = CountdownTime.ZERO
                     break
                 }
-
-                countdownTime = CountdownTime.fromInterval(delta)
             }
 
             delay(1.seconds)
@@ -106,8 +110,9 @@ internal fun rememberCountdownState(targetDate: Date): CountdownState {
     }
 
     return CountdownState(
-        countdownTime = countdownTime,
-        hasEnded = countdownTime == CountdownTime.ZERO,
+        countdownTime = CountdownTime.fromInterval(remainingMillis),
+        // Zero displayed seconds can still have a fraction of a second left.
+        hasEnded = remainingMillis <= 0,
     )
 }
 

@@ -21,23 +21,24 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.UiConfig.VariableConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.StateUpdate
 import com.revenuecat.purchases.storage.FileRepository
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentStyleIdentity
-import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
-import com.revenuecat.purchases.ui.revenuecatui.components.ConditionContext
+import com.revenuecat.purchases.ui.revenuecatui.components.ComponentVisibilityContext
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedPackagePartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ResolvedHeroInsets
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
-import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.resolveLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toComposeLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageContext
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageVisibilityPath
 import com.revenuecat.purchases.ui.revenuecatui.components.style.SheetPresentationKey
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleSheetState
@@ -51,6 +52,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallWarning
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.ui.revenuecatui.helpers.createLocaleFromString
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
+import kotlinx.serialization.json.JsonPrimitive
 import java.text.NumberFormat
 import java.util.Date
 import java.util.Locale
@@ -196,7 +198,7 @@ internal sealed interface PaywallState {
                 data class Info(
                     val pkg: Package,
                     val isSelectedByDefault: Boolean,
-                    val resolvedOffer: ResolvedOffer? = null,
+                    override val resolvedOffer: ResolvedOffer? = null,
                     /**
                      * The package component's static visibility and the overrides that can change it.
                      * Selection has to evaluate these: a package hidden by a rule must not be chosen as
@@ -204,10 +206,15 @@ internal sealed interface PaywallState {
                      */
                     val visible: Boolean = true,
                     val visibilityOverrides: List<PresentedOverride<PresentedPackagePartial>> = emptyList(),
-                    val offerEligibility: OfferEligibility? = null,
+                    override val offerEligibility: OfferEligibility? = null,
                     /** Null for root content; otherwise identifies the sheet containing this component. */
                     val sheetPresentationKey: SheetPresentationKey? = null,
-                ) {
+                    /** Null before styles are built; an empty list means there is no rendered path. */
+                    val visibilityPaths: List<PackageVisibilityPath>? = null,
+                ) : PackageContext {
+                    override val rcPackage: Package get() = pkg
+                    override val tabIndex: Int? get() = null
+
                     /**
                      * Unique identifier combining package ID and offer ID.
                      * This distinguishes multiple components referencing the same package
@@ -241,8 +248,22 @@ internal sealed interface PaywallState {
                 val offerEligibility: OfferEligibility,
             )
 
+            private val initialVisibilityContext = ComponentVisibilityContext(
+                screenCondition = ScreenCondition.COMPACT,
+                windowDpSize = null,
+                selectedPackage = { null },
+                selectedTabIndex = { initialSelectedTabIndex ?: 0 },
+                customVariables = mergedCustomVariables,
+                selectedOfferEligibility = { OfferEligibility.Ineligible },
+                stateReader = stateStore::currentValueOrDefault,
+                currentDate = dateProvider(),
+            )
+
+            private val initialPackageCandidates = packages.packagesOutsideTabs +
+                packages.packagesByTab[initialSelectedTabIndex ?: 0].orEmpty()
+
             private val initialSelectedPackageOutsideTabs = packages.packagesOutsideTabs
-                .firstOrNull { it.isSelectedByDefault && it.resolvesVisible(mergedCustomVariables) }
+                .authoredDefaultSelection(initialVisibilityContext, initialPackageCandidates)
                 ?.uniqueId
 
             /**
@@ -251,10 +272,8 @@ internal sealed interface PaywallState {
              */
             private val visibleFallbackForHiddenDefaultOutsideTabs = packages.packagesOutsideTabs
                 .takeIf { infos -> infos.any { it.isSelectedByDefault } }
-                ?.firstOrNull { it.resolvesVisible(mergedCustomVariables) }
+                ?.firstOrNull { it.canSelect(initialVisibilityContext, initialPackageCandidates) }
                 ?.uniqueId
-            private val packagesOutsideTabsUniqueIds: Set<String> = packages.packagesOutsideTabs
-                .mapTo(mutableSetOf()) { it.uniqueId }
             private val tabsByUniqueId: Map<String, Set<Int>> = mutableMapOf<String, Set<Int>>().apply {
                 packages.packagesByTab.forEach { (tabIndex, packagesList) ->
                     packagesList.forEach { packageInfo ->
@@ -305,11 +324,14 @@ internal sealed interface PaywallState {
             }
 
             private val selectedPackageByTab = mutableStateMapOf<Int, String?>().apply {
-                putAll(
-                    packages.packagesByTab.mapValues { (_, packagesList) ->
-                        packagesList.defaultSelection(mergedCustomVariables)?.uniqueId
-                    },
-                )
+                // Other tabs must resolve their defaults after publishing their own state, on first visit.
+                val index = initialSelectedTabIndex ?: 0
+                packages.packagesByTab[index]?.let { packagesList ->
+                    put(
+                        index,
+                        packagesList.defaultSelection(initialVisibilityContext, initialPackageCandidates)?.uniqueId,
+                    )
+                }
             }
 
             var selectedTabIndex by mutableIntStateOf(initialSelectedTabIndex ?: 0)
@@ -317,7 +339,6 @@ internal sealed interface PaywallState {
 
             private val initialSelectedPackageUniqueId: String? = initialSelectedPackageOutsideTabs
                 ?: selectedPackageByTab[selectedTabIndex]
-                ?: packages.packagesByTab[selectedTabIndex]?.defaultSelection(mergedCustomVariables)?.uniqueId
                 // Last, so a default declared inside a tab still wins.
                 ?: visibleFallbackForHiddenDefaultOutsideTabs
 
@@ -398,6 +419,14 @@ internal sealed interface PaywallState {
 
             val sheet = initialSheetState
 
+            fun selectTab(index: Int, tabId: String?, stateUpdates: List<StateUpdate>) {
+                if (index != selectedTabIndex && tabId != null) {
+                    // Visibility rules must see the destination tab's state before selection is resolved.
+                    stateStore.applyUpdates(stateUpdates, payload = JsonPrimitive(tabId))
+                }
+                update(selectedTabIndex = index)
+            }
+
             fun update(
                 localeList: FrameworkLocaleList? = null,
                 selectedTabIndex: Int? = null,
@@ -407,32 +436,17 @@ internal sealed interface PaywallState {
 
                 if (selectedTabIndex != null) {
                     this.selectedTabIndex = selectedTabIndex
-                    // If our currently selected package exists outside of tabs, we don't have to change the selected
-                    // package when the tab changes — but the new tab's context can still change what's visible.
-                    if (selectedPackageUniqueId != null &&
-                        packagesOutsideTabsUniqueIds.contains(selectedPackageUniqueId)
-                    ) {
-                        reconcileSelectionForWindowSize(paywallBoundsDp)
-                        return
-                    }
-
-                    selectedPackageUniqueId = selectedPackageByTab[selectedTabIndex]
-                        ?: initialSelectedPackageOutsideTabs
-                        ?: packages.packagesByTab[selectedTabIndex]
-                            ?.defaultSelection(mergedCustomVariables)
-                            ?.also { selection ->
-                                if (!selection.isSelectedByDefault) {
-                                    Logger.w(
-                                        "Could not find a visible default package for tab $selectedTabIndex. " +
-                                            "Using the first visible package instead.",
-                                    )
-                                }
-                            }
-                            ?.uniqueId
-                        // Nothing in the tab renders, so fall back outside it rather than clearing.
-                        ?: visibleFallbackForHiddenDefaultOutsideTabs
-
-                    reconcileSelectionForWindowSize(paywallBoundsDp)
+                    val tabPackages = packages.packagesByTab[selectedTabIndex].orEmpty()
+                    val resolved = selectionResolver().switchTab(
+                        current = selectedPackageUniqueId,
+                        remembered = selectedPackageByTab[selectedTabIndex],
+                    ) ?: tabPackages.defaultSelection(
+                        // Preserve the tab's initial choice when the current bounds hide every candidate.
+                        visibilityContext(windowDpSize = null),
+                        packages.packagesOutsideTabs + tabPackages,
+                    )?.uniqueId
+                    selectedPackageUniqueId = resolved
+                    if (resolved != null) update(selectedPackageUniqueId = resolved)
                 }
 
                 if (clickScopedActionInProgress != null) {
@@ -451,165 +465,44 @@ internal sealed interface PaywallState {
                 if (currentTabContainsThisPackage) selectedPackageByTab[currentTabIndex] = selectedPackageUniqueId
             }
 
-            private val AvailablePackages.Info.isInActivePresentation: Boolean
-                get() = sheetPresentationKey == null ||
-                    (sheet.visible && sheet.presentationKey === sheetPresentationKey)
+            private fun selectionResolver(windowDpSize: DpSize? = paywallBoundsDp) = PackageSelectionResolver(
+                packages = packages,
+                selectedTabIndex = selectedTabIndex,
+                presentedSheet = sheet.presentationKey.takeIf { sheet.visible },
+                context = visibilityContext(windowDpSize),
+            )
 
-            private fun activePackagesOutsideTabs(): List<AvailablePackages.Info> =
-                packages.packagesOutsideTabs.filter { it.isInActivePresentation }
+            private fun visibilityContext(windowDpSize: DpSize?) = ComponentVisibilityContext(
+                screenCondition = windowScreenCondition,
+                windowDpSize = windowDpSize,
+                selectedPackage = { selectedPackageInfo },
+                selectedTabIndex = { selectedTabIndex },
+                customVariables = mergedCustomVariables,
+                selectedOfferEligibility = { selectedOfferEligibility },
+                stateReader = stateStore::currentValueOrDefault,
+                currentDate = dateProvider(),
+            )
 
-            private fun activePackagesInSelectedTab(): List<AvailablePackages.Info> =
-                packages.packagesByTab[selectedTabIndex].orEmpty().filter { it.isInActivePresentation }
-
-            private fun activePackages(): List<AvailablePackages.Info> =
-                activePackagesOutsideTabs() + activePackagesInSelectedTab()
-
-            /**
-             * Moves the selection off a package that is hidden at the measured window size, so a
-             * hidden package can't stay selected and purchasable. Initial selection is resolved
-             * before the window size is known, and the window can change later. If nothing
-             * resolves visible the selection stays put (iOS parity). Acts only on this state's
-             * own selection; the workflow-level [defaultPackageInfo] fallback is not owned by
-             * this state and is left as-is.
-             *
-             * The keep-check mirrors what the renderer shows: it evaluates the current package as
-             * selected, in the active tab's context, under the screen condition the measured
-             * width implies. Replacement candidates are still evaluated unselected so the choice
-             * can't depend on its own outcome.
-             */
             fun reconcileSelectionForWindowSize(windowDpSize: DpSize?) {
                 if (windowDpSize == null) return
-                val screenCondition = windowScreenCondition
-                // The same uniqueId can exist in several tabs or sheets with different rules. Keep
-                // the selection as long as any copy in the selected tab/root/open sheet renders.
-                val activeContext = activePackages()
-                val uid = selectedPackageUniqueId ?: return
-                val copies = activeContext.filter { it.uniqueId == uid }
-                val currentRendersVisible = copies.any { copy ->
-                    copy.resolvesVisible(
-                        customVariables = mergedCustomVariables,
-                        windowDpSize = windowDpSize,
-                        screenCondition = screenCondition,
-                        selectedPackageId = copy.pkg.identifier,
-                        viewState = ComponentViewState.SELECTED,
-                    )
-                }
-                if (!currentRendersVisible) {
-                    // Past the shared defaults, any visible package beats keeping a hidden one
-                    // selected and purchasable.
-                    val replacement = visibleDefaultUniqueId(windowDpSize, screenCondition)
-                        ?: activePackagesOutsideTabs()
-                            .filter { it.rendersWhenSelected(windowDpSize, screenCondition) }
-                            .firstVisible(mergedCustomVariables, windowDpSize, screenCondition)
-                            ?.uniqueId
-                    if (replacement != null) {
-                        update(selectedPackageUniqueId = replacement)
-                    }
+                val resolved = selectionResolver(windowDpSize).reconcile(
+                    current = selectedPackageUniqueId,
+                    remembered = selectedPackageByTab[selectedTabIndex],
+                )
+                if (resolved != null && resolved != selectedPackageUniqueId) {
+                    update(selectedPackageUniqueId = resolved)
                 }
             }
-
-            /**
-             * The visible default for the current tab / root context: the tab's authored default,
-             * then one authored outside the tabs, then the tab's remembered selection, then the
-             * first package that renders (outside the tabs only when a default is declared there).
-             * Reconcile and [peekDefaultPackageUniqueIdAfterSheetDismiss] both use it, so a resize
-             * and a sheet dismiss land on the same package.
-             */
-            private fun visibleDefaultUniqueId(
-                windowDpSize: DpSize?,
-                screenCondition: ScreenCondition,
-            ): String? {
-                val tabPackages = activePackagesInSelectedTab()
-                    .filter { it.rendersWhenSelected(windowDpSize, screenCondition) }
-                val activeOutside = activePackagesOutsideTabs()
-                val outside = activeOutside
-                    .filter { it.rendersWhenSelected(windowDpSize, screenCondition) }
-                return tabPackages.authoredDefaultIfVisible(mergedCustomVariables, windowDpSize, screenCondition)
-                    ?.uniqueId
-                    ?: outside.authoredDefaultIfVisible(mergedCustomVariables, windowDpSize, screenCondition)?.uniqueId
-                    ?: uniqueIdIfVisibleAtBounds(selectedPackageByTab[selectedTabIndex], windowDpSize, screenCondition)
-                    ?: tabPackages.firstVisible(mergedCustomVariables, windowDpSize, screenCondition)?.uniqueId
-                    ?: outside
-                        .takeIf { activeOutside.any { info -> info.isSelectedByDefault } }
-                        ?.firstVisible(mergedCustomVariables, windowDpSize, screenCondition)
-                        ?.uniqueId
-            }
-
-            // A candidate must stay visible once selected, or a `selected` rule could hide it
-            // right after it's chosen.
-            private fun AvailablePackages.Info.rendersWhenSelected(
-                windowDpSize: DpSize?,
-                screenCondition: ScreenCondition,
-            ): Boolean = resolvesVisible(
-                customVariables = mergedCustomVariables,
-                windowDpSize = windowDpSize,
-                screenCondition = screenCondition,
-                selectedPackageId = pkg.identifier,
-                viewState = ComponentViewState.SELECTED,
-            )
 
             fun resetToDefaultPackage() {
                 selectedPackageUniqueId = peekDefaultPackageUniqueIdAfterSheetDismiss()
-                reconcileSelectionForWindowSize(paywallBoundsDp)
             }
 
-            /**
-             * The package the current tab should fall back to, which is also what a reset restores.
-             * Evaluates visibility at the measured bounds so callers (analytics, sheet dismiss)
-             * see the same package [resetToDefaultPackage] lands on.
-             */
-            fun peekDefaultPackageUniqueIdAfterSheetDismiss(windowDpSize: DpSize? = paywallBoundsDp): String? {
-                val screenCondition = windowScreenCondition
-                // If nothing renders, keep the current selection, matching reconcile's stay-put
-                // behavior. The init-time fallback remains the last resort when there is no
-                // current selection to keep.
-                return visibleDefaultUniqueId(windowDpSize, screenCondition)
-                    ?: selectedPackageUniqueId.takeIf {
-                        windowDpSize != null && !anyPackageRendersVisible(windowDpSize, screenCondition)
-                    }
-                    ?: uniqueIdIfVisibleAtBounds(
-                        visibleFallbackForHiddenDefaultOutsideTabs,
-                        windowDpSize,
-                        screenCondition,
-                    )
-            }
-
-            private fun anyPackageRendersVisible(
-                windowDpSize: DpSize,
-                screenCondition: ScreenCondition,
-            ): Boolean {
-                val selectedId = selectedPackageInfo?.rcPackage?.identifier
-                return activePackages().any { info ->
-                    info.resolvesVisible(
-                        customVariables = mergedCustomVariables,
-                        windowDpSize = windowDpSize,
-                        screenCondition = screenCondition,
-                        selectedPackageId = selectedId,
-                        viewState = if (info.uniqueId == selectedPackageUniqueId) {
-                            ComponentViewState.SELECTED
-                        } else {
-                            ComponentViewState.DEFAULT
-                        },
-                    )
-                }
-            }
-
-            /** [uniqueId] when any of its copies renders at the measured bounds; null when all are hidden. */
-            private fun uniqueIdIfVisibleAtBounds(
-                uniqueId: String?,
-                windowDpSize: DpSize?,
-                screenCondition: ScreenCondition,
-            ): String? = uniqueId?.takeIf { uid ->
-                activePackages().filter { it.uniqueId == uid }.any {
-                    it.resolvesVisible(
-                        customVariables = mergedCustomVariables,
-                        windowDpSize = windowDpSize,
-                        screenCondition = screenCondition,
-                        selectedPackageId = it.pkg.identifier,
-                        viewState = ComponentViewState.SELECTED,
-                    )
-                }
-            }
+            fun peekDefaultPackageUniqueIdAfterSheetDismiss(windowDpSize: DpSize? = paywallBoundsDp): String? =
+                selectionResolver(windowDpSize).reset(
+                    current = selectedPackageUniqueId,
+                    remembered = selectedPackageByTab[selectedTabIndex],
+                )
 
             fun peekSelectedPackageInfoAfterSheetDismiss(): SelectedPackageInfo? {
                 val uid = peekDefaultPackageUniqueIdAfterSheetDismiss()
@@ -717,65 +610,3 @@ internal val PaywallState.Loaded.Legacy.currentColors: TemplateConfiguration.Col
 
 internal val PaywallState.Loaded.Legacy.isInFullScreenMode: Boolean
     get() = templateConfiguration.mode.isFullScreen
-
-/**
- * Whether this package renders, evaluating the same overrides the renderer does.
- *
- * By default resolved as unselected with no selected package, because selection is usually what's
- * being decided: pinning those keeps resolution independent of its own result, so a paywall with
- * `selected` or `selected_package` visibility rules can't oscillate. The reconcile keep-check passes
- * the real [selectedPackageId] and [viewState] instead — evaluating an already-selected package as
- * selected mirrors the renderer and is a stable fixpoint.
- *
- * Note this only covers the package component's own rules. A package hidden solely by an enclosing
- * stack's rule still resolves visible here. The screen condition defaults to COMPACT for initial
- * selection (which happens before any size is known); paths that know the measured bounds pass the
- * [screenCondition] the renderer would use, plus the measured [windowDpSize].
- */
-@Suppress("LongParameterList")
-private fun PaywallState.Loaded.Components.AvailablePackages.Info.resolvesVisible(
-    customVariables: Map<String, CustomVariableValue>,
-    windowDpSize: DpSize? = null,
-    screenCondition: ScreenCondition = ScreenCondition.COMPACT,
-    selectedPackageId: String? = null,
-    viewState: ComponentViewState = ComponentViewState.DEFAULT,
-): Boolean =
-    visibilityOverrides.buildPresentedPartial(
-        windowSize = screenCondition,
-        offerEligibility = { offerEligibility ?: OfferEligibility.Ineligible },
-        state = { viewState },
-        conditionContext = ConditionContext(
-            selectedPackageId = { selectedPackageId },
-            customVariables = customVariables,
-            windowDpSize = windowDpSize,
-        ),
-    )?.partial?.visible ?: visible
-
-/**
- * The package that should start selected, in document order: the authored default if it renders,
- * otherwise the first package that does.
- */
-private fun List<PaywallState.Loaded.Components.AvailablePackages.Info>.defaultSelection(
-    customVariables: Map<String, CustomVariableValue>,
-    windowDpSize: DpSize? = null,
-    screenCondition: ScreenCondition = ScreenCondition.COMPACT,
-): PaywallState.Loaded.Components.AvailablePackages.Info? =
-    authoredDefaultIfVisible(customVariables, windowDpSize, screenCondition)
-        ?: firstVisible(customVariables, windowDpSize, screenCondition)
-
-/** The package authored as the default, only when it renders. */
-private fun List<PaywallState.Loaded.Components.AvailablePackages.Info>.authoredDefaultIfVisible(
-    customVariables: Map<String, CustomVariableValue>,
-    windowDpSize: DpSize? = null,
-    screenCondition: ScreenCondition = ScreenCondition.COMPACT,
-): PaywallState.Loaded.Components.AvailablePackages.Info? =
-    firstOrNull {
-        it.isSelectedByDefault && it.resolvesVisible(customVariables, windowDpSize, screenCondition)
-    }
-
-private fun List<PaywallState.Loaded.Components.AvailablePackages.Info>.firstVisible(
-    customVariables: Map<String, CustomVariableValue>,
-    windowDpSize: DpSize? = null,
-    screenCondition: ScreenCondition = ScreenCondition.COMPACT,
-): PaywallState.Loaded.Components.AvailablePackages.Info? =
-    firstOrNull { it.resolvesVisible(customVariables, windowDpSize, screenCondition) }

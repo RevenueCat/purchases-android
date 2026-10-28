@@ -68,7 +68,11 @@ internal fun TabControlButtonView(
                     defaultIndex = null,
                 )
             }
-            state.update(selectedTabIndex = resolvedTabIndex)
+            state.selectTab(
+                index = resolvedTabIndex,
+                tabId = ordered.getOrNull(resolvedTabIndex) ?: style.tabId,
+                stateUpdates = style.stateUpdates,
+            )
             componentInteractionTracker.track(selection)
         },
     )

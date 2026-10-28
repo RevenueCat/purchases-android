@@ -162,7 +162,7 @@ private fun firstVisibleLeaf(
             if (it.visible) firstVisibleWrapperLeaf(style, style.stackComponentStyle, state) else null
         }
         is CountdownComponentStyle -> {
-            val stack = rememberActiveCountdownStack(style)
+            val stack = rememberActiveCountdownStack(style, dateProvider = { state.currentDate })
             countdownStacks[ComponentStyleIdentity(style)] = stack
             firstVisibleWrapperLeaf(style, stack, state)
         }
