@@ -59,8 +59,6 @@ internal class ConfiguredAdRewardsProvider(
             } else {
                 unavailable("No committed remote configuration is available for configured ad rewards.")
             }
-            topic[ITEM_DEFAULT]?.blobRef == null ->
-                unavailable("The ad_rewards topic has no default blob reference.")
             else -> {
                 val bytes = manager.blobData(RemoteConfigTopic.AdRewards, ITEM_DEFAULT) { it }
                 if (bytes == null) {
