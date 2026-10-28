@@ -350,6 +350,19 @@ internal sealed interface PaywallState {
                     .mostExpensivePricePerMonthMicros()
             }
 
+            data class TabPackageContext(
+                val packageInfo: AvailablePackages.Info,
+                val mostExpensivePricePerMonthMicros: Long?,
+            )
+
+            fun tabPackageContext(tabIndex: Int): TabPackageContext? {
+                val tabPackages = packages.packagesByTab[tabIndex].orEmpty()
+                val packageInfo = tabPackages.find { it.uniqueId == selectedPackageByTab[tabIndex] }
+                    ?: tabPackages.defaultSelection(mergedCustomVariables)
+                    ?: return null
+                return TabPackageContext(packageInfo, tabPackages.mostExpensivePricePerMonthMicros())
+            }
+
             val currentDate: Date
                 get() = dateProvider()
 

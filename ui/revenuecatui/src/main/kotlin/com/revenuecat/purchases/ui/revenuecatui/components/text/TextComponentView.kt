@@ -155,17 +155,23 @@ private fun rememberProcessedText(
         derivedStateOf {
             val dateLocale = state.locale.toJavaLocale()
             val currencyLocale = state.currencyLocale.toJavaLocale()
-            val packageToUse = textState.applicablePackage
+            val tabContext = textState.tabIndexOutsidePackage?.let(state::tabPackageContext)
+            val packageToUse = tabContext?.packageInfo?.pkg ?: textState.applicablePackage
+            val mostExpensiveMicros = if (tabContext != null) {
+                tabContext.mostExpensivePricePerMonthMicros
+            } else {
+                state.mostExpensivePricePerMonthMicros
+            }
 
             val variableContext = packageToUse?.let { pkg ->
                 val discount = discountPercentage(
                     pricePerMonthMicros = pkg.product.pricePerMonth()?.amountMicros,
-                    mostExpensiveMicros = state.mostExpensivePricePerMonthMicros,
+                    mostExpensiveMicros = mostExpensiveMicros,
                 )
                 VariableProcessor.PackageContext(
                     discountRelativeToMostExpensivePerMonth = discount,
                     showZeroDecimalPlacePrices = !state.showPricesWithDecimals,
-                    mostExpensivePricePerMonthMicros = state.mostExpensivePricePerMonthMicros,
+                    mostExpensivePricePerMonthMicros = mostExpensiveMicros,
                 )
             }
 
@@ -176,7 +182,11 @@ private fun rememberProcessedText(
                 variableDataProvider = state.variableDataProvider,
                 packageContext = variableContext,
                 rcPackage = packageToUse,
-                subscriptionOption = textState.subscriptionOption,
+                subscriptionOption = if (tabContext != null) {
+                    tabContext.packageInfo.resolvedOffer?.subscriptionOption
+                } else {
+                    textState.subscriptionOption
+                },
                 currencyLocale = currencyLocale,
                 dateLocale = dateLocale,
                 date = state.currentDate,
