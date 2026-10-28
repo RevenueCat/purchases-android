@@ -134,6 +134,26 @@ class ConfiguredAdRewardsProviderTest {
     }
 
     @Test
+    fun `invalid reward values are logged without hiding valid additional rewards`() = runTest {
+        val invalidRewards = listOf(
+            """{"type":"virtual_currency","code":"coins","amount":0}""" to "virtual currency",
+            """{"type":"entitlement","identifier":"pro","duration_in_seconds":0}""" to "entitlement",
+        )
+        invalidRewards.forEach { (reward, type) ->
+            returnBlob(
+                """{"unit":{
+                    "reward":$reward,
+                    "more_rewards":[{"type":"virtual_currency","code":"coins","amount":10}]
+                }}""".trimIndent(),
+            )
+            val rewards = requireNotNull(provider.rewards("unit"))
+            assertThat(rewards.reward).isEqualTo(AdRewardConfiguration.UnsupportedReward)
+            assertThat(rewards.moreRewards).containsExactly(AdRewardConfiguration.VirtualCurrency("coins", 10))
+            verify(exactly = 1) { logHandler.w(any(), match { it.contains("Invalid configured $type reward") }) }
+        }
+    }
+
+    @Test
     fun `superseded successful read retries using the shared consistency helper`() = runTest {
         var generation = 0
         every { manager.configGeneration } answers { generation }
