@@ -34,11 +34,6 @@ class ConfiguredAdRewardsMappingTest {
             AdRewardConfiguration.Entitlement("pro", 1800.seconds),
             AdRewardConfiguration.VirtualCurrency("coins", 10),
         )
-        assertThat(result.allRewards).containsExactly(
-            AdRewardConfiguration.VirtualCurrency("coins", 10),
-            AdRewardConfiguration.Entitlement("pro", 1800.seconds),
-            AdRewardConfiguration.VirtualCurrency("coins", 10),
-        )
     }
 
     @Test

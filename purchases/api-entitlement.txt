@@ -654,10 +654,8 @@ package com.revenuecat.purchases.ads {
   }
 
   @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @dev.drewhamilton.poko.Poko public final class ConfiguredAdRewards {
-    method @InaccessibleFromKotlin public java.util.List<com.revenuecat.purchases.ads.AdRewardConfiguration> getAllRewards();
     method @InaccessibleFromKotlin public java.util.List<com.revenuecat.purchases.ads.AdRewardConfiguration> getMoreRewards();
     method @InaccessibleFromKotlin public com.revenuecat.purchases.ads.AdRewardConfiguration? getReward();
-    property public java.util.List<com.revenuecat.purchases.ads.AdRewardConfiguration> allRewards;
     property public java.util.List<com.revenuecat.purchases.ads.AdRewardConfiguration> moreRewards;
     property public com.revenuecat.purchases.ads.AdRewardConfiguration? reward;
   }
