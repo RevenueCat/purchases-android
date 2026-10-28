@@ -22,7 +22,27 @@ internal const val SUBSCRIBER_ATTRIBUTES_KEY = "subscriber_attributes"
 internal class RemoteSubscriberAttributes(
     val attributes: SubscriberAttributeMap,
     val unreadableKeys: Set<String> = emptySet(),
-)
+) {
+
+    /**
+     * Reconciles [local] attributes with these. The server's copy wins unless the local one is newer, which keeps
+     * changes that haven't reached it yet. A synced local attribute the server no longer has was deleted there and
+     * is dropped; an unsynced one is kept so it can still be posted.
+     */
+    fun mergeIntoLocalMap(local: SubscriberAttributeMap): SubscriberAttributeMap {
+        val merged = attributes.toMutableMap()
+        local.forEach { (key, localAttribute) ->
+            val remoteAttribute = attributes[key]
+            val keepLocal = when {
+                remoteAttribute != null -> localAttribute.setTime > remoteAttribute.setTime
+                key in unreadableKeys -> true
+                else -> !localAttribute.isSynced
+            }
+            if (keepLocal) merged[key] = localAttribute
+        }
+        return merged
+    }
+}
 
 /**
  * Null when the response has no `subscriber_attributes` object (the backend only sends one for some users),
@@ -66,26 +86,4 @@ private fun JSONObject.toRemoteSubscriberAttribute(key: String): SubscriberAttri
     }
     val updatedAtMs = (opt(BACKEND_NAME_TIMESTAMP) as? Number)?.toLong() ?: return null
     return SubscriberAttribute(key, value, setTime = Date(updatedAtMs), isSynced = true)
-}
-
-/**
- * Reconciles locally stored attributes with the server's. The server's copy wins unless the local one is newer,
- * which keeps changes that haven't reached it yet. A synced local attribute the server no longer has was deleted
- * there and is dropped; an unsynced one is kept so it can still be posted.
- */
-internal fun mergeSubscriberAttributes(
-    local: SubscriberAttributeMap,
-    remote: RemoteSubscriberAttributes,
-): SubscriberAttributeMap {
-    val merged = remote.attributes.toMutableMap()
-    local.forEach { (key, localAttribute) ->
-        val remoteAttribute = remote.attributes[key]
-        val keepLocal = when {
-            remoteAttribute != null -> localAttribute.setTime > remoteAttribute.setTime
-            key in remote.unreadableKeys -> true
-            else -> !localAttribute.isSynced
-        }
-        if (keepLocal) merged[key] = localAttribute
-    }
-    return merged
 }

@@ -142,7 +142,7 @@ class RemoteSubscriberAttributesTests {
         val email = attribute("\$email", "user@example.com", synced = true, at = now)
         val name = attribute("\$displayName", "Dave", synced = true, at = now)
 
-        val merged = mergeSubscriberAttributes(emptyMap(), remote(email, name))
+        val merged = remote(email, name).mergeIntoLocalMap(emptyMap())
 
         assertThat(merged).isEqualTo(mapOf(email.key.backendKey to email, name.key.backendKey to name))
     }
@@ -152,7 +152,7 @@ class RemoteSubscriberAttributesTests {
         val local = attribute("band", "Rush", synced = true, at = earlier)
         val remote = attribute("band", "Yes", synced = true, at = now)
 
-        assertThat(mergeSubscriberAttributes(local(local), remote(remote))).isEqualTo(mapOf("band" to remote))
+        assertThat(remote(remote).mergeIntoLocalMap(local(local))).isEqualTo(mapOf("band" to remote))
     }
 
     @Test
@@ -160,7 +160,7 @@ class RemoteSubscriberAttributesTests {
         val local = attribute("band", "Rush", synced = false, at = earlier)
         val remote = attribute("band", "Yes", synced = true, at = now)
 
-        val merged = mergeSubscriberAttributes(local(local), remote(remote))
+        val merged = remote(remote).mergeIntoLocalMap(local(local))
 
         assertThat(merged).isEqualTo(mapOf("band" to remote))
         assertThat(merged.values.filterNot { it.isSynced }).isEmpty()
@@ -171,7 +171,7 @@ class RemoteSubscriberAttributesTests {
         val local = attribute("band", "Rush", synced = false, at = now)
         val remote = attribute("band", "Yes", synced = true, at = earlier)
 
-        assertThat(mergeSubscriberAttributes(local(local), remote(remote))).isEqualTo(mapOf("band" to local))
+        assertThat(remote(remote).mergeIntoLocalMap(local(local))).isEqualTo(mapOf("band" to local))
     }
 
     @Test
@@ -179,7 +179,7 @@ class RemoteSubscriberAttributesTests {
         val local = attribute("band", "Rush", synced = true, at = now)
         val remote = attribute("band", "Yes", synced = true, at = earlier)
 
-        assertThat(mergeSubscriberAttributes(local(local), remote(remote))).isEqualTo(mapOf("band" to local))
+        assertThat(remote(remote).mergeIntoLocalMap(local(local))).isEqualTo(mapOf("band" to local))
     }
 
     @Test
@@ -187,7 +187,7 @@ class RemoteSubscriberAttributesTests {
         val local = attribute("band", "Rush", synced = false, at = now)
         val remote = attribute("band", "Yes", synced = true, at = now)
 
-        assertThat(mergeSubscriberAttributes(local(local), remote(remote))).isEqualTo(mapOf("band" to remote))
+        assertThat(remote(remote).mergeIntoLocalMap(local(local))).isEqualTo(mapOf("band" to remote))
     }
 
     @Test
@@ -195,7 +195,7 @@ class RemoteSubscriberAttributesTests {
         val local = attribute("band", null, synced = false, at = later)
         val remote = attribute("band", "Rush", synced = true, at = now)
 
-        assertThat(mergeSubscriberAttributes(local(local), remote(remote))).isEqualTo(mapOf("band" to local))
+        assertThat(remote(remote).mergeIntoLocalMap(local(local))).isEqualTo(mapOf("band" to local))
     }
 
     @Test
@@ -203,7 +203,7 @@ class RemoteSubscriberAttributesTests {
         val local = attribute("song", "YYZ", synced = false, at = now)
         val remote = attribute("band", "Rush", synced = true, at = now)
 
-        assertThat(mergeSubscriberAttributes(local(local), remote(remote)))
+        assertThat(remote(remote).mergeIntoLocalMap(local(local)))
             .isEqualTo(mapOf("song" to local, "band" to remote))
     }
 
@@ -211,7 +211,7 @@ class RemoteSubscriberAttributesTests {
     fun `an empty remote set keeps unsynced local attributes`() {
         val local = attribute("song", "YYZ", synced = false, at = now)
 
-        assertThat(mergeSubscriberAttributes(local(local), remote())).isEqualTo(mapOf("song" to local))
+        assertThat(remote().mergeIntoLocalMap(local(local))).isEqualTo(mapOf("song" to local))
     }
 
     @Test
@@ -219,14 +219,14 @@ class RemoteSubscriberAttributesTests {
         val deleted = attribute("song", "YYZ", synced = true, at = later)
         val remote = attribute("band", "Rush", synced = true, at = now)
 
-        assertThat(mergeSubscriberAttributes(local(deleted), remote(remote))).isEqualTo(mapOf("band" to remote))
+        assertThat(remote(remote).mergeIntoLocalMap(local(deleted))).isEqualTo(mapOf("band" to remote))
     }
 
     @Test
     fun `an empty remote set drops every synced local attribute`() {
         val synced = attribute("song", "YYZ", synced = true, at = now)
 
-        assertThat(mergeSubscriberAttributes(local(synced), remote())).isEmpty()
+        assertThat(remote().mergeIntoLocalMap(local(synced))).isEmpty()
     }
 
     @Test
@@ -234,20 +234,16 @@ class RemoteSubscriberAttributesTests {
         val synced = attribute("band", "Rush", synced = true, at = now)
         val unsynced = attribute("song", "YYZ", synced = false, at = now)
 
-        val merged = mergeSubscriberAttributes(
-            local(synced, unsynced),
-            RemoteSubscriberAttributes(emptyMap(), unreadableKeys = setOf("band", "song")),
-        )
+        val merged = RemoteSubscriberAttributes(emptyMap(), unreadableKeys = setOf("band", "song"))
+            .mergeIntoLocalMap(local(synced, unsynced))
 
         assertThat(merged).isEqualTo(mapOf("band" to synced, "song" to unsynced))
     }
 
     @Test
     fun `an unreadable remote entry with nothing local adds nothing`() {
-        val merged = mergeSubscriberAttributes(
-            emptyMap(),
-            RemoteSubscriberAttributes(emptyMap(), unreadableKeys = setOf("band")),
-        )
+        val merged = RemoteSubscriberAttributes(emptyMap(), unreadableKeys = setOf("band"))
+            .mergeIntoLocalMap(emptyMap())
 
         assertThat(merged).isEmpty()
     }

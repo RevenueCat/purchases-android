@@ -14,7 +14,6 @@ import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.subscriberattributes.RemoteSubscriberAttributes
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
 import com.revenuecat.purchases.subscriberattributes.buildSubscriberAttributesMapPerUser
-import com.revenuecat.purchases.subscriberattributes.mergeSubscriberAttributes
 
 internal typealias AppUserID = String
 internal typealias SubscriberAttributeMap = Map<String, SubscriberAttribute>
@@ -42,14 +41,15 @@ internal class SubscriberAttributesCache(
     }
 
     /**
-     * Replaces [appUserID]'s attributes with the result of [mergeSubscriberAttributes], unlike [setAttributes],
-     * which only adds and so would keep attributes the server deleted. Writes nothing if the merge changes nothing.
+     * Replaces [appUserID]'s attributes with the result of [RemoteSubscriberAttributes.mergeIntoLocalMap], unlike
+     * [setAttributes], which only adds and so would keep attributes the server deleted. Writes nothing if the merge
+     * changes nothing.
      */
     @Synchronized
     fun mergeRemoteAttributes(appUserID: AppUserID, remote: RemoteSubscriberAttributes) {
         val storedForAllUsers = getAllStoredSubscriberAttributes()
         val stored = storedForAllUsers[appUserID] ?: emptyMap()
-        val merged = mergeSubscriberAttributes(stored, remote)
+        val merged = remote.mergeIntoLocalMap(stored)
         if (merged == stored) return
 
         val updatedForAllUsers = if (merged.isEmpty()) {
