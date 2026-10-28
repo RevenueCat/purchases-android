@@ -12,6 +12,8 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.revenuecat.purchases.ui.revenuecatui.components.style.CountdownComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -25,6 +27,19 @@ private const val SECONDS_IN_DAY = 86_400
 private const val SECONDS_IN_HOUR = 3_600
 private const val SECONDS_IN_MINUTE = 60
 private const val MILLIS_IN_SECOND = 1000
+
+@Composable
+internal fun rememberActiveCountdownStack(
+    style: CountdownComponentStyle,
+    dateProvider: () -> Date = { Date() },
+): StackComponentStyle {
+    val countdownState = rememberCountdownState(style.date, dateProvider)
+    return if (countdownState.hasEnded && style.endStackComponentStyle != null) {
+        style.endStackComponentStyle
+    } else {
+        style.countdownStackComponentStyle
+    }
+}
 
 internal data class CountdownTime(
     val days: Int,

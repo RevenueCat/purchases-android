@@ -25,9 +25,11 @@ import com.revenuecat.purchases.paywalls.components.common.StateUpdate
 import com.revenuecat.purchases.storage.FileRepository
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
+import com.revenuecat.purchases.ui.revenuecatui.components.ComponentStyleIdentity
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentVisibilityContext
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedPackagePartial
+import com.revenuecat.purchases.ui.revenuecatui.components.ResolvedHeroInsets
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.resolveLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toComposeLocale
@@ -112,7 +114,7 @@ internal sealed interface PaywallState {
             val header: ComponentStyle?,
             val stickyFooter: ComponentStyle?,
             val background: BackgroundStyles,
-            val mainStackHasHeroImage: Boolean = false,
+            mainStackHasHeroImage: Boolean = false,
             /**
              * Some currencies do not commonly use decimals when displaying prices. Set this to false to accommodate
              * for that.
@@ -163,6 +165,13 @@ internal sealed interface PaywallState {
              */
             var paywallBoundsDp: DpSize? by mutableStateOf(null)
                 @JvmSynthetic internal set
+
+            var mainStackHasHeroImage by mutableStateOf(mainStackHasHeroImage)
+                internal set
+
+            internal var resolvedHeroInsets by mutableStateOf<Map<ComponentStyleIdentity, ResolvedHeroInsets>>(
+                emptyMap(),
+            )
 
             /**
              * The screen condition the renderer resolves size-class overrides with — derived from

@@ -73,6 +73,7 @@ import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.WithOptionalBackgroundOverlay
+import com.revenuecat.purchases.ui.revenuecatui.components.heroInsetsFor
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toHorizontalAlignmentOrNull
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
@@ -162,7 +163,19 @@ internal fun StackComponentView(
     }
 
     val resolvedModifier = modifier.resolveComponentSizeParentData(stackState.size)
-    val badge = stackState.badge
+    val heroInsets = state.heroInsetsFor(style)
+    val badge = stackState.badge?.let { badge ->
+        // A badge on the hero path sits outside the main stack's child padding.
+        if (badge.alignment.isTop && heroInsets?.isOnHeroPath(style) == true) {
+            BadgeStyle(
+                stackStyle = badge.stackStyle.copy(applyTopWindowInsets = true, ignoreHeaderHeight = true),
+                style = badge.style,
+                alignment = badge.alignment,
+            )
+        } else {
+            badge
+        }
+    }
     if (badge != null) {
         when (badge.style) {
             Badge.Style.Overlay -> {
@@ -697,7 +710,8 @@ private fun MainStackComponent(
                             ancestorScrollOrientations = descendantScrollOrientations,
                             modifier = childModifier
                                 .conditional(
-                                    stackState.applyTopWindowInsets && !child.shouldIgnoreTopWindowInsets,
+                                    stackState.appliesTopInsets(state) &&
+                                        !stackState.childIgnoresTopInsets(child, state),
                                 ) {
                                     windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
                                 }
@@ -736,9 +750,9 @@ private fun MainStackComponent(
                                 .conditional(
                                     // In a Vertical container, we only want to apply topSystemBarsPadding to the
                                     // first child, except when that child has `ignoreTopWindowInsets` set to true.
-                                    stackState.applyTopWindowInsets &&
-                                        index == 0 &&
-                                        !child.shouldIgnoreTopWindowInsets,
+                                    stackState.appliesTopInsets(state) &&
+                                        stackState.isFirstVisibleChild(child, index, state) &&
+                                        !stackState.childIgnoresTopInsets(child, state),
                                 ) {
                                     windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
                                 }
@@ -748,13 +762,15 @@ private fun MainStackComponent(
                 }
 
                 is Dimension.ZLayer -> {
-                    // Unlike windowInsetsPadding, a direct inset read does not see what an
+                    // Legacy header padding reads insets directly and does not see what an
                     // ancestor already consumed (e.g. a sheet sitting below the status bar), so
                     // that part is tracked here. The callback fires on attach, before the first
                     // measure, and the value is only read inside the layout block: the first
                     // frame is already right, and inset changes remeasure rather than recompose.
                     val density = LocalDensity.current
                     val consumedTopInsetPx = remember { mutableIntStateOf(0) }
+                    val useWindowInsetsPadding =
+                        stackState.ignoreHeaderHeight || state.heroInsetsFor(stackState.style) != null
                     Box(
                         modifier = outerModifier
                             .onConsumedWindowInsetsChanged { consumedTopInsetPx.intValue = it.getTop(density) }
@@ -771,7 +787,7 @@ private fun MainStackComponent(
                     ) {
                         stackState.children.forEach { child ->
                             val applyTopInsets =
-                                stackState.applyTopWindowInsets && !child.shouldIgnoreTopWindowInsets
+                                stackState.appliesTopInsets(state) && !stackState.childIgnoresTopInsets(child, state)
                             ComponentView(
                                 style = child,
                                 state = state,
@@ -779,13 +795,14 @@ private fun MainStackComponent(
                                 componentInteractionTracker = componentInteractionTracker,
                                 ancestorScrollOrientations = descendantScrollOrientations,
                                 modifier = Modifier
-                                    .conditional(applyTopInsets && !stackState.ignoreHeaderHeight) {
+                                    .conditional(applyTopInsets && !useWindowInsetsPadding) {
                                         // Read header height at layout time. If set (hero case),
                                         // it already includes status bar padding. Otherwise fall
                                         // back to the unconsumed safe-drawing top inset.
                                         headerOrInsetsTopPadding(state, safeDrawingInsets, consumedTopInsetPx)
                                     }
-                                    .conditional(applyTopInsets && stackState.ignoreHeaderHeight) {
+                                    .conditional(applyTopInsets && useWindowInsetsPadding) {
+                                        // Consume clearance so nested controls and badges cannot add it again.
                                         windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
                                     }
                                     .contentAlpha(contentAlpha),
@@ -1024,6 +1041,20 @@ internal val FlexDistribution.usesAllAvailableSpace: Boolean
         FlexDistribution.CENTER,
         -> false
     }
+
+private fun StackComponentState.appliesTopInsets(state: PaywallState.Loaded.Components): Boolean =
+    state.heroInsetsFor(style)?.appliesTo(style) ?: applyTopWindowInsets
+
+private fun StackComponentState.childIgnoresTopInsets(
+    child: ComponentStyle,
+    state: PaywallState.Loaded.Components,
+): Boolean = state.heroInsetsFor(style)?.let { it.exemptChildFor(style) === child } ?: child.shouldIgnoreTopWindowInsets
+
+private fun StackComponentState.isFirstVisibleChild(
+    child: ComponentStyle,
+    index: Int,
+    state: PaywallState.Loaded.Components,
+): Boolean = state.heroInsetsFor(style)?.firstVisibleChildFor(style)?.let { it === child } ?: (index == 0)
 
 private val ComponentStyle.shouldIgnoreTopWindowInsets: Boolean
     get() = when (this) {

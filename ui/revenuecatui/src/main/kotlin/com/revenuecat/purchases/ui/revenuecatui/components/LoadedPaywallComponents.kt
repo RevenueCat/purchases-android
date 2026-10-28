@@ -81,6 +81,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.toLayoutDirection
 import java.net.URL
 import java.util.Date
 
+@Suppress("LongMethod")
 @Composable
 internal fun LoadedPaywallComponents(
     state: PaywallState.Loaded.Components,
@@ -102,6 +103,7 @@ internal fun LoadedPaywallComponents(
 
     CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
         MeasurePaywallBounds(state, modifier) {
+            resolveHeroInsets(state.stack, state)
             val wrapInVerticalScroll = shouldWrapMainContentInVerticalScroll(state.stack, state)
             PaywallComponentsScaffold(
                 state = state,

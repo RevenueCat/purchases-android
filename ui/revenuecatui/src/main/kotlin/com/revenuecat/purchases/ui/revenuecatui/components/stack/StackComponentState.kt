@@ -87,7 +87,7 @@ internal class StackComponentState(
     initialWindowSize: WindowWidthSizeClass,
     initialWindowDpSize: DpSize?,
     initialLayoutDirection: LayoutDirection,
-    private val style: StackComponentStyle,
+    val style: StackComponentStyle,
     private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     private val selectedTabIndexProvider: () -> Int,
     private val selectedOfferEligibilityProvider: () -> OfferEligibility,

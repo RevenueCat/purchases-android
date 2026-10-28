@@ -122,6 +122,7 @@ internal class PackageSelectionInteractionTests {
     ) {
         composeTestRule.setContent {
             MeasurePaywallBounds(state, Modifier.requiredSize(300.dp, 400.dp)) {
+                resolveHeroInsets(state.stack, state)
                 ComponentView(state.stack, state, onClick = {}, componentInteractionTracker = tracker)
             }
         }
