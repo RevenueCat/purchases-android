@@ -133,6 +133,8 @@ import androidx.compose.ui.geometry.Size as ComposeSize
  *   "purchase in progress".
  * @param selected When non-null, exposes the stack's selected state to accessibility services.
  *   Only meaningful when [onStackClick] is non-null.
+ * @param ancestorScrollOrientations Scroll axes already active above this stack. An unbounded
+ *   matching scroll request is ignored because Compose cannot measure same-axis nested scroll containers.
  */
 @Suppress("LongMethod", "LongParameterList")
 @Composable
@@ -147,6 +149,7 @@ internal fun StackComponentView(
     interactionSource: MutableInteractionSource? = null,
     contentAlpha: (() -> Float)? = null,
     componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
+    ancestorScrollOrientations: Set<Orientation> = emptySet(),
 ) {
     // Get a StackComponentState that calculates the overridden properties we should use.
     val stackState = rememberUpdatedStackComponentState(
@@ -171,11 +174,12 @@ internal fun StackComponentView(
                     clickHandler,
                     componentInteractionTracker,
                     contentAlpha,
-                    resolvedModifier,
+                    modifier = resolvedModifier,
                     onStackClick = onStackClick,
                     enabled = enabled,
                     selected = selected,
                     interactionSource = interactionSource,
+                    ancestorScrollOrientations = ancestorScrollOrientations,
                 )
             }
 
@@ -191,11 +195,12 @@ internal fun StackComponentView(
                         clickHandler,
                         componentInteractionTracker,
                         contentAlpha,
-                        resolvedModifier,
+                        modifier = resolvedModifier,
                         onStackClick = onStackClick,
                         enabled = enabled,
                         selected = selected,
                         interactionSource = interactionSource,
+                        ancestorScrollOrientations = ancestorScrollOrientations,
                     )
 
                     else
@@ -207,11 +212,12 @@ internal fun StackComponentView(
                         clickHandler,
                         componentInteractionTracker,
                         contentAlpha,
-                        resolvedModifier,
+                        modifier = resolvedModifier,
                         onStackClick = onStackClick,
                         enabled = enabled,
                         selected = selected,
                         interactionSource = interactionSource,
+                        ancestorScrollOrientations = ancestorScrollOrientations,
                     )
                 }
             }
@@ -229,6 +235,7 @@ internal fun StackComponentView(
                     selected = selected,
                     interactionSource = interactionSource,
                     nestedBadge = badge,
+                    ancestorScrollOrientations = ancestorScrollOrientations,
                 )
         }
     } else {
@@ -243,6 +250,7 @@ internal fun StackComponentView(
             enabled = enabled,
             selected = selected,
             interactionSource = interactionSource,
+            ancestorScrollOrientations = ancestorScrollOrientations,
         )
     }
 }
@@ -257,6 +265,7 @@ private fun StackWithOverlaidBadge(
     clickHandler: suspend (PaywallAction) -> Unit,
     componentInteractionTracker: PaywallComponentInteractionTracker,
     contentAlpha: (() -> Float)?,
+    ancestorScrollOrientations: Set<Orientation>,
     modifier: Modifier = Modifier,
     onStackClick: (() -> Unit)? = null,
     enabled: Boolean = true,
@@ -274,6 +283,7 @@ private fun StackWithOverlaidBadge(
             enabled = enabled,
             selected = selected,
             interactionSource = interactionSource,
+            ancestorScrollOrientations = ancestorScrollOrientations,
         )
         val mainStackBorderWidthPx = with(LocalDensity.current) {
             stackState.border?.width?.toPx()
@@ -284,6 +294,7 @@ private fun StackWithOverlaidBadge(
             componentInteractionTracker,
             alignment,
             mainStackBorderWidthPx,
+            ancestorScrollOrientations,
             modifier = Modifier.padding(stackState.margin),
         )
     }
@@ -302,6 +313,7 @@ private fun StackWithLongEdgeToEdgeBadge(
     clickHandler: suspend (PaywallAction) -> Unit,
     componentInteractionTracker: PaywallComponentInteractionTracker,
     contentAlpha: (() -> Float)?,
+    ancestorScrollOrientations: Set<Orientation>,
     modifier: Modifier = Modifier,
     onStackClick: (() -> Unit)? = null,
     enabled: Boolean = true,
@@ -328,6 +340,7 @@ private fun StackWithLongEdgeToEdgeBadge(
                 enabled = enabled,
                 selected = selected,
                 interactionSource = interactionSource,
+                ancestorScrollOrientations = ancestorScrollOrientations,
             )
         }.first()
         val stackPlaceable = stackMeasurable.measure(constraints)
@@ -346,6 +359,7 @@ private fun StackWithLongEdgeToEdgeBadge(
                 state,
                 clickHandler,
                 componentInteractionTracker = componentInteractionTracker,
+                ancestorScrollOrientations = ancestorScrollOrientations,
             )
         }.first()
         val badgePlaceable = badgeMeasurable.measure(constraints)
@@ -477,6 +491,7 @@ private fun StackWithShortEdgeToEdgeBadge(
     clickHandler: suspend (PaywallAction) -> Unit,
     componentInteractionTracker: PaywallComponentInteractionTracker,
     contentAlpha: (() -> Float)?,
+    ancestorScrollOrientations: Set<Orientation>,
     modifier: Modifier = Modifier,
     onStackClick: (() -> Unit)? = null,
     enabled: Boolean = true,
@@ -563,6 +578,7 @@ private fun StackWithShortEdgeToEdgeBadge(
         enabled = enabled,
         selected = selected,
         interactionSource = interactionSource,
+        ancestorScrollOrientations = ancestorScrollOrientations,
     ) {
         StackComponentView(
             badgeStack.copy(shape = Shape.Rectangle(adjustedCornerRadiuses)),
@@ -570,6 +586,7 @@ private fun StackWithShortEdgeToEdgeBadge(
             clickHandler,
             componentInteractionTracker = componentInteractionTracker,
             modifier = Modifier.align(alignment.toAlignment()),
+            ancestorScrollOrientations = ancestorScrollOrientations,
         )
     }
 }
@@ -582,6 +599,7 @@ private fun BoxScope.OverlaidBadge(
     componentInteractionTracker: PaywallComponentInteractionTracker,
     alignment: TwoDimensionalAlignment,
     mainStackBorderWidthPx: Float?,
+    ancestorScrollOrientations: Set<Orientation>,
     modifier: Modifier = Modifier,
 ) {
     StackComponentView(
@@ -589,6 +607,7 @@ private fun BoxScope.OverlaidBadge(
         state,
         {},
         componentInteractionTracker = componentInteractionTracker,
+        ancestorScrollOrientations = ancestorScrollOrientations,
         modifier = modifier
             .align(alignment.toAlignment())
             .layout { measurable, constraints ->
@@ -611,6 +630,7 @@ private fun MainStackComponent(
     clickHandler: suspend (PaywallAction) -> Unit,
     componentInteractionTracker: PaywallComponentInteractionTracker,
     contentAlpha: (() -> Float)?,
+    ancestorScrollOrientations: Set<Orientation>,
     modifier: Modifier = Modifier,
     onStackClick: (() -> Unit)? = null,
     enabled: Boolean = true,
@@ -621,13 +641,21 @@ private fun MainStackComponent(
     overlay: (@Composable BoxScope.() -> Unit)? = null,
 ) {
     val safeDrawingInsets = WindowInsets.safeDrawing
+    val scrollOrientation = stackState.scrollOrientation?.takeUnless { orientation ->
+        orientation in ancestorScrollOrientations && stackState.size.mainAxis(orientation) !is Fixed
+    }
+    val descendantScrollOrientations = if (scrollOrientation != null) {
+        ancestorScrollOrientations + scrollOrientation
+    } else {
+        ancestorScrollOrientations
+    }
 
     // Show the right container composable depending on the dimension.
     // `outerModifier` is the caller-supplied modifier applied to the actual layout node parents
     // see. The clickable plain path moves it onto a wrapper `Box` (so parent-data modifiers like
     // `weight`/`align` reach the parent Row/Column) and passes `Modifier` here.
     val stack: @Composable (Modifier, Modifier) -> Unit = { outerModifier, rootModifier ->
-        val scrollState = stackState.scrollOrientation?.let { rememberScrollState() }
+        val scrollState = scrollOrientation?.let { rememberScrollState() }
 
         // Columns and Rows don't draw anything if they don't have any children. A Box does. We want users to be able
         // to draw "boxes" using whatever stack they please, for instance to create dividers.
@@ -653,7 +681,7 @@ private fun MainStackComponent(
                         mainAxisUnbounded = mainAxisUnbounded.value,
                         modifier = outerModifier
                             .size(stackState.size, verticalAlignment = dimension.alignment.toAlignment())
-                            .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
+                            .applyIfNotNull(scrollState, scrollOrientation) { state, orientation ->
                                 scrollable(state, orientation)
                             }
                             .then(rootModifier)
@@ -666,6 +694,7 @@ private fun MainStackComponent(
                             state = state,
                             onClick = clickHandler,
                             componentInteractionTracker = componentInteractionTracker,
+                            ancestorScrollOrientations = descendantScrollOrientations,
                             modifier = childModifier
                                 .conditional(
                                     stackState.applyTopWindowInsets && !child.shouldIgnoreTopWindowInsets,
@@ -689,7 +718,7 @@ private fun MainStackComponent(
                         mainAxisUnbounded = mainAxisUnbounded.value,
                         modifier = outerModifier
                             .size(stackState.size, horizontalAlignment = dimension.alignment.toAlignment())
-                            .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
+                            .applyIfNotNull(scrollState, scrollOrientation) { state, orientation ->
                                 scrollable(state, orientation)
                             }
                             .then(rootModifier)
@@ -702,6 +731,7 @@ private fun MainStackComponent(
                             state = state,
                             onClick = clickHandler,
                             componentInteractionTracker = componentInteractionTracker,
+                            ancestorScrollOrientations = descendantScrollOrientations,
                             modifier = childModifier
                                 .conditional(
                                     // In a Vertical container, we only want to apply topSystemBarsPadding to the
@@ -733,7 +763,7 @@ private fun MainStackComponent(
                                 horizontalAlignment = dimension.alignment.toHorizontalAlignmentOrNull(),
                                 verticalAlignment = dimension.alignment.toVerticalAlignmentOrNull(),
                             )
-                            .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
+                            .applyIfNotNull(scrollState, scrollOrientation) { state, orientation ->
                                 scrollable(state, orientation)
                             }
                             .then(rootModifier),
@@ -747,6 +777,7 @@ private fun MainStackComponent(
                                 state = state,
                                 onClick = clickHandler,
                                 componentInteractionTracker = componentInteractionTracker,
+                                ancestorScrollOrientations = descendantScrollOrientations,
                                 modifier = Modifier
                                     .conditional(applyTopInsets && !stackState.ignoreHeaderHeight) {
                                         // Read header height at layout time. If set (hero case),
@@ -906,6 +937,7 @@ private fun MainStackComponent(
                 modifier = Modifier
                     .align(nestedBadge.alignment.toAlignment()),
                 componentInteractionTracker = componentInteractionTracker,
+                ancestorScrollOrientations = ancestorScrollOrientations,
             )
         }
     } else if (overlay != null) {

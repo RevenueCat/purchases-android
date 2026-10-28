@@ -15,6 +15,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.ui.revenuecatui.components.style.SheetPresentationKey
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -96,5 +97,22 @@ class SimpleBottomSheetScaffoldTests {
         waitForIdle()
 
         onNodeWithText("Behind the sheet").assertIsDisplayed()
+    }
+
+    @Test
+    fun `hiding clears the presentation key before dismissal`() {
+        val sheetState = SimpleSheetState()
+        val key = SheetPresentationKey()
+        var keyDuringDismiss: SheetPresentationKey? = key
+        sheetState.show(
+            backgroundBlur = false,
+            content = {},
+            presentationKey = key,
+            onDismiss = { keyDuringDismiss = sheetState.presentationKey },
+        )
+
+        sheetState.hide()
+
+        assertThat(keyDuringDismiss).isNull()
     }
 }

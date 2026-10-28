@@ -11,7 +11,6 @@ import com.revenuecat.purchases.utils.TestUrlConnectionFactory
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -56,14 +55,6 @@ internal class APISourceFailoverTest {
     private val eligibleEndpoint = Endpoint.GetCustomerInfo("test-user-id")
     private val connectionFailure = IOException("request never reached the source")
 
-    private lateinit var appConfig: AppConfig
-
-    @Before
-    fun setUp() {
-        appConfig = mockk()
-        every { appConfig.usesRemoteConfigAPISources } returns true
-    }
-
     private fun healthConnection(responseCode: Int) =
         TestUrlConnection(responseCode, ByteArrayInputStream(ByteArray(0)))
 
@@ -74,7 +65,6 @@ internal class APISourceFailoverTest {
         ),
         deviceOffline: () -> Boolean = { false },
     ) = APISourceFailover(
-        appConfig,
         provider,
         SourceHealthChecker(connectionFactory),
         mockk { every { isDeviceOffline() } answers { deviceOffline() } },
@@ -88,14 +78,6 @@ internal class APISourceFailoverTest {
         val source = failover(provider).currentSource(eligibleEndpoint, defaultBaseURL, isFallbackAttempt = false)
         assertThat(source?.url).isEqualTo(URL("https://a.revenuecat.com/"))
         assertThat(source?.handle?.url).isEqualTo("https://a.revenuecat.com/")
-    }
-
-    @Test
-    fun `currentSource is null when the dangerous setting is disabled`() {
-        every { appConfig.usesRemoteConfigAPISources } returns false
-        val provider = FakeSourceProvider(listOf("https://a.revenuecat.com/"))
-        assertThat(failover(provider).currentSource(eligibleEndpoint, defaultBaseURL, isFallbackAttempt = false))
-            .isNull()
     }
 
     @Test

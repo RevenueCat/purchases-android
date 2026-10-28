@@ -8,6 +8,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -70,6 +71,7 @@ import kotlinx.serialization.json.JsonPrimitive
 
 private const val DURATION_MS_CROSS_FADE = 220
 
+@Suppress("LongParameterList")
 @Composable
 internal fun TabsComponentView(
     style: TabsComponentStyle,
@@ -77,6 +79,7 @@ internal fun TabsComponentView(
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
     componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
+    ancestorScrollOrientations: Set<Orientation> = emptySet(),
 ) {
     // Get a StackComponentState that calculates the overridden properties we should use.
     val tabsState = rememberUpdatedTabsComponentState(
@@ -127,6 +130,7 @@ internal fun TabsComponentView(
             state = state,
             clickHandler = clickHandler,
             componentInteractionTracker = componentInteractionTracker,
+            ancestorScrollOrientations = ancestorScrollOrientations,
         )
     }
 }

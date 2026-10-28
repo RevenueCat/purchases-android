@@ -209,7 +209,7 @@ internal class PurchasesOrchestrator(
     @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal val tokenManager: TokenManager,
     val adTracker: AdTracker = AdTracker(adEventsManager),
-    private val currentActivityTracker: CurrentActivityTracker = CurrentActivityTracker(),
+    private val currentActivityTracker: CurrentActivityTracker = CurrentActivityTracker,
     private val localRulesEvaluator: LocalRulesEvaluator = LocalRulesEvaluator(
         providers = emptyList(),
         currentAppUserId = { identityManager.currentAppUserID },
@@ -2380,6 +2380,9 @@ internal class PurchasesOrchestrator(
         const val frameworkVersion = Config.frameworkVersion
 
         var proxyURL: URL? = null
+
+        @Volatile
+        var internalSimulatedHostFailures: SimulatedHostFailures? = null
 
         /**
          * Note: This method only works for the Google Play Store. There is no Amazon equivalent at this time.

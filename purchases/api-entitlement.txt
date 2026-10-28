@@ -346,6 +346,7 @@ package com.revenuecat.purchases {
     method public static com.revenuecat.purchases.Purchases configureInCustomEntitlementsComputationMode(com.revenuecat.purchases.PurchasesConfigurationForCustomEntitlementsComputationMode configuration);
     method @InaccessibleFromKotlin @kotlin.jvm.Synchronized public String getAppUserID();
     method @InaccessibleFromKotlin public static String getFrameworkVersion();
+    method @InaccessibleFromKotlin public static com.revenuecat.purchases.SimulatedHostFailures? getInternalSimulatedHostFailures();
     method @InaccessibleFromKotlin @kotlin.jvm.Synchronized public static com.revenuecat.purchases.LogHandler getLogHandler();
     method @InaccessibleFromKotlin public static com.revenuecat.purchases.LogLevel getLogLevel();
     method public void getOfferings(com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback listener);
@@ -361,6 +362,7 @@ package com.revenuecat.purchases {
     method public void purchase(com.revenuecat.purchases.PurchaseParams purchaseParams, com.revenuecat.purchases.interfaces.PurchaseCallback callback);
     method public void removeUpdatedCustomerInfoListener();
     method public void restorePurchases(com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback callback);
+    method @InaccessibleFromKotlin public static void setInternalSimulatedHostFailures(com.revenuecat.purchases.SimulatedHostFailures?);
     method @InaccessibleFromKotlin @kotlin.jvm.Synchronized public static void setLogHandler(com.revenuecat.purchases.LogHandler);
     method @InaccessibleFromKotlin public static void setLogLevel(com.revenuecat.purchases.LogLevel);
     method @InaccessibleFromKotlin public static void setPlatformInfo(com.revenuecat.purchases.common.PlatformInfo);

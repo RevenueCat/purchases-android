@@ -21,6 +21,17 @@ class E2ETestsApplication : Application() {
 
     private inner class ConfigurePurchasesOnFirstActivity : ActivityLifecycleCallbacksAdapter() {
         override fun onActivityPreCreated(activity: Activity, savedInstanceState: Bundle?) {
+            // The default: the SDK is configured before the Activity starts, so it sees it start.
+            if (activity.intent?.getStringExtra(CONFIGURE_AFTER_START_EXTRA_KEY) == "true") return
+            configurePurchasesFrom(activity)
+        }
+
+        // What hybrid SDKs do: JS configures Purchases once the Activity has already started.
+        override fun onActivityResumed(activity: Activity) {
+            configurePurchasesFrom(activity)
+        }
+
+        private fun configurePurchasesFrom(activity: Activity) {
             if (!Purchases.isConfigured) {
                 configurePurchases(
                     PurchasesConfiguration.Builder(
@@ -50,6 +61,9 @@ class E2ETestsApplication : Application() {
         private const val APP_LOCALE_EXTRA_KEY = "app_locale"
         private const val APP_USER_ID_EXTRA_KEY = "app_user_id"
         private const val FORCE_SERVER_ERROR_EXTRA_KEY = "force_server_error_strategy"
+
+        // "true" configures after the first Activity has started, instead of before it is created.
+        private const val CONFIGURE_AFTER_START_EXTRA_KEY = "configure_after_start"
 
         // This app runs as a minified release build in the Maestro e2e CI jobs (to exercise
         // the SDK's consumer R8 rules), but uses Test Store API keys. Opt in to allow that
