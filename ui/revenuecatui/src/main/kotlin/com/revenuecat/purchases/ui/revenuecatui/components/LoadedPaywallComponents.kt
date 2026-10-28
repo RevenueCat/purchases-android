@@ -4,6 +4,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import android.content.res.Configuration
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -63,6 +64,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.SheetPresentationKey
 import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleBottomSheetScaffold
 import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleSheetState
 import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
@@ -79,6 +81,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.toLayoutDirection
 import java.net.URL
 import java.util.Date
 
+@Suppress("LongMethod")
 @Composable
 internal fun LoadedPaywallComponents(
     state: PaywallState.Loaded.Components,
@@ -101,7 +104,7 @@ internal fun LoadedPaywallComponents(
     CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
         MeasurePaywallBounds(state, modifier) {
             resolveHeroInsets(state.stack, state)
-            val shouldWrapMainContentInVerticalScroll = shouldWrapMainContentInVerticalScroll(state.stack, state)
+            val wrapInVerticalScroll = shouldWrapMainContentInVerticalScroll(state.stack, state)
             PaywallComponentsScaffold(
                 state = state,
                 headerContent = state.header?.let { headerStyle ->
@@ -131,9 +134,10 @@ internal fun LoadedPaywallComponents(
                     state = state,
                     onClick = onClick,
                     componentInteractionTracker = componentInteractionTracker,
+                    ancestorScrollOrientations = setOfNotNull(Orientation.Vertical.takeIf { wrapInVerticalScroll }),
                     modifier = Modifier
                         .fillMaxSize()
-                        .conditional(shouldWrapMainContentInVerticalScroll) {
+                        .conditional(wrapInVerticalScroll) {
                             verticalScroll(mainScrollState)
                         }
                         .conditional(state.header != null && !state.mainStackHasHeroImage) {
@@ -350,6 +354,7 @@ internal fun SimpleSheetState.show(
             )
         },
         contentKey = sheet.id,
+        presentationKey = sheet.presentationKey,
         onDismiss = {
             val sheetSelected = state.selectedPackageInfo
             val resulting = state.peekSelectedPackageInfoAfterSheetDismiss()
@@ -363,6 +368,7 @@ internal fun SimpleSheetState.show(
             state.resetToDefaultPackage()
         },
     )
+    state.reconcileSelectionForWindowSize(state.paywallBoundsDp)
 }
 
 @Suppress("LongMethod")
@@ -686,6 +692,7 @@ private fun previewBottomSheet(
 ) =
     ButtonComponentStyle.Action.NavigateTo.Destination.Sheet(
         id = "",
+        presentationKey = SheetPresentationKey(),
         name = "",
         stack = previewStackComponentStyle(
             children = listOf(

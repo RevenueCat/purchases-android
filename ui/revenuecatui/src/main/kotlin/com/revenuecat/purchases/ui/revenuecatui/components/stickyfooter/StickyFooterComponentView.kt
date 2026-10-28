@@ -2,6 +2,7 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components.stickyfooter
 
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
@@ -10,6 +11,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.StickyFooterCom
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 
+@Suppress("LongParameterList")
 @Composable
 internal fun StickyFooterComponentView(
     style: StickyFooterComponentStyle,
@@ -17,6 +19,7 @@ internal fun StickyFooterComponentView(
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
     componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
+    ancestorScrollOrientations: Set<Orientation> = emptySet(),
 ) {
     StackComponentView(
         style = style.stackComponentStyle,
@@ -24,5 +27,6 @@ internal fun StickyFooterComponentView(
         clickHandler = clickHandler,
         modifier = modifier,
         componentInteractionTracker = componentInteractionTracker,
+        ancestorScrollOrientations = ancestorScrollOrientations,
     )
 }

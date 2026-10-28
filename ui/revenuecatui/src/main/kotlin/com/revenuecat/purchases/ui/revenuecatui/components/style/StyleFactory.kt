@@ -134,6 +134,10 @@ internal class StyleFactory(
          */
         var tabIndex: Int? = null,
         /**
+         * Identifies the sheet whose content is currently being built, or null for root content.
+         */
+        var sheetPresentationKey: SheetPresentationKey? = null,
+        /**
          * When building a [TabsComponent] subtree, holds that component's dashboard `name` for tab control analytics.
          * Blank strings are treated as absent (same as [withTabsInteractionContext] input normalization).
          */
@@ -358,6 +362,19 @@ internal class StyleFactory(
             return result
         }
 
+        fun <T> withSheetPresentation(
+            presentationKey: SheetPresentationKey,
+            block: StyleFactoryScope.() -> T,
+        ): T {
+            val previousKey = sheetPresentationKey
+            sheetPresentationKey = presentationKey
+            try {
+                return block()
+            } finally {
+                sheetPresentationKey = previousKey
+            }
+        }
+
         fun <T> withTabsInteractionContext(
             tabsComponentName: String?,
             tabs: List<TabsComponent.Tab>,
@@ -500,11 +517,12 @@ internal class StyleFactory(
             }
 
         private fun recordPackage(pkg: AvailablePackages.Info) {
+            val scopedPackage = pkg.copy(sheetPresentationKey = sheetPresentationKey)
             val currentTabIndex = tabIndex
             if (currentTabIndex == null) {
-                packagesOutsideTabs.add(pkg)
+                packagesOutsideTabs.add(scopedPackage)
             } else {
-                packagesByTab.getOrPut(currentTabIndex) { mutableListOf() }.add(pkg)
+                packagesByTab.getOrPut(currentTabIndex) { mutableListOf() }.add(scopedPackage)
             }
         }
     }
@@ -888,12 +906,16 @@ internal class StyleFactory(
                     Logger.e("Sheet destination reached convertDestination without a stack.")
                     Result.Success(null)
                 } else {
-                    createStackComponentStyle(rawStack)
+                    val presentationKey = SheetPresentationKey()
+                    withSheetPresentation(presentationKey) {
+                        createStackComponentStyle(rawStack)
+                    }
                         .map { it.applyBottomWindowInsetsIfNecessary(shouldApply = true) }
                         .map { it.applyHorizontalWindowInsetsIfNecessary(shouldApply = true) }
                         .map { stackComponentStyle ->
                             ButtonComponentStyle.Action.NavigateTo.Destination.Sheet(
                                 id = destination.id,
+                                presentationKey = presentationKey,
                                 name = destination.name,
                                 stack = stackComponentStyle,
                                 backgroundBlur = destination.backgroundBlur,
