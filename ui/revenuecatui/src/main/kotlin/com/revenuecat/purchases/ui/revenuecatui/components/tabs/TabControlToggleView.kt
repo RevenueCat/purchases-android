@@ -46,7 +46,11 @@ internal fun TabControlToggleView(
             if (newTabIndex == state.selectedTabIndex) {
                 return@Switch
             }
-            state.update(selectedTabIndex = newTabIndex)
+            state.selectTab(
+                index = newTabIndex,
+                tabId = style.tabIdsOrdered.getOrNull(newTabIndex),
+                stateUpdates = style.stateUpdates,
+            )
             componentInteractionTracker.track(
                 PaywallComponentInteractionData(
                     componentType = PaywallComponentType.SWITCH,
