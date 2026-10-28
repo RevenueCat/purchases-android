@@ -1,10 +1,7 @@
 package com.revenuecat.purchases.ads
 
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 import org.junit.Test
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 class ConfiguredAdRewardsTest {
@@ -42,15 +39,4 @@ class ConfiguredAdRewardsTest {
         assertThat(rewards.moreRewards).isEmpty()
     }
 
-    @Test
-    fun `models reject invalid currency and entitlement values`() {
-        assertThatIllegalArgumentException().isThrownBy { AdRewardConfiguration.VirtualCurrency("", 10) }
-        listOf(0, -1).forEach { amount ->
-            assertThatIllegalArgumentException().isThrownBy { AdRewardConfiguration.VirtualCurrency("coins", amount) }
-        }
-        assertThatIllegalArgumentException().isThrownBy { AdRewardConfiguration.Entitlement("", 1.seconds) }
-        listOf(0.seconds, (-1).seconds, Duration.INFINITE, 500.milliseconds, 1500.milliseconds).forEach { duration ->
-            assertThatIllegalArgumentException().isThrownBy { AdRewardConfiguration.Entitlement("pro", duration) }
-        }
-    }
 }

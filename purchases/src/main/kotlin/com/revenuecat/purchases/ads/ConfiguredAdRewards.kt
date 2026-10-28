@@ -2,7 +2,6 @@ package com.revenuecat.purchases.ads
 
 import dev.drewhamilton.poko.Poko
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
 
 /**
  * The rewards expected for an ad unit.
@@ -32,11 +31,7 @@ internal interface AdRewardConfiguration {
         public val code: String,
         /** The positive configured amount. */
         public val amount: Int,
-    ) : AdRewardConfiguration {
-        init {
-            require(code.isNotEmpty() && amount > 0)
-        }
-    }
+    ) : AdRewardConfiguration
 
     /** A configured entitlement reward. This describes a duration, rather than a granted expiration date. */
     @Poko
@@ -47,11 +42,6 @@ internal interface AdRewardConfiguration {
         @get:JvmSynthetic
         public val duration: Duration,
     ) : AdRewardConfiguration {
-        init {
-            require(identifier.isNotEmpty() && duration.isPositive() && duration.isFinite())
-            require(duration == duration.inWholeSeconds.seconds)
-        }
-
         /** The configured duration in seconds, also available to Java callers. */
         public val durationInSeconds: Long
             get() = duration.inWholeSeconds
