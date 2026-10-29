@@ -15,14 +15,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.test.assertHeightIsEqualTo
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertWidthIsEqualTo
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
 import com.revenuecat.purchases.paywalls.components.PaywallComponent
@@ -33,6 +34,7 @@ import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Size
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
@@ -46,122 +48,46 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.ParameterizedRobolectricTestRunner
 import org.robolectric.annotation.Config
 
-@RunWith(AndroidJUnit4::class)
+@RunWith(ParameterizedRobolectricTestRunner::class)
 @Config(qualifiers = "w500dp-h1000dp")
-internal class StackAxisScrollTests {
-    @get:Rule
-    val composeTestRule = createComposeRule()
+internal class StackAxisScrollTests(private val case: Case) {
+    @get:Rule val rule = createComposeRule()
 
     @Test
-    fun `Fill tap targets fill every one to three level axis nesting in either scroll direction and layout direction`() {
-        runMatrix(Size(Fill(), Fill()), 200, 400)
-    }
-
-    @Test
-    fun `limited Fill tap targets retain their maximums across every axis nesting`() {
-        runMatrix(Size(Fill(max = 80u), Fill(max = 90u)), 80, 90)
-    }
-
-    @Test
-    fun `Fixed tap targets are not stretched across any axis nesting`() {
-        runMatrix(Size(Fixed(80u), Fixed(90u)), 80, 90)
-    }
-
-    @Test
-    fun `Fit tap targets retain their content size across every axis nesting`() {
-        runMatrix(
-            Size(Fit(), Fit()), 30, 40,
-            leafChildren = listOf(StackComponent(components = emptyList(), size = Size(Fixed(30u), Fixed(40u)))),
-        )
-    }
-
-    @Test
-    fun `Fill tap targets use the viewport after root padding in every axis nesting`() {
-        runMatrix(Size(Fill(), Fill()), 160, 360, rootPadding = Padding(20.0, 20.0, 20.0, 20.0))
-    }
-
-    @Test
-    fun `Fill minimums below the viewport do not shrink any axis nesting`() {
-        runMatrix(Size(Fill(min = 80u), Fill(min = 90u)), 200, 400)
-    }
-
-    @Test
-    fun `Fill minimum wins over a smaller maximum in every axis nesting`() {
-        runMatrix(Size(Fill(min = 80u, max = 60u), Fill(min = 90u, max = 60u)), 80, 90)
-    }
-
-    @Test
-    fun `resolved Fixed overrides do not inherit Fill constraints in any axis nesting`() {
-        runMatrix(
-            Size(Fill(), Fill()), 80, 90,
-            overrides = listOf(ComponentOverride(emptyList(), PartialStackComponent(size = Size(Fixed(80u), Fixed(90u))))),
-        )
-    }
-
-    @Test
-    fun `resolved Fill overrides receive viewport space in every axis nesting`() {
-        runMatrix(
-            Size(Fixed(80u), Fixed(90u)), 200, 400,
-            overrides = listOf(ComponentOverride(emptyList(), PartialStackComponent(size = Size(Fill(), Fill())))),
-        )
-    }
-
-    @Test
-    fun `Fill height with Fixed width receives viewport space in every axis nesting`() {
-        runMatrix(Size(Fixed(80u), Fill()), 80, 400)
-    }
-
-    @Test
-    fun `Fill width with Fixed height receives viewport space in every axis nesting`() {
-        runMatrix(Size(Fill(), Fixed(90u)), 200, 90)
-    }
-
-    @Test
-    fun `Fill height with Fit width retains content width in every axis nesting`() {
-        runMatrix(
-            Size(Fit(), Fill()), 30, 400,
-            leafChildren = listOf(StackComponent(components = emptyList(), size = Size(Fixed(30u), Fixed(40u)))),
-        )
-    }
-
-    @Test
-    fun `Fill width with Fit height retains content height in every axis nesting`() {
-        runMatrix(
-            Size(Fill(), Fit()), 200, 40,
-            leafChildren = listOf(StackComponent(components = emptyList(), size = Size(Fixed(30u), Fixed(40u)))),
-        )
-    }
-
-    private fun runMatrix(
-        leafSize: Size,
-        expectedWidth: Int,
-        expectedHeight: Int,
-        leafChildren: List<PaywallComponent> = emptyList(),
-        rootPadding: Padding = Padding(),
-        overrides: List<ComponentOverride<PartialStackComponent>> = emptyList(),
-    ) {
-        val dimensions = listOf(
-            Dimension.Vertical(HorizontalAlignment.CENTER, FlexDistribution.START),
-            Dimension.Horizontal(VerticalAlignment.CENTER, FlexDistribution.START),
-            Dimension.ZLayer(TwoDimensionalAlignment.CENTER),
-        )
-        val chains = dimensions.map { listOf(it) } +
-            dimensions.flatMap { a -> dimensions.map { b -> listOf(a, b) } } +
-            dimensions.flatMap { a -> dimensions.flatMap { b -> dimensions.map { c -> listOf(a, b, c) } } }
+    fun `sizing scrolling and native taps work across stack axes and RTL`() {
+        val vertical = Dimension.Vertical(HorizontalAlignment.CENTER, FlexDistribution.START)
+        val horizontal = Dimension.Horizontal(VerticalAlignment.CENTER, FlexDistribution.START)
+        val axes = listOf(vertical, horizontal, Dimension.ZLayer(TwoDimensionalAlignment.CENTER))
+        val chains = axes.map { listOf(it) } +
+            axes.flatMap { a -> axes.map { b -> listOf(a, b) } } +
+            axes.flatMap { a -> axes.flatMap { b -> axes.map { c -> listOf(a, b, c) } } }
         val factory = StyleFactory()
         val scenarios = Orientation.values().flatMap { scroll ->
             LayoutDirection.values().flatMap { direction ->
-                chains.map { chain ->
-                    var component: PaywallComponent = ButtonComponent(
-                        action = ButtonComponent.Action.NavigateBack,
-                        stack = StackComponent(components = leafChildren, size = leafSize, overrides = overrides),
-                    )
-                    chain.asReversed().forEachIndexed { index, dimension ->
+                (if (case.overflow == null) chains else axes.map { listOf(it) }).map { chain ->
+                    fun size(main: SizeConstraint) =
+                        if (scroll == Orientation.Vertical) Size(Fill(), main) else Size(main, Fill())
+                    var component: PaywallComponent = if (case.overflow != null) {
+                        StackComponent(
+                            components = listOf(
+                                StackComponent(components = emptyList(), size = size(Fixed(650u))),
+                                button(size(Fixed(80u))),
+                            ),
+                            dimension = if (scroll == Orientation.Vertical) vertical else horizontal,
+                            size = size(case.overflow),
+                        )
+                    } else {
+                        button(case.size)
+                    }
+                    chain.asReversed().forEachIndexed { index, axis ->
                         component = StackComponent(
-                            components = listOf(component), dimension = dimension, size = Size(Fill(), Fill()),
-                            padding = if (index == chain.lastIndex) rootPadding else Padding(),
+                            components = listOf(component), dimension = axis, size = Size(Fill(), Fill()),
+                            padding = if (index == chain.lastIndex) {
+                                Padding(case.padding, case.padding, case.padding, case.padding)
+                            } else Padding(),
                         )
                     }
                     Scenario(scroll, direction, chain, factory.create(component).getOrThrow().componentStyle as StackComponentStyle)
@@ -171,16 +97,14 @@ internal class StackAxisScrollTests {
         var current by mutableStateOf(0)
         var clicks = 0
         val state = FakePaywallState(components = emptyList())
-        composeTestRule.setContent {
+        rule.setContent {
             val scenario = scenarios[current]
             key(current) {
                 CompositionLocalProvider(LocalLayoutDirection provides scenario.direction) {
                     Box(Modifier.requiredSize(200.dp, 400.dp)) {
                         val scrollState = rememberScrollState()
                         StackComponentView(
-                            style = scenario.style,
-                            state = state,
-                            clickHandler = { clicks++ },
+                            style = scenario.style, state = state, clickHandler = { clicks++ },
                             ancestorScrollOrientations = setOf(scenario.scroll),
                             modifier = Modifier.fillMaxSize().then(
                                 if (scenario.scroll == Orientation.Vertical) Modifier.verticalScroll(scrollState)
@@ -193,19 +117,34 @@ internal class StackAxisScrollTests {
         }
         val failures = mutableListOf<String>()
         scenarios.forEachIndexed { index, scenario ->
-            composeTestRule.runOnIdle { current = index }
+            rule.runOnIdle { current = index }
             try {
-                composeTestRule.onNode(hasClickAction())
-                    .assertWidthIsEqualTo(expectedWidth.dp)
-                    .assertHeightIsEqualTo(expectedHeight.dp)
-                    .performTouchInput { click(center) }
+                val node = rule.onNode(hasClickAction())
+                if (case.overflow == null) {
+                    node.assertWidthIsEqualTo(case.width.dp).assertHeightIsEqualTo(case.height.dp)
+                } else {
+                    node.performScrollTo().assertIsDisplayed()
+                }
+                val before = clicks
+                node.performTouchInput { click(center) }
+                rule.runOnIdle { assertThat(clicks).isEqualTo(before + 1) }
             } catch (failure: AssertionError) {
                 failures += "${scenario.scroll}/${scenario.direction}/${scenario.chain}: ${failure.message}"
             }
         }
         assertThat(failures).isEmpty()
-        composeTestRule.runOnIdle { assertThat(clicks).isEqualTo(scenarios.size) }
     }
+
+    private fun button(size: Size) = ButtonComponent(
+        action = ButtonComponent.Action.NavigateBack,
+        stack = StackComponent(
+            components = if (size.width is Fit || size.height is Fit) {
+                listOf(StackComponent(components = emptyList(), size = Size(Fixed(30u), Fixed(40u))))
+            } else emptyList(),
+            size = size,
+            overrides = case.overrideSize?.let { listOf(ComponentOverride(emptyList(), PartialStackComponent(size = it))) }.orEmpty(),
+        ),
+    )
 
     private data class Scenario(
         val scroll: Orientation,
@@ -213,4 +152,38 @@ internal class StackAxisScrollTests {
         val chain: List<Dimension>,
         val style: StackComponentStyle,
     )
+
+    data class Case(
+        val name: String,
+        val size: Size = Size(Fill(), Fill()),
+        val width: Int = 200,
+        val height: Int = 400,
+        val padding: Double = 0.0,
+        val overrideSize: Size? = null,
+        val overflow: SizeConstraint? = null,
+    ) {
+        override fun toString() = name
+    }
+
+    companion object {
+        @JvmStatic
+        @ParameterizedRobolectricTestRunner.Parameters(name = "{0}")
+        fun cases() = listOf(
+            Case("Fill"),
+            Case("capped Fill", Size(Fill(max = 80u), Fill(max = 90u)), 80, 90),
+            Case("Fixed", Size(Fixed(80u), Fixed(90u)), 80, 90),
+            Case("Fit", Size(Fit(), Fit()), 30, 40),
+            Case("padding", width = 160, height = 360, padding = 20.0),
+            Case("minimum", Size(Fill(min = 80u), Fill(min = 90u))),
+            Case("minimum wins maximum", Size(Fill(min = 80u, max = 60u), Fill(min = 90u, max = 60u)), 80, 90),
+            Case("Fill to Fixed override", width = 80, height = 90, overrideSize = Size(Fixed(80u), Fixed(90u))),
+            Case("Fixed to Fill override", Size(Fixed(80u), Fixed(90u)), overrideSize = Size(Fill(), Fill())),
+            Case("Fixed width Fill height", Size(Fixed(80u), Fill()), 80, 400),
+            Case("Fill width Fixed height", Size(Fill(), Fixed(90u)), 200, 90),
+            Case("Fit width Fill height", Size(Fit(), Fill()), 30, 400),
+            Case("Fill width Fit height", Size(Fill(), Fit()), 200, 40),
+            Case("oversized Fit", overflow = Fit()),
+            Case("oversized Fill", overflow = Fill()),
+        ).map { arrayOf(it) }
+    }
 }

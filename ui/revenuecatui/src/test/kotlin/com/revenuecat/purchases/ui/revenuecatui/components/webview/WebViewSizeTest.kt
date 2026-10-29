@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
+import android.content.Context
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
@@ -10,11 +11,9 @@ import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
@@ -22,104 +21,61 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.ParameterizedRobolectricTestRunner
 
-@RunWith(AndroidJUnit4::class)
-internal class WebViewSizeTest {
-    @get:Rule
-    val composeTestRule = createComposeRule()
+@RunWith(ParameterizedRobolectricTestRunner::class)
+internal class WebViewSizeTest(private val horizontal: Boolean) {
+    @get:Rule val rule = createComposeRule()
 
     @Test
-    fun `Fill native child keeps the viewport height under a scroll`() {
-        lateinit var view: View
-        composeTestRule.setContent {
-            Box(Modifier.requiredSize(200.dp, 400.dp)) {
-                AndroidView(
-                    factory = { context ->
-                        FrameLayout(context).apply {
-                            view = View(context)
-                            addView(
-                                view,
-                                ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
-                            )
-                        }
-                    },
-                    modifier = Modifier.fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        .fillUnboundedAxisFromMinimum(Size(Fill(), Fill())),
-                )
+    fun `Fill native child keeps the viewport size under scrolling`() {
+        lateinit var child: View
+        render(Size(Fill(), Fill())) { context ->
+            FrameLayout(context).apply {
+                child = View(context)
+                addView(child, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
             }
         }
-        composeTestRule.runOnIdle {
-            assertThat(view.height).isEqualTo(with(composeTestRule.density) { 400.dp.roundToPx() })
+        rule.runOnIdle {
+            with(rule.density) {
+                assertThat(child.width).isEqualTo(200.dp.roundToPx())
+                assertThat(child.height).isEqualTo(400.dp.roundToPx())
+            }
         }
     }
 
     @Test
-    fun `Fill native child keeps the viewport width under a horizontal scroll`() {
+    fun `Fit native view can grow past the viewport`() {
         lateinit var view: View
-        composeTestRule.setContent {
-            Box(Modifier.requiredSize(200.dp, 400.dp)) {
-                AndroidView(
-                    factory = { context ->
-                        FrameLayout(context).apply {
-                            view = View(context)
-                            addView(
-                                view,
-                                ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
-                            )
-                        }
-                    },
-                    modifier = Modifier.fillMaxSize()
-                        .horizontalScroll(rememberScrollState())
-                        .fillUnboundedAxisFromMinimum(Size(Fill(), Fill())),
+        render(if (horizontal) Size(Fit(), Fill()) else Size(Fill(), Fit())) { context ->
+            View(context).also {
+                view = it
+                it.layoutParams = ViewGroup.LayoutParams(
+                    if (horizontal) 650 else ViewGroup.LayoutParams.MATCH_PARENT,
+                    if (horizontal) ViewGroup.LayoutParams.MATCH_PARENT else 650,
                 )
             }
         }
-        composeTestRule.runOnIdle {
-            assertThat(view.width).isEqualTo(with(composeTestRule.density) { 200.dp.roundToPx() })
+        rule.runOnIdle { assertThat(if (horizontal) view.width else view.height).isEqualTo(650) }
+    }
+
+    private fun render(size: Size, factory: (Context) -> View) {
+        rule.setContent {
+            Box(Modifier.requiredSize(200.dp, 400.dp)) {
+                val scroll = rememberScrollState()
+                AndroidView(
+                    factory = factory,
+                    modifier = Modifier.fillMaxSize()
+                        .then(if (horizontal) Modifier.horizontalScroll(scroll) else Modifier.verticalScroll(scroll))
+                        .fillUnboundedAxisFromMinimum(size),
+                )
+            }
         }
     }
 
-    @Test
-    fun `Fit native view can remain wider than the viewport`() {
-        lateinit var view: View
-        composeTestRule.setContent {
-            Box(Modifier.requiredSize(200.dp, 400.dp)) {
-                AndroidView(
-                    factory = { context ->
-                        View(context).also { nativeView ->
-                            view = nativeView
-                            nativeView.layoutParams = ViewGroup.LayoutParams(650, ViewGroup.LayoutParams.MATCH_PARENT)
-                        }
-                    },
-                    modifier = Modifier.fillMaxSize()
-                        .horizontalScroll(rememberScrollState())
-                        .fillUnboundedAxisFromMinimum(Size(Fit(), Fill())),
-                )
-            }
-        }
-        composeTestRule.runOnIdle { assertThat(view.width).isEqualTo(650) }
-    }
-
-    @Test
-    fun `Fit native view can remain taller than the viewport`() {
-        lateinit var view: View
-        composeTestRule.setContent {
-            val context = LocalContext.current
-            Box(Modifier.requiredSize(200.dp, 400.dp)) {
-                AndroidView(
-                    factory = {
-                        View(context).also { nativeView ->
-                            view = nativeView
-                            nativeView.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 650)
-                        }
-                    },
-                    modifier = Modifier.fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        .fillUnboundedAxisFromMinimum(Size(Fill(), Fit())),
-                )
-            }
-        }
-        composeTestRule.runOnIdle { assertThat(view.height).isEqualTo(650) }
+    companion object {
+        @JvmStatic
+        @ParameterizedRobolectricTestRunner.Parameters(name = "horizontal={0}")
+        fun directions() = listOf(arrayOf(false), arrayOf(true))
     }
 }

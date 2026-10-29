@@ -20,21 +20,14 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
-import com.revenuecat.purchases.paywalls.components.PartialStackComponent
 import com.revenuecat.purchases.paywalls.components.PaywallComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
-import com.revenuecat.purchases.paywalls.components.common.Background
-import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
-import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
-import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
-import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
@@ -47,15 +40,11 @@ import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAli
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.LoadedPaywallComponents
 import com.revenuecat.purchases.ui.revenuecatui.components.LoadedWorkflowPaywall
-import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.WorkflowPaywallUiState
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
-import com.revenuecat.purchases.ui.revenuecatui.extensions.toComponentsPaywallState
-import com.revenuecat.purchases.ui.revenuecatui.extensions.validatePaywallComponentsDataOrNull
+import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
-import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
-import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
-import java.net.URL
+import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -117,44 +106,6 @@ internal class ZLayerStackScrollTests {
         composeTestRule.runOnIdle { assertThat(clicks).isEqualTo(1) }
     }
 
-    @Test
-    fun `fixed height child is not stretched to viewport minimum`() {
-        render(layer(listOf(button(Size(Fill(), Fixed(80u))))))
-
-        composeTestRule.onNode(hasClickAction()).assertHeightIsEqualTo(80.dp)
-    }
-
-    @Test
-    fun `Fit height child is not stretched to viewport minimum`() {
-        render(layer(listOf(button(Size(Fill(), Fit()), listOf(text())))))
-
-        val height = composeTestRule.onNode(hasClickAction()).fetchSemanticsNode().size.height
-        assertThat(height).isGreaterThan(0).isLessThan(with(composeTestRule.density) { 100.dp.roundToPx() })
-    }
-
-    @Test
-    fun `Fill maximum remains smaller than the viewport`() {
-        render(layer(listOf(button(Size(Fill(), Fill(max = 80u))))))
-
-        composeTestRule.onNode(hasClickAction()).assertHeightIsEqualTo(80.dp)
-    }
-
-    @Test
-    fun `resolved Fixed override does not inherit the Fill minimum`() {
-        val tapTarget = button(
-            Size(Fill(), Fill()),
-            overrides = listOf(
-                ComponentOverride(
-                    conditions = emptyList(),
-                    properties = PartialStackComponent(size = Size(Fill(), Fixed(80u))),
-                ),
-            ),
-        )
-        render(layer(listOf(tapTarget)))
-
-        composeTestRule.onNode(hasClickAction()).assertHeightIsEqualTo(80.dp)
-    }
-
     private fun assertFullHeightTapTarget(workflow: Boolean) {
         val row = StackComponent(
             components = listOf(button(Size(Fill(), Fill()))),
@@ -196,10 +147,9 @@ internal class ZLayerStackScrollTests {
     private fun button(
         size: Size,
         children: List<PaywallComponent> = emptyList(),
-        overrides: List<ComponentOverride<PartialStackComponent>> = emptyList(),
     ) = ButtonComponent(
         action = ButtonComponent.Action.NavigateBack,
-        stack = StackComponent(components = children, size = size, overrides = overrides),
+        stack = StackComponent(components = children, size = size),
     )
 
     private fun text() = TextComponent(
@@ -207,30 +157,15 @@ internal class ZLayerStackScrollTests {
         color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
     )
 
-    private fun createState(root: StackComponent, footer: StickyFooterComponent?): PaywallState.Loaded.Components {
-        val data = PaywallComponentsData(
-            id = "zlayer-fill-root",
-            templateName = "components",
-            assetBaseURL = URL("https://assets.pawwalls.com"),
-            componentsConfig = ComponentsConfig(
-                base = PaywallComponentsConfig(
-                    stack = root,
-                    background = Background.Color(ColorScheme(ColorInfo.Hex(Color.White.toArgb()))),
-                    stickyFooter = footer,
-                ),
-            ),
-            componentsLocalizations = mapOf(LocaleId("en_US") to mapOf(LocalizationKey("label") to LocalizationData.Text(TEXT))),
-            defaultLocaleIdentifier = LocaleId("en_US"),
-        )
-        val offering = Offering(
-            identifier = "zlayer-fill-offering",
-            serverDescription = "Full-height root regression",
-            metadata = emptyMap(),
-            availablePackages = listOf(TestData.Packages.monthly),
-            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
-        )
-        return offering.toComponentsPaywallState(offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!)
-    }
+    private fun createState(root: StackComponent, footer: StickyFooterComponent?) = FakePaywallState(
+        rootStack = root,
+        stickyFooter = footer,
+        packages = listOf(TestData.Packages.monthly),
+        addPackageComponents = false,
+        localizations = nonEmptyMapOf(
+            LocaleId("en_US") to nonEmptyMapOf(LocalizationKey("label") to LocalizationData.Text(TEXT)),
+        ),
+    )
 
     private companion object {
         const val TEXT = "Continue"
