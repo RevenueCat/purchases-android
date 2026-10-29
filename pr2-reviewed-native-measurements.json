@@ -1,0 +1,149 @@
+{
+  "sdk": "11.1.0-SNAPSHOT",
+  "device": "Pixel 8 emulator, API 35",
+  "scope": "Reduced Catbone fixtures; not the full customer workflow",
+  "builds": {
+    "pre_fix": {
+      "source_commit": "5e610e7171a1bcd41ed489401fbe478f43592d5f",
+      "apk_sha256": "89de4cbc29d115fc1b38ee1d48ce67eeb185ae489371dea48609b969d2dfd49d"
+    },
+    "pr_1": {
+      "source_commit": "1eb49dc003971c4382563ce9d71a52f70b61e56c",
+      "apk_sha256": "2a46523ec13024b53ed48284f3a745a14a4117ccd136fc0bae1149a2db676376"
+    },
+    "pr_2": {
+      "source_commit": "31204c3d4bf3a0ea39f40f1f4fff4d15de1ca691",
+      "apk_sha256": "fae32db08841f1516ff7bf15be328e08fd2ccfa91b789f7dd14ae2d39a53874f"
+    }
+  },
+  "fixtures": {
+    "automatic": {
+      "before_build": "pre_fix",
+      "before": {
+        "mode": "automatic",
+        "web_x": 0,
+        "web_y": 1037,
+        "web_width_px": 1080,
+        "web_height_px": 263,
+        "screen_height_px": 2400,
+        "tap_x": 540,
+        "tap_y": 1800,
+        "native_tap_confirmed": false
+      },
+      "after_build": "pr_1",
+      "after": {
+        "mode": "automatic",
+        "web_x": 0,
+        "web_y": 0,
+        "web_width_px": 1080,
+        "web_height_px": 2337,
+        "screen_height_px": 2400,
+        "tap_x": 540,
+        "tap_y": 1800,
+        "native_tap_confirmed": true
+      }
+    },
+    "disabled": {
+      "before_build": "pre_fix",
+      "before": {
+        "mode": "disabled",
+        "web_x": 0,
+        "web_y": 0,
+        "web_width_px": 1080,
+        "web_height_px": 2337,
+        "screen_height_px": 2400,
+        "tap_x": 540,
+        "tap_y": 1800,
+        "native_tap_confirmed": true
+      },
+      "after_build": "pr_1",
+      "after": {
+        "mode": "disabled",
+        "web_x": 0,
+        "web_y": 0,
+        "web_width_px": 1080,
+        "web_height_px": 2337,
+        "screen_height_px": 2400,
+        "tap_x": 540,
+        "tap_y": 1800,
+        "native_tap_confirmed": true
+      }
+    },
+    "axis_horizontal": {
+      "before_build": "pr_1",
+      "before": {
+        "mode": "axis_horizontal",
+        "web_x": 0,
+        "web_y": 1037,
+        "web_width_px": 1080,
+        "web_height_px": 263,
+        "screen_height_px": 2400,
+        "tap_x": 540,
+        "tap_y": 1800,
+        "native_tap_confirmed": false
+      },
+      "after_build": "pr_2",
+      "after": {
+        "mode": "axis_horizontal",
+        "web_x": 0,
+        "web_y": 0,
+        "web_width_px": 1080,
+        "web_height_px": 2337,
+        "screen_height_px": 2400,
+        "tap_x": 540,
+        "tap_y": 1800,
+        "native_tap_confirmed": true
+      }
+    },
+    "axis_vertical": {
+      "before_build": "pr_1",
+      "before": {
+        "mode": "axis_vertical",
+        "web_x": 0,
+        "web_y": 0,
+        "web_width_px": 1080,
+        "web_height_px": 2337,
+        "screen_height_px": 2400,
+        "tap_x": 540,
+        "tap_y": 1800,
+        "native_tap_confirmed": true
+      },
+      "after_build": "pr_2",
+      "after": {
+        "mode": "axis_vertical",
+        "web_x": 0,
+        "web_y": 0,
+        "web_width_px": 1080,
+        "web_height_px": 2337,
+        "screen_height_px": 2400,
+        "tap_x": 540,
+        "tap_y": 1800,
+        "native_tap_confirmed": true
+      }
+    }
+  },
+  "additional_pr_2_controls": {
+    "automatic": {
+      "mode": "automatic",
+      "web_x": 0,
+      "web_y": 0,
+      "web_width_px": 1080,
+      "web_height_px": 2337,
+      "screen_height_px": 2400,
+      "tap_x": 540,
+      "tap_y": 1800,
+      "native_tap_confirmed": true
+    },
+    "disabled": {
+      "mode": "disabled",
+      "web_x": 0,
+      "web_y": 0,
+      "web_width_px": 1080,
+      "web_height_px": 2337,
+      "screen_height_px": 2400,
+      "tap_x": 540,
+      "tap_y": 1800,
+      "native_tap_confirmed": true
+    }
+  }
+}
