@@ -777,7 +777,8 @@ private fun MainStackComponent(
                     val consumedTopInsetPx = remember { mutableIntStateOf(0) }
                     val useWindowInsetsPadding =
                         stackState.ignoreHeaderHeight || state.heroInsetsFor(stackState.style) != null
-                    Box(
+                    ZLayerStack(
+                        items = stackState.children,
                         modifier = outerModifier
                             .onConsumedWindowInsetsChanged { consumedTopInsetPx.intValue = it.getTop(density) }
                             .size(
@@ -789,31 +790,29 @@ private fun MainStackComponent(
                                 scrollable(state, orientation)
                             }
                             .then(rootModifier),
-                        contentAlignment = dimension.alignment.toAlignment(),
-                    ) {
-                        stackState.children.forEach { child ->
-                            val applyTopInsets =
-                                stackState.appliesTopInsets(state) && !stackState.childIgnoresTopInsets(child, state)
-                            ComponentView(
-                                style = child,
-                                state = state,
-                                onClick = clickHandler,
-                                componentInteractionTracker = componentInteractionTracker,
-                                ancestorScrollOrientations = descendantScrollOrientations,
-                                modifier = Modifier
-                                    .conditional(applyTopInsets && !useWindowInsetsPadding) {
-                                        // Read header height at layout time. If set (hero case),
-                                        // it already includes status bar padding. Otherwise fall
-                                        // back to the unconsumed safe-drawing top inset.
-                                        headerOrInsetsTopPadding(state, safeDrawingInsets, consumedTopInsetPx)
-                                    }
-                                    .conditional(applyTopInsets && useWindowInsetsPadding) {
-                                        // Consume clearance so nested controls and badges cannot add it again.
-                                        windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
-                                    }
-                                    .contentAlpha(contentAlpha),
-                            )
-                        }
+                        alignment = dimension.alignment.toAlignment(),
+                    ) { child, childModifier ->
+                        val applyTopInsets =
+                            stackState.appliesTopInsets(state) && !stackState.childIgnoresTopInsets(child, state)
+                        ComponentView(
+                            style = child,
+                            state = state,
+                            onClick = clickHandler,
+                            componentInteractionTracker = componentInteractionTracker,
+                            ancestorScrollOrientations = descendantScrollOrientations,
+                            modifier = childModifier
+                                .conditional(applyTopInsets && !useWindowInsetsPadding) {
+                                    // Read header height at layout time. If set (hero case),
+                                    // it already includes status bar padding. Otherwise fall
+                                    // back to the unconsumed safe-drawing top inset.
+                                    headerOrInsetsTopPadding(state, safeDrawingInsets, consumedTopInsetPx)
+                                }
+                                .conditional(applyTopInsets && useWindowInsetsPadding) {
+                                    // Consume clearance so nested controls and badges cannot add it again.
+                                    windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
+                                }
+                                .contentAlpha(contentAlpha),
+                        )
                     }
                 }
             }
