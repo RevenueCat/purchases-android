@@ -15,6 +15,7 @@ import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.parseRGBAColor
+import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.utils.PreviewOfferingParser
 import com.revenuecat.purchases.utils.getLifetimePackageJSON
 import com.revenuecat.purchases.utils.stubINAPPStoreProduct
@@ -311,6 +312,32 @@ class OfferingsTest {
         assertThat(offerings.current).isNull()
         assertThat(offerings["offering_a"]).isNull()
         assertThat(offerings["offering_b"]).isNull()
+    }
+
+    @Test
+    fun `createOfferings warns about offerings dropped because none of their products could be found`() {
+        val productId = "com.myproduct.bad"
+        val products = mapOf(productId to listOf(getStoreProduct(productId, annualPeriod, annualBasePlanId)))
+
+        assertLogs(
+            listOf(
+                LogMessage(LogLevel.WARN, OfferingStrings.OFFERING_EMPTY.format("offering_a")),
+                LogMessage(LogLevel.WARN, OfferingStrings.OFFERING_EMPTY.format("offering_b")),
+            ),
+        ) {
+            offeringsParser.createOfferings(getOfferingsJSON(), products)
+        }
+    }
+
+    @Test
+    fun `createOfferings warns with the Test Store message when the configured store is the Test Store`() {
+        assertWarnLog(OfferingStrings.OFFERING_EMPTY_TEST_STORE.format("offering_a")) {
+            offeringsParser.createOfferings(
+                getOfferingsJSON(),
+                emptyMap(),
+                configuredStore = Store.TEST_STORE,
+            )
+        }
     }
 
     @Test

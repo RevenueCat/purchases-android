@@ -62,12 +62,12 @@ internal abstract class OfferingParser {
         val offerings = mutableMapOf<String, Offering>()
         for (i in 0 until jsonOfferings.length()) {
             val offeringJson = jsonOfferings.getJSONObject(i)
-            createOffering(offeringJson, productsById, uiConfig)?.let {
-                offerings[it.identifier] = it
-
-                if (it.availablePackages.isEmpty()) {
-                    warnLog { offeringEmptyMessage(it.identifier, configuredStore) }
-                }
+            val offering = createOffering(offeringJson, productsById, uiConfig)
+            if (offering != null) {
+                offerings[offering.identifier] = offering
+            } else {
+                // createOffering returns null when none of the offering's packages resolved to a product.
+                warnLog { offeringEmptyMessage(offeringJson.getString("identifier"), configuredStore) }
             }
         }
 
