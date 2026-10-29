@@ -56,7 +56,22 @@ internal class StackBoundedCompatibilityTests {
             listOf(Fixed(20u), Fixed(30u), Fixed(40u)), listOf(Fill(), Fill(), Fill()),
             listOf(Fixed(20u), Fill(), Fixed(40u)), listOf(Fit(), Fill(), Fit()),
         )
-        compare(listOf(false, true).flatMap { horizontal ->
+        compare(linearCases(patterns, listOf(Fill(), Fit(), Fixed(120u))))
+    }
+
+    @Test
+    fun `bounded spacers retain rounding and shrink when children exhaust the available space`() {
+        compare(
+            linearCases(
+                listOf(listOf(Fixed(20u), Fixed(30u), Fixed(40u)), listOf(Fixed(600u), Fixed(20u), Fixed(40u))),
+                listOf(Fill(), Fixed(100u), Fixed(201u)),
+            ),
+            width = 201, height = 401,
+        )
+    }
+
+    private fun linearCases(patterns: List<List<SizeConstraint>>, roots: List<SizeConstraint>) =
+        listOf(false, true).flatMap { horizontal ->
             fun size(main: SizeConstraint) = if (horizontal) Size(main, Fill()) else Size(Fill(), main)
             LayoutDirection.values().flatMap { direction ->
                 FlexDistribution.values().flatMap { distribution ->
@@ -65,13 +80,22 @@ internal class StackBoundedCompatibilityTests {
                             Dimension.Horizontal(VerticalAlignment.values()[alignment], distribution)
                         } else Dimension.Vertical(HorizontalAlignment.values()[alignment], distribution)
                         patterns.flatMap { pattern ->
-                            listOf(Fill(), Fit(), Fixed(120u)).map { root ->
+                            roots.map { root ->
                                 Case(direction, dimension, size(root), pattern.map(::size))
                             }
                         }
                     }
                 }
             }
+        }
+
+    @Test
+    fun `small remaining space never creates a negative edge spacer`() {
+        compare(LayoutDirection.values().map { direction ->
+            Case(
+                direction, Dimension.Horizontal(VerticalAlignment.CENTER, FlexDistribution.SPACE_AROUND),
+                Size(Fixed(103u), Fill()), List(4) { Size(Fixed(20u), Fill()) },
+            )
         })
     }
 
@@ -91,7 +115,7 @@ internal class StackBoundedCompatibilityTests {
         })
     }
 
-    private fun compare(cases: List<Case>) {
+    private fun compare(cases: List<Case>, width: Int = 200, height: Int = 400) {
         var current by mutableStateOf(0)
         rule.setContent {
             val case = cases[current]
@@ -100,7 +124,7 @@ internal class StackBoundedCompatibilityTests {
                     Row {
                         listOf(true, false).forEach { reference ->
                             val tag = if (reference) "reference" else "actual"
-                            Box(Modifier.requiredSize(200.dp, 400.dp).testTag(tag)) { Render(case, reference, tag) }
+                            Box(Modifier.requiredSize(width.dp, height.dp).testTag(tag)) { Render(case, reference, tag) }
                         }
                     }
                 }
@@ -108,15 +132,17 @@ internal class StackBoundedCompatibilityTests {
         }
         cases.forEachIndexed { index, case ->
             rule.runOnIdle { current = index }
-            assertThat(childBounds("actual")).describedAs(case.toString()).isEqualTo(childBounds("reference"))
+            assertThat(childBounds("actual", case.children.size)).describedAs(case.toString())
+                .isEqualTo(childBounds("reference", case.children.size))
         }
     }
 
-    private fun childBounds(prefix: String): List<Float> {
+    private fun childBounds(prefix: String, count: Int): List<Float> {
         val parent = rule.onNodeWithTag(prefix).fetchSemanticsNode().boundsInRoot
-        return (0..2).flatMap { index ->
+        return (0 until count).flatMap { index ->
             val child = rule.onNodeWithTag("$prefix-$index").fetchSemanticsNode().boundsInRoot
-            listOf(child.left - parent.left, child.top - parent.top, child.width, child.height)
+            if (child.width == 0f || child.height == 0f) listOf(0f, 0f, 0f, 0f)
+            else listOf(child.left - parent.left, child.top - parent.top, child.width, child.height)
         }
     }
 
