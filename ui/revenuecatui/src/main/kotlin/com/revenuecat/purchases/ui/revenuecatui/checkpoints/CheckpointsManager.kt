@@ -40,10 +40,13 @@ internal class CheckpointPresentation(
 )
 
 /**
- * What a checkpoint run produced: the terminal [flowOutcome] of whatever it presented (null when nothing was),
- * and [backedOut], true when the workflow's gate was not passed, or when an ungated flow went away because the
- * user navigated back (system back, or a navigate-back action on a workflow's first step) without purchasing or
- * restoring.
+ * The result of a checkpoint run.
+ *
+ * [flowOutcome] is the terminal outcome of the presented flow, or null if no flow appeared.
+ * [backedOut] is true when:
+ * - The workflow did not pass its gate.
+ * - An ungated flow closed through back navigation without a purchase or restore.
+ *   Back navigation includes system back and a navigate-back action on the first step.
  *
  * [failed] is true when the checkpoint could not be served before anything was on screen: the failure went to
  * the error presenter and the run is not reported as passed. [blockedByPresentedFlow] is true when the checkpoint
