@@ -362,28 +362,6 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
     }
 
     @Test
-    fun `Should restore the visible fallback after a sheet dismiss`() {
-        val state = paywallState(
-            packagesOutsideTabs = listOf(
-                packageInfo(
-                    TestData.Packages.annual,
-                    isSelectedByDefault = true,
-                    visibilityOverrides = listOf(canTrialOverride(false, visible = false)),
-                ),
-                packageInfo(TestData.Packages.monthly, isSelectedByDefault = false),
-            ),
-            packagesByTab = emptyMap(),
-            initialSelectedTabIndex = null,
-            customVariables = mapOf("can_trial" to CustomVariableValue.Boolean(false)),
-        )
-
-        state.resetToDefaultPackage()
-
-        assertThat(state.peekDefaultPackageUniqueIdAfterSheetDismiss()).isNotNull()
-        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
-    }
-
-    @Test
     fun `Should prefer an outside-tabs default over a tab package that is not a default`() {
         val state = paywallState(
             packagesOutsideTabs = listOf(packageInfo(TestData.Packages.annual, isSelectedByDefault = true)),
@@ -392,8 +370,6 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
             ),
             initialSelectedTabIndex = 0,
         )
-
-        state.resetToDefaultPackage()
 
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
     }
@@ -439,12 +415,6 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
             initialSelectedTabIndex = null,
         )
 
-        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
-
-        state.update(selectedPackageUniqueId = TestData.Packages.monthly.identifier)
-        state.resetToDefaultPackage()
-
-        assertThat(state.peekDefaultPackageUniqueIdAfterSheetDismiss()).isEqualTo(TestData.Packages.annual.identifier)
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
     }
 
@@ -534,27 +504,6 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
     }
 
     @Test
-    fun `Resetting to the default package reconciles a default hidden by a window size rule`() {
-        val hiddenDefault = packageInfo(
-            TestData.Packages.monthly,
-            isSelectedByDefault = true,
-            visibilityOverrides = listOf(hiddenWhenWiderThanOverride(width = 700.0)),
-        )
-        val visiblePackage = packageInfo(TestData.Packages.annual, isSelectedByDefault = false)
-        val state = paywallState(
-            packagesOutsideTabs = listOf(hiddenDefault, visiblePackage),
-            packagesByTab = emptyMap(),
-            initialSelectedTabIndex = null,
-        )
-        state.paywallBoundsDp = DpSize(800.dp, 600.dp)
-        state.update(selectedPackageUniqueId = visiblePackage.uniqueId)
-
-        state.resetToDefaultPackage()
-
-        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
-    }
-
-    @Test
     fun `Reconciles a user-selected package hidden by a window size rule`() {
         val hideable = packageInfo(
             TestData.Packages.monthly,
@@ -598,7 +547,7 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
     }
 
     @Test
-    fun `Sheet reset keeps a hidden tab selection when nothing is visible`() {
+    fun `Analytics default retains the tab selection when nothing is visible`() {
         val hiddenDefault = packageInfo(
             TestData.Packages.monthly,
             isSelectedByDefault = true,
@@ -616,10 +565,7 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
         )
         state.paywallBoundsDp = DpSize(800.dp, 600.dp)
 
-        assertThat(state.peekDefaultPackageUniqueIdAfterSheetDismiss()).isEqualTo(hiddenDefault.uniqueId)
-        state.resetToDefaultPackage()
-
-        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
+        assertThat(state.defaultPackageForPackageRowAnalytics()).isEqualTo(TestData.Packages.monthly)
     }
 
     @Test
@@ -692,7 +638,7 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
     }
 
     @Test
-    fun `Sheet reset keeps a remembered tab package visible only while selected`() {
+    fun `Analytics default accepts a remembered tab package visible only while selected`() {
         val selectedOnly = packageInfo(
             TestData.Packages.monthly,
             isSelectedByDefault = false,
@@ -708,9 +654,7 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
         state.paywallBoundsDp = DpSize(400.dp, 800.dp)
         state.update(selectedPackageUniqueId = selectedOnly.uniqueId)
 
-        state.resetToDefaultPackage()
-
-        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
+        assertThat(state.defaultPackageForPackageRowAnalytics()).isEqualTo(TestData.Packages.monthly)
     }
 
     @Test
@@ -763,7 +707,7 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
     }
 
     @Test
-    fun `Reconcile prefers the tab's authored default over one outside the tabs, matching sheet dismiss`() {
+    fun `Reconcile prefers the tab's authored default over one outside the tabs`() {
         val hiddenSelected = packageInfo(
             TestData.Packages.weekly,
             isSelectedByDefault = false,
@@ -901,7 +845,7 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
     }
 
     @Test
-    fun `Peek after sheet dismiss skips a default hidden at the measured bounds`() {
+    fun `Analytics default skips a package hidden at the measured bounds`() {
         val hiddenDefault = packageInfo(
             TestData.Packages.monthly,
             isSelectedByDefault = true,
@@ -915,7 +859,7 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
         )
         state.paywallBoundsDp = DpSize(800.dp, 600.dp)
 
-        assertThat(state.peekDefaultPackageUniqueIdAfterSheetDismiss()).isEqualTo(visibleOther.uniqueId)
+        assertThat(state.defaultPackageForPackageRowAnalytics()).isEqualTo(visibleOther.pkg)
     }
 
     @Test

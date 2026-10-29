@@ -167,40 +167,4 @@ internal class WindowSizeSelectionReconcileTests {
 
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
     }
-
-    @Test
-    fun `a sheet dismiss picks the same package as a resize`() {
-        val state = stateWithASecondAuthoredDefault()
-
-        val afterSheetDismiss = state.peekDefaultPackageUniqueIdAfterSheetDismiss(wideWindow)
-        state.reconcileSelectionForWindowSize(wideWindow)
-
-        assertThat(afterSheetDismiss).isEqualTo(state.selectedPackageInfo?.uniqueId)
-    }
-
-    @Test
-    fun `a sheet dismiss skips a package that a selected rule hides`() {
-        val state = FakePaywallState(
-            components = listOf(
-                packageComponent(
-                    packageId = TestData.Packages.monthly.identifier,
-                    isSelectedByDefault = true,
-                    overrides = listOf(
-                        ComponentOverride(
-                            conditions = listOf(ComponentOverride.Condition.Selected),
-                            properties = PartialPackageComponent(visible = false),
-                        ),
-                    ),
-                ),
-                packageComponent(packageId = TestData.Packages.annual.identifier),
-            ),
-            packages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
-        )
-
-        val afterSheetDismiss = state.peekDefaultPackageUniqueIdAfterSheetDismiss(narrowWindow)
-        state.reconcileSelectionForWindowSize(narrowWindow)
-
-        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
-        assertThat(afterSheetDismiss).isEqualTo(state.selectedPackageInfo?.uniqueId)
-    }
 }

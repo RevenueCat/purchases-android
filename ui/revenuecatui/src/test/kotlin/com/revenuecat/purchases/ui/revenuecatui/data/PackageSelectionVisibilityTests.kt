@@ -52,25 +52,6 @@ internal class PackageSelectionVisibilityTests {
     }
 
     @Test
-    fun `measurement selects the first revealed package when no default is authored`() {
-        val state = state(
-            StackComponent(
-                components = listOf(pkg(monthly), pkg(annual)),
-                visible = false,
-                overrides = listOf(ComponentOverride(
-                    conditions = listOf(wideCondition),
-                    properties = PartialStackComponent(visible = true),
-                )),
-            ),
-        )
-        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthly)
-
-        state.reconcileSelectionForWindowSize(wide)
-
-        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthly)
-    }
-
-    @Test
     fun `initial selection ignores packages in a closed sheet when no default is authored`() {
         val state = state(
             ButtonComponent(
@@ -89,7 +70,7 @@ internal class PackageSelectionVisibilityTests {
     }
 
     @Test
-    fun `selected-only default content is selected initially and after reset`() {
+    fun `selected-only default content is selected initially and remains the analytics default`() {
         val selectedOnly = StackComponent(
             components = emptyList(),
             visible = false,
@@ -103,9 +84,7 @@ internal class PackageSelectionVisibilityTests {
         state.paywallBoundsDp = wide
         state.update(selectedPackageUniqueId = annual.identifier)
 
-        state.resetToDefaultPackage()
-
-        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthly)
+        assertThat(state.defaultPackageForPackageRowAnalytics()).isEqualTo(monthly)
     }
 
     @Test
