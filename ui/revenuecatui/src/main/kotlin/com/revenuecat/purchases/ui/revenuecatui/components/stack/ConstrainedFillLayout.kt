@@ -113,9 +113,10 @@ internal object ConstrainedFillLayout {
                 minHeight = if (orientation == Orientation.Vertical) 0 else constraints.minHeight,
             )
             measurables.forEachIndexed { index, measurable ->
-                if (fillConstraints[index] != null) {
+                val fill = fillConstraints[index]
+                if (fill != null) {
                     placeables[index] = measurable.measure(
-                        constraints.withFillMainAxisSize(fillSizes[index], orientation)
+                        constraints.withFillMainAxisSize(fillSizes[index], orientation, capped = fill.max != null)
                             .forFillChild(measurable, crossAxisMinimums, this),
                     )
                 }
@@ -215,13 +216,13 @@ private fun Constraints.mainAxisMin(orientation: Orientation): Int =
 private fun Constraints.mainAxisMax(orientation: Orientation): Int =
     if (orientation == Orientation.Horizontal) maxWidth else maxHeight
 
-// A scroll allocation is a minimum, so a Fill child can still grow with its content.
-// Bounded parents retain Row/Column's exact weighted allocation.
-private fun Constraints.withFillMainAxisSize(size: Int, orientation: Orientation): Constraints =
+// Uncapped Fill can grow from its scroll allocation. A capped Fill keeps its exact share,
+// as under bounded Row/Column sizing, so the child's cap cannot force an expansion or be lost to native fallback.
+private fun Constraints.withFillMainAxisSize(size: Int, orientation: Orientation, capped: Boolean): Constraints =
     if (orientation == Orientation.Horizontal) {
-        copy(minWidth = size, maxWidth = if (hasBoundedWidth) size else Constraints.Infinity, minHeight = 0)
+        copy(minWidth = size, maxWidth = if (hasBoundedWidth || capped) size else Constraints.Infinity, minHeight = 0)
     } else {
-        copy(minWidth = 0, minHeight = size, maxHeight = if (hasBoundedHeight) size else Constraints.Infinity)
+        copy(minWidth = 0, minHeight = size, maxHeight = if (hasBoundedHeight || capped) size else Constraints.Infinity)
     }
 
 private fun Placeable.mainAxisSize(orientation: Orientation): Int =
