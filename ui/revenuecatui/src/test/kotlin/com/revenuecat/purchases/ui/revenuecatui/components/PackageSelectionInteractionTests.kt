@@ -34,6 +34,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TabsComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleBottomSheetScaffold
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
@@ -154,7 +155,7 @@ internal class PackageSelectionInteractionTests {
     fun `sheet entry before measurement and sheet choices do not overwrite destination tab memory`() {
         val tabs = TabsComponent(
             tabs = listOf(
-                tab("first", pkg(monthly), pkg(annual), sheetButton(pkg(monthly, default = true))),
+                tab("first", pkg(monthly, default = true), pkg(annual), sheetButton(pkg(monthly, default = true))),
                 tab("second", pkg(monthlyXl, default = true)),
             ),
             control = TabsComponent.TabControl.Buttons(StackComponent(emptyList())),
@@ -199,6 +200,88 @@ internal class PackageSelectionInteractionTests {
 
         composeTestRule.onNodeWithText("Monthly plan").assertDoesNotExist()
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthly)
+    }
+
+    @Test
+    fun `sheet clicks are discarded and close analytics reports the original manual root selection`() {
+        val state = state(
+            pkg(monthly, default = true),
+            pkg(annual),
+            sheetButton(pkg(monthlyXl, default = true), pkg(annualXl)),
+        )
+        state.update(selectedPackageUniqueId = annual.identifier)
+        val button = (state.stack as StackComponentStyle).children[2] as ButtonComponentStyle
+        val closes = mutableListOf<Pair<String?, String?>>()
+        val tracker = PaywallComponentInteractionTracker { interaction ->
+            if (interaction.componentValue == "close") {
+                closes.add(interaction.currentPackageIdentifier to interaction.resultingPackageIdentifier)
+            }
+        }
+        composeTestRule.setContent {
+            SimpleBottomSheetScaffold(sheetState = state.sheet) {
+                MeasurePaywallBounds(state, Modifier.requiredSize(300.dp, 400.dp)) {
+                    ComponentView(state.stack, state, onClick = {})
+                }
+            }
+        }
+        composeTestRule.runOnIdle {
+            state.sheet.show(sheetDestination(button), state, tracker, onClick = {})
+            assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthlyXl)
+        }
+
+        composeTestRule.onNodeWithText("Annual XL plan").performClick()
+        composeTestRule.runOnIdle {
+            assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annualXl)
+            state.sheet.hide()
+            assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
+        }
+
+        assertThat(closes).containsExactly(annualXl.identifier to annual.identifier)
+    }
+
+    @Test
+    fun `replacing and reopening sheets preserves the paywall selection and discards sheet memory`() {
+        val state = state(
+            pkg(monthly, default = true),
+            pkg(annual),
+            sheetButton(pkg(monthlyXl, default = true), pkg(annualXl)),
+            sheetButton(pkg(annualXl, default = true)),
+        )
+        val children = (state.stack as StackComponentStyle).children
+        val first = sheetDestination(children[2] as ButtonComponentStyle)
+        val second = sheetDestination(children[3] as ButtonComponentStyle)
+        val tracker = PaywallComponentInteractionTracker { }
+        state.update(selectedPackageUniqueId = annual.identifier)
+
+        state.sheet.show(first, state, tracker, onClick = {})
+        state.update(selectedPackageUniqueId = annualXl.identifier)
+        state.sheet.show(second, state, tracker, onClick = {})
+        state.sheet.hide()
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
+        state.update(selectedPackageUniqueId = monthly.identifier)
+        state.sheet.show(first, state, tracker, onClick = {})
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthlyXl)
+        state.sheet.hide()
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthly)
+    }
+
+    @Test
+    fun `dismissing a sheet restores an originally unselected paywall`() {
+        val state = state(sheetButton(pkg(monthlyXl, default = true), pkg(annualXl)))
+        val button = (state.stack as StackComponentStyle).children[0] as ButtonComponentStyle
+        val tracker = PaywallComponentInteractionTracker { }
+        assertThat(state.selectedPackageInfo).isNull()
+
+        state.sheet.show(sheetDestination(button), state, tracker, onClick = {})
+        state.update(selectedPackageUniqueId = annualXl.identifier)
+        state.sheet.hide()
+
+        assertThat(state.selectedPackageInfo).isNull()
+        state.sheet.show(sheetDestination(button), state, tracker, onClick = {})
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthlyXl)
+        state.sheet.hide()
+        assertThat(state.selectedPackageInfo).isNull()
     }
 
     private fun sheetButton(vararg children: PaywallComponent) = ButtonComponent(

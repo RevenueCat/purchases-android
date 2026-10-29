@@ -181,6 +181,8 @@ internal class PackageSelectionVisibilityTests {
         val sheet = (button.action as ButtonComponentStyle.Action.NavigateTo).destination
             as ButtonComponentStyle.Action.NavigateTo.Destination.Sheet
         state.paywallBoundsDp = wide
+        state.reconcileSelectionForWindowSize(wide)
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(weekly)
         state.sheet.show(sheet, state, PaywallComponentInteractionTracker { }, onClick = {})
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
 

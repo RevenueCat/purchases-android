@@ -327,6 +327,10 @@ internal sealed interface PaywallState {
 
             private var selectedPackageUniqueId by mutableStateOf(initialSelectedPackageUniqueId)
 
+            private data class PackageSelectionBeforeSheet(val uniqueId: String?)
+
+            private var packageSelectionBeforeSheet: PackageSelectionBeforeSheet? = null
+
             private var defaultPackageInfo: SelectedPackageInfo? by mutableStateOf(null)
 
             internal fun setDefaultPackage(info: SelectedPackageInfo) {
@@ -471,7 +475,16 @@ internal sealed interface PaywallState {
 
             fun selectPackageForSheetEntry() {
                 // Entry arbitration is independent of measurement and must not update the underlying tab memory.
+                if (packageSelectionBeforeSheet == null) {
+                    packageSelectionBeforeSheet = PackageSelectionBeforeSheet(selectedPackageUniqueId)
+                }
                 selectedPackageUniqueId = selectionResolver().enterSheet(selectedPackageUniqueId)
+            }
+
+            fun restorePackageAfterSheetDismiss() {
+                val selection = packageSelectionBeforeSheet ?: return
+                selectedPackageUniqueId = selection.uniqueId
+                packageSelectionBeforeSheet = null
             }
 
             fun reconcileSelectionForWindowSize(windowDpSize: DpSize?) {
@@ -496,6 +509,10 @@ internal sealed interface PaywallState {
                 )
 
             fun peekSelectedPackageInfoAfterSheetDismiss(): SelectedPackageInfo? {
+                packageSelectionBeforeSheet?.let { selection ->
+                    return selection.uniqueId?.let { findPackageInfoByUniqueId(it)?.selectionInfo() }
+                        ?: defaultPackageInfo
+                }
                 val uid = peekDefaultPackageUniqueIdAfterSheetDismiss()
                 val info = uid?.let { findPackageInfoByUniqueId(it) }
                 return if (uid != null && info != null) {

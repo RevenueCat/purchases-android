@@ -365,7 +365,7 @@ internal fun SimpleSheetState.show(
                     resultingRootPackage = resulting?.rcPackage,
                 ),
             )
-            state.resetToDefaultPackage()
+            state.restorePackageAfterSheetDismiss()
         },
     )
     state.selectPackageForSheetEntry()
