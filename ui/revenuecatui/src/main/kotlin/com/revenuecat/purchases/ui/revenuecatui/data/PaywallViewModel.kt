@@ -1737,7 +1737,12 @@ internal class PaywallViewModelImpl(
         val offeringId = step.offeringIdentifier ?: screen.offeringIdentifier
             ?: return StepResolution.Ready(screenId, screen, offering = null)
         val offering = offerings[offeringId]
-            ?: return StepResolution.Invalid("Offering '$offeringId' not found for step '${step.id}'")
+            ?: return StepResolution.Invalid(
+                "Offering '$offeringId' not found for step '${step.id}' of workflow '${workflow.id}'. " +
+                    "The offering is either missing from the offerings response, or was dropped because none of " +
+                    "its packages resolved to a product fetched from the store. Check the logs for a " +
+                    "\"No packages could be found for offering\" warning.",
+            )
         return StepResolution.Ready(screenId, screen, offering)
     }
 
