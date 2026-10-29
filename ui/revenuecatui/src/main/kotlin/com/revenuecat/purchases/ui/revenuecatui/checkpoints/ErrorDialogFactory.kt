@@ -1,20 +1,10 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
-import android.app.Activity
-import android.content.Context
-import android.view.View
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLayoutDirection
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
-import com.revenuecat.purchases.ui.revenuecatui.composables.ErrorDialog
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
-import com.revenuecat.purchases.ui.revenuecatui.helpers.toLayoutDirection
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -133,33 +123,5 @@ internal fun ErrorDialogFactory.asErrorPresenter(
     // after completing, only the fallback above may present UI.
     scope.launch {
         present(response.await())
-    }
-}
-
-/**
- * Creates the dialog View for a factory-supplied [CheckpointErrorDialog], using the SDK's existing dialog layout
- * but with the factory-provided [CheckpointErrorDialog.message] and [CheckpointErrorDialog.buttonTitle] in place
- * of the localized defaults. Used by [CheckpointsManager] when wiring a [ErrorDialogFactory] to a
- * [DefaultErrorPresenter].
- */
-internal fun factoryErrorDialogContent(
-    activity: Activity,
-    resources: Context,
-    dialog: CheckpointErrorDialog,
-    onAcknowledged: () -> Unit,
-): View = ComposeView(activity).apply {
-    setContent {
-        val configuration = resources.resources.configuration
-        CompositionLocalProvider(
-            LocalContext provides resources,
-            LocalConfiguration provides configuration,
-            LocalLayoutDirection provides configuration.toLayoutDirection(),
-        ) {
-            ErrorDialog(
-                dismissRequest = onAcknowledged,
-                error = dialog.message,
-                confirmButtonText = dialog.buttonTitle,
-            )
-        }
     }
 }

@@ -46,7 +46,9 @@ internal class DefaultErrorPresenter(
         resources: Context,
         message: String,
         onAcknowledged: () -> Unit,
-    ) -> View = ::errorDialogContent,
+    ) -> View = { activity, resources, message, onAcknowledged ->
+        errorDialogContent(activity, resources, message, onAcknowledged)
+    },
 ) : ErrorPresenter {
 
     private class Presentation(val params: ErrorPresenter.Params, val completion: ErrorPresenter.Completion) {
@@ -193,14 +195,16 @@ internal class DefaultErrorPresenter(
         }
 }
 
-// The paywall's own error dialog, unchanged: the Compose AlertDialog brings the scrim and the Material look, so the
-// window hosting it only needs to be transparent. The view keeps the activity as its context (the dialog's window
-// is built from it); only what the composition resolves follows the localized resources.
-private fun errorDialogContent(
+// The paywall's own error dialog, with [buttonTitle] in place of the localized "OK" when given: the Compose
+// AlertDialog brings the scrim and the Material look, so the window hosting it only needs to be transparent. The view
+// keeps the activity as its context (the dialog's window is built from it); only what the composition resolves
+// follows the localized resources.
+internal fun errorDialogContent(
     activity: Activity,
     resources: Context,
     message: String,
     onAcknowledged: () -> Unit,
+    buttonTitle: String? = null,
 ): View = ComposeView(activity).apply {
     setContent {
         val configuration = resources.resources.configuration
@@ -209,7 +213,7 @@ private fun errorDialogContent(
             LocalConfiguration provides configuration,
             LocalLayoutDirection provides configuration.toLayoutDirection(),
         ) {
-            ErrorDialog(dismissRequest = onAcknowledged, error = message)
+            ErrorDialog(dismissRequest = onAcknowledged, error = message, confirmButtonText = buttonTitle)
         }
     }
 }
