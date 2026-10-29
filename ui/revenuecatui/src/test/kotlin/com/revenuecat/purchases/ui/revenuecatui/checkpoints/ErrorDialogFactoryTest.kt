@@ -407,7 +407,7 @@ class ErrorDialogFactoryTest {
 
     // endregion
 
-    // ---- helpers ----
+    // region: helpers
 
     /**
      * Presents [params] through the factory and returns the completion handed to the presenter,
@@ -446,4 +446,6 @@ class ErrorDialogFactoryTest {
             heldCompletion!!.complete()
         }
     }
+
+    // endregion
 }

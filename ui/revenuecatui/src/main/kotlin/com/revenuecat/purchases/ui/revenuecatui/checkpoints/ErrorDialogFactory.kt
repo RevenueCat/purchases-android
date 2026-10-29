@@ -23,14 +23,14 @@ import kotlinx.coroutines.launch
 /**
  * Provides the content of the error dialog the SDK shows when a checkpoint fails. The SDK calls [createDialog]
  * from the main thread with the error information; the factory calls [Completion.complete] with custom dialog
- * content, or [null] to let the SDK use its own localized copy.
+ * content, or `null` to let the SDK use its own localized copy.
  *
  * The factory may hold the completion and call it later from any thread to let a hybrid bridge wait for the host
  * side to respond. The SDK applies a [TIMEOUT_MS]-millisecond timeout: if the completion is not called in time,
  * the SDK proceeds with its own copy and ignores any later completion.
  *
- * Set per call through [CheckpointParams.Builder.setErrorDialogFactory]. Takes effect when no [ErrorPresenter] is
- * set for the call or registered globally, and with lower precedence than either.
+ * Set per call through [CheckpointParams.Builder.setErrorDialogFactory]. Used only when no [ErrorPresenter] is
+ * set for the call or registered globally.
  *
  * @see CheckpointParams
  */
@@ -39,11 +39,11 @@ public fun interface ErrorDialogFactory {
 
     /**
      * Called on the main thread for each checkpoint error. Call [completion] with dialog content to show, or
-     * [null] to use the SDK's own localized copy. The completion may be called from any thread; the SDK applies a
+     * `null` to use the SDK's own localized copy. The completion may be called from any thread; the SDK applies a
      * [TIMEOUT_MS]-ms timeout and silently ignores completions that arrive after it.
      *
-     * A factory that throws is logged and the SDK falls back to its own dialog; that fallback's completion is
-     * the one that counts.
+     * A factory that throws is logged and the SDK shows its own dialog; any completion the factory already made
+     * is ignored.
      */
     public fun createDialog(params: Params, completion: Completion)
 
@@ -89,7 +89,7 @@ public fun interface ErrorDialogFactory {
     public fun interface Completion {
 
         /**
-         * Provides dialog content to the SDK, or [null] to use the SDK's own localized copy. May be called
+         * Provides dialog content to the SDK, or `null` to use the SDK's own localized copy. May be called
          * from any thread; only the first call counts.
          */
         public fun complete(dialog: CheckpointErrorDialog?)
@@ -106,9 +106,8 @@ public fun interface ErrorDialogFactory {
  * Converts this [ErrorDialogFactory] into an [ErrorPresenter] using [presenterFor] to create the underlying
  * presenter once the factory has responded or the timeout has elapsed.
  *
- * [presenterFor] receives the factory-supplied [CheckpointErrorDialog] when the factory provided one, or [null]
- * when the factory returned null, threw, or timed out (meaning: use the default dialog). This overload is the
- * testable core of the adapter; [CheckpointsManager] passes a production lambda; tests pass a recording one.
+ * [presenterFor] receives the factory-supplied [CheckpointErrorDialog] when the factory provided one, or `null`
+ * when the factory returned null, threw, or timed out (meaning: use the default dialog).
  */
 @OptIn(InviteOnlyCheckpointsAPI::class)
 internal fun ErrorDialogFactory.asErrorPresenter(
@@ -138,10 +137,7 @@ internal fun ErrorDialogFactory.asErrorPresenter(
         }
     }
 
-    val factoryCompletion = ErrorDialogFactory.Completion { dialog ->
-        response.complete(dialog)
-        // Late completions (after the timeout or a prior completion) are silently ignored.
-    }
+    val factoryCompletion = ErrorDialogFactory.Completion { dialog -> response.complete(dialog) }
 
     try {
         createDialog(factoryParams, factoryCompletion)

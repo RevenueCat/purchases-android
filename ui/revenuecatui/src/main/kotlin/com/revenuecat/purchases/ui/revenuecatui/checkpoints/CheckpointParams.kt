@@ -141,9 +141,9 @@ public class CheckpointParams private constructor(
             setPresentationMode(presentationMode)
 
         /**
-         * Provides custom dialog content for errors of this call; null lets the SDK pick the content itself.
-         * Takes effect only when no [ErrorPresenter] is set for this call or registered globally: the factory
-         * sits between those and the SDK's own dialog.
+         * Replaces any previously set error dialog factory; null clears it. The factory supplies the content of the
+         * error dialog for this call, and is used only when no [ErrorPresenter] is set for this call or registered
+         * globally.
          */
         @InternalRevenueCatAPI
         public fun setErrorDialogFactory(factory: ErrorDialogFactory?): Builder = apply {

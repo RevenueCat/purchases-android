@@ -126,7 +126,7 @@ class CheckpointsManagerFactoryTest {
 
         manager.runCheckpoint(mockPurchases, checkpointId, params)
 
-        // Factory was asked; SDK default was chosen (null completion) so defaultErrorPresenterFactory ran
+        // The factory completed with null, so the SDK's default presenter was created
         assertThat(factoryAsked).hasSize(1)
         assertThat(factoryAsked[0].checkpointIdentifier).isEqualTo(checkpointId)
         assertThat(factoryAsked[0].kind).isEqualTo(CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN)
@@ -190,7 +190,6 @@ class CheckpointsManagerFactoryTest {
         manager.runCheckpoint(mockPurchases, checkpointId, params)
 
         assertThat(factoryAsked).isTrue
-        // Factory returned null so SDK default is shown (defaultErrorPresenterFactory creates the presenter)
         assertThat(defaultErrorPresenters).hasSize(1)
     }
 
