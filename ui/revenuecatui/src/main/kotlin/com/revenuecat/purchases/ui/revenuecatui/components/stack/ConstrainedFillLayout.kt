@@ -13,6 +13,7 @@ import androidx.compose.ui.layout.MeasureResult
 import androidx.compose.ui.layout.MeasureScope
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
@@ -71,7 +72,9 @@ internal object ConstrainedFillLayout {
 
         if (constraints.isFullyUnbounded(orientation)) {
             // Nothing to distribute: every child, Fill or not, wraps its own content.
-            val measured = measurables.map { it.measure(constraints.forNonFillChild(consumed = 0, orientation)) }
+            val measured = measurables.map {
+                it.measure(constraints.forNonFillChild(consumed = 0, orientation).forFillChild(it, constraints, this))
+            }
             return layoutAndPlace(
                 placeables = measured,
                 mainAxisSize = measured.sumOf { it.mainAxisSize(orientation) } + totalSpacing,
@@ -103,7 +106,8 @@ internal object ConstrainedFillLayout {
             measurables.forEachIndexed { index, measurable ->
                 if (fillConstraints[index] != null) {
                     placeables[index] = measurable.measure(
-                        constraints.withExactMainAxisSize(fillSizes[index], orientation),
+                        constraints.withExactMainAxisSize(fillSizes[index], orientation)
+                            .forFillChild(measurable, constraints, this),
                     )
                 }
             }
@@ -129,7 +133,7 @@ internal object ConstrainedFillLayout {
      * after *every* preceding child.
      */
     @Suppress("LongParameterList")
-    private fun measureNonFillChildren(
+    private fun MeasureScope.measureNonFillChildren(
         measurables: List<Measurable>,
         fillConstraints: List<Fill?>,
         placeables: Array<Placeable?>,
@@ -143,12 +147,21 @@ internal object ConstrainedFillLayout {
             if (fillConstraints[index] != null) return@forEachIndexed
             val gaps = if (config.distribution.usesAllAvailableSpace) index else nonFillCount
             val consumed = nonFillSize + spacingPx * gaps
-            val placeable = measurable.measure(constraints.forNonFillChild(consumed, config.orientation))
+            val placeable = measurable.measure(
+                constraints.forNonFillChild(consumed, config.orientation).forFillChild(measurable, constraints, this),
+            )
             placeables[index] = placeable
             nonFillSize += placeable.mainAxisSize(config.orientation)
             nonFillCount++
         }
     }
+
+    private fun Constraints.forFillChild(measurable: Measurable, parent: Constraints, density: Density): Constraints =
+        preserveUnboundedFillMinimums(
+            (measurable.parentData as? ComponentSizeParentDataModifier)?.size,
+            parent,
+            density,
+        )
 }
 
 /**

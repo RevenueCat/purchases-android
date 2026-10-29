@@ -9,14 +9,12 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.constrainHeight
 import androidx.compose.ui.unit.constrainWidth
-import androidx.compose.ui.unit.dp
-import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.ComponentSizeParentDataModifier
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 
 /**
- * A layer stack keeps the viewport minimum for Fill-height children inside an outer scroll.
- * A Box drops that minimum, leaving Fill children with no height to fill. The maximum stays
+ * A layer stack keeps the viewport minimum for Fill children inside an outer scroll.
+ * A Box drops that minimum, leaving Fill children with no space to fill. The maximum stays
  * unbounded so content taller than the viewport can still grow and scroll.
  */
 @Composable
@@ -35,14 +33,10 @@ internal fun ZLayerStack(
         },
     ) { measurables, constraints ->
         val placeables = measurables.map { measurable ->
-            val fillHeight = (measurable.parentData as? ComponentSizeParentDataModifier)?.size?.height as? Fill
-            val minimumHeight = if (!constraints.hasBoundedHeight && fillHeight != null) {
-                val maximum = fillHeight.max?.let { maxOf(it, fillHeight.min ?: 0u).toInt().dp.roundToPx() }
-                constraints.minHeight.coerceAtMost(maximum ?: constraints.minHeight)
-            } else {
-                0
-            }
-            measurable.measure(constraints.copy(minWidth = 0, minHeight = minimumHeight))
+            val size = (measurable.parentData as? ComponentSizeParentDataModifier)?.size
+            measurable.measure(
+                constraints.copy(minWidth = 0, minHeight = 0).preserveUnboundedFillMinimums(size, constraints, this),
+            )
         }
         val width = constraints.constrainWidth(placeables.maxOfOrNull { it.width } ?: 0)
         val height = constraints.constrainHeight(placeables.maxOfOrNull { it.height } ?: 0)

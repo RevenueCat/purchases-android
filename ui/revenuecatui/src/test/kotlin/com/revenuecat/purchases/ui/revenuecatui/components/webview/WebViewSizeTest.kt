@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components.webview
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.requiredSize
@@ -51,6 +52,53 @@ internal class WebViewSizeTest {
         composeTestRule.runOnIdle {
             assertThat(view.height).isEqualTo(with(composeTestRule.density) { 400.dp.roundToPx() })
         }
+    }
+
+    @Test
+    fun `Fill native child keeps the viewport width under a horizontal scroll`() {
+        lateinit var view: View
+        composeTestRule.setContent {
+            Box(Modifier.requiredSize(200.dp, 400.dp)) {
+                AndroidView(
+                    factory = { context ->
+                        FrameLayout(context).apply {
+                            view = View(context)
+                            addView(
+                                view,
+                                ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
+                            )
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize()
+                        .horizontalScroll(rememberScrollState())
+                        .fillUnboundedAxisFromMinimum(Size(Fill(), Fill())),
+                )
+            }
+        }
+        composeTestRule.runOnIdle {
+            assertThat(view.width).isEqualTo(with(composeTestRule.density) { 200.dp.roundToPx() })
+        }
+    }
+
+    @Test
+    fun `Fit native view can remain wider than the viewport`() {
+        lateinit var view: View
+        composeTestRule.setContent {
+            Box(Modifier.requiredSize(200.dp, 400.dp)) {
+                AndroidView(
+                    factory = { context ->
+                        View(context).also { nativeView ->
+                            view = nativeView
+                            nativeView.layoutParams = ViewGroup.LayoutParams(650, ViewGroup.LayoutParams.MATCH_PARENT)
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize()
+                        .horizontalScroll(rememberScrollState())
+                        .fillUnboundedAxisFromMinimum(Size(Fit(), Fill())),
+                )
+            }
+        }
+        composeTestRule.runOnIdle { assertThat(view.width).isEqualTo(650) }
     }
 
     @Test
