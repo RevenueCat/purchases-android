@@ -17,7 +17,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
@@ -188,56 +187,6 @@ class ErrorDialogFactoryTest {
         assertThat(presenterDialogs).containsExactly(null as CheckpointErrorDialog?)
         presenters.single().complete()
         assertThat(outerCompletions).isEqualTo(1)
-    }
-
-    // endregion
-
-    // region: timeout
-
-    @Test
-    fun `factory not completing within the timeout falls back to SDK default`() {
-        scope.run {
-            val factory = ErrorDialogFactory { _, _ -> /* never completes */ }
-            factory.asPresenter(timeoutMs = 100).present(params, outerCompletion)
-
-            assertThat(presenterDialogs).isEmpty()
-
-            advanceTimeBy(101)
-
-            assertThat(presenterDialogs).containsExactly(null as CheckpointErrorDialog?)
-            verify(exactly = 1) { Logger.w(match { it.contains("timed out") }) }
-        }
-    }
-
-    @Test
-    fun `a completion arriving after the timeout is silently ignored`() {
-        scope.run {
-            var lateCompletion: ErrorDialogFactory.Completion? = null
-            val factory = ErrorDialogFactory { _, completion -> lateCompletion = completion }
-            factory.asPresenter(timeoutMs = 100).present(params, outerCompletion)
-
-            advanceTimeBy(101)
-            assertThat(presenterDialogs).hasSize(1) // timeout fired
-
-            lateCompletion!!.complete(CheckpointErrorDialog("Late", "OK"))
-
-            assertThat(presenterDialogs).hasSize(1) // no second presenter
-        }
-    }
-
-    @Test
-    fun `a factory completing before the timeout cancels it`() {
-        scope.run {
-            val factory = ErrorDialogFactory { _, completion -> completion.complete(null) }
-
-            factory.asPresenter(timeoutMs = 100).present(params, outerCompletion)
-
-            advanceTimeBy(200)
-
-            // Only one presenter (from the factory response, not from timeout)
-            assertThat(presenterDialogs).hasSize(1)
-            verify(exactly = 0) { Logger.w(match { it.contains("timed out") }) }
-        }
     }
 
     // endregion
@@ -425,11 +374,7 @@ class ErrorDialogFactoryTest {
      */
     private fun ErrorDialogFactory.asPresenter(
         scope: TestScope = this@ErrorDialogFactoryTest.scope,
-        timeoutMs: Long = ErrorDialogFactory.TIMEOUT_MS,
-    ): ErrorPresenter = asErrorPresenter(
-        scope = scope,
-        timeoutMs = timeoutMs,
-    ) { dialog ->
+    ): ErrorPresenter = asErrorPresenter(scope) { dialog ->
         presenterDialogs += dialog
         RecordingPresenter().also { presenters += it }
     }
