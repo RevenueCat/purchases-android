@@ -329,8 +329,10 @@ internal class PurchasesFactory(
                 automaticDeviceIdentifierCollectionEnabled,
             )
 
+            val localTransactionMetadataStore = LocalTransactionMetadataStore(contextForStorage, apiKey)
+
             val offlineCustomerInfoCalculator = OfflineCustomerInfoCalculator(
-                PurchasedProductsFetcher(cache, billing),
+                PurchasedProductsFetcher(cache, billing, localTransactionMetadataStore),
                 appConfig,
                 diagnosticsTracker,
             )
@@ -475,8 +477,6 @@ internal class PurchasesFactory(
             )
 
             val paywallPresentedCache = PaywallPresentedCache()
-
-            val localTransactionMetadataStore = LocalTransactionMetadataStore(contextForStorage, apiKey)
 
             val postReceiptHelper = PostReceiptHelper(
                 appConfig,
