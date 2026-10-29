@@ -98,6 +98,7 @@ class IdentityManagerIAMTests {
                 thirdArg<(() -> Unit)?>()?.invoke()
             }
             every { copyUnsyncedSubscriberAttributes(any(), any()) } just Runs
+            every { mergeAttributes(any(), any()) } just Runs
         }
         offeringsCache = mockk<OfferingsCache>().apply {
             every { clearCache() } just Runs
@@ -211,6 +212,21 @@ class IdentityManagerIAMTests {
         verify(exactly = 1) { backend.getCustomerInfo(serverID, false, any(), any()) }
         verify(exactly = 1) { deviceCache.cacheCustomerInfo(serverID, customerInfo) }
         verify(exactly = 0) { backend.logIn(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `IAM logIn merges the fresh CustomerInfo's subscriber attributes for the server-assigned user`() = runTest {
+        cachedAppUserID = anonymousID
+        createIdentityManager()
+        stubTokenLogIn(succeedWith = serverID)
+
+        logIn(googleIdentity)
+
+        verifyOrder {
+            deviceCache.cacheCustomerInfo(serverID, customerInfo)
+            subscriberAttributesManager.mergeAttributes(customerInfo, serverID)
+        }
+        verify(exactly = 0) { subscriberAttributesManager.mergeAttributes(any(), anonymousID) }
     }
 
     @Test
@@ -757,6 +773,7 @@ class IdentityManagerIAMTests {
         // The fetch itself went out for the server-assigned user, pinned to that user's token.
         verify(exactly = 1) { backend.getCustomerInfo(serverID, any(), any(), any()) }
         verify(exactly = 0) { deviceCache.cacheCustomerInfo(any(), any()) }
+        verify(exactly = 0) { subscriberAttributesManager.mergeAttributes(any(), any()) }
         assertThat(IdentityManager.isIdentityChangedError(result as PurchasesError)).isTrue()
         assertThat(identityManager.currentAppUserID).isEqualTo(identifiedID)
     }
