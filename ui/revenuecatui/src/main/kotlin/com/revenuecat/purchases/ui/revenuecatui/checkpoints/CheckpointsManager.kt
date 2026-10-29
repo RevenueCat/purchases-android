@@ -125,8 +125,9 @@ internal class CheckpointsManager(
     private val failed = CheckpointRun(flowOutcome = null, backedOut = false, failed = true)
 
     /**
-     * The app's error presenter for a call, or null when the SDK's own should be used. Precedence: per-call
-     * errorPresenter > registered errorPresenter > per-call errorDialogFactory.
+     * The app's error presenter for a call, or null when the SDK's own should be used. Checked in order, first
+     * non-null wins: per-call errorPresenter, registered errorPresenter, then a presenter built from the per-call
+     * errorDialogFactory.
      */
     @OptIn(InternalRevenueCatAPI::class)
     private fun appErrorPresenter(
