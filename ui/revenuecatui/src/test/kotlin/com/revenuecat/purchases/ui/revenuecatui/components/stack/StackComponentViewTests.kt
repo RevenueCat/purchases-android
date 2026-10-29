@@ -329,7 +329,14 @@ class StackComponentViewTests {
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
                 base = PaywallComponentsConfig(
-                    stack = StackComponent(components = listOf(component)),
+                    stack = StackComponent(components = listOf(
+                        component,
+                        PackageComponent(
+                            packageId = TestData.Packages.monthly.identifier,
+                            isSelectedByDefault = true,
+                            stack = StackComponent(emptyList()),
+                        ),
+                    )),
                     background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
                     stickyFooter = null,
                 ),
@@ -341,7 +348,7 @@ class StackComponentViewTests {
             identifier = "offering-id",
             serverDescription = "description",
             metadata = emptyMap(),
-            availablePackages = listOf(rcPackage),
+            availablePackages = listOf(rcPackage, TestData.Packages.monthly),
             paywallComponents = Offering.PaywallComponents(UiConfig(), data),
         )
         val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
