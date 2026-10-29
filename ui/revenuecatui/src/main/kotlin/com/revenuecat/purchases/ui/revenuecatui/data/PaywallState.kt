@@ -259,24 +259,16 @@ internal sealed interface PaywallState {
                 currentDate = dateProvider(),
             )
 
-            private val initialPackageCandidates = packages.packagesOutsideTabs +
-                packages.packagesByTab[initialSelectedTabIndex ?: 0].orEmpty()
+            private val initialSelectedPackageUniqueId = PackageSelectionResolver(
+                packages = packages,
+                selectedTabIndex = initialSelectedTabIndex ?: 0,
+                presentedSheet = initialSheetState.presentationKey.takeIf { initialSheetState.visible },
+                context = initialVisibilityContext,
+            ).initialSelection()
 
-            private val initialSelectedPackageOutsideTabs = packages.packagesOutsideTabs
-                .authoredDefaultSelection(initialVisibilityContext, initialPackageCandidates)
-                ?.uniqueId
-
-            /**
-             * Only used when a default *is* declared outside the tabs but a rule hid it, which would
-             * otherwise leave nothing selected. A paywall that declares no default still starts unselected.
-             */
-            private val visibleFallbackForHiddenDefaultOutsideTabs = packages.packagesOutsideTabs
-                .takeIf { infos -> infos.any { it.isSelectedByDefault } }
-                ?.firstOrNull { it.canSelect(initialVisibilityContext, initialPackageCandidates) }
-                ?.uniqueId
             private val tabsByUniqueId: Map<String, Set<Int>> = mutableMapOf<String, Set<Int>>().apply {
                 packages.packagesByTab.forEach { (tabIndex, packagesList) ->
-                    packagesList.forEach { packageInfo ->
+                    packagesList.filter { it.sheetPresentationKey == null }.forEach { packageInfo ->
                         val uniqueId = packageInfo.uniqueId
                         val tabIndices = getOrDefault(uniqueId, emptySet())
                         put(uniqueId, tabIndices + tabIndex)
@@ -324,23 +316,14 @@ internal sealed interface PaywallState {
             }
 
             private val selectedPackageByTab = mutableStateMapOf<Int, String?>().apply {
-                // Other tabs must resolve their defaults after publishing their own state, on first visit.
+                // Other tabs resolve their choices after publishing their own state, on first visit.
                 val index = initialSelectedTabIndex ?: 0
-                packages.packagesByTab[index]?.let { packagesList ->
-                    put(
-                        index,
-                        packagesList.defaultSelection(initialVisibilityContext, initialPackageCandidates)?.uniqueId,
-                    )
-                }
+                val uid = initialSelectedPackageUniqueId
+                if (!initialSheetState.visible && tabsByUniqueId[uid]?.contains(index) == true) put(index, uid)
             }
 
             var selectedTabIndex by mutableIntStateOf(initialSelectedTabIndex ?: 0)
                 private set
-
-            private val initialSelectedPackageUniqueId: String? = initialSelectedPackageOutsideTabs
-                ?: selectedPackageByTab[selectedTabIndex]
-                // Last, so a default declared inside a tab still wins.
-                ?: visibleFallbackForHiddenDefaultOutsideTabs
 
             private var selectedPackageUniqueId by mutableStateOf(initialSelectedPackageUniqueId)
 
@@ -434,16 +417,17 @@ internal sealed interface PaywallState {
             ) {
                 if (localeList != null) localeId = LocaleList(localeList.toLanguageTags()).toLocaleId()
 
-                if (selectedTabIndex != null) {
+                if (selectedTabIndex != null && selectedTabIndex != this.selectedTabIndex) {
                     this.selectedTabIndex = selectedTabIndex
                     val tabPackages = packages.packagesByTab[selectedTabIndex].orEmpty()
+                        .inPresentation(sheet.presentationKey.takeIf { sheet.visible })
                     val resolved = selectionResolver().switchTab(
-                        current = selectedPackageUniqueId,
                         remembered = selectedPackageByTab[selectedTabIndex],
                     ) ?: tabPackages.defaultSelection(
                         // Preserve the tab's initial choice when the current bounds hide every candidate.
                         visibilityContext(windowDpSize = null),
-                        packages.packagesOutsideTabs + tabPackages,
+                        packages.packagesOutsideTabs.inPresentation(sheet.presentationKey.takeIf { sheet.visible }) +
+                            tabPackages,
                     )?.uniqueId
                     selectedPackageUniqueId = resolved
                     if (resolved != null) update(selectedPackageUniqueId = resolved)
@@ -462,7 +446,9 @@ internal sealed interface PaywallState {
                 val currentTabIndex = selectedTabIndex
                 val tabsWithThisPackage = tabsByUniqueId[selectedPackageUniqueId]
                 val currentTabContainsThisPackage = tabsWithThisPackage?.contains(currentTabIndex) == true
-                if (currentTabContainsThisPackage) selectedPackageByTab[currentTabIndex] = selectedPackageUniqueId
+                if (!sheet.visible && currentTabContainsThisPackage) {
+                    selectedPackageByTab[currentTabIndex] = selectedPackageUniqueId
+                }
             }
 
             private fun selectionResolver(windowDpSize: DpSize? = paywallBoundsDp) = PackageSelectionResolver(
@@ -482,6 +468,11 @@ internal sealed interface PaywallState {
                 stateReader = stateStore::currentValueOrDefault,
                 currentDate = dateProvider(),
             )
+
+            fun selectPackageForSheetEntry() {
+                // Entry arbitration is independent of measurement and must not update the underlying tab memory.
+                selectedPackageUniqueId = selectionResolver().enterSheet(selectedPackageUniqueId)
+            }
 
             fun reconcileSelectionForWindowSize(windowDpSize: DpSize?) {
                 if (windowDpSize == null) return

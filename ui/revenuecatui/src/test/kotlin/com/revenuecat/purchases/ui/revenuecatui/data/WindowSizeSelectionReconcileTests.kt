@@ -124,6 +124,24 @@ internal class WindowSizeSelectionReconcileTests {
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
     }
 
+    @Test
+    fun `a later all hidden window retains the manual selection instead of the first hidden package`() {
+        val state = FakePaywallState(
+            components = listOf(
+                packageComponent(TestData.Packages.monthly.identifier, overrides = listOf(hiddenWhenWiderThan(700.0))),
+                packageComponent(TestData.Packages.annual.identifier, overrides = listOf(hiddenWhenWiderThan(700.0))),
+            ),
+            packages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+        )
+        state.update(selectedPackageUniqueId = TestData.Packages.annual.identifier)
+
+        state.reconcileSelectionForWindowSize(wideWindow)
+        state.reconcileSelectionForWindowSize(narrowWindow)
+        state.reconcileSelectionForWindowSize(wideWindow)
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
     private fun stateWithASecondAuthoredDefault(): PaywallState.Loaded.Components =
         FakePaywallState(
             components = listOf(

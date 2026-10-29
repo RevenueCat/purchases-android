@@ -368,7 +368,7 @@ internal fun SimpleSheetState.show(
             state.resetToDefaultPackage()
         },
     )
-    state.reconcileSelectionForWindowSize(state.paywallBoundsDp)
+    state.selectPackageForSheetEntry()
 }
 
 @Suppress("LongMethod")

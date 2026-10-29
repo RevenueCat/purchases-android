@@ -21,8 +21,11 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
 @OptIn(InternalRevenueCatAPI::class)
+@RunWith(RobolectricTestRunner::class)
 internal class PackageSelectionVisibilityTests {
     private val monthly = TestData.Packages.monthly
     private val annual = TestData.Packages.annual
@@ -36,6 +39,54 @@ internal class PackageSelectionVisibilityTests {
         conditions = listOf(wideCondition),
         properties = PartialStackComponent(visible = false),
     )
+
+    @Test
+    fun `initial selection skips hidden containers when no default is authored`() {
+        val state = state(
+            StackComponent(components = listOf(pkg(monthly)), visible = false),
+            pkg(annual),
+            pkg(weekly),
+        )
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
+    }
+
+    @Test
+    fun `measurement selects the first revealed package when no default is authored`() {
+        val state = state(
+            StackComponent(
+                components = listOf(pkg(monthly), pkg(annual)),
+                visible = false,
+                overrides = listOf(ComponentOverride(
+                    conditions = listOf(wideCondition),
+                    properties = PartialStackComponent(visible = true),
+                )),
+            ),
+        )
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthly)
+
+        state.reconcileSelectionForWindowSize(wide)
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthly)
+    }
+
+    @Test
+    fun `initial selection ignores packages in a closed sheet when no default is authored`() {
+        val state = state(
+            ButtonComponent(
+                action = ButtonComponent.Action.NavigateTo(
+                    ButtonComponent.Destination.Sheet(
+                        id = "plans",
+                        stack = StackComponent(listOf(pkg(monthly))),
+                    ),
+                ),
+                stack = StackComponent(emptyList()),
+            ),
+            pkg(annual),
+        )
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
+    }
 
     @Test
     fun `selected-only default content is selected initially and after reset`() {
@@ -131,11 +182,53 @@ internal class PackageSelectionVisibilityTests {
             as ButtonComponentStyle.Action.NavigateTo.Destination.Sheet
         state.paywallBoundsDp = wide
         state.sheet.show(sheet, state, PaywallComponentInteractionTracker { }, onClick = {})
-        state.update(selectedPackageUniqueId = annual.identifier)
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
 
         state.sheet.hide()
 
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(weekly)
+    }
+
+    @Test
+    fun `hidden fallback honors ancestor visibility and prefers any visible selectable package`() {
+        val allHidden = state(StackComponent(listOf(pkg(monthly), pkg(annual)), visible = false))
+        assertThat(allHidden.selectedPackageInfo?.rcPackage).isEqualTo(monthly)
+
+        val visibleAlternative = state(
+            StackComponent(listOf(pkg(monthly), pkg(annual)), visible = false),
+            pkg(weekly),
+        )
+        assertThat(visibleAlternative.selectedPackageInfo?.rcPackage).isEqualTo(weekly)
+    }
+
+    @Test
+    fun `a visible self hiding card is not an automatic all hidden fallback`() {
+        val selfHiding = pkg(monthly, content = StackComponent(
+            components = emptyList(),
+            overrides = listOf(ComponentOverride(
+                conditions = listOf(ComponentOverride.Condition.Selected),
+                properties = PartialStackComponent(visible = false),
+            )),
+        ))
+        val state = state(selfHiding)
+        assertThat(state.selectedPackageInfo).isNull()
+
+        // Explicit selection remains possible even though automatic replacement cannot choose it.
+        state.update(selectedPackageUniqueId = monthly.identifier)
+        state.reconcileSelectionForWindowSize(wide)
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthly)
+    }
+
+    @Test
+    fun `all hidden fallback does not invent an unavailable package`() {
+        val state = state(PackageComponent(
+            packageId = "not-in-offering",
+            isSelectedByDefault = false,
+            stack = StackComponent(emptyList()),
+            visible = false,
+        ))
+
+        assertThat(state.selectedPackageInfo).isNull()
     }
 
     private fun tabs(vararg contents: List<PaywallComponent>) = TabsComponent(
