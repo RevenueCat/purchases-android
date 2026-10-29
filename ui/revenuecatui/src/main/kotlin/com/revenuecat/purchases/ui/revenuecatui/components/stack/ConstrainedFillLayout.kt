@@ -103,11 +103,17 @@ internal object ConstrainedFillLayout {
             val targetMainAxisSize = constraints.targetMainAxisSize(orientation)
             val availableForFill = (targetMainAxisSize - nonFillSize - totalSpacing).coerceAtLeast(0)
             val fillSizes = allocateConstrainedFillSpace(availableForFill, fillConstraints, this)
+            // The main-axis minimum has already been shared between Fill siblings.
+            val crossAxisMinimums = if (orientation == Orientation.Horizontal) {
+                constraints.copy(minWidth = 0)
+            } else {
+                constraints.copy(minHeight = 0)
+            }
             measurables.forEachIndexed { index, measurable ->
                 if (fillConstraints[index] != null) {
                     placeables[index] = measurable.measure(
-                        constraints.withExactMainAxisSize(fillSizes[index], orientation)
-                            .forFillChild(measurable, constraints, this),
+                        constraints.withFillMainAxisSize(fillSizes[index], orientation)
+                            .forFillChild(measurable, crossAxisMinimums, this),
                     )
                 }
             }
@@ -191,11 +197,13 @@ private fun Constraints.mainAxisMin(orientation: Orientation): Int =
 private fun Constraints.mainAxisMax(orientation: Orientation): Int =
     if (orientation == Orientation.Horizontal) maxWidth else maxHeight
 
-private fun Constraints.withExactMainAxisSize(size: Int, orientation: Orientation): Constraints =
+// A scroll allocation is a minimum, so a Fill child can still grow with its content.
+// Bounded parents retain Row/Column's exact weighted allocation.
+private fun Constraints.withFillMainAxisSize(size: Int, orientation: Orientation): Constraints =
     if (orientation == Orientation.Horizontal) {
-        copy(minWidth = size, maxWidth = size, minHeight = 0)
+        copy(minWidth = size, maxWidth = if (hasBoundedWidth) size else Constraints.Infinity, minHeight = 0)
     } else {
-        copy(minWidth = 0, minHeight = size, maxHeight = size)
+        copy(minWidth = 0, minHeight = size, maxHeight = if (hasBoundedHeight) size else Constraints.Infinity)
     }
 
 private fun Placeable.mainAxisSize(orientation: Orientation): Int =

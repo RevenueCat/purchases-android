@@ -21,6 +21,10 @@ internal fun allocateConstrainedFillSpace(
 ): IntArray {
     val result = IntArray(constraints.size)
     val remainingIndices = constraints.indices.filterTo(mutableListOf()) { constraints[it] != null }
+    val allUnlimited = constraints.filterNotNull().all { it.min == null && it.max == null }
+    if (remainingIndices.isNotEmpty() && allUnlimited) {
+        return allocateEqualFillSpace(availableSpace, remainingIndices, result)
+    }
     var remainingSpace = availableSpace.coerceAtLeast(0).toLong()
 
     while (remainingIndices.isNotEmpty()) {
@@ -70,3 +74,16 @@ private fun Fill.maximumPx(density: Density): Int =
 
 private fun UInt.toPx(density: Density): Int =
     (toDouble() * density.density).roundToInt().coerceAtLeast(0)
+
+/** Match Row/Column's equal-weight rounding when no child has a limit. */
+private fun allocateEqualFillSpace(availableSpace: Int, indices: List<Int>, result: IntArray): IntArray {
+    val available = availableSpace.coerceAtLeast(0)
+    val roundedShare = (available.toFloat() / indices.size).roundToInt()
+    var remainder = available.toLong() - roundedShare.toLong() * indices.size
+    indices.forEach { index ->
+        val correction = remainder.coerceIn(-1L, 1L).toInt()
+        result[index] = roundedShare + correction
+        remainder -= correction
+    }
+    return result
+}

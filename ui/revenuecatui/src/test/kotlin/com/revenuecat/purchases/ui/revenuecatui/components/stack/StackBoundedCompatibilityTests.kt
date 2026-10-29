@@ -34,7 +34,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.helpers.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
-import kotlin.math.abs
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -89,8 +88,7 @@ internal class StackBoundedCompatibilityTests {
             composeTestRule.runOnIdle { current = index }
             val reference = childBounds("reference")
             val actual = childBounds("actual")
-            // Compose's weighted pixel rounding can assign the final pixel to a different sibling.
-            if (reference.zip(actual).any { (a, b) -> abs(a - b) > 1f }) {
+            if (reference != actual) {
                 failures += "$scenario: reference=$reference actual=$actual"
             }
         }
@@ -147,7 +145,7 @@ internal class StackBoundedCompatibilityTests {
             composeTestRule.runOnIdle { current = index }
             val reference = childBounds("reference")
             val actual = childBounds("actual")
-            if (reference.zip(actual).any { (a, b) -> abs(a - b) > 1f }) {
+            if (reference != actual) {
                 failures += "$scenario: reference=$reference actual=$actual"
             }
         }

@@ -108,6 +108,32 @@ internal class StackAxisScrollTests {
         )
     }
 
+    @Test
+    fun `Fill height with Fixed width receives viewport space in every axis nesting`() {
+        runMatrix(Size(Fixed(80u), Fill()), 80, 400)
+    }
+
+    @Test
+    fun `Fill width with Fixed height receives viewport space in every axis nesting`() {
+        runMatrix(Size(Fill(), Fixed(90u)), 200, 90)
+    }
+
+    @Test
+    fun `Fill height with Fit width retains content width in every axis nesting`() {
+        runMatrix(
+            Size(Fit(), Fill()), 30, 400,
+            leafChildren = listOf(StackComponent(components = emptyList(), size = Size(Fixed(30u), Fixed(40u)))),
+        )
+    }
+
+    @Test
+    fun `Fill width with Fit height retains content height in every axis nesting`() {
+        runMatrix(
+            Size(Fill(), Fit()), 200, 40,
+            leafChildren = listOf(StackComponent(components = emptyList(), size = Size(Fixed(30u), Fixed(40u)))),
+        )
+    }
+
     private fun runMatrix(
         leafSize: Size,
         expectedWidth: Int,

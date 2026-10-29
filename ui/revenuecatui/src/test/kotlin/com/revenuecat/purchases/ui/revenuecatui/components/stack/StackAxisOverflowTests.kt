@@ -52,6 +52,15 @@ internal class StackAxisOverflowTests {
 
     @Test
     fun `oversized Fit content remains scrollable and its final button works for all root axes and RTL`() {
+        runOverflowMatrix(Fit())
+    }
+
+    @Test
+    fun `oversized Fill content remains scrollable and its final button works for all root axes and RTL`() {
+        runOverflowMatrix(Fill())
+    }
+
+    private fun runOverflowMatrix(contentSize: SizeConstraint) {
         val vertical = Dimension.Vertical(HorizontalAlignment.CENTER, FlexDistribution.START)
         val horizontal = Dimension.Horizontal(VerticalAlignment.CENTER, FlexDistribution.START)
         val factory = StyleFactory()
@@ -69,7 +78,7 @@ internal class StackAxisOverflowTests {
                             ),
                         ),
                         dimension = if (scroll == Orientation.Vertical) vertical else horizontal,
-                        size = size(Fit()),
+                        size = size(contentSize),
                     )
                     val stack = StackComponent(components = listOf(content), dimension = root, size = Size(Fill(), Fill()))
                     Case(scroll, direction, root, factory.create(stack).getOrThrow().componentStyle as StackComponentStyle)
