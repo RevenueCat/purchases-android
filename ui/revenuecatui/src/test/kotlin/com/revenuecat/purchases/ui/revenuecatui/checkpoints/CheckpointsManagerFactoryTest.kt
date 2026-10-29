@@ -3,6 +3,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
 import android.app.Activity
+import android.os.Looper
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
@@ -23,6 +24,7 @@ import io.mockk.runs
 import io.mockk.unmockkObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -32,11 +34,14 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Robolectric
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowDialog
 
 /**
  * Integration tests for [ErrorDialogFactory] wired through [CheckpointsManager]. Covers the precedence matrix
- * (per-call errorPresenter > per-call errorDialogFactory > registered errorPresenter > SDK default) and the
+ * (per-call errorPresenter > registered errorPresenter > per-call errorDialogFactory > SDK default) and the
  * "no factory → default untouched" case.
  */
 @RunWith(AndroidJUnit4::class)
@@ -151,10 +156,13 @@ class CheckpointsManagerFactoryTest {
     }
 
     @Test
-    fun `per-call errorDialogFactory takes precedence over registered errorPresenter`() = runTest(dispatcher) {
+    fun `registered errorPresenter takes precedence over per-call errorDialogFactory`() = runTest(dispatcher) {
         var registeredAsked = false
         var factoryAsked = false
-        manager.errorPresenter = ErrorPresenter { _, _ -> registeredAsked = true }
+        manager.errorPresenter = ErrorPresenter { _, completion ->
+            registeredAsked = true
+            completion.complete()
+        }
         val params = CheckpointParams {
             errorDialogFactory { _, completion ->
                 factoryAsked = true
@@ -164,8 +172,9 @@ class CheckpointsManagerFactoryTest {
 
         manager.runCheckpoint(mockPurchases, checkpointId, params)
 
-        assertThat(factoryAsked).isTrue
-        assertThat(registeredAsked).isFalse
+        assertThat(factoryAsked).isFalse
+        assertThat(registeredAsked).isTrue
+        assertThat(defaultErrorPresenters).isEmpty()
     }
 
     @Test
@@ -190,20 +199,33 @@ class CheckpointsManagerFactoryTest {
     // region: factory-supplied dialog content
 
     @Test
-    fun `factory returning a non-null dialog creates a DefaultErrorPresenter for its content`() = runTest(dispatcher) {
-        val dialog = CheckpointErrorDialog(message = "Custom error", buttonTitle = "Got it")
+    fun `factory returning a non-null dialog waits for its window to be acknowledged`() = runTest(dispatcher) {
+        val controller = Robolectric.buildActivity(Activity::class.java).setup()
+        every { mockPurchases.currentActivity } returns controller.get()
+        every { mockPurchases.preferredUILocaleOverride } returns null
         val params = CheckpointParams {
-            errorDialogFactory { _, completion -> completion.complete(dialog) }
+            errorDialogFactory { _, completion ->
+                completion.complete(CheckpointErrorDialog(message = "Custom error", buttonTitle = "Got it"))
+            }
         }
 
-        // defaultErrorPresenterFactory is for the SDK default; a non-null dialog creates a different presenter
-        // with custom content. Since DefaultErrorPresenter needs an activity (which we've mocked to return
-        // mockActivity), this exercises the full path without throwing.
-        manager.runCheckpoint(mockPurchases, checkpointId, params)
+        try {
+            val run = async { manager.runCheckpoint(mockPurchases, checkpointId, params) }
 
-        // The factory path used a custom DefaultErrorPresenter (not the SDK's factory), so
-        // defaultErrorPresenterFactory was NOT invoked.
-        assertThat(defaultErrorPresenters).isEmpty()
+            val dialog = ShadowDialog.getLatestDialog()
+            assertThat(dialog).isNotNull
+            assertThat(dialog.isShowing).isTrue
+            assertThat(run.isCompleted).isFalse
+            assertThat(defaultErrorPresenters).isEmpty()
+
+            dialog.cancel()
+            shadowOf(Looper.getMainLooper()).idle()
+
+            assertThat(run.await().failed).isTrue
+            assertThat(dialog.isShowing).isFalse
+        } finally {
+            controller.pause().stop().destroy()
+        }
     }
 
     // endregion

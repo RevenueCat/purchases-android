@@ -126,7 +126,7 @@ internal class CheckpointsManager(
 
     /**
      * The app's error presenter for a call, or null when the SDK's own should be used. Precedence: per-call
-     * errorPresenter > per-call errorDialogFactory > registered errorPresenter.
+     * errorPresenter > registered errorPresenter > per-call errorDialogFactory.
      */
     @OptIn(InternalRevenueCatAPI::class)
     private fun appErrorPresenter(
@@ -143,7 +143,7 @@ internal class CheckpointsManager(
                 sdkErrorPresenter()
             }
         }
-        return params?.errorPresenter ?: factoryPresenter ?: errorPresenter
+        return params?.errorPresenter ?: errorPresenter ?: factoryPresenter
     }
 
     /**

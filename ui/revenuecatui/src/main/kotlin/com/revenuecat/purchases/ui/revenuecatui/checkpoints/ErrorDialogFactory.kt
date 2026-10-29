@@ -15,10 +15,10 @@ import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.composables.ErrorDialog
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toLayoutDirection
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Provides the content of the error dialog the SDK shows when a checkpoint fails. The SDK calls [createDialog]
@@ -122,7 +122,7 @@ internal fun ErrorDialogFactory.asErrorPresenter(
         customVariables = params.customVariables,
         kind = params.kind,
     )
-    val decided = AtomicBoolean(false)
+    val response = CompletableDeferred<CheckpointErrorDialog?>()
 
     fun present(dialog: CheckpointErrorDialog?) {
         presenterFor(dialog).presentOnce(params, outerCompletion::complete)
@@ -130,33 +130,35 @@ internal fun ErrorDialogFactory.asErrorPresenter(
 
     val timeoutJob = scope.launch {
         delay(timeoutMs)
-        if (decided.compareAndSet(false, true)) {
+        if (response.complete(null)) {
             Logger.w(
                 "Checkpoint error dialog factory timed out after ${timeoutMs}ms; " +
                     "using the SDK's default dialog.",
             )
-            present(null)
         }
     }
 
     val factoryCompletion = ErrorDialogFactory.Completion { dialog ->
-        if (decided.compareAndSet(false, true)) {
-            timeoutJob.cancel()
-            scope.launch {
-                present(dialog)
-            }
-        }
+        response.complete(dialog)
         // Late completions (after the timeout or a prior completion) are silently ignored.
     }
 
     try {
         createDialog(factoryParams, factoryCompletion)
     } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-        if (decided.compareAndSet(false, true)) {
-            timeoutJob.cancel()
-            Logger.w("Checkpoint error dialog factory threw; using the SDK's default dialog: $e")
-            present(null)
-        }
+        timeoutJob.cancel()
+        response.cancel()
+        Logger.w("Checkpoint error dialog factory threw; using the SDK's default dialog: $e")
+        present(null)
+        return@ErrorPresenter
+    }
+
+    // Wait until createDialog returns successfully before showing even a synchronous response. If it throws
+    // after completing, only the fallback above may present UI.
+    scope.launch {
+        val dialog = response.await()
+        timeoutJob.cancel()
+        present(dialog)
     }
 }
 

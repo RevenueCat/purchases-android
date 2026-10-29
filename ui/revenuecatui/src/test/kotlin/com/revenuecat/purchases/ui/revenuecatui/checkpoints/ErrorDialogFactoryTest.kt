@@ -157,6 +157,39 @@ class ErrorDialogFactoryTest {
         assertThat(presenterDialogs).hasSize(1)
     }
 
+    @Test
+    fun `a factory completing before throwing falls back without presenting its response`() {
+        val dialog = CheckpointErrorDialog("Must not be shown", "OK")
+        val factory = ErrorDialogFactory { _, completion ->
+            completion.complete(dialog)
+            error("Simulated.")
+        }
+
+        factory.asPresenter().present(params, outerCompletion)
+
+        assertThat(presenterDialogs).containsExactly(null as CheckpointErrorDialog?)
+        verify(exactly = 1) { Logger.w(match { it.contains("factory threw") }) }
+    }
+
+    @Test
+    fun `a queued response is discarded when the factory throws and late responses are ignored`() {
+        val queuedScope = TestScope(StandardTestDispatcher())
+        var lateCompletion: ErrorDialogFactory.Completion? = null
+        val factory = ErrorDialogFactory { _, completion ->
+            lateCompletion = completion
+            completion.complete(CheckpointErrorDialog("Must not be shown", "OK"))
+            error("Simulated.")
+        }
+
+        factory.asPresenter(scope = queuedScope).present(params, outerCompletion)
+        lateCompletion!!.complete(CheckpointErrorDialog("Late", "OK"))
+        queuedScope.advanceUntilIdle()
+
+        assertThat(presenterDialogs).containsExactly(null as CheckpointErrorDialog?)
+        presenters.single().complete()
+        assertThat(outerCompletions).isEqualTo(1)
+    }
+
     // endregion
 
     // region: timeout
