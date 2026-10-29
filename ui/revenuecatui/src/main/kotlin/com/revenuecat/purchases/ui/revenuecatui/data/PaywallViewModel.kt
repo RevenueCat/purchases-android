@@ -1740,8 +1740,8 @@ internal class PaywallViewModelImpl(
             ?: return StepResolution.Invalid(
                 "Offering '$offeringId' not found for step '${step.id}' of workflow '${workflow.id}'. " +
                     "The offering is either missing from the offerings response, or was dropped because none of " +
-                    "its products could be fetched from the store (for Test Store, check that the offering's " +
-                    "packages have products created in the Test Store).",
+                    "its packages resolved to a product fetched from the store. Check the logs for a " +
+                    "\"No packages could be found for offering\" warning.",
             )
         return StepResolution.Ready(screenId, screen, offering)
     }

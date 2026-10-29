@@ -341,6 +341,18 @@ class OfferingsTest {
     }
 
     @Test
+    fun `createOfferings warns without Play Store guidance when the configured store is Amazon`() {
+        assertWarnLog(OfferingStrings.OFFERING_EMPTY_OTHER_STORE.format("offering_a")) {
+            offeringsParser.createOfferings(
+                getOfferingsJSON(),
+                emptyMap(),
+                configuredStore = Store.AMAZON,
+            )
+        }
+        assertThat(OfferingStrings.OFFERING_EMPTY_OTHER_STORE).doesNotContain("Play Store")
+    }
+
+    @Test
     fun `createOfferings creates offerings`() {
         val storeProductMonthly = getStoreProduct(productIdentifier, monthlyPeriod, monthlyBasePlanId)
         val storeProductAnnual = getStoreProduct(productIdentifier, annualPeriod, annualBasePlanId)

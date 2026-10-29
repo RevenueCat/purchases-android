@@ -63,6 +63,10 @@ internal object OfferingStrings {
         "with identifier %s. This could be due to Products not being configured correctly in " +
         "the RevenueCat dashboard or Play Store.\nTo configure products, follow the instructions in " +
         "https://rev.cat/how-to-configure-offerings.\nMore information: https://rev.cat/why-are-offerings-empty"
+    const val OFFERING_EMPTY_OTHER_STORE = "There's a problem with your configuration. No packages could be found " +
+        "for offering with identifier %s. This could be due to Products not being configured correctly in " +
+        "the RevenueCat dashboard or the store.\nTo configure products, follow the instructions in " +
+        "https://rev.cat/how-to-configure-offerings.\nMore information: https://rev.cat/why-are-offerings-empty"
     const val OFFERING_EMPTY_TEST_STORE = "There's a problem with your configuration. No packages could be found " +
         "for offering with identifier %s. This could be due to Test Store products not being configured " +
         "correctly in the RevenueCat dashboard.\nTo configure products, follow the instructions in " +

@@ -112,10 +112,10 @@ internal abstract class OfferingParser {
     }
 
     private fun offeringEmptyMessage(offeringIdentifier: String, configuredStore: Store): String {
-        val template = if (configuredStore == Store.TEST_STORE) {
-            OfferingStrings.OFFERING_EMPTY_TEST_STORE
-        } else {
-            OfferingStrings.OFFERING_EMPTY
+        val template = when (configuredStore) {
+            Store.TEST_STORE -> OfferingStrings.OFFERING_EMPTY_TEST_STORE
+            Store.PLAY_STORE -> OfferingStrings.OFFERING_EMPTY
+            else -> OfferingStrings.OFFERING_EMPTY_OTHER_STORE
         }
         return template.format(offeringIdentifier)
     }
