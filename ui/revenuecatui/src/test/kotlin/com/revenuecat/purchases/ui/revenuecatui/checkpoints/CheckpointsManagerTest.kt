@@ -435,6 +435,44 @@ class CheckpointsManagerTest {
         assertThat(run!!.backedOut).isFalse
     }
 
+    @Test
+    fun `a workflow restore of only part of an offered entitlement set stays open and does not pass on back`() =
+        runTest(dispatcher) {
+            resolvesToWorkflow(product("monthly"))
+            mappingGrants("monthly" to listOf("pro", "premium"))
+            val restored = customerInfoWithActive("pro")
+            var run: CheckpointRun? = null
+            val call = launch { run = runCheckpoint() }
+            val options = manager.paywallOptions(currentCallId()) {}!!
+
+            assertThat(options.shouldDisplayBlock!!(restored)).isTrue
+            options.listener!!.onRestoreCompleted(restored)
+            finishPaywall(outcome = null, navigatedBack = true)
+            call.join()
+
+            assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Dismissed)
+            assertThat(run!!.backedOut).isTrue
+        }
+
+    @Test
+    fun `a workflow restore completing a partially active offered set closes and passes on back`() = runTest(dispatcher) {
+        customerInfoBeforeHasActive("pro")
+        resolvesToWorkflow(product("monthly"))
+        mappingGrants("monthly" to listOf("pro", "premium"))
+        val restored = customerInfoWithActive("pro", "premium")
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+        val options = manager.paywallOptions(currentCallId()) {}!!
+
+        assertThat(options.shouldDisplayBlock!!(restored)).isFalse
+        options.listener!!.onRestoreCompleted(restored)
+        finishPaywall(outcome = null, navigatedBack = true)
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Restored(restored))
+        assertThat(run!!.backedOut).isFalse
+    }
+
     // The paywall closes itself after a restore for which the options' block says not to display, so the flow
     // closes on a granting restore like it does on a purchase, and stays up otherwise.
     @Test
