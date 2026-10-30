@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ads
 
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.remoteconfig.ConfigTopic
@@ -25,7 +26,7 @@ import org.junit.Before
 import org.junit.Test
 import kotlin.test.assertFailsWith
 
-@OptIn(ExperimentalCoroutinesApi::class)
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, ExperimentalCoroutinesApi::class)
 class ConfiguredAdRewardsProviderTest {
     private val manager = mockk<RemoteConfigManager>(relaxed = true)
     private val provider = ConfiguredAdRewardsProvider(manager)

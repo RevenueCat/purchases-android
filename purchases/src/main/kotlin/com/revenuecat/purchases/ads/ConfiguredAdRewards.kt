@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ads
 
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import dev.drewhamilton.poko.Poko
 import kotlin.time.Duration
 
@@ -9,8 +10,9 @@ import kotlin.time.Duration
  * A null [reward] means no reward is configured for the ad unit.
  * Configured rewards describe what an app can advertise; they do not establish that a reward was granted.
  */
+@ExperimentalPreviewRevenueCatPurchasesAPI
 @Poko
-internal class ConfiguredAdRewards internal constructor(
+public class ConfiguredAdRewards internal constructor(
     private val rewards: List<AdRewardConfiguration>,
 ) {
     /** The primary reward, or null when no reward is configured. */
@@ -23,7 +25,8 @@ internal class ConfiguredAdRewards internal constructor(
 }
 
 /** A reward expected for an ad unit. Unknown or invalid rewards use [UnsupportedReward]. */
-internal interface AdRewardConfiguration {
+@ExperimentalPreviewRevenueCatPurchasesAPI
+public interface AdRewardConfiguration {
     /** A configured virtual currency reward. */
     @Poko
     public class VirtualCurrency internal constructor(
