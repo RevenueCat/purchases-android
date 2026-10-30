@@ -268,18 +268,16 @@ public class PaywallView : CompatComposeView {
             paywallOptionsState
         }
         RevenueCatTheme {
+            val viewModel = getPaywallViewModel(paywallOptions)
             if (paywallOptions.dismissRequestWithExitOffering != null) {
-                // Same as Paywall(paywallOptions), plus the exit offer preload PaywallDialog and PaywallActivity do.
-                // SideEffect rather than LaunchedEffect: the preload is a synchronous, idempotent flag, so it doesn't
-                // need to wait for the effect coroutine to be dispatched.
-                val viewModel = getPaywallViewModel(paywallOptions)
+                // Same exit offer preload PaywallDialog and PaywallActivity do. SideEffect rather than
+                // LaunchedEffect: the preload is a synchronous, idempotent flag, so it doesn't need to wait for the
+                // effect coroutine to be dispatched.
                 SideEffect {
                     viewModel.preloadExitOffering()
                 }
-                InternalPaywall(paywallOptions, viewModel)
-            } else {
-                Paywall(paywallOptions)
             }
+            InternalPaywall(paywallOptions, viewModel)
         }
     }
 }
