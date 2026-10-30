@@ -17,6 +17,7 @@ import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.PlatformInfo
+import com.revenuecat.purchases.common.createCustomerInfo
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.SharedConstants
@@ -2240,9 +2241,7 @@ internal class PurchasesTest : BasePurchasesTest() {
     }
 
     @Test
-    fun `pollRewardVerification refreshes customer info on verified entitlement reward`() {
-        mockCustomerInfoHelper()
-
+    fun `pollRewardVerification does not fetch customer info on entitlement reward without inline customer info`() {
         val result = runBlocking {
             purchases.pollRewardVerification(
                 clientTransactionId = "ct_1",
@@ -2258,23 +2257,15 @@ internal class PurchasesTest : BasePurchasesTest() {
         }
 
         assertThat(result.failed).isFalse
-        verify(exactly = 1) {
-            mockCustomerInfoHelper.retrieveCustomerInfo(
-                appUserId,
-                CacheFetchPolicy.FETCH_CURRENT,
-                any(),
-                any(),
-                any(),
-                any(),
-            )
+        verify(exactly = 0) {
+            mockCustomerInfoHelper.retrieveCustomerInfo(any(), any(), any(), any(), any(), any())
         }
+        verify(exactly = 0) { mockCustomerInfoUpdateHandler.cacheAndNotifyListeners(any(), any()) }
     }
 
     @Test
-    fun `pollRewardVerification returns failed when entitlement customer info refresh fails`() {
-        mockCustomerInfoHelper(
-            errorGettingCustomerInfo = PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken"),
-        )
+    fun `pollRewardVerification caches customer info from the poll on entitlement reward`() {
+        val customerInfo = createCustomerInfo(Responses.validFullPurchaserResponse)
 
         val result = runBlocking {
             purchases.pollRewardVerification(
@@ -2285,12 +2276,17 @@ internal class PurchasesTest : BasePurchasesTest() {
                     Outcome.Verified(
                         reward = PollReward.Entitlement(identifier = "pro", expiresAt = Date(1_800_000_000_000L)),
                         moreRewards = emptyList(),
+                        customerInfo = customerInfo,
                     )
                 },
             )
         }
 
-        assertThat(result.failed).isTrue
+        assertThat(result.failed).isFalse
+        verify(exactly = 1) { mockCustomerInfoUpdateHandler.cacheAndNotifyListeners(customerInfo, appUserId) }
+        verify(exactly = 0) {
+            mockCustomerInfoHelper.retrieveCustomerInfo(any(), any(), any(), any(), any(), any())
+        }
     }
 
     private val testTrackingMetadata = RewardedAdTrackingMetadata(

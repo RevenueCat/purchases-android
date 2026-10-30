@@ -30,6 +30,7 @@ import com.revenuecat.purchases.common.networking.buildPostReceiptResponse
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfiguration
+import com.revenuecat.purchases.common.responses.CustomerInfoResponseJsonKeys
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
@@ -1194,12 +1195,18 @@ internal class Backend(
                             val response = json.decodeFromString<RewardVerificationResponse>(
                                 result.payloadText,
                             )
-                            onSuccessHandler(response.toRewardVerificationPollStatus())
+                            onSuccessHandler(
+                                response.toRewardVerificationPollStatus(rewardVerificationCustomerInfo(result)),
+                            )
                         } catch (e: SerializationException) {
                             onErrorHandler(
                                 RewardVerificationError(e.toPurchasesError().also { errorLog(it) }, false),
                             )
                         } catch (e: IllegalArgumentException) {
+                            onErrorHandler(
+                                RewardVerificationError(e.toPurchasesError().also { errorLog(it) }, false),
+                            )
+                        } catch (e: JSONException) {
                             onErrorHandler(
                                 RewardVerificationError(e.toPurchasesError().also { errorLog(it) }, false),
                             )
@@ -1225,6 +1232,11 @@ internal class Backend(
                 Delay.NONE,
             )
         }
+    }
+
+    private fun rewardVerificationCustomerInfo(result: HTTPResult): CustomerInfo? {
+        if (!result.body.has(CustomerInfoResponseJsonKeys.SUBSCRIBER)) return null
+        return CustomerInfoFactory.buildCustomerInfo(result)
     }
 
     @Suppress("LongParameterList")
