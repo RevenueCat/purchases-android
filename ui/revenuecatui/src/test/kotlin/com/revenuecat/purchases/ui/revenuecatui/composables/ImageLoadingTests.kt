@@ -5,6 +5,7 @@ import android.graphics.drawable.BitmapDrawable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
@@ -12,6 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -28,6 +30,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBackgroundStyle
+import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPreviewImageLoader
 import com.revenuecat.purchases.ui.revenuecatui.helpers.captureToImageCompat
 import com.revenuecat.purchases.ui.revenuecatui.paywalls.PaywallImageLoader
 import io.mockk.every
@@ -118,6 +121,14 @@ internal class ImageLoadingTests(private val imageType: ImageType) {
         responseGate?.complete(Unit)
         composeTestRule.waitForIdle()
         assertImageIsBlue()
+    }
+
+    @Test
+    fun `Preview shows the blocking image when full and placeholder URLs match`() {
+        render(mutableStateOf(Sources(imageUrl, imageUrl)), inPreviewMode = true)
+
+        assertImageIsBlue()
+        assertThat(requests.map { it.data }).containsOnly(imageUrl)
     }
 
     @Test
@@ -221,16 +232,21 @@ internal class ImageLoadingTests(private val imageType: ImageType) {
         assertCacheEnabled(requests.single { it.data == updatedUrl })
     }
 
-    private fun render(sources: MutableState<Sources>) {
+    private fun render(sources: MutableState<Sources>, inPreviewMode: Boolean = false) {
         composeTestRule.setContent {
-            val source = sources.value
-            when (imageType) {
-                ImageType.COMPONENT -> RemoteImage(
-                    urlString = source.full,
-                    placeholderUrlString = source.placeholder,
-                    modifier = Modifier.requiredSize(100.dp).testTag("image"),
-                )
-                ImageType.BACKGROUND -> BackgroundImage(source)
+            CompositionLocalProvider(
+                LocalInspectionMode provides inPreviewMode,
+                LocalPreviewImageLoader provides imageLoader.takeIf { inPreviewMode },
+            ) {
+                val source = sources.value
+                when (imageType) {
+                    ImageType.COMPONENT -> RemoteImage(
+                        urlString = source.full,
+                        placeholderUrlString = source.placeholder,
+                        modifier = Modifier.requiredSize(100.dp).testTag("image"),
+                    )
+                    ImageType.BACKGROUND -> BackgroundImage(source)
+                }
             }
         }
     }
