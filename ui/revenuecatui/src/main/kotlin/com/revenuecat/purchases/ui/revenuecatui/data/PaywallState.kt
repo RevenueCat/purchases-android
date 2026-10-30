@@ -20,6 +20,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.UiConfig.VariableConfig
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.storage.FileRepository
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
@@ -350,17 +351,29 @@ internal sealed interface PaywallState {
                     .mostExpensivePricePerMonthMicros()
             }
 
-            data class TabPackageContext(
-                val packageInfo: AvailablePackages.Info,
+            data class TextPackageContext(
+                val rcPackage: Package?,
+                val subscriptionOption: SubscriptionOption?,
                 val mostExpensivePricePerMonthMicros: Long?,
             )
 
-            fun tabPackageContext(tabIndex: Int): TabPackageContext? {
+            fun textPackageContext(
+                tabIndex: Int?,
+                fallbackPackage: Package?,
+                fallbackSubscriptionOption: SubscriptionOption?,
+            ): TextPackageContext {
                 val tabPackages = packages.packagesByTab[tabIndex].orEmpty()
                 val packageInfo = tabPackages.find { it.uniqueId == selectedPackageByTab[tabIndex] }
                     ?: tabPackages.defaultSelection(mergedCustomVariables)
-                    ?: return null
-                return TabPackageContext(packageInfo, tabPackages.mostExpensivePricePerMonthMicros())
+                return if (packageInfo != null) {
+                    TextPackageContext(
+                        packageInfo.pkg,
+                        packageInfo.resolvedOffer?.subscriptionOption,
+                        tabPackages.mostExpensivePricePerMonthMicros(),
+                    )
+                } else {
+                    TextPackageContext(fallbackPackage, fallbackSubscriptionOption, mostExpensivePricePerMonthMicros)
+                }
             }
 
             val currentDate: Date

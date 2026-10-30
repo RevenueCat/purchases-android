@@ -155,13 +155,13 @@ private fun rememberProcessedText(
         derivedStateOf {
             val dateLocale = state.locale.toJavaLocale()
             val currencyLocale = state.currencyLocale.toJavaLocale()
-            val tabContext = textState.tabIndexOutsidePackage?.let(state::tabPackageContext)
-            val packageToUse = tabContext?.packageInfo?.pkg ?: textState.applicablePackage
-            val mostExpensiveMicros = if (tabContext != null) {
-                tabContext.mostExpensivePricePerMonthMicros
-            } else {
-                state.mostExpensivePricePerMonthMicros
-            }
+            val textPackageContext = state.textPackageContext(
+                tabIndex = textState.tabIndexOutsidePackage,
+                fallbackPackage = textState.applicablePackage,
+                fallbackSubscriptionOption = textState.subscriptionOption,
+            )
+            val packageToUse = textPackageContext.rcPackage
+            val mostExpensiveMicros = textPackageContext.mostExpensivePricePerMonthMicros
 
             val variableContext = packageToUse?.let { pkg ->
                 val discount = discountPercentage(
@@ -182,11 +182,7 @@ private fun rememberProcessedText(
                 variableDataProvider = state.variableDataProvider,
                 packageContext = variableContext,
                 rcPackage = packageToUse,
-                subscriptionOption = if (tabContext != null) {
-                    tabContext.packageInfo.resolvedOffer?.subscriptionOption
-                } else {
-                    textState.subscriptionOption
-                },
+                subscriptionOption = textPackageContext.subscriptionOption,
                 currencyLocale = currencyLocale,
                 dateLocale = dateLocale,
                 date = state.currentDate,
