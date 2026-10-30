@@ -309,6 +309,52 @@ class DefaultPaywallPresenterTest {
     }
 
     @Test
+    fun `a restore uses a mapping cached after an earlier restore`() {
+        cachedActiveEntitlements("pro")
+        present()
+        val listener = options().listener!!
+        val restored = customerInfoWithActive("pro", "premium")
+
+        listener.onRestoreCompleted(restored)
+        assertThat(dismissals).isEmpty()
+
+        mappingGrants("monthly" to listOf("pro", "premium"))
+        listener.onRestoreCompleted(restored)
+        finished(navigatedBack = true)
+
+        assertThat(dismissals).containsExactly(false)
+        assertThat(results).containsExactly(Result.Continued)
+    }
+
+    @Test
+    fun `a mapping refreshed during presentation still requires the complete offered entitlement set`() {
+        mappingGrants("monthly" to listOf("pro"))
+        present()
+        val listener = options().listener!!
+
+        mappingGrants("monthly" to listOf("pro", "premium"))
+        listener.onRestoreCompleted(customerInfoWithActive("pro"))
+        finished(navigatedBack = true)
+
+        assertThat(dismissals).isEmpty()
+        assertThat(results).containsExactly(Result.NavigatedBack)
+    }
+
+    @Test
+    fun `a late mapping does not make already active entitlements newly obtained`() {
+        cachedActiveEntitlements("pro", "premium")
+        present()
+        val listener = options().listener!!
+
+        mappingGrants("monthly" to listOf("pro", "premium"))
+        listener.onRestoreCompleted(customerInfoWithActive("pro", "premium", "unrelated"))
+        finished(navigatedBack = true)
+
+        assertThat(dismissals).isEmpty()
+        assertThat(results).containsExactly(Result.NavigatedBack)
+    }
+
+    @Test
     fun `a granting restore closes the window that is currently on screen`() {
         mappingGrants("monthly" to listOf("pro"))
         present()

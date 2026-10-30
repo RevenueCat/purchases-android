@@ -574,6 +574,70 @@ class CheckpointsManagerTest {
     }
 
     @Test
+    fun `a workflow restore uses a mapping cached after an earlier restore`() = runTest(dispatcher) {
+        customerInfoBeforeHasActive("pro")
+        resolvesToWorkflow(product("monthly"))
+        val restored = customerInfoWithActive("pro", "premium")
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+        val options = manager.paywallOptions(currentCallId()) {}!!
+
+        options.listener!!.onRestoreCompleted(restored)
+        assertThat(options.shouldDisplayBlock!!(restored)).isTrue
+
+        mappingGrants("monthly" to listOf("pro", "premium"))
+        options.listener!!.onRestoreCompleted(restored)
+        val shouldDisplay = options.shouldDisplayBlock!!(restored)
+        finishPaywall(outcome = null, navigatedBack = true)
+        call.join()
+
+        assertThat(shouldDisplay).isFalse
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Restored(restored))
+        assertThat(run!!.backedOut).isFalse
+    }
+
+    @Test
+    fun `a mapping refreshed during a workflow still requires the complete offered entitlement set`() =
+        runTest(dispatcher) {
+            resolvesToWorkflow(product("monthly"))
+            mappingGrants("monthly" to listOf("pro"))
+            var run: CheckpointRun? = null
+            val call = launch { run = runCheckpoint() }
+            val options = manager.paywallOptions(currentCallId()) {}!!
+
+            mappingGrants("monthly" to listOf("pro", "premium"))
+            val restored = customerInfoWithActive("pro")
+            options.listener!!.onRestoreCompleted(restored)
+            val shouldDisplay = options.shouldDisplayBlock!!(restored)
+            finishPaywall(outcome = null, navigatedBack = true)
+            call.join()
+
+            assertThat(shouldDisplay).isTrue
+            assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Dismissed)
+            assertThat(run!!.backedOut).isTrue
+        }
+
+    @Test
+    fun `a late mapping does not make already active workflow entitlements newly obtained`() = runTest(dispatcher) {
+        customerInfoBeforeHasActive("pro", "premium")
+        resolvesToWorkflow(product("monthly"))
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+        val options = manager.paywallOptions(currentCallId()) {}!!
+
+        mappingGrants("monthly" to listOf("pro", "premium"))
+        val restored = customerInfoWithActive("pro", "premium", "unrelated")
+        options.listener!!.onRestoreCompleted(restored)
+        val shouldDisplay = options.shouldDisplayBlock!!(restored)
+        finishPaywall(outcome = null, navigatedBack = true)
+        call.join()
+
+        assertThat(shouldDisplay).isTrue
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Dismissed)
+        assertThat(run!!.backedOut).isTrue
+    }
+
+    @Test
     fun `the SDK's own paywall without a started activity fails and presents nothing`() = runTest(dispatcher) {
         every { mockPurchases.currentActivity } returns null
         resolvesTo(CheckpointResolution.MatchedOffering(offering(), checkpointRuleId = null, traceId = "trace_id"))
