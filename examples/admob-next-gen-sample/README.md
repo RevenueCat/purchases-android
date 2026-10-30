@@ -41,6 +41,19 @@ Use the format-specific controls to exercise behavior that is not shared by ever
 Google's native and native-video test inventory can be inconsistent. A failed test request does not necessarily mean
 the renderer or tracking integration is broken; use your own test-enabled ad unit when you need reliable native fills.
 
+## Check configured rewards
+
+The **Rewarded** and **Rewarded interstitial** screens display expected rewards for their ad unit in both
+Direct and Preloaded modes. The card shows primary and additional rewards, distinguishes unavailable
+configuration from no configured rewards, and keeps these values separate from earned/verified rewards.
+Reward lookup does not block ad loading or showing.
+
+Configure rewards in the RevenueCat project for the exact ad unit ID shown in the card. Use
+`ADMOB_REWARDED_AD_UNIT_ID` and `ADMOB_REWARDED_INTERSTITIAL_AD_UNIT_ID` in `local.properties` to select
+your units. **Look up again** uses the SDK's normal cache behavior; it does not force a network refresh.
+Compare a configured unit with one that has no rewards, and test unavailable configuration on a fresh
+install without connectivity.
+
 ## Verify RevenueCat events
 
 After exercising a flow, background the app so the RevenueCat SDK flushes queued events. Check the RevenueCat

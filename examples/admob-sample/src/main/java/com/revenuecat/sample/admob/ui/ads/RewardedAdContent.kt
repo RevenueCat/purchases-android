@@ -45,6 +45,8 @@ internal fun RewardedAdContent(activity: Activity) {
 
     val isLoading = message?.isLoading == true
 
+    ConfiguredRewardsCard(Constants.AdMob.REWARDED_AD_UNIT_ID)
+
     Text(
         text = "Full-screen ad that rewards users. Tracks: Loaded, Displayed, Opened (on click), Revenue. " +
             "Toggle reward verification to validate the reward server-side via RevenueCat.",

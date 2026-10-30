@@ -45,6 +45,7 @@ internal fun RewardedScreen(activity: Activity, onBack: () -> Unit) = RewardedAd
     title = "Rewarded",
     description = "The verification choice is captured when an ad is loaded or polled.",
     adName = "rewarded ad",
+    adUnitId = BuildConfig.ADMOB_REWARDED_AD_UNIT_ID,
     preloadId = REWARDED_PRELOAD_ID,
     onBack = onBack,
     getConfiguration = { RewardedAdPreloader.getConfiguration(REWARDED_PRELOAD_ID) },
@@ -98,6 +99,7 @@ internal fun RewardedInterstitialScreen(activity: Activity, onBack: () -> Unit) 
     title = "Rewarded interstitial",
     description = "Both direct and preloaded ads can opt into RevenueCat reward verification.",
     adName = "rewarded-interstitial ad",
+    adUnitId = BuildConfig.ADMOB_REWARDED_INTERSTITIAL_AD_UNIT_ID,
     preloadId = REWARDED_INTERSTITIAL_PRELOAD_ID,
     onBack = onBack,
     getConfiguration = {
@@ -162,6 +164,7 @@ private fun <AdT : Ad> RewardedAdScreen(
     title: String,
     description: String,
     adName: String,
+    adUnitId: String,
     preloadId: String,
     onBack: () -> Unit,
     getConfiguration: () -> PreloadConfiguration?,
@@ -184,6 +187,7 @@ private fun <AdT : Ad> RewardedAdScreen(
     val scope = rememberCoroutineScope()
 
     AdScreen(title, onBack) { mode ->
+        ConfiguredRewardsCard(adUnitId)
         RewardVerificationToggle(useVerification) { useVerification = it }
         Text(description)
         if (mode == LoadMode.DIRECT) {

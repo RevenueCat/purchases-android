@@ -72,6 +72,18 @@ The adapter library automatically tracks these RevenueCat ad events for all ad f
 
 Interact with the ads in the app, then background the app. The RevenueCat SDK flushes events when the app goes to the background, and they will be visible shortly after in the [RevenueCat Dashboard](https://app.revenuecat.com/).
 
+### 5. Check Configured Rewards
+
+Open **Rewarded** or **Rewarded Interstitial** to look up the expected rewards for that screen's ad unit.
+The card shows the primary and additional rewards, or distinguishes unavailable configuration from no
+configured rewards. **Look up again** repeats the lookup using the SDK's normal cache behavior; it does
+not force a network refresh. Loading and showing ads work independently of the lookup.
+
+Use a RevenueCat project with rewards configured for the exact ad unit ID shown in the card. Override
+`ADMOB_REWARDED_AD_UNIT_ID` or `ADMOB_REWARDED_INTERSTITIAL_AD_UNIT_ID` in `local.properties` when needed.
+Compare a configured unit with one that has no rewards, and test unavailable configuration on a fresh
+install without connectivity. Configured values are displayed separately from earned or verified rewards.
+
 ---
 
 ## How It Works
