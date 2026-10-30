@@ -223,6 +223,7 @@ internal class PurchasesOrchestrator(
         audiencesConfigProvider = audiencesConfigProvider,
         localRulesEvaluator = localRulesEvaluator,
         getOfferings = { Purchases.sharedInstance.awaitOfferings() },
+        track = eventsManager::track,
     ),
     @OptIn(InternalRevenueCatAPI::class)
     // With remote config off there is no audiences topic to read, so every branch takes its

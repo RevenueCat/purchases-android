@@ -4,6 +4,8 @@ package com.revenuecat.purchases.checkpoints
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.common.events.FeatureEvent
+import com.revenuecat.purchases.common.workflows.events.WorkflowEvent
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.LogMessage
 import com.revenuecat.purchases.Package
@@ -76,6 +78,7 @@ class CheckpointWorkflowResolverImplTest {
     private lateinit var mockOffering: Offering
     private lateinit var mockOfferings: Offerings
     private var offeringsFetchError: PurchasesError? = null
+private val trackedEvents = mutableListOf<FeatureEvent>()
     private var offeringsFetched = 0
 
     private lateinit var resolver: CheckpointWorkflowResolverImpl
@@ -114,6 +117,7 @@ class CheckpointWorkflowResolverImplTest {
                 offeringsFetchError?.let { throw PurchasesException(it) }
                 mockOfferings
             },
+            track = { trackedEvents.add(it) },
         )
     }
 
@@ -615,6 +619,34 @@ class CheckpointWorkflowResolverImplTest {
             .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
         assertThat(offeringsFetched).isZero()
         coVerify(exactly = 0) { mockWorkflowManager.getWorkflowBody(any()) }
+    }
+
+    @Test
+    fun `offering step tracks step started then completed sharing the resolution trace id`() = runTest {
+        coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns offeringWorkflow("wf1234", "default")
+
+        val resolution = resolve() as CheckpointResolution.MatchedOffering
+
+        assertThat(trackedEvents).hasSize(2)
+        val started = trackedEvents[0] as WorkflowEvent.StepStarted
+        val completed = trackedEvents[1] as WorkflowEvent.StepCompleted
+        assertThat(started.workflowId).isEqualTo("wf1234")
+        assertThat(started.entryReason).isEqualTo("start")
+        assertThat(started.isFirstStep).isTrue()
+        assertThat(started.isLastStep).isTrue()
+        assertThat(completed.stepId).isEqualTo(started.stepId)
+        assertThat(completed.toStepId).isNull()
+        assertThat(started.traceId).isEqualTo(resolution.traceId)
+        assertThat(completed.traceId).isEqualTo(resolution.traceId)
+    }
+
+    @Test
+    fun `offering step that cannot load its offering tracks started but not completed`() = runTest {
+        coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns offeringWorkflow("wf1234", "missing")
+
+        resolve()
+
+        assertThat(trackedEvents.single()).isInstanceOf(WorkflowEvent.StepStarted::class.java)
     }
 
     @Test

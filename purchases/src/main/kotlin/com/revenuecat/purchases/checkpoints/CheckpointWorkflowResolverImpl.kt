@@ -16,6 +16,7 @@ import com.revenuecat.purchases.common.checkpoints.CheckpointRulesResolution
 import com.revenuecat.purchases.common.checkpoints.CheckpointsConfigProvider
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.localrules.LocalRulesEvaluator
 import com.revenuecat.purchases.common.localrules.RulesDimensionValue
@@ -26,8 +27,10 @@ import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.common.workflows.WorkflowStep
 import com.revenuecat.purchases.common.workflows.WorkflowStepGating
+import com.revenuecat.purchases.common.workflows.events.WorkflowEvent
 import com.revenuecat.purchases.withPresentedCheckpointIdentifier
 import kotlinx.coroutines.CancellationException
+import java.util.Date
 import java.util.UUID
 
 /**
@@ -48,7 +51,7 @@ import java.util.UUID
  * [SIMULATED_ERROR_CHECKPOINT_ID] is the one piece of PoC scaffolding left: it is the only way for the tester
  * apps to exercise the throw path, since nothing in the config-driven path throws.
  */
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 internal class CheckpointWorkflowResolverImpl(
     private val workflowManager: WorkflowManager,
     private val uiConfigProvider: UiConfigProvider,
@@ -56,6 +59,7 @@ internal class CheckpointWorkflowResolverImpl(
     private val audiencesConfigProvider: AudiencesConfigProvider,
     private val localRulesEvaluator: LocalRulesEvaluator,
     private val getOfferings: suspend () -> Offerings,
+    private val track: (FeatureEvent) -> Unit = {},
 ) : CheckpointWorkflowResolver {
 
     override suspend fun resolve(
@@ -169,7 +173,7 @@ internal class CheckpointWorkflowResolverImpl(
             if (workflow.steps.size != 1) {
                 unservableRule(rule, "an offering step cannot be mixed with other steps")
             } else {
-                resolveOfferingRule(checkpointIdentifier, rule, initialStep)
+                resolveOfferingRule(checkpointIdentifier, rule, workflow, initialStep)
             }
         } else if (workflow.steps.values.any { it.isOfferingStep }) {
             unservableRule(rule, "a UI workflow cannot contain offering steps")
@@ -178,36 +182,79 @@ internal class CheckpointWorkflowResolverImpl(
         }
     }
 
+    /**
+     * An offering step has no UI, so it is the whole workflow: it starts when it is entered and completes once the
+     * offering it presents has loaded. A step that cannot be served never completes.
+     */
     @Suppress("ReturnCount")
     private suspend fun resolveOfferingRule(
         checkpointIdentifier: String,
         rule: CheckpointRule,
+        workflow: PublishedWorkflow,
         step: WorkflowStep,
     ): CheckpointResolution {
         val offeringIdentifier = step.offeringIdentifier
             ?: return unservableRule(rule, "the offering step has no valid offering identifier")
 
+        val traceId = UUID.randomUUID().toString()
+        val workflowBlobRef = workflowManager.workflowBlobRef(rule.workflowId)
+        track(
+            WorkflowEvent.StepStarted(
+                creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
+                workflowId = workflow.id,
+                stepId = step.id,
+                traceId = traceId,
+                entryReason = WORKFLOW_START_ENTRY_REASON,
+                isFirstStep = true,
+                isLastStep = true,
+                workflowBlobRef = workflowBlobRef,
+                fallbackOriginalStepId = step.fallbackOriginalStepId,
+                experiment = step.experimentData(workflowBlobRef),
+            ),
+        )
         val offering = loadOfferings(checkpointIdentifier)?.all?.get(offeringIdentifier)
             ?: return unservableRule(rule, "offering '$offeringIdentifier' was not found in offerings")
-        val matched = matchedOffering(offering, checkpointIdentifier, rule)
+        track(
+            WorkflowEvent.StepCompleted(
+                creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
+                workflowId = workflow.id,
+                stepId = step.id,
+                traceId = traceId,
+                isFirstStep = true,
+                isLastStep = true,
+                workflowBlobRef = workflowBlobRef,
+                fallbackOriginalStepId = step.fallbackOriginalStepId,
+                experiment = step.experimentData(workflowBlobRef),
+            ),
+        )
+        val matched = matchedOffering(offering, checkpointIdentifier, rule, traceId)
         debugLog {
             "Checkpoint resolved to offering '${matched.offering.identifier}' from workflow '${rule.workflowId}'"
         }
         return matched
     }
 
+    private fun WorkflowStep.experimentData(workflowBlobRef: String?): WorkflowEvent.ExperimentData? {
+        val experimentId = experimentId
+        val experimentVariant = experimentVariant
+        return if (experimentId == null || experimentVariant == null || workflowBlobRef == null) {
+            null
+        } else {
+            WorkflowEvent.ExperimentData(experimentId = experimentId, experimentVariant = experimentVariant)
+        }
+    }
+
     private fun matchedOffering(
         offering: Offering,
         checkpointIdentifier: String,
         rule: CheckpointRule,
-    ): CheckpointResolution.MatchedOffering {
-        val traceId = UUID.randomUUID().toString()
-        return CheckpointResolution.MatchedOffering(
+        traceId: String,
+    ): CheckpointResolution.MatchedOffering =
+        CheckpointResolution.MatchedOffering(
             offering.withPresentedCheckpointIdentifier(checkpointIdentifier, traceId),
             checkpointRuleId = rule.id,
             traceId = traceId,
         )
-    }
 
     private suspend fun resolveUiRule(
         checkpointIdentifier: String,
@@ -265,5 +312,6 @@ internal class CheckpointWorkflowResolverImpl(
 
     private companion object {
         const val SIMULATED_ERROR_CHECKPOINT_ID = "f0rc3_3rr0r"
+        const val WORKFLOW_START_ENTRY_REASON = "start"
     }
 }
