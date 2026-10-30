@@ -4,6 +4,7 @@ package com.revenuecat.purchases.common.workflows
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.JsonTools
+import com.revenuecat.purchases.common.workflows.events.WorkflowEvent
 import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
@@ -203,6 +204,30 @@ internal class WorkflowModelsDeserializationTest {
         assertThat(step.experimentId).isEqualTo("exp_new")
         assertThat(step.experimentVariant).isEqualTo("b")
     }
+
+    @Test
+    fun `WorkflowStep experimentData returns the experiment when it has an id, a variant and a blob ref`() {
+        val step = stepWithParams("""{"experiment_id": "exp_abc", "experiment_variant": "b"}""")
+        assertThat(step.experimentData(workflowBlobRef = "blob_ref"))
+            .isEqualTo(WorkflowEvent.ExperimentData(experimentId = "exp_abc", experimentVariant = "b"))
+    }
+
+    @Test
+    fun `WorkflowStep experimentData is null without a blob ref`() {
+        val step = stepWithParams("""{"experiment_id": "exp_abc", "experiment_variant": "b"}""")
+        assertThat(step.experimentData(workflowBlobRef = null)).isNull()
+    }
+
+    @Test
+    fun `WorkflowStep experimentData is null when the id or the variant is missing`() {
+        assertThat(stepWithParams("""{"experiment_variant": "b"}""").experimentData("blob_ref")).isNull()
+        assertThat(stepWithParams("""{"experiment_id": "exp_abc"}""").experimentData("blob_ref")).isNull()
+    }
+
+    private fun stepWithParams(paramValues: String): WorkflowStep = JsonTools.json.decodeFromString(
+        WorkflowStep.serializer(),
+        """{"id": "step_1", "type": "screen", "param_values": $paramValues}""",
+    )
 
     @Test
     fun `PublishedWorkflow decodes a fallback copy step`() {

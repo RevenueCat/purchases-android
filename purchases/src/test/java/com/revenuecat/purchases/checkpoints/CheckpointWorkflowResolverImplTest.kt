@@ -22,6 +22,7 @@ import com.revenuecat.purchases.common.checkpoints.CheckpointResponse
 import com.revenuecat.purchases.common.checkpoints.CheckpointRule
 import com.revenuecat.purchases.common.checkpoints.CheckpointRulesResolution
 import com.revenuecat.purchases.common.checkpoints.CheckpointsConfigProvider
+import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.localrules.LocalRulesEvaluator
 import com.revenuecat.purchases.common.localrules.RulesDimensionProvider
 import com.revenuecat.purchases.common.localrules.RulesDimensionValue
@@ -34,6 +35,7 @@ import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.common.workflows.WorkflowStep
 import com.revenuecat.purchases.common.workflows.WorkflowTrigger
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
+import com.revenuecat.purchases.common.workflows.events.WorkflowEvent
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
@@ -76,6 +78,7 @@ class CheckpointWorkflowResolverImplTest {
     private lateinit var mockOffering: Offering
     private lateinit var mockOfferings: Offerings
     private var offeringsFetchError: PurchasesError? = null
+    private val trackedEvents = mutableListOf<FeatureEvent>()
     private var offeringsFetched = 0
 
     private lateinit var resolver: CheckpointWorkflowResolverImpl
@@ -114,6 +117,7 @@ class CheckpointWorkflowResolverImplTest {
                 offeringsFetchError?.let { throw PurchasesException(it) }
                 mockOfferings
             },
+            track = { trackedEvents.add(it) },
         )
     }
 
@@ -618,6 +622,87 @@ class CheckpointWorkflowResolverImplTest {
     }
 
     @Test
+    fun `offering step tracks step started then completed sharing the resolution trace id`() = runTest {
+        coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns offeringWorkflow("wf1234", "default")
+
+        val resolution = resolve() as CheckpointResolution.MatchedOffering
+
+        assertThat(trackedEvents).hasSize(2)
+        val started = trackedEvents[0] as WorkflowEvent.StepStarted
+        val completed = trackedEvents[1] as WorkflowEvent.StepCompleted
+        assertThat(started.workflowId).isEqualTo("wf1234")
+        assertThat(started.entryReason).isEqualTo("start")
+        assertThat(started.isFirstStep).isTrue()
+        assertThat(started.isLastStep).isTrue()
+        assertThat(completed.stepId).isEqualTo(started.stepId)
+        assertThat(completed.toStepId).isNull()
+        assertThat(started.traceId).isEqualTo(resolution.traceId)
+        assertThat(completed.traceId).isEqualTo(resolution.traceId)
+    }
+
+    @Test
+    fun `offering step events carry the blob ref, experiment data and fallback step id`() = runTest {
+        coEvery { mockWorkflowManager.workflowBlobRef("wf1234") } returns "blob-ref-1"
+        coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns workflow("wf1234", experimentOfferingStep())
+
+        resolve()
+
+        val expectedExperiment = WorkflowEvent.ExperimentData(experimentId = "exp_abc", experimentVariant = "b")
+        val started = trackedEvents[0] as WorkflowEvent.StepStarted
+        val completed = trackedEvents[1] as WorkflowEvent.StepCompleted
+        assertThat(started.workflowBlobRef).isEqualTo("blob-ref-1")
+        assertThat(started.experiment).isEqualTo(expectedExperiment)
+        assertThat(started.fallbackOriginalStepId).isEqualTo("paywall_a")
+        assertThat(completed.workflowBlobRef).isEqualTo("blob-ref-1")
+        assertThat(completed.experiment).isEqualTo(expectedExperiment)
+        assertThat(completed.fallbackOriginalStepId).isEqualTo("paywall_a")
+    }
+
+    @Test
+    fun `offering step events have no experiment data without a blob ref`() = runTest {
+        coEvery { mockWorkflowManager.workflowBlobRef("wf1234") } returns null
+        coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns workflow("wf1234", experimentOfferingStep())
+
+        resolve()
+
+        val started = trackedEvents[0] as WorkflowEvent.StepStarted
+        val completed = trackedEvents[1] as WorkflowEvent.StepCompleted
+        assertThat(started.workflowBlobRef).isNull()
+        assertThat(started.experiment).isNull()
+        assertThat(completed.workflowBlobRef).isNull()
+        assertThat(completed.experiment).isNull()
+    }
+
+    @Test
+    fun `offering step that cannot load its offering tracks started but not completed`() = runTest {
+        coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns offeringWorkflow("wf1234", "missing")
+
+        resolve()
+
+        assertThat(trackedEvents.single()).isInstanceOf(WorkflowEvent.StepStarted::class.java)
+    }
+
+    @Test
+    fun `offering step events of a stale attempt are discarded so only the retried answer is tracked`() = runTest {
+        var generation = 0
+        configureRulesReadAt { generation }
+        // The first attempt's config generation moves while it is resolving; the retry is stable.
+        coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } answers {
+            if (generation == 0) generation++
+            offeringWorkflow("wf1234", "default")
+        }
+
+        val resolution = resolve() as CheckpointResolution.MatchedOffering
+
+        assertThat(offeringsFetched).isEqualTo(2)
+        assertThat(trackedEvents.map { it::class }).containsExactly(
+            WorkflowEvent.StepStarted::class,
+            WorkflowEvent.StepCompleted::class,
+        )
+        assertThat(trackedEvents.map { (it as WorkflowEvent).traceId }).containsOnly(resolution.traceId)
+    }
+
+    @Test
     fun `offering step ancillary fields do not prevent resolution`() = runTest {
         val step = offeringStep("default").copy(
             screenId = "screen-id",
@@ -956,6 +1041,16 @@ class CheckpointWorkflowResolverImplTest {
         initialStepId = steps.first().id,
         steps = steps.associateBy { it.id },
         screens = emptyMap(),
+    )
+
+    private fun experimentOfferingStep(): WorkflowStep = offeringStep("default").copy(
+        metadata = JsonObject(
+            mapOf(
+                "experiment_id" to JsonPrimitive("exp_abc"),
+                "experiment_variant" to JsonPrimitive("b"),
+                "fallback_original_step_id" to JsonPrimitive("paywall_a"),
+            ),
+        ),
     )
 
     private fun offeringStep(offeringIdentifier: String): WorkflowStep = WorkflowStep(
