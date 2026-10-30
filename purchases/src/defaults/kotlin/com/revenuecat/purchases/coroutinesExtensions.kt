@@ -2,6 +2,8 @@ package com.revenuecat.purchases
 
 import android.content.Context
 import com.revenuecat.purchases.CacheFetchPolicy.CACHED_OR_FETCHED
+import com.revenuecat.purchases.ads.AdRewardConfiguration
+import com.revenuecat.purchases.ads.ConfiguredAdRewards
 import com.revenuecat.purchases.ads.events.AdCaptureMethod
 import com.revenuecat.purchases.ads.rewardverification.Poller
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationFetcher
@@ -18,6 +20,17 @@ import com.revenuecat.purchases.interfaces.ManageSubscriptionsCallback
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Locale
+
+/**
+ * Coroutine friendly version of [Purchases.getAdRewards]. Returns null when configuration is unavailable
+ * or [adUnitId] is empty. A result with a null [ConfiguredAdRewards.reward] means no rewards are configured.
+ * Unknown or invalid individual rewards use [AdRewardConfiguration.UnsupportedReward].
+ */
+@JvmSynthetic
+@Suppress("UNUSED_PARAMETER", "UnusedParameter")
+internal suspend fun Purchases.awaitGetAdRewards(adUnitId: String): ConfiguredAdRewards? {
+    throw NotImplementedError("Configured ad rewards will be implemented in a follow-up PR.")
+}
 
 /**
  * Get latest available customer info.
