@@ -641,6 +641,39 @@ class CheckpointWorkflowResolverImplTest {
     }
 
     @Test
+    fun `offering step events carry the blob ref, experiment data and fallback step id`() = runTest {
+        coEvery { mockWorkflowManager.workflowBlobRef("wf1234") } returns "blob-ref-1"
+        coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns workflow("wf1234", experimentOfferingStep())
+
+        resolve()
+
+        val expectedExperiment = WorkflowEvent.ExperimentData(experimentId = "exp_abc", experimentVariant = "b")
+        val started = trackedEvents[0] as WorkflowEvent.StepStarted
+        val completed = trackedEvents[1] as WorkflowEvent.StepCompleted
+        assertThat(started.workflowBlobRef).isEqualTo("blob-ref-1")
+        assertThat(started.experiment).isEqualTo(expectedExperiment)
+        assertThat(started.fallbackOriginalStepId).isEqualTo("paywall_a")
+        assertThat(completed.workflowBlobRef).isEqualTo("blob-ref-1")
+        assertThat(completed.experiment).isEqualTo(expectedExperiment)
+        assertThat(completed.fallbackOriginalStepId).isEqualTo("paywall_a")
+    }
+
+    @Test
+    fun `offering step events have no experiment data without a blob ref`() = runTest {
+        coEvery { mockWorkflowManager.workflowBlobRef("wf1234") } returns null
+        coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns workflow("wf1234", experimentOfferingStep())
+
+        resolve()
+
+        val started = trackedEvents[0] as WorkflowEvent.StepStarted
+        val completed = trackedEvents[1] as WorkflowEvent.StepCompleted
+        assertThat(started.workflowBlobRef).isNull()
+        assertThat(started.experiment).isNull()
+        assertThat(completed.workflowBlobRef).isNull()
+        assertThat(completed.experiment).isNull()
+    }
+
+    @Test
     fun `offering step that cannot load its offering tracks started but not completed`() = runTest {
         coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns offeringWorkflow("wf1234", "missing")
 
@@ -1008,6 +1041,16 @@ class CheckpointWorkflowResolverImplTest {
         initialStepId = steps.first().id,
         steps = steps.associateBy { it.id },
         screens = emptyMap(),
+    )
+
+    private fun experimentOfferingStep(): WorkflowStep = offeringStep("default").copy(
+        metadata = JsonObject(
+            mapOf(
+                "experiment_id" to JsonPrimitive("exp_abc"),
+                "experiment_variant" to JsonPrimitive("b"),
+                "fallback_original_step_id" to JsonPrimitive("paywall_a"),
+            ),
+        ),
     )
 
     private fun offeringStep(offeringIdentifier: String): WorkflowStep = WorkflowStep(
