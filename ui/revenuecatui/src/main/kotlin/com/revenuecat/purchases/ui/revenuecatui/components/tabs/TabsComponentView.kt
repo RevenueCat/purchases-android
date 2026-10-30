@@ -94,7 +94,10 @@ internal fun TabsComponentView(
     // published id above the visibility gate keeps a hidden -> visible transition from republishing and
     // clobbering a value another component already set (mirrors iOS's didSeedInitialState). The declared state
     // default is expected to match default_tab_id.
-    val selectedTabId = style.tabs[state.selectedTabIndex.coerceIn(0..style.tabs.lastIndex)].id
+    // The selected index is paywall-wide, so on a Tabs component with fewer tabs two different indices can map to
+    // the same tab. Everything below uses the clamped index so they're treated as the same tab.
+    val selectedTabIndex = state.selectedTabIndex.coerceIn(0..style.tabs.lastIndex)
+    val selectedTabId = style.tabs[selectedTabIndex].id
     val lastPublishedTabId = remember { mutableStateOf<String?>(null) }
     LaunchedEffect(tabsState.visible, selectedTabId) {
         if (!tabsState.visible || selectedTabId == lastPublishedTabId.value) return@LaunchedEffect
@@ -104,18 +107,18 @@ internal fun TabsComponentView(
         }
     }
 
+    // Above the visibility gate so each tab's state survives the Tabs component being hidden.
+    val tabContentStateHolder = rememberSaveableStateHolder()
+
     if (!tabsState.visible) return
 
     val backgroundStyle = tabsState.background?.let { rememberBackgroundStyle(it) }
     val borderStyle = tabsState.border?.let { rememberBorderStyle(border = it) }
     val shadowStyle = tabsState.shadow?.let { rememberShadowStyle(shadow = it) }
-    val tabContentStateHolder = rememberSaveableStateHolder()
 
     AnimatedContent(
-        // Clamped here rather than inside the content: the selected index is paywall-wide, so on a Tabs component
-        // with fewer tabs two different indices can map to the same tab. Animating between them would compose
-        // that tab twice under the same saveable key.
-        targetState = state.selectedTabIndex.coerceIn(0..tabsState.tabs.lastIndex),
+        // Clamped, so two indices that map to the same tab never compose it twice under one saveable key.
+        targetState = selectedTabIndex,
         modifier = modifier
             .padding(tabsState.margin)
             .applyIfNotNull(shadowStyle) { shadow(it, tabsState.shape) }

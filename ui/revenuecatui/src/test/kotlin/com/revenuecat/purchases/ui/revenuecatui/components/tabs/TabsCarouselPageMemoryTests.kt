@@ -15,12 +15,15 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipe
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
+import com.revenuecat.purchases.paywalls.components.PartialTabsComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.TabControlButtonComponent
 import com.revenuecat.purchases.paywalls.components.TabControlComponent
 import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
@@ -32,14 +35,16 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fi
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TabsComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toNonEmptyMapOrNull
+import kotlin.math.abs
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import kotlin.math.abs
 
 @RunWith(AndroidJUnit4::class)
 class TabsCarouselPageMemoryTests {
@@ -67,6 +72,23 @@ class TabsCarouselPageMemoryTests {
         assertPageShown(tab = "a", page = 2)
         onNodeWithText(tabButtonText("b")).performClick()
         assertPageShown(tab = "b", page = 1)
+    }
+
+    @Test
+    fun `Each tab's carousel keeps its page while the Tabs component is hidden`(): Unit = with(composeTestRule) {
+        // Arrange: the Tabs component is hidden while the annual package is selected.
+        val state = setTabsWithCarousels(hiddenWhenSelected = TestData.Packages.annual)
+        swipeCarouselForward(tab = "a", fromPage = 0)
+
+        // Act
+        state.update(selectedPackageUniqueId = TestData.Packages.annual.identifier)
+        waitForIdle()
+        onNodeWithText(tabButtonText("a")).assertDoesNotExist()
+        state.update(selectedPackageUniqueId = TestData.Packages.monthly.identifier)
+        waitForIdle()
+
+        // Assert
+        assertPageShown(tab = "a", page = 1)
     }
 
     @Test
@@ -200,7 +222,10 @@ class TabsCarouselPageMemoryTests {
         return visible.single()
     }
 
-    private fun ComposeContentTestRule.setTabsWithCarousels(autoAdvanceTabA: Boolean = false) {
+    private fun ComposeContentTestRule.setTabsWithCarousels(
+        autoAdvanceTabA: Boolean = false,
+        hiddenWhenSelected: Package? = null,
+    ): PaywallState.Loaded.Components {
         val tabControlButtons = tabNames.mapIndexed { index, tab ->
             TabControlButtonComponent(
                 tabIndex = index,
@@ -249,6 +274,19 @@ class TabsCarouselPageMemoryTests {
                 )
             },
             control = TabsComponent.TabControl.Buttons(stack = StackComponent(components = tabControlButtons)),
+            overrides = listOfNotNull(
+                hiddenWhenSelected?.let { pkg ->
+                    ComponentOverride(
+                        conditions = listOf(
+                            ComponentOverride.Condition.SelectedPackage(
+                                operator = ComponentOverride.ArrayOperator.IN,
+                                packages = listOf(pkg.identifier),
+                            ),
+                        ),
+                        properties = PartialTabsComponent(visible = false),
+                    )
+                },
+            ),
         )
         val localizations = tabNames
             .flatMap { tab ->
@@ -260,12 +298,14 @@ class TabsCarouselPageMemoryTests {
         val state = FakePaywallState(
             components = listOf(tabsComponent),
             localizations = nonEmptyMapOf(LocaleId("en_US") to localizations),
+            packages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
         )
         val tabsComponentStyle = (state.stack as StackComponentStyle).children
             .filterIsInstance<TabsComponentStyle>()
             .single()
 
         setContent { TabsComponentView(style = tabsComponentStyle, state = state, clickHandler = { }) }
+        return state
     }
 
     private companion object {
