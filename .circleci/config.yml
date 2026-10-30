@@ -450,9 +450,6 @@ jobs:
           name: Deploy to S3
           command: aws s3 sync ~/project/docs/10.30.1 s3://purchases-docs/android/10.30.1 --delete
       - run:
-          name: Update index.html
-          command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
-      - run:
           name: Invalidate CloudFront caches
           command: aws cloudfront create-invalidation --distribution-id EPTW7F3CB566V --paths "/*"
 
