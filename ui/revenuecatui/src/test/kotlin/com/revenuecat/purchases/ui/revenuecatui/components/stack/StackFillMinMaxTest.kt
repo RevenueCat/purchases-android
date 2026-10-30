@@ -22,21 +22,23 @@ import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.PaywallComponent
 import com.revenuecat.purchases.paywalls.components.PaywallTransition
 import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.paywalls.components.StackComponent.Overflow
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
+import com.revenuecat.purchases.paywalls.components.properties.Badge
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
-import com.revenuecat.purchases.paywalls.components.StackComponent.Overflow
 import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
+import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorEquals
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
@@ -423,6 +425,63 @@ class StackFillMinMaxTest {
         },
         25 to Color.Red,
         75 to Color.Blue,
+    )
+
+    @Test
+    fun `scroll allocations reach a Fill button background and centered content`() = assertBothOrientations(
+        stack = { h ->
+            stack(
+                h,
+                child(Color.Yellow, fill(h, min = 10u)),
+                ButtonComponent(
+                    action = ButtonComponent.Action.NavigateBack,
+                    stack = StackComponent(
+                        components = listOf(child(Color.Blue, fixed(h, 10u))),
+                        dimension = if (h) Dimension.Horizontal(VerticalAlignment.CENTER, FlexDistribution.CENTER)
+                        else Dimension.Vertical(HorizontalAlignment.CENTER, FlexDistribution.CENTER),
+                        size = fill(h),
+                        backgroundColor = ColorScheme(ColorInfo.Hex(Color.Red.toArgb())),
+                    ),
+                ),
+                overflow = Overflow.SCROLL,
+            )
+        },
+        10 to Color.Yellow,
+        55 to Color.Red,
+        75 to Color.Blue,
+        95 to Color.Red,
+    )
+
+    @Test
+    fun `badged Fill button keeps its allocation and applies margins once`() = assertBothOrientations(
+        stack = { h ->
+            stack(
+                h,
+                child(Color.Yellow, fill(h, min = 10u)),
+                ButtonComponent(
+                    action = ButtonComponent.Action.NavigateBack,
+                    stack = StackComponent(
+                        components = listOf(child(Color.Blue, fixed(h, 10u))),
+                        dimension = if (h) Dimension.Horizontal(VerticalAlignment.CENTER, FlexDistribution.CENTER)
+                        else Dimension.Vertical(HorizontalAlignment.CENTER, FlexDistribution.CENTER),
+                        size = fill(h),
+                        margin = if (h) Padding(leading = 10.0, trailing = 10.0) else Padding(top = 10.0, bottom = 10.0),
+                        backgroundColor = ColorScheme(ColorInfo.Hex(Color.Red.toArgb())),
+                        badge = Badge(
+                            stack = child(Color.Magenta, Size(Fixed(4u), Fixed(4u))),
+                            style = Badge.Style.Overlay,
+                            alignment = TwoDimensionalAlignment.TOP_LEADING,
+                        ),
+                    ),
+                ),
+                overflow = Overflow.SCROLL,
+            )
+        },
+        10 to Color.Yellow,
+        55 to Color.Green,
+        65 to Color.Red,
+        75 to Color.Blue,
+        95 to Color.Green,
     )
 
     private fun twoCappedChildren(horizontal: Boolean, distribution: FlexDistribution) = stack(

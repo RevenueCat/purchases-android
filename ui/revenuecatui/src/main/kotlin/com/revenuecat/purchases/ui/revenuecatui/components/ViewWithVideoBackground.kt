@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
@@ -17,14 +16,16 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 
 @Composable
+@Suppress("LongParameterList")
 internal fun ViewWithVideoBackground(
     state: PaywallState.Loaded.Components,
     background: BackgroundStyle?,
     modifier: Modifier = Modifier,
     shape: Shape = RectangleShape,
-    content: @Composable BoxScope.() -> Unit,
+    size: Size? = null,
+    content: @Composable BoxScope.(Modifier) -> Unit,
 ) {
-    Box(modifier = modifier) {
+    BoxWithUnboundedFillMinimums(size = size, modifier = modifier) { minimums ->
         when (val background = background) {
             is BackgroundStyle.Video -> {
                 val videoComponent = VideoComponentStyle(
@@ -60,6 +61,6 @@ internal fun ViewWithVideoBackground(
 
             else -> {}
         }
-        content()
+        content(minimums)
     }
 }
