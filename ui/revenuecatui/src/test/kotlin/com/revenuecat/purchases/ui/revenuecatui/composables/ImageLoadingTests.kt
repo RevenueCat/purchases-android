@@ -27,6 +27,7 @@ import coil.request.ImageRequest
 import coil.request.SuccessResult
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
+import com.revenuecat.purchases.ui.revenuecatui.BuildConfig
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBackgroundStyle
@@ -39,6 +40,7 @@ import io.mockk.unmockkObject
 import kotlinx.coroutines.CompletableDeferred
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -125,6 +127,7 @@ internal class ImageLoadingTests(private val imageType: ImageType) {
 
     @Test
     fun `Preview shows the blocking image when full and placeholder URLs match`() {
+        assumeTrue("Preview image loading is intentionally disabled in release builds", BuildConfig.DEBUG)
         render(mutableStateOf(Sources(imageUrl, imageUrl)), inPreviewMode = true)
 
         assertImageIsBlue()
