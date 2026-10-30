@@ -4,6 +4,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.RewardVerificationPollStatus
+import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.VerifiedReward
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
@@ -15,6 +16,7 @@ import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.verification.SignatureVerificationResult
+import com.revenuecat.purchases.utils.Responses
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -22,6 +24,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
+import org.json.JSONObject
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -106,6 +109,60 @@ class BackendGetRewardVerificationResultTest {
                 iamAppUserID = any(),
             )
         }
+    }
+
+    @Test
+    fun `getRewardVerificationResult builds customer info from subscriber in response`() {
+        mockHttpResult(
+            payload = JSONObject(Responses.validFullPurchaserResponse).put("status", "verified").toString(),
+            verificationResult = SignatureVerificationResult.Verified,
+        )
+
+        var receivedResult: RewardVerificationPollStatus? = null
+        backend.getRewardVerificationResult(
+            appUserID = appUserId,
+            clientTransactionId = clientTransactionId,
+            adUnitId = null,
+            onSuccess = { receivedResult = it },
+            onError = { error -> fail("Expected success. Got error: $error") },
+        )
+
+        val customerInfo = (receivedResult as RewardVerificationPollStatus.Verified).customerInfo
+        assertThat(customerInfo).isNotNull
+        assertThat(customerInfo?.entitlements?.verification).isEqualTo(VerificationResult.VERIFIED)
+        assertThat(customerInfo?.activeSubscriptions).isNotEmpty
+    }
+
+    @Test
+    fun `getRewardVerificationResult leaves customer info null without subscriber in response`() {
+        mockHttpResult(payload = """{"status":"verified"}""")
+
+        var receivedResult: RewardVerificationPollStatus? = null
+        backend.getRewardVerificationResult(
+            appUserID = appUserId,
+            clientTransactionId = clientTransactionId,
+            adUnitId = null,
+            onSuccess = { receivedResult = it },
+            onError = { error -> fail("Expected success. Got error: $error") },
+        )
+
+        assertThat((receivedResult as RewardVerificationPollStatus.Verified).customerInfo).isNull()
+    }
+
+    @Test
+    fun `getRewardVerificationResult returns error on malformed subscriber`() {
+        mockHttpResult(payload = """{"status":"verified","subscriber":{}}""")
+
+        var obtainedError: PurchasesError? = null
+        backend.getRewardVerificationResult(
+            appUserID = appUserId,
+            clientTransactionId = clientTransactionId,
+            adUnitId = null,
+            onSuccess = { fail("Expected error. Got success") },
+            onError = { error -> obtainedError = error.error },
+        )
+
+        assertThat(obtainedError?.code).isEqualTo(PurchasesErrorCode.NetworkError)
     }
 
     @Test
@@ -279,6 +336,7 @@ class BackendGetRewardVerificationResultTest {
         responseCode: Int = RCHTTPStatusCodes.SUCCESS,
         payload: String,
         delayMs: Long? = null,
+        verificationResult: SignatureVerificationResult = SignatureVerificationResult.NotRequested,
     ) {
         every {
             httpClient.performRequest(
@@ -299,7 +357,7 @@ class BackendGetRewardVerificationResultTest {
                 payload,
                 HTTPResult.Origin.BACKEND,
                 requestDate = null,
-                SignatureVerificationResult.NotRequested,
+                verificationResult,
                 isLoadShedderResponse = false,
                 isFallbackURL = false,
             )

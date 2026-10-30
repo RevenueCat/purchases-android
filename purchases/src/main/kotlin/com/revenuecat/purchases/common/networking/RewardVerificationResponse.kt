@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.networking
 
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.RewardVerificationPollStatus
 import com.revenuecat.purchases.VerifiedReward
@@ -24,12 +25,13 @@ internal data class RewardVerificationResponse(
     val message: String? = null,
 ) {
     @OptIn(InternalRevenueCatAPI::class)
-    fun toRewardVerificationPollStatus(): RewardVerificationPollStatus {
+    fun toRewardVerificationPollStatus(customerInfo: CustomerInfo? = null): RewardVerificationPollStatus {
         return when (status.lowercase()) {
             "pending" -> RewardVerificationPollStatus.PENDING
             "verified" -> RewardVerificationPollStatus.Verified(
                 reward = reward.toVerifiedReward(),
                 moreRewards = moreRewards.orEmpty().map { it.toVerifiedReward() },
+                customerInfo = customerInfo,
             )
             "failed" -> RewardVerificationPollStatus.Failed(failureReason = failureReason, message = message)
             else -> {

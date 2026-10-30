@@ -2,13 +2,18 @@
 
 package com.revenuecat.purchases.ads.rewardverification
 
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ads.events.types.AdRewardFailureReason
 
 // Internal poll result. The public [RewardVerificationResult] stays binary (verified/failed); these subtypes
 // capture *why* polling ended so the poller can log an actionable reason without adding public cases.
 internal sealed interface Outcome {
-    class Verified(val reward: VerifiedReward, val moreRewards: List<VerifiedReward>) : Outcome
+    class Verified(
+        val reward: VerifiedReward,
+        val moreRewards: List<VerifiedReward>,
+        val customerInfo: CustomerInfo? = null,
+    ) : Outcome
 
     sealed interface Failed : Outcome {
         val logMessage: String

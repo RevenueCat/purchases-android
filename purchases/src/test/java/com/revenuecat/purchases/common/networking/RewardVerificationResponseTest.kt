@@ -4,7 +4,9 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.RewardVerificationPollStatus
 import com.revenuecat.purchases.VerifiedReward
 import com.revenuecat.purchases.common.JsonProvider
+import com.revenuecat.purchases.common.createCustomerInfo
 import com.revenuecat.purchases.utils.Iso8601Utils
+import com.revenuecat.purchases.utils.Responses
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -33,6 +35,27 @@ class RewardVerificationResponseTest {
 
         assertThat(response.toRewardVerificationPollStatus())
             .isEqualTo(RewardVerificationPollStatus.Verified(VerifiedReward.NoReward))
+    }
+
+    @Test
+    fun `maps verified status ignoring subscriber key`() {
+        val response = JsonProvider.defaultJson.decodeFromString<RewardVerificationResponse>(
+            """{"status":"verified","subscriber":{}}""",
+        )
+
+        assertThat(response.toRewardVerificationPollStatus())
+            .isEqualTo(RewardVerificationPollStatus.Verified(VerifiedReward.NoReward))
+    }
+
+    @Test
+    fun `maps verified status with customer info`() {
+        val customerInfo = createCustomerInfo(Responses.validFullPurchaserResponse)
+        val response = JsonProvider.defaultJson.decodeFromString<RewardVerificationResponse>(
+            """{"status":"verified"}""",
+        )
+
+        assertThat(response.toRewardVerificationPollStatus(customerInfo))
+            .isEqualTo(RewardVerificationPollStatus.Verified(VerifiedReward.NoReward, customerInfo = customerInfo))
     }
 
     @Test

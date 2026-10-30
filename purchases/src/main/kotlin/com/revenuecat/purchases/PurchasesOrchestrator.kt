@@ -1287,6 +1287,10 @@ internal class PurchasesOrchestrator(
         )
     }
 
+    fun cacheCustomerInfo(customerInfo: CustomerInfo) {
+        customerInfoUpdateHandler.cacheAndNotifyListeners(customerInfo, identityManager.currentAppUserID)
+    }
+
     // region Subscriber Attributes
 
     val attributesForCurrentUser: List<CustomerAttribute>

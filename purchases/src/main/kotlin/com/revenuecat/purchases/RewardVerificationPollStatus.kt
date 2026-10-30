@@ -10,10 +10,12 @@ public sealed interface RewardVerificationPollStatus {
      *
      * @param reward The primary granted reward.
      * @param moreRewards Additional granted rewards; does not repeat [reward].
+     * @param customerInfo The customer info reflecting the grant, when the backend included it in the response.
      */
     public data class Verified(
         val reward: VerifiedReward,
         val moreRewards: List<VerifiedReward> = emptyList(),
+        val customerInfo: CustomerInfo? = null,
     ) : RewardVerificationPollStatus
 
     /**
