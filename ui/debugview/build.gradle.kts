@@ -1,3 +1,5 @@
+import org.gradle.api.tasks.testing.Test
+
 plugins {
     alias(libs.plugins.revenuecat.public.library)
     alias(libs.plugins.paparazzi)
@@ -49,4 +51,13 @@ dependencies {
     testImplementation(libs.mockk.agent)
 
     testImplementation(libs.androidx.legacy.core.ui)
+}
+
+// Same rule as in ui/revenuecatui: snapshot tests only run through Paparazzi's record/verify tasks.
+val paparazziTaskRequested = gradle.startParameter.taskNames.any { it.contains("Paparazzi") }
+if (!paparazziTaskRequested) {
+    tasks.withType<Test>().configureEach {
+        filter.excludeTestsMatching("com.revenuecat.purchases.ui.debugview.DebugViewSnapshotTest")
+        filter.isFailOnNoMatchingTests = false
+    }
 }
