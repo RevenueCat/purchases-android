@@ -45,7 +45,6 @@ internal class DefaultPaywallPresenter(
     private lateinit var params: PaywallPresenter.Params
     private var completion: PaywallPresenter.Completion? = null
     private var activeEntitlementsBefore: Set<String>? = null
-    private var presentedEntitlements: List<Set<String>> = emptyList()
     private var obtained = false
     private var failure: PurchasesError? = null
 
@@ -62,8 +61,6 @@ internal class DefaultPaywallPresenter(
         this.params = params
         this.completion = completion
         purchases.cachedActiveEntitlementIds { activeEntitlementsBefore = it }
-        presentedEntitlements =
-            listOf(params.offering).entitlementsGrantedBy(purchases.internalProductEntitlementMapping())
         val window = windowFactory(UUID.randomUUID().toString(), this, params.presentationMode)
         try {
             window.show(activity)
@@ -105,6 +102,8 @@ internal class DefaultPaywallPresenter(
 
         override fun onRestoreCompleted(customerInfo: CustomerInfo) {
             if (completion == null) return
+            val presentedEntitlements =
+                listOf(params.offering).entitlementsGrantedBy(purchases.internalProductEntitlementMapping())
             if (customerInfo.grantsPresentedEntitlement(activeEntitlementsBefore, presentedEntitlements)) {
                 obtained = true
                 dismiss?.invoke(false)

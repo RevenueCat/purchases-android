@@ -293,7 +293,7 @@ internal class CheckpointsManager(
                 }
                 .setShouldDisplayBlock { customerInfo ->
                     slot.with(callId) {
-                        customerInfo.grantsPresentedEntitlement(it.activeEntitlementsBefore, it.presentedEntitlements)
+                        customerInfo.grantsPresentedEntitlement(it.activeEntitlementsBefore, it.presentedEntitlements())
                     } != true
                 }
                 .setErrorPresenter(presentation.errorPresenter)
@@ -320,7 +320,7 @@ internal class CheckpointsManager(
         // would be a no-op anyway.
         override fun onRestoreCompleted(customerInfo: CustomerInfo) {
             val granted = slot.with(callId) {
-                customerInfo.grantsPresentedEntitlement(it.activeEntitlementsBefore, it.presentedEntitlements)
+                customerInfo.grantsPresentedEntitlement(it.activeEntitlementsBefore, it.presentedEntitlements())
             } == true
             if (granted) {
                 recordOutcome(callId, CheckpointFlowOutcome.Restored(customerInfo))
@@ -411,8 +411,9 @@ internal class CheckpointsManager(
             callId = UUID.randomUUID().toString(),
             presentation = null,
             activeEntitlementsBefore = customerInfoBefore.activeEntitlementIds,
-            presentedEntitlements = listOf(params.offering)
-                .entitlementsGrantedBy(purchases.internalProductEntitlementMapping()),
+            presentedEntitlements = {
+                listOf(params.offering).entitlementsGrantedBy(purchases.internalProductEntitlementMapping())
+            },
             customerInfoBefore = customerInfoBefore,
             flowFinished = CompletableDeferred(),
         )
@@ -558,8 +559,9 @@ internal class CheckpointsManager(
                 errorPresenter = errorPresenter.forCheckpoint(identifier, customVariables),
             ),
             activeEntitlementsBefore = customerInfoBefore.activeEntitlementIds,
-            presentedEntitlements = resolution.presentedOfferings
-                .entitlementsGrantedBy(purchases.internalProductEntitlementMapping()),
+            presentedEntitlements = {
+                resolution.presentedOfferings.entitlementsGrantedBy(purchases.internalProductEntitlementMapping())
+            },
             customerInfoBefore = customerInfoBefore,
             flowFinished = CompletableDeferred(),
         )
