@@ -171,17 +171,18 @@ internal interface PaywallViewModel {
 
 @Suppress("TooManyFunctions", "LongParameterList", "LargeClass")
 internal class PaywallViewModelImpl(
-    override val resourceProvider: ResourceProvider,
+    override var resourceProvider: ResourceProvider,
     private val purchases: PurchasesType = PurchasesImpl(),
     private var options: PaywallOptions,
     colorScheme: ColorScheme,
     private var isDarkMode: Boolean,
     private val shouldDisplayBlock: ((CustomerInfo) -> Boolean)?,
-    preview: Boolean = false,
+    private val preview: Boolean = false,
     private val productChangeCalculator: ProductChangeCalculator = ProductChangeCalculator(purchases),
     private val backgroundDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : ViewModel(), PaywallViewModel {
-    private val variableDataProvider = VariableDataProvider(resourceProvider, preview)
+    private val variableDataProvider
+        get() = VariableDataProvider(resourceProvider, preview)
 
     override val state: StateFlow<PaywallState>
         get() = _state.asStateFlow()
@@ -1763,15 +1764,15 @@ internal class PaywallViewModelImpl(
     }
 
     private fun getCurrentLocaleList(): LocaleListCompat {
-        val preferredLocale = purchases.preferredUILocaleOverride ?: return LocaleListCompat.getDefault()
+        val preferredLocale = purchases.preferredUILocaleOverride ?: return resourceProvider.getLocales()
 
         return try {
             val locale = createLocaleFromString(preferredLocale)
             val localeList = LocaleListCompat.create(locale)
             localeList
         } catch (e: IllegalArgumentException) {
-            Logger.e("Invalid preferred locale format: $preferredLocale. Using system default.", e)
-            LocaleListCompat.getDefault()
+            Logger.e("Invalid preferred locale format: $preferredLocale. Using app or system default.", e)
+            resourceProvider.getLocales()
         }
     }
 
@@ -1782,7 +1783,10 @@ internal class PaywallViewModelImpl(
     }
 
     private fun LocaleListCompat.toLocaleIds(): List<LocaleId> =
-        List(size()) { index -> get(index)!!.toLocaleId() }
+        toLocales().map { it.toLocaleId() }
+
+    private fun LocaleListCompat.toLocales(): List<Locale> =
+        List(size()) { index -> get(index)!! }
 
     private fun calculateState(
         offering: Offering,
@@ -1825,6 +1829,7 @@ internal class PaywallViewModelImpl(
                 shouldDisplayDismissButton = options.shouldDisplayDismissButton,
                 storefrontCountryCode = storefrontCountryCode,
                 validationWarning = validationResult.warning,
+                preferredLocales = _lastLocaleList.value.toLocales(),
             )
             is PaywallValidationResult.Components -> offering.toComponentsPaywallState(
                 validationResult = validationResult,

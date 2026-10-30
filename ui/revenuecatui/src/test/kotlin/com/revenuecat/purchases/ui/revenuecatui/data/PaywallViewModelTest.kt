@@ -7,6 +7,7 @@ import android.content.Context
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.core.os.LocaleListCompat
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
@@ -76,6 +77,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPurchaseButtonAct
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toInteractionEvent
 import com.revenuecat.purchases.ui.revenuecatui.helpers.resolvedWebCheckoutInteractionUrl
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable
@@ -897,7 +899,23 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `locale changes revalidate the selected components localization`(): Unit = runBlocking {
+    fun `legacy paywalls prefer the app locale and respect explicit overrides`() {
+        val resourceProvider = object : ResourceProvider by MockResourceProvider() {
+            override fun getLocales(): LocaleListCompat = LocaleListCompat.forLanguageTags("es-ES")
+        }
+        val model = create(offering = defaultOffering, resourceProvider = resourceProvider)
+        val initialState = model.state.value as PaywallState.Loaded.Legacy
+        assertThat(initialState.templateConfiguration.locale.toLanguageTag()).isEqualTo("es-ES")
+
+        every { purchases.preferredUILocaleOverride } returns "en_US"
+        model.refreshStateIfLocaleChanged()
+
+        val updatedState = model.state.value as PaywallState.Loaded.Legacy
+        assertThat(updatedState.templateConfiguration.locale.toLanguageTag()).isEqualTo("en-US")
+    }
+
+    @Test
+    fun `app locale changes revalidate components and explicit overrides take priority`(): Unit = runBlocking {
         val data = PaywallComponentsData(
             id = "paywall_id",
             templateName = "template",
@@ -913,17 +931,20 @@ class PaywallViewModelTest {
             availablePackages = listOf(TestData.Packages.monthly),
             paywallComponents = Offering.PaywallComponents(UiConfig(), data),
         )
-        var preferredLocale = "en_US"
-        every { purchases.preferredUILocaleOverride } answers { preferredLocale }
-        val model = create(offering = offering, mode = PaywallMode.FULL_SCREEN)
+        val resourceProvider = object : ResourceProvider by MockResourceProvider() {
+            override fun getLocales(): LocaleListCompat = LocaleListCompat.forLanguageTags("en-US")
+        }
+        val model = create(offering = offering, mode = PaywallMode.FULL_SCREEN, resourceProvider = resourceProvider)
         assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
 
-        preferredLocale = "es_ES"
+        model.resourceProvider = object : ResourceProvider by MockResourceProvider() {
+            override fun getLocales(): LocaleListCompat = LocaleListCompat.forLanguageTags("es-ES")
+        }
         model.refreshStateIfLocaleChanged()
 
         assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Legacy::class.java)
 
-        preferredLocale = "en_US"
+        every { purchases.preferredUILocaleOverride } returns "en_US"
         model.refreshStateIfLocaleChanged()
 
         assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
@@ -4200,6 +4221,7 @@ class PaywallViewModelTest {
         dismissRequestWithExitOffering: ((Offering?, PaywallResult?, PaywallDismissReason) -> Unit)? = null,
         dismissRequest: () -> Unit = { dismissInvoked = true },
         errorPresenter: PaywallErrorPresenter? = null,
+        resourceProvider: ResourceProvider = MockResourceProvider(),
         shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null,
     ): PaywallViewModelImpl {
         val builder = PaywallOptions.Builder(dismissRequest = dismissRequest)
@@ -4212,7 +4234,7 @@ class PaywallViewModelTest {
             builder.setDismissRequestWithExitOffering(it)
         }
         return PaywallViewModelImpl(
-            MockResourceProvider(),
+            resourceProvider,
             purchases,
             builder.build(),
             TestData.Constants.currentColorScheme,

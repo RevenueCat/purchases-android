@@ -4,6 +4,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import android.content.res.Configuration
+import android.os.LocaleList
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -90,7 +91,7 @@ internal fun LoadedPaywallComponents(
     componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
     val configuration = LocalConfiguration.current
-    state.update(localeList = configuration.locales)
+    state.update(localeList = configuration.locales.takeUnless { it.isEmpty } ?: LocaleList.getDefault())
 
     val onClick: suspend (PaywallAction) -> Unit = { action ->
         handleClick(action, state, clickHandler, componentInteractionTracker)
