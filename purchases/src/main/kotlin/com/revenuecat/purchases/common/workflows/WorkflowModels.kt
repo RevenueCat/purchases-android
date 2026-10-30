@@ -3,6 +3,7 @@
 package com.revenuecat.purchases.common.workflows
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.common.workflows.events.WorkflowEvent
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.ExitOffers
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
@@ -106,6 +107,19 @@ public object WorkflowScreenType {
     public const val PAYWALL: String = "paywall"
 }
 
+/**
+ * Parsed workflow gate. Unknown gate types and malformed known fields are [Invalid] and fail closed: the workflow
+ * is not served. Unknown keys are ignored so the backend can add fields without breaking shipped SDKs.
+ */
+@InternalRevenueCatAPI
+public sealed class WorkflowStepGating {
+    public object Soft : WorkflowStepGating()
+
+    public data class Hard(val entitlementIdentifiers: Set<String>) : WorkflowStepGating()
+
+    public object Invalid : WorkflowStepGating()
+}
+
 @InternalRevenueCatAPI
 @Serializable
 public data class WorkflowStep(
@@ -118,6 +132,11 @@ public data class WorkflowStep(
     @SerialName("trigger_actions") val triggerActions: Map<String, WorkflowTriggerAction> = emptyMap(),
     val metadata: JsonElement? = null,
 ) {
+    /** The gate in `param_values.gating`, or `null` when the key is absent. */
+    @InternalRevenueCatAPI
+    public val gating: WorkflowStepGating?
+        get() = paramValues[GATING_PARAM]?.let(::parseWorkflowStepGating)
+
     /**
      * The step's screen classification, as reported by the backend under `metadata.screen_type`.
      *
@@ -153,6 +172,21 @@ public data class WorkflowStep(
     public val experimentVariant: String?
         get() = experimentValueFromMetadataOrParams(EXPERIMENT_VARIANT_PARAM)
 
+    /**
+     * The experiment this step belongs to, or `null` when it is not in one or the workflow has no blob ref to
+     * attribute it to.
+     */
+    @InternalRevenueCatAPI
+    public fun experimentData(workflowBlobRef: String?): WorkflowEvent.ExperimentData? {
+        val experimentId = experimentId
+        val experimentVariant = experimentVariant
+        return if (experimentId == null || experimentVariant == null || workflowBlobRef == null) {
+            null
+        } else {
+            WorkflowEvent.ExperimentData(experimentId = experimentId, experimentVariant = experimentVariant)
+        }
+    }
+
     /** A terminal step that resolves to an offering instead of rendering a screen. */
     @InternalRevenueCatAPI
     public val isOfferingStep: Boolean
@@ -187,6 +221,31 @@ private const val OFFERING_STEP_TYPE = "offering"
 private const val OFFERING_PARAM = "offering"
 private const val OFFERING_IDENTIFIER_PARAM = "identifier"
 private const val FLAT_OFFERING_IDENTIFIER_PARAM = "offering_identifier"
+private const val GATING_PARAM = "gating"
+private const val GATING_TYPE_KEY = "type"
+private const val GATING_ENTITLEMENTS_KEY = "entitlement_identifiers"
+
+private fun parseWorkflowStepGating(value: JsonElement): WorkflowStepGating {
+    val gating = value as? JsonObject ?: return WorkflowStepGating.Invalid
+    val type = (gating[GATING_TYPE_KEY] as? JsonPrimitive)?.takeIf { it.isString }?.content
+    return when (type) {
+        "soft" -> if (GATING_ENTITLEMENTS_KEY in gating) WorkflowStepGating.Invalid else WorkflowStepGating.Soft
+        "hard" -> parseHardWorkflowStepGating(gating)
+        else -> WorkflowStepGating.Invalid
+    }
+}
+
+@Suppress("ReturnCount")
+private fun parseHardWorkflowStepGating(gating: JsonObject): WorkflowStepGating {
+    val elements = gating[GATING_ENTITLEMENTS_KEY] as? JsonArray ?: return WorkflowStepGating.Invalid
+    val identifiers = elements.mapNotNull { element ->
+        (element as? JsonPrimitive)?.takeIf { it.isString }?.content?.takeIf { it.isNotBlank() }
+    }
+    if (identifiers.isEmpty() || identifiers.size != elements.size || identifiers.distinct().size != identifiers.size) {
+        return WorkflowStepGating.Invalid
+    }
+    return WorkflowStepGating.Hard(identifiers.toSet())
+}
 
 @InternalRevenueCatAPI
 @Serializable

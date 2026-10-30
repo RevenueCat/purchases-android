@@ -487,6 +487,11 @@ public class Purchases internal constructor(
     @JvmSynthetic
     public suspend fun awaitGetWorkflowIds(): List<String> = purchasesOrchestrator.workflowIds()
 
+    /** Every checkpoint id in the synced config. For internal test apps. */
+    @InternalRevenueCatAPI
+    @JvmSynthetic
+    public suspend fun awaitGetCheckpointIds(): List<String> = purchasesOrchestrator.checkpointIds()
+
     @InternalRevenueCatAPI
     @JvmSynthetic
     public suspend fun resolveWorkflow(offeringId: String): WorkflowResolution =
@@ -699,6 +704,38 @@ public class Purchases internal constructor(
         callback: GetVirtualCurrenciesCallback,
     ) {
         purchasesOrchestrator.getVirtualCurrencies(callback = callback)
+    }
+
+    /**
+     * Spends virtual currencies for the current subscriber. Requires the SDK to be configured with
+     * [PurchasesConfiguration.Builder.iamEnabled]; otherwise the callback receives an
+     * [PurchasesErrorCode.UnsupportedError].
+     *
+     * @param amounts How much of each currency to spend, keyed by currency code. Non-positive amounts are ignored;
+     * if none are left, nothing is spent and the callback receives the current balances.
+     * @param reference An optional app-specific reference for this transaction.
+     * @param callback Called with the subscriber's balances after the spend.
+     */
+    @InternalRevenueCatAPI
+    public fun spendVirtualCurrencies(
+        amounts: Map<String, Int>,
+        reference: String? = null,
+        callback: GetVirtualCurrenciesCallback,
+    ) {
+        purchasesOrchestrator.spendVirtualCurrencies(amounts, reference, callback)
+    }
+
+    /**
+     * Spends [amount] of the virtual currency [code]. See [spendVirtualCurrencies].
+     */
+    @InternalRevenueCatAPI
+    public fun spendVirtualCurrency(
+        code: String,
+        amount: Int,
+        reference: String? = null,
+        callback: GetVirtualCurrenciesCallback,
+    ) {
+        spendVirtualCurrencies(mapOf(code to amount), reference, callback)
     }
 
     /**
@@ -1092,6 +1129,18 @@ public class Purchases internal constructor(
     }
 
     // region Subscriber Attributes
+
+    /**
+     * The subscriber attributes for the current user, sorted by key.
+     *
+     * Typically this only includes attributes that were set on this device. If the current user was authenticated
+     * through IAM, it includes all readable attributes on the user's customer profile, as of the last time
+     * [CustomerInfo] was fetched. Deleted attributes are not included.
+     */
+    @InternalRevenueCatAPI
+    public val attributesForCurrentUser: List<CustomerAttribute>
+        get() = purchasesOrchestrator.attributesForCurrentUser
+
     // region Special Attributes
 
     /**
@@ -1672,6 +1721,18 @@ public class Purchases internal constructor(
             set(value) { PurchasesOrchestrator.proxyURL = value }
 
         /**
+         * API hosts to treat as failing, so API source failover can be tested by hand from a test app.
+         * Set it before calling [configure] to arm the hook (an instance with empty sets arms it without failing
+         * anything); later assignments take effect on the next request. Leaving it null at configure time
+         * leaves the instance without the hook. Never set this in production.
+         */
+        @InternalRevenueCatAPI
+        @JvmStatic
+        public var internalSimulatedHostFailures: SimulatedHostFailures?
+            get() = PurchasesOrchestrator.internalSimulatedHostFailures
+            set(value) { PurchasesOrchestrator.internalSimulatedHostFailures = value }
+
+        /**
          * True if [configure] has been called and [Purchases.sharedInstance] is set
          */
         @JvmStatic
@@ -1703,6 +1764,9 @@ public class Purchases internal constructor(
                 configuration,
                 platformInfo,
                 proxyURL,
+                forceServerErrorStrategy = internalSimulatedHostFailures?.let {
+                    SimulatedHostFailures.strategy { internalSimulatedHostFailures }
+                },
             ).also {
                 @SuppressLint("RestrictedApi")
                 sharedInstance = it

@@ -13,6 +13,7 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
+import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -90,8 +91,12 @@ class WebPurchaseRedemptionHelperTest {
         val newUserId = "new-user-id"
         val deviceCache = mockk<DeviceCache>()
         val appConfig = mockk<AppConfig>()
+        val subscriberAttributesManager = mockk<SubscriberAttributesManager>().apply {
+            every { mergeAttributes(any(), any()) } just Runs
+        }
         val realCustomerInfoUpdateHandler = CustomerInfoUpdateHandler(
             deviceCache,
+            subscriberAttributesManager,
             identityManager,
             offlineEntitlementsManager,
             appConfig,

@@ -34,6 +34,8 @@ internal data class TabControlButtonComponentStyle(
     val tabContextNamesById: Map<String, String> = emptyMap(),
     @get:JvmSynthetic
     val tabsDefaultTabIndex: Int = 0,
+    @get:JvmSynthetic
+    val stateUpdates: List<StateUpdate> = emptyList(),
 ) : ComponentStyle {
     override val visible: Boolean = stack.visible
     override val size: Size = stack.size
@@ -51,6 +53,10 @@ internal class TabControlToggleComponentStyle(
     val trackColorOff: ColorStyles,
     @get:JvmSynthetic
     val componentName: String? = null,
+    @get:JvmSynthetic
+    val tabIdsOrdered: List<String> = emptyList(),
+    @get:JvmSynthetic
+    val stateUpdates: List<StateUpdate> = emptyList(),
 ) : ComponentStyle {
     override val visible: Boolean = true
     override val size: Size = Size(width = Fit(), height = Fit())

@@ -21,6 +21,7 @@ class DataStoreUtils(
     private val useAmazonKey = booleanPreferencesKey("last_use_amazon_key")
     private val storeKey = stringPreferencesKey("last_store_key")
     private val appUserIdKey = stringPreferencesKey("last_app_user_id_key")
+    private val simulatedFailuresModeKey = stringPreferencesKey("last_simulated_failures_mode_key")
 
     suspend fun saveSdkConfig(
         sdkConfiguration: SdkConfiguration,
@@ -39,6 +40,7 @@ class DataStoreUtils(
             } else {
                 preferences[appUserIdKey] = sdkConfiguration.appUserId
             }
+            preferences[simulatedFailuresModeKey] = sdkConfiguration.simulatedFailuresMode.name
         }
     }
 
@@ -51,6 +53,7 @@ class DataStoreUtils(
                 proxyUrl = preferences[proxyUrlKey],
                 store = storedStore ?: fallbackStore,
                 appUserId = preferences[appUserIdKey],
+                simulatedFailuresMode = SimulatedFailuresMode.fromName(preferences[simulatedFailuresModeKey]),
             )
         }
     }

@@ -53,6 +53,57 @@ def run_plugin_action_in_current_directory(&block)
 end
 
 platform :android do
+  desc "Build the SDK update test apps"
+  lane :build_sdk_update_test_apps do |options|
+    base_path = File.expand_path("..", Dir.pwd)
+    output_dir = File.expand_path(options[:output_dir] || "build/sdk_update_tests", base_path)
+    local_version = File.read("#{base_path}/.version").strip
+    release_version = options[:release_version] || get_latest_release_before_version(
+      repo_name: "purchases-android",
+      version: local_version
+    )
+    FileUtils.rm_rf(output_dir)
+    { "release" => release_version, "local" => local_version }.each do |name, sdk_version|
+      gradle(
+        task: ":test-apps:sdkupdatetester:assembleDebug",
+        project_dir: base_path,
+        properties: name == "release" ? { "SDK_UPDATE_TESTER_RELEASE_VERSION" => sdk_version } : {},
+        flags: "--no-daemon --parallel"
+      )
+      FileUtils.mkdir_p("#{output_dir}/#{name}")
+      apk_path = "#{base_path}/test-apps/sdkupdatetester/build/outputs/apk/debug/sdkupdatetester-debug.apk"
+      FileUtils.cp(apk_path, "#{output_dir}/#{name}/SDKUpdateTester.apk")
+      File.write("#{output_dir}/#{name}/version.txt", sdk_version)
+    end
+    UI.success("SDK update test apps available in #{output_dir}")
+  end
+
+  desc "Run an SDK update Maestro test case"
+  lane :run_sdk_update_test do |options|
+    test_case = options[:test_case] || UI.user_error!("test_case is required")
+    unless %w[anonymous_user logged_in_user].include?(test_case)
+      UI.user_error!("test_case must be anonymous_user or logged_in_user")
+    end
+    base_path = File.expand_path("..", Dir.pwd)
+    apps_dir = File.expand_path(options[:apps_dir] || "build/sdk_update_tests", base_path)
+    flows_dir = "#{base_path}/maestro/sdk_update_tests/#{test_case}"
+    app = lambda do |name|
+      version_path = "#{apps_dir}/#{name}/version.txt"
+      UI.user_error!("#{version_path} not found. Run build_sdk_update_test_apps first.") unless File.exist?(version_path)
+      { app_path: "#{apps_dir}/#{name}/SDKUpdateTester.apk", sdk_version: File.read(version_path).strip }
+    end
+    run_sdk_update_maestro_test(
+      platform: "android",
+      app_id: "com.revenuecat.SDKUpdateTester",
+      steps: [
+        app.call("release").merge(flow: "#{flows_dir}/before_update.yaml"),
+        app.call("local").merge(flow: "#{flows_dir}/after_update.yaml")
+      ],
+      output_dir: File.expand_path(options[:output_dir] || "fastlane/test_output/sdk_update_tests/#{test_case}", base_path),
+      max_attempts: Integer(options.fetch(:max_attempts, 3))
+    )
+  end
+
   desc "Fetch integration test secrets from 1Password and write them to local.properties"
   desc "Requires the 1Password CLI (op) to be installed and signed in"
   lane :setup_local_properties do

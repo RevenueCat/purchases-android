@@ -197,6 +197,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime)
     implementation(libs.androidx.lifecycle.common)
     implementation(libs.androidx.lifecycle.process)
+    implementation(libs.androidx.startup.runtime)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.google.blockstore)
     implementation(libs.tink)
@@ -251,14 +252,11 @@ fun DokkaSourceSetSpec.configureDocumentedSourceSet() {
 
 dokka {
     dokkaSourceSets {
-        named("customEntitlementComputation") {
+        // AGP registers variant source sets after this block runs, so they can only be reached lazily.
+        matching { it.name.startsWith("customEntitlementComputation") }.configureEach {
             suppress.set(true)
         }
-        named("defaults") {
-            dependentSourceSets.addLater(dokkaSourceSets.named("main").flatMap { it.sourceSetId })
-            configureDocumentedSourceSet()
-        }
-        named("main") {
+        matching { it.name == "defaultsRelease" }.configureEach {
             configureDocumentedSourceSet()
             sourceLink {
                 localDirectory.set(file("src/main/kotlin"))

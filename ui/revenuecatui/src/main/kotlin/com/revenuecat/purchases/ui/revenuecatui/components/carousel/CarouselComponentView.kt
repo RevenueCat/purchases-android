@@ -8,6 +8,7 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -81,7 +82,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import androidx.compose.ui.unit.lerp as lerpUnit
 
-@Suppress("LongMethod")
+@Suppress("LongMethod", "LongParameterList")
 @JvmSynthetic
 @Composable
 internal fun CarouselComponentView(
@@ -90,6 +91,7 @@ internal fun CarouselComponentView(
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
     componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
+    ancestorScrollOrientations: Set<Orientation> = emptySet(),
 ) {
     val carouselState = rememberUpdatedCarouselComponentState(
         style = style,
@@ -229,6 +231,7 @@ internal fun CarouselComponentView(
                 state = state,
                 clickHandler = clickHandler,
                 componentInteractionTracker = componentInteractionTracker,
+                ancestorScrollOrientations = ancestorScrollOrientations,
                 modifier = pageHeightModifier(pageStyle.size.height, fillPageModifier),
             )
         }

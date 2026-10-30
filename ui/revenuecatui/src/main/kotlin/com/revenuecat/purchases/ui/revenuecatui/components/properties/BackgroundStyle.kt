@@ -176,15 +176,17 @@ internal fun rememberBackgroundStyle(background: BackgroundStyles): BackgroundSt
 @Stable
 @Composable
 private fun rememberAsyncImagePainter(imageUrls: ImageUrls, contentScale: ContentScale): AsyncImagePainter {
-    var cachePolicy by remember { mutableStateOf(CachePolicy.ENABLED) }
+    val url = imageUrls.webp.toString()
+    val placeholderUrl = imageUrls.webpLowRes.toString()
+    var cachePolicy by remember(url) { mutableStateOf(CachePolicy.ENABLED) }
     val context = LocalContext.current
     val previewImageLoader = LocalPreviewImageLoader.current
     val isInPreviewMode = isInPreviewMode()
     val imageLoader = previewImageLoader.takeIf { isInPreviewMode } ?: remember(context) {
         PaywallImageLoader.get(context.applicationContext)
     }
-    val imageRequest = remember(context, imageUrls.webp, cachePolicy) {
-        getImageRequest(context, imageUrls.webp.toString(), cachePolicy)
+    val imageRequest = remember(context, url, cachePolicy) {
+        getImageRequest(context, url, cachePolicy)
     }
     return rememberAsyncImagePainter(
         model = imageRequest,
@@ -192,8 +194,11 @@ private fun rememberAsyncImagePainter(imageUrls: ImageUrls, contentScale: Conten
         placeholder = if (isInPreviewMode && previewImageLoader != null) {
             imageLoader.getPreviewPlaceholderBlocking(imageRequest)
         } else {
+            // Coil retains this painter while loading, including when the URLs initially match.
             rememberAsyncImagePainter(
-                model = getImageRequest(context, imageUrls.webpLowRes.toString(), cachePolicy),
+                model = placeholderUrl.takeUnless { it == url }?.let {
+                    getImageRequest(context, it, CachePolicy.ENABLED)
+                },
                 imageLoader = imageLoader,
                 error = null,
                 fallback = null,

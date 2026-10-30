@@ -75,7 +75,7 @@ internal fun IconComponentView(
         RemoteImage(
             urlString = iconState.url,
             modifier = Modifier
-                .size(iconState.size)
+                .size(iconState.size, requireFixedSize = true)
                 .applyIfNotNull(shadowStyle) { shadow(it, composeShape) }
                 .applyIfNotNull(backgroundColor) { background(it, composeShape) }
                 .clip(composeShape)

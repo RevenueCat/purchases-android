@@ -1,8 +1,8 @@
 package com.revenuecat.purchases.strings
 
 internal object NetworkStrings {
-    const val API_REQUEST_COMPLETED = "API request completed with status: %s %s %s"
-    const val API_REQUEST_STARTED = "API request started: %s %s"
+    const val API_REQUEST_COMPLETED = "API request completed with status: %s %s%s %s"
+    const val API_REQUEST_STARTED = "API request started: %s %s%s"
     const val HTTP_RESPONSE_PAYLOAD_NULL = "HTTP Response payload is null"
     const val HTTP_RESPONSE_NO_STATUS_CODE = "HTTP Response has no valid status code"
     const val ETAG_RETRYING_CALL = "We were expecting to be able to return a cached response, but we can't find it. " +

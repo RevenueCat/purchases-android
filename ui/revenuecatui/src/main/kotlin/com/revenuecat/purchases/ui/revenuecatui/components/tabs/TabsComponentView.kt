@@ -8,6 +8,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -71,6 +72,7 @@ import kotlinx.serialization.json.JsonPrimitive
 
 private const val DURATION_MS_CROSS_FADE = 220
 
+@Suppress("LongParameterList")
 @Composable
 internal fun TabsComponentView(
     style: TabsComponentStyle,
@@ -78,6 +80,7 @@ internal fun TabsComponentView(
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
     componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
+    ancestorScrollOrientations: Set<Orientation> = emptySet(),
 ) {
     // Get a StackComponentState that calculates the overridden properties we should use.
     val tabsState = rememberUpdatedTabsComponentState(
@@ -85,8 +88,8 @@ internal fun TabsComponentView(
         paywallState = state,
     )
 
-    // State-driven paywalls: publish the selected tab id into the state store so components that react to it via a
-    // `state_condition` override recompose. Gated behind visibility (parity with iOS): a hidden Tabs never
+    // Seed state and cover programmatic changes; controls also publish synchronously before resolving selection.
+    // Gated behind visibility (parity with iOS): a hidden Tabs never
     // publishes. Seeds once and then publishes only when the selection actually changes. Remembering the last
     // published id above the visibility gate keeps a hidden -> visible transition from republishing and
     // clobbering a value another component already set (mirrors iOS's didSeedInitialState). The declared state
@@ -132,6 +135,7 @@ internal fun TabsComponentView(
                 state = state,
                 clickHandler = clickHandler,
                 componentInteractionTracker = componentInteractionTracker,
+                ancestorScrollOrientations = ancestorScrollOrientations,
             )
         }
     }

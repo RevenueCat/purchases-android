@@ -143,6 +143,7 @@ dependencies {
     implementation(libs.androidx.core)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(platform(libs.compose.bom))
+    implementation(libs.compose.material.icons.core)
     implementation(libs.material)
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.graphics)

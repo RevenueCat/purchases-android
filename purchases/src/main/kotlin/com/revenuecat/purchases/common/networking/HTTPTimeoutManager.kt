@@ -31,6 +31,9 @@ internal class HTTPTimeoutManager(
         // Proxied request
         const val DEFAULT_TIMEOUT_MS = 30000L // 30 seconds
 
+        // Bound silent socket reads independently of endpoint-specific connection timeout tiers.
+        const val READ_TIMEOUT_MS = 30000L
+
         const val TIMEOUT_RESET_INTERVAL_MS = 600000L // 10 minutes
         const val TEST_DIVIDER = 10L // When running tests, we reduce timeouts
     }
@@ -62,12 +65,6 @@ internal class HTTPTimeoutManager(
      * @param fallbackAvailable Whether the endpoint has fallback-URL support and at least one fallback URL
      * is configured, i.e. whether this attempt actually has somewhere to fail over to.
      * @param isProxied Whether a proxy URL is set.
-     * @param reTieredTimeoutsEnabled Whether this caller opts into the re-tiered no-fallback fail-fast
-     * timeouts. Main-API requests opt in only when remote-config API sources are enabled (so the default
-     * configuration keeps its legacy flat timeout), while blob-source downloads always opt in. It has no
-     * effect on the fallback-supported, fallback-host, or proxied tiers.
-     * This parameter should be removed once the `usesRemoteConfigAPISources` dangerous setting is removed
-     * and the re-tiered timeouts become the only behavior.
      * @return The timeout in milliseconds.
      */
     fun getTimeoutForRequest(
@@ -75,7 +72,6 @@ internal class HTTPTimeoutManager(
         isFallback: Boolean,
         fallbackAvailable: Boolean,
         isProxied: Boolean,
-        reTieredTimeoutsEnabled: Boolean,
     ): Long {
         val timeout = when {
             // Fallback-host and proxied requests use a flat timeout and never consult the per-host memory.
@@ -86,9 +82,6 @@ internal class HTTPTimeoutManager(
                 when {
                     fallbackAvailable && sourceRecentlyTimedOut -> REDUCED_TIMEOUT_MS
                     fallbackAvailable -> SUPPORTED_FALLBACK_TIMEOUT_MS
-                    // The re-tiered no-fallback fail-fast timeouts only apply to callers that opt in. Otherwise
-                    // keep the legacy flat timeout so the default configuration's behavior stays unchanged.
-                    !reTieredTimeoutsEnabled -> DEFAULT_TIMEOUT_MS
                     sourceRecentlyTimedOut -> MAIN_SOURCE_NO_FALLBACK_REDUCED_TIMEOUT_MS
                     else -> MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS
                 }
@@ -100,6 +93,12 @@ internal class HTTPTimeoutManager(
         } else {
             timeout
         }
+    }
+
+    fun getReadTimeout(): Long = if (appConfig.runningTests) {
+        READ_TIMEOUT_MS / TEST_DIVIDER
+    } else {
+        READ_TIMEOUT_MS
     }
 
     /**

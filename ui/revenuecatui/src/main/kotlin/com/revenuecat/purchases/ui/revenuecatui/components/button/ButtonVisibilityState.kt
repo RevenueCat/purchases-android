@@ -13,11 +13,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.DpSize
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
-import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
-import com.revenuecat.purchases.ui.revenuecatui.components.ConditionContext
+import com.revenuecat.purchases.ui.revenuecatui.components.ComponentVisibilityContext
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
-import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
-import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageAwareDelegate
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -93,38 +90,19 @@ internal class ButtonVisibilityState(
     private var windowSize by mutableStateOf(initialWindowSize)
     private var windowDpSize by mutableStateOf(initialWindowDpSize)
 
-    private val packageAwareDelegate = PackageAwareDelegate(
-        style = style.stackComponentStyle,
-        selectedPackageInfoProvider = selectedPackageInfoProvider,
-        selectedTabIndexProvider = selectedTabIndexProvider,
-        selectedOfferEligibilityProvider = selectedOfferEligibilityProvider,
-    )
-
-    private val presentedPartial by derivedStateOf {
-        val windowCondition = ScreenCondition.from(windowSize)
-        style.overrides.buildPresentedPartial(
-            windowCondition,
-            offerEligibility = { packageAwareDelegate.offerEligibility },
-            state = {
-                if (packageAwareDelegate.isSelected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
-            },
-            conditionContext = ConditionContext(
-                selectedPackageId = { selectedPackageInfoProvider()?.rcPackage?.identifier },
-                customVariables = customVariablesProvider(),
-                stateReader = stateStoreProvider()::currentValueOrDefault,
-                windowDpSize = windowDpSize,
-            ),
+    private val visibilityContext: ComponentVisibilityContext
+        get() = ComponentVisibilityContext(
+            screenCondition = ScreenCondition.from(windowSize),
+            windowDpSize = windowDpSize,
+            selectedPackage = selectedPackageInfoProvider,
+            selectedTabIndex = selectedTabIndexProvider,
+            customVariables = customVariablesProvider(),
+            selectedOfferEligibility = selectedOfferEligibilityProvider,
+            stateReader = { stateStoreProvider().currentValueOrDefault(it) },
         )
-    }
 
-    /**
-     * Deliberately falls back to `true` rather than to the stack's visibility: the caller already
-     * gates on the stack's own resolved state, which accounts for overrides on that stack. Reading
-     * [ButtonComponentStyle.visible] here instead would reintroduce the stack's pre-override value
-     * and hide a button whose stack an override had revealed.
-     */
     @get:JvmSynthetic
-    val visible by derivedStateOf { presentedPartial?.partial?.visible ?: style.buttonVisible ?: true }
+    val visible by derivedStateOf { visibilityContext.isVisible(style) }
 
     @JvmSynthetic
     fun update(windowSize: WindowWidthSizeClass, windowDpSize: DpSize?) {
