@@ -20,6 +20,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.UiConfig.VariableConfig
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.StateUpdate
 import com.revenuecat.purchases.storage.FileRepository
@@ -378,6 +379,31 @@ internal sealed interface PaywallState {
             val mostExpensivePricePerMonthMicros by derivedStateOf {
                 (packages.packagesOutsideTabs + packages.packagesByTab[selectedTabIndex].orEmpty())
                     .mostExpensivePricePerMonthMicros()
+            }
+
+            data class TextPackageContext(
+                val rcPackage: Package?,
+                val subscriptionOption: SubscriptionOption?,
+                val mostExpensivePricePerMonthMicros: Long?,
+            )
+
+            fun textPackageContext(
+                tabIndex: Int?,
+                fallbackPackage: Package?,
+                fallbackSubscriptionOption: SubscriptionOption?,
+            ): TextPackageContext {
+                val tabPackages = packages.packagesByTab[tabIndex].orEmpty()
+                val packageInfo = tabPackages.find { it.uniqueId == selectedPackageByTab[tabIndex] }
+                    ?: tabPackages.defaultSelection(mergedCustomVariables)
+                return if (packageInfo != null) {
+                    TextPackageContext(
+                        packageInfo.pkg,
+                        packageInfo.resolvedOffer?.subscriptionOption,
+                        tabPackages.mostExpensivePricePerMonthMicros(),
+                    )
+                } else {
+                    TextPackageContext(fallbackPackage, fallbackSubscriptionOption, mostExpensivePricePerMonthMicros)
+                }
             }
 
             val currentDate: Date
