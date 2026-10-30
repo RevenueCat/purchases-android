@@ -75,9 +75,11 @@ internal class CheckpointWorkflowResolverImpl(
             errorLog(error)
             throw PurchasesException(error)
         }
-        attemptResolve(identifier, customVariables)?.let { return it }
+        // One id per hit, shared by every event it produces, so a retried attempt keeps it.
+        val traceId = UUID.randomUUID().toString()
+        attemptResolve(identifier, customVariables, traceId)?.let { return it }
         verboseLog { "Remote config changed while resolving checkpoint '$identifier'; resolving it again." }
-        return attemptResolve(identifier, customVariables)
+        return attemptResolve(identifier, customVariables, traceId)
             ?: configurationUnavailable("Remote config kept changing while resolving checkpoint '$identifier'.")
     }
 
@@ -90,6 +92,7 @@ internal class CheckpointWorkflowResolverImpl(
     private suspend fun attemptResolve(
         identifier: String,
         customVariables: Map<String, RulesDimensionValue>,
+        traceId: String,
     ): CheckpointResolution? {
         val rulesResolution = when (val resolution = checkpointsConfigProvider.resolveCheckpoint(identifier)) {
             is CheckpointRulesResolution.Found -> resolution
@@ -126,7 +129,7 @@ internal class CheckpointWorkflowResolverImpl(
         } ?: return configurationUnavailable("UI config is unavailable for checkpoint '$identifier'.")
         // Held back until the result is known to be current, so a stale attempt that gets retried emits nothing.
         val pendingEvents = mutableListOf<FeatureEvent>()
-        return resolveRule(identifier, workflowManager, rule, uiConfig, pendingEvents)
+        return resolveRule(identifier, workflowManager, rule, uiConfig, traceId, pendingEvents)
             .takeIf { checkpointsConfigProvider.isCurrent(rulesResolution) }
             ?.also { pendingEvents.forEach(track) }
     }
@@ -162,6 +165,7 @@ internal class CheckpointWorkflowResolverImpl(
         workflowManager: WorkflowManager,
         rule: CheckpointRule,
         uiConfig: UiConfig,
+        traceId: String,
         pendingEvents: MutableList<FeatureEvent>,
     ): CheckpointResolution {
         val workflow = try {
@@ -178,12 +182,12 @@ internal class CheckpointWorkflowResolverImpl(
             if (workflow.steps.size != 1) {
                 unservableRule(rule, "an offering step cannot be mixed with other steps")
             } else {
-                resolveOfferingRule(checkpointIdentifier, rule, workflow, initialStep, pendingEvents)
+                resolveOfferingRule(checkpointIdentifier, rule, workflow, initialStep, traceId, pendingEvents)
             }
         } else if (workflow.steps.values.any { it.isOfferingStep }) {
             unservableRule(rule, "a UI workflow cannot contain offering steps")
         } else {
-            resolveUiRule(checkpointIdentifier, rule, workflow, uiConfig)
+            resolveUiRule(checkpointIdentifier, rule, workflow, uiConfig, traceId)
         }
     }
 
@@ -197,12 +201,12 @@ internal class CheckpointWorkflowResolverImpl(
         rule: CheckpointRule,
         workflow: PublishedWorkflow,
         step: WorkflowStep,
+        traceId: String,
         pendingEvents: MutableList<FeatureEvent>,
     ): CheckpointResolution {
         val offeringIdentifier = step.offeringIdentifier
             ?: return unservableRule(rule, "the offering step has no valid offering identifier")
 
-        val traceId = UUID.randomUUID().toString()
         val workflowBlobRef = workflowManager.workflowBlobRef(rule.workflowId)
         pendingEvents += WorkflowEvent.StepStarted(
             creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
@@ -253,6 +257,7 @@ internal class CheckpointWorkflowResolverImpl(
         rule: CheckpointRule,
         workflow: PublishedWorkflow,
         uiConfig: UiConfig,
+        traceId: String,
     ): CheckpointResolution {
         val offerings = loadOfferings(checkpointIdentifier)
             ?: return unservableRule(rule, "the offerings its steps present could not be fetched")
@@ -263,7 +268,7 @@ internal class CheckpointWorkflowResolverImpl(
             uiConfig,
             offerings,
             checkpointRuleId = rule.id,
-            traceId = UUID.randomUUID().toString(),
+            traceId = traceId,
             workflowBlobRef = workflowManager.workflowBlobRef(rule.workflowId),
         )
     }
