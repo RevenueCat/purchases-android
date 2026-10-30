@@ -7,6 +7,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorDialogFactory.Outcome
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockkObject
@@ -68,7 +69,7 @@ class ErrorDialogFactoryTest {
     @Test
     fun `factory providing a dialog routes it to the custom presenter`() {
         val dialog = CheckpointErrorDialog(message = "Custom error", buttonTitle = "Got it")
-        val factory = ErrorDialogFactory { _, completion -> completion.complete(dialog) }
+        val factory = ErrorDialogFactory { _, completion -> completion.complete(Outcome.Show(dialog)) }
 
         factory.asPresenter().present(params, outerCompletion)
 
@@ -78,7 +79,7 @@ class ErrorDialogFactoryTest {
     @Test
     fun `completing the presenter after a factory-provided dialog completes the outer completion once`() {
         val dialog = CheckpointErrorDialog(message = "Custom", buttonTitle = "OK")
-        val factory = ErrorDialogFactory { _, completion -> completion.complete(dialog) }
+        val factory = ErrorDialogFactory { _, completion -> completion.complete(Outcome.Show(dialog)) }
 
         factory.asPresenter().present(params, outerCompletion)
         presenters[0].complete()
@@ -91,7 +92,7 @@ class ErrorDialogFactoryTest {
         var receivedParams: ErrorDialogFactory.Params? = null
         val factory = ErrorDialogFactory { p, completion ->
             receivedParams = p
-            completion.complete(null)
+            completion.complete(Outcome.UseDefault)
         }
 
         factory.asPresenter().present(params, outerCompletion)
@@ -104,11 +105,11 @@ class ErrorDialogFactoryTest {
 
     // endregion
 
-    // region: null dialog → SDK default
+    // region: UseDefault outcome → SDK default
 
     @Test
-    fun `factory returning null requests the SDK default presenter`() {
-        val factory = ErrorDialogFactory { _, completion -> completion.complete(null) }
+    fun `factory completing with UseDefault requests the SDK default presenter`() {
+        val factory = ErrorDialogFactory { _, completion -> completion.complete(Outcome.UseDefault) }
 
         factory.asPresenter().present(params, outerCompletion)
 
@@ -116,12 +117,40 @@ class ErrorDialogFactoryTest {
     }
 
     @Test
-    fun `completing the default presenter after null completes the outer completion once`() {
-        val factory = ErrorDialogFactory { _, completion -> completion.complete(null) }
+    fun `completing the default presenter after UseDefault completes the outer completion once`() {
+        val factory = ErrorDialogFactory { _, completion -> completion.complete(Outcome.UseDefault) }
 
         factory.asPresenter().present(params, outerCompletion)
         presenters[0].complete()
 
+        assertThat(outerCompletions).isEqualTo(1)
+    }
+
+    // endregion
+
+    // region: Suppress outcome
+
+    @Test
+    fun `factory completing with Suppress creates no presenter and completes the outer completion once`() {
+        val factory = ErrorDialogFactory { _, completion -> completion.complete(Outcome.Suppress) }
+
+        factory.asPresenter().present(params, outerCompletion)
+
+        assertThat(presenterDialogs).isEmpty()
+        assertThat(presenters).isEmpty()
+        assertThat(outerCompletions).isEqualTo(1)
+    }
+
+    @Test
+    fun `a completion after Suppress is ignored`() {
+        var completion: ErrorDialogFactory.Completion? = null
+        val factory = ErrorDialogFactory { _, c -> completion = c }
+
+        factory.asPresenter().present(params, outerCompletion)
+        completion!!.complete(Outcome.Suppress)
+        completion!!.complete(Outcome.Show(CheckpointErrorDialog("Late", "OK")))
+
+        assertThat(presenterDialogs).isEmpty()
         assertThat(outerCompletions).isEqualTo(1)
     }
 
@@ -150,7 +179,7 @@ class ErrorDialogFactoryTest {
         factory.asPresenter().present(params, outerCompletion)
         assertThat(presenterDialogs).hasSize(1) // default already chosen
 
-        lateCompletion!!.complete(CheckpointErrorDialog("Late", "OK"))
+        lateCompletion!!.complete(Outcome.Show(CheckpointErrorDialog("Late", "OK")))
 
         // No second presenter was created
         assertThat(presenterDialogs).hasSize(1)
@@ -160,7 +189,7 @@ class ErrorDialogFactoryTest {
     fun `a factory completing before throwing falls back without presenting its response`() {
         val dialog = CheckpointErrorDialog("Must not be shown", "OK")
         val factory = ErrorDialogFactory { _, completion ->
-            completion.complete(dialog)
+            completion.complete(Outcome.Show(dialog))
             error("Simulated.")
         }
 
@@ -176,12 +205,12 @@ class ErrorDialogFactoryTest {
         var lateCompletion: ErrorDialogFactory.Completion? = null
         val factory = ErrorDialogFactory { _, completion ->
             lateCompletion = completion
-            completion.complete(CheckpointErrorDialog("Must not be shown", "OK"))
+            completion.complete(Outcome.Show(CheckpointErrorDialog("Must not be shown", "OK")))
             error("Simulated.")
         }
 
         factory.asPresenter(scope = queuedScope).present(params, outerCompletion)
-        lateCompletion!!.complete(CheckpointErrorDialog("Late", "OK"))
+        lateCompletion!!.complete(Outcome.Show(CheckpointErrorDialog("Late", "OK")))
         queuedScope.advanceUntilIdle()
 
         assertThat(presenterDialogs).containsExactly(null as CheckpointErrorDialog?)
@@ -199,8 +228,8 @@ class ErrorDialogFactoryTest {
         val factory = ErrorDialogFactory { _, c -> completion = c }
 
         factory.asPresenter().present(params, outerCompletion)
-        completion!!.complete(CheckpointErrorDialog("First", "OK"))
-        completion!!.complete(CheckpointErrorDialog("Second", "Ignored"))
+        completion!!.complete(Outcome.Show(CheckpointErrorDialog("First", "OK")))
+        completion!!.complete(Outcome.Show(CheckpointErrorDialog("Second", "Ignored")))
 
         assertThat(presenterDialogs).containsExactly(CheckpointErrorDialog("First", "OK"))
     }
@@ -211,7 +240,7 @@ class ErrorDialogFactoryTest {
         val factory = ErrorDialogFactory { _, c -> factoryCompletion = c }
 
         factory.asPresenter().present(params, outerCompletion)
-        factoryCompletion!!.complete(null)
+        factoryCompletion!!.complete(Outcome.UseDefault)
         presenters[0].complete()
         presenters[0].complete()
 
@@ -231,7 +260,7 @@ class ErrorDialogFactoryTest {
 
         factory.asPresenter(scope = scopeWithDispatcher).present(params, outerCompletion)
 
-        thread { factoryCompletion!!.complete(null) }.join()
+        thread { factoryCompletion!!.complete(Outcome.UseDefault) }.join()
 
         // Scope hasn't advanced yet; the scope.launch { present(...) } is pending
         assertThat(presenterDialogs).isEmpty()
@@ -363,7 +392,7 @@ class ErrorDialogFactoryTest {
      * so callers can drive the acknowledgement and observe [outerCompletions].
      */
     private fun presentAndCaptureCompletion(): RecordingPresenter {
-        val factory = ErrorDialogFactory { _, c -> c.complete(null) }
+        val factory = ErrorDialogFactory { _, c -> c.complete(Outcome.UseDefault) }
         factory.asPresenter().present(params, outerCompletion)
         return presenters.last()
     }

@@ -15,6 +15,7 @@ import com.revenuecat.purchases.checkpoints.CheckpointResolution
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorDialogFactory.Outcome
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.just
@@ -120,7 +121,7 @@ class CheckpointsManagerFactoryTest {
         val params = CheckpointParams {
             errorDialogFactory { p, completion ->
                 factoryAsked += p
-                completion.complete(null)
+                completion.complete(Outcome.UseDefault)
             }
         }
 
@@ -144,7 +145,7 @@ class CheckpointsManagerFactoryTest {
             }
             errorDialogFactory { _, completion ->
                 factoryAsked = true
-                completion.complete(null)
+                completion.complete(Outcome.UseDefault)
             }
         }
 
@@ -166,7 +167,7 @@ class CheckpointsManagerFactoryTest {
         val params = CheckpointParams {
             errorDialogFactory { _, completion ->
                 factoryAsked = true
-                completion.complete(null)
+                completion.complete(Outcome.UseDefault)
             }
         }
 
@@ -183,7 +184,7 @@ class CheckpointsManagerFactoryTest {
         val params = CheckpointParams {
             errorDialogFactory { _, completion ->
                 factoryAsked = true
-                completion.complete(null)
+                completion.complete(Outcome.UseDefault)
             }
         }
 
@@ -191,6 +192,22 @@ class CheckpointsManagerFactoryTest {
 
         assertThat(factoryAsked).isTrue
         assertThat(defaultErrorPresenters).hasSize(1)
+    }
+
+    @Test
+    fun `per-call errorDialogFactory suppressing the error shows no dialog`() = runTest(dispatcher) {
+        var factoryAsked = false
+        val params = CheckpointParams {
+            errorDialogFactory { _, completion ->
+                factoryAsked = true
+                completion.complete(Outcome.Suppress)
+            }
+        }
+
+        manager.runCheckpoint(mockPurchases, checkpointId, params)
+
+        assertThat(factoryAsked).isTrue
+        assertThat(defaultErrorPresenters).isEmpty()
     }
 
     // endregion
@@ -204,7 +221,9 @@ class CheckpointsManagerFactoryTest {
         every { mockPurchases.preferredUILocaleOverride } returns null
         val params = CheckpointParams {
             errorDialogFactory { _, completion ->
-                completion.complete(CheckpointErrorDialog(message = "Custom error", buttonTitle = "Got it"))
+                completion.complete(
+                    Outcome.Show(CheckpointErrorDialog(message = "Custom error", buttonTitle = "Got it")),
+                )
             }
         }
 
