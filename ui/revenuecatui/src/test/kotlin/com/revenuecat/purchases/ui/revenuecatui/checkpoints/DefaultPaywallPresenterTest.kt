@@ -235,6 +235,31 @@ class DefaultPaywallPresenterTest {
     }
 
     @Test
+    fun `restoring only part of an offered entitlement set leaves the paywall open and does not continue on back`() {
+        mappingGrants("monthly" to listOf("pro", "premium"))
+        present()
+
+        options().listener!!.onRestoreCompleted(customerInfoWithActive("pro"))
+        assertThat(dismissals).isEmpty()
+        finished(navigatedBack = true)
+
+        assertThat(results).containsExactly(Result.NavigatedBack)
+    }
+
+    @Test
+    fun `restoring the rest of a partially active offered set closes the paywall and continues on back`() {
+        cachedActiveEntitlements("pro")
+        mappingGrants("monthly" to listOf("pro", "premium"))
+        present()
+
+        options().listener!!.onRestoreCompleted(customerInfoWithActive("pro", "premium"))
+        assertThat(dismissals).containsExactly(false)
+        finished(navigatedBack = true)
+
+        assertThat(results).containsExactly(Result.Continued)
+    }
+
+    @Test
     fun `a restore that grants nothing new changes nothing`() {
         cachedActiveEntitlements("plus")
         mappingGrants("monthly" to listOf("plus"))

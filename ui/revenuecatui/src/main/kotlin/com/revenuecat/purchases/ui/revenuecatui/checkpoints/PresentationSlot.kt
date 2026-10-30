@@ -18,7 +18,7 @@ internal class PresentationSlot {
         val presentation: CheckpointPresentation?,
         val activeEntitlementsBefore: Set<String>?,
         // What the presented products grant, read once before the flow was presented.
-        val presentedEntitlements: Set<String>,
+        val presentedEntitlements: List<Set<String>>,
         // Read before the flow was presented; delivered with the run when the flow produced nothing newer.
         val customerInfoBefore: CustomerInfo,
         val flowFinished: CompletableDeferred<CheckpointRun>,

@@ -395,7 +395,8 @@ class FlowResultMappingTest {
             product("unmapped"),
         )
 
-        assertThat(offerings.entitlementsGrantedBy(mapping)).containsExactlyInAnyOrder("pro", "plus", "gold")
+        assertThat(offerings.entitlementsGrantedBy(mapping))
+            .containsExactlyInAnyOrder(setOf("pro"), setOf("plus"), setOf("gold"))
     }
 
     @Test
@@ -407,17 +408,57 @@ class FlowResultMappingTest {
     fun `a presented entitlement the user did not hold before is a grant`() {
         val customerInfo = customerInfoWithActive("plus", "pro")
 
-        assertThat(customerInfo.grantsPresentedEntitlement(setOf("plus"), setOf("pro"))).isTrue
-        assertThat(customerInfo.grantsPresentedEntitlement(null, setOf("pro"))).isTrue
+        assertThat(customerInfo.grantsPresentedEntitlement(setOf("plus"), listOf(setOf("pro")))).isTrue
+        assertThat(customerInfo.grantsPresentedEntitlement(null, listOf(setOf("pro")))).isTrue
     }
 
     @Test
     fun `an entitlement held before, or one no presented product grants, is not a grant`() {
         val customerInfo = customerInfoWithActive("plus", "pro")
 
-        assertThat(customerInfo.grantsPresentedEntitlement(setOf("plus", "pro"), setOf("pro"))).isFalse
-        assertThat(customerInfo.grantsPresentedEntitlement(setOf("plus"), setOf("gold"))).isFalse
-        assertThat(customerInfo.grantsPresentedEntitlement(null, emptySet())).isFalse
+        assertThat(customerInfo.grantsPresentedEntitlement(setOf("plus", "pro"), listOf(setOf("pro")))).isFalse
+        assertThat(customerInfo.grantsPresentedEntitlement(setOf("plus"), listOf(setOf("gold")))).isFalse
+        assertThat(customerInfo.grantsPresentedEntitlement(null, emptyList())).isFalse
+    }
+
+    @Test
+    fun `restoring only part of an offered product's entitlements is not a grant`() {
+        val presented = presenting(product("monthly"))
+            .entitlementsGrantedBy(mapping("monthly" to listOf("pro", "premium")))
+
+        assertThat(customerInfoWithActive("pro").grantsPresentedEntitlement(emptySet(), presented)).isFalse
+        assertThat(customerInfoWithActive("pro").grantsPresentedEntitlement(null, presented)).isFalse
+    }
+
+    @Test
+    fun `completing an offered entitlement set is a grant even when part was already active`() {
+        val presented = presenting(product("monthly"))
+            .entitlementsGrantedBy(mapping("monthly" to listOf("pro", "premium")))
+        val restored = customerInfoWithActive("pro", "premium")
+
+        assertThat(restored.grantsPresentedEntitlement(emptySet(), presented)).isTrue
+        assertThat(restored.grantsPresentedEntitlement(setOf("pro"), presented)).isTrue
+        assertThat(restored.grantsPresentedEntitlement(null, presented)).isTrue
+    }
+
+    @Test
+    fun `partial entitlement sets from different products do not combine into a grant`() {
+        val presented = presenting(product("monthly"), product("annual")).entitlementsGrantedBy(
+            mapping("monthly" to listOf("pro", "premium"), "annual" to listOf("extra", "bonus")),
+        )
+
+        assertThat(customerInfoWithActive("pro", "extra").grantsPresentedEntitlement(emptySet(), presented)).isFalse
+        assertThat(customerInfoWithActive("extra", "bonus").grantsPresentedEntitlement(emptySet(), presented)).isTrue
+    }
+
+    @Test
+    fun `an already active complete set does not qualify a partial restore for another product`() {
+        val presented = presenting(product("monthly"), product("annual")).entitlementsGrantedBy(
+            mapping("monthly" to listOf("pro", "premium"), "annual" to listOf("extra", "bonus")),
+        )
+        val restored = customerInfoWithActive("pro", "premium", "extra")
+
+        assertThat(restored.grantsPresentedEntitlement(setOf("pro", "premium"), presented)).isFalse
     }
 
     private fun step(id: String, screenId: String?, offeringId: String?) = WorkflowStep(

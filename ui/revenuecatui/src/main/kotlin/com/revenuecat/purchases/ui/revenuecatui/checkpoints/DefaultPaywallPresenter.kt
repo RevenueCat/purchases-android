@@ -45,7 +45,7 @@ internal class DefaultPaywallPresenter(
     private lateinit var params: PaywallPresenter.Params
     private var completion: PaywallPresenter.Completion? = null
     private var activeEntitlementsBefore: Set<String>? = null
-    private var presentedEntitlements: Set<String> = emptySet()
+    private var presentedEntitlements: List<Set<String>> = emptyList()
     private var obtained = false
     private var failure: PurchasesError? = null
 
