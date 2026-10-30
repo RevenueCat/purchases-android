@@ -131,6 +131,7 @@ internal class LogInReadTimeoutTest : BaseHTTPClientTest() {
             blockstoreHelper = blockstore,
             backupManager = mockk(relaxed = true),
             remoteConfigManager = mockk(relaxed = true),
+            configuredAdRewardsProvider = mockk(relaxed = true),
             uiConfigProvider = mockk(relaxed = true),
             workflowsConfigProvider = mockk(relaxed = true),
             checkpointsConfigProvider = mockk(relaxed = true),
