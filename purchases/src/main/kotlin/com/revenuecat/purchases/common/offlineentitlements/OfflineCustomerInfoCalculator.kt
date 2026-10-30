@@ -4,7 +4,6 @@ import com.google.gson.internal.bind.util.ISO8601Utils
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.CustomerInfoOriginalSource
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -140,10 +139,7 @@ internal class OfflineCustomerInfoCalculator(
                         product.expiresDate?.let { Iso8601Utils.format(it) } ?: JSONObject.NULL,
                     )
                     put(ProductResponseJsonKeys.MANAGEMENT_URL, determineManagementURL())
-                    put(
-                        ProductResponseJsonKeys.PERIOD_TYPE,
-                        PeriodType.NORMAL.name.lowercase(),
-                    ) // Best guess, we don't know what period type was purchased
+                    put(ProductResponseJsonKeys.PERIOD_TYPE, product.periodType.name.lowercase())
                 },
             )
         }

@@ -1,20 +1,29 @@
 package com.revenuecat.purchases.common.offlineentitlements
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.Purchase
+import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DateProvider
+import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.caching.LocalTransactionMetadata
+import com.revenuecat.purchases.common.caching.LocalTransactionMetadataStore
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.google.toStoreTransaction
+import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import com.revenuecat.purchases.utils.stubGooglePurchase
+import com.revenuecat.purchases.utils.stubFreeTrialPricingPhase
+import com.revenuecat.purchases.utils.stubPricingPhase
 import com.revenuecat.purchases.utils.stubStoreTransactionFromGooglePurchase
 import io.mockk.every
 import io.mockk.mockk
@@ -34,6 +43,7 @@ class PurchasedProductsFetcherTest {
 
     private lateinit var deviceCache: DeviceCache
     private lateinit var billing: BillingAbstract
+    private lateinit var localTransactionMetadataStore: LocalTransactionMetadataStore
     private lateinit var dateProvider: DateProvider
 
     private val testDate = Date(1680048626287L) // Tue Mar 28 17:10:26 PDT 2023
@@ -50,11 +60,13 @@ class PurchasedProductsFetcherTest {
         deviceCache = mockk()
         every { deviceCache.getActivePurchasesNotInCache(any()) } returns emptyList()
         billing = mockk()
+        localTransactionMetadataStore = mockk()
+        every { localTransactionMetadataStore.getLocalTransactionMetadata(any()) } returns null
         dateProvider = object : DateProvider {
             override val now: Date
                 get() = testDate
         }
-        fetcher = PurchasedProductsFetcher(deviceCache, billing, dateProvider)
+        fetcher = PurchasedProductsFetcher(deviceCache, billing, localTransactionMetadataStore, dateProvider)
     }
 
     @Test
@@ -548,7 +560,75 @@ class PurchasedProductsFetcherTest {
         )
     }
 
+    @Test
+    fun `a purchase whose saved option starts with a free phase is a trial`() {
+        assertThat(periodTypesWithSavedPricingPhases(listOf(freeTrialPhase, fullPricePhase)))
+            .containsExactly(PeriodType.TRIAL)
+    }
+
+    @Test
+    fun `a purchase whose saved option starts with a discounted phase is an intro`() {
+        assertThat(periodTypesWithSavedPricingPhases(listOf(discountedPhase, fullPricePhase)))
+            .containsExactly(PeriodType.INTRO)
+    }
+
+    @Test
+    fun `a purchase whose saved option is a plain base plan is normal`() {
+        assertThat(periodTypesWithSavedPricingPhases(listOf(fullPricePhase))).containsExactly(PeriodType.NORMAL)
+    }
+
+    @Test
+    fun `a purchase whose saved receipt has no pricing phases is normal`() {
+        assertThat(periodTypesWithSavedPricingPhases(null)).containsExactly(PeriodType.NORMAL)
+    }
+
+    @Test
+    fun `a subscription with add-ons is normal even with a saved free phase`() {
+        val periodTypes = periodTypesWithSavedPricingPhases(
+            listOf(freeTrialPhase, fullPricePhase),
+            productIds = listOf("base_product", "addon_product"),
+        )
+
+        assertThat(periodTypes).containsExactly(PeriodType.NORMAL, PeriodType.NORMAL)
+    }
+
     // region helpers
+    private val freeTrialPhase = stubFreeTrialPricingPhase()
+    private val discountedPhase = stubPricingPhase(
+        price = 1.99,
+        recurrenceMode = ProductDetails.RecurrenceMode.FINITE_RECURRING,
+        billingCycleCount = 3,
+    )
+    private val fullPricePhase = stubPricingPhase()
+
+    private fun periodTypesWithSavedPricingPhases(
+        pricingPhases: List<PricingPhase>?,
+        productIds: List<String> = listOf("monthly"),
+    ): List<PeriodType> {
+        mockEntitlementMapping(productIds.associateWith { listOf("pro") })
+        val activePurchase = stubStoreTransactionFromGooglePurchase(
+            productIds = productIds,
+            purchaseTime = testDate.time,
+        )
+        mockActivePurchases(listOf(activePurchase))
+        every {
+            localTransactionMetadataStore.getLocalTransactionMetadata(activePurchase.purchaseToken)
+        } returns LocalTransactionMetadata(
+            token = activePurchase.purchaseToken,
+            receiptInfo = ReceiptInfo(productIDs = productIds, pricingPhases = pricingPhases),
+            purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+        )
+        var receivedListOfPurchasedProducts: List<PurchasedProduct> = emptyList()
+
+        fetcher.queryActiveProducts(
+            appUserID = appUserID,
+            onSuccess = { receivedListOfPurchasedProducts = it },
+            unexpectedOnError,
+        )
+
+        return receivedListOfPurchasedProducts.map { it.periodType }
+    }
+
     private fun assertPurchasedProduct(
         purchasedProduct: PurchasedProduct,
         purchaseRecord: StoreTransaction,
@@ -559,6 +639,7 @@ class PurchasedProductsFetcherTest {
         assertThat(purchasedProduct.productIdentifier).isEqualTo(purchaseRecord.productIds[purchasedProductIndex])
         assertThat(purchasedProduct.storeTransaction).isEqualTo(purchaseRecord)
         assertThat(purchasedProduct.isSynced).isEqualTo(isSynced)
+        assertThat(purchasedProduct.periodType).isEqualTo(PeriodType.NORMAL)
         assertThat(purchasedProduct.entitlements.size).isEqualTo(productIdentifierToEntitlements[purchasedProduct.productIdentifier]?.size ?: 0)
         if (purchasedProduct.entitlements.isNotEmpty()) {
             assertThat(purchasedProduct.entitlements).containsAll(productIdentifierToEntitlements[purchasedProduct.productIdentifier])
