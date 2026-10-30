@@ -81,10 +81,8 @@ class TabsCarouselPageMemoryTests {
         mainClock.advanceTimeBy(AUTO_ADVANCE_MS_PER_PAGE + AUTO_ADVANCE_MS_TRANSITION / 5)
         waitForIdle()
         assertThat(pagePositionsX(tab = "a")).noneMatch { abs(it - restingX) < 1f }
-        onNodeWithText(tabButtonText("b")).performClick()
-        advanceTimeInSteps(TAB_SWITCH_MS)
-        onNodeWithText(tabButtonText("a")).performClick()
-        advanceTimeInSteps(TAB_SWITCH_MS)
+        switchTab(tab = "b")
+        switchTab(tab = "a")
 
         // Assert: one of tab A's pages is back where a page rests, not between two.
         assertThat(pagePositionsX(tab = "a")).anyMatch { abs(it - restingX) < 1f }
@@ -157,14 +155,14 @@ class TabsCarouselPageMemoryTests {
     )
 
     /**
-     * Advances the paused clock a step at a time, settling in between. One big jump lets the tab cross-fade and
-     * the restored pager's settle race each other.
+     * Lets Compose handle the click before advancing the paused clock past the cross-fade, so the tab switch starts
+     * at the click rather than after the jump.
      */
-    private fun ComposeTestRule.advanceTimeInSteps(durationMs: Long) {
-        repeat((durationMs / CLOCK_STEP_MS).toInt()) {
-            mainClock.advanceTimeBy(CLOCK_STEP_MS)
-            waitForIdle()
-        }
+    private fun ComposeTestRule.switchTab(tab: String) {
+        onNodeWithText(tabButtonText(tab)).performClick()
+        waitForIdle()
+        mainClock.advanceTimeBy(TAB_SWITCH_MS)
+        waitForIdle()
     }
 
     private fun ComposeTestRule.pagePositionsX(tab: String): List<Float> =
@@ -276,7 +274,6 @@ class TabsCarouselPageMemoryTests {
         const val AUTO_ADVANCE_MS_PER_PAGE = 5_000L
         const val AUTO_ADVANCE_MS_TRANSITION = 1_000L
         const val TAB_SWITCH_MS = 400L
-        const val CLOCK_STEP_MS = 50L
     }
 
     private fun tabButtonKey(tab: String) = LocalizationKey("tab_$tab")
