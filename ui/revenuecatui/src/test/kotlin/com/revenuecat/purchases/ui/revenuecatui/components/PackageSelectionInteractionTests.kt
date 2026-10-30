@@ -284,6 +284,41 @@ internal class PackageSelectionInteractionTests {
         assertThat(state.selectedPackageInfo).isNull()
     }
 
+    @Test
+    fun `packageless sheet preserves the manual root choice instead of reapplying defaults`() {
+        val state = state(pkg(monthly, default = true), pkg(annual), sheetButton())
+        state.update(selectedPackageUniqueId = annual.identifier)
+        val button = (state.stack as StackComponentStyle).children[2] as ButtonComponentStyle
+
+        state.sheet.show(sheetDestination(button), state, PaywallComponentInteractionTracker { }, onClick = {})
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
+        state.sheet.hide()
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
+    }
+
+    @Test
+    fun `all hidden sheet uses its scoped fallback ahead of the root default`() {
+        val state = state(
+            pkg(monthly, default = true),
+            pkg(annual),
+            sheetButton(PackageComponent(
+                packageId = monthlyXl.identifier,
+                isSelectedByDefault = false,
+                visible = false,
+                stack = StackComponent(emptyList()),
+            )),
+        )
+        state.update(selectedPackageUniqueId = annual.identifier)
+        val button = (state.stack as StackComponentStyle).children[2] as ButtonComponentStyle
+
+        state.sheet.show(sheetDestination(button), state, PaywallComponentInteractionTracker { }, onClick = {})
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthlyXl)
+        state.sheet.hide()
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
+    }
+
     private fun sheetButton(vararg children: PaywallComponent) = ButtonComponent(
         action = ButtonComponent.Action.NavigateTo(ButtonComponent.Destination.Sheet(
             id = "plans",

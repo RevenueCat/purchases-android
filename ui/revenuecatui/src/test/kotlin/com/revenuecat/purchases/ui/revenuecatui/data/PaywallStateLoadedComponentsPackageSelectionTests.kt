@@ -816,6 +816,8 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
             onClick = {},
         )
 
+        state.reconcileSelectionForWindowSize(state.paywallBoundsDp)
+
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
     }
 

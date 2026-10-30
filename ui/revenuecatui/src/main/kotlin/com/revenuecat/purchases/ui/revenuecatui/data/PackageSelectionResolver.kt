@@ -26,10 +26,12 @@ internal class PackageSelectionResolver(
             ?: remembered?.takeIf { uid -> active.any { it.uniqueId == uid } }
             ?: allHiddenFallback()
 
-    fun enterSheet(current: String?): String? = sheet.defaultSelection(context, active)?.uniqueId
-        ?: defaultSelection(remembered = null)
-        ?: allHiddenFallback()
-        ?: current
+    fun enterSheet(current: String?): String? {
+        if (sheet.isEmpty()) return current
+        return sheet.defaultSelection(context, active)?.uniqueId
+            ?: allHiddenFallback()
+            ?: current
+    }
 
     fun reconcile(current: String?, remembered: String?): String? = when {
         current != null && rendersWhenSelected(current) -> current
