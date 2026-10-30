@@ -12,9 +12,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
 /**
- * Hard paywall: access is granted only when the user obtains an entitlement through the checkpoint. Every other
- * outcome, a dismissal included, leaves the content locked and lets the user try again. Backing out of the flow
- * never reaches the callback, so nothing here waits on it.
+ * The checkpoint callback grants access. Remote hard gating suppresses the callback until any configured
+ * entitlement is active. Backing out of an unresolved hard gate leaves the content locked and lets the user try again.
  */
 class HardPaywallViewModel : ViewModel() {
 
@@ -44,19 +43,11 @@ class HardPaywallViewModel : ViewModel() {
                 }
             },
         ) { result ->
-            if (result.flow?.obtainedEntitlements.orEmpty().isNotEmpty()) {
-                unlock("${result.summary()} Access granted.")
-            } else {
-                stayLocked(result.summary())
-            }
+            unlock("${result.summary()} Access granted.")
         }
     }
 
     private fun unlock(message: String) {
         _state.update { it.copy(unlocked = true, message = message) }
-    }
-
-    private fun stayLocked(message: String) {
-        _state.update { it.copy(unlocked = false, message = message) }
     }
 }
