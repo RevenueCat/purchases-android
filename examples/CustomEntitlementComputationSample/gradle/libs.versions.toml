@@ -1,7 +1,7 @@
 [versions]
 agp = "9.2.1"
 kotlin = "2.2.21"
-purchases = "11.0.1"
+purchases = "11.1.0-SNAPSHOT"
 androidxCore = "1.10.1"
 
 [plugins]
