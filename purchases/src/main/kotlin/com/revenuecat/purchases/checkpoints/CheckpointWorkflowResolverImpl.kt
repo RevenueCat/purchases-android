@@ -124,8 +124,7 @@ internal class CheckpointWorkflowResolverImpl(
             errorLog(e) { "UI config could not be fetched for checkpoint '$identifier'." }
             null
         } ?: return configurationUnavailable("UI config is unavailable for checkpoint '$identifier'.")
-        // Step events describe the answer that is reported, so they are held back until it is known to be current:
-        // a stale attempt is discarded and retried, and would otherwise leave an orphaned pair behind.
+        // Held back until the result is known to be current, so a stale attempt that gets retried emits nothing.
         val pendingEvents = mutableListOf<FeatureEvent>()
         return resolveRule(identifier, workflowManager, rule, uiConfig, pendingEvents)
             .takeIf { checkpointsConfigProvider.isCurrent(rulesResolution) }
@@ -190,8 +189,7 @@ internal class CheckpointWorkflowResolverImpl(
 
     /**
      * An offering step has no UI, so it is the whole workflow: it starts when it is entered and completes once the
-     * offering it presents has loaded. A step that cannot be served never completes. The events are added to
-     * [pendingEvents] rather than tracked, for the caller to track once the resolution is known to be current.
+     * offering it presents has loaded. A step that cannot be served never completes.
      */
     @Suppress("ReturnCount")
     private suspend fun resolveOfferingRule(

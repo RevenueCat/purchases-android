@@ -4,8 +4,6 @@ package com.revenuecat.purchases.checkpoints
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.common.events.FeatureEvent
-import com.revenuecat.purchases.common.workflows.events.WorkflowEvent
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.LogMessage
 import com.revenuecat.purchases.Package
@@ -24,6 +22,7 @@ import com.revenuecat.purchases.common.checkpoints.CheckpointResponse
 import com.revenuecat.purchases.common.checkpoints.CheckpointRule
 import com.revenuecat.purchases.common.checkpoints.CheckpointRulesResolution
 import com.revenuecat.purchases.common.checkpoints.CheckpointsConfigProvider
+import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.localrules.LocalRulesEvaluator
 import com.revenuecat.purchases.common.localrules.RulesDimensionProvider
 import com.revenuecat.purchases.common.localrules.RulesDimensionValue
@@ -36,6 +35,7 @@ import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.common.workflows.WorkflowStep
 import com.revenuecat.purchases.common.workflows.WorkflowTrigger
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
+import com.revenuecat.purchases.common.workflows.events.WorkflowEvent
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
@@ -78,7 +78,7 @@ class CheckpointWorkflowResolverImplTest {
     private lateinit var mockOffering: Offering
     private lateinit var mockOfferings: Offerings
     private var offeringsFetchError: PurchasesError? = null
-private val trackedEvents = mutableListOf<FeatureEvent>()
+    private val trackedEvents = mutableListOf<FeatureEvent>()
     private var offeringsFetched = 0
 
     private lateinit var resolver: CheckpointWorkflowResolverImpl
