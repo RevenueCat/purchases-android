@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.tabs
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
@@ -81,13 +82,89 @@ class TabsCarouselPageMemoryTests {
         waitForIdle()
         assertThat(pagePositionsX(tab = "a")).noneMatch { abs(it - restingX) < 1f }
         onNodeWithText(tabButtonText("b")).performClick()
-        mainClock.advanceTimeBy(TAB_SWITCH_MS)
+        advanceTimeInSteps(TAB_SWITCH_MS)
         onNodeWithText(tabButtonText("a")).performClick()
-        mainClock.advanceTimeBy(TAB_SWITCH_MS)
-        waitForIdle()
+        advanceTimeInSteps(TAB_SWITCH_MS)
 
         // Assert: one of tab A's pages is back where a page rests, not between two.
         assertThat(pagePositionsX(tab = "a")).anyMatch { abs(it - restingX) < 1f }
+    }
+
+    @Test
+    fun `A smaller Tabs component stays on its last tab when a bigger one moves past it`(): Unit =
+        with(composeTestRule) {
+            // Arrange: the selected tab index is paywall-wide, so both Tabs components follow it.
+            val bigTabs = listOf("x", "y", "z")
+            val smallTabs = listOf("p", "q")
+            val tabsComponents = listOf(simpleTabsComponent(bigTabs), simpleTabsComponent(smallTabs))
+            val localizations = (bigTabs + smallTabs)
+                .flatMap { tab ->
+                    listOf(
+                        tabButtonKey(tab) to LocalizationData.Text(tabButtonText(tab)),
+                        pageKey(tab, 0) to LocalizationData.Text(pageText(tab, 0)),
+                    )
+                }
+                .toMap()
+                .toNonEmptyMapOrNull()!!
+            val state = FakePaywallState(
+                components = tabsComponents,
+                localizations = nonEmptyMapOf(LocaleId("en_US") to localizations),
+            )
+            val tabsComponentStyles = (state.stack as StackComponentStyle).children
+                .filterIsInstance<TabsComponentStyle>()
+            setContent {
+                Column {
+                    tabsComponentStyles.forEach { TabsComponentView(style = it, state = state, clickHandler = { }) }
+                }
+            }
+
+            // Act: tab 1 -> tab 2 on the bigger one; both indices clamp to 1 on the smaller one.
+            onNodeWithText(tabButtonText("y")).performClick()
+            waitForIdle()
+            onNodeWithText(tabButtonText("z")).performClick()
+            waitForIdle()
+
+            // Assert
+            onNodeWithText(pageText("z", 0)).assertExists()
+            onNodeWithText(pageText("q", 0)).assertExists()
+        }
+
+    private fun simpleTabsComponent(tabs: List<String>) = TabsComponent(
+        tabs = tabs.map { tab ->
+            TabsComponent.Tab(
+                id = tab,
+                stack = StackComponent(
+                    components = listOf(
+                        TabControlComponent,
+                        TextComponent(text = pageKey(tab, 0), color = textColor),
+                    ),
+                ),
+            )
+        },
+        control = TabsComponent.TabControl.Buttons(
+            stack = StackComponent(
+                components = tabs.mapIndexed { index, tab ->
+                    TabControlButtonComponent(
+                        tabIndex = index,
+                        tabId = tab,
+                        stack = StackComponent(
+                            components = listOf(TextComponent(text = tabButtonKey(tab), color = textColor)),
+                        ),
+                    )
+                },
+            ),
+        ),
+    )
+
+    /**
+     * Advances the paused clock a step at a time, settling in between. One big jump lets the tab cross-fade and
+     * the restored pager's settle race each other.
+     */
+    private fun ComposeTestRule.advanceTimeInSteps(durationMs: Long) {
+        repeat((durationMs / CLOCK_STEP_MS).toInt()) {
+            mainClock.advanceTimeBy(CLOCK_STEP_MS)
+            waitForIdle()
+        }
     }
 
     private fun ComposeTestRule.pagePositionsX(tab: String): List<Float> =
@@ -199,6 +276,7 @@ class TabsCarouselPageMemoryTests {
         const val AUTO_ADVANCE_MS_PER_PAGE = 5_000L
         const val AUTO_ADVANCE_MS_TRANSITION = 1_000L
         const val TAB_SWITCH_MS = 400L
+        const val CLOCK_STEP_MS = 50L
     }
 
     private fun tabButtonKey(tab: String) = LocalizationKey("tab_$tab")

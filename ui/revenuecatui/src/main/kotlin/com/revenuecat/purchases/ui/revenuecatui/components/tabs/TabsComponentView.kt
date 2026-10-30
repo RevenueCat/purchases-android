@@ -112,7 +112,10 @@ internal fun TabsComponentView(
     val tabContentStateHolder = rememberSaveableStateHolder()
 
     AnimatedContent(
-        targetState = state.selectedTabIndex,
+        // Clamped here rather than inside the content: the selected index is paywall-wide, so on a Tabs component
+        // with fewer tabs two different indices can map to the same tab. Animating between them would compose
+        // that tab twice under the same saveable key.
+        targetState = state.selectedTabIndex.coerceIn(0..tabsState.tabs.lastIndex),
         modifier = modifier
             .padding(tabsState.margin)
             .applyIfNotNull(shadowStyle) { shadow(it, tabsState.shape) }
@@ -124,9 +127,7 @@ internal fun TabsComponentView(
             fadeIn(animationSpec = tween(DURATION_MS_CROSS_FADE, delayMillis = 0))
                 .togetherWith(fadeOut(animationSpec = tween(DURATION_MS_CROSS_FADE)))
         },
-    ) { selectedTabIndex ->
-        // Coerce it, just in case we get an out-of-range value.
-        val tabIndex = selectedTabIndex.coerceIn(0..tabsState.tabs.lastIndex)
+    ) { tabIndex ->
         val tab = tabsState.tabs[tabIndex]
         // Keyed by index: tab ids aren't guaranteed unique.
         tabContentStateHolder.SaveableStateProvider(key = tabIndex) {

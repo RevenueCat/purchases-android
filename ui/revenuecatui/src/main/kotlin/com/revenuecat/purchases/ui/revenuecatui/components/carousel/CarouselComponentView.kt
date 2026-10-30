@@ -82,6 +82,19 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import androidx.compose.ui.unit.lerp as lerpUnit
 
+/**
+ * The saved state includes the scroll offset, so a carousel hidden mid-transition (e.g. its tab was switched away
+ * during auto-advance) would otherwise come back stuck between two pages.
+ */
+@Composable
+private fun SettleOnRestoredPage(pagerState: PagerState) {
+    LaunchedEffect(pagerState) {
+        if (pagerState.currentPageOffsetFraction != 0f) {
+            pagerState.scrollToPage(pagerState.currentPage)
+        }
+    }
+}
+
 @Suppress("LongMethod", "LongParameterList")
 @JvmSynthetic
 @Composable
@@ -118,14 +131,7 @@ internal fun CarouselComponentView(
         }
     }
 
-    // The saved state includes the scroll offset, so a carousel hidden
-    // mid-transition (e.g. its tab was switched away during auto-advance)
-    // would otherwise come back stuck between two pages.
-    LaunchedEffect(pagerState) {
-        if (pagerState.currentPageOffsetFraction != 0f) {
-            pagerState.scrollToPage(pagerState.currentPage)
-        }
-    }
+    SettleOnRestoredPage(pagerState)
 
     val skipProgrammaticPageTracking = remember { ProgrammaticPageTrackingFlag() }
 
