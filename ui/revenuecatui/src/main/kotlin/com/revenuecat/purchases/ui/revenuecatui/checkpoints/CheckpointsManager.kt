@@ -138,7 +138,13 @@ internal class CheckpointsManager(
         val factoryPresenter = params?.errorDialogFactory?.asErrorPresenter(scope) { dialog ->
             if (dialog != null) {
                 DefaultErrorPresenter(purchases) { activity, resources, _, onAcknowledged ->
-                    errorDialogContent(activity, resources, dialog.message, onAcknowledged, dialog.buttonTitle)
+                    DefaultErrorPresenter.errorDialogContent(
+                        activity,
+                        resources,
+                        dialog.message,
+                        onAcknowledged,
+                        dialog.buttonTitle,
+                    )
                 }
             } else {
                 sdkErrorPresenter()

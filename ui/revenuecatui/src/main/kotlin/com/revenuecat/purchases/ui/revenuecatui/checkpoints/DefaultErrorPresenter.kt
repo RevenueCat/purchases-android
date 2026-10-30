@@ -193,27 +193,30 @@ internal class DefaultErrorPresenter(
             PurchasesErrorCode.PaymentPendingError -> R.string.revenuecatui_checkpoint_error_payment_pending
             else -> R.string.revenuecatui_checkpoint_error_generic
         }
-}
 
-// The paywall's own error dialog, with [buttonTitle] in place of the localized "OK" when given: the Compose
-// AlertDialog brings the scrim and the Material look, so the window hosting it only needs to be transparent. The view
-// keeps the activity as its context (the dialog's window is built from it); only what the composition resolves
-// follows the localized resources.
-internal fun errorDialogContent(
-    activity: Activity,
-    resources: Context,
-    message: String,
-    onAcknowledged: () -> Unit,
-    buttonTitle: String? = null,
-): View = ComposeView(activity).apply {
-    setContent {
-        val configuration = resources.resources.configuration
-        CompositionLocalProvider(
-            LocalContext provides resources,
-            LocalConfiguration provides configuration,
-            LocalLayoutDirection provides configuration.toLayoutDirection(),
-        ) {
-            ErrorDialog(dismissRequest = onAcknowledged, error = message, confirmButtonText = buttonTitle)
+    internal companion object {
+
+        // The paywall's own error dialog, with [buttonTitle] in place of the localized "OK" when given: the Compose
+        // AlertDialog brings the scrim and the Material look, so the window hosting it only needs to be
+        // transparent. The view keeps the activity as its context (the dialog's window is built from it); only
+        // what the composition resolves follows the localized resources.
+        fun errorDialogContent(
+            activity: Activity,
+            resources: Context,
+            message: String,
+            onAcknowledged: () -> Unit,
+            buttonTitle: String? = null,
+        ): View = ComposeView(activity).apply {
+            setContent {
+                val configuration = resources.resources.configuration
+                CompositionLocalProvider(
+                    LocalContext provides resources,
+                    LocalConfiguration provides configuration,
+                    LocalLayoutDirection provides configuration.toLayoutDirection(),
+                ) {
+                    ErrorDialog(dismissRequest = onAcknowledged, error = message, confirmButtonText = buttonTitle)
+                }
+            }
         }
     }
 }
