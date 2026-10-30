@@ -204,6 +204,7 @@ internal class PaywallViewModelImpl(
     private val _purchaseCompleted: MutableState<Boolean> = mutableStateOf(false)
     private val _workflowState: MutableState<WorkflowPaywallUiState?> = mutableStateOf(null)
     private var workflowTraceId: String = UUID.randomUUID().toString()
+    private var preferApplicationLocale = false
     private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
     private val _colorScheme = MutableStateFlow(colorScheme)
 
@@ -880,6 +881,9 @@ internal class PaywallViewModelImpl(
     }
 
     private suspend fun updateStateFromOffering(offeringSelection: OfferingSelection) {
+        preferApplicationLocale = purchases.awaitGetPaywallsPreferApplicationLocale()
+        _lastLocaleList.value = getCurrentLocaleList()
+
         // Injected workflow (e.g. mobile app preview): render locally, no /workflows fetch.
         if (presentInjectedWorkflowIfNeeded(offeringSelection)) {
             return
@@ -1764,15 +1768,26 @@ internal class PaywallViewModelImpl(
     }
 
     private fun getCurrentLocaleList(): LocaleListCompat {
-        val preferredLocale = purchases.preferredUILocaleOverride ?: return resourceProvider.getLocales()
+        val deviceLocales = LocaleListCompat.getDefault()
+        val defaultLocales = if (preferApplicationLocale) {
+            LocaleListCompat.forLanguageTags(
+                "${resourceProvider.getLocales().toLanguageTags()},${deviceLocales.toLanguageTags()}",
+            )
+        } else {
+            deviceLocales
+        }
+        val preferredLocale = purchases.preferredUILocaleOverride ?: return defaultLocales
 
         return try {
             val locale = createLocaleFromString(preferredLocale)
-            val localeList = LocaleListCompat.create(locale)
-            localeList
+            if (preferApplicationLocale) {
+                LocaleListCompat.forLanguageTags("${locale.toLanguageTag()},${defaultLocales.toLanguageTags()}")
+            } else {
+                LocaleListCompat.create(locale)
+            }
         } catch (e: IllegalArgumentException) {
             Logger.e("Invalid preferred locale format: $preferredLocale. Using app or system default.", e)
-            resourceProvider.getLocales()
+            defaultLocales
         }
     }
 

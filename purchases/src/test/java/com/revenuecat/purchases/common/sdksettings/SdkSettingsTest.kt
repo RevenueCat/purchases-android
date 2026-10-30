@@ -38,6 +38,29 @@ internal class SdkSettingsTest {
     }
 
     @Test
+    fun `parses the paywall application locale preference`() {
+        assertThat(parse("""{"paywalls":{"prefer_application_locale":true}}""").paywalls)
+            .isEqualTo(PaywallsSettings(preferApplicationLocale = true))
+        assertThat(parse("""{"paywalls":{"prefer_application_locale":false}}""").paywalls)
+            .isEqualTo(PaywallsSettings(preferApplicationLocale = false))
+        assertThat(parse("""{"paywalls":{}}""").paywalls)
+            .isEqualTo(PaywallsSettings())
+        assertThat(SdkSettings.DEFAULT.paywalls).isNull()
+    }
+
+    @Test
+    fun `malformed paywall preferences do not discard diagnostics`() {
+        listOf("\"true\"", "1", "{}", "[]").forEach { value ->
+            val settings = parse(
+                """{"diagnostics":{"enabled":true},"paywalls":{"prefer_application_locale":$value}}""",
+            )
+            assertThat(settings.paywalls).isNull()
+            assertThat(settings.diagnostics).isEqualTo(DiagnosticsSettings(enabled = true))
+        }
+        assertThat(parse("""{"paywalls":"yes"}""")).isEqualTo(SdkSettings.DEFAULT)
+    }
+
+    @Test
     fun `an empty item is the default settings`() {
         assertThat(parse("{}")).isEqualTo(SdkSettings.DEFAULT)
         assertThat(SdkSettings.DEFAULT.diagnostics).isNull()

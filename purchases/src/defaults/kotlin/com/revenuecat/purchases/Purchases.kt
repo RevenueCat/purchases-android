@@ -482,6 +482,11 @@ public class Purchases internal constructor(
     @Throws(PurchasesException::class)
     public suspend fun awaitGetUiConfig(): UiConfig = purchasesOrchestrator.getUiConfig()
 
+    @InternalRevenueCatAPI
+    @JvmSynthetic
+    public suspend fun awaitGetPaywallsPreferApplicationLocale(): Boolean =
+        purchasesOrchestrator.getPaywallsPreferApplicationLocale()
+
     /** Every workflow id in the synced config, including ones that claim no offering. For internal test apps. */
     @InternalRevenueCatAPI
     @JvmSynthetic

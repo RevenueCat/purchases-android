@@ -4,6 +4,7 @@ import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.common.errorLog
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -22,6 +23,7 @@ import kotlinx.serialization.json.jsonPrimitive
  */
 internal data class SdkSettings(
     val diagnostics: DiagnosticsSettings? = null,
+    val paywalls: PaywallsSettings? = null,
 ) {
     companion object {
         val DEFAULT = SdkSettings()
@@ -33,6 +35,7 @@ internal data class SdkSettings(
          */
         fun parse(item: JsonObject): SdkSettings = SdkSettings(
             diagnostics = item.section("diagnostics"),
+            paywalls = item.section("paywalls"),
         )
 
         private inline fun <reified T> JsonObject.section(key: String): T? {
@@ -46,6 +49,13 @@ internal data class SdkSettings(
         }
     }
 }
+
+@Serializable
+internal data class PaywallsSettings(
+    @SerialName("prefer_application_locale")
+    @Serializable(with = StrictBooleanSerializer::class)
+    val preferApplicationLocale: Boolean? = null,
+)
 
 @Serializable
 internal data class DiagnosticsSettings(

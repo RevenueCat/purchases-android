@@ -19,6 +19,7 @@ import com.revenuecat.purchases.common.remoteconfig.RemoteConfigCommitListener
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.common.sdksettings.DiagnosticsSettings
 import com.revenuecat.purchases.common.sdksettings.SdkSettings
+import com.revenuecat.purchases.common.sdksettings.PaywallsSettings
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
 import com.revenuecat.purchases.google.toInAppStoreProduct
@@ -3175,6 +3176,16 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     // endregion
 
     // region getUiConfig
+
+    @Test
+    fun `paywall application locale preference is enabled only by explicit remote true`() = runBlocking {
+        listOf(true, false, null).forEach { enabled ->
+            coEvery { mockSdkSettingsConfigProvider.getSettings(waitForInFlightRefresh = true) } returns
+                SdkSettings(paywalls = enabled?.let { PaywallsSettings(preferApplicationLocale = it) })
+
+            assertThat(purchases.awaitGetPaywallsPreferApplicationLocale()).isEqualTo(enabled == true)
+        }
+    }
 
     @Test
     fun `getUiConfig delivers the provider's result to the caller`() {
