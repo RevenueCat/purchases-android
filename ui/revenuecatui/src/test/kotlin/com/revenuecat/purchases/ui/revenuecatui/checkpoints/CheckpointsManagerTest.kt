@@ -7,6 +7,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfo
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
@@ -87,6 +88,7 @@ class CheckpointsManagerTest {
         defaultPresentedErrors.clear()
         customerInfoBefore = customerInfoWithActive()
         mockPurchases = mockk {
+            every { appUserID } returns "customer-a"
             every { currentActivity } returns mockActivity
             every { getCustomerInfo(CacheFetchPolicy.CACHED_OR_FETCHED, any()) } answers {
                 secondArg<ReceiveCustomerInfoCallback>().onReceived(customerInfoBefore)
@@ -368,6 +370,164 @@ class CheckpointsManagerTest {
 
         // The purchase wins over the later error, and a purchase is never backed out.
         assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
+        assertThat(run!!.backedOut).isFalse
+    }
+
+    @Test
+    fun `workflow gate context carries the customer's active entitlements through copied options`() = runTest(dispatcher) {
+        customerInfoBeforeHasActive("plus", "pro")
+        resolvesToWorkflow()
+        val call = launch { runCheckpoint() }
+
+        val options = manager.paywallOptions(currentCallId()) {}!!
+
+        assertThat(options.checkpointGateContext!!.initialActiveEntitlementIds).containsExactlyInAnyOrder("plus", "pro")
+        assertThat(options.copy().checkpointGateContext).isSameAs(options.checkpointGateContext)
+        assertThat(manager.paywallOptions("unknown-call-id") {}).isNull()
+        call.cancel()
+        call.join()
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `workflow snapshot keeps initiating identity when customer changes during the customer read`() = runTest(dispatcher) {
+        every { mockPurchases.appUserID } returns "customer-a"
+        val cacheResult = slot<ReceiveCustomerInfoCallback>()
+        every { mockPurchases.getCustomerInfo(CacheFetchPolicy.CACHED_OR_FETCHED, capture(cacheResult)) } just runs
+        resolvesToWorkflow()
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+        every { mockPurchases.appUserID } returns "customer-b"
+        val customerInfo = customerInfoWithActive("pro")
+        cacheResult.captured.onReceived(customerInfo)
+        val context = manager.paywallOptions(currentCallId()) {}!!.checkpointGateContext!!
+        assertThat(context.initialAppUserId).isEqualTo("customer-a")
+
+        context.onOutcomeChanged(CheckpointGateOutcome.NOT_PASSED)
+        finishPaywall(outcome = CheckpointFlowOutcome.Restored(customerInfo), navigatedBack = true)
+        call.join()
+
+        assertThat(run!!.backedOut).isTrue()
+    }
+
+    @Test
+    fun `an abandoned gate callback cannot back out the replacement call`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        val firstCall = launch { runCheckpoint() }
+        val abandonedContext = manager.paywallOptions(currentCallId()) {}!!.checkpointGateContext!!
+        firstCall.cancel()
+        firstCall.join()
+        var run: CheckpointRun? = null
+        val secondCall = launch { run = runCheckpoint() }
+
+        abandonedContext.onOutcomeChanged(CheckpointGateOutcome.NOT_PASSED)
+        finishPaywall(outcome = null)
+        secondCall.join()
+
+        assertThat(run!!.backedOut).isFalse
+    }
+
+    @Test
+    fun `an abandoned gate callback cannot pass the replacement call`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        val firstCall = launch { runCheckpoint() }
+        val abandonedContext = manager.paywallOptions(currentCallId()) {}!!.checkpointGateContext!!
+        firstCall.cancel()
+        firstCall.join()
+        var run: CheckpointRun? = null
+        val secondCall = launch { run = runCheckpoint() }
+        manager.paywallOptions(currentCallId()) {}!!.checkpointGateContext!!
+            .onOutcomeChanged(CheckpointGateOutcome.NOT_PASSED)
+
+        abandonedContext.onOutcomeChanged(CheckpointGateOutcome.PASSED)
+        finishPaywall(outcome = null)
+        secondCall.join()
+
+        assertThat(run!!.backedOut).isTrue
+    }
+
+    @Test
+    fun `a not-passed gate backs out despite a recorded purchase`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        val purchased = CheckpointFlowOutcome.Purchased(mockk(), mockk())
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+        manager.recordOutcome(currentCallId(), purchased)
+
+        manager.paywallOptions(currentCallId()) {}!!.checkpointGateContext!!
+            .onOutcomeChanged(CheckpointGateOutcome.NOT_PASSED)
+        finishPaywall(outcome = null, navigatedBack = true)
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(purchased)
+        assertThat(run!!.backedOut).isTrue
+    }
+
+    @Test
+    fun `a not-passed gate backs out on close despite a recorded restore`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        val restored = CheckpointFlowOutcome.Restored(mockk())
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+        manager.recordOutcome(currentCallId(), restored)
+
+        manager.paywallOptions(currentCallId()) {}!!.checkpointGateContext!!
+            .onOutcomeChanged(CheckpointGateOutcome.NOT_PASSED)
+        finishPaywall(outcome = null)
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(restored)
+        assertThat(run!!.backedOut).isTrue
+    }
+
+    @Test
+    fun `a failed presentation with a not-passed gate backs out despite a recorded purchase`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        val purchased = CheckpointFlowOutcome.Purchased(mockk(), mockk())
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+        val callId = currentCallId()
+        manager.recordOutcome(callId, purchased)
+        manager.paywallOptions(callId) {}!!.checkpointGateContext!!
+            .onOutcomeChanged(CheckpointGateOutcome.NOT_PASSED)
+
+        manager.onPresentationFailed(callId, PurchasesError(PurchasesErrorCode.ConfigurationError, "Re-present failed"))
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(purchased)
+        assertThat(run!!.backedOut).isTrue
+    }
+
+    @Test
+    fun `a passed gate is not backed out without a recorded purchase or restore`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+        val context = manager.paywallOptions(currentCallId()) {}!!.checkpointGateContext!!
+        context.onOutcomeChanged(CheckpointGateOutcome.NOT_PASSED)
+
+        context.onOutcomeChanged(CheckpointGateOutcome.PASSED)
+        finishPaywall(outcome = null, navigatedBack = true)
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Dismissed)
+        assertThat(run!!.backedOut).isFalse
+    }
+
+    @Test
+    fun `a not-applicable gate preserves purchase passage on back`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        val purchased = CheckpointFlowOutcome.Purchased(mockk(), mockk())
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+        val context = manager.paywallOptions(currentCallId()) {}!!.checkpointGateContext!!
+        context.onOutcomeChanged(CheckpointGateOutcome.NOT_PASSED)
+
+        context.onOutcomeChanged(CheckpointGateOutcome.NOT_APPLICABLE)
+        finishPaywall(purchased, navigatedBack = true)
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(purchased)
         assertThat(run!!.backedOut).isFalse
     }
 
