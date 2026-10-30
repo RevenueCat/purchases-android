@@ -3,6 +3,7 @@
 package com.revenuecat.purchases.common.workflows
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.common.workflows.events.WorkflowEvent
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.ExitOffers
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
@@ -170,6 +171,21 @@ public data class WorkflowStep(
 
     public val experimentVariant: String?
         get() = experimentValueFromMetadataOrParams(EXPERIMENT_VARIANT_PARAM)
+
+    /**
+     * The experiment this step belongs to, or `null` when it is not in one or the workflow has no blob ref to
+     * attribute it to.
+     */
+    @InternalRevenueCatAPI
+    public fun experimentData(workflowBlobRef: String?): WorkflowEvent.ExperimentData? {
+        val experimentId = experimentId
+        val experimentVariant = experimentVariant
+        return if (experimentId == null || experimentVariant == null || workflowBlobRef == null) {
+            null
+        } else {
+            WorkflowEvent.ExperimentData(experimentId = experimentId, experimentVariant = experimentVariant)
+        }
+    }
 
     /** A terminal step that resolves to an offering instead of rendering a screen. */
     @InternalRevenueCatAPI

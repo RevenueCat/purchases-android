@@ -650,6 +650,26 @@ private val trackedEvents = mutableListOf<FeatureEvent>()
     }
 
     @Test
+    fun `offering step events of a stale attempt are discarded so only the retried answer is tracked`() = runTest {
+        var generation = 0
+        configureRulesReadAt { generation }
+        // The first attempt's config generation moves while it is resolving; the retry is stable.
+        coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } answers {
+            if (generation == 0) generation++
+            offeringWorkflow("wf1234", "default")
+        }
+
+        val resolution = resolve() as CheckpointResolution.MatchedOffering
+
+        assertThat(offeringsFetched).isEqualTo(2)
+        assertThat(trackedEvents.map { it::class }).containsExactly(
+            WorkflowEvent.StepStarted::class,
+            WorkflowEvent.StepCompleted::class,
+        )
+        assertThat(trackedEvents.map { (it as WorkflowEvent).traceId }).containsOnly(resolution.traceId)
+    }
+
+    @Test
     fun `offering step ancillary fields do not prevent resolution`() = runTest {
         val step = offeringStep("default").copy(
             screenId = "screen-id",

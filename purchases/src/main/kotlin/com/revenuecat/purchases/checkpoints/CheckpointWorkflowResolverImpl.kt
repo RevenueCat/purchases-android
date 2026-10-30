@@ -28,6 +28,7 @@ import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.common.workflows.WorkflowStep
 import com.revenuecat.purchases.common.workflows.WorkflowStepGating
 import com.revenuecat.purchases.common.workflows.events.WorkflowEvent
+import com.revenuecat.purchases.common.workflows.events.WorkflowStepEntryReason
 import com.revenuecat.purchases.withPresentedCheckpointIdentifier
 import kotlinx.coroutines.CancellationException
 import java.util.Date
@@ -123,8 +124,12 @@ internal class CheckpointWorkflowResolverImpl(
             errorLog(e) { "UI config could not be fetched for checkpoint '$identifier'." }
             null
         } ?: return configurationUnavailable("UI config is unavailable for checkpoint '$identifier'.")
-        return resolveRule(identifier, workflowManager, rule, uiConfig)
+        // Step events describe the answer that is reported, so they are held back until it is known to be current:
+        // a stale attempt is discarded and retried, and would otherwise leave an orphaned pair behind.
+        val pendingEvents = mutableListOf<FeatureEvent>()
+        return resolveRule(identifier, workflowManager, rule, uiConfig, pendingEvents)
             .takeIf { checkpointsConfigProvider.isCurrent(rulesResolution) }
+            ?.also { pendingEvents.forEach(track) }
     }
 
     /**
@@ -158,6 +163,7 @@ internal class CheckpointWorkflowResolverImpl(
         workflowManager: WorkflowManager,
         rule: CheckpointRule,
         uiConfig: UiConfig,
+        pendingEvents: MutableList<FeatureEvent>,
     ): CheckpointResolution {
         val workflow = try {
             workflowManager.getWorkflowBody(rule.workflowId)
@@ -173,7 +179,7 @@ internal class CheckpointWorkflowResolverImpl(
             if (workflow.steps.size != 1) {
                 unservableRule(rule, "an offering step cannot be mixed with other steps")
             } else {
-                resolveOfferingRule(checkpointIdentifier, rule, workflow, initialStep)
+                resolveOfferingRule(checkpointIdentifier, rule, workflow, initialStep, pendingEvents)
             }
         } else if (workflow.steps.values.any { it.isOfferingStep }) {
             unservableRule(rule, "a UI workflow cannot contain offering steps")
@@ -184,7 +190,8 @@ internal class CheckpointWorkflowResolverImpl(
 
     /**
      * An offering step has no UI, so it is the whole workflow: it starts when it is entered and completes once the
-     * offering it presents has loaded. A step that cannot be served never completes.
+     * offering it presents has loaded. A step that cannot be served never completes. The events are added to
+     * [pendingEvents] rather than tracked, for the caller to track once the resolution is known to be current.
      */
     @Suppress("ReturnCount")
     private suspend fun resolveOfferingRule(
@@ -192,56 +199,43 @@ internal class CheckpointWorkflowResolverImpl(
         rule: CheckpointRule,
         workflow: PublishedWorkflow,
         step: WorkflowStep,
+        pendingEvents: MutableList<FeatureEvent>,
     ): CheckpointResolution {
         val offeringIdentifier = step.offeringIdentifier
             ?: return unservableRule(rule, "the offering step has no valid offering identifier")
 
         val traceId = UUID.randomUUID().toString()
         val workflowBlobRef = workflowManager.workflowBlobRef(rule.workflowId)
-        track(
-            WorkflowEvent.StepStarted(
-                creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
-                workflowId = workflow.id,
-                stepId = step.id,
-                traceId = traceId,
-                entryReason = WORKFLOW_START_ENTRY_REASON,
-                isFirstStep = true,
-                isLastStep = true,
-                workflowBlobRef = workflowBlobRef,
-                fallbackOriginalStepId = step.fallbackOriginalStepId,
-                experiment = step.experimentData(workflowBlobRef),
-            ),
+        pendingEvents += WorkflowEvent.StepStarted(
+            creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
+            workflowId = workflow.id,
+            stepId = step.id,
+            traceId = traceId,
+            entryReason = WorkflowStepEntryReason.START.value,
+            isFirstStep = true,
+            isLastStep = true,
+            workflowBlobRef = workflowBlobRef,
+            fallbackOriginalStepId = step.fallbackOriginalStepId,
+            experiment = step.experimentData(workflowBlobRef),
         )
         val offering = loadOfferings(checkpointIdentifier)?.all?.get(offeringIdentifier)
             ?: return unservableRule(rule, "offering '$offeringIdentifier' was not found in offerings")
-        track(
-            WorkflowEvent.StepCompleted(
-                creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
-                workflowId = workflow.id,
-                stepId = step.id,
-                traceId = traceId,
-                isFirstStep = true,
-                isLastStep = true,
-                workflowBlobRef = workflowBlobRef,
-                fallbackOriginalStepId = step.fallbackOriginalStepId,
-                experiment = step.experimentData(workflowBlobRef),
-            ),
+        pendingEvents += WorkflowEvent.StepCompleted(
+            creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
+            workflowId = workflow.id,
+            stepId = step.id,
+            traceId = traceId,
+            isFirstStep = true,
+            isLastStep = true,
+            workflowBlobRef = workflowBlobRef,
+            fallbackOriginalStepId = step.fallbackOriginalStepId,
+            experiment = step.experimentData(workflowBlobRef),
         )
         val matched = matchedOffering(offering, checkpointIdentifier, rule, traceId)
         debugLog {
             "Checkpoint resolved to offering '${matched.offering.identifier}' from workflow '${rule.workflowId}'"
         }
         return matched
-    }
-
-    private fun WorkflowStep.experimentData(workflowBlobRef: String?): WorkflowEvent.ExperimentData? {
-        val experimentId = experimentId
-        val experimentVariant = experimentVariant
-        return if (experimentId == null || experimentVariant == null || workflowBlobRef == null) {
-            null
-        } else {
-            WorkflowEvent.ExperimentData(experimentId = experimentId, experimentVariant = experimentVariant)
-        }
     }
 
     private fun matchedOffering(
@@ -312,6 +306,5 @@ internal class CheckpointWorkflowResolverImpl(
 
     private companion object {
         const val SIMULATED_ERROR_CHECKPOINT_ID = "f0rc3_3rr0r"
-        const val WORKFLOW_START_ENTRY_REASON = "start"
     }
 }
