@@ -8,6 +8,7 @@ import com.revenuecat.purchases.paywalls.PaywallAssetWarmer
 import com.revenuecat.purchases.ui.revenuecatui.components.webview.PaywallWebViewPrewarmer
 import com.revenuecat.purchases.ui.revenuecatui.components.webview.PaywallWebViewStartUp
 import com.revenuecat.purchases.ui.revenuecatui.components.webview.clearPaywallProfileStorage
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import java.util.concurrent.ConcurrentHashMap
 
 @OptIn(InternalRevenueCatAPI::class)
@@ -37,9 +38,11 @@ internal class PaywallAssetWarmerImpl : PaywallAssetWarmer {
                         )
                         .build(),
                 )
-            }.onFailure {
+            }.getOrElse { error ->
                 completed()
-            }.getOrThrow()
+                Logger.e("Error warming paywall image", error)
+                null
+            }
         }
     }
 

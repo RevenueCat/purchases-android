@@ -12,7 +12,6 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -102,17 +101,22 @@ internal class PaywallAssetWarmerImplTest {
     }
 
     @Test
-    fun `enqueue exceptions release the image and still propagate`() {
-        every { imageLoader.enqueue(any()) } throws IllegalStateException("enqueue failed")
-        assertThatThrownBy { warmer.warmImages(context, listOf(shared)) }
-            .isInstanceOf(IllegalStateException::class.java)
+    fun `enqueue exceptions release the image and do not stop the batch`() {
+        every { imageLoader.enqueue(any()) } answers {
+            val request = firstArg<ImageRequest>()
+            if (request.data == shared) throw IllegalStateException("enqueue failed")
+            requests.add(request)
+            mockk<Disposable>(relaxed = true)
+        }
+        warmer.warmImages(context, listOf(shared, other))
+        assertThat(requests.map { it.data }).containsExactly(other)
 
         every { imageLoader.enqueue(any()) } answers {
             requests.add(firstArg())
             mockk<Disposable>(relaxed = true)
         }
         warmer.warmImages(context, listOf(shared))
-        assertThat(requests.map { it.data }).containsExactly(shared)
+        assertThat(requests.map { it.data }).containsExactly(other, shared)
     }
 
     @Test
