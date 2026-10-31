@@ -87,6 +87,8 @@ internal interface PurchasesType {
     @Throws(PurchasesException::class)
     suspend fun awaitGetUiConfig(): UiConfig
 
+    suspend fun awaitGetPaywallsPreferApplicationLocale(): Boolean = false
+
     suspend fun resolveWorkflow(offeringId: String): WorkflowResolution
 
     suspend fun awaitWorkflowBlobRef(workflowId: String): String?
@@ -182,6 +184,9 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
 
     @Throws(PurchasesException::class)
     override suspend fun awaitGetUiConfig(): UiConfig = purchases.awaitGetUiConfig()
+
+    override suspend fun awaitGetPaywallsPreferApplicationLocale(): Boolean =
+        purchases.awaitGetPaywallsPreferApplicationLocale()
 
     @OptIn(InternalRevenueCatAPI::class)
     override suspend fun resolveWorkflow(offeringId: String): WorkflowResolution =

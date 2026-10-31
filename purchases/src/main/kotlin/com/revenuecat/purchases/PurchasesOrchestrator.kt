@@ -832,6 +832,9 @@ internal class PurchasesOrchestrator(
     suspend fun workflowBlobRef(workflowId: String): String? =
         workflowManager.workflowBlobRef(workflowId)
 
+    suspend fun getPaywallsPreferApplicationLocale(): Boolean =
+        sdkSettingsConfigProvider.getSettings(waitForInFlightRefresh = true).paywalls?.preferApplicationLocale == true
+
     suspend fun getUiConfig(): UiConfig {
         if (appConfig.uiPreviewMode || remoteConfigManager.isDisabled) {
             val message = if (appConfig.uiPreviewMode) {

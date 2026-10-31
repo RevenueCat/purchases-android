@@ -1,6 +1,9 @@
 package com.revenuecat.purchases.ui.revenuecatui.helpers
 
+import android.content.res.Configuration
 import android.content.res.Resources
+import android.os.LocaleList
+import androidx.core.os.LocaleListCompat
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.mockk.every
 import io.mockk.mockk
@@ -8,10 +11,49 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.util.Locale
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class PaywallResourceProviderTest {
+
+    @Test
+    fun `getLocales uses the host configuration instead of device preferences`() {
+        val previousLocales = LocaleList.getDefault()
+        try {
+            LocaleList.setDefault(LocaleList(Locale.JAPAN))
+            val configuration = Configuration().apply {
+                setLocales(LocaleList(Locale.US, Locale.FRANCE))
+            }
+            val resources = mockk<Resources> {
+                every { this@mockk.configuration } returns configuration
+            }
+            val provider = PaywallResourceProvider("TestApp", "com.test.app", resources)
+
+            assertThat(provider.getLocales().toLanguageTags()).isEqualTo("en-US,fr-FR")
+            assertThat(provider.getLocale()).isEqualTo(Locale.US)
+        } finally {
+            LocaleList.setDefault(previousLocales)
+        }
+    }
+
+    @Test
+    fun `getLocales falls back to all device preferences when the host has no locales`() {
+        val previousLocales = LocaleList.getDefault()
+        try {
+            LocaleList.setDefault(LocaleList(Locale.JAPAN, Locale.US))
+            val configuration = Configuration().apply { setLocales(LocaleList.getEmptyLocaleList()) }
+            val resources = mockk<Resources> {
+                every { this@mockk.configuration } returns configuration
+            }
+            val provider = PaywallResourceProvider("TestApp", "com.test.app", resources)
+
+            assertThat(provider.getLocales()).isEqualTo(LocaleListCompat.getDefault())
+            assertThat(provider.getLocales().toLanguageTags()).isEqualTo("ja-JP,en-US")
+        } finally {
+            LocaleList.setDefault(previousLocales)
+        }
+    }
 
     private fun resourceProviderWith(
         assetsByDir: Map<String, Array<String>>,
