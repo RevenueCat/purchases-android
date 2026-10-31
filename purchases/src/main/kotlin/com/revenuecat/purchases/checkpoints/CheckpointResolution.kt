@@ -48,8 +48,13 @@ public sealed class CheckpointResolution {
         val workflowBlobRef: String?,
     ) : CheckpointResolution()
 
-    /** Nothing should be served for this checkpoint; the user continues uninterrupted. */
-    public data class NoAction(val reason: Reason) : CheckpointResolution() {
+    /**
+     * Nothing should be served for this checkpoint; the user continues uninterrupted.
+     *
+     * [traceId] is set when events were already tracked for the hit before it turned out to be unservable, so the
+     * hit event can be joined to them. It is null otherwise.
+     */
+    public data class NoAction(val reason: Reason, val traceId: String? = null) : CheckpointResolution() {
 
         public enum class Reason {
             /** The checkpoint is configured, but no rule matched. */

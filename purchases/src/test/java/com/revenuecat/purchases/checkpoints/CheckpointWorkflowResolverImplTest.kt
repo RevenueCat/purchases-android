@@ -677,9 +677,10 @@ class CheckpointWorkflowResolverImplTest {
     fun `offering step that cannot load its offering tracks started but not completed`() = runTest {
         coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns offeringWorkflow("wf1234", "missing")
 
-        resolve()
+        val resolution = resolve() as CheckpointResolution.NoAction
 
-        assertThat(trackedEvents.single()).isInstanceOf(WorkflowEvent.StepStarted::class.java)
+        val started = trackedEvents.single() as WorkflowEvent.StepStarted
+        assertThat(resolution.traceId).isEqualTo(started.traceId)
     }
 
     @Test

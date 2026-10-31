@@ -94,7 +94,7 @@ internal fun CheckpointResolution.toCheckpointEvent(identifier: String, timestam
             identifier = identifier,
             checkpointType = CheckpointType.CUSTOM,
             result = reason.toCheckpointHitResult(),
-            traceId = UUID.randomUUID().toString(),
+            traceId = traceId ?: UUID.randomUUID().toString(),
             timestamp = timestamp,
         )
     }
