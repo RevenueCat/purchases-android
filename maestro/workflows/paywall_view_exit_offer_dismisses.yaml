@@ -1,0 +1,43 @@
+# Closing the exit paywall dismisses the whole presentation. Navigates the workflow (offering
+# `default_workflows`) to its last page, closes it so the exit offer paywall shows in its place, then closes the exit
+# paywall. Hosted in a PaywallView whose exit offer handler re-targets the same view, like the Unity SDK's Dialog
+# presenter.
+#
+# Run locally against the test store:
+#   maestro test -e MAESTRO_STORE=test_store maestro/workflows/paywall_view_exit_offer_dismisses.yaml
+
+appId: com.revenuecat.e2etests
+name: PaywallView exit paywall dismisses the presentation
+env:
+  MAESTRO_STORE: ${MAESTRO_STORE || 'test_store'}
+
+---
+- launchApp:
+    clearState: true
+    arguments:
+      e2e_test_flow: open_paywall_view_exit_offer
+- extendedWaitUntil: { visible: "Present Paywall", timeout: 15000 }
+- tapOn: { text: "Present Paywall" }
+- extendedWaitUntil:
+    visible: "Start Your Free Week And Reclaim 30+ Minutes Daily"
+    timeout: 15000
+- tapOn: { text: "Continue 1/3" }
+- extendedWaitUntil:
+    visible: "Most People Feel Calmer After Just 3 Sessions"
+    timeout: 15000
+- tapOn: { text: "Continue 2/3" }
+- extendedWaitUntil:
+    visible: "People Who Meditate Daily Sleep 40% Better"
+    timeout: 15000
+# Close the last page (unlabeled close icon, top-left) -> the same PaywallView shows the exit offer paywall.
+- tapOn: { point: "8%,6%" }
+- extendedWaitUntil:
+    visible: "Unlock full access"
+    timeout: 15000
+# Close the exit paywall -> the dismiss handler fires and no further paywall is shown.
+# NOTE: the exit paywall's close control is an unlabeled icon at the top-right ([1070,153][1280,297] on a
+# 1280x2856 emulator). Re-confirm on the target device/emulator if it fails.
+- tapOn: { point: "92%,8%" }
+- extendedWaitUntil: { visible: "Paywall dismissed", timeout: 8000 }
+- assertNotVisible: "Unlock full access"
+- takeScreenshot: "paywall_view_exit_offer_dismisses"

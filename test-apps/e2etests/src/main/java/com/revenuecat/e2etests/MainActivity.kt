@@ -9,6 +9,7 @@ import com.revenuecat.e2etests.main.DeveloperProvidedOfferingScreen
 import com.revenuecat.e2etests.main.MainPage
 import com.revenuecat.e2etests.main.NoPaywallScreen
 import com.revenuecat.e2etests.ui.theme.PurchasesandroidTheme
+import com.revenuecat.e2etests.workflow.PaywallViewExitOfferScreen
 import com.revenuecat.e2etests.workflow.PresentedWorkflowScreen
 import com.revenuecat.e2etests.workflow.WorkflowScreen
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLauncher
@@ -52,6 +53,7 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
                     E2ETestFlow.OPEN_WORKFLOW_PRESENTED -> PresentedWorkflowScreen(
                         onPresentPaywall = { paywallLauncher.launch(it) },
                     )
+                    E2ETestFlow.OPEN_PAYWALL_VIEW_EXIT_OFFER -> PaywallViewExitOfferScreen()
                     E2ETestFlow.OPEN_NO_PAYWALL -> NoPaywallScreen()
                     E2ETestFlow.OPEN_DEVELOPER_PROVIDED_OFFERING -> DeveloperProvidedOfferingScreen()
                     E2ETestFlow.OPEN_CHECKPOINT -> CheckpointScreen(

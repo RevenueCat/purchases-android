@@ -1,0 +1,27 @@
+# Closing the FIRST workflow page must NOT surface the exit offer: the exit offer is gated to the last
+# (exit-offer) step. Closing page 1 calls the PaywallView's dismiss handler. Hosted in a PaywallView with
+# PaywallView.setExitOfferHandler. The close control is an unlabeled, horizontally centered icon, as in
+# workflow_exit_offer_not_on_first_page.yaml.
+#
+# Run locally against the test store:
+#   maestro test -e MAESTRO_STORE=test_store maestro/workflows/paywall_view_exit_offer_not_on_first_page.yaml
+
+appId: com.revenuecat.e2etests
+name: PaywallView exit offer is not shown when closing the first page
+env:
+  MAESTRO_STORE: ${MAESTRO_STORE || 'test_store'}
+
+---
+- launchApp:
+    clearState: true
+    arguments:
+      e2e_test_flow: open_paywall_view_exit_offer
+- extendedWaitUntil: { visible: "Present Paywall", timeout: 15000 }
+- tapOn: { text: "Present Paywall" }
+- extendedWaitUntil:
+    visible: "Start Your Free Week And Reclaim 30+ Minutes Daily"
+    timeout: 15000
+- tapOn: { point: "50%,13%" }
+- extendedWaitUntil: { visible: "Paywall dismissed", timeout: 8000 }
+- assertNotVisible: "Unlock full access"
+- takeScreenshot: "paywall_view_exit_offer_not_on_first_page"
