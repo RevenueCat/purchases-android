@@ -6,11 +6,14 @@ import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
+import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -36,7 +39,14 @@ import org.robolectric.annotation.Config
 @Config(manifest = Config.NONE)
 class DefaultPaywallPresenterTest {
 
-    private val offering = mockk<Offering>()
+    // Named apart from Offering.monthly, which the offering mock's block would otherwise resolve to.
+    private val monthlyProduct = mockk<StoreProduct> {
+        every { id } returns "monthly"
+        every { purchasingData.productId } returns "monthly"
+    }
+    private val offering = mockk<Offering> {
+        every { availablePackages } returns listOf(mockk<Package> { every { product } returns monthlyProduct })
+    }
     private val params = PaywallPresenter.Params(
         offering,
         "test_checkpoint",
@@ -67,6 +77,7 @@ class DefaultPaywallPresenterTest {
         mockActivity = mockk(relaxed = true)
         mockPurchases = mockk { every { currentActivity } returns mockActivity }
         cachedActiveEntitlements()
+        noMapping()
         mockWindow = mockk(relaxed = true)
         presenter = DefaultPaywallPresenter(mockPurchases, errorPresenter = { _, _ -> }) { callId, host, mode ->
             windowCallId = callId
@@ -211,8 +222,9 @@ class DefaultPaywallPresenterTest {
     }
 
     @Test
-    fun `a restore that grants a new entitlement closes the paywall and reports Continued`() {
+    fun `a restore that grants a presented entitlement closes the paywall and reports Continued`() {
         cachedActiveEntitlements("plus")
+        mappingGrants("monthly" to listOf("pro"))
         present()
 
         options().listener!!.onRestoreCompleted(customerInfoWithActive("plus", "pro"))
@@ -223,8 +235,34 @@ class DefaultPaywallPresenterTest {
     }
 
     @Test
+    fun `restoring only part of an offered entitlement set leaves the paywall open and does not continue on back`() {
+        mappingGrants("monthly" to listOf("pro", "premium"))
+        present()
+
+        options().listener!!.onRestoreCompleted(customerInfoWithActive("pro"))
+        assertThat(dismissals).isEmpty()
+        finished(navigatedBack = true)
+
+        assertThat(results).containsExactly(Result.NavigatedBack)
+    }
+
+    @Test
+    fun `restoring the rest of a partially active offered set closes the paywall and continues on back`() {
+        cachedActiveEntitlements("pro")
+        mappingGrants("monthly" to listOf("pro", "premium"))
+        present()
+
+        options().listener!!.onRestoreCompleted(customerInfoWithActive("pro", "premium"))
+        assertThat(dismissals).containsExactly(false)
+        finished(navigatedBack = true)
+
+        assertThat(results).containsExactly(Result.Continued)
+    }
+
+    @Test
     fun `a restore that grants nothing new changes nothing`() {
         cachedActiveEntitlements("plus")
+        mappingGrants("monthly" to listOf("plus"))
         present()
 
         options().listener!!.onRestoreCompleted(customerInfoWithActive("plus"))
@@ -235,11 +273,12 @@ class DefaultPaywallPresenterTest {
     }
 
     @Test
-    fun `a restore counts every active entitlement as new when there is no cached customer info`() {
+    fun `a restore counts every presented entitlement as new when there is no cached customer info`() {
         noCachedCustomerInfo()
+        mappingGrants("monthly" to listOf("pro"))
         present()
 
-        options().listener!!.onRestoreCompleted(customerInfoWithActive("plus"))
+        options().listener!!.onRestoreCompleted(customerInfoWithActive("pro"))
 
         assertThat(dismissals).containsExactly(false)
         finished(navigatedBack = true)
@@ -247,7 +286,77 @@ class DefaultPaywallPresenterTest {
     }
 
     @Test
+    fun `a restore that grants an entitlement the offering's products do not grant changes nothing`() {
+        mappingGrants("monthly" to listOf("pro"))
+        present()
+
+        options().listener!!.onRestoreCompleted(customerInfoWithActive("plus"))
+        assertThat(dismissals).isEmpty()
+        finished(navigatedBack = true)
+
+        assertThat(results).containsExactly(Result.NavigatedBack)
+    }
+
+    @Test
+    fun `without a cached product-entitlement mapping a granting restore changes nothing`() {
+        present()
+
+        options().listener!!.onRestoreCompleted(customerInfoWithActive("pro"))
+        assertThat(dismissals).isEmpty()
+        finished(navigatedBack = true)
+
+        assertThat(results).containsExactly(Result.NavigatedBack)
+    }
+
+    @Test
+    fun `a restore uses a mapping cached after an earlier restore`() {
+        cachedActiveEntitlements("pro")
+        present()
+        val listener = options().listener!!
+        val restored = customerInfoWithActive("pro", "premium")
+
+        listener.onRestoreCompleted(restored)
+        assertThat(dismissals).isEmpty()
+
+        mappingGrants("monthly" to listOf("pro", "premium"))
+        listener.onRestoreCompleted(restored)
+        finished(navigatedBack = true)
+
+        assertThat(dismissals).containsExactly(false)
+        assertThat(results).containsExactly(Result.Continued)
+    }
+
+    @Test
+    fun `a mapping refreshed during presentation still requires the complete offered entitlement set`() {
+        mappingGrants("monthly" to listOf("pro"))
+        present()
+        val listener = options().listener!!
+
+        mappingGrants("monthly" to listOf("pro", "premium"))
+        listener.onRestoreCompleted(customerInfoWithActive("pro"))
+        finished(navigatedBack = true)
+
+        assertThat(dismissals).isEmpty()
+        assertThat(results).containsExactly(Result.NavigatedBack)
+    }
+
+    @Test
+    fun `a late mapping does not make already active entitlements newly obtained`() {
+        cachedActiveEntitlements("pro", "premium")
+        present()
+        val listener = options().listener!!
+
+        mappingGrants("monthly" to listOf("pro", "premium"))
+        listener.onRestoreCompleted(customerInfoWithActive("pro", "premium", "unrelated"))
+        finished(navigatedBack = true)
+
+        assertThat(dismissals).isEmpty()
+        assertThat(results).containsExactly(Result.NavigatedBack)
+    }
+
+    @Test
     fun `a granting restore closes the window that is currently on screen`() {
+        mappingGrants("monthly" to listOf("pro"))
         present()
         val firstDismissals = mutableListOf<Boolean>()
         presenter.paywallOptions(windowCallId!!) { firstDismissals += it }
@@ -261,6 +370,7 @@ class DefaultPaywallPresenterTest {
 
     @Test
     fun `a later error does not erase a recorded grant`() {
+        mappingGrants("monthly" to listOf("pro"))
         present()
         options().listener!!.onRestoreCompleted(customerInfoWithActive("pro"))
         options().listener!!.onPurchaseError(PurchasesError(PurchasesErrorCode.StoreProblemError, "boom"))
@@ -416,6 +526,18 @@ class DefaultPaywallPresenterTest {
         every { mockPurchases.getCustomerInfo(CacheFetchPolicy.CACHE_ONLY, any()) } answers {
             secondArg<ReceiveCustomerInfoCallback>().onReceived(customerInfoWithActive(*identifiers))
         }
+    }
+
+    private fun mappingGrants(vararg entries: Pair<String, List<String>>) {
+        every { mockPurchases.internalProductEntitlementMapping() } returns ProductEntitlementMapping(
+            entries.associate { (productId, entitlements) ->
+                productId to ProductEntitlementMapping.Mapping(productId, null, entitlements)
+            },
+        )
+    }
+
+    private fun noMapping() {
+        every { mockPurchases.internalProductEntitlementMapping() } returns null
     }
 
     private fun noCachedCustomerInfo() {

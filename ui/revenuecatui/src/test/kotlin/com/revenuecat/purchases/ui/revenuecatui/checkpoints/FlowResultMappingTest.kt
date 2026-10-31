@@ -5,11 +5,16 @@ import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.checkpoints.CheckpointResolution
+import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
+import com.revenuecat.purchases.common.workflows.PublishedWorkflow
+import com.revenuecat.purchases.common.workflows.WorkflowStep
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
@@ -21,6 +26,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonPrimitive
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -347,6 +353,134 @@ class FlowResultMappingTest {
         assertThat(purchases.customerInfo(CacheFetchPolicy.CACHED_OR_FETCHED).getOrNull()).isSameAs(customerInfo)
         assertThat(purchases.customerInfo(CacheFetchPolicy.FETCH_CURRENT).errorOrNull()).isEqualTo(error)
     }
+
+    @Test
+    fun `a workflow presents the offerings its steps reference, on the step or on its screen, once each`() {
+        val monthly = product("monthly")
+        val annual = product("annual")
+        val resolution = CheckpointResolution.MatchedWorkflow(
+            PublishedWorkflow(
+                id = "workflow",
+                displayName = "Workflow",
+                initialStepId = "on-step",
+                steps = mapOf(
+                    "on-step" to step("on-step", screenId = "screen", offeringId = "default"),
+                    "on-screen" to step("on-screen", screenId = "annual-screen", offeringId = null),
+                    "again" to step("again", screenId = "annual-screen", offeringId = "annual"),
+                    "unknown" to step("unknown", screenId = "screen", offeringId = "missing"),
+                    "none" to step("none", screenId = null, offeringId = null),
+                ),
+                screens = mapOf("annual-screen" to mockk { every { offeringIdentifier } returns "annual" }),
+            ),
+            mockk(),
+            offerings(offering("default", monthly), offering("annual", annual), offering("other", product("other"))),
+            checkpointRuleId = null,
+            traceId = "trace-id",
+            workflowBlobRef = null,
+        )
+
+        val presented = resolution.presentedOfferings
+            .flatMap { offering -> offering.availablePackages.map { it.product } }
+
+        assertThat(presented).containsExactly(monthly, annual)
+    }
+
+    @Test
+    fun `the entitlements presented offerings grant are read per base plan, then per store product`() {
+        val mapping = mapping("sub:p1m" to listOf("pro"), "sub" to listOf("plus"), "coins" to listOf("gold"))
+        val offerings = presenting(
+            subscriptionProduct("sub:p1m", "sub"),
+            subscriptionProduct("sub:p1y", "sub"),
+            product("coins"),
+            product("unmapped"),
+        )
+
+        assertThat(offerings.entitlementsGrantedBy(mapping))
+            .containsExactlyInAnyOrder(setOf("pro"), setOf("plus"), setOf("gold"))
+    }
+
+    @Test
+    fun `no entitlement is presented without a cached product-entitlement mapping`() {
+        assertThat(presenting(product("monthly")).entitlementsGrantedBy(null)).isEmpty()
+    }
+
+    @Test
+    fun `a presented entitlement the user did not hold before is a grant`() {
+        val customerInfo = customerInfoWithActive("plus", "pro")
+
+        assertThat(customerInfo.grantsPresentedEntitlement(setOf("plus"), listOf(setOf("pro")))).isTrue
+        assertThat(customerInfo.grantsPresentedEntitlement(null, listOf(setOf("pro")))).isTrue
+    }
+
+    @Test
+    fun `an entitlement held before, or one no presented product grants, is not a grant`() {
+        val customerInfo = customerInfoWithActive("plus", "pro")
+
+        assertThat(customerInfo.grantsPresentedEntitlement(setOf("plus", "pro"), listOf(setOf("pro")))).isFalse
+        assertThat(customerInfo.grantsPresentedEntitlement(setOf("plus"), listOf(setOf("gold")))).isFalse
+        assertThat(customerInfo.grantsPresentedEntitlement(null, emptyList())).isFalse
+    }
+
+    @Test
+    fun `restoring only part of an offered product's entitlements is not a grant`() {
+        val presented = presenting(product("monthly"))
+            .entitlementsGrantedBy(mapping("monthly" to listOf("pro", "premium")))
+
+        assertThat(customerInfoWithActive("pro").grantsPresentedEntitlement(emptySet(), presented)).isFalse
+        assertThat(customerInfoWithActive("pro").grantsPresentedEntitlement(null, presented)).isFalse
+    }
+
+    @Test
+    fun `completing an offered entitlement set is a grant even when part was already active`() {
+        val presented = presenting(product("monthly"))
+            .entitlementsGrantedBy(mapping("monthly" to listOf("pro", "premium")))
+        val restored = customerInfoWithActive("pro", "premium")
+
+        assertThat(restored.grantsPresentedEntitlement(emptySet(), presented)).isTrue
+        assertThat(restored.grantsPresentedEntitlement(setOf("pro"), presented)).isTrue
+        assertThat(restored.grantsPresentedEntitlement(null, presented)).isTrue
+    }
+
+    @Test
+    fun `partial entitlement sets from different products do not combine into a grant`() {
+        val presented = presenting(product("monthly"), product("annual")).entitlementsGrantedBy(
+            mapping("monthly" to listOf("pro", "premium"), "annual" to listOf("extra", "bonus")),
+        )
+
+        assertThat(customerInfoWithActive("pro", "extra").grantsPresentedEntitlement(emptySet(), presented)).isFalse
+        assertThat(customerInfoWithActive("extra", "bonus").grantsPresentedEntitlement(emptySet(), presented)).isTrue
+    }
+
+    @Test
+    fun `an already active complete set does not qualify a partial restore for another product`() {
+        val presented = presenting(product("monthly"), product("annual")).entitlementsGrantedBy(
+            mapping("monthly" to listOf("pro", "premium"), "annual" to listOf("extra", "bonus")),
+        )
+        val restored = customerInfoWithActive("pro", "premium", "extra")
+
+        assertThat(restored.grantsPresentedEntitlement(setOf("pro", "premium"), presented)).isFalse
+    }
+
+    private fun step(id: String, screenId: String?, offeringId: String?) = WorkflowStep(
+        id = id,
+        type = "screen",
+        screenId = screenId,
+        paramValues = offeringId?.let { mapOf("offering_identifier" to JsonPrimitive(it)) }.orEmpty(),
+    )
+
+    private fun offerings(vararg offerings: Offering): Offerings {
+        val byId = offerings.associateBy { it.identifier }
+        return mockk {
+            every { all } returns byId
+            every { this@mockk[any()] } answers { byId[firstArg()] }
+        }
+    }
+
+    private fun mapping(vararg entries: Pair<String, List<String>>) = ProductEntitlementMapping(
+        entries.associate { (productId, entitlements) ->
+            productId to ProductEntitlementMapping.Mapping(productId, null, entitlements)
+        },
+    )
 
     private fun presented(outcome: CheckpointFlowOutcome, vararg presentedProducts: StoreProduct) =
         CheckpointRun(outcome, backedOut = false, presentedOfferings = presenting(*presentedProducts))

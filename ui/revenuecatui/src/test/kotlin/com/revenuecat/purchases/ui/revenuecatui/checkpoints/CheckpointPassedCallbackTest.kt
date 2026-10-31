@@ -17,6 +17,9 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
+import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
+import com.revenuecat.purchases.common.workflows.PublishedWorkflow
+import com.revenuecat.purchases.common.workflows.WorkflowStep
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
@@ -41,6 +44,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.serialization.json.JsonPrimitive
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -91,6 +95,7 @@ class CheckpointPassedCallbackTest {
         }
         customerInfoBeforeHasActive()
         cachedCustomerInfoHasActive()
+        noMapping()
         manager = CheckpointsManager(
             presenterFactory = { callId, _, _ ->
                 presentedCallIds += callId
@@ -326,16 +331,31 @@ class CheckpointPassedCallbackTest {
     }
 
     @Test
-    fun `a workflow restore that unlocks an entitlement passes the checkpoint on back`() = runTest(dispatcher) {
-        customerInfoBeforeHasActive("plus")
-        resolvesToWorkflow()
+    fun `a workflow restore that unlocks a presented entitlement passes the checkpoint on back`() =
+        runTest(dispatcher) {
+            customerInfoBeforeHasActive("plus")
+            resolvesToWorkflow(product("monthly"))
+            mappingGrants("monthly" to listOf("pro"))
 
-        checkpoint()
-        workflowListener().onRestoreCompleted(customerInfoWithActive("plus", "pro"))
-        finishPaywall(outcome = null, navigatedBack = true)
+            checkpoint()
+            workflowListener().onRestoreCompleted(customerInfoWithActive("plus", "pro"))
+            finishPaywall(outcome = null, navigatedBack = true)
 
-        assertThat(results.obtained).containsExactly(setOf("pro"))
-    }
+            assertThat(results.obtained).containsExactly(setOf("pro"))
+        }
+
+    @Test
+    fun `a workflow restore that unlocks an entitlement no presented product grants does not pass on back`() =
+        runTest(dispatcher) {
+            resolvesToWorkflow(product("monthly"))
+            mappingGrants("monthly" to listOf("pro"))
+
+            checkpoint()
+            workflowListener().onRestoreCompleted(customerInfoWithActive("plus"))
+            finishPaywall(outcome = null, navigatedBack = true)
+
+            assertThat(results).isEmpty()
+        }
 
     @Test
     fun `a dismissed paywall delivers an empty result`() = runTest(dispatcher) {
@@ -429,7 +449,8 @@ class CheckpointPassedCallbackTest {
 
     @Test
     fun `a granting restore delivers the customer information it produced`() = runTest(dispatcher) {
-        resolvesToWorkflow()
+        resolvesToWorkflow(product("monthly"))
+        mappingGrants("monthly" to listOf("pro"))
         val restored = customerInfoWithActive("pro")
 
         checkpoint()
@@ -728,7 +749,7 @@ class CheckpointPassedCallbackTest {
 
     private fun resolvesToWorkflow(vararg products: StoreProduct) {
         resolvesTo(CheckpointResolution.MatchedWorkflow(
-            mockk(),
+            workflow("default"),
             mockk(),
             offerings(*products),
             checkpointRuleId = null,
@@ -786,8 +807,41 @@ class CheckpointPassedCallbackTest {
         every { availablePackages } returns products.map { p -> mockk<Package> { every { product } returns p } }
     }
 
-    private fun offerings(vararg products: StoreProduct): Offerings = mockk {
-        every { all } returns mapOf("default" to offering(*products))
+    private fun workflow(vararg offeringIds: String): PublishedWorkflow = PublishedWorkflow(
+        id = "workflow",
+        displayName = "Workflow",
+        initialStepId = "step-0",
+        steps = offeringIds.withIndex().associate { (index, offeringId) ->
+            "step-$index" to WorkflowStep(
+                id = "step-$index",
+                type = "screen",
+                screenId = "screen-$index",
+                paramValues = mapOf("offering_identifier" to JsonPrimitive(offeringId)),
+            )
+        },
+        screens = emptyMap(),
+    )
+
+    private fun offerings(vararg products: StoreProduct): Offerings = offeringsById("default" to offering(*products))
+
+    private fun offeringsById(vararg entries: Pair<String, Offering>): Offerings {
+        val byId = mapOf(*entries)
+        return mockk {
+            every { all } returns byId
+            every { this@mockk[any()] } answers { byId[firstArg()] }
+        }
+    }
+
+    private fun mappingGrants(vararg entries: Pair<String, List<String>>) {
+        every { mockPurchases.internalProductEntitlementMapping() } returns ProductEntitlementMapping(
+            entries.associate { (productId, entitlements) ->
+                productId to ProductEntitlementMapping.Mapping(productId, null, entitlements)
+            },
+        )
+    }
+
+    private fun noMapping() {
+        every { mockPurchases.internalProductEntitlementMapping() } returns null
     }
 
     private fun CustomerInfo.purchased(vararg identifiers: String, date: Date = Date(1_000)): CustomerInfo = apply {

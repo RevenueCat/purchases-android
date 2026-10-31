@@ -24,12 +24,13 @@ import java.util.UUID
  * the paywall's errors to the checkpoint's [ErrorPresenter], which the paywall only offers internally.
  *
  * It reports how the user left the paywall, except that a purchase, or a restore that granted an entitlement the
- * user did not hold when the paywall opened, continues the flow whatever closed the window; a granting restore
- * also closes the paywall, like a purchase does. What the user obtained is still read from the synced customer
- * info, like for any other presenter. A paywall that could not load, or a window that could not be kept on
- * screen, reports [Result.Failed] unless the user obtained something first: the checkpoint is not passed. One
- * instance per presentation, and the host of its own window. Like an app presenter's UI, the window is not taken
- * down when the checkpoint call is abandoned: the user closes it, and its report is ignored.
+ * offering's products grant and the user did not hold when the paywall opened, continues the flow whatever closed
+ * the window; a granting restore also closes the paywall, like a purchase does. What the user obtained is still
+ * read from the synced customer info, like for any other presenter. A paywall that could not load, or a window
+ * that could not be kept on screen, reports [Result.Failed] unless the user obtained something first: the
+ * checkpoint is not passed. One instance per presentation, and the host of its own window. Like an app
+ * presenter's UI, the window is not taken down when the checkpoint call is abandoned: the user closes it, and its
+ * report is ignored.
  */
 internal class DefaultPaywallPresenter(
     private val purchases: Purchases,
@@ -92,7 +93,7 @@ internal class DefaultPaywallPresenter(
         }
 
     // A grant is sticky: a later error or web checkout must not erase it, and neither changes how leaving is
-    // reported, so they are not observed. A restore that granted nothing changes nothing either.
+    // reported, so they are not observed. A restore that granted nothing the offering sells changes nothing either.
     private val listener = object : PaywallListener {
         override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
             if (completion == null) return
@@ -101,7 +102,9 @@ internal class DefaultPaywallPresenter(
 
         override fun onRestoreCompleted(customerInfo: CustomerInfo) {
             if (completion == null) return
-            if (customerInfo.grantsNewEntitlements(activeEntitlementsBefore)) {
+            val presentedEntitlements =
+                listOf(params.offering).entitlementsGrantedBy(purchases.internalProductEntitlementMapping())
+            if (customerInfo.grantsPresentedEntitlement(activeEntitlementsBefore, presentedEntitlements)) {
                 obtained = true
                 dismiss?.invoke(false)
             }
