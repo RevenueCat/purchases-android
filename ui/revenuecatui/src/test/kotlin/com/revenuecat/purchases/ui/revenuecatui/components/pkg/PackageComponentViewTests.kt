@@ -212,14 +212,13 @@ class PackageComponentViewTests {
             }
         }
 
-        // Assert
-        // Nothing selected
+        // Assert: the first available package is the unauthored initial fallback.
         onNodeWithText(unselectedTextYearly.value)
-            .assertIsDisplayed()
+            .assertIsNotDisplayed()
         onNodeWithText(unselectedTextMonthly.value)
             .assertIsDisplayed()
         onNodeWithText(selectedTextYearly.value)
-            .assertIsNotDisplayed()
+            .assertIsDisplayed()
         onNodeWithText(selectedTextMonthly.value)
             .assertIsNotDisplayed()
 
@@ -628,16 +627,16 @@ class PackageComponentViewTests {
                 }
             }
 
-            onNodeWithTag("yearly").performClick()
             onNodeWithTag("monthly").performClick()
+            onNodeWithTag("yearly").performClick()
             waitForIdle()
 
             // Assert
             assertThat(selectedWhenTracked)
-                .containsExactly(packageYearly.identifier, packageMonthly.identifier)
-            assertThat(origins).containsExactly(null, packageYearly.identifier)
+                .containsExactly(packageMonthly.identifier, packageYearly.identifier)
+            assertThat(origins).containsExactly(packageYearly.identifier, packageMonthly.identifier)
             assertThat(destinations)
-                .containsExactly(packageYearly.identifier, packageMonthly.identifier)
+                .containsExactly(packageMonthly.identifier, packageYearly.identifier)
         }
 
 }

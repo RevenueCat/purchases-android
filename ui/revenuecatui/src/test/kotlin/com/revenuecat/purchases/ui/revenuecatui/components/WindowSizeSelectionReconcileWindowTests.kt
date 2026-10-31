@@ -42,7 +42,7 @@ internal class WindowSizeSelectionReconcileWindowTests {
     val composeTestRule = createComposeRule()
 
     @Test
-    fun `selection follows the package that actually renders when its sibling container hides`(): Unit =
+    fun `selection follows the visible package across window sizes without authored defaults`(): Unit =
         with(composeTestRule) {
             val monthlyKey = LocalizationKey("monthly")
             val annualKey = LocalizationKey("annual")
@@ -52,7 +52,7 @@ internal class WindowSizeSelectionReconcileWindowTests {
                     StackComponent(
                         components = listOf(PackageComponent(
                             packageId = TestData.Packages.monthly.identifier,
-                            isSelectedByDefault = true,
+                            isSelectedByDefault = false,
                             stack = StackComponent(listOf(TextComponent(text = monthlyKey, color = color))),
                         )),
                         overrides = listOf(ComponentOverride(
@@ -67,6 +67,13 @@ internal class WindowSizeSelectionReconcileWindowTests {
                         packageId = TestData.Packages.annual.identifier,
                         isSelectedByDefault = false,
                         stack = StackComponent(listOf(TextComponent(text = annualKey, color = color))),
+                        overrides = listOf(ComponentOverride(
+                            conditions = listOf(ComponentOverride.Condition.WindowWidthRule(
+                                operator = ComponentOverride.ComparisonOperator.LESS_THAN,
+                                value = 700.0,
+                            )),
+                            properties = PartialPackageComponent(visible = false),
+                        )),
                     ),
                 ),
                 packages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
@@ -88,6 +95,7 @@ internal class WindowSizeSelectionReconcileWindowTests {
                     controller.setWindowSizeInexact(width = 400.dp, height = 800.dp)
                     waitForIdle()
                     onNodeWithText("Monthly plan").assertIsDisplayed()
+                    onNodeWithText("Annual plan").assertDoesNotExist()
                     assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
 
                     controller.setWindowSizeInexact(width = 900.dp, height = 600.dp)
@@ -95,9 +103,49 @@ internal class WindowSizeSelectionReconcileWindowTests {
                     onNodeWithText("Monthly plan").assertDoesNotExist()
                     onNodeWithText("Annual plan").assertIsDisplayed()
                     assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+
+                    controller.setWindowSizeInexact(width = 400.dp, height = 800.dp)
+                    waitForIdle()
+                    onNodeWithText("Monthly plan").assertIsDisplayed()
+                    onNodeWithText("Annual plan").assertDoesNotExist()
+                    assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
                 },
             )
         }
+
+    @Test
+    fun `remeasurement preserves a valid manual choice ahead of an authored default`(): Unit = with(composeTestRule) {
+        val state = FakePaywallState(
+            components = listOf(
+                PackageComponent(
+                    packageId = TestData.Packages.monthly.identifier,
+                    isSelectedByDefault = true,
+                    stack = StackComponent(emptyList()),
+                ),
+                PackageComponent(
+                    packageId = TestData.Packages.annual.identifier,
+                    isSelectedByDefault = false,
+                    stack = StackComponent(emptyList()),
+                ),
+            ),
+            packages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+        )
+        windowChangingTest(
+            arrange = { state },
+            act = { paywallState -> MeasurePaywallBounds(paywallState) { Box(Modifier.fillMaxSize()) } },
+            assert = { controller ->
+                controller.setWindowSizeInexact(width = 400.dp, height = 800.dp)
+                waitForIdle()
+                runOnIdle { state.update(selectedPackageUniqueId = TestData.Packages.annual.identifier) }
+                controller.setWindowSizeInexact(width = 900.dp, height = 600.dp)
+                waitForIdle()
+                assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+                controller.setWindowSizeInexact(width = 400.dp, height = 800.dp)
+                waitForIdle()
+                assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+            },
+        )
+    }
 
     @Test
     fun `a state added after bounds settle is reconciled too`(): Unit = with(composeTestRule) {

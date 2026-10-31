@@ -2749,7 +2749,7 @@ class PaywallViewModelTest {
     // region getWebCheckoutUrl
 
     @Test
-    fun `getWebCheckoutUrl returns expected state when no selected package`(): Unit = runBlocking {
+    fun `getWebCheckoutUrl uses the initial fallback when no package is specified`(): Unit = runBlocking {
         val model = create(offering = offeringWithWPL)
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlAndPackage),
@@ -2757,7 +2757,7 @@ class PaywallViewModelTest {
 
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlNoPackage),
-        ).isEqualTo("https://revenuecat.com?rc_source=app")
+        ).isEqualTo("https://revenuecat.com?rc_source=app&rc_package=%24rc_monthly")
 
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlNoPackageParam),
@@ -2769,7 +2769,7 @@ class PaywallViewModelTest {
 
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithNoPackage),
-        ).isEqualTo("https://test-web-billing.revenuecat.com")
+        ).isEqualTo("https://test-web-billing.revenuecat.com?rc_package=\$rc_monthly")
 
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithoutAppendingPackage),
