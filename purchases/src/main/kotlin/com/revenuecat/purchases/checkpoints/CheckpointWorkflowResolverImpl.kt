@@ -171,21 +171,21 @@ internal class CheckpointWorkflowResolverImpl(
         val workflow = try {
             workflowManager.getWorkflowBody(rule.workflowId)
         } catch (e: PurchasesException) {
-            return unservableRule(rule, "it could not be loaded: ${e.error}")
+            return unservableRule(rule, "it could not be loaded: ${e.error}", traceId)
         }
         val initialStep = workflow.steps[workflow.initialStepId]
-            ?: return unservableRule(rule, "its initial step was not found")
+            ?: return unservableRule(rule, "its initial step was not found", traceId)
         workflow.steps.values.firstOrNull { it.gating == WorkflowStepGating.Invalid }?.let { step ->
-            return unservableRule(rule, "step '${step.id}' has invalid gating")
+            return unservableRule(rule, "step '${step.id}' has invalid gating", traceId)
         }
         return if (initialStep.isOfferingStep) {
             if (workflow.steps.size != 1) {
-                unservableRule(rule, "an offering step cannot be mixed with other steps")
+                unservableRule(rule, "an offering step cannot be mixed with other steps", traceId)
             } else {
                 resolveOfferingRule(checkpointIdentifier, rule, workflow, initialStep, traceId, pendingEvents)
             }
         } else if (workflow.steps.values.any { it.isOfferingStep }) {
-            unservableRule(rule, "a UI workflow cannot contain offering steps")
+            unservableRule(rule, "a UI workflow cannot contain offering steps", traceId)
         } else {
             resolveUiRule(checkpointIdentifier, rule, workflow, uiConfig, traceId)
         }
@@ -205,7 +205,7 @@ internal class CheckpointWorkflowResolverImpl(
         pendingEvents: MutableList<FeatureEvent>,
     ): CheckpointResolution {
         val offeringIdentifier = step.offeringIdentifier
-            ?: return unservableRule(rule, "the offering step has no valid offering identifier")
+            ?: return unservableRule(rule, "the offering step has no valid offering identifier", traceId)
 
         val workflowBlobRef = workflowManager.workflowBlobRef(rule.workflowId)
         pendingEvents += WorkflowEvent.StepStarted(
@@ -221,7 +221,7 @@ internal class CheckpointWorkflowResolverImpl(
             experiment = step.experimentData(workflowBlobRef),
         )
         val offering = loadOfferings(checkpointIdentifier)?.all?.get(offeringIdentifier)
-            ?: return unservableRule(rule, "offering '$offeringIdentifier' was not found in offerings")
+            ?: return unservableRule(rule, "offering '$offeringIdentifier' was not found in offerings", traceId)
         pendingEvents += WorkflowEvent.StepCompleted(
             creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
             workflowId = workflow.id,
@@ -260,7 +260,7 @@ internal class CheckpointWorkflowResolverImpl(
         traceId: String,
     ): CheckpointResolution {
         val offerings = loadOfferings(checkpointIdentifier)
-            ?: return unservableRule(rule, "the offerings its steps present could not be fetched")
+            ?: return unservableRule(rule, "the offerings its steps present could not be fetched", traceId)
         debugLog { "Checkpoint resolved to workflow '${rule.workflowId}'" }
         workflowManager.prewarmWorkflowAssets(workflow, uiConfig)
         return CheckpointResolution.MatchedWorkflow(
@@ -281,9 +281,13 @@ internal class CheckpointWorkflowResolverImpl(
             null
         }
 
-    private fun unservableRule(rule: CheckpointRule, reason: String): CheckpointResolution.NoAction {
+    private fun unservableRule(
+        rule: CheckpointRule,
+        reason: String,
+        traceId: String,
+    ): CheckpointResolution.NoAction {
         warnLog { "The matched checkpoint rule for workflow '${rule.workflowId}' can't be served: $reason." }
-        return CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
+        return CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE, traceId)
     }
 
     private fun configurationUnavailable(message: String): CheckpointResolution.NoAction {
