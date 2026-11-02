@@ -583,6 +583,11 @@ class PurchasedProductsFetcherTest {
     }
 
     @Test
+    fun `a purchase whose saved receipt has empty pricing phases is normal`() {
+        assertThat(periodTypesWithSavedPricingPhases(emptyList())).containsExactly(PeriodType.NORMAL)
+    }
+
+    @Test
     fun `a subscription with add-ons is normal even with a saved free phase`() {
         val periodTypes = periodTypesWithSavedPricingPhases(
             listOf(freeTrialPhase, fullPricePhase),
