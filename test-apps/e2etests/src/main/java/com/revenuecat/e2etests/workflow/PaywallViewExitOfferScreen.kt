@@ -1,6 +1,9 @@
 package com.revenuecat.e2etests.workflow
 
+import android.app.Dialog
+import android.content.Context
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.FrameLayout
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -11,6 +14,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -18,11 +22,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.awaitOfferings
@@ -31,16 +34,18 @@ import com.revenuecat.purchases.ui.revenuecatui.views.PaywallView
 private const val WORKFLOW_OFFERING_ID = "default_workflows"
 
 /**
- * Hosts the workflow paywall in a [PaywallView] inside an app-owned container, and re-targets that same
- * [PaywallView] to the exit offering when the paywall reports one. This mirrors the Unity SDK's Dialog-hosted
- * presenter and exercises [PaywallView.setExitOfferHandler].
+ * Presents the workflow paywall in a [PaywallView] inside a full-screen [Dialog], and presents the exit offering in
+ * a new [Dialog] when the paywall reports one. This mirrors the Unity SDK's presenter and exercises
+ * [PaywallView.setExitOfferHandler] with the Dialog lifecycle: the Dialog's window has no lifecycle owner, so
+ * [PaywallView] installs its own.
  */
 @Composable
 fun PaywallViewExitOfferScreen(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
     var offering by remember { mutableStateOf<Offering?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
-    var presenting by remember { mutableStateOf(false) }
     var dismissed by remember { mutableStateOf(false) }
+    val presenter = remember(context) { PaywallViewDialogPresenter(context) { dismissed = true } }
 
     LaunchedEffect(Unit) {
         try {
@@ -50,26 +55,9 @@ fun PaywallViewExitOfferScreen(modifier: Modifier = Modifier) {
             error = e.message ?: "Failed to load offerings"
         }
     }
+    DisposableEffect(presenter) { onDispose { presenter.dismiss() } }
 
     val loaded = offering
-    if (presenting && loaded != null) {
-        AndroidView(
-            modifier = modifier.fillMaxSize(),
-            factory = { context ->
-                FrameLayout(context).apply {
-                    showPaywall(
-                        offeringId = loaded.identifier,
-                        onDismiss = {
-                            presenting = false
-                            dismissed = true
-                        },
-                    )
-                }
-            },
-        )
-        return
-    }
-
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -81,28 +69,65 @@ fun PaywallViewExitOfferScreen(modifier: Modifier = Modifier) {
         if (dismissed) Text("Paywall dismissed")
         when {
             error != null -> Text("Error: $error", color = MaterialTheme.colorScheme.error)
-            loaded != null -> Button(onClick = { presenting = true }) { Text("Present Paywall") }
+            loaded != null -> Button(
+                onClick = {
+                    dismissed = false
+                    presenter.present(loaded.identifier)
+                },
+            ) { Text("Present Paywall") }
             else -> CircularProgressIndicator()
         }
     }
 }
 
 @OptIn(InternalRevenueCatAPI::class)
-private fun FrameLayout.showPaywall(offeringId: String, onDismiss: () -> Unit) {
-    val paywallView = PaywallView(context)
-    paywallView.setOfferingId(offeringId)
-    paywallView.setDismissHandler(onDismiss)
-    paywallView.setExitOfferHandler { exitOffering ->
-        // Deferred so the paywall isn't re-targeted from inside its own close callback.
-        post {
-            paywallView.setOfferingId(
-                exitOffering.identifier,
-                PresentedOfferingContext(exitOffering.identifier),
-            )
+private class PaywallViewDialogPresenter(
+    private val context: Context,
+    private val onDismissed: () -> Unit,
+) {
+    private var currentDialog: Dialog? = null
+
+    fun present(offeringId: String) {
+        if (currentDialog != null) return
+
+        val dialog = Dialog(context, android.R.style.Theme_Light_NoTitleBar).apply {
+            window?.apply {
+                addFlags(WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED)
+                setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+            }
+            setCancelable(false)
         }
+        currentDialog = dialog
+
+        val paywallView = PaywallView(context)
+        paywallView.setOfferingId(offeringId)
+        paywallView.setDismissHandler {
+            dismiss()
+            onDismissed()
+        }
+        paywallView.setExitOfferHandler { exitOffering ->
+            // Ignore a repeated close on a paywall that was already replaced. The new paywall gets the same handler,
+            // so exit offers chain.
+            if (currentDialog === dialog) {
+                dismiss()
+                present(exitOffering.identifier)
+            }
+        }
+        dialog.setContentView(
+            FrameLayout(context).apply {
+                addView(
+                    paywallView,
+                    FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
+                )
+            },
+            ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
+        )
+        dialog.show()
     }
-    addView(
-        paywallView,
-        FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
-    )
+
+    fun dismiss() {
+        val dialog = currentDialog
+        currentDialog = null
+        dialog?.dismiss()
+    }
 }
