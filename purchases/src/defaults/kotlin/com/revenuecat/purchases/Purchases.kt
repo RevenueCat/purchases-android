@@ -894,9 +894,7 @@ public class Purchases internal constructor(
                 data = CustomPaywallEvent.Impression.Data(
                     paywallId = params.paywallId,
                     offeringId = resolvedOfferingId,
-                    placementIdentifier = resolvedPresentedOfferingContext?.placementIdentifier,
-                    targetingRevision = resolvedPresentedOfferingContext?.targetingContext?.revision,
-                    targetingRuleId = resolvedPresentedOfferingContext?.targetingContext?.ruleId,
+                    presentedOfferingContext = resolvedPresentedOfferingContext,
                 ),
             ),
         )

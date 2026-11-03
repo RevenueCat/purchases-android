@@ -600,9 +600,7 @@ internal fun CustomPaywallEvent.Impression.toBackendStoredEvent(
             paywallID = data.paywallId,
             offeringID = data.offeringId,
             presentedOfferingContext = BackendEvent.CustomPaywallPresentedOfferingContextData.from(
-                placementIdentifier = data.placementIdentifier,
-                targetingRevision = data.targetingRevision,
-                targetingRuleId = data.targetingRuleId,
+                data = data,
             ),
         ),
     )

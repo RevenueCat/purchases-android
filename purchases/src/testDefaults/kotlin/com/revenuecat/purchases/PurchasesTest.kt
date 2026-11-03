@@ -1896,6 +1896,26 @@ internal class PurchasesTest : BasePurchasesTest() {
         )
     }
 
+    @Test
+    fun `trackCustomPaywallImpression preserves workflow context from the passed offering`() {
+        every { mockOfferingsManager.cachedOfferings } returns null
+        val context = PresentedOfferingContext("flow_offering")
+            .copyWithWorkflowContext("wrapper", "embedded-step", "blob-ref")
+            .copyWithCheckpointIdentifier("checkpoint")
+            .copyWithTraceId("trace-id")
+        val offering = makeOfferingWithContext("flow_offering", context)
+        val capturedEvent = slot<CustomPaywallEvent>()
+        every { mockEventsManager.track(capture(capturedEvent)) } just Runs
+
+        purchases.trackCustomPaywallImpression(CustomPaywallImpressionParams("pw", offering))
+
+        val data = (capturedEvent.captured as CustomPaywallEvent.Impression).data
+        assertThat(data.offeringId).isEqualTo("flow_offering")
+        assertThat(data.workflowId).isEqualTo("wrapper")
+        assertThat(data.stepId).isEqualTo("embedded-step")
+        assertThat(data.blobRef).isEqualTo("blob-ref")
+    }
+
     // endregion trackCustomPaywallImpression presented offering context resolution
 
     @Test

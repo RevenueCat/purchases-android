@@ -141,10 +141,8 @@ internal fun Offering.withPresentedContext(
     checkpointIdentifier: String?,
     traceId: String?,
 ): Offering {
-    val updatedAvailablePackages = this.availablePackages.map {
-        val oldContext = it.presentedOfferingContext
-
-        val newContext = oldContext
+    return mapPresentedOfferingContext { oldContext ->
+        oldContext
             .copy(
                 placementIdentifier = placementId ?: oldContext.placementIdentifier,
                 targetingContext = targeting?.let { targeting ->
@@ -157,26 +155,15 @@ internal fun Offering.withPresentedContext(
             .let { context ->
                 traceId?.let(context::copyWithTraceId) ?: context
             }
-        val product = it.product.copyWithPresentedOfferingContext(newContext)
-
-        Package(
-            identifier = it.identifier,
-            packageType = it.packageType,
-            product = product,
-            presentedOfferingContext = newContext,
-            webCheckoutURL = it.webCheckoutURL,
-        )
     }
+}
 
-    return Offering(
-        identifier = this.identifier,
-        serverDescription = this.serverDescription,
-        metadata = this.metadata,
-        availablePackages = updatedAvailablePackages,
-        paywall = this.paywall,
-        paywallComponents = this.paywallComponents,
-        webCheckoutURL = this.webCheckoutURL,
-    ).also { it.hasPaywallComponents = this.hasPaywallComponents }
+internal fun Offering.withPresentedWorkflowContext(
+    workflowId: String,
+    stepId: String,
+    blobRef: String?,
+): Offering = mapPresentedOfferingContext { context ->
+    context.copyWithWorkflowContext(workflowId, stepId, blobRef)
 }
 
 /** Returns a copy whose purchase contexts identify the checkpoint that presented this offering. */
