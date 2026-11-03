@@ -114,7 +114,9 @@ Variant names combine the flavor and build type, e.g. `defaultsDebug`, `customEn
 
 - Use `@Poko` for public value models to avoid `copy`/`componentN` compatibility obligations. See the [v9 migration](migrations/v9-MIGRATION.md) and [detekt configuration](config/detekt/detekt.yml).
 - Use regular interfaces instead of introducing public sealed hierarchies or enums; new cases can break exhaustive callers. Existing baseline exceptions are not precedents.
+- When extending developer-implemented interfaces or abstract classes, provide default implementations for new methods.
 - Follow comparable callback and coroutine fetch contracts. Keep successful empty/no-match results distinct from fetch failures, preserving error codes and diagnostics.
+- Preserve existing JVM signatures when adding parameters; default arguments alone do not preserve binary compatibility.
 - For public API changes, update and compile relevant Kotlin and Java `api-tester` consumers across applicable flavors. Generate and review API signatures; do not hand-edit them.
 
 ## Code Style
