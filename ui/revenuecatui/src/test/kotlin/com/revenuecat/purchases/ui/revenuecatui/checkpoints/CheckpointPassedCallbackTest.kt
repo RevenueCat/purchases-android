@@ -87,7 +87,6 @@ class CheckpointPassedCallbackTest {
         mockPresenter = mockk(relaxed = true)
         defaultPresenter = null
         mockPurchases = mockk {
-            every { appUserID } returns "customer-a"
             every { currentActivity } returns mockActivity
         }
         customerInfoBeforeHasActive()

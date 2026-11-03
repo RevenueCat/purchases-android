@@ -7,9 +7,10 @@ internal enum class CheckpointGateOutcome {
     NOT_PASSED,
 }
 
-/** The checkpoint's cached entitlement baseline and call-scoped gate reporting channel. */
+/**
+ * The checkpoint's call-scoped gate reporting channel. The presented workflow reads the customer's entitlements
+ * itself when it reaches a gate.
+ */
 internal class CheckpointGateContext(
-    val initialAppUserId: String?,
-    val initialActiveEntitlementIds: Set<String>?,
     val onOutcomeChanged: (CheckpointGateOutcome) -> Unit,
 )
