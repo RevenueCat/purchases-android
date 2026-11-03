@@ -20,11 +20,13 @@ import com.revenuecat.purchases.ui.revenuecatui.DismissRequestWithExitOffering
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
+import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
 import com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.R
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 import com.revenuecat.purchases.ui.revenuecatui.getPaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable
@@ -96,6 +98,7 @@ public class PaywallView : CompatComposeView {
     private var initialFontProvider: FontProvider? = null
     private var dismissHandler: (() -> Unit)? = null
     private var exitOfferHandler: ((Offering) -> Unit)? = null
+    private var currentViewModel: PaywallViewModel? = null
     private var listener: PaywallListener? = null
     private var purchaseLogic: PaywallPurchaseLogic? = null
     private var shouldDisplayDismissButton: Boolean? = null
@@ -213,7 +216,16 @@ public class PaywallView : CompatComposeView {
     }
 
     override fun onBackPressed() {
-        dismissHandler?.run { dismiss() } ?: super.onBackPressed()
+        val viewModel = currentViewModel
+        if (exitOfferHandler != null && viewModel != null) {
+            // Same routing as the BackHandler in InternalPaywall, which doesn't run when this view manages its own
+            // view tree owners and consumes the back key itself.
+            if (!viewModel.handleBackNavigation()) {
+                viewModel.closePaywall(reason = PaywallDismissReason.NAVIGATED_BACK)
+            }
+        } else {
+            dismissHandler?.run { dismiss() } ?: super.onBackPressed()
+        }
     }
 
     private fun init(context: Context, attrs: AttributeSet?) {
@@ -269,6 +281,7 @@ public class PaywallView : CompatComposeView {
         }
         RevenueCatTheme {
             val viewModel = getPaywallViewModel(paywallOptions)
+            SideEffect { currentViewModel = viewModel }
             if (paywallOptions.dismissRequestWithExitOffering != null) {
                 // Same exit offer preload PaywallDialog and PaywallActivity do. SideEffect rather than
                 // LaunchedEffect: the preload is a synchronous, idempotent flag, so it doesn't need to wait for the

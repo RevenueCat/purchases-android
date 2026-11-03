@@ -182,6 +182,29 @@ class PaywallViewExitOfferTest {
     }
 
     @Test
+    fun `back press goes through the exit offer path when an exit offer handler is set`() {
+        val receivedExitOfferings = mutableListOf<Offering>()
+        var dismissCount = 0
+        val activity = Robolectric.buildActivity(PaywallViewHostActivity::class.java).setup().get()
+        val container = FrameLayout(activity)
+        activity.setContentView(container)
+        val paywallView = PaywallView(activity)
+        paywallView.setOfferingId(
+            offeringWithExitOffer.identifier,
+            PresentedOfferingContext(offeringWithExitOffer.identifier),
+        )
+        paywallView.setDismissHandler { dismissCount++ }
+        paywallView.setExitOfferHandler { receivedExitOfferings += it }
+        container.addView(paywallView)
+        shadowOf(Looper.getMainLooper()).idle()
+
+        paywallView.onBackPressed()
+
+        assertThat(receivedExitOfferings.map { it.identifier }).containsExactly(exitOffering.identifier)
+        assertThat(dismissCount).isZero()
+    }
+
+    @Test
     fun `re-targeting the view to the exit offering shows it and its close reaches the dismiss handler`() {
         // Mirrors the Unity SDK's Dialog presenter, which re-targets the same PaywallView instead of swapping views.
         var dismissCount = 0
