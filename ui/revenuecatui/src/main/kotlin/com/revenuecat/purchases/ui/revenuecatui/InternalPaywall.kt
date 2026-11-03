@@ -142,11 +142,7 @@ private fun InternalPaywallContent(
         }
     }
 
-    BackHandler {
-        if (!viewModel.handleBackNavigation() && viewModel.canDismissWithSystemBack()) {
-            viewModel.closePaywall(reason = PaywallDismissReason.NAVIGATED_BACK)
-        }
-    }
+    BackHandler { viewModel.handleSystemBack() }
 
     val colorScheme = MaterialTheme.colorScheme
     val isDark = isSystemInDarkTheme()
@@ -265,6 +261,12 @@ private fun InternalPaywallContent(
                 }
             }
         }
+    }
+}
+
+private fun PaywallViewModel.handleSystemBack() {
+    if (!handleBackNavigation() && canDismissWithSystemBack()) {
+        closePaywall(reason = PaywallDismissReason.NAVIGATED_BACK)
     }
 }
 

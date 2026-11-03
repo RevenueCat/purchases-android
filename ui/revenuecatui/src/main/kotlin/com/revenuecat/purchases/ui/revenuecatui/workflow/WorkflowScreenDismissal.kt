@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui.workflow
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.workflows.WorkflowScreen
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
+import com.revenuecat.purchases.paywalls.components.PaywallComponent
 import com.revenuecat.purchases.utils.filter
 
 /**
@@ -14,12 +15,12 @@ import com.revenuecat.purchases.utils.filter
 internal fun WorkflowScreen.hasDismissButton(): Boolean {
     val config = componentsConfig.base
     return listOfNotNull(config.stack, config.header, config.stickyFooter).any { root ->
-        root.filter { component ->
-            component is ButtonComponent &&
-                (
-                    component.action is ButtonComponent.Action.CloseWorkflow ||
-                        component.action is ButtonComponent.Action.NavigateBack
-                    )
-        }.isNotEmpty()
+        root.filter(::isDismissButton).isNotEmpty()
     }
+}
+
+@OptIn(InternalRevenueCatAPI::class)
+private fun isDismissButton(component: PaywallComponent): Boolean {
+    val action = (component as? ButtonComponent)?.action
+    return action is ButtonComponent.Action.CloseWorkflow || action is ButtonComponent.Action.NavigateBack
 }

@@ -1568,9 +1568,8 @@ internal class PaywallViewModelImpl(
     override fun canDismissWithSystemBack(): Boolean {
         // Without a step on screen (a standalone paywall, an error, or the skeleton while routing) back stays the
         // way out.
-        val step = currentWorkflowStep ?: return true
-        val screen = step.screenId?.let { currentWorkflow?.screens?.get(it) } ?: return true
-        return screen.hasDismissButton()
+        val screen = currentWorkflowStep?.screenId?.let { currentWorkflow?.screens?.get(it) }
+        return screen?.hasDismissButton() ?: true
     }
 
     private fun trackWorkflowStepNavigation(
