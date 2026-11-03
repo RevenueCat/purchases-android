@@ -610,6 +610,9 @@ class ReceiptInfoTest {
             "targetingContext",
             "checkpointIdentifier",
             "traceId",
+            "workflowId",
+            "stepId",
+            "blobRef",
         )
     }
 

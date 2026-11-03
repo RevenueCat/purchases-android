@@ -30,6 +30,7 @@ import com.revenuecat.purchases.common.workflows.WorkflowStepGating
 import com.revenuecat.purchases.common.workflows.events.WorkflowEvent
 import com.revenuecat.purchases.common.workflows.events.WorkflowStepEntryReason
 import com.revenuecat.purchases.withPresentedCheckpointIdentifier
+import com.revenuecat.purchases.withPresentedWorkflowContext
 import kotlinx.coroutines.CancellationException
 import java.util.Date
 import java.util.UUID
@@ -233,7 +234,12 @@ internal class CheckpointWorkflowResolverImpl(
             fallbackOriginalStepId = step.fallbackOriginalStepId,
             experiment = step.experimentData(workflowBlobRef),
         )
-        val matched = matchedOffering(offering, checkpointIdentifier, rule, traceId)
+        val matched = matchedOffering(
+            offering.withPresentedWorkflowContext(workflow.id, step.id, workflowBlobRef),
+            checkpointIdentifier,
+            rule,
+            traceId,
+        )
         debugLog {
             "Checkpoint resolved to offering '${matched.offering.identifier}' from workflow '${rule.workflowId}'"
         }
