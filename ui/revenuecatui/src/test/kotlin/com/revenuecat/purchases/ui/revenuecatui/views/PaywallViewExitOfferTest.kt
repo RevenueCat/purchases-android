@@ -47,10 +47,16 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import java.net.URL
+import java.time.Duration
 
 @OptIn(InternalRevenueCatAPI::class)
 @RunWith(RobolectricTestRunner::class)
 class PaywallViewExitOfferTest {
+
+    private companion object {
+        const val RECOMPOSITION_FRAMES = 10
+        const val FRAME_MILLIS = 16L
+    }
 
     private val mockPurchases = mockk<Purchases>()
 
@@ -225,12 +231,16 @@ class PaywallViewExitOfferTest {
         val originalViewModel = viewModelFor(activity)
 
         originalViewModel.closePaywall()
-        shadowOf(Looper.getMainLooper()).idle()
+        // Re-targeting recomposes the view with a new view model; give the recomposer frames to get there.
+        repeat(RECOMPOSITION_FRAMES) {
+            if (exitViewModelOrNull(activity, originalViewModel) == null) {
+                shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(FRAME_MILLIS))
+            }
+        }
 
-        val exitViewModel = activity.viewModelStore.keys()
-            .filter { key -> key.toIntOrNull() != null }
-            .map { key -> ViewModelProvider(activity).get(key, PaywallViewModelImpl::class.java) }
-            .single { it !== originalViewModel }
+        val exitViewModel = exitViewModelOrNull(activity, originalViewModel)
+        assertThat(exitViewModel).isNotNull
+        exitViewModel!!
         val exitState = exitViewModel.state.value
         assertThat(exitState).isInstanceOf(PaywallState.Loaded::class.java)
         assertThat((exitState as PaywallState.Loaded).offering.identifier).isEqualTo(exitOffering.identifier)
@@ -257,6 +267,15 @@ class PaywallViewExitOfferTest {
         shadowOf(Looper.getMainLooper()).idle()
         return viewModelFor(activity)
     }
+
+    private fun exitViewModelOrNull(
+        activity: PaywallViewHostActivity,
+        originalViewModel: PaywallViewModelImpl,
+    ): PaywallViewModelImpl? =
+        activity.viewModelStore.keys()
+            .filter { key -> key.toIntOrNull() != null }
+            .map { key -> ViewModelProvider(activity).get(key, PaywallViewModelImpl::class.java) }
+            .firstOrNull { it !== originalViewModel }
 
     private fun viewModelFor(activity: PaywallViewHostActivity): PaywallViewModelImpl {
         val viewModelKey = activity.viewModelStore.keys().single { key -> key.toIntOrNull() != null }
