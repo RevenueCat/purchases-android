@@ -11,7 +11,6 @@ import kotlinx.coroutines.CompletableDeferred
  */
 internal class PresentationSlot {
 
-    @Suppress("LongParameterList")
     class PendingCall(
         val callId: String,
         // Null for a call whose flow a PaywallPresenter shows: that UI, and what happens in it, is the
@@ -21,7 +20,6 @@ internal class PresentationSlot {
         // Read before the flow was presented; delivered with the run when the flow produced nothing newer.
         val customerInfoBefore: CustomerInfo,
         val flowFinished: CompletableDeferred<CheckpointRun>,
-        val initialAppUserId: String? = null,
     ) {
         // Null until the paywall reports something; kept on the call rather than the presented window so
         // losing the window (configuration change) doesn't reset it.

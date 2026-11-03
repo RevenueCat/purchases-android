@@ -7,7 +7,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfo
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
@@ -88,7 +87,6 @@ class CheckpointsManagerTest {
         defaultPresentedErrors.clear()
         customerInfoBefore = customerInfoWithActive()
         mockPurchases = mockk {
-            every { appUserID } returns "customer-a"
             every { currentActivity } returns mockActivity
             every { getCustomerInfo(CacheFetchPolicy.CACHED_OR_FETCHED, any()) } answers {
                 secondArg<ReceiveCustomerInfoCallback>().onReceived(customerInfoBefore)
@@ -374,40 +372,17 @@ class CheckpointsManagerTest {
     }
 
     @Test
-    fun `workflow gate context carries the customer's active entitlements through copied options`() = runTest(dispatcher) {
-        customerInfoBeforeHasActive("plus", "pro")
+    fun `workflow gate context is call-scoped and survives copied options`() = runTest(dispatcher) {
         resolvesToWorkflow()
         val call = launch { runCheckpoint() }
 
         val options = manager.paywallOptions(currentCallId()) {}!!
 
-        assertThat(options.checkpointGateContext!!.initialActiveEntitlementIds).containsExactlyInAnyOrder("plus", "pro")
+        assertThat(options.checkpointGateContext).isNotNull
         assertThat(options.copy().checkpointGateContext).isSameAs(options.checkpointGateContext)
         assertThat(manager.paywallOptions("unknown-call-id") {}).isNull()
         call.cancel()
         call.join()
-    }
-
-    @OptIn(InternalRevenueCatAPI::class)
-    @Test
-    fun `workflow snapshot keeps initiating identity when customer changes during the customer read`() = runTest(dispatcher) {
-        every { mockPurchases.appUserID } returns "customer-a"
-        val cacheResult = slot<ReceiveCustomerInfoCallback>()
-        every { mockPurchases.getCustomerInfo(CacheFetchPolicy.CACHED_OR_FETCHED, capture(cacheResult)) } just runs
-        resolvesToWorkflow()
-        var run: CheckpointRun? = null
-        val call = launch { run = runCheckpoint() }
-        every { mockPurchases.appUserID } returns "customer-b"
-        val customerInfo = customerInfoWithActive("pro")
-        cacheResult.captured.onReceived(customerInfo)
-        val context = manager.paywallOptions(currentCallId()) {}!!.checkpointGateContext!!
-        assertThat(context.initialAppUserId).isEqualTo("customer-a")
-
-        context.onOutcomeChanged(CheckpointGateOutcome.NOT_PASSED)
-        finishPaywall(outcome = CheckpointFlowOutcome.Restored(customerInfo), navigatedBack = true)
-        call.join()
-
-        assertThat(run!!.backedOut).isTrue()
     }
 
     @Test

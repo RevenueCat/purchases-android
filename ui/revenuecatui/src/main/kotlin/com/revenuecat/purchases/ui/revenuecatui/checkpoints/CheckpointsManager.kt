@@ -202,8 +202,6 @@ internal class CheckpointsManager(
             Logger.e("Checkpoint '$identifier' could not be resolved: ${e.error}")
             return@withContext presentFailure(e.error)
         }
-        // Capture before the customer read, which can suspend while logIn/logOut changes the customer.
-        val initialAppUserId = purchases.appUserID
         val customerInfoBefore = purchases.customerInfo(CacheFetchPolicy.CACHED_OR_FETCHED).getOrElse { error ->
             Logger.e("Checkpoint '$identifier': the customer's information could not be read: $error")
             return@withContext presentFailure(error)
@@ -225,7 +223,6 @@ internal class CheckpointsManager(
                     errorPresenter(),
                     presentationMode,
                     customerInfoBefore,
-                    initialAppUserId,
                 )
                 is CheckpointResolution.NoAction -> when (resolution.reason) {
                     CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE -> {
@@ -320,8 +317,7 @@ internal class CheckpointsManager(
     // reports one, and a paywall that could not load carries the error as its result when its error UI is done.
     // The exit offering, if any, is not presented for checkpoints.
     override fun paywallOptions(callId: String, dismiss: (navigatedBack: Boolean) -> Unit): PaywallOptions? =
-        slot.with(callId) { call ->
-            val presentation = call.presentation ?: return@with null
+        presentation(callId)?.let { presentation ->
             PaywallOptions.Builder(dismissRequest = { dismiss(false) })
                 .setDismissRequestWithExitOffering { _, result, reason ->
                     (result as? PaywallResult.Error)?.let {
@@ -332,7 +328,7 @@ internal class CheckpointsManager(
                 .setErrorPresenter(presentation.errorPresenter)
                 .setCustomVariables(presentation.customVariables)
                 .setCheckpointGateContext(
-                    CheckpointGateContext(call.initialAppUserId, call.activeEntitlementsBefore) { outcome ->
+                    CheckpointGateContext { outcome ->
                         slot.with(callId) { it.gateOutcome = outcome }
                     },
                 )
@@ -582,7 +578,6 @@ internal class CheckpointsManager(
         errorPresenter: ErrorPresenter,
         presentationMode: FlowPresentationMode,
         customerInfoBefore: CustomerInfo,
-        initialAppUserId: String,
     ): CheckpointRun {
         val activity = purchases.currentActivity ?: presentationError(
             PurchasesErrorCode.ConfigurationError,
@@ -599,7 +594,6 @@ internal class CheckpointsManager(
             activeEntitlementsBefore = customerInfoBefore.activeEntitlementIds,
             customerInfoBefore = customerInfoBefore,
             flowFinished = CompletableDeferred(),
-            initialAppUserId = initialAppUserId,
         )
         if (!slot.claim(call)) return blockedByPresentedFlow
         try {
