@@ -173,6 +173,23 @@ jobs:
           command: bundle exec fastlane android build_magic_weather_compose
       - android/save_build_cache
 
+  assemble-samplecat-sample-app:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - revenuecat/install-mise-tools:
+          tools: java,ruby
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v2
+      - accept-android-licenses
+      - android/restore_gradle_cache
+      - android/restore_build_cache
+      - run:
+          name: Build sample app
+          command: bundle exec fastlane android build_samplecat
+      - android/save_build_cache
+
   assemble-custom-entitlement-computation-sample-app:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
@@ -1104,6 +1121,9 @@ workflows:
           requires:
             - deploy-snapshot
       - assemble-custom-entitlement-computation-sample-app:
+          requires:
+            - deploy-snapshot
+      - assemble-samplecat-sample-app:
           requires:
             - deploy-snapshot
       - assemble-admob-integration-sample-app

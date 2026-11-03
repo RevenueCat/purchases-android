@@ -23,6 +23,7 @@ files_with_version_number = {
   './examples/MagicWeather/gradle/libs.versions.toml' => ['purchases = "{x}"'],
   './examples/MagicWeatherCompose/gradle/libs.versions.toml' => ['purchases = "{x}"'],
   './examples/CustomEntitlementComputationSample/gradle/libs.versions.toml' => ['purchases = "{x}"'],
+  './examples/SampleCat/gradle/libs.versions.toml' => ['revenueCat = "{x}"'],
   './test-apps/sdksizetesting/gradle/libs.versions.toml' => ['purchases = "{x}"'],
 }
 files_to_update_on_latest_stable_releases = {
@@ -649,6 +650,19 @@ platform :android do
     gradle(
       project_dir: project_dir,
       task: task,
+    )
+  end
+
+  desc "Builds a SampleCat APK"
+  lane :build_samplecat do |options|
+    gradle(
+      project_dir: "examples/SampleCat",
+      task: "assembleDebug",
+      # The dashboard download sets these. The build fails without them.
+      properties: {
+        "REVENUECAT_API_KEY" => "goog_ci_build_only",
+        "APPLICATION_ID" => "com.revenuecat.samplecat",
+      },
     )
   end
 

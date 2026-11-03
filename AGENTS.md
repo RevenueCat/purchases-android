@@ -194,6 +194,7 @@ Variant names combine the flavor and build type, e.g. `defaultsDebug`, `customEn
 ### Sample Applications
 - **MagicWeather**: Standard sample app
 - **MagicWeatherCompose**: Compose-based sample
+- **SampleCat**: The sample app that the dashboard download gives for the Play Store. It is the reference for app integration code. The download writes the API key and entitlement ID into its `gradle.properties`
 - **CustomEntitlementComputationSample**: Sample for custom entitlement computation flavor
 - **purchase-tester**: Testing app for purchase flows
 - **paywall-tester**: Testing app for paywall UI
