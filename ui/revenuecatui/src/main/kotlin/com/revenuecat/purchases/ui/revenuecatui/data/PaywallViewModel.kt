@@ -383,7 +383,6 @@ internal class PaywallViewModelImpl(
         Logger.d("Paywalls: Close paywall initiated")
         val gateUnresolved = checkpointGateController.hasUnresolvedGate
         if (gateUnresolved && handleBackNavigation()) return
-        val dismissalReason = if (gateUnresolved) PaywallDismissReason.NAVIGATED_BACK else reason
         trackCurrentWorkflowLeft()
         trackPaywallClose()
         val exitOffering = if (!gateUnresolved && !_purchaseCompleted.value && shouldTriggerExitOfferForCurrentStep) {
@@ -397,7 +396,7 @@ internal class PaywallViewModelImpl(
         endPresentationSession()
         val dismissWithExitOffering = options.dismissRequestWithExitOffering
         if (dismissWithExitOffering != null) {
-            dismissWithExitOffering(exitOffering, result, dismissalReason)
+            dismissWithExitOffering(exitOffering, result, reason)
         } else {
             options.dismissRequest()
         }
@@ -1296,7 +1295,11 @@ internal class PaywallViewModelImpl(
     ) {
         val navigator = workflowNavigator ?: return
         initialStepJob?.cancel()
+        // An already-known first gate must block passage even before the read coroutine starts.
+        val initialStep = navigator.currentStep
+        if (branch == null && initialStep != null && !markInitialGateReached(initialStep)) return
         initialStepJob = viewModelScope.launch {
+            if (navigator !== workflowNavigator) return@launch
             if (branch != null) {
                 val stepId = purchases.resolveBranch(
                     branch,
@@ -1308,6 +1311,7 @@ internal class PaywallViewModelImpl(
             }
             val step = navigator.currentStep ?: return@launch
             resolvedInitialStepId = step.id
+            if (branch != null && !markInitialGateReached(step)) return@launch
             if (!enterGatedStep(step)) return@launch
             resolveBranchesFor(step)
             buildStateFromStep(step, workflow, uiConfig, offerings, presentedOfferingContext)
@@ -1320,6 +1324,15 @@ internal class PaywallViewModelImpl(
             }
             preWarmWorkflowStepCache(workflow, uiConfig, offerings, presentedOfferingContext)
         }
+    }
+
+    private fun markInitialGateReached(step: WorkflowStep): Boolean {
+        val controller = checkpointGateController
+        val generation = presentationGeneration
+        // Until its customer's entitlements are known, a reached gate fails closed.
+        controller.evaluate(step, emptySet())
+        // Reporting the unresolved outcome can replace the presentation through host code.
+        return ownsPresentation(controller, generation)
     }
 
     /** Nothing waits on this: until it lands, a branch takes its fallback. */
@@ -1637,15 +1650,13 @@ internal class PaywallViewModelImpl(
         val navigator = workflowNavigator ?: return
         if (navigator.currentStep?.let(checkpointGateController::blocksForwardNavigation) == true) return
         val candidate = navigator.peekTriggerStep(componentId, triggerType) ?: return
-        enterThroughGate(candidate) { navigateForward(navigator, candidate, componentId, triggerType) }
+        enterThroughGate(candidate) { navigateForward(navigator, candidate) }
     }
 
     @Suppress("ReturnCount")
     private fun navigateForward(
         navigator: WorkflowNavigator,
         candidate: WorkflowStep,
-        componentId: String,
-        triggerType: WorkflowTriggerType,
     ) {
         if (navigator !== workflowNavigator) return
         val workflow = currentWorkflow ?: return
@@ -1653,10 +1664,9 @@ internal class PaywallViewModelImpl(
         prepareStateForStep(candidate, workflow, offerings) ?: return
         val fromStep = navigator.currentStep
         val fromStepId = fromStep?.id
-        // triggerAction repeats the same lookup as peekTriggerStep. It should not return null
-        // given the peek succeeded, but guard anyway to avoid a hard crash.
-        val newStep = navigator.triggerAction(componentId, triggerType) ?: run {
-            Logger.e("triggerAction returned null after peekTriggerStep succeeded — this is a bug")
+        // Branch resolution can finish during the gate read. Enter the checked destination from the tap.
+        val newStep = navigator.navigateForward(candidate.id) ?: run {
+            Logger.e("navigateForward returned null for a checked workflow step — this is a bug")
             return
         }
         resolveBranchesFor(newStep)
