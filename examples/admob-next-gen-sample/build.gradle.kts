@@ -1,6 +1,3 @@
-import org.gradle.api.artifacts.component.ProjectComponentIdentifier
-import org.gradle.api.artifacts.type.ArtifactTypeDefinition
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.util.Properties
 
 plugins {
@@ -82,17 +79,4 @@ dependencies {
     implementation(libs.compose.material3)
 
     implementation(libs.google.mobile.ads.next.gen)
-}
-
-// Temporary sample access until configured ad rewards become a public preview API.
-androidComponents.onVariants { variant ->
-    val purchasesClasses = configurations.getByName("${variant.name}CompileClasspath").incoming.artifactView {
-        componentFilter { it is ProjectComponentIdentifier && it.projectPath == ":purchases" }
-        attributes.attribute(ArtifactTypeDefinition.ARTIFACT_TYPE_ATTRIBUTE, "android-classes-jar")
-    }.files
-    tasks.withType<KotlinCompile>().configureEach {
-        if (name == "compile${variant.name.replaceFirstChar(Char::uppercaseChar)}Kotlin") {
-            friendPaths.from(purchasesClasses)
-        }
-    }
 }
