@@ -731,6 +731,9 @@ internal class MockViewModel(
         return handleBackNavigationResult
     }
 
+    var canDismissWithSystemBackResult = true
+    override fun canDismissWithSystemBack(): Boolean = canDismissWithSystemBackResult
+
     var onTransitionCompleteCallCount = 0
         private set
     override fun onTransitionComplete(transitionId: Int) {

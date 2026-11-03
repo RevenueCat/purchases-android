@@ -143,7 +143,7 @@ private fun InternalPaywallContent(
     }
 
     BackHandler {
-        if (!viewModel.handleBackNavigation()) {
+        if (!viewModel.handleBackNavigation() && viewModel.canDismissWithSystemBack()) {
             viewModel.closePaywall(reason = PaywallDismissReason.NAVIGATED_BACK)
         }
     }
