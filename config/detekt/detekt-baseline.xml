@@ -324,6 +324,7 @@
     <ID>PreviewPublic:PaywallLoadingView.kt$PaywallLoadingViewPreview</ID>
     <ID>PreviewPublic:PaywallsScreen.kt$PaywallsScreenPreview</ID>
     <ID>PreviewPublic:WeatherApp.kt$WeatherAppPreview</ID>
+    <ID>SpreadOperator:OfferingPackagesScreen.kt$( error.resId, *error.formatArgs.toTypedArray(), )</ID>
     <ID>SpreadOperator:OfferingsScreen.kt$( error.resId, *error.formatArgs.toTypedArray(), )</ID>
     <ID>SpreadOperator:OfferingsScreen.kt$( state.error.resId, *state.error.formatArgs.toTypedArray(), )</ID>
     <ID>SpreadOperator:PaywallsScreen.kt$( error.resId, *error.formatArgs.toTypedArray(), )</ID>
