@@ -455,10 +455,13 @@ internal sealed interface PaywallState {
                 }
             }
 
-            private fun selectionResolver(windowDpSize: DpSize? = paywallBoundsDp) = PackageSelectionResolver(
+            private fun selectionResolver(
+                windowDpSize: DpSize? = paywallBoundsDp,
+                presentedSheet: SheetPresentationKey? = sheet.presentationKey.takeIf { sheet.visible },
+            ) = PackageSelectionResolver(
                 packages = packages,
                 selectedTabIndex = selectedTabIndex,
-                presentedSheet = sheet.presentationKey.takeIf { sheet.visible },
+                presentedSheet = presentedSheet,
                 context = visibilityContext(windowDpSize),
             )
 
@@ -478,13 +481,25 @@ internal sealed interface PaywallState {
                 if (packageSelectionBeforeSheet == null) {
                     packageSelectionBeforeSheet = PackageSelectionBeforeSheet(selectedPackageUniqueId)
                 }
-                selectedPackageUniqueId = selectionResolver().enterSheet(selectedPackageUniqueId)
+                selectedPackageUniqueId = selectionResolver().enterSheet(selectionBeforeSheetAtCurrentBounds())
             }
 
             fun restorePackageAfterSheetDismiss() {
-                val selection = packageSelectionBeforeSheet ?: return
-                selectedPackageUniqueId = selection.uniqueId
+                if (packageSelectionBeforeSheet == null) return
+                selectedPackageUniqueId = selectionBeforeSheetAtCurrentBounds()
                 packageSelectionBeforeSheet = null
+            }
+
+            private fun selectionBeforeSheetAtCurrentBounds(): String? {
+                val selection = packageSelectionBeforeSheet ?: return null
+                return if (paywallBoundsDp == null) {
+                    selection.uniqueId
+                } else {
+                    selectionResolver(presentedSheet = null).reconcile(
+                        current = selection.uniqueId,
+                        remembered = selectedPackageByTab[selectedTabIndex],
+                    )
+                }
             }
 
             fun reconcileSelectionForWindowSize(windowDpSize: DpSize?) {
@@ -509,8 +524,8 @@ internal sealed interface PaywallState {
                 )
 
             fun peekSelectedPackageInfoAfterSheetDismiss(): SelectedPackageInfo? {
-                packageSelectionBeforeSheet?.let { selection ->
-                    return selection.uniqueId?.let { findPackageInfoByUniqueId(it)?.selectionInfo() }
+                packageSelectionBeforeSheet?.let {
+                    return selectionBeforeSheetAtCurrentBounds()?.let { findPackageInfoByUniqueId(it)?.selectionInfo() }
                         ?: defaultPackageInfo
                 }
                 val uid = peekDefaultPackageUniqueIdAfterSheetDismiss()

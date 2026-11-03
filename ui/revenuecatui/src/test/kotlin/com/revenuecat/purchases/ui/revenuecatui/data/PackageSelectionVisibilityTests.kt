@@ -212,6 +212,58 @@ internal class PackageSelectionVisibilityTests {
         assertThat(state.selectedPackageInfo).isNull()
     }
 
+    @Test
+    fun `resize during sheet presentation does not restore a hidden root package`() {
+        val state = state(
+            hiddenStack(pkg(monthly, default = true)),
+            pkg(weekly),
+            ButtonComponent(
+                action = ButtonComponent.Action.NavigateTo(ButtonComponent.Destination.Sheet(
+                    id = "plans", stack = StackComponent(listOf(pkg(annual, default = true))),
+                )),
+                stack = StackComponent(emptyList()),
+            ),
+        )
+        val button = (state.stack as StackComponentStyle).children[2] as ButtonComponentStyle
+        val sheet = (button.action as ButtonComponentStyle.Action.NavigateTo).destination
+            as ButtonComponentStyle.Action.NavigateTo.Destination.Sheet
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthly)
+        state.sheet.show(sheet, state, PaywallComponentInteractionTracker { }, onClick = {})
+        state.paywallBoundsDp = wide
+        state.reconcileSelectionForWindowSize(wide)
+        assertThat(state.peekSelectedPackageInfoAfterSheetDismiss()?.rcPackage).isEqualTo(weekly)
+        state.sheet.hide()
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(weekly)
+    }
+
+    @Test
+    fun `replacing a package sheet with an empty sheet restores the original root selection`() {
+        fun button(id: String, children: List<PaywallComponent>) = ButtonComponent(
+            action = ButtonComponent.Action.NavigateTo(ButtonComponent.Destination.Sheet(
+                id = id, stack = StackComponent(children),
+            )),
+            stack = StackComponent(emptyList()),
+        )
+        val state = state(
+            pkg(monthly, default = true),
+            pkg(weekly),
+            button("plans", listOf(pkg(annual, default = true))),
+            button("terms", emptyList()),
+        )
+        fun sheet(index: Int) = (((state.stack as StackComponentStyle).children[index] as ButtonComponentStyle)
+            .action as ButtonComponentStyle.Action.NavigateTo).destination
+            as ButtonComponentStyle.Action.NavigateTo.Destination.Sheet
+        state.paywallBoundsDp = wide
+        state.update(selectedPackageUniqueId = weekly.identifier)
+        state.sheet.show(sheet(2), state, PaywallComponentInteractionTracker { }, onClick = {})
+        state.update(selectedPackageUniqueId = annual.identifier)
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
+        state.sheet.show(sheet(3), state, PaywallComponentInteractionTracker { }, onClick = {})
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(weekly)
+        state.sheet.hide()
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(weekly)
+    }
+
     private fun tabs(vararg contents: List<PaywallComponent>) = TabsComponent(
         tabs = contents.mapIndexed { index, children ->
             TabsComponent.Tab(id = index.toString(), stack = StackComponent(children))
