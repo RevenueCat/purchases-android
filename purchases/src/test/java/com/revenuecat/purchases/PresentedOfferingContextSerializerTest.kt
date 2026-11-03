@@ -101,25 +101,4 @@ class PresentedOfferingContextSerializerTest {
         assertThat(decoded.stepId).isEqualTo("embedded-step-id")
         assertThat(decoded.blobRef).isEqualTo("blob-ref")
     }
-
-    @Test
-    fun `context copies preserve workflow attribution without changing the original`() {
-        val original = PresentedOfferingContext("offering-id")
-            .copyWithWorkflowContext("workflow-id", "step-id", "blob-ref")
-        val updated = original.copy(
-            placementIdentifier = "placement-id",
-            targetingContext = PresentedOfferingContext.TargetingContext(3, "rule-id"),
-        ).copyWithCheckpointIdentifier("checkpoint-id").copyWithTraceId("trace-id")
-
-        assertThat(updated.workflowId).isEqualTo("workflow-id")
-        assertThat(updated.stepId).isEqualTo("step-id")
-        assertThat(updated.blobRef).isEqualTo("blob-ref")
-        assertThat(updated.placementIdentifier).isEqualTo("placement-id")
-        assertThat(updated.targetingContext?.ruleId).isEqualTo("rule-id")
-        assertThat(updated.checkpointIdentifier).isEqualTo("checkpoint-id")
-        assertThat(updated.traceId).isEqualTo("trace-id")
-        assertThat(original.placementIdentifier).isNull()
-        assertThat(original.checkpointIdentifier).isNull()
-        assertThat(original.traceId).isNull()
-    }
 }

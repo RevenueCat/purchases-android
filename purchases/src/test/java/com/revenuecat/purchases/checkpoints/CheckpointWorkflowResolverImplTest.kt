@@ -9,7 +9,6 @@ import com.revenuecat.purchases.LogMessage
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.PresentedOfferingContext
-import com.revenuecat.purchases.PresentedOfferingContextSerializer
 import com.revenuecat.purchases.assertLogs
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
@@ -23,7 +22,10 @@ import com.revenuecat.purchases.common.checkpoints.CheckpointResponse
 import com.revenuecat.purchases.common.checkpoints.CheckpointRule
 import com.revenuecat.purchases.common.checkpoints.CheckpointRulesResolution
 import com.revenuecat.purchases.common.checkpoints.CheckpointsConfigProvider
+import com.revenuecat.purchases.common.events.BackendEvent
+import com.revenuecat.purchases.common.events.BackendStoredEvent
 import com.revenuecat.purchases.common.events.FeatureEvent
+import com.revenuecat.purchases.common.events.toBackendStoredEvent
 import com.revenuecat.purchases.common.localrules.LocalRulesEvaluator
 import com.revenuecat.purchases.common.localrules.RulesDimensionProvider
 import com.revenuecat.purchases.common.localrules.RulesDimensionValue
@@ -40,6 +42,8 @@ import com.revenuecat.purchases.common.workflows.events.WorkflowEvent
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
+import com.revenuecat.purchases.paywalls.events.CustomPaywallEvent
+import com.revenuecat.purchases.paywalls.events.CustomPaywallImpressionParams
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -297,20 +301,33 @@ class CheckpointWorkflowResolverImplTest {
     }
 
     @Test
-    fun `a matched offering carries its served workflow step and blob in its context`() = runTest {
-        val workflow = offeringWorkflow("wf1234", "default")
+    fun `a matched offering sends its served workflow step and blob in a custom impression`() = runTest {
+        val embeddedStepId = "wf_offering~exp~b~offering"
+        val workflow = offeringWorkflow("wf1234", "default", stepId = embeddedStepId)
         coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns workflow
         coEvery { mockWorkflowManager.workflowBlobRef("wf1234") } returns "blob-ref"
 
         val resolution = resolve() as CheckpointResolution.MatchedOffering
-        val context = resolution.offering.availablePackages.single().presentedOfferingContext
-        val encoded = Json.parseToJsonElement(
-            Json.encodeToString(PresentedOfferingContextSerializer, context),
+        val params = CustomPaywallImpressionParams("custom", resolution.offering)
+        val event = CustomPaywallEvent.Impression(
+            data = CustomPaywallEvent.Impression.Data(
+                paywallId = params.paywallId,
+                offeringId = params.offeringId,
+                presentedOfferingContext = params.presentedOfferingContext,
+            ),
+        )
+        val stored = event.toBackendStoredEvent("user", "session") as BackendStoredEvent.CustomPaywall
+        val payload = Json.parseToJsonElement(
+            Json.encodeToString(BackendEvent.CustomPaywall.serializer(), stored.event),
         ).jsonObject
+        val context = payload.getValue("presented_offering_context").jsonObject
 
-        assertThat(encoded["workflowId"]).isEqualTo(JsonPrimitive(workflow.id))
-        assertThat(encoded["stepId"]).isEqualTo(JsonPrimitive(workflow.initialStepId))
-        assertThat(encoded["blobRef"]).isEqualTo(JsonPrimitive("blob-ref"))
+        assertThat(context["workflow_id"]).isEqualTo(JsonPrimitive(workflow.id))
+        assertThat(context["step_id"]).isEqualTo(JsonPrimitive(embeddedStepId))
+        assertThat(context["blob_ref"]).isEqualTo(JsonPrimitive("blob-ref"))
+        assertThat(params.presentedOfferingContext?.traceId).isEqualTo(resolution.traceId)
+        assertThat(context).doesNotContainKey("trace_id")
+        assertThat(payload).doesNotContainKey("trace_id")
         val product = resolution.offering.availablePackages.single().product
         val productContexts = buildList {
             add(product.presentedOfferingContext)
@@ -1075,11 +1092,15 @@ class CheckpointWorkflowResolverImplTest {
         screens = emptyMap(),
     )
 
-    private fun offeringWorkflow(id: String, offeringIdentifier: String): PublishedWorkflow = PublishedWorkflow(
+    private fun offeringWorkflow(
+        id: String,
+        offeringIdentifier: String,
+        stepId: String = "offering-step",
+    ): PublishedWorkflow = PublishedWorkflow(
         id = id,
         displayName = "Offering workflow",
-        initialStepId = "offering-step",
-        steps = mapOf("offering-step" to offeringStep(offeringIdentifier)),
+        initialStepId = stepId,
+        steps = mapOf(stepId to offeringStep(offeringIdentifier).copy(id = stepId)),
         screens = emptyMap(),
     )
 

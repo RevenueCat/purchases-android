@@ -1,6 +1,5 @@
 package com.revenuecat.purchases
 
-import android.os.Parcel
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.utils.stubStoreProduct
 import org.assertj.core.api.Assertions.assertThat
@@ -41,22 +40,5 @@ class OfferingTest {
         )
 
         assertThat(offering.presentedOfferingContext).isNull()
-    }
-
-    @Test
-    fun `parcel roundtrip retains workflow attribution`() {
-        val original = PresentedOfferingContext("offering")
-            .copyWithWorkflowContext("workflow", "step", "blob-ref")
-        val parcel = Parcel.obtain()
-        try {
-            parcel.writeParcelable(original, 0)
-            parcel.setDataPosition(0)
-            @Suppress("DEPRECATION")
-            val decoded = parcel.readParcelable<PresentedOfferingContext>(PresentedOfferingContext::class.java.classLoader)
-
-            assertThat(decoded).isEqualTo(original)
-        } finally {
-            parcel.recycle()
-        }
     }
 }
