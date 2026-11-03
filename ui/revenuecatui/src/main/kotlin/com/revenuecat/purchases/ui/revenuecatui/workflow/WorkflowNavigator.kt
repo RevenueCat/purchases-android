@@ -56,6 +56,11 @@ internal class WorkflowNavigator(private val workflow: PublishedWorkflow) {
             Logger.w("Workflow trigger action '${trigger.actionId}' leads nowhere, ignoring")
             return null
         }
+        return navigateForward(stepId)
+    }
+
+    /** Commits the destination chosen before an asynchronous gate check, without resolving the trigger again. */
+    fun navigateForward(stepId: WorkflowStepID): WorkflowStep? {
         val nextStep = workflow.steps[stepId] ?: run {
             Logger.w("Step '$stepId' not found in workflow '${workflow.id}'")
             return null
