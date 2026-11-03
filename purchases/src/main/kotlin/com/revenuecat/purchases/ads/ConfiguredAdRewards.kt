@@ -26,7 +26,7 @@ public class ConfiguredAdRewards internal constructor(
 
 /** A reward expected for an ad unit. Unknown or invalid rewards use [UnsupportedReward]. */
 @ExperimentalPreviewRevenueCatPurchasesAPI
-public interface AdRewardConfiguration {
+public abstract class AdRewardConfiguration private constructor() {
     /** A configured virtual currency reward. */
     @Poko
     public class VirtualCurrency internal constructor(
@@ -34,7 +34,7 @@ public interface AdRewardConfiguration {
         public val code: String,
         /** The positive configured amount. */
         public val amount: Int,
-    ) : AdRewardConfiguration
+    ) : AdRewardConfiguration()
 
     /** A configured entitlement reward. This describes a duration, rather than a granted expiration date. */
     @Poko
@@ -44,12 +44,12 @@ public interface AdRewardConfiguration {
         /** The positive configured duration of entitlement access, in whole seconds. */
         @get:JvmSynthetic
         public val duration: Duration,
-    ) : AdRewardConfiguration {
+    ) : AdRewardConfiguration() {
         /** The configured duration in seconds, also available to Java callers. */
         public val durationInSeconds: Long
             get() = duration.inWholeSeconds
     }
 
     /** A configured reward whose type is unsupported by this SDK version or whose values are invalid. */
-    public object UnsupportedReward : AdRewardConfiguration
+    public object UnsupportedReward : AdRewardConfiguration()
 }
