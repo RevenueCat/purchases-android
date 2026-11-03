@@ -42,7 +42,7 @@ import org.robolectric.shadows.ShadowDialog
 
 /**
  * Integration tests for [ErrorDialogFactory] wired through [CheckpointsManager]. Covers the precedence matrix
- * (per-call errorPresenter > registered errorPresenter > per-call errorDialogFactory > SDK default) and the
+ * (per-call errorPresenter > per-call errorDialogFactory > registered errorPresenter > SDK default) and the
  * "no factory → default untouched" case.
  */
 @RunWith(AndroidJUnit4::class)
@@ -157,7 +157,7 @@ class CheckpointsManagerFactoryTest {
     }
 
     @Test
-    fun `registered errorPresenter takes precedence over per-call errorDialogFactory`() = runTest(dispatcher) {
+    fun `per-call errorDialogFactory takes precedence over registered errorPresenter`() = runTest(dispatcher) {
         var registeredAsked = false
         var factoryAsked = false
         manager.errorPresenter = ErrorPresenter { _, completion ->
@@ -173,9 +173,8 @@ class CheckpointsManagerFactoryTest {
 
         manager.runCheckpoint(mockPurchases, checkpointId, params)
 
-        assertThat(factoryAsked).isFalse
-        assertThat(registeredAsked).isTrue
-        assertThat(defaultErrorPresenters).isEmpty()
+        assertThat(factoryAsked).isTrue
+        assertThat(registeredAsked).isFalse
     }
 
     @Test

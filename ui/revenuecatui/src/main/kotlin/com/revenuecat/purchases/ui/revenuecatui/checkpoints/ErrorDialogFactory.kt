@@ -19,8 +19,8 @@ import kotlinx.coroutines.launch
  * side to respond. Like [ErrorPresenter.Completion], the completion must be called: the SDK shows nothing further
  * until it is.
  *
- * Set per call through [CheckpointParams.Builder.setErrorDialogFactory]. Used only when no [ErrorPresenter] is
- * set for the call or registered globally.
+ * Set per call through [CheckpointParams.Builder.setErrorDialogFactory]. Takes precedence over an [ErrorPresenter]
+ * registered globally, but not over one set for the same call.
  *
  * @see CheckpointParams
  */
