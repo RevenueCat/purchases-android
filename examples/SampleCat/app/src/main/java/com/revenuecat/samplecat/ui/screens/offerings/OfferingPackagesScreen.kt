@@ -29,6 +29,7 @@ import com.revenuecat.samplecat.R
 import com.revenuecat.samplecat.model.PurchasableState
 import com.revenuecat.samplecat.ui.components.ConceptIntroduction
 import com.revenuecat.samplecat.ui.components.ContentBackground
+import com.revenuecat.samplecat.ui.components.ErrorMessageBox
 import com.revenuecat.samplecat.ui.components.PurchasableCard
 import com.revenuecat.samplecat.ui.theme.RCGreen
 import com.revenuecat.samplecat.viewmodel.OfferingsUiState
@@ -48,6 +49,7 @@ fun OfferingPackagesScreen(
     val offeringsState by userViewModel.offeringsState.collectAsState()
     val isPurchasing by userViewModel.isPurchasing.collectAsState()
     val purchasingProductId by userViewModel.purchasingProductId.collectAsState()
+    val purchaseError by userViewModel.purchaseError.collectAsState()
 
     val offering by remember {
         derivedStateOf {
@@ -95,6 +97,18 @@ fun OfferingPackagesScreen(
                         title = stringResource(R.string.packages_title),
                         description = stringResource(R.string.packages_description),
                     )
+                }
+
+                purchaseError?.let { error ->
+                    item {
+                        ErrorMessageBox(
+                            message = stringResource(
+                                error.resId,
+                                *error.formatArgs.toTypedArray(),
+                            ),
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        )
+                    }
                 }
 
                 items(packages, key = { it.identifier }) { pkg ->
