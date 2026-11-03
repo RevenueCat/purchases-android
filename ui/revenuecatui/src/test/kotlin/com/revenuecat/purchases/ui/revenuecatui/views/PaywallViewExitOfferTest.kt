@@ -56,6 +56,8 @@ class PaywallViewExitOfferTest {
     private companion object {
         const val RECOMPOSITION_FRAMES = 10
         const val FRAME_MILLIS = 16L
+        const val PRELOAD_POLLS = 500
+        const val PRELOAD_POLL_MILLIS = 10L
     }
 
     private val mockPurchases = mockk<Purchases>()
@@ -125,6 +127,7 @@ class PaywallViewExitOfferTest {
             onDismiss = { dismissCount++ },
             onExitOffer = { receivedExitOfferings += it },
         )
+        awaitExitOfferPreloaded(viewModel)
 
         viewModel.closePaywall()
 
@@ -204,6 +207,8 @@ class PaywallViewExitOfferTest {
         container.addView(paywallView)
         shadowOf(Looper.getMainLooper()).idle()
 
+        awaitExitOfferPreloaded(viewModelFor(activity))
+
         paywallView.onBackPressed()
 
         assertThat(receivedExitOfferings.map { it.identifier }).containsExactly(exitOffering.identifier)
@@ -229,6 +234,7 @@ class PaywallViewExitOfferTest {
         container.addView(paywallView)
         shadowOf(Looper.getMainLooper()).idle()
         val originalViewModel = viewModelFor(activity)
+        awaitExitOfferPreloaded(originalViewModel)
 
         originalViewModel.closePaywall()
         // Re-targeting recomposes the view with a new view model; give the recomposer frames to get there.
@@ -266,6 +272,16 @@ class PaywallViewExitOfferTest {
         container.addView(paywallView)
         shadowOf(Looper.getMainLooper()).idle()
         return viewModelFor(activity)
+    }
+
+    // The exit offering resolves asynchronously; closing before it is ready dismisses instead of showing it.
+    private fun awaitExitOfferPreloaded(viewModel: PaywallViewModelImpl) {
+        repeat(PRELOAD_POLLS) {
+            if (viewModel.preloadedExitOffering != null) return
+            shadowOf(Looper.getMainLooper()).idle()
+            Thread.sleep(PRELOAD_POLL_MILLIS)
+        }
+        assertThat(viewModel.preloadedExitOffering).isNotNull
     }
 
     private fun exitViewModelOrNull(
