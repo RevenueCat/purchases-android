@@ -394,7 +394,7 @@ internal sealed interface PaywallState {
             ): TextPackageContext {
                 val tabPackages = packages.packagesByTab[tabIndex].orEmpty()
                 val packageInfo = tabPackages.find { it.uniqueId == selectedPackageByTab[tabIndex] }
-                    ?: tabPackages.defaultSelection(mergedCustomVariables)
+                    ?: tabPackages.defaultSelection(visibilityContext(windowDpSize = null))
                 return if (packageInfo != null) {
                     TextPackageContext(
                         packageInfo.pkg,
