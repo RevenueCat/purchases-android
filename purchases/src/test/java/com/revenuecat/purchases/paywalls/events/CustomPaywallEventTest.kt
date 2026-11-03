@@ -509,6 +509,87 @@ class CustomPaywallEventTest {
     // region Wire encoding: presented_offering_context
 
     @Test
+    fun `workflow-only context survives stored event roundtrip without a trace id`() {
+        val context = PresentedOfferingContext("off")
+            .copyWithWorkflowContext("wrapper", "embedded-step", "blob-ref")
+            .copyWithCheckpointIdentifier("checkpoint")
+            .copyWithTraceId("trace-id")
+        val offering = makeOffering("off", context)
+        val params = CustomPaywallImpressionParams(paywallId = "pw", offering = offering)
+        val event = CustomPaywallEvent.Impression(
+            creationData = CustomPaywallEvent.Impression.CreationData(id = fixedId, date = fixedDate),
+            data = CustomPaywallEvent.Impression.Data(
+                paywallId = params.paywallId,
+                offeringId = params.offeringId,
+                presentedOfferingContext = params.presentedOfferingContext,
+            ),
+        )
+        val stored = event.toBackendStoredEvent(appUserID, appSessionID)
+        val encoded = json.encodeToString(BackendStoredEvent.serializer(), stored)
+        val decoded = json.decodeFromString(BackendStoredEvent.serializer(), encoded) as BackendStoredEvent.CustomPaywall
+
+        assertThat(decoded).isEqualTo(stored)
+        assertThat(decoded.event.presentedOfferingContext).isEqualTo(
+            BackendEvent.CustomPaywallPresentedOfferingContextData(
+                workflowId = "wrapper",
+                stepId = "embedded-step",
+                blobRef = "blob-ref",
+            ),
+        )
+        assertThat(encoded).contains("\"workflow_id\":\"wrapper\"")
+        assertThat(encoded).contains("\"step_id\":\"embedded-step\"")
+        assertThat(encoded).contains("\"blob_ref\":\"blob-ref\"")
+        assertThat(encoded).doesNotContain("trace_id", "traceId", "checkpoint", "placement_identifier")
+    }
+
+    @Test
+    fun `older stored custom impressions decode without workflow context`() {
+        val encoded = """
+            {
+                "id":"$fixedId",
+                "version":1,
+                "type":"custom_paywall_impression",
+                "app_user_id":"$appUserID",
+                "timestamp":${fixedDate.time},
+                "paywall_id":"pw",
+                "offering_id":"off",
+                "presented_offering_context":{"placement_identifier":"placement"}
+            }
+        """.trimIndent()
+
+        val decoded = json.decodeFromString(BackendEvent.CustomPaywall.serializer(), encoded)
+
+        assertThat(decoded.presentedOfferingContext).isEqualTo(
+            BackendEvent.CustomPaywallPresentedOfferingContextData(placementIdentifier = "placement"),
+        )
+    }
+
+    @Test
+    fun `custom impression includes workflow and placement targeting context together`() {
+        val context = PresentedOfferingContext(
+            offeringIdentifier = "off",
+            placementIdentifier = "placement",
+            targetingContext = PresentedOfferingContext.TargetingContext(3, "rule-id"),
+        ).copyWithWorkflowContext("wrapper", "embedded-step", "blob-ref")
+        val event = CustomPaywallEvent.Impression(
+            data = CustomPaywallEvent.Impression.Data("pw", "off", context),
+        )
+
+        val stored = event.toBackendStoredEvent(appUserID, appSessionID) as BackendStoredEvent.CustomPaywall
+
+        assertThat(stored.event.presentedOfferingContext).isEqualTo(
+            BackendEvent.CustomPaywallPresentedOfferingContextData(
+                placementIdentifier = "placement",
+                targetingRevision = 3,
+                targetingRuleId = "rule-id",
+                workflowId = "wrapper",
+                stepId = "embedded-step",
+                blobRef = "blob-ref",
+            ),
+        )
+    }
+
+    @Test
     fun `BackendStoredEvent CustomPaywall JSON nests presented_offering_context with all fields`() {
         val event = CustomPaywallEvent.Impression(
             creationData = CustomPaywallEvent.Impression.CreationData(id = fixedId, date = fixedDate),

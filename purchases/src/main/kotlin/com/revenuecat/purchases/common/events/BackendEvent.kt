@@ -8,6 +8,7 @@ import com.revenuecat.purchases.common.Config
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.events.CustomerCenterDisplayMode
 import com.revenuecat.purchases.customercenter.events.CustomerCenterEventType
+import com.revenuecat.purchases.paywalls.events.CustomPaywallEvent
 import com.revenuecat.purchases.utils.Event
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -341,20 +342,31 @@ internal sealed class BackendEvent : Event {
         val targetingRevision: Int? = null,
         @SerialName("targeting_rule_id")
         val targetingRuleId: String? = null,
+        @SerialName("workflow_id")
+        val workflowId: String? = null,
+        @SerialName("step_id")
+        val stepId: String? = null,
+        @SerialName("blob_ref")
+        val blobRef: String? = null,
     ) {
         companion object {
+            @OptIn(InternalRevenueCatAPI::class)
             fun from(
-                placementIdentifier: String?,
-                targetingRevision: Int?,
-                targetingRuleId: String?,
+                data: CustomPaywallEvent.Impression.Data,
             ): CustomPaywallPresentedOfferingContextData? {
-                if (placementIdentifier == null && targetingRevision == null && targetingRuleId == null) {
+                val hasPlacement = data.placementIdentifier != null || data.targetingRevision != null ||
+                    data.targetingRuleId != null
+                val hasWorkflow = data.workflowId != null || data.stepId != null || data.blobRef != null
+                if (!hasPlacement && !hasWorkflow) {
                     return null
                 }
                 return CustomPaywallPresentedOfferingContextData(
-                    placementIdentifier = placementIdentifier,
-                    targetingRevision = targetingRevision,
-                    targetingRuleId = targetingRuleId,
+                    placementIdentifier = data.placementIdentifier,
+                    targetingRevision = data.targetingRevision,
+                    targetingRuleId = data.targetingRuleId,
+                    workflowId = data.workflowId,
+                    stepId = data.stepId,
+                    blobRef = data.blobRef,
                 )
             }
         }

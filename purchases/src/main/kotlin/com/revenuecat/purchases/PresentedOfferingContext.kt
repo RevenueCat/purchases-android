@@ -38,14 +38,23 @@ public class PresentedOfferingContext private constructor(
     @get:JvmSynthetic
     @property:InternalRevenueCatAPI
     public val traceId: String?,
+    @get:JvmSynthetic
+    internal val workflowId: String?,
+    @get:JvmSynthetic
+    internal val stepId: String?,
+    @get:JvmSynthetic
+    internal val blobRef: String?,
 ) : Parcelable {
+    // Preserve the existing public constructor signatures for binary compatibility.
+    @Suppress("ForbiddenPublicConstructor")
     public constructor(
         offeringIdentifier: String,
         placementIdentifier: String?,
         targetingContext: TargetingContext?,
-    ) : this(offeringIdentifier, placementIdentifier, targetingContext, null, null)
+    ) : this(offeringIdentifier, placementIdentifier, targetingContext, null, null, null, null, null)
 
-    public constructor(offeringIdentifier: String) : this(offeringIdentifier, null, null, null, null)
+    @Suppress("ForbiddenPublicConstructor")
+    public constructor(offeringIdentifier: String) : this(offeringIdentifier, null, null)
 
     @JvmSynthetic
     @InternalRevenueCatAPI
@@ -59,6 +68,9 @@ public class PresentedOfferingContext private constructor(
         targetingContext = targetingContext,
         checkpointIdentifier = checkpointIdentifier,
         traceId = traceId,
+        workflowId = workflowId,
+        stepId = stepId,
+        blobRef = blobRef,
     )
 
     @JvmSynthetic
@@ -69,6 +81,9 @@ public class PresentedOfferingContext private constructor(
             targetingContext = targetingContext,
             checkpointIdentifier = checkpointIdentifier,
             traceId = traceId,
+            workflowId = workflowId,
+            stepId = stepId,
+            blobRef = blobRef,
         )
 
     @JvmSynthetic
@@ -79,21 +94,47 @@ public class PresentedOfferingContext private constructor(
             targetingContext = targetingContext,
             checkpointIdentifier = checkpointIdentifier,
             traceId = traceId,
+            workflowId = workflowId,
+            stepId = stepId,
+            blobRef = blobRef,
         )
 
+    @JvmSynthetic
+    internal fun copyWithWorkflowContext(
+        workflowId: String?,
+        stepId: String?,
+        blobRef: String?,
+    ): PresentedOfferingContext = PresentedOfferingContext(
+        offeringIdentifier = offeringIdentifier,
+        placementIdentifier = placementIdentifier,
+        targetingContext = targetingContext,
+        checkpointIdentifier = checkpointIdentifier,
+        traceId = traceId,
+        workflowId = workflowId,
+        stepId = stepId,
+        blobRef = blobRef,
+    )
+
     internal companion object {
+        @Suppress("LongParameterList")
         fun create(
             offeringIdentifier: String,
             placementIdentifier: String?,
             targetingContext: TargetingContext?,
             checkpointIdentifier: String?,
             traceId: String?,
+            workflowId: String?,
+            stepId: String?,
+            blobRef: String?,
         ): PresentedOfferingContext = PresentedOfferingContext(
             offeringIdentifier = offeringIdentifier,
             placementIdentifier = placementIdentifier,
             targetingContext = targetingContext,
             checkpointIdentifier = checkpointIdentifier,
             traceId = traceId,
+            workflowId = workflowId,
+            stepId = stepId,
+            blobRef = blobRef,
         )
     }
 
@@ -153,6 +194,9 @@ internal object PresentedOfferingContextSerializer : KSerializer<PresentedOfferi
     private const val TARGETING_CONTEXT_INDEX = 2
     private const val CHECKPOINT_IDENTIFIER_INDEX = 3
     private const val TRACE_ID_INDEX = 4
+    private const val WORKFLOW_ID_INDEX = 5
+    private const val STEP_ID_INDEX = 6
+    private const val BLOB_REF_INDEX = 7
 
     private val nullableStringSerializer = String.serializer().nullable
     private val nullableTargetingContextSerializer = TargetingContextSerializer.nullable
@@ -163,6 +207,9 @@ internal object PresentedOfferingContextSerializer : KSerializer<PresentedOfferi
         element("targetingContext", nullableTargetingContextSerializer.descriptor)
         element("checkpointIdentifier", nullableStringSerializer.descriptor, isOptional = true)
         element("traceId", nullableStringSerializer.descriptor, isOptional = true)
+        element("workflowId", nullableStringSerializer.descriptor, isOptional = true)
+        element("stepId", nullableStringSerializer.descriptor, isOptional = true)
+        element("blobRef", nullableStringSerializer.descriptor, isOptional = true)
     }
 
     override fun serialize(encoder: Encoder, value: PresentedOfferingContext) {
@@ -186,6 +233,15 @@ internal object PresentedOfferingContextSerializer : KSerializer<PresentedOfferi
             value.traceId?.let {
                 encodeStringElement(descriptor, TRACE_ID_INDEX, it)
             }
+            value.workflowId?.let {
+                encodeStringElement(descriptor, WORKFLOW_ID_INDEX, it)
+            }
+            value.stepId?.let {
+                encodeStringElement(descriptor, STEP_ID_INDEX, it)
+            }
+            value.blobRef?.let {
+                encodeStringElement(descriptor, BLOB_REF_INDEX, it)
+            }
         }
     }
 
@@ -196,6 +252,9 @@ internal object PresentedOfferingContextSerializer : KSerializer<PresentedOfferi
             var targetingContext: PresentedOfferingContext.TargetingContext? = null
             var checkpointIdentifier: String? = null
             var traceId: String? = null
+            var workflowId: String? = null
+            var stepId: String? = null
+            var blobRef: String? = null
 
             while (true) {
                 when (val index = decodeElementIndex(descriptor)) {
@@ -223,6 +282,13 @@ internal object PresentedOfferingContextSerializer : KSerializer<PresentedOfferi
                         TRACE_ID_INDEX,
                         nullableStringSerializer,
                     )
+                    WORKFLOW_ID_INDEX -> workflowId = decodeSerializableElement(
+                        descriptor,
+                        index,
+                        nullableStringSerializer,
+                    )
+                    STEP_ID_INDEX -> stepId = decodeSerializableElement(descriptor, index, nullableStringSerializer)
+                    BLOB_REF_INDEX -> blobRef = decodeSerializableElement(descriptor, index, nullableStringSerializer)
                     -1 -> break
                     else -> error("Unexpected index: $index")
                 }
@@ -234,6 +300,9 @@ internal object PresentedOfferingContextSerializer : KSerializer<PresentedOfferi
                 targetingContext,
                 checkpointIdentifier,
                 traceId,
+                workflowId,
+                stepId,
+                blobRef,
             )
         }
     }
