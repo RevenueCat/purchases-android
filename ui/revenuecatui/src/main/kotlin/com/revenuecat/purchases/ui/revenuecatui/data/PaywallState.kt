@@ -426,6 +426,7 @@ internal sealed interface PaywallState {
                     val tabPackages = packages.packagesByTab[selectedTabIndex].orEmpty()
                         .inPresentation(sheet.presentationKey.takeIf { sheet.visible })
                     val resolved = selectionResolver().switchTab(
+                        current = selectedPackageUniqueId,
                         remembered = selectedPackageByTab[selectedTabIndex],
                     ) ?: tabPackages.defaultSelection(
                         // Preserve the tab's initial choice when the current bounds hide every candidate.

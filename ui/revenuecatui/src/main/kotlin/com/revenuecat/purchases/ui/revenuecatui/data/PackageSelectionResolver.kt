@@ -20,8 +20,9 @@ internal class PackageSelectionResolver(
 
     fun initialSelection(): String? = defaultSelection(remembered = null) ?: allHiddenFallback()
 
-    fun switchTab(remembered: String?): String? =
-        remembered?.takeIf { rendersWhenSelected(it) }
+    fun switchTab(current: String?, remembered: String?): String? =
+        current?.takeIf { tab.isEmpty() && outside.rendersWhenSelected(it, context) }
+            ?: remembered?.takeIf { rendersWhenSelected(it) }
             ?: defaultSelection(remembered = null)
             ?: remembered?.takeIf { uid -> active.any { it.uniqueId == uid } }
             ?: allHiddenFallback()

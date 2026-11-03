@@ -44,6 +44,36 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
     private val localeId = LocaleId("en_US")
 
     @Test
+    fun `content only tab switch preserves a visible manual root choice`() {
+        val state = paywallState(
+            packagesOutsideTabs = listOf(
+                packageInfo(TestData.Packages.monthly, isSelectedByDefault = true),
+                packageInfo(TestData.Packages.annual, isSelectedByDefault = false),
+            ),
+            packagesByTab = emptyMap(),
+            initialSelectedTabIndex = 0,
+        )
+        state.update(selectedPackageUniqueId = TestData.Packages.annual.identifier)
+        state.update(selectedTabIndex = 1)
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
+    @Test
+    fun `content only tab switch does not preserve a hidden root choice`() {
+        val state = paywallState(
+            packagesOutsideTabs = listOf(
+                packageInfo(TestData.Packages.monthly, isSelectedByDefault = true),
+                packageInfo(TestData.Packages.annual, isSelectedByDefault = false, visible = false),
+            ),
+            packagesByTab = emptyMap(),
+            initialSelectedTabIndex = 0,
+        )
+        state.update(selectedPackageUniqueId = TestData.Packages.annual.identifier)
+        state.update(selectedTabIndex = 1)
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
+    }
+
+    @Test
     fun `Should select default package from tab 0 when initialSelectedTabIndex is null`() {
         // Arrange: packages only in tabs, no initialSelectedTabIndex
         val defaultPackage = TestData.Packages.monthly
