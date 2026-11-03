@@ -29,7 +29,6 @@ import com.revenuecat.purchases.strings.IdentityStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import kotlinx.coroutines.suspendCancellableCoroutine
-import java.util.Locale
 import java.util.UUID
 
 @OptIn(InternalRevenueCatAPI::class)
@@ -517,7 +516,7 @@ internal class IdentityManager(
     }
 
     private fun generateRandomID(): String {
-        return "\$RCAnonymousID:" + UUID.randomUUID().toString().toLowerCase(Locale.ROOT).replace("-", "")
+        return "\$RCAnonymousID:" + UUID.randomUUID().toString().lowercase().replace("-", "")
             .also {
                 log(LogIntent.USER) { IdentityStrings.SETTING_NEW_ANON_ID }
             }

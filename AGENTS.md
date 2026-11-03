@@ -180,7 +180,7 @@ Variant names combine the flavor and build type, e.g. `defaultsDebug`, `customEn
 - **Compile SDK**: 36
 - **Min SDK**: 23 (24 for UI modules)
 - **Java**: 8+
-- **Kotlin**: 2.2.21 (language level 1.8)
+- **Kotlin**: 2.2.21 (language level 2.1)
 
 ## Development Notes
 
