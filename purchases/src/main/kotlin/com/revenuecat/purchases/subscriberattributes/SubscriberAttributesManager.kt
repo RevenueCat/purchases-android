@@ -30,6 +30,7 @@ internal class SubscriberAttributesManager(
 
     private val obtainingDeviceIdentifiersObservable = ObtainDeviceIdentifiersObservable()
 
+    @OptIn(InternalRevenueCatAPI::class)
     @Synchronized
     fun setAttributes(attributesToSet: Map<String, String?>, appUserID: String) {
         val attributesAsObjects = attributesToSet.map { (key, value) ->

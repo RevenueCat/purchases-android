@@ -238,6 +238,7 @@ dependencies {
 
     baselineProfile(project(":baselineprofile"))
     testImplementation(kotlin("test"))
+    testImplementation(kotlin("reflect"))
 
     kover(project(":feature:amazon"))
 }
