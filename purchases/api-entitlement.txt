@@ -181,8 +181,8 @@ package com.revenuecat.purchases {
   public static final class LogLevel.Companion {
   }
 
-  public final class NoCoreLibraryDesugaringException extends java.lang.RuntimeException {
-    ctor public NoCoreLibraryDesugaringException(Throwable cause);
+  @Deprecated public final class NoCoreLibraryDesugaringException extends java.lang.RuntimeException {
+    ctor @Deprecated public NoCoreLibraryDesugaringException(Throwable cause);
   }
 
   @dev.drewhamilton.poko.Poko public final class Offering {

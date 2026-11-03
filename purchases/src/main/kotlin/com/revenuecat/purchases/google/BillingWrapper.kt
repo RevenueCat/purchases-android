@@ -23,7 +23,6 @@ import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.NoCoreLibraryDesugaringException
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -1024,24 +1023,17 @@ internal class BillingWrapper(
             setProductDetails(purchaseInfo.productDetails)
         }.build()
 
-        try {
-            return Result.Success(
-                BillingFlowParams.newBuilder()
-                    .setProductDetailsParamsList(listOf(productDetailsParamsList))
-                    .setObfuscatedAccountId(appUserID.sha256())
-                    .apply {
-                        isPersonalizedPrice?.let {
-                            setIsOfferPersonalized(it)
-                        }
+        return Result.Success(
+            BillingFlowParams.newBuilder()
+                .setProductDetailsParamsList(listOf(productDetailsParamsList))
+                .setObfuscatedAccountId(appUserID.sha256())
+                .apply {
+                    isPersonalizedPrice?.let {
+                        setIsOfferPersonalized(it)
                     }
-                    .build(),
-            )
-        } catch (e: NoClassDefFoundError) {
-            // Billing Client 7 may throw NoClassDefFoundError if core library desugaring is not enabled when building
-            // a BillingFlowParams in some devices because the library started using Java 8 types.
-            // This was fixed in Billing Client 8.
-            throw NoCoreLibraryDesugaringException(e)
-        }
+                }
+                .build(),
+        )
     }
 
     private fun buildSubscriptionPurchaseParams(
@@ -1053,32 +1045,25 @@ internal class BillingWrapper(
     ): Result<BillingFlowParams, PurchasesError> {
         val productDetailsParamsList = buildSubscriptionProductDetailsParams(purchaseInfo = purchaseInfo)
 
-        try {
-            return Result.Success(
-                BillingFlowParams.newBuilder()
-                    .setProductDetailsParamsList(productDetailsParamsList)
-                    .apply {
-                        // Google rejects a purchase whose obfuscatedAccountId differs from the one on the subscription
-                        // it replaces (https://issuetracker.google.com/issues/155005449), so the id is not set for
-                        // product changes or for purchases of an already owned subscription, unless explicitly
-                        // opted in via DangerousSettings.
-                        replaceProductInfo?.let { setUpgradeInfo(it) }
-                        if (shouldSetObfuscatedAccountId) {
-                            setObfuscatedAccountId(appUserID.sha256())
-                        }
-
-                        isPersonalizedPrice?.let {
-                            setIsOfferPersonalized(it)
-                        }
+        return Result.Success(
+            BillingFlowParams.newBuilder()
+                .setProductDetailsParamsList(productDetailsParamsList)
+                .apply {
+                    // Google rejects a purchase whose obfuscatedAccountId differs from the one on the subscription
+                    // it replaces (https://issuetracker.google.com/issues/155005449), so the id is not set for
+                    // product changes or for purchases of an already owned subscription, unless explicitly
+                    // opted in via DangerousSettings.
+                    replaceProductInfo?.let { setUpgradeInfo(it) }
+                    if (shouldSetObfuscatedAccountId) {
+                        setObfuscatedAccountId(appUserID.sha256())
                     }
-                    .build(),
-            )
-        } catch (e: NoClassDefFoundError) {
-            // Billing Client 7 may throw NoClassDefFoundError if core library desugaring is not enabled when building
-            // a BillingFlowParams in some devices because the library started using Java 8 types.
-            // This was fixed in Billing Client 8.
-            throw NoCoreLibraryDesugaringException(e)
-        }
+
+                    isPersonalizedPrice?.let {
+                        setIsOfferPersonalized(it)
+                    }
+                }
+                .build(),
+        )
     }
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
