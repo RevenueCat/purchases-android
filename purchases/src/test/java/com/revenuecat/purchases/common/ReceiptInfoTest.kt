@@ -541,7 +541,7 @@ class ReceiptInfoTest {
     }
 
     @Test
-    fun `ReceiptInfo preserves checkpoint identifier and trace id when serialized and deserialized`() {
+    fun `ReceiptInfo preserves workflow checkpoint and trace metadata when serialized and deserialized`() {
         // language=JSON
         val serialized = """
             {
@@ -551,13 +551,19 @@ class ReceiptInfoTest {
                     "placementIdentifier":null,
                     "targetingContext":null,
                     "checkpointIdentifier":"onboarding_paywall",
-                    "traceId":"trace_id"
+                    "traceId":"trace_id",
+                    "workflowId":"workflow-id",
+                    "stepId":"embedded-step-id",
+                    "blobRef":"blob-ref"
                 }
             }
         """.trimIndent().lines().joinToString("") { it.trim() }
 
         val decoded = json.decodeFromString<ReceiptInfo>(serialized)
 
+        assertThat(decoded.presentedOfferingContext?.workflowId).isEqualTo("workflow-id")
+        assertThat(decoded.presentedOfferingContext?.stepId).isEqualTo("embedded-step-id")
+        assertThat(decoded.presentedOfferingContext?.blobRef).isEqualTo("blob-ref")
         assertThat(json.encodeToString(decoded)).isEqualTo(serialized)
     }
 

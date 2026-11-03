@@ -96,6 +96,20 @@ class PresentedOfferingContextSerializerTest {
         val encoded = json.encodeToString(PresentedOfferingContextSerializer, original)
         val decoded = json.decodeFromString(PresentedOfferingContextSerializer, encoded)
 
+        val expectedJson = """
+            {
+                "offeringIdentifier":"offering-id",
+                "placementIdentifier":null,
+                "targetingContext":null,
+                "checkpointIdentifier":"checkpoint-id",
+                "traceId":"trace-id",
+                "workflowId":"workflow-id",
+                "stepId":"embedded-step-id",
+                "blobRef":"blob-ref"
+            }
+        """.trimIndent().lines().joinToString("") { it.trim() }
+
+        assertThat(encoded).isEqualTo(expectedJson)
         assertThat(decoded).isEqualTo(original)
         assertThat(decoded.workflowId).isEqualTo("workflow-id")
         assertThat(decoded.stepId).isEqualTo("embedded-step-id")
