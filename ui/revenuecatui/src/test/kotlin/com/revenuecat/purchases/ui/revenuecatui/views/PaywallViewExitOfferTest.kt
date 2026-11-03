@@ -4,6 +4,7 @@ import android.os.Looper
 import android.widget.FrameLayout
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.lifecycle.ViewModelProvider
 import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.InternalRevenueCatAPI
@@ -41,24 +42,28 @@ import io.mockk.unmockkAll
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import java.net.URL
-import java.time.Duration
 
 @OptIn(InternalRevenueCatAPI::class)
 @RunWith(RobolectricTestRunner::class)
 class PaywallViewExitOfferTest {
 
     private companion object {
-        const val RECOMPOSITION_FRAMES = 10
-        const val FRAME_MILLIS = 16L
         const val PRELOAD_POLLS = 500
         const val PRELOAD_POLL_MILLIS = 10L
     }
+
+    // Gives the recomposers of the activities built below their own frame clock. Without it, recompositions after the
+    // first one depend on a process-wide Choreographer that Robolectric resets between tests, so re-targeting only
+    // worked when this class ran first in its JVM.
+    @get:Rule
+    val composeTestRule = createEmptyComposeRule()
 
     private val mockPurchases = mockk<Purchases>()
 
@@ -237,15 +242,17 @@ class PaywallViewExitOfferTest {
         awaitExitOfferPreloaded(originalViewModel)
 
         originalViewModel.closePaywall()
-        // Re-targeting recomposes the view with a new view model; give the recomposer frames to get there.
-        repeat(RECOMPOSITION_FRAMES) {
-            if (exitViewModelOrNull(activity, originalViewModel) == null) {
-                shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(FRAME_MILLIS))
-            }
-        }
+        // Re-targeting recomposes the view with a new view model.
+        composeTestRule.waitForIdle()
 
         val exitViewModel = exitViewModelOrNull(activity, originalViewModel)
-        assertThat(exitViewModel).isNotNull
+        assertThat(exitViewModel)
+            .withFailMessage(
+                "No exit view model. dismissCount=%s, viewModelKeys=%s",
+                dismissCount,
+                activity.viewModelStore.keys(),
+            )
+            .isNotNull
         exitViewModel!!
         val exitState = exitViewModel.state.value
         assertThat(exitState).isInstanceOf(PaywallState.Loaded::class.java)
