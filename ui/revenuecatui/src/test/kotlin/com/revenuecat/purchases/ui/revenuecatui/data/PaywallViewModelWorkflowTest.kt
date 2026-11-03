@@ -861,7 +861,7 @@ class PaywallViewModelWorkflowTest {
 
         assertThat(events.filterIsInstance<WorkflowEvent.Close>().map { it.stepId }).containsExactly("step-1")
         assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.NOT_PASSED)
-        assertThat(reasons).containsExactly(PaywallDismissReason.NAVIGATED_BACK)
+        assertThat(reasons).containsExactly(PaywallDismissReason.CLOSE)
     }
 
     @Test
@@ -1358,7 +1358,7 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
-    fun `close on blocked initial step dismisses as navigated back without exit offer`() {
+    fun `close on blocked initial step preserves close reason without exit offer`() {
         val reasons = mutableListOf<PaywallDismissReason>()
         val exitOfferings = mutableListOf<Offering?>()
         val vm = createVm(
@@ -1371,7 +1371,7 @@ class PaywallViewModelWorkflowTest {
         )
         runGateRead()
         vm.closePaywall()
-        assertThat(reasons).containsExactly(PaywallDismissReason.NAVIGATED_BACK)
+        assertThat(reasons).containsExactly(PaywallDismissReason.CLOSE)
         assertThat(exitOfferings).containsExactly(null)
         assertThat(vm.workflowState.value).isNull()
     }
@@ -1398,7 +1398,7 @@ class PaywallViewModelWorkflowTest {
         assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-2")
         vm.closePaywall()
         vm.closePaywall()
-        assertThat(reasons).containsExactly(PaywallDismissReason.NAVIGATED_BACK)
+        assertThat(reasons).containsExactly(PaywallDismissReason.CLOSE)
         assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.NOT_PASSED)
     }
 
@@ -1525,6 +1525,142 @@ class PaywallViewModelWorkflowTest {
 
         assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
         assertThat(outcomes).containsExactly(CheckpointGateOutcome.NOT_APPLICABLE)
+    }
+
+    @Test
+    fun `closing a pending initial hard gate preserves its unresolved outcome`() {
+        val read = CompletableDeferred<CustomerInfo>()
+        coEvery { purchases.awaitCustomerInfo(CacheFetchPolicy.CACHED_OR_FETCHED) } coAnswers { read.await() }
+        val outcomes = mutableListOf<CheckpointGateOutcome>()
+        val reasons = mutableListOf<PaywallDismissReason>()
+        val vm = createVm(
+            gateContext = CheckpointGateContext(outcomes::add),
+            dismissRequestWithExitOffering = { _, _, reason -> reasons.add(reason) },
+        )
+        vm.startHardGate()
+
+        // Sheet scrim taps and swipe-to-dismiss close the paywall, including while loading.
+        vm.closePaywall()
+        read.complete(gatedCustomerInfo("pro"))
+        runGateRead()
+
+        assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.NOT_PASSED)
+        assertThat(reasons).containsExactly(PaywallDismissReason.CLOSE)
+        assertThat(vm.workflowState.value).isNull()
+    }
+
+    @Test
+    fun `an initial hard gate blocks passage before its read coroutine starts`() {
+        val outcomes = mutableListOf<CheckpointGateOutcome>()
+        val vm = createVm(gateContext = CheckpointGateContext(outcomes::add))
+        vm.startWorkflowPresentationFromResult(
+            workflow.copy(steps = mapOf(step1.id to step1.withHardGate(), step2.id to step2)),
+            testOfferings, null, uiConfig,
+        )
+
+        vm.closePaywall()
+
+        assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.NOT_PASSED)
+        assertThat(vm.workflowState.value).isNull()
+    }
+
+    @Test
+    fun `closing an audience-selected initial gate blocks passage while its read is pending`() {
+        val branch = CompletableDeferred<WorkflowStepID>()
+        val read = CompletableDeferred<CustomerInfo>()
+        coEvery { purchases.resolveBranch(any(), any()) } coAnswers { branch.await() }
+        coEvery { purchases.awaitCustomerInfo(CacheFetchPolicy.CACHED_OR_FETCHED) } coAnswers { read.await() }
+        val outcomes = mutableListOf<CheckpointGateOutcome>()
+        val vm = createVm(gateContext = CheckpointGateContext(outcomes::add))
+        vm.startWorkflowPresentationFromResult(
+            workflow.copy(
+                initialTrigger = WorkflowTriggerAction.Branch(routes = emptyList(), fallbackStepId = step1.id),
+                steps = mapOf(step1.id to step1, step2.id to step2.withHardGate()),
+            ),
+            testOfferings, null, uiConfig,
+        )
+        branch.complete(step2.id)
+        runGateRead()
+
+        vm.closePaywall()
+
+        assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.NOT_PASSED)
+        assertThat(vm.workflowState.value).isNull()
+    }
+
+    @Test
+    fun `initial unresolved gate callback cannot overwrite a replacement presentation`() {
+        lateinit var vm: PaywallViewModelImpl
+        vm = createVm(gateContext = CheckpointGateContext { outcome ->
+            if (outcome == CheckpointGateOutcome.NOT_PASSED) {
+                vm.startWorkflowPresentationFromResult(
+                    workflow.copy(initialStepId = step2.id), testOfferings, null, uiConfig,
+                )
+            }
+        })
+
+        vm.startHardGate()
+
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo(step2.id)
+        assertThat(vm.workflowState.value?.isSkeleton).isFalse()
+    }
+
+    @Test
+    fun `backing out of an unresolved initial hard gate preserves back reason`() {
+        val reasons = mutableListOf<PaywallDismissReason>()
+        val vm = createVm(
+            gateContext = CheckpointGateContext {},
+            dismissRequestWithExitOffering = { _, _, reason -> reasons.add(reason) },
+        )
+        vm.startHardGate()
+
+        vm.closePaywall(reason = PaywallDismissReason.NAVIGATED_BACK)
+
+        assertThat(reasons).containsExactly(PaywallDismissReason.NAVIGATED_BACK)
+    }
+
+    @Test
+    fun `branch resolution during a gate read keeps the destination chosen at tap time`() = runTest {
+        val read = CompletableDeferred<CustomerInfo>()
+        val branch = CompletableDeferred<Map<String, String>>()
+        coEvery { purchases.awaitCustomerInfo(CacheFetchPolicy.CACHED_OR_FETCHED) } coAnswers { read.await() }
+        coEvery { purchases.resolveBranches(any(), any()) } coAnswers { branch.await() }
+        coEvery { purchases.awaitRestore() } returns gatedCustomerInfo("vip")
+        val branchStep = step1.copy(triggerActions = mapOf(
+            "action-next" to WorkflowTriggerAction.Branch(routes = emptyList(), fallbackStepId = "step-2"),
+        ))
+        val vipStep = step2.copy(
+            id = "step-vip",
+            paramValues = step2.paramValues + ("gating" to JsonObject(mapOf(
+                "type" to JsonPrimitive("hard"),
+                "entitlement_identifiers" to JsonArray(listOf(JsonPrimitive("vip"))),
+            ))),
+        )
+        var dismissals = 0
+        val outcomes = mutableListOf<CheckpointGateOutcome>()
+        val vm = createVm(dismissRequest = { dismissals++ }, gateContext = CheckpointGateContext(outcomes::add))
+        vm.startWorkflowPresentationFromResult(
+            workflow.copy(steps = mapOf(step1.id to branchStep, step2.id to step2.withHardGate(), vipStep.id to vipStep)),
+            testOfferings, null, uiConfig,
+        )
+        runGateRead()
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        runGateRead()
+        branch.complete(mapOf("action-next" to "step-vip"))
+        runGateRead()
+        read.complete(gatedCustomerInfo())
+        runGateRead()
+
+        // The tap selected the fallback, whose gate requires pro or premium.
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-2")
+        vm.handleRestorePurchases()
+        assertThat(dismissals).isZero()
+        assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.NOT_PASSED)
+
+        coEvery { purchases.awaitRestore() } returns gatedCustomerInfo("pro")
+        vm.handleRestorePurchases()
+        assertThat(dismissals).isEqualTo(1)
+        assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.PASSED)
     }
 
     // region forward navigation
