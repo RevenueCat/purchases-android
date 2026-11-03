@@ -1,8 +1,5 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
 
@@ -76,6 +73,9 @@ android {
         buildConfigField("String", "ENTITLEMENT_ID", if (entitlementId != null) "\"$entitlementId\"" else "null")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Selects the SDK variant when CI builds against the local sources (-PuseLocalSdk).
+        missingDimensionStrategy("apis", "defaults")
     }
 
     buildTypes {
@@ -99,9 +99,9 @@ android {
     }
 }
 
-kotlin {
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
     compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_11)
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
     }
 }
 

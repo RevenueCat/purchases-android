@@ -653,19 +653,6 @@ platform :android do
     )
   end
 
-  desc "Builds a SampleCat APK"
-  lane :build_samplecat do |options|
-    gradle(
-      project_dir: "examples/SampleCat",
-      task: "assembleDebug",
-      # The dashboard download sets these. The build fails without them.
-      properties: {
-        "REVENUECAT_API_KEY" => "goog_ci_build_only",
-        "APPLICATION_ID" => "com.revenuecat.samplecat",
-      },
-    )
-  end
-
   desc "Builds an AdMob Integration Sample APK"
   lane :build_admob_integration_sample do |options|
     gradle(
