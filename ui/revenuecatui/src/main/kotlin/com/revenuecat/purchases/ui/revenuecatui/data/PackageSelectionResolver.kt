@@ -12,11 +12,16 @@ internal class PackageSelectionResolver(
     selectedTabIndex: Int,
     presentedSheet: SheetPresentationKey?,
     private val context: ComponentVisibilityContext,
+    owningSheet: SheetPresentationKey? = null,
 ) {
     private val outside = packages.packagesOutsideTabs.inPresentation(presentedSheet)
     private val tab = packages.packagesByTab[selectedTabIndex].orEmpty().inPresentation(presentedSheet)
     private val active = outside + tab
-    private val sheet = active.filter { presentedSheet != null && it.sheetPresentationKey === presentedSheet }
+
+    // An independent context's containing sheet is its root and follows tab selection priority.
+    private val sheet = active.filter {
+        presentedSheet != null && presentedSheet !== owningSheet && it.sheetPresentationKey === presentedSheet
+    }
 
     fun initialSelection(): String? = defaultSelection(remembered = null) ?: allHiddenFallback()
 

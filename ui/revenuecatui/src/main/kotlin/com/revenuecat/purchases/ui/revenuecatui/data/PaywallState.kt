@@ -190,7 +190,7 @@ internal sealed interface PaywallState {
             internal fun reconcilePurchaseContextSelection(initialize: Boolean = false) {
                 val owningSheet = (stack as? StackComponentStyle)?.purchaseContextPresentationKey
                 val presentedSheet = sheet.presentationKey.takeIf { sheet.visible }
-                val activePackages = (packages.packagesOutsideTabs + packages.packagesByTab[selectedTabIndex].orEmpty())
+                val activePackages = (packages.packagesByTab[selectedTabIndex].orEmpty() + packages.packagesOutsideTabs)
                     .filter {
                         it.sheetPresentationKey === owningSheet || it.sheetPresentationKey === presentedSheet
                     }
@@ -318,16 +318,26 @@ internal sealed interface PaywallState {
                 currentDate = dateProvider(),
             )
 
+            private val owningSheetPresentationKey = (stack as? StackComponentStyle)
+                ?.purchaseContextPresentationKey.takeIf { isIndependentPurchaseContext }
+
+            private fun canRememberTabSelection(presentation: SimpleSheetState): Boolean =
+                !presentation.visible ||
+                    (isIndependentPurchaseContext && presentation.presentationKey === owningSheetPresentationKey)
+
             private val initialSelectedPackageUniqueId = PackageSelectionResolver(
                 packages = packages,
                 selectedTabIndex = initialSelectedTabIndex ?: 0,
                 presentedSheet = initialSheetState.presentationKey.takeIf { initialSheetState.visible },
                 context = initialVisibilityContext,
+                owningSheet = owningSheetPresentationKey,
             ).initialSelection()
 
             private val tabsByUniqueId: Map<String, Set<Int>> = mutableMapOf<String, Set<Int>>().apply {
                 packages.packagesByTab.forEach { (tabIndex, packagesList) ->
-                    packagesList.filter { it.sheetPresentationKey == null }.forEach { packageInfo ->
+                    packagesList.filter {
+                        it.sheetPresentationKey == null || it.sheetPresentationKey === owningSheetPresentationKey
+                    }.forEach { packageInfo ->
                         val uniqueId = packageInfo.uniqueId
                         val tabIndices = getOrDefault(uniqueId, emptySet())
                         put(uniqueId, tabIndices + tabIndex)
@@ -378,7 +388,9 @@ internal sealed interface PaywallState {
                 // Other tabs resolve their choices after publishing their own state, on first visit.
                 val index = initialSelectedTabIndex ?: 0
                 val uid = initialSelectedPackageUniqueId
-                if (!initialSheetState.visible && tabsByUniqueId[uid]?.contains(index) == true) put(index, uid)
+                if (canRememberTabSelection(initialSheetState) && tabsByUniqueId[uid]?.contains(index) == true) {
+                    put(index, uid)
+                }
             }
 
             var selectedTabIndex by mutableIntStateOf(initialSelectedTabIndex ?: 0)
@@ -542,7 +554,7 @@ internal sealed interface PaywallState {
                 val currentTabIndex = selectedTabIndex
                 val tabsWithThisPackage = tabsByUniqueId[selectedPackageUniqueId]
                 val currentTabContainsThisPackage = tabsWithThisPackage?.contains(currentTabIndex) == true
-                if (!sheet.visible && currentTabContainsThisPackage) {
+                if (canRememberTabSelection(sheet) && currentTabContainsThisPackage) {
                     selectedPackageByTab[currentTabIndex] = selectedPackageUniqueId
                 }
             }
@@ -555,6 +567,7 @@ internal sealed interface PaywallState {
                 selectedTabIndex = selectedTabIndex,
                 presentedSheet = presentedSheet,
                 context = visibilityContext(windowDpSize),
+                owningSheet = owningSheetPresentationKey,
             )
 
             private fun visibilityContext(windowDpSize: DpSize?) = ComponentVisibilityContext(

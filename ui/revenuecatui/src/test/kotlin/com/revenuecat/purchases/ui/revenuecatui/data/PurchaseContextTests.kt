@@ -10,6 +10,7 @@ import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PaywallComponent
 import com.revenuecat.purchases.paywalls.components.PurchaseContext
 import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
@@ -41,6 +42,57 @@ internal class PurchaseContextTests {
         components = components.toList(),
         purchaseContext = PurchaseContext(mode = "independent"),
     )
+
+    private fun tabbedSheetContext(): Pair<PaywallState.Loaded.Components, PaywallState.Loaded.Components> {
+        val sheetContent = scope(
+            pkg(monthly, selected = true),
+            TabsComponent(
+                control = TabsComponent.TabControl.Buttons(StackComponent(emptyList())),
+                tabs = listOf(
+                    TabsComponent.Tab(id = "monthly", stack = StackComponent(listOf(pkg(monthly, selected = true)))),
+                    TabsComponent.Tab(id = "weekly", stack = StackComponent(listOf(
+                        pkg(TestData.Packages.weekly, selected = true), pkg(annual),
+                    ))),
+                ),
+            ),
+        )
+        val parent = FakePaywallState(
+            components = listOf(pkg(annual, selected = true), ButtonComponent(
+                stack = StackComponent(emptyList()),
+                action = ButtonComponent.Action.NavigateTo(ButtonComponent.Destination.Sheet(
+                    id = "tabbed-sheet", stack = sheetContent,
+                )),
+            )),
+            packages = listOf(monthly, annual, TestData.Packages.weekly),
+            addPackageComponents = false,
+        )
+        val button = (parent.stack as StackComponentStyle).children[1] as ButtonComponentStyle
+        val destination = (button.action as ButtonComponentStyle.Action.NavigateTo)
+            .destination as ButtonComponentStyle.Action.NavigateTo.Destination.Sheet
+        parent.sheet.show(backgroundBlur = false, content = {}, presentationKey = destination.presentationKey)
+        return parent to requireNotNull(parent.purchaseContextState(destination.stack as StackComponentStyle))
+    }
+
+    @Test
+    fun `a tab default in an independent sheet takes precedence over its outside default`() {
+        val (parent, child) = tabbedSheetContext()
+        assertThat(child.selectedPackageInfo?.rcPackage).isEqualTo(monthly)
+        child.update(selectedTabIndex = 1)
+        child.reconcilePurchaseContextSelection()
+        assertThat(child.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.weekly)
+        assertThat(parent.selectedPackageInfo?.rcPackage).isEqualTo(annual)
+    }
+
+    @Test
+    fun `an independent sheet remembers a manually selected package in its own tabs`() {
+        val (parent, child) = tabbedSheetContext()
+        child.update(selectedTabIndex = 1)
+        child.update(selectedPackageUniqueId = annual.identifier)
+        child.update(selectedTabIndex = 0)
+        child.update(selectedTabIndex = 1)
+        assertThat(child.selectedPackageInfo?.rcPackage).isEqualTo(annual)
+        assertThat(parent.selectedPackageInfo?.rcPackage).isEqualTo(annual)
+    }
 
     @Test
     fun `child package visibility cannot make a hidden parent default eligible`() {
