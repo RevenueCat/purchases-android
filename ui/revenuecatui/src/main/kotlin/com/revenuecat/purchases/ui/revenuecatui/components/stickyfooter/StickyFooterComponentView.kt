@@ -13,6 +13,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.StickyFooterCom
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 
+@Suppress("LongParameterList")
 @Composable
 internal fun StickyFooterComponentView(
     style: StickyFooterComponentStyle,
@@ -20,6 +21,7 @@ internal fun StickyFooterComponentView(
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
     componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
+    ancestorScrollOrientations: Set<Orientation> = emptySet(),
 ) {
     val layout = resolvedFooterLayout(state)
     if (layout == StickyFooterComponent.Layout.HIDDEN) return
@@ -42,5 +44,6 @@ internal fun StickyFooterComponentView(
         clickHandler = clickHandler,
         modifier = modifier,
         componentInteractionTracker = componentInteractionTracker,
+        ancestorScrollOrientations = ancestorScrollOrientations,
     )
 }

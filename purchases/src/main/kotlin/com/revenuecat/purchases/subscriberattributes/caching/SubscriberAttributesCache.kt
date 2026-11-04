@@ -11,6 +11,7 @@ import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.strings.AttributionStrings
+import com.revenuecat.purchases.subscriberattributes.RemoteSubscriberAttributes
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
 import com.revenuecat.purchases.subscriberattributes.buildSubscriberAttributesMapPerUser
 
@@ -37,6 +38,26 @@ internal class SubscriberAttributesCache(
             currentlyStoredAttributesForAllUsers + mapOf(appUserID to updatedAttributesForUser)
 
         deviceCache.putAttributes(updatedAttributesForAllUsers)
+    }
+
+    /**
+     * Replaces [appUserID]'s attributes with the result of [RemoteSubscriberAttributes.mergeIntoLocalMap], unlike
+     * [setAttributes], which only adds and so would keep attributes the server deleted. Writes nothing if the merge
+     * changes nothing.
+     */
+    @Synchronized
+    fun mergeRemoteAttributes(appUserID: AppUserID, remote: RemoteSubscriberAttributes) {
+        val storedForAllUsers = getAllStoredSubscriberAttributes()
+        val stored = storedForAllUsers[appUserID] ?: emptyMap()
+        val merged = remote.mergeIntoLocalMap(stored)
+        if (merged == stored) return
+
+        val updatedForAllUsers = if (merged.isEmpty()) {
+            storedForAllUsers - appUserID
+        } else {
+            storedForAllUsers + (appUserID to merged)
+        }
+        deviceCache.putAttributes(updatedForAllUsers)
     }
 
     @Synchronized

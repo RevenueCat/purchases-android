@@ -4,11 +4,19 @@ import android.app.Activity
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.After
 import org.junit.Test
 
 class CurrentActivityTrackerTest {
 
-    private val tracker = CurrentActivityTracker()
+    private val tracker = CurrentActivityTracker
+    private val mockedActivities = mutableListOf<Activity>()
+
+    // The tracker is process-wide, so leave it as found.
+    @After
+    fun tearDown() {
+        mockedActivities.forEach { tracker.onActivityStopped(it) }
+    }
 
     @Test
     fun `currentActivity is null before any activity starts`() {
@@ -85,8 +93,8 @@ class CurrentActivityTrackerTest {
         assertThat(tracker.currentActivity).isNull()
     }
 
-    private fun mockActivity(finishing: Boolean = false, destroyed: Boolean = false): Activity = mockk {
+    private fun mockActivity(finishing: Boolean = false, destroyed: Boolean = false): Activity = mockk<Activity> {
         every { isFinishing } returns finishing
         every { isDestroyed } returns destroyed
-    }
+    }.also { mockedActivities.add(it) }
 }

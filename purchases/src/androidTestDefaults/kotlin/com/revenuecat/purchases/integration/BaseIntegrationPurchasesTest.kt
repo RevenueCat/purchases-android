@@ -172,6 +172,7 @@ abstract class BaseIntegrationPurchasesTest : BasePurchasesIntegrationTest() {
             )
         }
 
+        awaitOfferingsResponsePersisted()
         simulateSdkRestart(activity, forceServerErrorsStrategy = ForceServerErrorStrategy.failAll)
 
         ensureBlockFinishes { latch ->
@@ -508,7 +509,6 @@ abstract class BaseIntegrationPurchasesTest : BasePurchasesIntegrationTest() {
             every { runningTests } returns true
             every { fallbackBaseURLs } returns emptyList()
             every { hasProxyURL } returns false
-            every { usesRemoteConfigAPISources } returns false
         }
         return HTTPClient(
             appConfig = appConfig,

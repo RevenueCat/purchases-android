@@ -181,21 +181,66 @@ internal class StackOverflowScrollTests {
 
     @Test
     fun `root can opt out while a bounded child scrolls`() {
-        val child = StackComponent(
-            components = listOf(
-                StackComponent(
-                    components = emptyList(),
-                    size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fixed(4000u)),
-                ),
-            ),
-            dimension = Dimension.Vertical(HorizontalAlignment.CENTER, FlexDistribution.START),
-            size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fixed(200u)),
-            overflow = StackComponent.Overflow.SCROLL,
-        )
         setPaywallContent(
             rootStack(
                 overflow = StackComponent.Overflow.NONE,
-                children = listOf(child),
+                children = listOf(scrollingChild()),
+            ),
+        )
+
+        assertThat(verticallyScrollableNodeCount()).isEqualTo(1)
+    }
+
+    @Test
+    fun `scrolling root keeps same-axis scrolling on its bounded child`() {
+        setPaywallContent(
+            rootStack(
+                overflow = StackComponent.Overflow.SCROLL,
+                children = listOf(scrollingChild()),
+            ),
+        )
+
+        assertThat(verticallyScrollableNodeCount()).isEqualTo(2)
+        val maxScrollRange = composeTestRule.onAllNodes(verticallyScrollable)
+            .fetchSemanticsNodes()
+            .maxOf { it.config[SemanticsProperties.VerticalScrollAxisRange].maxValue() }
+        assertThat(maxScrollRange).isGreaterThan(0f)
+    }
+
+    @Test
+    fun `scrolling root keeps same-axis scrolling on its max-bounded fill child`() {
+        setPaywallContent(
+            rootStack(
+                overflow = StackComponent.Overflow.SCROLL,
+                children = listOf(scrollingChild(height = SizeConstraint.Fill(max = 200u))),
+            ),
+        )
+
+        assertThat(verticallyScrollableNodeCount()).isEqualTo(2)
+        val maxScrollRange = composeTestRule.onAllNodes(verticallyScrollable)
+            .fetchSemanticsNodes()
+            .maxOf { it.config[SemanticsProperties.VerticalScrollAxisRange].maxValue() }
+        assertThat(maxScrollRange).isGreaterThan(0f)
+    }
+
+    @Test
+    fun `scrolling root disables same-axis scrolling on its unbounded child`() {
+        setPaywallContent(
+            rootStack(
+                overflow = StackComponent.Overflow.SCROLL,
+                children = listOf(scrollingChild(height = SizeConstraint.Fit())),
+            ),
+        )
+
+        assertThat(verticallyScrollableNodeCount()).isEqualTo(1)
+    }
+
+    @Test
+    fun `automatic root scroll disables same-axis scrolling on its unbounded child`() {
+        setPaywallContent(
+            rootStack(
+                overflow = null,
+                children = listOf(scrollingChild(height = SizeConstraint.Fit())),
             ),
         )
 
@@ -246,6 +291,20 @@ internal class StackOverflowScrollTests {
         size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fill()),
         overflow = overflow,
         overrides = overrides,
+    )
+
+    private fun scrollingChild(
+        height: SizeConstraint = SizeConstraint.Fixed(200u),
+    ): StackComponent = StackComponent(
+        components = listOf(
+            StackComponent(
+                components = emptyList(),
+                size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fixed(4000u)),
+            ),
+        ),
+        dimension = Dimension.Vertical(HorizontalAlignment.CENTER, FlexDistribution.START),
+        size = Size(width = SizeConstraint.Fill(), height = height),
+        overflow = StackComponent.Overflow.SCROLL,
     )
 
     private fun paywallState(rootStack: StackComponent): PaywallState.Loaded.Components {

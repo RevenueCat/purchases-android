@@ -127,6 +127,41 @@ class StyleFactoryTests {
     }
 
     @Test
+    fun `Packages in a sheet share its presentation key while root packages have none`() {
+        val rootPackage = PackageComponent(
+            packageId = TestData.Packages.annual.identifier,
+            isSelectedByDefault = true,
+            stack = StackComponent(components = emptyList()),
+        )
+        val sheetPackage = PackageComponent(
+            packageId = TestData.Packages.monthly.identifier,
+            isSelectedByDefault = false,
+            stack = StackComponent(components = emptyList()),
+        )
+        val sheetButton = ButtonComponent(
+            action = ButtonComponent.Action.NavigateTo(
+                destination = ButtonComponent.Destination.Sheet(
+                    id = "package-sheet",
+                    stack = StackComponent(components = listOf(sheetPackage)),
+                ),
+            ),
+            stack = StackComponent(components = emptyList()),
+        )
+
+        val result = styleFactory.create(StackComponent(components = listOf(rootPackage, sheetButton))).getOrThrow()
+
+        val infos = result.availablePackages.packagesOutsideTabs.associateBy { it.pkg.identifier }
+        val buttonStyle = (result.componentStyle as StackComponentStyle).children[1] as ButtonComponentStyle
+        val destination = (buttonStyle.action as ButtonComponentStyle.Action.NavigateTo).destination
+            as ButtonComponentStyle.Action.NavigateTo.Destination.Sheet
+        assertThat(infos.getValue(TestData.Packages.annual.identifier).sheetPresentationKey).isNull()
+        assertThat(infos.getValue(TestData.Packages.annual.identifier).visibilityPaths).isNotEmpty()
+        assertThat(infos.getValue(TestData.Packages.monthly.identifier).sheetPresentationKey)
+            .isSameAs(destination.presentationKey)
+        assertThat(infos.getValue(TestData.Packages.monthly.identifier).visibilityPaths).isNotEmpty()
+    }
+
+    @Test
     fun `Should create a WebViewComponentStyle for a WebViewComponent`() {
         val size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fit())
         val component = WebViewComponent(

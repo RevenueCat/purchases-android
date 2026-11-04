@@ -71,9 +71,6 @@ internal class AppConfig(
     val applyObfuscatedAccountIdToSubscriptionChanges: Boolean
         get() = dangerousSettings.applyObfuscatedAccountIdToSubscriptionChanges
 
-    val usesRemoteConfigAPISources: Boolean
-        get() = dangerousSettings.usesRemoteConfigAPISources
-
     val playStoreVersionName = context.playStoreVersionName
     val playServicesVersionName = context.playServicesVersionName
 

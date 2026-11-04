@@ -3,6 +3,7 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components.pkg
 
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -15,6 +16,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteract
 import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPackageRowSelection
 
 @JvmSynthetic
+@Suppress("LongParameterList")
 @Composable
 internal fun PackageComponentView(
     style: PackageComponentStyle,
@@ -22,6 +24,7 @@ internal fun PackageComponentView(
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
     componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
+    ancestorScrollOrientations: Set<Orientation> = emptySet(),
 ) {
     val packageState = rememberUpdatedPackageComponentState(style = style, paywallState = state)
 
@@ -40,6 +43,7 @@ internal fun PackageComponentView(
         },
         componentInteractionTracker = componentInteractionTracker,
         modifier = modifier,
+        ancestorScrollOrientations = ancestorScrollOrientations,
         selected = if (style.isSelectable) selected else null,
         onStackClick = if (style.isSelectable) {
             click@{

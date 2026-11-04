@@ -86,7 +86,9 @@ class IdentityManagerTests {
                 cleanUpSubscriberAttributeCache(capture(cachedAppUserIDSlot), mockEditor)
             } just Runs
         }
-        mockSubscriberAttributesManager = mockk()
+        mockSubscriberAttributesManager = mockk<SubscriberAttributesManager>().apply {
+            every { mergeAttributes(any(), any()) } just Runs
+        }
         mockOfferingsCache = mockk<OfferingsCache>().apply {
             every { clearCache() } just Runs
         }
@@ -320,6 +322,49 @@ class IdentityManagerTests {
 
         verify(exactly = 1) { mockDeviceCache.cacheAppUserID(newAppUserID) }
         verify(exactly = 1) { mockDeviceCache.cacheCustomerInfo(newAppUserID, mockCustomerInfo) }
+    }
+
+    @Test
+    fun `login merges the new user's subscriber attributes after copying the anonymous user's`() {
+        val mockCustomerInfo: CustomerInfo = mockk()
+        mockCachedAnonymousUser()
+        val oldAppUserID = stubAnonymousID
+        val newAppUserID = "new"
+        every {
+            mockBackend.logIn(oldAppUserID, newAppUserID, captureLambda(), any())
+        } answers {
+            lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(mockCustomerInfo, false)
+        }
+        every { mockDeviceCache.cacheCustomerInfo(any(), any()) } just Runs
+        mockSubscriberAttributesManagerSynchronize(newAppUserID)
+        mockSubscriberAttributesManagerCopyAttributes(oldAppUserID, newAppUserID)
+
+        identityManager.logIn(newAppUserID, { _, _ -> }, { })
+
+        verifyOrder {
+            mockDeviceCache.cacheCustomerInfo(newAppUserID, mockCustomerInfo)
+            mockSubscriberAttributesManager.copyUnsyncedSubscriberAttributes(oldAppUserID, newAppUserID)
+            mockSubscriberAttributesManager.mergeAttributes(mockCustomerInfo, newAppUserID)
+        }
+        verify(exactly = 0) { mockSubscriberAttributesManager.mergeAttributes(any(), oldAppUserID) }
+    }
+
+    @Test
+    fun `login does not merge subscriber attributes on error`() {
+        mockCachedAnonymousUser()
+        val newAppUserID = "new"
+        every {
+            mockBackend.logIn(stubAnonymousID, newAppUserID, any(), captureLambda())
+        } answers {
+            lambda<(PurchasesError) -> Unit>().captured.invoke(
+                PurchasesError(PurchasesErrorCode.InvalidCredentialsError)
+            )
+        }
+        mockSubscriberAttributesManagerSynchronize(newAppUserID)
+
+        identityManager.logIn(newAppUserID, { _, _ -> }, { })
+
+        verify(exactly = 0) { mockSubscriberAttributesManager.mergeAttributes(any(), any()) }
     }
 
     @Test

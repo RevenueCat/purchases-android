@@ -424,8 +424,6 @@ class OfferingsManagerTest {
 
         assertThat(receivedOfferings).isEqualTo(testOfferings)
 
-        // Null payload: the response came from the disk cache, so it must not be re-serialized and
-        // written back on every failed fetch.
         verify(exactly = 1) { cache.cacheOfferings(testOfferings, null, any()) }
         verify(exactly = 1) {
             offeringsFactory.createOfferings(

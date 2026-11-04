@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.offlineentitlements
 
+import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.models.StoreTransaction
 import java.util.Date
 
@@ -10,4 +11,5 @@ internal data class PurchasedProduct(
     val entitlements: List<String>,
     val expiresDate: Date?,
     val isSynced: Boolean,
+    val periodType: PeriodType,
 )

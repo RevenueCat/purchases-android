@@ -5,8 +5,8 @@ import com.revenuecat.purchases.utils.UrlConnectionFactory
 import java.io.IOException
 
 /**
- * Wraps [delegate] so downloads [strategy] declares unreachable throw instead of connecting, letting an
- * integration test simulate no network on paths that bypass `HTTPClient`.
+ * Wraps [delegate] so connections [strategy] declares unreachable throw instead of connecting, letting an
+ * integration test simulate unreachable hosts on paths that bypass `HTTPClient`.
  */
 internal class ForcedFailureUrlConnectionFactory(
     private val delegate: UrlConnectionFactory,

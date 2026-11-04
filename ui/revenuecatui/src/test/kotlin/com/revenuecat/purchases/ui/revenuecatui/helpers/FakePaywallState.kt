@@ -20,6 +20,7 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
+import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
@@ -31,6 +32,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.validatePaywallComponentsDataOrNull
 import java.net.URL
+import java.util.Date
 
 internal fun FakePaywallState(vararg pkg: Package): PaywallState.Loaded.Components =
     FakePaywallState(packages = pkg.toList())
@@ -68,14 +70,23 @@ internal fun FakePaywallState(
     purchases: PurchasesType = MockPurchasesType(),
     offeringWebCheckoutURL: URL? = null,
     viewModelActionInProgress: State<Boolean> = mutableStateOf(false),
+    addPackageComponents: Boolean = true,
+    stateDeclarations: Map<String, StateDeclaration> = emptyMap(),
+    dateProvider: () -> Date = { Date() },
 ): PaywallState.Loaded.Components {
-    val packageComponents = packages.map { pkg ->
-        PackageComponent(
-            packageId = pkg.identifier,
-            isSelectedByDefault = false,
-            stack = StackComponent(components = emptyList())
-        )
-    }
+    // Only synthesize a PackageComponent for packages the caller's components don't already
+    // reference: a synthesized always-visible duplicate would defeat visibility-rule tests.
+    val explicitPackageIds = components.filterIsInstance<PackageComponent>().map { it.packageId }.toSet()
+    val packageComponents = packages
+        .takeIf { addPackageComponents }.orEmpty()
+        .filter { it.identifier !in explicitPackageIds }
+        .map { pkg ->
+            PackageComponent(
+                packageId = pkg.identifier,
+                isSelectedByDefault = false,
+                stack = StackComponent(components = emptyList())
+            )
+        }
     val data = PaywallComponentsData(
         id = "paywall_id",
         templateName = "template",
@@ -90,6 +101,7 @@ internal fun FakePaywallState(
         ),
         componentsLocalizations = localizations,
         defaultLocaleIdentifier = defaultLocaleIdentifier,
+        stateDeclarations = stateDeclarations,
     )
     val offering = Offering(
         identifier = "identifier",
@@ -102,6 +114,7 @@ internal fun FakePaywallState(
     val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
     return offering.toComponentsPaywallState(
         validated,
+        dateProvider = dateProvider,
         purchases = purchases,
         customVariables = customVariables,
         viewModelActionInProgress = viewModelActionInProgress,

@@ -83,6 +83,10 @@ class LoginFragment : Fragment() {
             navigateToProxyFragment()
         }
 
+        binding.simulatedFailuresButton.setOnClickListener {
+            showSimulatedFailuresDialog(dataStoreUtils)
+        }
+
         return binding.root
     }
 

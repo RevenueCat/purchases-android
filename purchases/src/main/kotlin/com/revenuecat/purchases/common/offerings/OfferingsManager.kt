@@ -222,8 +222,7 @@ internal class OfferingsManager(
                             createAndCacheOfferings(
                                 offeringsJSON = cachedOfferingsResponse,
                                 // Unknown: the source of the response that originally populated the
-                                // disk cache is not persisted, because persisting it is what forced the
-                                // response body to be re-serialized on every write.
+                                // disk cache is not persisted.
                                 originalDataSource = null,
                                 responsePayloadToCache = null,
                                 requestEpoch,

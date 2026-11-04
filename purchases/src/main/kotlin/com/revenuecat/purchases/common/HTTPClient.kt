@@ -216,7 +216,6 @@ internal class HTTPClient(
                 requestBaseURL = source?.url ?: baseURL,
                 isFallbackURL = fallbackURLIndex > 0,
                 isMainBackend = isMainBackend,
-                fallbackAvailable = canUseFallback(),
                 endpoint = endpoint,
                 body = body,
                 postFieldsToSign = postFieldsToSign,
@@ -338,7 +337,6 @@ internal class HTTPClient(
         requestBaseURL: URL,
         isFallbackURL: Boolean,
         isMainBackend: Boolean,
-        fallbackAvailable: Boolean,
         endpoint: Endpoint,
         body: Map<String, Any?>?,
         postFieldsToSign: List<Pair<String, String>>?,
@@ -372,12 +370,7 @@ internal class HTTPClient(
             callSuccessful = true
         } catch (e: IOException) {
             exceptionHit = e
-            // With remote-config API sources enabled, record a timeout for any main-source attempt that timed
-            // out, regardless of fallback-URL support. When disabled, keep the legacy behavior of only arming
-            // the fail-fast memory for endpoints that support fallback URLs.
-            val timedOutOnMainSource = e is SocketTimeoutException && isMainBackend
-            val shouldArmFailFastMemory = appConfig.usesRemoteConfigAPISources || fallbackAvailable
-            if (timedOutOnMainSource && shouldArmFailFastMemory) {
+            if (e is SocketTimeoutException && isMainBackend) {
                 requestResult = HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT
             }
         } finally {
@@ -445,18 +438,14 @@ internal class HTTPClient(
         val postFieldsToSignHeader: String?
         val fullURL: URL
 
-        if (appConfig.runningTests) {
-            forceServerErrorStrategy?.fakeResponseWithoutPerformingRequest(baseURL, endpoint)?.let {
-                warnLog { "Faking response for request to ${endpoint.getPath()}" }
-                return it
-            }
+        forceServerErrorStrategy?.fakeResponseWithoutPerformingRequest(baseURL, endpoint)?.let {
+            warnLog { "Faking response for request to ${endpoint.getPath()}" }
+            return it
         }
 
         try {
             val requestURL = URL(baseURL, path)
-            fullURL = if (appConfig.runningTests &&
-                forceServerErrorStrategy?.shouldForceServerError(baseURL, endpoint) == true
-            ) {
+            fullURL = if (forceServerErrorStrategy?.shouldForceServerError(baseURL, endpoint) == true) {
                 warnLog { "Forcing server error for request to ${URL(baseURL, path)}" }
                 URL(forceServerErrorStrategy.serverErrorURL)
             } else {
@@ -491,9 +480,6 @@ internal class HTTPClient(
                 isFallback = isFallbackURL || endpoint.targetsFallbackHost,
                 fallbackAvailable = endpoint.supportsFallbackBaseURLs && appConfig.fallbackBaseURLs.isNotEmpty(),
                 isProxied = appConfig.hasProxyURL,
-                // The re-tiered fail-fast timeouts for main-API requests only apply when API sources are
-                // enabled. Blob-source downloads opt in independently of this setting.
-                reTieredTimeoutsEnabled = appConfig.usesRemoteConfigAPISources,
             )
 
             connection = getConnection(httpRequest, timeout)
@@ -506,7 +492,7 @@ internal class HTTPClient(
         val payloadBytes: ByteArray?
         val responseCode: Int
         try {
-            debugLog { NetworkStrings.API_REQUEST_STARTED.format(connection.requestMethod, path) }
+            debugLog { NetworkStrings.API_REQUEST_STARTED.format(connection.requestMethod, baseURL.host, path) }
             responseCode = connection.responseCode
             payloadBytes = inputStream?.let { readBytesFully(it) }
             if (enableExtraRequestLogging) {
@@ -531,7 +517,9 @@ internal class HTTPClient(
             throw IOException(NetworkStrings.HTTP_RESPONSE_NO_STATUS_CODE)
         }
 
-        debugLog { NetworkStrings.API_REQUEST_COMPLETED.format(connection.requestMethod, path, responseCode) }
+        debugLog {
+            NetworkStrings.API_REQUEST_COMPLETED.format(connection.requestMethod, baseURL.host, path, responseCode)
+        }
         // The response arrived in full. Everything below only inspects it, so failures from here on say
         // nothing about how responsive the host is.
         onResponseReceived(responseCode)
@@ -777,7 +765,8 @@ internal class HTTPClient(
             // Responses are cached by ETagManager. An HttpResponseCache installed by the app
             // would otherwise splice stale cached bodies into our 304s and break signature verification.
             useCaches = false
-            // We leave the read timeout to the default (readTimeout = 0), which means infinite.
+            // HttpURLConnection's default readTimeout of 0 never times out a silent connected socket.
+            readTimeout = timeoutManager.getReadTimeout().toInt()
             request.headers.forEach { (key, value) ->
                 addRequestProperty(key, value)
             }

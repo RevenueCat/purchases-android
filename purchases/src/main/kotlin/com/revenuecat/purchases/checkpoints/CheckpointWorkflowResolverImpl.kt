@@ -16,6 +16,7 @@ import com.revenuecat.purchases.common.checkpoints.CheckpointRulesResolution
 import com.revenuecat.purchases.common.checkpoints.CheckpointsConfigProvider
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.localrules.LocalRulesEvaluator
 import com.revenuecat.purchases.common.localrules.RulesDimensionValue
@@ -25,16 +26,21 @@ import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.common.workflows.WorkflowStep
+import com.revenuecat.purchases.common.workflows.WorkflowStepGating
+import com.revenuecat.purchases.common.workflows.events.WorkflowEvent
+import com.revenuecat.purchases.common.workflows.events.WorkflowStepEntryReason
 import com.revenuecat.purchases.withPresentedCheckpointIdentifier
+import com.revenuecat.purchases.withPresentedWorkflowContext
 import kotlinx.coroutines.CancellationException
+import java.util.Date
 import java.util.UUID
 
 /**
  * Resolves a checkpoint through the `checkpoint_rules` topic: the checkpoint's rules are read from remote config
  * and evaluated in order against locally collected dimensions, and the first rule whose audience matches wins.
  *
- * The winner is final. If its workflow turns out to be unservable — its body unavailable, or the offerings its
- * steps present unfetchable — the checkpoint resolves to
+ * The winner is final. If its workflow turns out to be unservable — its body unavailable, a step's gate
+ * unreadable, or the offerings its steps present unfetchable — the checkpoint resolves to
  * [CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE] rather than falling through to a rule the
  * customer was not the first choice for. Which offering each UI step presents is not checked here: the workflow is
  * presented against the fetched offerings and a step whose offering is missing fails when it is reached.
@@ -47,7 +53,7 @@ import java.util.UUID
  * [SIMULATED_ERROR_CHECKPOINT_ID] is the one piece of PoC scaffolding left: it is the only way for the tester
  * apps to exercise the throw path, since nothing in the config-driven path throws.
  */
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 internal class CheckpointWorkflowResolverImpl(
     private val workflowManager: WorkflowManager,
     private val uiConfigProvider: UiConfigProvider,
@@ -55,6 +61,7 @@ internal class CheckpointWorkflowResolverImpl(
     private val audiencesConfigProvider: AudiencesConfigProvider,
     private val localRulesEvaluator: LocalRulesEvaluator,
     private val getOfferings: suspend () -> Offerings,
+    private val track: (FeatureEvent) -> Unit = {},
 ) : CheckpointWorkflowResolver {
 
     override suspend fun resolve(
@@ -69,9 +76,11 @@ internal class CheckpointWorkflowResolverImpl(
             errorLog(error)
             throw PurchasesException(error)
         }
-        attemptResolve(identifier, customVariables)?.let { return it }
+        // One id per hit, shared by every event it produces, so a retried attempt keeps it.
+        val traceId = UUID.randomUUID().toString()
+        attemptResolve(identifier, customVariables, traceId)?.let { return it }
         verboseLog { "Remote config changed while resolving checkpoint '$identifier'; resolving it again." }
-        return attemptResolve(identifier, customVariables)
+        return attemptResolve(identifier, customVariables, traceId)
             ?: configurationUnavailable("Remote config kept changing while resolving checkpoint '$identifier'.")
     }
 
@@ -84,6 +93,7 @@ internal class CheckpointWorkflowResolverImpl(
     private suspend fun attemptResolve(
         identifier: String,
         customVariables: Map<String, RulesDimensionValue>,
+        traceId: String,
     ): CheckpointResolution? {
         val rulesResolution = when (val resolution = checkpointsConfigProvider.resolveCheckpoint(identifier)) {
             is CheckpointRulesResolution.Found -> resolution
@@ -118,8 +128,11 @@ internal class CheckpointWorkflowResolverImpl(
             errorLog(e) { "UI config could not be fetched for checkpoint '$identifier'." }
             null
         } ?: return configurationUnavailable("UI config is unavailable for checkpoint '$identifier'.")
-        return resolveRule(identifier, workflowManager, rule, uiConfig)
+        // Held back until the result is known to be current, so a stale attempt that gets retried emits nothing.
+        val pendingEvents = mutableListOf<FeatureEvent>()
+        return resolveRule(identifier, workflowManager, rule, uiConfig, traceId, pendingEvents)
             .takeIf { checkpointsConfigProvider.isCurrent(rulesResolution) }
+            ?.also { pendingEvents.forEach(track) }
     }
 
     /**
@@ -153,39 +166,80 @@ internal class CheckpointWorkflowResolverImpl(
         workflowManager: WorkflowManager,
         rule: CheckpointRule,
         uiConfig: UiConfig,
+        traceId: String,
+        pendingEvents: MutableList<FeatureEvent>,
     ): CheckpointResolution {
         val workflow = try {
             workflowManager.getWorkflowBody(rule.workflowId)
         } catch (e: PurchasesException) {
-            return unservableRule(rule, "it could not be loaded: ${e.error}")
+            return unservableRule(rule, "it could not be loaded: ${e.error}", traceId)
         }
         val initialStep = workflow.steps[workflow.initialStepId]
-            ?: return unservableRule(rule, "its initial step was not found")
+            ?: return unservableRule(rule, "its initial step was not found", traceId)
+        workflow.steps.values.firstOrNull { it.gating == WorkflowStepGating.Invalid }?.let { step ->
+            return unservableRule(rule, "step '${step.id}' has invalid gating", traceId)
+        }
         return if (initialStep.isOfferingStep) {
             if (workflow.steps.size != 1) {
-                unservableRule(rule, "an offering step cannot be mixed with other steps")
+                unservableRule(rule, "an offering step cannot be mixed with other steps", traceId)
             } else {
-                resolveOfferingRule(checkpointIdentifier, rule, initialStep)
+                resolveOfferingRule(checkpointIdentifier, rule, workflow, initialStep, traceId, pendingEvents)
             }
         } else if (workflow.steps.values.any { it.isOfferingStep }) {
-            unservableRule(rule, "a UI workflow cannot contain offering steps")
+            unservableRule(rule, "a UI workflow cannot contain offering steps", traceId)
         } else {
-            resolveUiRule(checkpointIdentifier, rule, workflow, uiConfig)
+            resolveUiRule(checkpointIdentifier, rule, workflow, uiConfig, traceId)
         }
     }
 
+    /**
+     * An offering step has no UI, so it is the whole workflow: it starts when it is entered and completes once the
+     * offering it presents has loaded. A step that cannot be served never completes.
+     */
     @Suppress("ReturnCount")
     private suspend fun resolveOfferingRule(
         checkpointIdentifier: String,
         rule: CheckpointRule,
+        workflow: PublishedWorkflow,
         step: WorkflowStep,
+        traceId: String,
+        pendingEvents: MutableList<FeatureEvent>,
     ): CheckpointResolution {
         val offeringIdentifier = step.offeringIdentifier
-            ?: return unservableRule(rule, "the offering step has no valid offering identifier")
+            ?: return unservableRule(rule, "the offering step has no valid offering identifier", traceId)
 
+        val workflowBlobRef = workflowManager.workflowBlobRef(rule.workflowId)
+        pendingEvents += WorkflowEvent.StepStarted(
+            creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
+            workflowId = workflow.id,
+            stepId = step.id,
+            traceId = traceId,
+            entryReason = WorkflowStepEntryReason.START.value,
+            isFirstStep = true,
+            isLastStep = true,
+            workflowBlobRef = workflowBlobRef,
+            fallbackOriginalStepId = step.fallbackOriginalStepId,
+            experiment = step.experimentData(workflowBlobRef),
+        )
         val offering = loadOfferings(checkpointIdentifier)?.all?.get(offeringIdentifier)
-            ?: return unservableRule(rule, "offering '$offeringIdentifier' was not found in offerings")
-        val matched = matchedOffering(offering, checkpointIdentifier, rule)
+            ?: return unservableRule(rule, "offering '$offeringIdentifier' was not found in offerings", traceId)
+        pendingEvents += WorkflowEvent.StepCompleted(
+            creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
+            workflowId = workflow.id,
+            stepId = step.id,
+            traceId = traceId,
+            isFirstStep = true,
+            isLastStep = true,
+            workflowBlobRef = workflowBlobRef,
+            fallbackOriginalStepId = step.fallbackOriginalStepId,
+            experiment = step.experimentData(workflowBlobRef),
+        )
+        val matched = matchedOffering(
+            offering.withPresentedWorkflowContext(workflow.id, step.id, workflowBlobRef),
+            checkpointIdentifier,
+            rule,
+            traceId,
+        )
         debugLog {
             "Checkpoint resolved to offering '${matched.offering.identifier}' from workflow '${rule.workflowId}'"
         }
@@ -196,23 +250,23 @@ internal class CheckpointWorkflowResolverImpl(
         offering: Offering,
         checkpointIdentifier: String,
         rule: CheckpointRule,
-    ): CheckpointResolution.MatchedOffering {
-        val traceId = UUID.randomUUID().toString()
-        return CheckpointResolution.MatchedOffering(
+        traceId: String,
+    ): CheckpointResolution.MatchedOffering =
+        CheckpointResolution.MatchedOffering(
             offering.withPresentedCheckpointIdentifier(checkpointIdentifier, traceId),
             checkpointRuleId = rule.id,
             traceId = traceId,
         )
-    }
 
     private suspend fun resolveUiRule(
         checkpointIdentifier: String,
         rule: CheckpointRule,
         workflow: PublishedWorkflow,
         uiConfig: UiConfig,
+        traceId: String,
     ): CheckpointResolution {
         val offerings = loadOfferings(checkpointIdentifier)
-            ?: return unservableRule(rule, "the offerings its steps present could not be fetched")
+            ?: return unservableRule(rule, "the offerings its steps present could not be fetched", traceId)
         debugLog { "Checkpoint resolved to workflow '${rule.workflowId}'" }
         workflowManager.prewarmWorkflowAssets(workflow, uiConfig)
         return CheckpointResolution.MatchedWorkflow(
@@ -220,7 +274,7 @@ internal class CheckpointWorkflowResolverImpl(
             uiConfig,
             offerings,
             checkpointRuleId = rule.id,
-            traceId = UUID.randomUUID().toString(),
+            traceId = traceId,
             workflowBlobRef = workflowManager.workflowBlobRef(rule.workflowId),
         )
     }
@@ -233,9 +287,13 @@ internal class CheckpointWorkflowResolverImpl(
             null
         }
 
-    private fun unservableRule(rule: CheckpointRule, reason: String): CheckpointResolution.NoAction {
+    private fun unservableRule(
+        rule: CheckpointRule,
+        reason: String,
+        traceId: String,
+    ): CheckpointResolution.NoAction {
         warnLog { "The matched checkpoint rule for workflow '${rule.workflowId}' can't be served: $reason." }
-        return CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
+        return CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE, traceId)
     }
 
     private fun configurationUnavailable(message: String): CheckpointResolution.NoAction {

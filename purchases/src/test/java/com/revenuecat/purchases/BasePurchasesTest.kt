@@ -14,6 +14,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
+import com.revenuecat.purchases.ads.ConfiguredAdRewardsProvider
 import com.revenuecat.purchases.blockstore.BlockstoreHelper
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
@@ -104,6 +105,7 @@ internal open class BasePurchasesTest {
     internal val mockVirtualCurrencyManager = mockk<VirtualCurrencyManager>()
     internal val mockPurchaseParamsValidator = mockk<PurchaseParamsValidator>()
     internal val mockWorkflowManager = mockk<WorkflowManager>(relaxed = true)
+    internal val mockConfiguredAdRewardsProvider = mockk<ConfiguredAdRewardsProvider>(relaxed = true)
     internal val mockRemoteConfigManager = mockk<RemoteConfigManager>(relaxed = true)
     internal val mockTokenManager = mockk<TokenManager>(relaxed = true)
     internal val mockUiConfigProvider = mockk<UiConfigProvider>(relaxed = true)
@@ -358,6 +360,7 @@ internal open class BasePurchasesTest {
         val mockEntitlements = mockk<EntitlementInfos>()
         every { mockEntitlements.verification } returns verificationResult
         every { mockInfo.entitlements } returns mockEntitlements
+        every { mockInfo.subscriptionsByProductIdentifier } returns emptyMap()
     }
 
     protected fun mockCustomerInfoHelper(
@@ -481,6 +484,7 @@ internal open class BasePurchasesTest {
         enableSimulatedStore: Boolean = false,
         store: Store = Store.PLAY_STORE,
         subscriberAttributesManager: SubscriberAttributesManager = mockSubscriberAttributesManager,
+        diagnosticsEnabled: Boolean = true,
     ) {
         appConfig = AppConfig(
             context = mockContext,
@@ -510,7 +514,7 @@ internal open class BasePurchasesTest {
             customerInfoHelper = mockCustomerInfoHelper,
             customerInfoUpdateHandler = mockCustomerInfoUpdateHandler,
             diagnosticsSynchronizer = mockDiagnosticsSynchronizer,
-            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker.takeIf { diagnosticsEnabled },
             dateProvider = mockDateProvider,
             offlineEntitlementsManager = mockOfflineEntitlementsManager,
             postReceiptHelper = mockPostReceiptHelper,
@@ -534,6 +538,7 @@ internal open class BasePurchasesTest {
             purchaseParamsValidator = mockPurchaseParamsValidator,
             workflowManager = mockWorkflowManager,
             remoteConfigManager = mockRemoteConfigManager,
+            configuredAdRewardsProvider = mockConfiguredAdRewardsProvider,
             uiConfigProvider = mockUiConfigProvider,
             workflowsConfigProvider = mockWorkflowsConfigProvider,
             checkpointsConfigProvider = mockCheckpointsConfigProvider,

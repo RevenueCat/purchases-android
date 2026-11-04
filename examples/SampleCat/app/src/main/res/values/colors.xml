@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- RevenueCat Brand Colors -->
+    <color name="rc_blue">#576CDB</color>
+    <color name="rc_green">#11D483</color>
+    <color name="accent_color">#F2545B</color>
+</resources>

@@ -13,6 +13,9 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import dev.drewhamilton.poko.Poko
 
 @Immutable
+internal class SheetPresentationKey
+
+@Immutable
 internal data class ButtonComponentStyle(
     @get:JvmSynthetic
     val stackComponentStyle: StackComponentStyle,
@@ -98,6 +101,7 @@ internal data class ButtonComponentStyle(
                 @Immutable
                 data class Sheet(
                     @get:JvmSynthetic val id: String,
+                    @get:JvmSynthetic val presentationKey: SheetPresentationKey,
                     @get:JvmSynthetic val name: String?,
                     @get:JvmSynthetic val stack: ComponentStyle,
                     @get:JvmSynthetic val backgroundBlur: Boolean,

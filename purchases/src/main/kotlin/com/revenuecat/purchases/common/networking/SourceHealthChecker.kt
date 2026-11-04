@@ -4,7 +4,6 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.verboseLog
-import com.revenuecat.purchases.utils.DefaultUrlConnectionFactory
 import com.revenuecat.purchases.utils.UrlConnection
 import com.revenuecat.purchases.utils.UrlConnectionFactory
 import java.io.IOException
@@ -22,7 +21,7 @@ import java.util.concurrent.CountDownLatch
  */
 @OptIn(InternalRevenueCatAPI::class)
 internal class SourceHealthChecker(
-    private val urlConnectionFactory: UrlConnectionFactory = DefaultUrlConnectionFactory(),
+    private val urlConnectionFactory: UrlConnectionFactory,
     private val dateProvider: DateProvider = DefaultDateProvider(),
 ) {
 

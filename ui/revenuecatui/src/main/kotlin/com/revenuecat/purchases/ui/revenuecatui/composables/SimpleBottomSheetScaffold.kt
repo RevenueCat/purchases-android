@@ -34,6 +34,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.ui.revenuecatui.components.style.SheetPresentationKey
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 
 private const val ALPHA_SCRIM = 0.6f
@@ -95,6 +96,10 @@ internal class SimpleSheetState {
         private set
 
     @get:JvmSynthetic
+    var presentationKey: SheetPresentationKey? by mutableStateOf(null)
+        private set
+
+    @get:JvmSynthetic
     var visible by mutableStateOf(false)
         private set
 
@@ -104,11 +109,13 @@ internal class SimpleSheetState {
         backgroundBlur: Boolean,
         content: @Composable () -> Unit,
         contentKey: Any? = null,
+        presentationKey: SheetPresentationKey? = null,
         onDismiss: (() -> Unit)? = null,
     ) {
         this.backgroundBlur = backgroundBlur
         this.content = content
         this.contentKey = contentKey
+        this.presentationKey = presentationKey
         this.onDismiss = onDismiss
         visible = true
     }
@@ -116,6 +123,7 @@ internal class SimpleSheetState {
     fun hide() {
         backgroundBlur = false
         visible = false
+        presentationKey = null
         onDismiss?.invoke()
         onDismiss = null
     }

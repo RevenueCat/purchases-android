@@ -4,6 +4,7 @@ package com.revenuecat.purchases.common.workflows
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.JsonTools
+import com.revenuecat.purchases.common.workflows.events.WorkflowEvent
 import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
@@ -16,6 +17,74 @@ import org.junit.Test
 import java.net.URL
 
 internal class WorkflowModelsDeserializationTest {
+
+    @Test
+    fun `WorkflowStep gating parses soft gates`() {
+        assertThat(stepWithGating("""{"type":"soft"}""").gating).isEqualTo(WorkflowStepGating.Soft)
+    }
+
+    @Test
+    fun `WorkflowStep gating parses hard gates with entitlement identifiers`() {
+        val step = stepWithGating("""{"type":"hard","entitlement_identifiers":["pro","premium"]}""")
+
+        assertThat(step.gating).isEqualTo(WorkflowStepGating.Hard(setOf("pro", "premium")))
+    }
+
+    @Test
+    fun `WorkflowStep gating ignores unknown keys so the backend can add fields`() {
+        assertThat(stepWithGating("""{"type":"soft","new_field":{"a":1}}""").gating)
+            .isEqualTo(WorkflowStepGating.Soft)
+        assertThat(stepWithGating("""{"type":"hard","entitlement_identifiers":["pro"],"new_field":true}""").gating)
+            .isEqualTo(WorkflowStepGating.Hard(setOf("pro")))
+    }
+
+    @Test
+    fun `WorkflowStep gating is null when the key is absent`() {
+        val step = JsonTools.json.decodeFromString(
+            WorkflowStep.serializer(),
+            """{"id":"step_1","type":"screen","param_values":{"other":true}}""",
+        )
+
+        assertThat(step.gating).isNull()
+    }
+
+    @Test
+    fun `WorkflowStep gating is invalid for malformed or unknown present values`() {
+        listOf(
+            "null",
+            "true",
+            "42",
+            "\"hard\"",
+            "[]",
+            "{}",
+            """{"type":null}""",
+            """{"type":42}""",
+            """{"type":"unknown"}""",
+            """{"type":"hard"}""",
+            """{"type":"hard","entitlement_identifiers":null}""",
+            """{"type":"hard","entitlement_identifiers":"pro"}""",
+            """{"type":"hard","entitlement_identifiers":{}}""",
+            """{"type":"hard","entitlement_identifiers":[]}""",
+            """{"type":"hard","entitlement_identifiers":[""]}""",
+            """{"type":"hard","entitlement_identifiers":["  "]}""",
+            """{"type":"hard","entitlement_identifiers":["pro",null]}""",
+            """{"type":"hard","entitlement_identifiers":["pro",42]}""",
+            """{"type":"hard","entitlement_identifiers":["pro",true]}""",
+            """{"type":"hard","entitlement_identifiers":["pro",{}]}""",
+            """{"type":"hard","entitlement_identifiers":["pro",[]]}""",
+            """{"type":"hard","entitlement_identifiers":["pro","pro"]}""",
+            """{"type":"soft","entitlement_identifiers":["pro"]}""",
+        ).forEach { gatingJson ->
+            assertThat(stepWithGating(gatingJson).gating)
+                .describedAs(gatingJson)
+                .isEqualTo(WorkflowStepGating.Invalid)
+        }
+    }
+
+    private fun stepWithGating(gatingJson: String): WorkflowStep = JsonTools.json.decodeFromString(
+        WorkflowStep.serializer(),
+        """{"id":"step_1","type":"screen","param_values":{"gating":$gatingJson}}""",
+    )
 
     @Test
     fun `WorkflowStep stepScreenType reads paywall from metadata`() {
@@ -135,6 +204,30 @@ internal class WorkflowModelsDeserializationTest {
         assertThat(step.experimentId).isEqualTo("exp_new")
         assertThat(step.experimentVariant).isEqualTo("b")
     }
+
+    @Test
+    fun `WorkflowStep experimentData returns the experiment when it has an id, a variant and a blob ref`() {
+        val step = stepWithParams("""{"experiment_id": "exp_abc", "experiment_variant": "b"}""")
+        assertThat(step.experimentData(workflowBlobRef = "blob_ref"))
+            .isEqualTo(WorkflowEvent.ExperimentData(experimentId = "exp_abc", experimentVariant = "b"))
+    }
+
+    @Test
+    fun `WorkflowStep experimentData is null without a blob ref`() {
+        val step = stepWithParams("""{"experiment_id": "exp_abc", "experiment_variant": "b"}""")
+        assertThat(step.experimentData(workflowBlobRef = null)).isNull()
+    }
+
+    @Test
+    fun `WorkflowStep experimentData is null when the id or the variant is missing`() {
+        assertThat(stepWithParams("""{"experiment_variant": "b"}""").experimentData("blob_ref")).isNull()
+        assertThat(stepWithParams("""{"experiment_id": "exp_abc"}""").experimentData("blob_ref")).isNull()
+    }
+
+    private fun stepWithParams(paramValues: String): WorkflowStep = JsonTools.json.decodeFromString(
+        WorkflowStep.serializer(),
+        """{"id": "step_1", "type": "screen", "param_values": $paramValues}""",
+    )
 
     @Test
     fun `PublishedWorkflow decodes a fallback copy step`() {

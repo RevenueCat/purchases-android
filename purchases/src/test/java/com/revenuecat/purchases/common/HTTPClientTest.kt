@@ -36,6 +36,7 @@ import io.mockk.spyk
 import io.mockk.verify
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.SocketPolicy
 import okio.Buffer
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -57,9 +58,15 @@ import java.net.URL
 import java.net.URLConnection
 import java.net.URLStreamHandler
 import java.util.Date
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
 import org.robolectric.annotation.Config as AnnotationConfig
+
+private const val SILENT_SOCKET_TEST_TIMEOUT_MS = 10_000L
+private const val SILENT_SOCKET_CLEANUP_TIMEOUT_MS = 2_000L
 
 @RunWith(AndroidJUnit4::class)
 @AnnotationConfig(manifest = AnnotationConfig.NONE)
@@ -133,7 +140,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val endpoint = Endpoint.GetCustomerInfo("test_user_id")
         val provider = FakeAPISourceProvider(listOf(server.url("/").toString()))
         val client = createClient(
-            appConfig = createAppConfig(proxyURL = null, usesRemoteConfigAPISources = true),
+            appConfig = createAppConfig(proxyURL = null),
             apiSourceProvider = provider,
         )
         enqueue(endpoint.getPath(), expectedResult = HTTPResult.createResult())
@@ -149,32 +156,6 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val request = server.takeRequest()
         assertThat(request.path).isEqualTo("/v1/subscribers/test_user_id")
         assertThat(server.requestCount).isEqualTo(1)
-    }
-
-    @Test
-    fun `performRequest ignores the API source provider when usesRemoteConfigAPISources is disabled`() {
-        val endpoint = Endpoint.GetCustomerInfo("test_user_id")
-        // The setting is disabled by default, so the provider must never be consulted and requests keep
-        // targeting the provided base URL.
-        val provider = mockk<RemoteConfigSourceProvider>(relaxed = true)
-        val client = createClient(
-            appConfig = createAppConfig(proxyURL = null, usesRemoteConfigAPISources = false),
-            apiSourceProvider = provider,
-        )
-        enqueue(endpoint.getPath(), expectedResult = HTTPResult.createResult())
-
-        client.performRequest(
-            baseURL,
-            endpoint,
-            body = null,
-            postFieldsToSign = null,
-            mapOf("" to ""),
-        )
-
-        val request = server.takeRequest()
-        assertThat(request.path).isEqualTo("/v1/subscribers/test_user_id")
-        assertThat(server.requestCount).isEqualTo(1)
-        verify(exactly = 0) { provider.getCurrent(any()) }
     }
 
     @Test
@@ -206,7 +187,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val apiSourceServer = MockWebServer()
         val provider = FakeAPISourceProvider(listOf(apiSourceServer.url("/").toString()))
         val client = createClient(
-            appConfig = createAppConfig(usesRemoteConfigAPISources = true),
+            appConfig = createAppConfig(),
             apiSourceProvider = provider,
         )
         enqueue(endpoint.getPath(), expectedResult = HTTPResult.createResult())
@@ -234,7 +215,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
         val provider = FakeAPISourceProvider(listOf(server.url("/").toString()))
         val client = createClient(
-            appConfig = createAppConfig(proxyURL = null, usesRemoteConfigAPISources = true),
+            appConfig = createAppConfig(proxyURL = null),
             apiSourceProvider = provider,
         )
 
@@ -364,7 +345,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             connectionProvider = { TestUrlConnection(200, ByteArrayInputStream(ByteArray(0))) },
         )
         val client = createClient(
-            appConfig = createAppConfig(proxyURL = null, usesRemoteConfigAPISources = true),
+            appConfig = createAppConfig(proxyURL = null),
             apiSourceProvider = provider,
             sourceHealthChecker = healthCheckerReturning(200, healthFactory),
         )
@@ -395,7 +376,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             listOf(server.url("/").toString(), secondSourceServer.url("/").toString()),
         )
         val client = createClient(
-            appConfig = createAppConfig(proxyURL = null, usesRemoteConfigAPISources = true),
+            appConfig = createAppConfig(proxyURL = null),
             apiSourceProvider = provider,
             sourceHealthChecker = unreachableHealthChecker(),
         )
@@ -429,7 +410,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             connectionProvider = { throw IOException("health endpoint unreachable") },
         )
         val client = createClient(
-            appConfig = createAppConfig(proxyURL = null, usesRemoteConfigAPISources = true),
+            appConfig = createAppConfig(proxyURL = null),
             apiSourceProvider = provider,
             sourceHealthChecker = SourceHealthChecker(healthFactory),
             deviceOffline = true,
@@ -464,7 +445,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             connectionProvider = { throw IOException("health endpoint unreachable") },
         )
         val client = createClient(
-            appConfig = createAppConfig(proxyURL = null, usesRemoteConfigAPISources = true),
+            appConfig = createAppConfig(proxyURL = null),
             apiSourceProvider = provider,
             sourceHealthChecker = SourceHealthChecker(healthFactory),
             deviceOffline = true,
@@ -496,7 +477,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             connectionProvider = { TestUrlConnection(200, ByteArrayInputStream(ByteArray(0))) },
         )
         val client = createClient(
-            appConfig = createAppConfig(proxyURL = null, usesRemoteConfigAPISources = true),
+            appConfig = createAppConfig(proxyURL = null),
             apiSourceProvider = provider,
             sourceHealthChecker = healthCheckerReturning(200, healthFactory),
         )
@@ -524,7 +505,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val unreachableUrl = unreachableSourceUrl()
         val provider = FakeAPISourceProvider(listOf(unreachableUrl, server.url("/").toString()))
         val client = createClient(
-            appConfig = createAppConfig(proxyURL = null, usesRemoteConfigAPISources = true),
+            appConfig = createAppConfig(proxyURL = null),
             apiSourceProvider = provider,
             sourceHealthChecker = healthCheckerReturning(200),
         )
@@ -549,7 +530,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val unreachableUrl = unreachableSourceUrl()
         val provider = FakeAPISourceProvider(listOf(unreachableUrl, server.url("/").toString()))
         val client = createClient(
-            appConfig = createAppConfig(proxyURL = null, usesRemoteConfigAPISources = true),
+            appConfig = createAppConfig(proxyURL = null),
             apiSourceProvider = provider,
             sourceHealthChecker = unreachableHealthChecker(),
         )
@@ -587,7 +568,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val unreachableUrl = unreachableSourceUrl()
         val provider = FakeAPISourceProvider(listOf(unreachableUrl))
         val client = createClient(
-            appConfig = createAppConfig(proxyURL = null, usesRemoteConfigAPISources = true),
+            appConfig = createAppConfig(proxyURL = null),
             apiSourceProvider = provider,
             sourceHealthChecker = unreachableHealthChecker(),
         )
@@ -612,7 +593,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val fallbackServer = MockWebServer()
         val provider = FakeAPISourceProvider(listOf(server.url("/").toString()))
         val client = createClient(
-            appConfig = createAppConfig(proxyURL = null, usesRemoteConfigAPISources = true),
+            appConfig = createAppConfig(proxyURL = null),
             apiSourceProvider = provider,
             sourceHealthChecker = unreachableHealthChecker(),
         )
@@ -646,7 +627,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val unreachableUrl = unreachableSourceUrl()
         val provider = FakeAPISourceProvider(listOf(unreachableUrl, server.url("/").toString()))
         val client = createClient(
-            appConfig = createAppConfig(proxyURL = null, usesRemoteConfigAPISources = true),
+            appConfig = createAppConfig(proxyURL = null),
             apiSourceProvider = provider,
             sourceHealthChecker = unreachableHealthChecker(),
         )
@@ -696,7 +677,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val endpoint = Endpoint.GetCustomerInfo("test_user_id")
         val provider = ReArmingAPISourceProvider(server.url("/").toString())
         val client = createClient(
-            appConfig = createAppConfig(proxyURL = null, usesRemoteConfigAPISources = true),
+            appConfig = createAppConfig(proxyURL = null),
             apiSourceProvider = provider,
             sourceHealthChecker = unreachableHealthChecker(),
         )
@@ -924,6 +905,27 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
         assertThat(result.responseCode).isEqualTo(502)
         assertThat(result.payloadText).isEqualTo("Some error xml")
+    }
+
+    @Test
+    fun `server error strategy is honored outside integration test mode`() {
+        val client = createClient(
+            appConfig = createAppConfig(runningTests = false),
+            forceServerErrorStrategy = object : ForceServerErrorStrategy {
+                override val serverErrorURL: String
+                    get() = server.url("force-server-error").toString()
+                override fun shouldForceServerError(baseURL: URL, endpoint: Endpoint): Boolean = true
+            },
+        )
+        enqueue(
+            "force-server-error",
+            expectedResult = HTTPResult.createResult(responseCode = 502, payload = "Some error xml")
+        )
+
+        val result = client.performRequest(baseURL, Endpoint.LogIn, body = null, postFieldsToSign = null, mapOf("" to ""))
+
+        assertThat(server.takeRequest().requestUrl?.toString()).isEqualTo("${server.url("")}force-server-error")
+        assertThat(result.responseCode).isEqualTo(502)
     }
 
     @Test
@@ -1968,7 +1970,6 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(
             timeoutManager.getTimeoutForRequest(
                 host = host, isFallback = false, fallbackAvailable = true, isProxied = false,
-                reTieredTimeoutsEnabled = true,
             )
         ).isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
 
@@ -1997,7 +1998,6 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(
             timeoutManager.getTimeoutForRequest(
                 host = host, isFallback = false, fallbackAvailable = true, isProxied = false,
-                reTieredTimeoutsEnabled = true,
             )
         ).isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
         verify(exactly = 1) {
@@ -2021,7 +2021,6 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(
             timeoutManager.getTimeoutForRequest(
                 host = host, isFallback = false, fallbackAvailable = true, isProxied = false,
-                reTieredTimeoutsEnabled = true,
             )
         ).isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
 
@@ -2074,8 +2073,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             assertThat(
                 timeoutManager.getTimeoutForRequest(
                     host = host, isFallback = false, fallbackAvailable = true, isProxied = false,
-                    reTieredTimeoutsEnabled = true,
-                )
+                    )
             ).isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
             verify(exactly = 1) {
                 timeoutManager.recordRequestResult(host, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
@@ -2089,7 +2087,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     fun `HTTPClient records MAIN_SOURCE_TIMED_OUT when timeout occurs on main source with endpoint not supporting fallback`() {
         val endpoint = Endpoint.LogIn
 
-        val appConfig = createAppConfig(usesRemoteConfigAPISources = true)
+        val appConfig = createAppConfig()
         val timeoutManager = spyk(HTTPTimeoutManager(appConfig))
         val host = "10.255.255.255"
 
@@ -2100,7 +2098,6 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(
             timeoutManager.getTimeoutForRequest(
                 host = host, isFallback = false, fallbackAvailable = false, isProxied = false,
-                reTieredTimeoutsEnabled = true,
             )
         ).isEqualTo(HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
 
@@ -2133,63 +2130,13 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(
             timeoutManager.getTimeoutForRequest(
                 host = host, isFallback = false, fallbackAvailable = false, isProxied = false,
-                reTieredTimeoutsEnabled = true,
             )
         ).isEqualTo(HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
         assertThat(
             timeoutManager.getTimeoutForRequest(
                 host = host, isFallback = false, fallbackAvailable = true, isProxied = false,
-                reTieredTimeoutsEnabled = true,
             )
         ).isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
-    }
-
-    @Test
-    fun `HTTPClient keeps legacy timeout behavior for no-fallback endpoint when API sources are disabled`() {
-        val endpoint = Endpoint.LogIn
-        assert(!endpoint.supportsFallbackBaseURLs)
-
-        val appConfig = createAppConfig(usesRemoteConfigAPISources = false)
-        val timeoutManager = spyk(HTTPTimeoutManager(appConfig))
-        val host = "10.255.255.255"
-
-        client = createClient(appConfig = appConfig, timeoutManager = timeoutManager)
-
-        // With API sources disabled, the no-fallback endpoint uses the legacy flat timeout.
-        assertThat(
-            timeoutManager.getTimeoutForRequest(
-                host = host, isFallback = false, fallbackAvailable = false, isProxied = false,
-                reTieredTimeoutsEnabled = false,
-            )
-        ).isEqualTo(HTTPTimeoutManager.DEFAULT_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
-
-        enqueue(
-            endpoint.getPath(),
-            HTTPResult.createResult(),
-        )
-
-        assertThatThrownBy {
-            client.performRequest(
-                URL("http://$host/"), // Unroutable IP to force connection timeout
-                endpoint,
-                body = null,
-                postFieldsToSign = null,
-                mapOf("" to ""),
-                fallbackBaseURLs = emptyList(),
-            )
-        }.isInstanceOf(SocketTimeoutException::class.java)
-
-        // The timeout is NOT recorded because the endpoint has no fallback support and API sources are
-        // disabled, so the host stays on the legacy flat timeout (unchanged default behavior).
-        verify(exactly = 0) {
-            timeoutManager.recordRequestResult(host, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
-        }
-        assertThat(
-            timeoutManager.getTimeoutForRequest(
-                host = host, isFallback = false, fallbackAvailable = false, isProxied = false,
-                reTieredTimeoutsEnabled = false,
-            )
-        ).isEqualTo(HTTPTimeoutManager.DEFAULT_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
     }
 
     @Test
@@ -2197,7 +2144,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val endpoint = Endpoint.GetRemoteConfigFallback("test-domain")
         assert(!endpoint.supportsFallbackBaseURLs)
 
-        val appConfig = createAppConfig(proxyURL = null, usesRemoteConfigAPISources = true)
+        val appConfig = createAppConfig(proxyURL = null)
         val timeoutManager = spyk(HTTPTimeoutManager(appConfig))
         val host = "10.255.255.255"
 
@@ -2219,7 +2166,6 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         verify(exactly = 1) {
             timeoutManager.getTimeoutForRequest(
                 host = host, isFallback = true, fallbackAvailable = false, isProxied = false,
-                reTieredTimeoutsEnabled = true,
             )
         }
         verify(exactly = 0) {
@@ -2229,7 +2175,6 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(
             timeoutManager.getTimeoutForRequest(
                 host = host, isFallback = false, fallbackAvailable = false, isProxied = false,
-                reTieredTimeoutsEnabled = true,
             )
         ).isEqualTo(HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
     }
@@ -2237,7 +2182,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     @Test
     fun `HTTPClient does not record a main source success for the remote config fallback endpoint`() {
         val endpoint = Endpoint.GetRemoteConfigFallback("test-domain")
-        val appConfig = createAppConfig(usesRemoteConfigAPISources = true)
+        val appConfig = createAppConfig()
         val timeoutManager = spyk(HTTPTimeoutManager(appConfig))
 
         client = createClient(appConfig = appConfig, timeoutManager = timeoutManager)
@@ -2265,7 +2210,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     @Test
     fun `HTTPClient clears the host's fail-fast memory when a response fails signature verification`() {
         val endpoint = Endpoint.LogIn
-        val appConfig = createAppConfig(proxyURL = null, usesRemoteConfigAPISources = true)
+        val appConfig = createAppConfig(proxyURL = null)
         val timeoutManager = spyk(HTTPTimeoutManager(appConfig))
         val host = baseURL.host
 
@@ -2303,7 +2248,6 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(
             timeoutManager.getTimeoutForRequest(
                 host = host, isFallback = false, fallbackAvailable = false, isProxied = false,
-                reTieredTimeoutsEnabled = true,
             )
         ).isEqualTo(HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
     }
@@ -2324,7 +2268,6 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(
             timeoutManager.getTimeoutForRequest(
                 host = host, isFallback = false, fallbackAvailable = true, isProxied = false,
-                reTieredTimeoutsEnabled = true,
             )
         ).isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
 
@@ -2353,11 +2296,121 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(
             timeoutManager.getTimeoutForRequest(
                 host = host, isFallback = false, fallbackAvailable = true, isProxied = false,
-                reTieredTimeoutsEnabled = true,
             )
         ).isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
         verify(exactly = 1) {
             timeoutManager.recordRequestResult(host, HTTPTimeoutManager.RequestResult.OTHER_RESULT)
+        }
+    }
+
+    @Test
+    fun `a connection that goes silent after connecting fails within the configured timeout instead of hanging`() {
+        val endpoint = Endpoint.GetOfferings("test_user_id")
+
+        val appConfig = createAppConfig(proxyURL = null)
+        val timeoutManager = spyk(HTTPTimeoutManager(appConfig))
+        client = createClient(appConfig = appConfig, timeoutManager = timeoutManager)
+
+        // The server accepts the connection but never sends a single response byte, so only the
+        // read timeout can bound this request: the connection itself succeeds.
+        val silentServer = MockWebServer()
+        val silentBaseURL = silentServer.url("/v1").toUrl()
+        silentServer.enqueue(MockResponse().apply { socketPolicy = SocketPolicy.NO_RESPONSE })
+        val requestExecutor = Executors.newSingleThreadExecutor()
+        val request = requestExecutor.submit<HTTPResult> {
+            client.performRequest(
+                silentBaseURL,
+                endpoint,
+                body = null,
+                postFieldsToSign = null,
+                mapOf("" to ""),
+                fallbackBaseURLs = emptyList(),
+            )
+        }
+
+        val failure = try {
+            runCatching {
+                request.get(SILENT_SOCKET_TEST_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            }.exceptionOrNull()
+        } finally {
+            silentServer.shutdown()
+            request.cancel(true)
+            requestExecutor.shutdownNow()
+            assertThat(
+                requestExecutor.awaitTermination(SILENT_SOCKET_CLEANUP_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            ).isTrue()
+        }
+
+        assertThat(failure)
+            .isInstanceOf(ExecutionException::class.java)
+            .hasCauseInstanceOf(SocketTimeoutException::class.java)
+    }
+
+    @Test
+    fun `a connection that goes silent after connecting fails over to the fallback URL`() {
+        val endpoint = Endpoint.GetOfferings("test_user_id")
+        assert(endpoint.supportsFallbackBaseURLs)
+
+        val appConfig = createAppConfig(proxyURL = null)
+        val timeoutManager = spyk(HTTPTimeoutManager(appConfig))
+        client = createClient(appConfig = appConfig, timeoutManager = timeoutManager)
+
+        // The main server accepts the connection but never responds; the fallback server works.
+        val silentServer = MockWebServer()
+        val silentBaseURL = silentServer.url("/v1").toUrl()
+        val host = silentBaseURL.host
+        silentServer.enqueue(MockResponse().apply { socketPolicy = SocketPolicy.NO_RESPONSE })
+
+        val fallbackServer = MockWebServer()
+        val fallbackBaseURL = fallbackServer.url("/v1").toUrl()
+        val validJsonPayload = """{"offerings": [], "current_offering_id": null}"""
+        fallbackServer.enqueue(
+            MockResponse()
+                .setBody(validJsonPayload)
+                .setResponseCode(RCHTTPStatusCodes.SUCCESS)
+        )
+
+        every {
+            mockETagManager.getHTTPResultFromCacheOrBackend(
+                RCHTTPStatusCodes.SUCCESS,
+                validJsonPayload,
+                eTagHeader = any(),
+                urlString = any(),
+                refreshETag = false,
+                requestDate = any(),
+                verificationResult = SignatureVerificationResult.NotRequested,
+                isLoadShedderResponse = false,
+                isFallbackURL = true,
+            )
+        } returns HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS, validJsonPayload)
+
+        val requestExecutor = Executors.newSingleThreadExecutor()
+        val request = requestExecutor.submit<HTTPResult> {
+            client.performRequest(
+                silentBaseURL,
+                endpoint,
+                body = null,
+                postFieldsToSign = null,
+                mapOf("" to ""),
+                fallbackBaseURLs = listOf(fallbackBaseURL),
+            )
+        }
+
+        val result = try {
+            request.get(SILENT_SOCKET_TEST_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        } finally {
+            silentServer.shutdown()
+            fallbackServer.shutdown()
+            request.cancel(true)
+            requestExecutor.shutdownNow()
+            assertThat(
+                requestExecutor.awaitTermination(SILENT_SOCKET_CLEANUP_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            ).isTrue()
+        }
+
+        assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
+        verify(exactly = 1) {
+            timeoutManager.recordRequestResult(host, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
         }
     }
 

@@ -23,7 +23,6 @@ import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.NoCoreLibraryDesugaringException
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -260,7 +259,7 @@ internal class BillingWrapper(
             ),
             onReceive,
             onError,
-            ::withConnectedClient,
+            { withConnectedClient(onError, it) },
             ::executeRequestOnUIThread,
         )
         useCase.run()
@@ -405,7 +404,7 @@ internal class BillingWrapper(
         if (activity.intent == null) {
             log(LogIntent.WARNING) { BillingStrings.NULL_ACTIVITY_INTENT }
         }
-        withConnectedClient {
+        withConnectedClient(onError = { purchasesUpdatedListener?.onPurchasesFailedToUpdate(it) }) {
             launchBillingFlow(activity, params)
                 .takeIf { billingResult -> billingResult.responseCode != BillingClient.BillingResponseCode.OK }
                 ?.let { billingResult ->
@@ -432,7 +431,7 @@ internal class BillingWrapper(
             ),
             onReceivePurchaseHistory,
             onReceivePurchaseHistoryError,
-            ::withConnectedClient,
+            { withConnectedClient(onReceivePurchaseHistoryError, it) },
             ::executeRequestOnUIThread,
         ).run()
     }
@@ -526,7 +525,7 @@ internal class BillingWrapper(
             onError = { _ ->
                 // TODO-retry: if ITEM_NOT_OWNED queryPurchasesAsync
             },
-            ::withConnectedClient,
+            { withConnectedClient(receivingFunction = it) },
             ::executeRequestOnUIThread,
         ).run()
     }
@@ -547,7 +546,7 @@ internal class BillingWrapper(
             { _ ->
                 // TODO-retry: if ITEM_NOT_OWNED queryPurchasesAsync
             },
-            ::withConnectedClient,
+            { withConnectedClient(receivingFunction = it) },
             ::executeRequestOnUIThread,
         ).run()
     }
@@ -567,7 +566,7 @@ internal class BillingWrapper(
             ),
             onSuccess,
             onError,
-            ::withConnectedClient,
+            { withConnectedClient(onError, it) },
             ::executeRequestOnUIThread,
         ).run()
     }
@@ -600,7 +599,7 @@ internal class BillingWrapper(
                     }
                 },
                 onError,
-                ::withConnectedClient,
+                { withConnectedClient(onError, it) },
                 ::executeRequestOnUIThread,
             ).run()
         } ?: onError(
@@ -631,6 +630,9 @@ internal class BillingWrapper(
         listener: (ProductType) -> Unit,
         resultHandler: (Boolean) -> Unit,
     ) {
+        val onError: PurchasesErrorCallback = {
+            listener(ProductType.UNKNOWN)
+        }
         QueryPurchasesByTypeUseCase(
             QueryPurchasesByTypeUseCaseParams(
                 dateProvider,
@@ -641,11 +643,8 @@ internal class BillingWrapper(
             onSuccess = { purchases ->
                 resultHandler(purchases.values.any { it.purchaseToken == purchaseToken })
             },
-            onError = { error ->
-                errorLog(error)
-                listener(ProductType.UNKNOWN)
-            },
-            withConnectedClient = ::withConnectedClient,
+            onError = onError,
+            withConnectedClient = { withConnectedClient(onError, it) },
             executeRequestOnUIThread = ::executeRequestOnUIThread,
         ).run()
     }
@@ -888,15 +887,24 @@ internal class BillingWrapper(
             deviceCache = deviceCache,
             onReceive = { billingConfig -> onSuccess(billingConfig.countryCode) },
             onError = onError,
-            withConnectedClient = ::withConnectedClient,
+            withConnectedClient = { withConnectedClient(onError, it) },
             executeRequestOnUIThread = ::executeRequestOnUIThread,
         ).run()
     }
 
-    private fun withConnectedClient(receivingFunction: BillingClient.() -> Unit) {
-        billingClient?.takeIf { it.isReady }?.let {
-            it.receivingFunction()
-        } ?: log(LogIntent.GOOGLE_WARNING) { BillingStrings.BILLING_CLIENT_DISCONNECTED.format(getStackTrace()) }
+    private fun withConnectedClient(
+        onError: PurchasesErrorCallback = {},
+        receivingFunction: BillingClient.() -> Unit,
+    ) {
+        val connectedClient = billingClient?.takeIf { it.isReady }
+        if (connectedClient != null) {
+            connectedClient.receivingFunction()
+        } else {
+            // Billing can disconnect after the request is dequeued but before it runs.
+            // Reconnecting won't retry that request, so report the error here.
+            log(LogIntent.GOOGLE_WARNING) { BillingStrings.BILLING_CLIENT_DISCONNECTED.format(getStackTrace()) }
+            onError(PurchasesError(PurchasesErrorCode.StoreProblemError, BillingStrings.BILLING_SERVICE_DISCONNECTED))
+        }
     }
 
     private fun getStackTrace(): String {
@@ -1015,24 +1023,17 @@ internal class BillingWrapper(
             setProductDetails(purchaseInfo.productDetails)
         }.build()
 
-        try {
-            return Result.Success(
-                BillingFlowParams.newBuilder()
-                    .setProductDetailsParamsList(listOf(productDetailsParamsList))
-                    .setObfuscatedAccountId(appUserID.sha256())
-                    .apply {
-                        isPersonalizedPrice?.let {
-                            setIsOfferPersonalized(it)
-                        }
+        return Result.Success(
+            BillingFlowParams.newBuilder()
+                .setProductDetailsParamsList(listOf(productDetailsParamsList))
+                .setObfuscatedAccountId(appUserID.sha256())
+                .apply {
+                    isPersonalizedPrice?.let {
+                        setIsOfferPersonalized(it)
                     }
-                    .build(),
-            )
-        } catch (e: NoClassDefFoundError) {
-            // Billing Client 7 may throw NoClassDefFoundError if core library desugaring is not enabled when building
-            // a BillingFlowParams in some devices because the library started using Java 8 types.
-            // This was fixed in Billing Client 8.
-            throw NoCoreLibraryDesugaringException(e)
-        }
+                }
+                .build(),
+        )
     }
 
     private fun buildSubscriptionPurchaseParams(
@@ -1044,32 +1045,25 @@ internal class BillingWrapper(
     ): Result<BillingFlowParams, PurchasesError> {
         val productDetailsParamsList = buildSubscriptionProductDetailsParams(purchaseInfo = purchaseInfo)
 
-        try {
-            return Result.Success(
-                BillingFlowParams.newBuilder()
-                    .setProductDetailsParamsList(productDetailsParamsList)
-                    .apply {
-                        // Google rejects a purchase whose obfuscatedAccountId differs from the one on the subscription
-                        // it replaces (https://issuetracker.google.com/issues/155005449), so the id is not set for
-                        // product changes or for purchases of an already owned subscription, unless explicitly
-                        // opted in via DangerousSettings.
-                        replaceProductInfo?.let { setUpgradeInfo(it) }
-                        if (shouldSetObfuscatedAccountId) {
-                            setObfuscatedAccountId(appUserID.sha256())
-                        }
-
-                        isPersonalizedPrice?.let {
-                            setIsOfferPersonalized(it)
-                        }
+        return Result.Success(
+            BillingFlowParams.newBuilder()
+                .setProductDetailsParamsList(productDetailsParamsList)
+                .apply {
+                    // Google rejects a purchase whose obfuscatedAccountId differs from the one on the subscription
+                    // it replaces (https://issuetracker.google.com/issues/155005449), so the id is not set for
+                    // product changes or for purchases of an already owned subscription, unless explicitly
+                    // opted in via DangerousSettings.
+                    replaceProductInfo?.let { setUpgradeInfo(it) }
+                    if (shouldSetObfuscatedAccountId) {
+                        setObfuscatedAccountId(appUserID.sha256())
                     }
-                    .build(),
-            )
-        } catch (e: NoClassDefFoundError) {
-            // Billing Client 7 may throw NoClassDefFoundError if core library desugaring is not enabled when building
-            // a BillingFlowParams in some devices because the library started using Java 8 types.
-            // This was fixed in Billing Client 8.
-            throw NoCoreLibraryDesugaringException(e)
-        }
+
+                    isPersonalizedPrice?.let {
+                        setIsOfferPersonalized(it)
+                    }
+                }
+                .build(),
+        )
     }
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)

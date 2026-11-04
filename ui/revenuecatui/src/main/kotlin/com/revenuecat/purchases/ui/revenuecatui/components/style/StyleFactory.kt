@@ -32,6 +32,7 @@ import com.revenuecat.purchases.paywalls.components.WebViewComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
+import com.revenuecat.purchases.paywalls.components.common.StateUpdate
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
@@ -135,11 +136,16 @@ internal class StyleFactory(
          */
         var tabIndex: Int? = null,
         /**
+         * Identifies the sheet whose content is currently being built, or null for root content.
+         */
+        var sheetPresentationKey: SheetPresentationKey? = null,
+        /**
          * When building a [TabsComponent] subtree, holds that component's dashboard `name` for tab control analytics.
          * Blank strings are treated as absent (same as [withTabsInteractionContext] input normalization).
          */
         var enclosingTabsComponentName: String? = null,
         var enclosingTabsOrderedTabIds: List<String> = emptyList(),
+        var enclosingTabsStateUpdates: List<StateUpdate> = emptyList(),
         var enclosingTabContextNamesById: Map<String, String> = emptyMap(),
         var enclosingTabsDefaultTabIndexForInteraction: Int = 0,
         /**
@@ -359,18 +365,34 @@ internal class StyleFactory(
             return result
         }
 
+        fun <T> withSheetPresentation(
+            presentationKey: SheetPresentationKey,
+            block: StyleFactoryScope.() -> T,
+        ): T {
+            val previousKey = sheetPresentationKey
+            sheetPresentationKey = presentationKey
+            try {
+                return block()
+            } finally {
+                sheetPresentationKey = previousKey
+            }
+        }
+
         fun <T> withTabsInteractionContext(
             tabsComponentName: String?,
             tabs: List<TabsComponent.Tab>,
             defaultTabId: String?,
+            stateUpdates: List<StateUpdate>,
             block: StyleFactoryScope.() -> T,
         ): T {
             val previousName = enclosingTabsComponentName
             val previousIds = enclosingTabsOrderedTabIds
+            val previousStateUpdates = enclosingTabsStateUpdates
             val previousContextNames = enclosingTabContextNamesById
             val previousDefaultForInteraction = enclosingTabsDefaultTabIndexForInteraction
             enclosingTabsComponentName = tabsComponentName?.takeUnless { it.isBlank() }
             enclosingTabsOrderedTabIds = tabs.map { it.id }
+            enclosingTabsStateUpdates = stateUpdates
             enclosingTabContextNamesById = tabs.mapNotNull { tab ->
                 tab.name?.takeUnless { it.isBlank() }?.let { tab.id to it }
             }.toMap()
@@ -384,6 +406,7 @@ internal class StyleFactory(
             } finally {
                 enclosingTabsComponentName = previousName
                 enclosingTabsOrderedTabIds = previousIds
+                enclosingTabsStateUpdates = previousStateUpdates
                 enclosingTabContextNamesById = previousContextNames
                 enclosingTabsDefaultTabIndexForInteraction = previousDefaultForInteraction
             }
@@ -501,11 +524,12 @@ internal class StyleFactory(
             }
 
         private fun recordPackage(pkg: AvailablePackages.Info) {
+            val scopedPackage = pkg.copy(sheetPresentationKey = sheetPresentationKey)
             val currentTabIndex = tabIndex
             if (currentTabIndex == null) {
-                packagesOutsideTabs.add(pkg)
+                packagesOutsideTabs.add(scopedPackage)
             } else {
-                packagesByTab.getOrPut(currentTabIndex) { mutableListOf() }.add(pkg)
+                packagesByTab.getOrPut(currentTabIndex) { mutableListOf() }.add(scopedPackage)
             }
         }
     }
@@ -547,6 +571,13 @@ internal class StyleFactory(
                         componentStyle
                     }
                 }
+                .map { componentStyle ->
+                    if (componentStyle is StackComponentStyle) {
+                        componentStyle.copy(windowInsetsRoot = applyTopWindowInsets)
+                    } else {
+                        componentStyle
+                    }
+                }
                 .map { componentStyle -> componentStyle.applyBottomWindowInsetsIfNecessary(applyBottomWindowInsets) }
                 .map { componentStyle ->
                     componentStyle.applyHorizontalWindowInsetsIfNecessary(applyHorizontalWindowInsets)
@@ -554,7 +585,7 @@ internal class StyleFactory(
                 .map { componentStyle ->
                     StyleResult(
                         componentStyle = componentStyle,
-                        availablePackages = packages,
+                        availablePackages = packages.withVisibilityPaths(componentStyle),
                         defaultTabIndex = defaultTabIndex,
                         heroImageDetected = heroImageDetected,
                     )
@@ -891,12 +922,16 @@ internal class StyleFactory(
                     Logger.e("Sheet destination reached convertDestination without a stack.")
                     Result.Success(null)
                 } else {
-                    createStackComponentStyle(rawStack)
+                    val presentationKey = SheetPresentationKey()
+                    withSheetPresentation(presentationKey) {
+                        createStackComponentStyle(rawStack)
+                    }
                         .map { it.applyBottomWindowInsetsIfNecessary(shouldApply = true) }
                         .map { it.applyHorizontalWindowInsetsIfNecessary(shouldApply = true) }
                         .map { stackComponentStyle ->
                             ButtonComponentStyle.Action.NavigateTo.Destination.Sheet(
                                 id = destination.id,
+                                presentationKey = presentationKey,
                                 name = destination.name,
                                 stack = stackComponentStyle,
                                 backgroundBlur = destination.backgroundBlur,
@@ -1276,6 +1311,7 @@ internal class StyleFactory(
                         tabIdsOrdered = enclosingTabsOrderedTabIds,
                         tabContextNamesById = enclosingTabContextNamesById,
                         tabsDefaultTabIndex = enclosingTabsDefaultTabIndexForInteraction,
+                        stateUpdates = enclosingTabsStateUpdates,
                     )
                 }
         }
@@ -1296,6 +1332,8 @@ internal class StyleFactory(
                 trackColorOn = trackColorOn,
                 trackColorOff = trackColorOff,
                 componentName = enclosingTabsComponentName ?: component.name,
+                tabIdsOrdered = enclosingTabsOrderedTabIds,
+                stateUpdates = enclosingTabsStateUpdates,
             )
         }
 
@@ -1306,6 +1344,7 @@ internal class StyleFactory(
             tabsComponentName = component.name,
             tabs = component.tabs,
             defaultTabId = component.defaultTabId,
+            stateUpdates = component.stateUpdates.orEmpty(),
         ) {
             createTabsComponentStyleTabControl(component.control).flatMap { control ->
                 // Find the index of the defaultTabId.

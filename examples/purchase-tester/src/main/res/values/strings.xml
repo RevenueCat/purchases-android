@@ -28,4 +28,6 @@
     <string name="find_placement">Find Placement</string>
     <string name="purchases_completed_by">Purchases are completed by</string>
     <string name="my_app">My app</string>
+    <string name="simulated_api_failures">Simulated API failures (ignored when a proxy URL is set)</string>
+    <string name="simulated_failures">Failures</string>
 </resources>

@@ -12,12 +12,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.DpSize
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
-import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
-import com.revenuecat.purchases.ui.revenuecatui.components.ConditionContext
+import com.revenuecat.purchases.ui.revenuecatui.components.ComponentVisibilityContext
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
-import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
+import com.revenuecat.purchases.ui.revenuecatui.components.resolveVisibility
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TabsComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -81,22 +80,22 @@ internal class TabsComponentState(
         } ?: OfferEligibility.Ineligible
     }
 
-    private val presentedPartial by derivedStateOf {
-        val windowCondition = ScreenCondition.from(windowSize)
-        style.overrides.buildPresentedPartial(
-            windowCondition,
-            offerEligibility = { offerEligibility },
-            state = { ComponentViewState.DEFAULT },
-            conditionContext = ConditionContext(
-                selectedPackageId = { selectedPackageInfoProvider()?.rcPackage?.identifier },
-                customVariables = customVariablesProvider(),
-                windowDpSize = windowDpSize,
-            ),
+    private val visibilityContext: ComponentVisibilityContext
+        get() = ComponentVisibilityContext(
+            screenCondition = ScreenCondition.from(windowSize),
+            windowDpSize = windowDpSize,
+            selectedPackage = selectedPackageInfoProvider,
+            selectedTabIndex = { 0 },
+            customVariables = customVariablesProvider(),
+            selectedOfferEligibility = { offerEligibility },
         )
+
+    private val presentedPartial by derivedStateOf {
+        visibilityContext.resolve(style.overrides)
     }
 
     @get:JvmSynthetic
-    val visible by derivedStateOf { presentedPartial?.partial?.visible ?: style.visible }
+    val visible by derivedStateOf { style.resolveVisibility(presentedPartial) }
 
     @get:JvmSynthetic
     val tabs = style.tabs

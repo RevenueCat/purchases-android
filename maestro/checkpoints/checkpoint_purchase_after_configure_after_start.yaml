@@ -1,0 +1,42 @@
+# The checkpoint's paywall presents when Purchases is configured after the app's Activity has already started,
+# as the hybrid SDKs (React Native, Flutter, ...) do from JS. The SDK never saw that Activity start, so it has to
+# find it by other means to present over it.
+#
+# Run locally against the test store:
+#   maestro test -e MAESTRO_STORE=test_store maestro/checkpoints/checkpoint_purchase_after_configure_after_start.yaml
+
+appId: com.revenuecat.e2etests
+name: Checkpoint paywall presents when Purchases is configured after the Activity started
+env:
+  MAESTRO_STORE: ${MAESTRO_STORE || 'test_store'}
+
+---
+- launchApp:
+    clearState: true
+    arguments:
+      e2e_test_flow: open_checkpoint
+      checkpoint_identifier: donottouch_sdk_everyone
+      app_user_id: "maestro-checkpoint-${Date.now()}"
+      configure_after_start: "true"
+- extendedWaitUntil:
+    visible: "Hit checkpoint"
+    timeout: 15000
+- tapOn:
+    text: "Hit checkpoint"
+
+- extendedWaitUntil:
+    visible: "Continue"
+    timeout: 20000
+- tapOn:
+    text: "Continue"
+
+- extendedWaitUntil:
+    visible: "TEST VALID PURCHASE"
+    timeout: 15000
+- tapOn:
+    text: "TEST VALID PURCHASE"
+
+- extendedWaitUntil:
+    visible: "Callback: passed, entitlements: pro (call #1)"
+    timeout: 20000
+- takeScreenshot: "checkpoint_purchase_after_configure_after_start - passed"

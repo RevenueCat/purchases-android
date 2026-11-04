@@ -21,11 +21,14 @@ internal fun interface ForceServerErrorStrategy {
     fun modifyRequestURL(url: URL, endpoint: Endpoint): URL = url
 
     /**
-     * Whether a direct [java.net.HttpURLConnection] download of [url] should fail as if the host were
-     * unreachable. Unlike the rest of this interface, this covers requests that never reach `HTTPClient`: remote
-     * config blobs are fetched straight from the config CDN, a different host from the API, so forcing API
-     * errors alone leaves them downloading normally. Default `false` keeps that (an API outage does not imply
-     * the CDN is down); return `true` to simulate having no network at all.
+     * Whether a direct [java.net.HttpURLConnection] to [url] should fail as if the host were unreachable. Unlike
+     * the rest of this interface, this covers requests that never reach `HTTPClient`:
+     * - Remote config blobs are fetched straight from the config CDN, a different host from the API, so forcing
+     *   API errors alone leaves them downloading normally. Default `false` keeps that (an API outage does not
+     *   imply the CDN is down); return `true` to simulate having no network at all.
+     * - API source health checks probe `<source>/v1/health/connectivity`, so returning `true` for that url
+     *   reports the source unhealthy. Combined with [shouldForceServerError] for the same source, this simulates
+     *   the source being down, and the SDK fails over to the next one.
      */
     fun shouldForceConnectionFailure(url: String): Boolean = false
 

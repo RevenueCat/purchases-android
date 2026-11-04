@@ -7,11 +7,13 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
+import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
+import io.mockk.verifyOrder
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -20,6 +22,7 @@ import org.junit.runner.RunWith
 class CustomerInfoUpdateHandlerTest {
 
     private lateinit var deviceCache: DeviceCache
+    private lateinit var subscriberAttributesManager: SubscriberAttributesManager
     private lateinit var identityManager: IdentityManager
     private lateinit var offlineEntitlementsManager: OfflineEntitlementsManager
     private lateinit var appConfig: AppConfig
@@ -33,6 +36,7 @@ class CustomerInfoUpdateHandlerTest {
     @Before
     fun setUp() {
         deviceCache = mockk()
+        subscriberAttributesManager = mockk()
         identityManager = mockk()
         offlineEntitlementsManager = mockk()
         appConfig = mockk()
@@ -41,12 +45,14 @@ class CustomerInfoUpdateHandlerTest {
         every { identityManager.currentAppUserID } returns appUserId
         every { deviceCache.getCachedCustomerInfo(appUserId) } returns mockInfo
         every { deviceCache.cacheCustomerInfo(appUserId, mockInfo) } just Runs
+        every { subscriberAttributesManager.mergeAttributes(any(), any()) } just Runs
         every { offlineEntitlementsManager.offlineCustomerInfo } returns null
         every { appConfig.customEntitlementComputation } returns false
         every { diagnosticsTracker.trackCustomerInfoVerificationResultIfNeeded(any()) } just Runs
 
         customerInfoUpdateHandler = CustomerInfoUpdateHandler(
             deviceCache,
+            subscriberAttributesManager,
             identityManager,
             offlineEntitlementsManager,
             appConfig = appConfig,
@@ -110,6 +116,26 @@ class CustomerInfoUpdateHandlerTest {
         customerInfoUpdateHandler.cacheAndNotifyListeners(mockInfo, appUserId)
 
         verify(exactly = 1) { deviceCache.cacheCustomerInfo(appUserId, mockInfo) }
+    }
+
+    @Test
+    fun `caching and notifying listeners merges the customer info's subscriber attributes after caching it`() {
+        customerInfoUpdateHandler.cacheAndNotifyListeners(mockInfo, appUserId)
+
+        verifyOrder {
+            deviceCache.cacheCustomerInfo(appUserId, mockInfo)
+            subscriberAttributesManager.mergeAttributes(mockInfo, appUserId)
+        }
+    }
+
+    @Test
+    fun `caching and notifying listeners for a previous user merges attributes under that user`() {
+        every { deviceCache.cacheCustomerInfo("previous-user", mockInfo) } just Runs
+
+        customerInfoUpdateHandler.cacheAndNotifyListeners(mockInfo, "previous-user")
+
+        verify(exactly = 1) { subscriberAttributesManager.mergeAttributes(mockInfo, "previous-user") }
+        verify(exactly = 0) { subscriberAttributesManager.mergeAttributes(any(), appUserId) }
     }
 
     @Test

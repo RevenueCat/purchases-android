@@ -3,6 +3,7 @@ package com.revenuecat.paywallstester
 import android.app.Application
 import android.util.Log
 import com.revenuecat.paywallstester.data.ApiKeyStore
+import com.revenuecat.paywallstester.data.SimulatedFailuresStore
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.DebugEventListener
 import com.revenuecat.purchases.InternalRevenueCatAPI
@@ -23,6 +24,7 @@ class MainApplication : Application() {
         Purchases.logLevel = LogLevel.VERBOSE
 
         val apiKey = ApiKeyStore(this).getLastUsedApiKey()
+        Purchases.internalSimulatedHostFailures = SimulatedFailuresStore(this).get().hostFailures()
         val configurePurchases = ConfigurePurchasesUseCase(this)
         configurePurchases(apiKey)
         Purchases.sharedInstance.debugEventListener = DebugEventListener { event ->

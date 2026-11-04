@@ -8,6 +8,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.VerificationResult.*
 import com.revenuecat.purchases.common.DateProvider
+import com.revenuecat.purchases.common.caching.PayloadFileStore
 import com.revenuecat.purchases.common.createResult
 import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import com.revenuecat.purchases.common.verification.SignatureVerificationResult.FailureReason
@@ -40,7 +41,7 @@ class ETagManagerTest {
             get() = testDate
     }
     private val mockedPrefs = mockk<SharedPreferences>()
-    private val payloadStore: ETagPayloadStore by lazy { spyk(ETagPayloadStore(temporaryFolder.newFolder())) }
+    private val payloadStore: PayloadFileStore by lazy { spyk(PayloadFileStore(temporaryFolder.newFolder())) }
     private val underTest: ETagManager by lazy {
         ETagManager(mockk(), lazy { mockedPrefs }, testDateProvider, payloadStore)
     }

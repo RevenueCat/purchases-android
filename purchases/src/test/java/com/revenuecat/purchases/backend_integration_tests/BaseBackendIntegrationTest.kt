@@ -13,8 +13,8 @@ import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.RequestResponseListener
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.caching.PayloadFileStore
 import com.revenuecat.purchases.common.networking.ETagManager
-import com.revenuecat.purchases.common.networking.ETagPayloadStore
 import com.revenuecat.purchases.common.networking.disabledTokenAuthenticator
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
@@ -118,7 +118,6 @@ internal abstract class BaseBackendIntegrationTest {
             every { fallbackBaseURLs } returns listOf(AppConfig.fallbackURL)
             every { runningTests } returns true
             every { hasProxyURL } returns false
-            every { usesRemoteConfigAPISources } returns false
         }
         dispatcher = Dispatcher(Executors.newSingleThreadScheduledExecutor(), runningIntegrationTests = true)
         diagnosticsDispatcher = Dispatcher(Executors.newSingleThreadScheduledExecutor(), runningIntegrationTests = true)
@@ -134,7 +133,7 @@ internal abstract class BaseBackendIntegrationTest {
         eTagManager = ETagManager(
             mockk(),
             lazy { sharedPreferences },
-            payloadStore = ETagPayloadStore(temporaryFolder.newFolder()),
+            payloadStore = PayloadFileStore(temporaryFolder.newFolder()),
         )
         signingManager = spyk(SigningManager(signatureVerificationMode, appConfig, apiKey()))
         deviceCache = DeviceCache(sharedPreferences, apiKey())

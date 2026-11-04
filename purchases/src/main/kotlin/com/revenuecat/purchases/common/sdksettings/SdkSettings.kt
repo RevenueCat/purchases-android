@@ -3,9 +3,18 @@ package com.revenuecat.purchases.common.sdksettings
 import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.common.errorLog
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.JsonDecoder
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.jsonPrimitive
 
 /**
  * The SDK-specific settings served through the `sdk_settings` remote config topic's inline `default` item.
@@ -47,5 +56,21 @@ internal data class DiagnosticsSettings(
      * precedence over [PurchasesConfiguration.Builder.diagnosticsEnabled]. `null` leaves the local configuration
      * unchanged.
      */
+    @Serializable(with = StrictBooleanSerializer::class)
     val enabled: Boolean? = null,
 )
+
+/**
+ * kotlinx-serialization 1.7 decodes a quoted `"true"` as a boolean even when the [Json] is not lenient.
+ */
+private object StrictBooleanSerializer : KSerializer<Boolean> {
+    override val descriptor = PrimitiveSerialDescriptor("StrictBoolean", PrimitiveKind.BOOLEAN)
+
+    override fun deserialize(decoder: Decoder): Boolean {
+        val primitive = (decoder as JsonDecoder).decodeJsonElement().jsonPrimitive
+        return primitive.takeUnless { it.isString }?.booleanOrNull
+            ?: throw SerializationException("Expected a boolean, got $primitive")
+    }
+
+    override fun serialize(encoder: Encoder, value: Boolean) = encoder.encodeBoolean(value)
+}
