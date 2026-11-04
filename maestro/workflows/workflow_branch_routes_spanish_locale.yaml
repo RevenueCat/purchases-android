@@ -1,15 +1,5 @@
-# Opens the `with-branch` offering with a Spanish locale and asserts Branch 1 routes to Testimonials 3
-# instead of its fallback (Testimonials 1, see workflow_progresses_through_branch.yaml):
-#   Welcome Screen 1 -> Branch 1 -> Testimonials 3
-# The audience targets locale `es_es`. The app_locale launch argument is read in E2ETestsApplication and
-# applied via Purchases.overridePreferredUILocale, which the SDK normalizes to lowercase snake case
-# (`es-ES` -> `es_es`) before evaluating the audience.
-#
-# The Continue buttons are matched with a regex so the flow works whether or not the workflow has Spanish
-# localizations for them ("Continue" / "Continuar").
-#
-# TODO: Testimonials 3 is asserted by its English headline. If the workflow gets Spanish localizations for
-# that screen, replace it with the Spanish text.
+# Opens the `with-branch` workflow with an es-ES locale and asserts its branch routes to Testimonials 3
+# instead of the default Testimonials 1.
 # Run on CI by the `run-maestro-tests` job.
 #
 # Run locally against the test store:

@@ -1,8 +1,5 @@
-# Opens the workflow whose offering is `with-branch`:
-#   Welcome Screen 1 -> Branch 1 -> Testimonials 1 -> Paywall screen 1
-# Branch 1 routes a Spanish locale (`es_es`) to Testimonials 3 instead (see
-# workflow_branch_routes_spanish_locale.yaml). With the default locale the user takes the fallback to
-# Testimonials 1, and reaching the "Limited time offer" paywall proves the branch resolved and routed onward.
+# Opens the `with-branch` workflow and progresses through its branch node (default locale) to the
+# "Limited time offer" paywall via Testimonials 1.
 # Run on CI by the `run-maestro-tests` job.
 #
 # Run locally against the test store:
