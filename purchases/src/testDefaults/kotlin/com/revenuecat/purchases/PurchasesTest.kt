@@ -2124,7 +2124,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 clientTransactionId = "ct_1",
                 trackingMetadata = null,
                 captureMethod = AdCaptureMethod.MANUAL,
-                poll = { Outcome.Verified(PollReward.VirtualCurrency(code = "gems", amount = 5), moreRewards = emptyList()) },
+                poll = { Outcome.Verified(PollReward.VirtualCurrency(code = "gems", amount = 5), moreRewards = emptyList(), customerInfo = null) },
             )
         }
 
@@ -2139,7 +2139,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 clientTransactionId = "ct_1",
                 trackingMetadata = null,
                 captureMethod = AdCaptureMethod.MANUAL,
-                poll = { Outcome.Verified(PollReward.NoReward, moreRewards = emptyList()) },
+                poll = { Outcome.Verified(PollReward.NoReward, moreRewards = emptyList(), customerInfo = null) },
             )
             purchases.pollRewardVerification(
                 clientTransactionId = "ct_2",
@@ -2233,6 +2233,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                     Outcome.Verified(
                         reward = PollReward.NoReward,
                         moreRewards = listOf(PollReward.VirtualCurrency(code = "gems", amount = 5)),
+                        customerInfo = null,
                     )
                 },
             )
@@ -2252,6 +2253,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                     Outcome.Verified(
                         reward = PollReward.Entitlement(identifier = "pro", expiresAt = Date(1_800_000_000_000L)),
                         moreRewards = emptyList(),
+                        customerInfo = null,
                     )
                 },
             )
@@ -2321,7 +2323,7 @@ internal class PurchasesTest : BasePurchasesTest() {
 
     @Test
     fun `pollRewardVerification with tracking metadata fires earned then verified when nothing is granted`() {
-        val tracked = pollWithTracking { Outcome.Verified(PollReward.NoReward, moreRewards = emptyList()) }
+        val tracked = pollWithTracking { Outcome.Verified(PollReward.NoReward, moreRewards = emptyList(), customerInfo = null) }
 
         assertThat(tracked).hasSize(2)
         assertThat(tracked[0]).isInstanceOf(AdEvent.RewardEarnedUnverified::class.java)
@@ -2331,7 +2333,7 @@ internal class PurchasesTest : BasePurchasesTest() {
     @Test
     fun `pollRewardVerification with tracking metadata fires one granted event for a single reward`() {
         val tracked = pollWithTracking {
-            Outcome.Verified(PollReward.VirtualCurrency(code = "gems", amount = 5), moreRewards = emptyList())
+            Outcome.Verified(PollReward.VirtualCurrency(code = "gems", amount = 5), moreRewards = emptyList(), customerInfo = null)
         }
 
         assertThat(tracked).hasSize(3)
@@ -2347,6 +2349,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             Outcome.Verified(
                 reward = PollReward.VirtualCurrency(code = "gems", amount = 5),
                 moreRewards = listOf(PollReward.Entitlement(identifier = "pro", expiresAt = Date(1_800_000_000_000L))),
+                customerInfo = null,
             )
         }
 
@@ -2401,7 +2404,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 clientTransactionId = "ct_1",
                 trackingMetadata = null,
                 captureMethod = AdCaptureMethod.MANUAL,
-                poll = { Outcome.Verified(PollReward.VirtualCurrency(code = "gems", amount = 5), moreRewards = emptyList()) },
+                poll = { Outcome.Verified(PollReward.VirtualCurrency(code = "gems", amount = 5), moreRewards = emptyList(), customerInfo = null) },
             )
         }
 

@@ -12,7 +12,7 @@ internal sealed interface Outcome {
     class Verified(
         val reward: VerifiedReward,
         val moreRewards: List<VerifiedReward>,
-        val customerInfo: CustomerInfo? = null,
+        val customerInfo: CustomerInfo?,
     ) : Outcome
 
     sealed interface Failed : Outcome {
