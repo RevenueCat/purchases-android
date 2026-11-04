@@ -1059,19 +1059,6 @@ jobs:
             -PREVENUECAT_API_KEY=goog_ci_build_only
             -PAPPLICATION_ID=com.revenuecat.samplecat
 
-  assemble-checkpoint-tester:
-    <<: *android-executor
-    shell: /bin/bash --login -o pipefail
-    steps:
-      - attach_workspace:
-          at: .
-      - revenuecat/install-mise-tools:
-          tools: java
-      - android/restore_gradle_cache
-      - run:
-          name: Assemble checkpoint tester
-          command: ./gradlew :examples:checkpointtester:assembleDebug --no-daemon --parallel
-
 workflows:
   version: 2
   danger:
@@ -1200,10 +1187,6 @@ workflows:
             - prepare-tests
           <<: *non-main-branches
       - verify-admob-legacy-latest-compatibility:
-          requires:
-            - prepare-tests
-          <<: *non-main-branches
-      - assemble-checkpoint-tester:
           requires:
             - prepare-tests
           <<: *non-main-branches
