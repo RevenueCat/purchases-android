@@ -17,6 +17,7 @@ import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialPackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
 import com.revenuecat.purchases.paywalls.components.PaywallComponent
+import com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.TabControlButtonComponent
 import com.revenuecat.purchases.paywalls.components.TabControlComponent
@@ -144,8 +145,11 @@ internal class PackageSelectionInteractionTests {
 
         val button = (state.stack as StackComponentStyle).children[2] as ButtonComponentStyle
         composeTestRule.runOnIdle {
-            state.sheet.show(sheetDestination(button), state, PaywallComponentInteractionTracker { }, onClick = {})
-            assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annualXl)
+            val sheetState = state.sheet.show(
+                sheetDestination(button), state, PaywallComponentInteractionTracker { }, onClick = {},
+            )
+            assertThat(sheetState.selectedPackageInfo?.rcPackage).isEqualTo(annualXl)
+            assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthlyXl)
             state.sheet.hide()
             assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthlyXl)
         }
@@ -165,12 +169,17 @@ internal class PackageSelectionInteractionTests {
         val tabStyle = (state.stack as StackComponentStyle).children[0] as TabsComponentStyle
         val button = tabStyle.tabs[0].stack.children[3] as ButtonComponentStyle
 
-        state.sheet.show(sheetDestination(button), state, PaywallComponentInteractionTracker { }, onClick = {})
+        val sheetState = state.sheet.show(
+            sheetDestination(button), state, PaywallComponentInteractionTracker { }, onClick = {},
+        )
 
         assertThat(state.paywallBoundsDp).isNull()
-        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthly)
+        assertThat(sheetState.selectedPackageInfo?.rcPackage).isEqualTo(monthly)
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
         // The sheet's package also occurs on the tab, so neither entry nor manual selection may save it there.
-        state.update(selectedPackageUniqueId = monthly.identifier)
+        sheetState.update(selectedPackageUniqueId = monthly.identifier)
+        sheetState.update(selectedTabIndex = 1)
+        assertThat(state.selectedTabIndex).isEqualTo(0)
         state.sheet.hide()
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
         state.update(selectedTabIndex = 1)
@@ -203,6 +212,67 @@ internal class PackageSelectionInteractionTests {
     }
 
     @Test
+    fun `sheet choices keep root variables unchanged and purchase the sheet package`() {
+        val purchase = PurchaseButtonComponent(
+            stack = StackComponent(listOf(text("buy"))),
+        )
+        val webPurchase = PurchaseButtonComponent(
+            stack = StackComponent(listOf(text("web-buy"))),
+            method = PurchaseButtonComponent.Method.CustomWebCheckout(
+                customUrl = PurchaseButtonComponent.CustomUrl(
+                    urlLid = LocalizationKey("checkout-url"), packageParam = "package",
+                ),
+            ),
+        )
+        val opener = ButtonComponent(
+            action = ButtonComponent.Action.NavigateTo(ButtonComponent.Destination.Sheet(
+                id = "plans",
+                stack = StackComponent(listOf(
+                    text("sheet-selection"), pkg(monthlyXl, default = true), pkg(annualXl), purchase, webPurchase,
+                )),
+            )),
+            stack = StackComponent(listOf(text("open"))),
+        )
+        val state = state(text("root-selection"), pkg(monthly, default = true), pkg(annual), opener)
+        state.update(selectedPackageUniqueId = annual.identifier)
+        val purchases = mutableListOf<PaywallAction.External.PurchasePackage>()
+        val webPurchases = mutableListOf<PaywallAction.External.LaunchWebCheckout>()
+        composeTestRule.setContent {
+            LoadedPaywallComponents(
+                state = state,
+                clickHandler = {
+                    if (it is PaywallAction.External.PurchasePackage) purchases.add(it)
+                    if (it is PaywallAction.External.LaunchWebCheckout) webPurchases.add(it)
+                },
+                modifier = Modifier.requiredSize(300.dp, 600.dp),
+            )
+        }
+        composeTestRule.onNodeWithText("See plans").performClick()
+        composeTestRule.onNodeWithText("Root: ${annual.product.name}", useUnmergedTree = true).assertExists()
+        composeTestRule.onNodeWithText("Sheet: ${monthly.product.name}").assertIsDisplayed()
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
+
+        composeTestRule.onNodeWithText("Buy sheet").performClick()
+        composeTestRule.onNodeWithText("Web buy sheet").performClick()
+        composeTestRule.runOnIdle {
+            assertThat(purchases.single().rcPackage).isEqualTo(monthlyXl)
+            assertThat(webPurchases.single().resolvedUrl).contains("package=monthly_xl")
+        }
+        composeTestRule.onNodeWithText("Annual XL plan").performClick()
+        composeTestRule.onNodeWithText("Root: ${annual.product.name}", useUnmergedTree = true).assertExists()
+        composeTestRule.onNodeWithText("Sheet: ${annual.product.name}").assertIsDisplayed()
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
+        composeTestRule.onNodeWithText("Buy sheet").performClick()
+        composeTestRule.runOnIdle {
+            assertThat(purchases.map { it.rcPackage }).containsExactly(monthlyXl, annualXl)
+            state.sheet.hide()
+        }
+        composeTestRule.onNodeWithText("See plans").performClick()
+        composeTestRule.onNodeWithText("Sheet: ${monthly.product.name}").assertIsDisplayed()
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
+    }
+
+    @Test
     fun `sheet clicks are discarded and close analytics reports the original manual root selection`() {
         val state = state(
             pkg(monthly, default = true),
@@ -224,14 +294,17 @@ internal class PackageSelectionInteractionTests {
                 }
             }
         }
+        lateinit var sheetState: PaywallState.Loaded.Components
         composeTestRule.runOnIdle {
-            state.sheet.show(sheetDestination(button), state, tracker, onClick = {})
-            assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthlyXl)
+            sheetState = state.sheet.show(sheetDestination(button), state, tracker, onClick = {})
+            assertThat(sheetState.selectedPackageInfo?.rcPackage).isEqualTo(monthlyXl)
+            assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
         }
 
         composeTestRule.onNodeWithText("Annual XL plan").performClick()
         composeTestRule.runOnIdle {
-            assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annualXl)
+            assertThat(sheetState.selectedPackageInfo?.rcPackage).isEqualTo(annualXl)
+            assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
             state.sheet.hide()
             assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
         }
@@ -253,15 +326,16 @@ internal class PackageSelectionInteractionTests {
         val tracker = PaywallComponentInteractionTracker { }
         state.update(selectedPackageUniqueId = annual.identifier)
 
-        state.sheet.show(first, state, tracker, onClick = {})
-        state.update(selectedPackageUniqueId = annualXl.identifier)
+        val firstState = state.sheet.show(first, state, tracker, onClick = {})
+        firstState.update(selectedPackageUniqueId = annualXl.identifier)
         state.sheet.show(second, state, tracker, onClick = {})
         state.sheet.hide()
 
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
         state.update(selectedPackageUniqueId = monthly.identifier)
-        state.sheet.show(first, state, tracker, onClick = {})
-        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthlyXl)
+        val reopened = state.sheet.show(first, state, tracker, onClick = {})
+        assertThat(reopened.selectedPackageInfo?.rcPackage).isEqualTo(monthlyXl)
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthly)
         state.sheet.hide()
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthly)
     }
@@ -273,13 +347,14 @@ internal class PackageSelectionInteractionTests {
         val tracker = PaywallComponentInteractionTracker { }
         assertThat(state.selectedPackageInfo).isNull()
 
-        state.sheet.show(sheetDestination(button), state, tracker, onClick = {})
-        state.update(selectedPackageUniqueId = annualXl.identifier)
+        val sheetState = state.sheet.show(sheetDestination(button), state, tracker, onClick = {})
+        sheetState.update(selectedPackageUniqueId = annualXl.identifier)
         state.sheet.hide()
 
         assertThat(state.selectedPackageInfo).isNull()
-        state.sheet.show(sheetDestination(button), state, tracker, onClick = {})
-        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthlyXl)
+        val reopened = state.sheet.show(sheetDestination(button), state, tracker, onClick = {})
+        assertThat(reopened.selectedPackageInfo?.rcPackage).isEqualTo(monthlyXl)
+        assertThat(state.selectedPackageInfo).isNull()
         state.sheet.hide()
         assertThat(state.selectedPackageInfo).isNull()
     }
@@ -312,11 +387,49 @@ internal class PackageSelectionInteractionTests {
         state.update(selectedPackageUniqueId = annual.identifier)
         val button = (state.stack as StackComponentStyle).children[2] as ButtonComponentStyle
 
-        state.sheet.show(sheetDestination(button), state, PaywallComponentInteractionTracker { }, onClick = {})
+        val sheetState = state.sheet.show(
+            sheetDestination(button), state, PaywallComponentInteractionTracker { }, onClick = {},
+        )
 
-        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthlyXl)
+        assertThat(sheetState.selectedPackageInfo?.rcPackage).isEqualTo(monthlyXl)
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
         state.sheet.hide()
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
+    }
+
+    @Test
+    fun `sheet without authored default keeps the existing first visible fallback scoped`() {
+        val state = state(pkg(monthly, default = true), pkg(annual), sheetButton(pkg(monthlyXl), pkg(annualXl)))
+        state.update(selectedPackageUniqueId = annual.identifier)
+        val button = (state.stack as StackComponentStyle).children[2] as ButtonComponentStyle
+        val sheetState = state.sheet.show(
+            sheetDestination(button), state, PaywallComponentInteractionTracker { }, onClick = {},
+        )
+        assertThat(sheetState.selectedPackageInfo?.rcPackage).isEqualTo(monthlyXl)
+        sheetState.update(selectedPackageUniqueId = annualXl.identifier)
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
+    }
+
+    @Test
+    fun `nested sheet dismissal reports the root package rather than its replaced parent sheet`() {
+        val state = state(
+            pkg(monthly, default = true), pkg(annual),
+            sheetButton(pkg(monthlyXl, default = true), sheetButton(pkg(annualXl, default = true))),
+        )
+        state.update(selectedPackageUniqueId = annual.identifier)
+        val outer = sheetDestination((state.stack as StackComponentStyle).children[2] as ButtonComponentStyle)
+        val inner = sheetDestination((outer.stack as StackComponentStyle).children[1] as ButtonComponentStyle)
+        val closes = mutableListOf<Pair<String?, String?>>()
+        val tracker = PaywallComponentInteractionTracker {
+            if (it.componentValue == "close") closes.add(it.currentPackageIdentifier to it.resultingPackageIdentifier)
+        }
+        val outerState = state.sheet.show(outer, state, tracker, onClick = {})
+        val innerState = state.sheet.show(inner, outerState, tracker, onClick = {})
+        assertThat(outerState.selectedPackageInfo?.rcPackage).isEqualTo(monthlyXl)
+        assertThat(innerState.selectedPackageInfo?.rcPackage).isEqualTo(annualXl)
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
+        state.sheet.hide()
+        assertThat(closes).containsExactly(annualXl.identifier to annual.identifier)
     }
 
     private fun sheetButton(vararg children: PaywallComponent) = ButtonComponent(
@@ -355,6 +468,12 @@ internal class PackageSelectionInteractionTests {
             LocalizationKey(annual.identifier) to LocalizationData.Text("Annual plan"),
             LocalizationKey(monthlyXl.identifier) to LocalizationData.Text("Monthly XL plan"),
             LocalizationKey(annualXl.identifier) to LocalizationData.Text("Annual XL plan"),
+            LocalizationKey("root-selection") to LocalizationData.Text("Root: {{ product.store_product_name }}"),
+            LocalizationKey("sheet-selection") to LocalizationData.Text("Sheet: {{ product.store_product_name }}"),
+            LocalizationKey("buy") to LocalizationData.Text("Buy sheet"),
+            LocalizationKey("web-buy") to LocalizationData.Text("Web buy sheet"),
+            LocalizationKey("checkout-url") to LocalizationData.Text("https://checkout.example.com/plans"),
+            LocalizationKey("open") to LocalizationData.Text("See plans"),
             LocalizationKey("first") to LocalizationData.Text("First"),
             LocalizationKey("second") to LocalizationData.Text("Plans"),
         )),

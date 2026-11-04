@@ -806,7 +806,7 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
     }
 
     @Test
-    fun `Reconcile follows the currently open sheet`() {
+    fun `Reconcile keeps the root independent of the currently open sheet`() {
         val sheetKey = SheetPresentationKey()
         val hiddenRootCopy = packageInfo(
             TestData.Packages.monthly,
@@ -828,9 +828,12 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
         state.update(selectedPackageUniqueId = hiddenRootCopy.uniqueId)
         state.sheet.show(backgroundBlur = false, content = {}, presentationKey = sheetKey)
 
+        val sheetState = state.createSheetState(sheetKey)
         state.reconcileSelectionForWindowSize(state.paywallBoundsDp)
+        sheetState.reconcileSelectionForWindowSize(state.paywallBoundsDp)
 
-        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+        assertThat(sheetState.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
 
         state.sheet.show(
             sheet = ButtonComponentStyle.Action.NavigateTo.Destination.Sheet(
@@ -914,7 +917,7 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
         )
         assertThat(state.selectedPackageInfo).isNull()
 
-        state.sheet.show(
+        val sheetState = state.sheet.show(
             sheet = ButtonComponentStyle.Action.NavigateTo.Destination.Sheet(
                 id = "hidden-plans",
                 presentationKey = openKey,
@@ -928,7 +931,8 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
             onClick = {},
         )
 
-        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
+        assertThat(sheetState.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
+        assertThat(state.selectedPackageInfo).isNull()
         state.sheet.hide()
         assertThat(state.sheet.presentationKey).isNull()
         assertThat(state.selectedPackageInfo).isNull()

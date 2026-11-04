@@ -162,8 +162,9 @@ internal class PackageSelectionVisibilityTests {
         state.paywallBoundsDp = wide
         state.reconcileSelectionForWindowSize(wide)
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(weekly)
-        state.sheet.show(sheet, state, PaywallComponentInteractionTracker { }, onClick = {})
-        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
+        val sheetState = state.sheet.show(sheet, state, PaywallComponentInteractionTracker { }, onClick = {})
+        assertThat(sheetState.selectedPackageInfo?.rcPackage).isEqualTo(annual)
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(weekly)
 
         state.sheet.hide()
 
@@ -231,7 +232,7 @@ internal class PackageSelectionVisibilityTests {
         state.sheet.show(sheet, state, PaywallComponentInteractionTracker { }, onClick = {})
         state.paywallBoundsDp = wide
         state.reconcileSelectionForWindowSize(wide)
-        assertThat(state.peekSelectedPackageInfoAfterSheetDismiss()?.rcPackage).isEqualTo(weekly)
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(weekly)
         state.sheet.hide()
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(weekly)
     }
@@ -255,9 +256,10 @@ internal class PackageSelectionVisibilityTests {
             as ButtonComponentStyle.Action.NavigateTo.Destination.Sheet
         state.paywallBoundsDp = wide
         state.update(selectedPackageUniqueId = weekly.identifier)
-        state.sheet.show(sheet(2), state, PaywallComponentInteractionTracker { }, onClick = {})
-        state.update(selectedPackageUniqueId = annual.identifier)
-        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
+        val sheetState = state.sheet.show(sheet(2), state, PaywallComponentInteractionTracker { }, onClick = {})
+        sheetState.update(selectedPackageUniqueId = annual.identifier)
+        assertThat(sheetState.selectedPackageInfo?.rcPackage).isEqualTo(annual)
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(weekly)
         state.sheet.show(sheet(3), state, PaywallComponentInteractionTracker { }, onClick = {})
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(weekly)
         state.sheet.hide()
