@@ -7,6 +7,8 @@
     <string name="nav_products">Products</string>
     <string name="nav_paywalls">Paywalls</string>
     <string name="nav_support">Support</string>
+    <string name="nav_checkpoints">Checkpoints</string>
+    <string name="nav_beta">Beta</string>
     <string name="nav_packages">Packages</string>
     <string name="nav_back">Back</string>
 
@@ -43,6 +45,53 @@
     <string name="customer_center_title">Customer Center</string>
     <string name="customer_center_description">Help your customers manage their subscriptions with a self-service Customer Center.</string>
     <string name="customer_center_open">Open Customer Center</string>
+
+    <!-- Checkpoints Screen -->
+    <string name="checkpoints_title">Checkpoints</string>
+    <string name="checkpoints_description">Fire a checkpoint at a point in your app, and let the dashboard decide which flow the customer sees.</string>
+    <string name="checkpoints_beta_note">Checkpoints are in private beta. Contact RevenueCat to get access.</string>
+    <string name="checkpoints_hard_paywall">Hard paywall</string>
+    <string name="checkpoints_hard_paywall_subtitle">The content stays locked until the customer has access.</string>
+    <string name="checkpoints_soft_paywall">Soft paywall</string>
+    <string name="checkpoints_soft_paywall_subtitle">The content is always available. The result only updates the status.</string>
+    <string name="checkpoints_onboarding">Onboarding</string>
+    <string name="checkpoints_onboarding_subtitle">Fires a checkpoint at the last step and always completes.</string>
+    <string name="checkpoints_entitlement_gate">Entitlement gate</string>
+    <string name="checkpoints_entitlement_gate_subtitle">Checks CustomerInfo first and skips the checkpoint for subscribers.</string>
+    <string name="checkpoints_preparing">Preparing the checkpoint…</string>
+    <string name="checkpoints_latest_result">Latest result</string>
+    <string name="checkpoints_result">Checkpoint result</string>
+    <string name="checkpoints_no_flow">No flow was presented.</string>
+    <string name="checkpoints_try_again">Try again</string>
+    <string name="checkpoints_run_again">Run the checkpoint again</string>
+    <string name="checkpoints_premium_unlocked">Premium content unlocked</string>
+    <string name="checkpoints_premium_locked">Premium content locked</string>
+    <string name="checkpoints_access_unlocked">The customer has access. The content is unlocked.</string>
+    <string name="checkpoints_locked_no_flow">No flow was presented. The content stays locked.</string>
+    <string name="checkpoints_locked_no_access">The flow ended without access. The content stays locked.</string>
+    <string name="checkpoints_feature_content">Feature content</string>
+    <string name="checkpoints_feature_content_description">This content is available for each checkpoint result.</string>
+    <string name="checkpoints_subscription_status">Subscription status</string>
+    <string name="checkpoints_subscriber">Subscriber</string>
+    <string name="checkpoints_free_tier">Free tier</string>
+    <string name="checkpoints_soft_paywall_no_flow">No flow was presented. The content stays available.</string>
+    <string name="checkpoints_soft_paywall_flow_ended">The flow ended. The content stays available.</string>
+    <string name="checkpoints_onboarding_welcome">Welcome</string>
+    <string name="checkpoints_onboarding_welcome_message">This flow fires a checkpoint before its last step.</string>
+    <string name="checkpoints_onboarding_personalize">Personalize</string>
+    <string name="checkpoints_onboarding_personalize_message">Imagine that the customer selects their preferences here.</string>
+    <string name="checkpoints_onboarding_done">You\'re ready</string>
+    <string name="checkpoints_onboarding_done_message">Onboarding is complete for each checkpoint result.</string>
+    <string name="checkpoints_onboarding_continue">Continue</string>
+    <string name="checkpoints_onboarding_finish">Finish onboarding</string>
+    <string name="checkpoints_onboarding_restart">Restart onboarding</string>
+    <string name="checkpoints_onboarding_flow_ended">The checkpoint flow ended.</string>
+    <string name="checkpoints_checking_customer_info">Checking CustomerInfo…</string>
+    <string name="checkpoints_content_unlocked">Content unlocked</string>
+    <string name="checkpoints_content_locked">Content locked</string>
+    <string name="checkpoints_gate_skipped">The app skipped the checkpoint because the customer already has access.</string>
+    <string name="checkpoints_refresh_access">Refresh access</string>
+    <string name="checkpoints_failed">Failed: %1$s</string>
 
     <!-- Error messages -->
     <string name="error_fetch_offerings">Failed to fetch offerings: %1$s</string>

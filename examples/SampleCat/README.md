@@ -9,6 +9,7 @@ It is built with Jetpack Compose and Material 3.
 - **Products** - View all products across offerings with purchase capability
 - **Paywalls** - Display RevenueCat's pre-built paywall UI for any offering
 - **Customer Center** - Self-service subscription management for customers
+- **Checkpoints** (beta) - Fire a checkpoint, and let the dashboard decide which flow the customer sees
 
 ## Configuration
 
