@@ -150,19 +150,19 @@ class BackendGetRewardVerificationResultTest {
     }
 
     @Test
-    fun `getRewardVerificationResult returns error on malformed subscriber`() {
+    fun `getRewardVerificationResult leaves customer info null on malformed subscriber`() {
         mockHttpResult(payload = """{"status":"verified","subscriber":{}}""")
 
-        var obtainedError: PurchasesError? = null
+        var receivedResult: RewardVerificationPollStatus? = null
         backend.getRewardVerificationResult(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
             adUnitId = null,
-            onSuccess = { fail("Expected error. Got success") },
-            onError = { error -> obtainedError = error.error },
+            onSuccess = { receivedResult = it },
+            onError = { error -> fail("Expected success. Got error: $error") },
         )
 
-        assertThat(obtainedError?.code).isEqualTo(PurchasesErrorCode.NetworkError)
+        assertThat((receivedResult as RewardVerificationPollStatus.Verified).customerInfo).isNull()
     }
 
     @Test

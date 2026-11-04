@@ -1206,10 +1206,6 @@ internal class Backend(
                             onErrorHandler(
                                 RewardVerificationError(e.toPurchasesError().also { errorLog(it) }, false),
                             )
-                        } catch (e: JSONException) {
-                            onErrorHandler(
-                                RewardVerificationError(e.toPurchasesError().also { errorLog(it) }, false),
-                            )
                         }
                     } else {
                         onErrorHandler(
@@ -1236,7 +1232,12 @@ internal class Backend(
 
     private fun rewardVerificationCustomerInfo(result: HTTPResult): CustomerInfo? {
         if (!result.body.has(CustomerInfoResponseJsonKeys.SUBSCRIBER)) return null
-        return CustomerInfoFactory.buildCustomerInfo(result)
+        return try {
+            CustomerInfoFactory.buildCustomerInfo(result)
+        } catch (e: JSONException) {
+            warnLog { NetworkStrings.REWARD_VERIFICATION_MALFORMED_CUSTOMER_INFO.format(e.localizedMessage) }
+            null
+        }
     }
 
     @Suppress("LongParameterList")
