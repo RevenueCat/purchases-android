@@ -2067,7 +2067,7 @@ internal class PurchasesTest : BasePurchasesTest() {
     @OptIn(InternalRevenueCatAPI::class)
     @Test
     fun `getRewardVerificationResult returns result from backend on success`() {
-        val expectedResult = RewardVerificationPollStatus.Verified(VerifiedReward.VirtualCurrency(code = "coins", amount = 10))
+        val expectedResult = RewardVerificationPollStatus.Verified(VerifiedReward.VirtualCurrency(code = "coins", amount = 10), customerInfo = null)
         every {
             mockBackend.getRewardVerificationResult(
                 appUserID = appUserId,
@@ -2178,7 +2178,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             )
         } answers {
             lambda<(RewardVerificationPollStatus) -> Unit>().captured.invoke(
-                RewardVerificationPollStatus.Verified(VerifiedReward.NoReward),
+                RewardVerificationPollStatus.Verified(VerifiedReward.NoReward, customerInfo = null),
             )
         }
 
@@ -2425,7 +2425,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             )
         } answers {
             lambda<(RewardVerificationPollStatus) -> Unit>().captured.invoke(
-                RewardVerificationPollStatus.Verified(VerifiedReward.VirtualCurrency(code = "coins", amount = 10)),
+                RewardVerificationPollStatus.Verified(VerifiedReward.VirtualCurrency(code = "coins", amount = 10), customerInfo = null),
             )
         }
     }

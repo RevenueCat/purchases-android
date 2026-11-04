@@ -15,7 +15,7 @@ public sealed interface RewardVerificationPollStatus {
     public data class Verified(
         val reward: VerifiedReward,
         val moreRewards: List<VerifiedReward> = emptyList(),
-        val customerInfo: CustomerInfo? = null,
+        val customerInfo: CustomerInfo?,
     ) : RewardVerificationPollStatus
 
     /**

@@ -24,7 +24,7 @@ class RewardVerificationResponseTest {
             """{"status":"pending"}""",
         )
 
-        assertThat(response.toRewardVerificationPollStatus()).isEqualTo(RewardVerificationPollStatus.PENDING)
+        assertThat(response.toRewardVerificationPollStatus(customerInfo = null)).isEqualTo(RewardVerificationPollStatus.PENDING)
     }
 
     @Test
@@ -33,8 +33,8 @@ class RewardVerificationResponseTest {
             """{"status":"verified"}""",
         )
 
-        assertThat(response.toRewardVerificationPollStatus())
-            .isEqualTo(RewardVerificationPollStatus.Verified(VerifiedReward.NoReward))
+        assertThat(response.toRewardVerificationPollStatus(customerInfo = null))
+            .isEqualTo(RewardVerificationPollStatus.Verified(VerifiedReward.NoReward, customerInfo = null))
     }
 
     @Test
@@ -43,8 +43,8 @@ class RewardVerificationResponseTest {
             """{"status":"verified","subscriber":{}}""",
         )
 
-        assertThat(response.toRewardVerificationPollStatus())
-            .isEqualTo(RewardVerificationPollStatus.Verified(VerifiedReward.NoReward))
+        assertThat(response.toRewardVerificationPollStatus(customerInfo = null))
+            .isEqualTo(RewardVerificationPollStatus.Verified(VerifiedReward.NoReward, customerInfo = null))
     }
 
     @Test
@@ -64,7 +64,7 @@ class RewardVerificationResponseTest {
             """{"status":"failed"}""",
         )
 
-        assertThat(response.toRewardVerificationPollStatus()).isEqualTo(RewardVerificationPollStatus.Failed())
+        assertThat(response.toRewardVerificationPollStatus(customerInfo = null)).isEqualTo(RewardVerificationPollStatus.Failed())
     }
 
     @Test
@@ -79,7 +79,7 @@ class RewardVerificationResponseTest {
             """.trimIndent(),
         )
 
-        assertThat(response.toRewardVerificationPollStatus()).isEqualTo(
+        assertThat(response.toRewardVerificationPollStatus(customerInfo = null)).isEqualTo(
             RewardVerificationPollStatus.Failed(
                 failureReason = "ssv_not_enabled",
                 message = "AdMob server-side reward verification is not enabled for this app.",
@@ -93,7 +93,7 @@ class RewardVerificationResponseTest {
             """{"status":"something_new"}""",
         )
 
-        assertThat(response.toRewardVerificationPollStatus()).isEqualTo(RewardVerificationPollStatus.UNKNOWN)
+        assertThat(response.toRewardVerificationPollStatus(customerInfo = null)).isEqualTo(RewardVerificationPollStatus.UNKNOWN)
     }
 
     @Test
@@ -111,9 +111,10 @@ class RewardVerificationResponseTest {
             """.trimIndent(),
         )
 
-        assertThat(response.toRewardVerificationPollStatus()).isEqualTo(
+        assertThat(response.toRewardVerificationPollStatus(customerInfo = null)).isEqualTo(
             RewardVerificationPollStatus.Verified(
                 VerifiedReward.VirtualCurrency(code = "coins", amount = 10),
+                customerInfo = null,
             ),
         )
     }
@@ -133,8 +134,8 @@ class RewardVerificationResponseTest {
             """.trimIndent(),
         )
 
-        assertThat(response.toRewardVerificationPollStatus()).isEqualTo(
-            RewardVerificationPollStatus.Verified(VerifiedReward.UnsupportedReward),
+        assertThat(response.toRewardVerificationPollStatus(customerInfo = null)).isEqualTo(
+            RewardVerificationPollStatus.Verified(VerifiedReward.UnsupportedReward, customerInfo = null),
         )
     }
 
@@ -153,8 +154,8 @@ class RewardVerificationResponseTest {
             """.trimIndent(),
         )
 
-        assertThat(response.toRewardVerificationPollStatus()).isEqualTo(
-            RewardVerificationPollStatus.Verified(VerifiedReward.UnsupportedReward),
+        assertThat(response.toRewardVerificationPollStatus(customerInfo = null)).isEqualTo(
+            RewardVerificationPollStatus.Verified(VerifiedReward.UnsupportedReward, customerInfo = null),
         )
     }
 
@@ -173,12 +174,13 @@ class RewardVerificationResponseTest {
             """.trimIndent(),
         )
 
-        assertThat(response.toRewardVerificationPollStatus()).isEqualTo(
+        assertThat(response.toRewardVerificationPollStatus(customerInfo = null)).isEqualTo(
             RewardVerificationPollStatus.Verified(
                 VerifiedReward.Entitlement(
                     identifier = "pro",
                     expiresAt = Iso8601Utils.parse("2026-06-16T12:00:00Z"),
                 ),
+                customerInfo = null,
             ),
         )
     }
@@ -197,8 +199,8 @@ class RewardVerificationResponseTest {
             """.trimIndent(),
         )
 
-        assertThat(response.toRewardVerificationPollStatus()).isEqualTo(
-            RewardVerificationPollStatus.Verified(VerifiedReward.UnsupportedReward),
+        assertThat(response.toRewardVerificationPollStatus(customerInfo = null)).isEqualTo(
+            RewardVerificationPollStatus.Verified(VerifiedReward.UnsupportedReward, customerInfo = null),
         )
     }
 
@@ -217,8 +219,8 @@ class RewardVerificationResponseTest {
             """.trimIndent(),
         )
 
-        assertThat(response.toRewardVerificationPollStatus()).isEqualTo(
-            RewardVerificationPollStatus.Verified(VerifiedReward.UnsupportedReward),
+        assertThat(response.toRewardVerificationPollStatus(customerInfo = null)).isEqualTo(
+            RewardVerificationPollStatus.Verified(VerifiedReward.UnsupportedReward, customerInfo = null),
         )
     }
 
@@ -247,7 +249,7 @@ class RewardVerificationResponseTest {
             """.trimIndent(),
         )
 
-        assertThat(response.toRewardVerificationPollStatus()).isEqualTo(
+        assertThat(response.toRewardVerificationPollStatus(customerInfo = null)).isEqualTo(
             RewardVerificationPollStatus.Verified(
                 reward = VerifiedReward.VirtualCurrency(code = "coins", amount = 10),
                 moreRewards = listOf(
@@ -257,6 +259,7 @@ class RewardVerificationResponseTest {
                     ),
                     VerifiedReward.UnsupportedReward,
                 ),
+                customerInfo = null,
             ),
         )
     }
@@ -267,8 +270,8 @@ class RewardVerificationResponseTest {
             """{"status":"verified","reward":null}""",
         )
 
-        assertThat(response.toRewardVerificationPollStatus()).isEqualTo(
-            RewardVerificationPollStatus.Verified(VerifiedReward.NoReward),
+        assertThat(response.toRewardVerificationPollStatus(customerInfo = null)).isEqualTo(
+            RewardVerificationPollStatus.Verified(VerifiedReward.NoReward, customerInfo = null),
         )
     }
 
@@ -278,8 +281,8 @@ class RewardVerificationResponseTest {
             """{"status":"verified","reward":"bad"}""",
         )
 
-        assertThat(response.toRewardVerificationPollStatus()).isEqualTo(
-            RewardVerificationPollStatus.Verified(VerifiedReward.UnsupportedReward),
+        assertThat(response.toRewardVerificationPollStatus(customerInfo = null)).isEqualTo(
+            RewardVerificationPollStatus.Verified(VerifiedReward.UnsupportedReward, customerInfo = null),
         )
     }
 }

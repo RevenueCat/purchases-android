@@ -97,7 +97,7 @@ class BackendGetRewardVerificationResultTest {
         )
 
         assertThat(receivedResult).isEqualTo(
-            RewardVerificationPollStatus.Verified(VerifiedReward.VirtualCurrency(code = "coins", amount = 10)),
+            RewardVerificationPollStatus.Verified(VerifiedReward.VirtualCurrency(code = "coins", amount = 10), customerInfo = null),
         )
         verify(exactly = 1) {
             httpClient.performRequest(
@@ -219,7 +219,7 @@ class BackendGetRewardVerificationResultTest {
         )
 
         assertThat(receivedResult).isEqualTo(
-            RewardVerificationPollStatus.Verified(VerifiedReward.UnsupportedReward),
+            RewardVerificationPollStatus.Verified(VerifiedReward.UnsupportedReward, customerInfo = null),
         )
     }
 
@@ -237,7 +237,7 @@ class BackendGetRewardVerificationResultTest {
         )
 
         assertThat(receivedResult).isEqualTo(
-            RewardVerificationPollStatus.Verified(VerifiedReward.UnsupportedReward),
+            RewardVerificationPollStatus.Verified(VerifiedReward.UnsupportedReward, customerInfo = null),
         )
     }
 
@@ -257,7 +257,7 @@ class BackendGetRewardVerificationResultTest {
         )
 
         assertThat(receivedResult).isEqualTo(
-            RewardVerificationPollStatus.Verified(VerifiedReward.NoReward),
+            RewardVerificationPollStatus.Verified(VerifiedReward.NoReward, customerInfo = null),
         )
     }
 

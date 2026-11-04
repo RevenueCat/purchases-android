@@ -25,7 +25,7 @@ internal data class RewardVerificationResponse(
     val message: String? = null,
 ) {
     @OptIn(InternalRevenueCatAPI::class)
-    fun toRewardVerificationPollStatus(customerInfo: CustomerInfo? = null): RewardVerificationPollStatus {
+    fun toRewardVerificationPollStatus(customerInfo: CustomerInfo?): RewardVerificationPollStatus {
         return when (status.lowercase()) {
             "pending" -> RewardVerificationPollStatus.PENDING
             "verified" -> RewardVerificationPollStatus.Verified(
