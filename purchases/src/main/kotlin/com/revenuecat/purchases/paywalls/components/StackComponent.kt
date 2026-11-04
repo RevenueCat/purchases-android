@@ -68,6 +68,9 @@ public class StackComponent(
     public val overrides: List<ComponentOverride<PartialStackComponent>> = emptyList(),
     @get:JvmSynthetic
     public val name: String? = null,
+    @get:JvmSynthetic
+    @SerialName("purchase_context")
+    public val purchaseContext: PurchaseContext? = null,
 ) : PaywallComponent {
 
     @Serializable(with = StackOverflowDeserializer::class)
@@ -145,3 +148,12 @@ internal object NullableStackOverflowDeserializer : KSerializer<StackComponent.O
         throw NotImplementedError("Serialization is not implemented because it is not needed.")
     }
 }
+
+@InternalRevenueCatAPI
+@Poko
+@Serializable
+@Immutable
+public class PurchaseContext(
+    @get:JvmSynthetic
+    public val mode: String,
+)

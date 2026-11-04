@@ -12,42 +12,74 @@ internal class PackageSelectionResolver(
     selectedTabIndex: Int,
     presentedSheet: SheetPresentationKey?,
     private val context: ComponentVisibilityContext,
+    owningSheet: SheetPresentationKey? = null,
 ) {
-    // Defaults in a closed sheet still establish a root fallback for the selected tab / root context.
-    private val hasAuthoredDefault = packages.packagesOutsideTabs.any { it.isSelectedByDefault } ||
-        packages.packagesByTab[selectedTabIndex].orEmpty().any { it.isSelectedByDefault }
     private val outside = packages.packagesOutsideTabs.inPresentation(presentedSheet)
     private val tab = packages.packagesByTab[selectedTabIndex].orEmpty().inPresentation(presentedSheet)
     private val active = outside + tab
 
-    fun switchTab(current: String?, remembered: String?): String? = reconcile(
-        current = current?.takeIf { uid -> outside.any { it.uniqueId == uid } } ?: remembered,
-        remembered = remembered,
-    )
+    // An independent context's containing sheet is its root and follows tab selection priority.
+    private val sheet = active.filter {
+        presentedSheet != null && presentedSheet !== owningSheet && it.sheetPresentationKey === presentedSheet
+    }
+
+    fun initialSelection(): String? = defaultSelection(remembered = null) ?: allHiddenFallback()
+
+    fun switchTab(current: String?, remembered: String?): String? =
+        current?.takeIf { tab.isEmpty() && outside.rendersWhenSelected(it, context) }
+            ?: remembered?.takeIf { rendersWhenSelected(it) }
+            ?: defaultSelection(remembered = null)
+            ?: remembered?.takeIf { uid -> active.any { it.uniqueId == uid } }
+            ?: allHiddenFallback()
+
+    fun enterSheet(current: String?): String? {
+        if (sheet.isEmpty()) return current
+        return sheet.defaultSelection(context, active)?.uniqueId
+            ?: allHiddenFallback()
+            ?: current
+    }
 
     fun reconcile(current: String?, remembered: String?): String? = when {
-        current != null && rendersWhenSelected(current) -> current
-        // No default in this context means the paywall deliberately starts unselected.
-        current == null && tab.isEmpty() && !hasAuthoredDefault -> null
+        // An explicit choice may hide its own card. Keep it while the card could still render
+        // unselected; viewport/container rules that hide both states still trigger reconciliation.
+        current != null && active.any { info ->
+            info.uniqueId == current && (
+                info.resolvesVisible(context.withSelection(null)) || rendersWhenSelected(current)
+                )
+        } -> current
         else -> defaultSelection(remembered)
-            ?: outside.firstOrNull { canSelect(it) }?.uniqueId.takeIf { current != null }
-            // Keep the existing all-hidden behavior, including workflow fallbacks owned elsewhere.
             ?: current
+            ?: allHiddenFallback()
     }
 
     fun reset(current: String?, remembered: String?): String? = defaultSelection(remembered)
         ?: current.takeIf {
             val selectionContext = context.withSelection(active.find { it.uniqueId == current }?.selectionInfo())
-            active.none { info -> info.resolvesVisible(selectionContext) }
+            active.any { info -> info.uniqueId == current } &&
+                active.none { info -> info.resolvesVisible(selectionContext) }
         }
+        ?: allHiddenFallback()
 
     private fun defaultSelection(remembered: String?): String? =
-        tab.authoredDefaultSelection(context, active)?.uniqueId
+        sheet.authoredDefaultSelection(context, active)?.uniqueId
+            ?: tab.authoredDefaultSelection(context, active)?.uniqueId
             ?: outside.authoredDefaultSelection(context, active)?.uniqueId
             ?: remembered?.takeIf { rendersWhenSelected(it) }
+            ?: sheet.firstOrNull { canSelect(it) }?.uniqueId
             ?: tab.firstOrNull { canSelect(it) }?.uniqueId
-            ?: outside.takeIf { hasAuthoredDefault }
-                ?.firstOrNull { canSelect(it) }?.uniqueId
+            ?: outside.firstOrNull { canSelect(it) }?.uniqueId
+
+    // Only unselected, unauthored, entirely hidden contexts get a terminal purchase fallback.
+    // A visible card that hides itself on selection must not become an automatic candidate.
+    private fun allHiddenFallback(): String? {
+        val candidates = sheet.ifEmpty { active }
+        return candidates.firstOrNull()?.uniqueId.takeIf {
+            candidates.none { it.isSelectedByDefault } && candidates.none { info ->
+                info.resolvesVisible(context.withSelection(null)) ||
+                    info.resolvesVisible(context.withSelection(info.selectionInfo()))
+            }
+        }
+    }
 
     private fun rendersWhenSelected(uniqueId: String): Boolean = active.rendersWhenSelected(uniqueId, context)
 
@@ -55,7 +87,7 @@ internal class PackageSelectionResolver(
     private fun canSelect(info: AvailablePackages.Info): Boolean = info.canSelect(context, active)
 }
 
-private fun List<AvailablePackages.Info>.inPresentation(key: SheetPresentationKey?): List<AvailablePackages.Info> =
+internal fun List<AvailablePackages.Info>.inPresentation(key: SheetPresentationKey?): List<AvailablePackages.Info> =
     filter { it.sheetPresentationKey == null || it.sheetPresentationKey === key }
 
 internal fun AvailablePackages.Info.selectionInfo(): SelectedPackageInfo = SelectedPackageInfo(

@@ -166,15 +166,9 @@ internal fun ButtonComponentView(
                                 paywallAction = paywallAction,
                                 state = state,
                             )
-                            // Resolve the URL once and carry it on the action: PaywallViewModel reuses it instead of
-                            // resolving again, so the interaction event and the URL opened for checkout cannot differ.
-                            val resolvedAction = if (
-                                paywallAction is PaywallAction.External.LaunchWebCheckout && componentUrl != null
-                            ) {
-                                paywallAction.copy(resolvedUrl = componentUrl)
-                            } else {
-                                paywallAction
-                            }
+                            // Carry the package or URL resolved in this button's context through to the action handler.
+                            val resolvedAction = actionForPurchaseClick(paywallAction, state, componentUrl)
+                                ?: return@onStackClick
                             componentInteractionTracker.track(
                                 paywallPurchaseButtonAction(
                                     componentName = style.componentName,
@@ -355,6 +349,35 @@ private fun packageForPurchaseButtonInteraction(
         else -> null
     }
     return actionPackage ?: state.selectedPackageInfo?.rcPackage
+}
+
+private fun actionForPurchaseClick(
+    action: PaywallAction,
+    state: PaywallState.Loaded.Components,
+    componentUrl: String?,
+): PaywallAction? = when (action) {
+    is PaywallAction.External.PurchasePackage -> {
+        if (state.isIndependentPurchaseContext && action.rcPackage == null) {
+            state.selectedPackageInfo?.let { selected ->
+                action.copy(rcPackage = selected.rcPackage, resolvedOffer = selected.resolvedOffer)
+            }
+        } else {
+            action
+        }
+    }
+    is PaywallAction.External.LaunchWebCheckout -> {
+        val behavior = action.paramBehavior
+        if (state.isIndependentPurchaseContext &&
+            behavior is PaywallAction.External.LaunchWebCheckout.ParamBehavior.Append && behavior.rcPackage == null
+        ) {
+            state.selectedPackageInfo?.let { selected ->
+                action.copy(paramBehavior = behavior.copy(rcPackage = selected.rcPackage), resolvedUrl = componentUrl)
+            }
+        } else {
+            if (componentUrl != null) action.copy(resolvedUrl = componentUrl) else action
+        }
+    }
+    else -> action
 }
 
 @Preview

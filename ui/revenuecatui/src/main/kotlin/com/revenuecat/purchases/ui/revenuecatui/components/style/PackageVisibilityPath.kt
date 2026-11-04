@@ -13,18 +13,23 @@ internal class PackageVisibilityPath(
 }
 
 /** Attach paths after the styles have been built, when all of a package's containers are known. */
-internal fun AvailablePackages.withVisibilityPaths(root: ComponentStyle): AvailablePackages {
-    val paths = PackageVisibilityPathCollector()
-    paths.visit(root)
+internal fun AvailablePackages.withVisibilityPaths(
+    root: ComponentStyle,
+    sheet: SheetPresentationKey? = null,
+): AvailablePackages {
+    val paths = PackageVisibilityPathCollector(root)
+    paths.visit(root, sheet = sheet)
     fun AvailablePackages.Info.withPaths(tabIndex: Int?) =
         copy(visibilityPaths = paths.byPackage[this to tabIndex].orEmpty())
     return AvailablePackages(
         packagesOutsideTabs = packagesOutsideTabs.map { it.withPaths(null) },
         packagesByTab = packagesByTab.mapValues { (tabIndex, infos) -> infos.map { it.withPaths(tabIndex) } },
+        nestedPackages = nestedPackages,
+        hasDeclaredPackages = hasDeclaredPackages,
     )
 }
 
-private class PackageVisibilityPathCollector {
+private class PackageVisibilityPathCollector(private val root: ComponentStyle) {
     val byPackage = mutableMapOf<Pair<AvailablePackages.Info, Int?>, MutableList<PackageVisibilityPath>>()
 
     @Suppress("LongParameterList", "CyclomaticComplexMethod", "LongMethod")
@@ -52,7 +57,11 @@ private class PackageVisibilityPathCollector {
                     .add(PackageVisibilityPath(path + style.stackComponentStyle, branches))
                 child(style.stackComponentStyle)
             }
-            is StackComponentStyle -> style.children.forEach { child(it) }
+            is StackComponentStyle -> {
+                if (style === root || style.purchaseContextPackages == null) {
+                    style.children.forEach { child(it) }
+                }
+            }
             is ButtonComponentStyle -> {
                 child(style.stackComponentStyle)
                 val destination = (style.action as? ButtonComponentStyle.Action.NavigateTo)?.destination

@@ -18,6 +18,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
@@ -39,6 +40,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
+import com.revenuecat.purchases.ui.revenuecatui.components.previewStackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
@@ -55,6 +57,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentS
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.variableLocalizationKeysForEnUs
 import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
@@ -134,6 +137,152 @@ class ButtonComponentViewTests {
         ),
         action = ButtonComponentStyle.Action.PurchasePackage(rcPackage = null),
     )
+
+    @Test
+    fun `web checkout with no scoped selection does not buy the root package`() {
+        val original = TestData.Packages.annual
+        val annual = Package(
+            original.identifier, original.packageType, original.product,
+            original.presentedOfferingContext, URL("https://checkout.example.com/annual"),
+        )
+        val root = FakePaywallState(annual)
+        root.update(selectedPackageUniqueId = annual.identifier)
+        val style = previewStackComponentStyle(children = emptyList()).copy(
+            purchaseContextPackages = PaywallState.Loaded.Components.AvailablePackages(emptyList(), emptyMap()),
+        )
+        val state = requireNotNull(root.purchaseContextState(style))
+        var clicks = 0
+        var checkoutUrl: String? = null
+        composeTestRule.setContent {
+            ButtonComponentView(
+                style = purchaseButtonStyle.copy(action = ButtonComponentStyle.Action.WebCheckout(
+                    rcPackage = null,
+                    autoDismiss = false,
+                    openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
+                )),
+                state = state,
+                onClick = { action ->
+                    clicks++
+                    checkoutUrl = root.resolveWebCheckoutUrlForInteraction(action as PaywallAction.External.LaunchWebCheckout)
+                },
+            )
+        }
+        composeTestRule.onNodeWithText("Purchase").performClick()
+        composeTestRule.waitForIdle()
+        assertThat(clicks).isZero()
+        assertThat(checkoutUrl).isNull()
+        assertThat(state.actionInProgress).isFalse()
+    }
+
+    @Test
+    fun `web checkout carries the scoped package even when it has no checkout URL`() {
+        val original = TestData.Packages.annual
+        val annual = Package(
+            original.identifier, original.packageType, original.product,
+            original.presentedOfferingContext, URL("https://checkout.example.com/annual"),
+        )
+        val originalMonthly = TestData.Packages.monthly
+        val monthly = Package(
+            originalMonthly.identifier, originalMonthly.packageType, originalMonthly.product,
+            originalMonthly.presentedOfferingContext, webCheckoutURL = null,
+        )
+        val root = FakePaywallState(annual, monthly)
+        root.update(selectedPackageUniqueId = annual.identifier)
+        val style = previewStackComponentStyle(children = emptyList()).copy(
+            purchaseContextPackages = PaywallState.Loaded.Components.AvailablePackages(
+                listOf(PaywallState.Loaded.Components.AvailablePackages.Info(
+                    pkg = monthly,
+                    isSelectedByDefault = true,
+                )),
+                emptyMap(),
+            ),
+        )
+        val state = requireNotNull(root.purchaseContextState(style))
+        var checkoutAction: PaywallAction.External.LaunchWebCheckout? = null
+        var checkoutUrl: String? = null
+        composeTestRule.setContent {
+            ButtonComponentView(
+                style = purchaseButtonStyle.copy(action = ButtonComponentStyle.Action.WebCheckout(
+                    rcPackage = null,
+                    autoDismiss = false,
+                    openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
+                )),
+                state = state,
+                onClick = { action ->
+                    checkoutAction = action as PaywallAction.External.LaunchWebCheckout
+                    checkoutUrl = root.resolveWebCheckoutUrlForInteraction(action)
+                },
+            )
+        }
+        composeTestRule.onNodeWithText("Purchase").performClick()
+        composeTestRule.waitForIdle()
+        val behavior = checkoutAction?.paramBehavior as PaywallAction.External.LaunchWebCheckout.ParamBehavior.Append
+        assertThat(behavior.rcPackage).isEqualTo(monthly)
+        assertThat(checkoutUrl).isNull()
+    }
+
+    @Test
+    fun `purchase action carries the selection from the button context`() {
+        val root = FakePaywallState(TestData.Packages.annual, TestData.Packages.monthly)
+        root.update(selectedPackageUniqueId = TestData.Packages.annual.identifier)
+        val style = previewStackComponentStyle(children = emptyList()).copy(
+            purchaseContextPackages = PaywallState.Loaded.Components.AvailablePackages(
+                packagesOutsideTabs = listOf(
+                    PaywallState.Loaded.Components.AvailablePackages.Info(
+                        pkg = TestData.Packages.monthly,
+                        isSelectedByDefault = true,
+                    ),
+                ),
+                packagesByTab = emptyMap(),
+                hasDeclaredPackages = true,
+            ),
+        )
+        val state = requireNotNull(root.purchaseContextState(style))
+        var purchaseAction: PaywallAction.External.PurchasePackage? = null
+
+        composeTestRule.setContent {
+            ButtonComponentView(
+                style = purchaseButtonStyle,
+                state = state,
+                onClick = { purchaseAction = it as PaywallAction.External.PurchasePackage },
+            )
+        }
+
+        composeTestRule.onNodeWithText("Purchase").performClick()
+        composeTestRule.waitForIdle()
+        assertThat(purchaseAction?.rcPackage).isEqualTo(TestData.Packages.monthly)
+        assertThat(purchaseAction?.resolvedOffer).isEqualTo(state.selectedPackageInfo?.resolvedOffer)
+        assertThat(root.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
+    @Test
+    fun `purchase action with no scoped selection does not buy the root package`() {
+        val root = FakePaywallState(TestData.Packages.annual, TestData.Packages.monthly)
+        root.update(selectedPackageUniqueId = TestData.Packages.annual.identifier)
+        val style = previewStackComponentStyle(children = emptyList()).copy(
+            purchaseContextPackages = PaywallState.Loaded.Components.AvailablePackages(
+                packagesOutsideTabs = emptyList(),
+                packagesByTab = emptyMap(),
+                hasDeclaredPackages = true,
+            ),
+        )
+        val state = requireNotNull(root.purchaseContextState(style))
+        var clicks = 0
+
+        composeTestRule.setContent {
+            ButtonComponentView(
+                style = purchaseButtonStyle,
+                state = state,
+                onClick = { clicks++ },
+            )
+        }
+
+        composeTestRule.onNodeWithText("Purchase").performClick()
+        composeTestRule.waitForIdle()
+        assertThat(clicks).isZero()
+        assertThat(state.actionInProgress).isFalse()
+        assertThat(root.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
 
     @Test
     fun `a click cut short by the button leaving composition releases the paywall action`() {
