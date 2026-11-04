@@ -1287,6 +1287,7 @@ internal class PurchasesOrchestrator(
     }
 
     fun cacheCustomerInfo(customerInfo: CustomerInfo) {
+        offlineEntitlementsManager.resetOfflineCustomerInfoCache()
         customerInfoUpdateHandler.cacheAndNotifyListeners(customerInfo, identityManager.currentAppUserID)
     }
 

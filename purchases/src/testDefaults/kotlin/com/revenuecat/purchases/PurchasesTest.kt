@@ -70,6 +70,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import io.mockk.verifyAll
+import io.mockk.verifyOrder
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -2266,6 +2267,7 @@ internal class PurchasesTest : BasePurchasesTest() {
     @Test
     fun `pollRewardVerification caches customer info from the poll on entitlement reward`() {
         val customerInfo = createCustomerInfo(Responses.validFullPurchaserResponse)
+        every { mockOfflineEntitlementsManager.resetOfflineCustomerInfoCache() } just Runs
 
         val result = runBlocking {
             purchases.pollRewardVerification(
@@ -2283,7 +2285,10 @@ internal class PurchasesTest : BasePurchasesTest() {
         }
 
         assertThat(result.failed).isFalse
-        verify(exactly = 1) { mockCustomerInfoUpdateHandler.cacheAndNotifyListeners(customerInfo, appUserId) }
+        verifyOrder {
+            mockOfflineEntitlementsManager.resetOfflineCustomerInfoCache()
+            mockCustomerInfoUpdateHandler.cacheAndNotifyListeners(customerInfo, appUserId)
+        }
         verify(exactly = 0) {
             mockCustomerInfoHelper.retrieveCustomerInfo(any(), any(), any(), any(), any(), any())
         }
