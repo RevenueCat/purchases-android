@@ -87,6 +87,7 @@ class TabControlDiscountTests {
     fun `Tab without packages keeps the shared package context`() {
         render(emptyAnnualTab = true)
         compose.onNodeWithText("Yearly: 46%").assertExists()
+        compose.onNodeWithText("Selected: $129.99").assertExists()
     }
 
     private fun render(emptyAnnualTab: Boolean = false) {
@@ -136,7 +137,12 @@ class TabControlDiscountTests {
             )),
             stack = StackComponent(components = listOf(text("All plans"))),
         )
-        val root = StackComponent(components = listOf(
+        val rootPlans = if (emptyAnnualTab) {
+            listOf(plan(sheetAnnual, "Root annual", true), plan(sheetMonthly, "Root monthly", false))
+        } else {
+            emptyList()
+        }
+        val root = StackComponent(components = rootPlans + listOf(
             tabs, sheet, text("Selected: {{ product.price }}"), text("Selected offer: {{ product.offer_price }}"),
         ))
         val data = PaywallComponentsData(

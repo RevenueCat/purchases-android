@@ -21,15 +21,15 @@ internal class PackageSelectionResolver(
     fun initialSelection(): String? = defaultSelection(remembered = null) ?: allHiddenFallback()
 
     fun switchTab(current: String?, remembered: String?): String? =
-        current?.takeIf { tab.isEmpty() && outside.rendersWhenSelected(it, context) }
-            ?: remembered?.takeIf { rendersWhenSelected(it) }
+        current?.takeIf { tab.isEmpty() && outside.couldBeSelected(it, context) }
+            ?: remembered?.takeIf { active.couldBeSelected(it, context) }
             ?: defaultSelection(remembered = null)
             ?: remembered?.takeIf { uid -> active.any { it.uniqueId == uid } }
             ?: allHiddenFallback()
 
     fun enterSheet(current: String?): String? {
         if (sheet.isEmpty()) return current
-        return sheet.defaultSelection(context, active)?.uniqueId
+        return sheet.defaultSelection(context)?.uniqueId
             ?: allHiddenFallback()
             ?: current
     }
@@ -37,11 +37,7 @@ internal class PackageSelectionResolver(
     fun reconcile(current: String?, remembered: String?): String? = when {
         // An explicit choice may hide its own card. Keep it while the card could still render
         // unselected; viewport/container rules that hide both states still trigger reconciliation.
-        current != null && active.any { info ->
-            info.uniqueId == current && (
-                info.resolvesVisible(context.withSelection(null)) || rendersWhenSelected(current)
-                )
-        } -> current
+        current != null && sheet.ifEmpty { active }.couldBeSelected(current, context) -> current
         else -> defaultSelection(remembered)
             ?: current
             ?: allHiddenFallback()
@@ -55,14 +51,14 @@ internal class PackageSelectionResolver(
         }
         ?: allHiddenFallback()
 
-    private fun defaultSelection(remembered: String?): String? =
-        sheet.authoredDefaultSelection(context, active)?.uniqueId
-            ?: tab.authoredDefaultSelection(context, active)?.uniqueId
+    private fun defaultSelection(remembered: String?): String? {
+        if (sheet.isNotEmpty()) return sheet.defaultSelection(context)?.uniqueId
+        return tab.authoredDefaultSelection(context, active)?.uniqueId
             ?: outside.authoredDefaultSelection(context, active)?.uniqueId
-            ?: remembered?.takeIf { rendersWhenSelected(it) }
-            ?: sheet.firstOrNull { canSelect(it) }?.uniqueId
+            ?: remembered?.takeIf { active.couldBeSelected(it, context) }
             ?: tab.firstOrNull { canSelect(it) }?.uniqueId
             ?: outside.firstOrNull { canSelect(it) }?.uniqueId
+    }
 
     // Only unselected, unauthored, entirely hidden contexts get a terminal purchase fallback.
     // A visible card that hides itself on selection must not become an automatic candidate.
@@ -75,8 +71,6 @@ internal class PackageSelectionResolver(
             }
         }
     }
-
-    private fun rendersWhenSelected(uniqueId: String): Boolean = active.rendersWhenSelected(uniqueId, context)
 
     // Unauthored fallbacks must render independently of selection and stay visible after selection.
     private fun canSelect(info: AvailablePackages.Info): Boolean = info.canSelect(context, active)
@@ -100,6 +94,16 @@ private fun List<AvailablePackages.Info>.rendersWhenSelected(
     uniqueId: String,
     context: ComponentVisibilityContext,
 ): Boolean = any { it.uniqueId == uniqueId && it.resolvesVisible(context.withSelection(it.selectionInfo())) }
+
+private fun List<AvailablePackages.Info>.couldBeSelected(
+    uniqueId: String,
+    context: ComponentVisibilityContext,
+): Boolean = any { info ->
+    info.uniqueId == uniqueId && (
+        info.resolvesVisible(context.withSelection(null)) ||
+            info.resolvesVisible(context.withSelection(info.selectionInfo()))
+        )
+}
 
 internal fun AvailablePackages.Info.canSelect(
     context: ComponentVisibilityContext,

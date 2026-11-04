@@ -316,6 +316,78 @@ internal class PackageSelectionVisibilityTests {
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
     }
 
+    @Test
+    fun `returning to a tab preserves an explicit self hiding choice until its container is hidden`() {
+        val state = state(tabs(
+            listOf(pkg(annual, default = true), hiddenStack(selfHidingPackage(monthly))),
+            listOf(pkg(weekly, default = true)),
+        ))
+        state.paywallBoundsDp = DpSize(400.dp, 600.dp)
+        state.update(selectedPackageUniqueId = monthly.identifier)
+
+        state.update(selectedTabIndex = 1)
+        state.update(selectedTabIndex = 0)
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthly)
+
+        state.update(selectedTabIndex = 1)
+        state.paywallBoundsDp = wide
+        state.update(selectedTabIndex = 0)
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
+    }
+
+    @Test
+    fun `switching to a content only tab preserves an explicit self hiding root choice`() {
+        val state = state(
+            pkg(annual, default = true),
+            selfHidingPackage(monthly),
+            tabs(emptyList(), emptyList()),
+        )
+        state.update(selectedPackageUniqueId = monthly.identifier)
+
+        state.update(selectedTabIndex = 1)
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthly)
+    }
+
+    @Test
+    fun `sheet resize selects a visible sheet package ahead of root and tab defaults`() {
+        val state = state(
+            pkg(annual, default = true),
+            tabs(listOf(pkg(annual, default = true))),
+            ButtonComponent(
+                action = ButtonComponent.Action.NavigateTo(ButtonComponent.Destination.Sheet(
+                    id = "plans",
+                    stack = StackComponent(listOf(hiddenStack(pkg(monthly)), pkg(weekly))),
+                )),
+                stack = StackComponent(emptyList()),
+            ),
+        )
+        state.paywallBoundsDp = DpSize(400.dp, 600.dp)
+        val button = (state.stack as StackComponentStyle).children[2] as ButtonComponentStyle
+        val sheet = (button.action as ButtonComponentStyle.Action.NavigateTo).destination
+            as ButtonComponentStyle.Action.NavigateTo.Destination.Sheet
+        state.sheet.show(sheet, state, PaywallComponentInteractionTracker { }, onClick = {})
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthly)
+
+        state.paywallBoundsDp = wide
+        state.reconcileSelectionForWindowSize(wide)
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(weekly)
+        state.sheet.hide()
+        state.restorePackageAfterSheetDismiss()
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
+    }
+
+    private fun selfHidingPackage(pkg: Package) = pkg(pkg, content = StackComponent(
+        components = emptyList(),
+        overrides = listOf(ComponentOverride(
+            conditions = listOf(ComponentOverride.Condition.Selected),
+            properties = PartialStackComponent(visible = false),
+        )),
+    ))
+
     private fun tabs(vararg contents: List<PaywallComponent>) = TabsComponent(
         tabs = contents.mapIndexed { index, children ->
             TabsComponent.Tab(id = index.toString(), stack = StackComponent(children))
