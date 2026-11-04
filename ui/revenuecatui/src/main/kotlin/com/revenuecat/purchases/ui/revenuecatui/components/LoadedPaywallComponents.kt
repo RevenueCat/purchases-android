@@ -365,10 +365,10 @@ internal fun SimpleSheetState.show(
                     resultingRootPackage = resulting?.rcPackage,
                 ),
             )
-            state.resetToDefaultPackage()
+            state.restorePackageAfterSheetDismiss()
         },
     )
-    state.reconcileSelectionForWindowSize(state.paywallBoundsDp)
+    state.selectPackageForSheetEntry()
 }
 
 @Suppress("LongMethod")
