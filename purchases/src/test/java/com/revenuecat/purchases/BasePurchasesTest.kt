@@ -22,6 +22,7 @@ import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DefaultLocaleProvider
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.PlatformInfo
+import com.revenuecat.purchases.common.StorefrontAwaiter
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
@@ -105,6 +106,7 @@ internal open class BasePurchasesTest {
     internal val mockVirtualCurrencyManager = mockk<VirtualCurrencyManager>()
     internal val mockPurchaseParamsValidator = mockk<PurchaseParamsValidator>()
     internal val mockWorkflowManager = mockk<WorkflowManager>(relaxed = true)
+    internal val mockStorefrontAwaiter = mockk<StorefrontAwaiter>(relaxed = true)
     internal val mockConfiguredAdRewardsProvider = mockk<ConfiguredAdRewardsProvider>(relaxed = true)
     internal val mockRemoteConfigManager = mockk<RemoteConfigManager>(relaxed = true)
     internal val mockTokenManager = mockk<TokenManager>(relaxed = true)
@@ -537,6 +539,7 @@ internal open class BasePurchasesTest {
             backupManager = mockBackupManager,
             purchaseParamsValidator = mockPurchaseParamsValidator,
             workflowManager = mockWorkflowManager,
+            storefrontAwaiter = mockStorefrontAwaiter,
             remoteConfigManager = mockRemoteConfigManager,
             configuredAdRewardsProvider = mockConfiguredAdRewardsProvider,
             uiConfigProvider = mockUiConfigProvider,

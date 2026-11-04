@@ -41,6 +41,7 @@ import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
+import com.revenuecat.purchases.common.StorefrontAwaiter
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.audiences.AudiencesConfigProvider
 import com.revenuecat.purchases.common.between
@@ -195,6 +196,7 @@ internal class PurchasesOrchestrator(
     private val purchaseParamsValidator: PurchaseParamsValidator,
 
     private val workflowManager: WorkflowManager,
+    private val storefrontAwaiter: StorefrontAwaiter?,
     val processLifecycleOwnerProvider: () -> LifecycleOwner = { ProcessLifecycleOwner.get() },
     private val blockstoreHelper: BlockstoreHelper = BlockstoreHelper(application, identityManager),
     private val backupManager: BackupManager = BackupManager(application),
@@ -401,9 +403,11 @@ internal class PurchasesOrchestrator(
                     onSuccess = { countryCode ->
                         storefrontCountryCode = countryCode
                         debugLog { BillingStrings.BILLING_COUNTRY_CODE.format(countryCode) }
+                        storefrontAwaiter?.release()
                     },
                     onError = { error ->
                         errorLog(error)
+                        storefrontAwaiter?.release()
                     },
                 )
             }

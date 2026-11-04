@@ -142,6 +142,7 @@ class SubscriberAttributesPurchasesTests {
             virtualCurrencyManager = virtualCurrencyManagerMock,
             purchaseParamsValidator = purchaseParamsValidator,
             workflowManager = mockk(relaxed = true),
+            storefrontAwaiter = null,
             remoteConfigManager = mockk(relaxed = true),
             configuredAdRewardsProvider = mockk(relaxed = true),
             uiConfigProvider = mockk(relaxed = true),
