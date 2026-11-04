@@ -1,12 +1,10 @@
 package com.revenuecat.apitester.kotlin
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ads.AdRewardConfiguration
 import com.revenuecat.purchases.ads.ConfiguredAdRewards
 import com.revenuecat.purchases.interfaces.GetAdRewardsCallback
 import kotlin.time.Duration
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Suppress("unused", "UNUSED_VARIABLE")
 private class ConfiguredAdRewardsAPI {
     fun check(
