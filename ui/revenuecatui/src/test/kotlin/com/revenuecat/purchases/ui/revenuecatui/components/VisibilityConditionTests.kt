@@ -563,6 +563,7 @@ class VisibilityConditionTests {
         )
         val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
         val state = offering.toComponentsPaywallState(validated)
+        state.update(selectedPackageUniqueId = TestData.Packages.annual.identifier)
 
         val styleFactory = StyleFactory(localizations = localizations, offering = offering)
         val textStyle = styleFactory.create(conditionedText).getOrThrow().componentStyle as TextComponentStyle
@@ -587,7 +588,7 @@ class VisibilityConditionTests {
             }
         }
 
-        // Initially no package selected — text visible
+        // Annual is initially selected, so the text is visible.
         onNodeWithText(textValue).assertIsDisplayed()
 
         // Click monthly → text hidden
@@ -664,6 +665,7 @@ class VisibilityConditionTests {
         )
         val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
         val state = offering.toComponentsPaywallState(validated)
+        state.update(selectedPackageUniqueId = TestData.Packages.annual.identifier)
 
         val styleFactory = StyleFactory(localizations = localizations, offering = offering)
         val stackStyle = styleFactory.create(conditionedStack).getOrThrow().componentStyle as StackComponentStyle
@@ -688,7 +690,7 @@ class VisibilityConditionTests {
             }
         }
 
-        // Initially no package selected — stack child visible
+        // Annual is initially selected, so the stack child is visible.
         onNodeWithText(childTextValue).assertIsDisplayed()
 
         // Click monthly → stack hidden

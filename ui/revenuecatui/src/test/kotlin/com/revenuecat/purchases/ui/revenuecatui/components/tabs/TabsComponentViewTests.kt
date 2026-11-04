@@ -12,6 +12,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -474,7 +475,7 @@ class TabsComponentViewTests {
     }
 
     @Test
-    fun `Should not select the default package when switching tabs if the selected package is global`(): Unit =
+    fun `Should prefer tab entry defaults over a global selection and restore remembered manual choices`(): Unit =
         with(composeTestRule) {
             // Arrange
             val defaultPackageOnTabZero = TestData.Packages.annual.copy(identifier = "default-package-on-tab-zero")
@@ -500,7 +501,7 @@ class TabsComponentViewTests {
                         1 to listOf(otherPackageOnTabZero, defaultPackageOnTabZero),
                         0 to listOf(defaultPackageOnTabOne, otherPackageOnTabOne, defaultGlobalPackageAndOnTabOne),
                     ),
-                    // We expect this package to be the default selected package, as it (also) exists globally.
+                    // The root default competes with each active tab default.
                     simplePackageComponent(defaultGlobalPackageAndOnTabOne, isSelectedByDefault = true)
                 )
             )
@@ -520,7 +521,8 @@ class TabsComponentViewTests {
             onNode(isToggleable())
                 .assertIsOn()
 
-            // defaultGlobalPackageAndOnTabOne is selected.
+            assertPackageIsSelected(selected = defaultPackageOnTabOne, all = packages)
+            onAllNodesWithText(defaultGlobalPackageAndOnTabOne.unselectedLocalizedText.value)[0].performClick()
             assertPackageIsSelected(selected = defaultGlobalPackageAndOnTabOne, all = packages)
 
             // Switch to tab 0
@@ -528,8 +530,8 @@ class TabsComponentViewTests {
                 .performClick()
                 .assertIsOff()
 
-            // defaultGlobalPackageAndOnTabOne is still selected.
-            assertPackageIsSelected(selected = defaultGlobalPackageAndOnTabOne, all = packages)
+            // The destination tab default takes precedence over the current root selection.
+            assertPackageIsSelected(selected = defaultPackageOnTabZero, all = packages)
 
             // Select otherPackageOnTabZero
             onNodeWithText(otherPackageOnTabZero.unselectedLocalizedText.value)
@@ -541,8 +543,8 @@ class TabsComponentViewTests {
                 .performClick()
                 .assertIsOn()
 
-            // defaultPackageOnTabOne is selected.
-            assertPackageIsSelected(selected = defaultPackageOnTabOne, all = packages)
+            // The manual global choice also belongs to tab 1 and was remembered there.
+            assertPackageIsSelected(selected = defaultGlobalPackageAndOnTabOne, all = packages)
         }
 
     @Test
@@ -677,7 +679,7 @@ class TabsComponentViewTests {
                 components = listOf(
                     tabsComponent,
                     simplePackageComponent(otherGlobalPackage, isSelectedByDefault = false),
-                    // We expect this package to be the default selected package, as it (also) exists globally.
+                    // This root default is the fallback when entering the empty tab.
                     simplePackageComponent(defaultGlobalPackageAndOnTabOne, isSelectedByDefault = true),
                 )
             )
@@ -693,9 +695,9 @@ class TabsComponentViewTests {
             setContent { StackComponentView(style = rootStackStyle, state = state, clickHandler = { }) }
 
             // Assert
-            assertPackageIsSelected(selected = defaultGlobalPackageAndOnTabOne, all = packages)
+            assertPackageIsSelected(selected = defaultPackageOnTabZero, all = packages)
             // Tab zero is selected
-            onNodeWithText(defaultPackageOnTabZero.unselectedLocalizedText.value)
+            onNodeWithText(defaultPackageOnTabZero.selectedLocalizedText.value)
                 .assertIsDisplayed()
             onNodeWithText(otherPackageOnTabZero.unselectedLocalizedText.value)
                 .assertIsDisplayed()
@@ -824,6 +826,8 @@ class TabsComponentViewTests {
             setContent { StackComponentView(style = rootStackStyle, state = state, clickHandler = { }) }
 
             // Assert
+            assertPackageIsSelected(selected = defaultPackageOnTabZero, all = packages)
+            onAllNodesWithText(defaultGlobalPackageAndOnTabOne.unselectedLocalizedText.value)[0].performClick()
             assertPackageIsSelected(selected = defaultGlobalPackageAndOnTabOne, all = packages)
             // Bimonthly discount is correct.
             onNodeWithText(expectedTextWithDiscount(expectedBiMonthlyDiscountTabZero))
@@ -924,6 +928,8 @@ class TabsComponentViewTests {
         // Tab 1.
         onNode(isToggleable())
             .assertIsOn()
+        assertPackageIsSelected(selected = defaultPackageOnTabOne, all = packages)
+        onAllNodesWithText(defaultGlobalPackageAndOnTabOne.unselectedLocalizedText.value)[0].performClick()
         assertPackageIsSelected(selected = defaultGlobalPackageAndOnTabOne, all = packages)
         // Bimonthly discount is correct.
         onNodeWithText(expectedTextWithDiscount(expectedBiMonthlyDiscountTabOne))
