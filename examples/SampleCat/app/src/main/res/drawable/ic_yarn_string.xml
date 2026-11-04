@@ -1,0 +1,22 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+
+    <!-- Yarn string extending from ball -->
+    <path
+        android:name="yarn_string"
+        android:pathData="
+            M3.637,78.444
+            L8.115,76.884
+            C11.555,75.686 15.344,76.019 18.522,77.799
+            C21.82,79.645 25.457,80.807 29.215,81.214
+            L45.597,82.989
+            C46.568,83.094 47.544,83.147 48.52,83.147"
+        android:fillColor="#00000000"
+        android:strokeColor="#000000"
+        android:strokeWidth="5"
+        android:strokeLineCap="round" />
+
+</vector>

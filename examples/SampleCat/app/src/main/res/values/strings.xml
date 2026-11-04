@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SampleCat</string>
+
+    <!-- Navigation -->
+    <string name="nav_offerings">Offerings</string>
+    <string name="nav_products">Products</string>
+    <string name="nav_paywalls">Paywalls</string>
+    <string name="nav_support">Support</string>
+    <string name="nav_packages">Packages</string>
+    <string name="nav_back">Back</string>
+
+    <!-- Purchase states -->
+    <string name="purchase_button">Purchase</string>
+    <string name="purchase_button_purchasing">Purchasing…</string>
+    <string name="purchase_button_purchased">Purchased</string>
+
+    <!-- Package count -->
+    <string name="package_count_zero">No packages</string>
+    <string name="package_count_one">1 package</string>
+    <string name="package_count_other">%d packages</string>
+
+    <!-- Offerings Screen -->
+    <string name="offerings_title">Offerings</string>
+    <string name="offerings_description">Offerings are the products you can \"offer\" to customers on your paywall.</string>
+    <string name="offerings_empty">No offerings found. Make sure you have configured offerings in your RevenueCat dashboard and they are linked to products in the Play Store.</string>
+
+    <!-- Packages Screen -->
+    <string name="packages_title">Packages</string>
+    <string name="packages_description">Packages are a representation of the products that you \"offer\" to customers on your paywall.</string>
+
+    <!-- Products Screen -->
+    <string name="products_title">Products</string>
+    <string name="products_description">Products are the individual in-app purchases and subscriptions you set up on the Play Store.</string>
+    <string name="products_empty">No products found. Make sure your offerings have packages with products configured in the Play Store.</string>
+
+    <!-- Paywalls Screen -->
+    <string name="paywalls_title">Paywalls</string>
+    <string name="paywalls_description">Display beautiful, customizable paywalls to showcase your offerings and drive conversions.</string>
+    <string name="paywalls_empty">No offerings found. Make sure you have configured offerings in your RevenueCat dashboard.</string>
+
+    <!-- Customer Center Screen -->
+    <string name="customer_center_title">Customer Center</string>
+    <string name="customer_center_description">Help your customers manage their subscriptions with a self-service Customer Center.</string>
+    <string name="customer_center_open">Open Customer Center</string>
+
+    <!-- Error messages -->
+    <string name="error_fetch_offerings">Failed to fetch offerings: %1$s</string>
+    <string name="error_purchase_failed">Purchase failed: %1$s</string>
+
+    <!-- Preview strings -->
+    <string name="preview_subscription_title">Monthly Subscription</string>
+    <string name="preview_subscription_price">$4.99/month</string>
+    <string name="preview_product_id">com.example.monthly</string>
+    <string name="preview_error_message">An error occurred while loading data.</string>
+    <string name="preview_warning_message">No items found. Please try again later.</string>
+    <string name="preview_offering_title">Default Offering</string>
+    <string name="preview_package_count">3 packages</string>
+</resources>

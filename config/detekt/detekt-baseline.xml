@@ -16,6 +16,7 @@
     <ID>CompositionLocalAllowlist:HelperFunctions.kt$LocalActivity</ID>
     <ID>CyclomaticComplexMethod:EntitlementInfo.kt$EntitlementInfo$override fun equals(other: Any?): Boolean</ID>
     <ID>DestructuringDeclarationWithTooManyEntries:Period.kt$val (year, month, week, day) = periodResult.destructured</ID>
+    <ID>Filename:UiState.kt$com.revenuecat.samplecat.model.UiState.kt</ID>
     <ID>Filename:backendHelpers.kt$com.revenuecat.purchases.subscriberattributes.backendHelpers.kt</ID>
     <ID>Filename:billingClientParamBuilders.kt$com.revenuecat.purchases.google.billingClientParamBuilders.kt</ID>
     <ID>Filename:billingResultExtensions.kt$com.revenuecat.purchases.google.billingResultExtensions.kt</ID>
@@ -197,6 +198,25 @@
     <ID>ForbiddenPublicSealedClass:PurchaseLogic.kt$PurchaseLogicResult</ID>
     <ID>ForbiddenPublicSealedClass:Purchases.kt$Purchases$DeepLink</ID>
     <ID>ForbiddenPublicSealedClass:RedeemWebPurchaseListener.kt$RedeemWebPurchaseListener$Result</ID>
+    <ID>LongMethod:NavGraph.kt$@Composable fun SampleCatNavHost( userViewModel: UserViewModel, modifier: Modifier = Modifier, )</ID>
+    <ID>LongMethod:OfferingPackagesScreen.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun OfferingPackagesScreen( userViewModel: UserViewModel, offeringId: String, onBackClick: () -> Unit, modifier: Modifier = Modifier, )</ID>
+    <ID>LongMethod:OfferingsScreen.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun OfferingsScreen( userViewModel: UserViewModel, onOfferingClick: (String) -> Unit, modifier: Modifier = Modifier, )</ID>
+    <ID>LongMethod:PaywallsScreen.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun PaywallsScreen( userViewModel: UserViewModel, modifier: Modifier = Modifier, )</ID>
+    <ID>LongMethod:ProductsScreen.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun ProductsScreen( userViewModel: UserViewModel, modifier: Modifier = Modifier, )</ID>
+    <ID>LongMethod:PurchasableCard.kt$@Composable fun PurchasableCard( title: String?, productId: String, description: String, state: PurchasableState, onPurchaseClick: () -> Unit, modifier: Modifier = Modifier, )</ID>
+    <ID>LongParameterList:PurchasableCard.kt$( title: String?, productId: String, description: String, state: PurchasableState, onPurchaseClick: () -> Unit, modifier: Modifier = Modifier, )</ID>
+    <ID>MagicNumber:Color.kt$0xFF11D483</ID>
+    <ID>MagicNumber:Color.kt$0xFF1C1B1F</ID>
+    <ID>MagicNumber:Color.kt$0xFF1F1F47</ID>
+    <ID>MagicNumber:Color.kt$0xFF49454F</ID>
+    <ID>MagicNumber:Color.kt$0xFF576CDB</ID>
+    <ID>MagicNumber:Color.kt$0xFFCAC4D0</ID>
+    <ID>MagicNumber:Color.kt$0xFFE6E1E5</ID>
+    <ID>MagicNumber:Color.kt$0xFFE7E0EC</ID>
+    <ID>MagicNumber:Color.kt$0xFFF2545B</ID>
+    <ID>MagicNumber:Color.kt$0xFFF5F5F5</ID>
+    <ID>MagicNumber:ErrorMessageBox.kt$0xFFB71C1C</ID>
+    <ID>MagicNumber:ErrorMessageBox.kt$0xFFFFCDD2</ID>
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$120</ID>
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$20</ID>
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$32</ID>
@@ -205,7 +225,11 @@
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$61</ID>
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$90</ID>
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$91</ID>
+    <ID>MagicNumber:WarningMessageBox.kt$0xFFE65100</ID>
+    <ID>MagicNumber:WarningMessageBox.kt$0xFFFFF3E0</ID>
     <ID>MagicNumber:storeProductConversions.kt$3</ID>
+    <ID>MatchingDeclarationName:NavGraph.kt$Screen</ID>
+    <ID>MatchingDeclarationName:UiState.kt$PurchasableState</ID>
     <ID>MaxLineLength:Constants.kt$Constants$/* The entitlement ID from the RevenueCat dashboard that is activated upon successful in-app purchase for the duration of the purchase. Modify this property to reflect your app's entitlement identifier. */</ID>
     <ID>ModifierMissing:CloseButton.kt$CloseButton</ID>
     <ID>ModifierMissing:CustomerInfoDetailScreen.kt$CustomerInfoDetailScreen</ID>
@@ -300,6 +324,13 @@
     <ID>PreviewPublic:PaywallLoadingView.kt$PaywallLoadingViewPreview</ID>
     <ID>PreviewPublic:PaywallsScreen.kt$PaywallsScreenPreview</ID>
     <ID>PreviewPublic:WeatherApp.kt$WeatherAppPreview</ID>
+    <ID>SpreadOperator:OfferingPackagesScreen.kt$( error.resId, *error.formatArgs.toTypedArray(), )</ID>
+    <ID>SpreadOperator:OfferingsScreen.kt$( error.resId, *error.formatArgs.toTypedArray(), )</ID>
+    <ID>SpreadOperator:OfferingsScreen.kt$( state.error.resId, *state.error.formatArgs.toTypedArray(), )</ID>
+    <ID>SpreadOperator:PaywallsScreen.kt$( error.resId, *error.formatArgs.toTypedArray(), )</ID>
+    <ID>SpreadOperator:PaywallsScreen.kt$( state.error.resId, *state.error.formatArgs.toTypedArray(), )</ID>
+    <ID>SpreadOperator:ProductsScreen.kt$( error.resId, *error.formatArgs.toTypedArray(), )</ID>
+    <ID>SpreadOperator:ProductsScreen.kt$( state.error.resId, *state.error.formatArgs.toTypedArray(), )</ID>
     <ID>SwallowedException:DeviceCache.kt$DeviceCache$e: JSONException</ID>
     <ID>SwallowedException:DeviceCache.kt$DeviceCache$e: NullPointerException</ID>
     <ID>SwallowedException:utils.kt$e: PackageManager.NameNotFoundException</ID>
@@ -323,6 +354,10 @@
     <ID>ViewModelForwarding:InternalPaywall.kt$TemplatePaywall(state = state, viewModel = viewModel)</ID>
     <ID>ViewModelForwarding:LoadingPaywall.kt$Template2( state = state, viewModel = viewModel, childModifier = Modifier .placeholder( visible = true, shape = RoundedCornerShape(UIConstant.defaultPackageCornerRadius), highlight = Fade( highlightColor = LoadingPaywallConstants.placeholderColor, animationSpec = PlaceholderDefaults.fadeAnimationSpec, ), color = LoadingPaywallConstants.placeholderColor, ), )</ID>
     <ID>ViewModelForwarding:MainScreen.kt$SwitchUserDialog(viewModel)</ID>
+    <ID>ViewModelForwarding:NavGraph.kt$OfferingPackagesScreen( userViewModel = userViewModel, offeringId = offeringId, onBackClick = { navController.popBackStack() }, )</ID>
+    <ID>ViewModelForwarding:NavGraph.kt$OfferingsScreen( userViewModel = userViewModel, onOfferingClick = { offeringId -> navController.navigate(Screen.OfferingPackages.createRoute(offeringId)) }, )</ID>
+    <ID>ViewModelForwarding:NavGraph.kt$PaywallsScreen(userViewModel = userViewModel)</ID>
+    <ID>ViewModelForwarding:NavGraph.kt$ProductsScreen(userViewModel = userViewModel)</ID>
     <ID>ViewModelForwarding:PaywallFooterScreen.kt$PurchaseAlertDialog(viewModel, it)</ID>
     <ID>ViewModelForwarding:PaywallScreen.kt$PurchaseAlertDialog(viewModel, it)</ID>
     <ID>ViewModelForwarding:PurchaseButton.kt$PurchaseButton( colors = colors, packages = state.templateConfiguration.packages, selectedPackage = state.selectedPackage, viewModel = viewModel, horizontalPadding = horizontalPadding, childModifier = childModifier, )</ID>

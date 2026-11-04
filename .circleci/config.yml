@@ -1039,6 +1039,26 @@ jobs:
           name: Verify purchases-ui target SDK (34)
           command: ./gradlew :test-apps:testpurchasesuiandroidcompatibility:assembleDebug --no-daemon --parallel
 
+  assemble-samplecat:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - attach_workspace:
+          at: .
+      - revenuecat/install-mise-tools:
+          tools: java
+      - android/restore_gradle_cache
+      - run:
+          name: Assemble SampleCat against the local SDK
+          # -PuseLocalSdk builds against the SDK sources in this PR, so a change that breaks SampleCat fails here.
+          # The key and application ID are placeholders. The build fails without them.
+          working_directory: examples/SampleCat
+          command: >-
+            ./gradlew assembleDebug --no-daemon
+            -PuseLocalSdk
+            -PREVENUECAT_API_KEY=goog_ci_build_only
+            -PAPPLICATION_ID=com.revenuecat.samplecat
+
   assemble-checkpoint-tester:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
@@ -1187,6 +1207,9 @@ workflows:
           requires:
             - prepare-tests
           <<: *non-main-branches
+      - assemble-samplecat:
+          requires:
+            - prepare-tests
       - test_dokka_hide_internal:
           requires:
             - prepare-tests
