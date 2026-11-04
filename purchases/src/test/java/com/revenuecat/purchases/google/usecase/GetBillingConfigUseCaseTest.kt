@@ -19,6 +19,8 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.util.Date
+import kotlin.time.Duration.Companion.milliseconds
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -34,6 +36,51 @@ internal class GetBillingConfigUseCaseTest: BaseBillingUseCaseTest() {
     override fun setup() {
         super.setup()
         every { mockDeviceCache.setStorefront(expectedCountryCode) } just Runs
+        every { mockDeviceCache.getStorefront() } returns null
+    }
+
+    @Test
+    fun `first storefront load on a fresh install tracks the time since the billing wrapper was created`() {
+        mockGetBillingConfig()
+        every { mockDateProvider.now } returns Date(timestamp500)
+
+        wrapper.getStorefront(onSuccess = { }, onError = { fail("Should succeed") })
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleInitialStorefrontLoad(successful = true, responseTime = 500.milliseconds)
+        }
+    }
+
+    @Test
+    fun `failed first storefront load on a fresh install is tracked as unsuccessful`() {
+        mockGetBillingConfig(BillingResponseCode.ERROR)
+        every { mockDateProvider.now } returns Date(timestamp123)
+
+        wrapper.getStorefront(onSuccess = { fail("Should error") }, onError = { })
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleInitialStorefrontLoad(successful = false, responseTime = 123.milliseconds)
+        }
+    }
+
+    @Test
+    fun `storefront load is tracked only once`() {
+        mockGetBillingConfig()
+
+        wrapper.getStorefront(onSuccess = { }, onError = { fail("Should succeed") })
+        wrapper.getStorefront(onSuccess = { }, onError = { fail("Should succeed") })
+
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleInitialStorefrontLoad(any(), any()) }
+    }
+
+    @Test
+    fun `storefront load is not tracked when a storefront was already cached`() {
+        every { mockDeviceCache.getStorefront() } returns "ES"
+        mockGetBillingConfig()
+
+        wrapper.getStorefront(onSuccess = { }, onError = { fail("Should succeed") })
+
+        verify(exactly = 0) { mockDiagnosticsTracker.trackGoogleInitialStorefrontLoad(any(), any()) }
     }
 
     @Test

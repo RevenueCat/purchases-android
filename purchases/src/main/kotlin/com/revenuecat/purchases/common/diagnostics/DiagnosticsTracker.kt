@@ -239,6 +239,16 @@ internal class DiagnosticsTracker(
         )
     }
 
+    fun trackGoogleInitialStorefrontLoad(successful: Boolean, responseTime: Duration) {
+        trackEvent(
+            eventName = DiagnosticsEntryName.GOOGLE_INITIAL_STOREFRONT_LOAD,
+            properties = mapOf(
+                SUCCESSFUL_KEY to successful,
+                RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
+            ),
+        )
+    }
+
     fun trackGoogleBillingServiceDisconnected() {
         trackEvent(
             eventName = DiagnosticsEntryName.GOOGLE_BILLING_SERVICE_DISCONNECTED,

@@ -124,6 +124,7 @@ internal open class BaseBillingUseCaseTest {
         every { mockDiagnosticsTracker.trackGoogleBillingStartConnection() } just runs
         every { mockDiagnosticsTracker.trackGoogleBillingSetupFinished(any(), any(), any()) } just runs
         every { mockDiagnosticsTracker.trackGoogleBillingServiceDisconnected() } just runs
+        every { mockDiagnosticsTracker.trackGoogleInitialStorefrontLoad(any(), any()) } just runs
     }
 
 }

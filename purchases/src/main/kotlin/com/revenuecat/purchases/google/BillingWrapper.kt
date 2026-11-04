@@ -36,6 +36,7 @@ import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.StoreProductsCallback
+import com.revenuecat.purchases.common.between
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
@@ -76,8 +77,11 @@ import com.revenuecat.purchases.utils.Result
 import java.io.PrintWriter
 import java.io.StringWriter
 import java.lang.ref.WeakReference
+import java.util.Date
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.min
+import kotlin.time.Duration
 
 private const val RECONNECT_TIMER_START_MILLISECONDS = 1L * 1000L
 private const val RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 15 minutes
@@ -106,6 +110,10 @@ internal class BillingWrapper(
 
     private val backgroundHandler: Handler =
         backgroundHandler ?: Handler(ownedBackgroundThread!!.looper)
+
+    // Created at configure: measures how long a fresh install waits for its storefront.
+    private val createdAt: Date = dateProvider.now
+    private val initialStorefrontLoadTracked = AtomicBoolean(false)
 
     private companion object {
         /**
@@ -882,14 +890,30 @@ internal class BillingWrapper(
         onError: PurchasesErrorCallback,
     ) {
         verboseLog { BillingStrings.BILLING_INITIATE_GETTING_COUNTRY_CODE }
+        val isInitialLoad = deviceCache.getStorefront() == null
+        val trackingOnError: PurchasesErrorCallback = { error ->
+            if (isInitialLoad) trackInitialStorefrontLoadIfNeeded(successful = false)
+            onError(error)
+        }
         GetBillingConfigUseCase(
             GetBillingConfigUseCaseParams(appInBackground),
             deviceCache = deviceCache,
-            onReceive = { billingConfig -> onSuccess(billingConfig.countryCode) },
-            onError = onError,
-            withConnectedClient = { withConnectedClient(onError, it) },
+            onReceive = { billingConfig ->
+                if (isInitialLoad) trackInitialStorefrontLoadIfNeeded(successful = true)
+                onSuccess(billingConfig.countryCode)
+            },
+            onError = trackingOnError,
+            withConnectedClient = { withConnectedClient(trackingOnError, it) },
             executeRequestOnUIThread = ::executeRequestOnUIThread,
         ).run()
+    }
+
+    private fun trackInitialStorefrontLoadIfNeeded(successful: Boolean) {
+        if (diagnosticsTrackerIfEnabled == null || initialStorefrontLoadTracked.getAndSet(true)) return
+        diagnosticsTrackerIfEnabled.trackGoogleInitialStorefrontLoad(
+            successful = successful,
+            responseTime = Duration.between(createdAt, dateProvider.now),
+        )
     }
 
     private fun withConnectedClient(

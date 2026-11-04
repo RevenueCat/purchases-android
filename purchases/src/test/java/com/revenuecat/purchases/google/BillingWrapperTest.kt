@@ -495,6 +495,7 @@ class BillingWrapperTest {
 
     @Test
     fun `storefront returns an error if billing disconnects after scheduling`() {
+        every { mockDeviceCache.getStorefront() } returns null
         val requests = captureScheduledBillingRequests()
         val errors = mutableListOf<PurchasesError>()
         wrapper.getStorefront(
@@ -2470,6 +2471,7 @@ class BillingWrapperTest {
         every { mockDiagnosticsTracker.trackGoogleBillingStartConnection() } just runs
         every { mockDiagnosticsTracker.trackGoogleBillingSetupFinished(any(), any(), any()) } just runs
         every { mockDiagnosticsTracker.trackGoogleBillingServiceDisconnected() } just runs
+        every { mockDiagnosticsTracker.trackGoogleInitialStorefrontLoad(any(), any()) } just runs
         every { mockDiagnosticsTracker.trackGooglePurchaseStarted(any(), any(), any(), any()) } just runs
         every { mockDiagnosticsTracker.trackGooglePurchaseUpdateReceived(any(), any(), any(), any()) } just runs
     }
