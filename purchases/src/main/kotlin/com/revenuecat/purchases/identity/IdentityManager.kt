@@ -29,7 +29,6 @@ import com.revenuecat.purchases.strings.IdentityStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import kotlinx.coroutines.suspendCancellableCoroutine
-import java.util.Locale
 import java.util.UUID
 
 @OptIn(InternalRevenueCatAPI::class)
@@ -195,6 +194,8 @@ internal class IdentityManager(
                         commitAppUserID(newAppUserID)
                         deviceCache.cacheCustomerInfo(newAppUserID, customerInfo)
                         copySubscriberAttributesToNewUserIfOldIsAnonymous(oldAppUserID, newAppUserID)
+                        // after the copy, so copied attributes are reconciled with the server's like any others
+                        subscriberAttributesManager.mergeAttributes(customerInfo, newAppUserID)
                         clearPaywallWebViewStorageIfUserChanged(oldAppUserID, newAppUserID)
                         offlineEntitlementsManager.resetOfflineCustomerInfoCache()
                     }
@@ -446,7 +447,10 @@ internal class IdentityManager(
                 // Like the switch itself: a result for a user who's no longer current must have no effect.
                 val stillCurrent = synchronized(this@IdentityManager) {
                     (currentAppUserID == appUserID).also {
-                        if (it) deviceCache.cacheCustomerInfo(appUserID, customerInfo)
+                        if (it) {
+                            deviceCache.cacheCustomerInfo(appUserID, customerInfo)
+                            subscriberAttributesManager.mergeAttributes(customerInfo, appUserID)
+                        }
                     }
                 }
                 if (stillCurrent) onSuccess(customerInfo, appUserID) else onError(identityChangedError)
@@ -512,7 +516,7 @@ internal class IdentityManager(
     }
 
     private fun generateRandomID(): String {
-        return "\$RCAnonymousID:" + UUID.randomUUID().toString().toLowerCase(Locale.ROOT).replace("-", "")
+        return "\$RCAnonymousID:" + UUID.randomUUID().toString().lowercase().replace("-", "")
             .also {
                 log(LogIntent.USER) { IdentityStrings.SETTING_NEW_ANON_ID }
             }

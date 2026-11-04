@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -93,7 +94,10 @@ internal fun TabsComponentView(
     // published id above the visibility gate keeps a hidden -> visible transition from republishing and
     // clobbering a value another component already set (mirrors iOS's didSeedInitialState). The declared state
     // default is expected to match default_tab_id.
-    val selectedTabId = style.tabs[state.selectedTabIndex.coerceIn(0..style.tabs.lastIndex)].id
+    // The selected index is paywall-wide, so on a Tabs component with fewer tabs two different indices can map to
+    // the same tab. Everything below uses the clamped index so they're treated as the same tab.
+    val selectedTabIndex = state.selectedTabIndex.coerceIn(0..style.tabs.lastIndex)
+    val selectedTabId = style.tabs[selectedTabIndex].id
     val lastPublishedTabId = remember { mutableStateOf<String?>(null) }
     LaunchedEffect(tabsState.visible, selectedTabId) {
         if (!tabsState.visible || selectedTabId == lastPublishedTabId.value) return@LaunchedEffect
@@ -103,6 +107,9 @@ internal fun TabsComponentView(
         }
     }
 
+    // Above the visibility gate so each tab's state survives the Tabs component being hidden.
+    val tabContentStateHolder = rememberSaveableStateHolder()
+
     if (!tabsState.visible) return
 
     val backgroundStyle = tabsState.background?.let { rememberBackgroundStyle(it) }
@@ -110,7 +117,8 @@ internal fun TabsComponentView(
     val shadowStyle = tabsState.shadow?.let { rememberShadowStyle(shadow = it) }
 
     AnimatedContent(
-        targetState = state.selectedTabIndex,
+        // Clamped, so two indices that map to the same tab never compose it twice under one saveable key.
+        targetState = selectedTabIndex,
         modifier = modifier
             .padding(tabsState.margin)
             .applyIfNotNull(shadowStyle) { shadow(it, tabsState.shape) }
@@ -122,16 +130,18 @@ internal fun TabsComponentView(
             fadeIn(animationSpec = tween(DURATION_MS_CROSS_FADE, delayMillis = 0))
                 .togetherWith(fadeOut(animationSpec = tween(DURATION_MS_CROSS_FADE)))
         },
-    ) { selectedTabIndex ->
-        // Coerce it, just in case we get an out-of-range value.
-        val tab = tabsState.tabs[selectedTabIndex.coerceIn(0..tabsState.tabs.lastIndex)]
-        StackComponentView(
-            style = tab.stack,
-            state = state,
-            clickHandler = clickHandler,
-            componentInteractionTracker = componentInteractionTracker,
-            ancestorScrollOrientations = ancestorScrollOrientations,
-        )
+    ) { tabIndex ->
+        val tab = tabsState.tabs[tabIndex]
+        // Keyed by index: tab ids aren't guaranteed unique.
+        tabContentStateHolder.SaveableStateProvider(key = tabIndex) {
+            StackComponentView(
+                style = tab.stack,
+                state = state,
+                clickHandler = clickHandler,
+                componentInteractionTracker = componentInteractionTracker,
+                ancestorScrollOrientations = ancestorScrollOrientations,
+            )
+        }
     }
 }
 

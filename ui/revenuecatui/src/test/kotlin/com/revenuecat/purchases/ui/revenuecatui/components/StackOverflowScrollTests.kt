@@ -208,6 +208,22 @@ internal class StackOverflowScrollTests {
     }
 
     @Test
+    fun `scrolling root keeps same-axis scrolling on its max-bounded fill child`() {
+        setPaywallContent(
+            rootStack(
+                overflow = StackComponent.Overflow.SCROLL,
+                children = listOf(scrollingChild(height = SizeConstraint.Fill(max = 200u))),
+            ),
+        )
+
+        assertThat(verticallyScrollableNodeCount()).isEqualTo(2)
+        val maxScrollRange = composeTestRule.onAllNodes(verticallyScrollable)
+            .fetchSemanticsNodes()
+            .maxOf { it.config[SemanticsProperties.VerticalScrollAxisRange].maxValue() }
+        assertThat(maxScrollRange).isGreaterThan(0f)
+    }
+
+    @Test
     fun `scrolling root disables same-axis scrolling on its unbounded child`() {
         setPaywallContent(
             rootStack(

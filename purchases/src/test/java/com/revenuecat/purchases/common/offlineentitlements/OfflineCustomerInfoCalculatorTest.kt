@@ -183,6 +183,7 @@ class OfflineCustomerInfoCalculatorTest {
             listOf(entitlementID),
             expiresDate = oneHourAgo,
             isSynced = true,
+            periodType = PeriodType.NORMAL,
         )
 
         val notBwProductPurchaseDate = oneHourAgo.add(1.seconds)
@@ -196,6 +197,7 @@ class OfflineCustomerInfoCalculatorTest {
             listOf(secondEntitlementID),
             expiresDate = oneDayFromNow,
             isSynced = true,
+            periodType = PeriodType.NORMAL,
         )
 
         every {
@@ -552,6 +554,7 @@ class OfflineCustomerInfoCalculatorTest {
                 listOf("pro"),
                 null,
                 isSynced = true,
+                periodType = PeriodType.NORMAL,
             )
         )
 
@@ -611,6 +614,7 @@ class OfflineCustomerInfoCalculatorTest {
                 listOf("pro"),
                 null,
                 isSynced = true,
+                periodType = PeriodType.NORMAL,
             )
         )
 
@@ -763,6 +767,7 @@ class OfflineCustomerInfoCalculatorTest {
                 baseEntitlements,
                 baseExpiration,
                 isSynced = true,
+                periodType = PeriodType.NORMAL,
             ),
             PurchasedProduct(
                 "addon_product",
@@ -771,6 +776,7 @@ class OfflineCustomerInfoCalculatorTest {
                 addOnEntitlements,
                 addOnExpiration,
                 isSynced = true,
+                periodType = PeriodType.NORMAL,
             ),
         )
     }
@@ -800,6 +806,7 @@ class OfflineCustomerInfoCalculatorTest {
                 mapping.entitlements,
                 expiresDate,
                 isSynced = true,
+                periodType = PeriodType.NORMAL,
             )
         }
 
@@ -848,6 +855,7 @@ class OfflineCustomerInfoCalculatorTest {
                 listOf("pro_1"),
                 oneDayFromNow,
                 isSynced = isSynced,
+                periodType = PeriodType.NORMAL,
             )
         }
         mockPurchasedProducts(products)
@@ -860,5 +868,30 @@ class OfflineCustomerInfoCalculatorTest {
         )
         assertThat(receivedCustomerInfo?.unsyncedProductIdentifiers).containsExactly("unposted")
     }
+
+    @Test
+    fun `uses each product's period type for its subscription and entitlement`() {
+        val product = PurchasedProduct(
+            "product_1",
+            "p1m",
+            stubStoreTransactionFromGooglePurchase(productIds = listOf("product_1"), purchaseTime = oneHourAgo.time),
+            listOf("pro_1"),
+            oneDayFromNow,
+            isSynced = false,
+            periodType = PeriodType.TRIAL,
+        )
+        mockPurchasedProducts(listOf(product))
+
+        var receivedCustomerInfo: CustomerInfo? = null
+        offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
+            appUserID = appUserID,
+            onSuccess = { receivedCustomerInfo = it },
+            onError = { fail("Should've succeeded") }
+        )
+        assertThat(receivedCustomerInfo?.subscriptionsByProductIdentifier?.values?.single()?.periodType)
+            .isEqualTo(PeriodType.TRIAL)
+        assertThat(receivedCustomerInfo?.entitlements?.get("pro_1")?.periodType).isEqualTo(PeriodType.TRIAL)
+    }
+
     // endregion
 }

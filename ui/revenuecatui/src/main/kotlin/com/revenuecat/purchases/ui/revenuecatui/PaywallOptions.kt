@@ -132,6 +132,7 @@ public class PaywallOptions internal constructor(
             this.injectedWorkflowTraceId != other.injectedWorkflowTraceId -> false
             this.injectedWorkflowBlobRef != other.injectedWorkflowBlobRef -> false
             this.injectedWorkflowCheckpointIdentifier != other.injectedWorkflowCheckpointIdentifier -> false
+            this.dismissRequestWithExitOffering != other.dismissRequestWithExitOffering -> false
             else -> this.dismissRequest == other.dismissRequest
         }
     }

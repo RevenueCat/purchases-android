@@ -8,14 +8,41 @@ import com.revenuecat.purchases.paywalls.PaywallAssetWarmer
 import com.revenuecat.purchases.ui.revenuecatui.components.webview.PaywallWebViewPrewarmer
 import com.revenuecat.purchases.ui.revenuecatui.components.webview.PaywallWebViewStartUp
 import com.revenuecat.purchases.ui.revenuecatui.components.webview.clearPaywallProfileStorage
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import java.util.concurrent.ConcurrentHashMap
 
 @OptIn(InternalRevenueCatAPI::class)
 internal class PaywallAssetWarmerImpl : PaywallAssetWarmer {
 
+    private val inFlightImages = ConcurrentHashMap<Uri, Any>()
+
     override fun warmImages(context: Context, imageUris: List<Uri>) {
         val imageLoader = PaywallImageLoader.get(context)
         imageUris.forEach { uri ->
-            imageLoader.enqueue(ImageRequest.Builder(context).data(uri).build())
+            val owner = Any()
+            if (inFlightImages.putIfAbsent(uri, owner) != null) return@forEach
+
+            // Workflows can share images. Keep one warming request per URL until it completes,
+            // then let the image loader's normal cache policies handle subsequent requests.
+            fun completed() {
+                inFlightImages.remove(uri, owner)
+            }
+            runCatching {
+                imageLoader.enqueue(
+                    ImageRequest.Builder(context)
+                        .data(uri)
+                        .listener(
+                            onSuccess = { _, _ -> completed() },
+                            onError = { _, _ -> completed() },
+                            onCancel = { completed() },
+                        )
+                        .build(),
+                )
+            }.getOrElse { error ->
+                completed()
+                Logger.e("Error warming paywall image", error)
+                null
+            }
         }
     }
 

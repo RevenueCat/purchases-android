@@ -85,3 +85,11 @@ public sealed class WorkflowEvent : FeatureEvent {
         public val experiment: ExperimentData? = null,
     ) : WorkflowEvent()
 }
+
+/** Why a workflow step was entered, as reported in [WorkflowEvent.StepStarted.entryReason]. */
+@InternalRevenueCatAPI
+public enum class WorkflowStepEntryReason(public val value: String) {
+    START("start"),
+    FORWARD("forward"),
+    BACK("back"),
+}

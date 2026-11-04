@@ -186,11 +186,19 @@ constructor(
 
     @InternalRevenueCatAPI
     public fun copy(presentedOfferingContext: PresentedOfferingContext): Offering {
+        return mapPresentedOfferingContext { presentedOfferingContext }
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @JvmSynthetic
+    internal fun mapPresentedOfferingContext(
+        transform: (PresentedOfferingContext) -> PresentedOfferingContext,
+    ): Offering {
         return Offering(
             identifier = this.identifier,
             serverDescription = this.serverDescription,
             metadata = this.metadata,
-            availablePackages = this.availablePackages.map { it.copy(presentedOfferingContext) },
+            availablePackages = this.availablePackages.map { it.copy(transform(it.presentedOfferingContext)) },
             paywall = this.paywall,
             paywallComponents = this.paywallComponents,
             webCheckoutURL = this.webCheckoutURL,

@@ -8,6 +8,7 @@ import androidx.annotation.VisibleForTesting
 import androidx.core.os.UserManagerCompat
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
+import com.revenuecat.purchases.ads.ConfiguredAdRewardsProvider
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
@@ -329,8 +330,10 @@ internal class PurchasesFactory(
                 automaticDeviceIdentifierCollectionEnabled,
             )
 
+            val localTransactionMetadataStore = LocalTransactionMetadataStore(contextForStorage, apiKey)
+
             val offlineCustomerInfoCalculator = OfflineCustomerInfoCalculator(
-                PurchasedProductsFetcher(cache, billing),
+                PurchasedProductsFetcher(cache, billing, localTransactionMetadataStore),
                 appConfig,
                 diagnosticsTracker,
             )
@@ -381,6 +384,8 @@ internal class PurchasesFactory(
                 context = contextForStorage,
                 fontLoader = fontLoader,
             )
+
+            val configuredAdRewardsProvider = ConfiguredAdRewardsProvider(remoteConfigManager)
 
             // Single shared instances so the in-memory caches the render path reads synchronously are the same
             // ones the manager warms on commit.
@@ -468,6 +473,7 @@ internal class PurchasesFactory(
 
             val customerInfoUpdateHandler = CustomerInfoUpdateHandler(
                 cache,
+                subscriberAttributesManager,
                 identityManager,
                 offlineEntitlementsManager,
                 appConfig = appConfig,
@@ -475,8 +481,6 @@ internal class PurchasesFactory(
             )
 
             val paywallPresentedCache = PaywallPresentedCache()
-
-            val localTransactionMetadataStore = LocalTransactionMetadataStore(contextForStorage, apiKey)
 
             val postReceiptHelper = PostReceiptHelper(
                 appConfig,
@@ -633,6 +637,7 @@ internal class PurchasesFactory(
                 workflowManager = workflowManager,
                 fileRepository = fileRepository,
                 remoteConfigManager = remoteConfigManager,
+                configuredAdRewardsProvider = configuredAdRewardsProvider,
                 uiConfigProvider = uiConfigProvider,
                 workflowsConfigProvider = workflowsConfigProvider,
                 checkpointsConfigProvider = checkpointsConfigProvider,

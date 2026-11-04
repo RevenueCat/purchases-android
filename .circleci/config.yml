@@ -43,7 +43,7 @@ aliases:
 version: 2.1
 orbs:
   android: circleci/android@3.2.0
-  revenuecat: revenuecat/sdks-common-config@4.7.0
+  revenuecat: revenuecat/sdks-common-config@4.7.1
   codecov: codecov/codecov@3.2.4
 
 parameters:
@@ -440,7 +440,7 @@ jobs:
       - install-awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/11.1.0-SNAPSHOT s3://purchases-docs/android/11.1.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/11.2.0-SNAPSHOT s3://purchases-docs/android/11.2.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -1039,7 +1039,7 @@ jobs:
           name: Verify purchases-ui target SDK (34)
           command: ./gradlew :test-apps:testpurchasesuiandroidcompatibility:assembleDebug --no-daemon --parallel
 
-  assemble-checkpoint-tester:
+  assemble-samplecat:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
     steps:
@@ -1049,8 +1049,15 @@ jobs:
           tools: java
       - android/restore_gradle_cache
       - run:
-          name: Assemble checkpoint tester
-          command: ./gradlew :examples:checkpointtester:assembleDebug --no-daemon --parallel
+          name: Assemble SampleCat against the local SDK
+          # -PuseLocalSdk builds against the SDK sources in this PR, so a change that breaks SampleCat fails here.
+          # The key and application ID are placeholders. The build fails without them.
+          working_directory: examples/SampleCat
+          command: >-
+            ./gradlew assembleDebug --no-daemon
+            -PuseLocalSdk
+            -PREVENUECAT_API_KEY=goog_ci_build_only
+            -PAPPLICATION_ID=com.revenuecat.samplecat
 
 workflows:
   version: 2
@@ -1183,10 +1190,9 @@ workflows:
           requires:
             - prepare-tests
           <<: *non-main-branches
-      - assemble-checkpoint-tester:
+      - assemble-samplecat:
           requires:
             - prepare-tests
-          <<: *non-main-branches
       - test_dokka_hide_internal:
           requires:
             - prepare-tests

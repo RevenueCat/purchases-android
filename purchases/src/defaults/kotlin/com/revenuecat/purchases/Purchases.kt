@@ -8,6 +8,8 @@ import android.net.Uri
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.Purchases.Companion.configure
 import com.revenuecat.purchases.Purchases.Companion.debugLogsEnabled
+import com.revenuecat.purchases.ads.AdRewardConfiguration
+import com.revenuecat.purchases.ads.ConfiguredAdRewards
 import com.revenuecat.purchases.ads.events.AdCaptureMethod
 import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.ads.events.types.AdRewardEarnedUnverifiedData
@@ -42,6 +44,7 @@ import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.DeepLinkParser
 import com.revenuecat.purchases.identity.Authentication
 import com.revenuecat.purchases.interfaces.Callback
+import com.revenuecat.purchases.interfaces.GetAdRewardsCallback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetRewardVerificationResultCallback
@@ -273,6 +276,20 @@ public class Purchases internal constructor(
     @get:JvmSynthetic
     public val adTracker: AdTracker
         get() = purchasesOrchestrator.adTracker
+
+    /**
+     * Returns configured rewards for the exact, case-sensitive [adUnitId], using cached configuration when available
+     * and loading it when needed. These values are for display and may differ from the reward ultimately granted;
+     * use reward verification to determine what was granted.
+     *
+     * The callback runs on the main thread with null when configuration is unavailable or [adUnitId] is empty.
+     * A result with a null [ConfiguredAdRewards.reward] means no rewards are configured.
+     * Unknown or invalid individual rewards use [AdRewardConfiguration.UnsupportedReward].
+     */
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    public fun getAdRewards(adUnitId: String, callback: GetAdRewardsCallback) {
+        purchasesOrchestrator.getAdRewards(adUnitId, callback)
+    }
 
     @Suppress("EmptyFunctionBlock", "DeprecatedCallableAddReplaceWith")
     @Deprecated("Will be removed in next major. Logic has been moved to PurchasesOrchestrator")
@@ -877,9 +894,7 @@ public class Purchases internal constructor(
                 data = CustomPaywallEvent.Impression.Data(
                     paywallId = params.paywallId,
                     offeringId = resolvedOfferingId,
-                    placementIdentifier = resolvedPresentedOfferingContext?.placementIdentifier,
-                    targetingRevision = resolvedPresentedOfferingContext?.targetingContext?.revision,
-                    targetingRuleId = resolvedPresentedOfferingContext?.targetingContext?.ruleId,
+                    presentedOfferingContext = resolvedPresentedOfferingContext,
                 ),
             ),
         )
@@ -1129,6 +1144,18 @@ public class Purchases internal constructor(
     }
 
     // region Subscriber Attributes
+
+    /**
+     * The subscriber attributes for the current user, sorted by key.
+     *
+     * Typically this only includes attributes that were set on this device. If the current user was authenticated
+     * through IAM, it includes all readable attributes on the user's customer profile, as of the last time
+     * [CustomerInfo] was fetched. Deleted attributes are not included.
+     */
+    @InternalRevenueCatAPI
+    public val attributesForCurrentUser: List<CustomerAttribute>
+        get() = purchasesOrchestrator.attributesForCurrentUser
+
     // region Special Attributes
 
     /**

@@ -52,6 +52,16 @@ class CheckpointEventTest {
     }
 
     @Test
+    fun `a no-action carrying a trace id reports it on the hit event`() {
+        val event = CheckpointResolution.NoAction(
+            CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE,
+            traceId = "trace-1",
+        ).toEvent()
+
+        assertThat(event.traceId).isEqualTo("trace-1")
+    }
+
+    @Test
     fun `each no-action reason maps to its result and carries no workflow, offering or rule`() {
         val expectedResults = mapOf(
             CheckpointResolution.NoAction.Reason.NO_MATCH to CheckpointHitResult.NO_MATCH,

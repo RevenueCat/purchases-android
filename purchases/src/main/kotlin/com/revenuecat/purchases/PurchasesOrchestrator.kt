@@ -19,6 +19,7 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.PendingPurchasesParams
+import com.revenuecat.purchases.ads.ConfiguredAdRewardsProvider
 import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.blockstore.BlockstoreHelper
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
@@ -89,6 +90,7 @@ import com.revenuecat.purchases.identity.AuthenticationReporter
 import com.revenuecat.purchases.identity.Identity
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
+import com.revenuecat.purchases.interfaces.GetAdRewardsCallback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetRewardVerificationResultCallback
@@ -132,6 +134,7 @@ import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.strings.SyncAttributesAndOfferingsStrings
 import com.revenuecat.purchases.strings.VirtualCurrencyStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
+import com.revenuecat.purchases.subscriberattributes.toCustomerAttributes
 import com.revenuecat.purchases.utils.CurrentActivityTracker
 import com.revenuecat.purchases.utils.CustomActivityLifecycleHandler
 import com.revenuecat.purchases.utils.PurchaseParamsValidator
@@ -197,6 +200,7 @@ internal class PurchasesOrchestrator(
     private val backupManager: BackupManager = BackupManager(application),
     val fileRepository: FileRepository = DefaultFileRepository(application),
     private val remoteConfigManager: RemoteConfigManager,
+    private val configuredAdRewardsProvider: ConfiguredAdRewardsProvider,
     private val uiConfigProvider: UiConfigProvider,
     private val workflowsConfigProvider: WorkflowsConfigProvider,
     private val checkpointsConfigProvider: CheckpointsConfigProvider,
@@ -222,6 +226,7 @@ internal class PurchasesOrchestrator(
         audiencesConfigProvider = audiencesConfigProvider,
         localRulesEvaluator = localRulesEvaluator,
         getOfferings = { Purchases.sharedInstance.awaitOfferings() },
+        track = { Purchases.sharedInstance.purchasesOrchestrator.track(it) },
     ),
     @OptIn(InternalRevenueCatAPI::class)
     // With remote config off there is no audiences topic to read, so every branch takes its
@@ -1104,6 +1109,7 @@ internal class PurchasesOrchestrator(
             state = state.copy(purchaseCallbacksByProductId = Collections.emptyMap())
         }
         this.backend.close()
+        this.configuredAdRewardsProvider.close()
         this.remoteConfigManager.close()
         this.workflowManager.close()
         this.uiConfigProvider.close()
@@ -1286,6 +1292,10 @@ internal class PurchasesOrchestrator(
     }
 
     // region Subscriber Attributes
+
+    val attributesForCurrentUser: List<CustomerAttribute>
+        get() = subscriberAttributesManager.getStoredAttributes(appUserID).toCustomerAttributes()
+
     // region Special Attributes
 
     fun setAttributes(attributes: Map<String, String?>) {
@@ -1617,6 +1627,14 @@ internal class PurchasesOrchestrator(
     }
 
     //endregion
+
+    // region Configured Ad Rewards
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    fun getAdRewards(adUnitId: String, callback: GetAdRewardsCallback) {
+        configuredAdRewardsProvider.getRewards(adUnitId) { rewards -> dispatch { callback.onReceived(rewards) } }
+    }
+
+    // endregion
 
     // region Virtual Currencies
     fun getVirtualCurrencies(

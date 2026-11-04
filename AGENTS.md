@@ -110,6 +110,16 @@ Variant names combine the flavor and build type, e.g. `defaultsDebug`, `customEn
 - **`@ExperimentalPreviewRevenueCatUIPurchasesAPI`** - Same as above but for the `:ui:revenuecatui` module
 - **`@InviteOnlyCheckpointsAPI`** - Checkpoints APIs in `:ui:revenuecatui` available to invited developers only; tracked by Metalava but hidden from Dokka
 
+## Design and Implementation Conventions
+
+- Use `@Poko` for public value models to avoid `copy`/`componentN` compatibility obligations. See the [v9 migration](migrations/v9-MIGRATION.md) and [detekt configuration](config/detekt/detekt.yml).
+- Avoid new public sealed hierarchies or enums. For SDK-owned hierarchies that developers should not implement, prefer non-sealed abstract classes with restricted constructors. Existing baseline exceptions are not precedents.
+- When extending developer-implemented interfaces or abstract classes, provide default implementations for new methods.
+- Follow comparable callback and coroutine fetch contracts. Keep successful empty/no-match results distinct from fetch failures, preserving error codes and diagnostics.
+- For public and internal code, require explicit arguments for values that must be propagated between layers, even when nullable. Avoid defaults such as `= null` when omission could silently discard upstream data.
+- Preserve existing JVM signatures when adding parameters; default arguments alone do not preserve binary compatibility.
+- For public API changes, update and compile relevant Kotlin and Java `api-tester` consumers across applicable flavors. Generate and review API signatures; do not hand-edit them.
+
 ## Code Style
 
 - **Imports over inline fully-qualified references**: Always add an `import` statement at the top of the file rather than using a fully-qualified name inline (e.g., write `import foo.Bar` and use `Bar`, not `foo.Bar` inline in the code).
@@ -170,7 +180,7 @@ Variant names combine the flavor and build type, e.g. `defaultsDebug`, `customEn
 - **Compile SDK**: 36
 - **Min SDK**: 23 (24 for UI modules)
 - **Java**: 8+
-- **Kotlin**: 2.2.21 (language level 1.8)
+- **Kotlin**: 2.2.21 (language level 2.1)
 
 ## Development Notes
 
@@ -184,6 +194,7 @@ Variant names combine the flavor and build type, e.g. `defaultsDebug`, `customEn
 ### Sample Applications
 - **MagicWeather**: Standard sample app
 - **MagicWeatherCompose**: Compose-based sample
+- **SampleCat**: The sample app that the dashboard download gives for the Play Store. It is the reference for app integration code. The download writes the API key and entitlement ID into its `gradle.properties`
 - **CustomEntitlementComputationSample**: Sample for custom entitlement computation flavor
 - **purchase-tester**: Testing app for purchase flows
 - **paywall-tester**: Testing app for paywall UI

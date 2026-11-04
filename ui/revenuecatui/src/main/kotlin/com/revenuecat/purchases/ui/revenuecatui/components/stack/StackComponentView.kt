@@ -635,6 +635,12 @@ private fun BoxScope.OverlaidBadge(
     )
 }
 
+private fun Size.isMainAxisBounded(orientation: Orientation): Boolean = when (val constraint = mainAxis(orientation)) {
+    is Fixed -> true
+    is Fill -> constraint.max != null
+    is Fit -> false
+}
+
 @Suppress("LongMethod", "LongParameterList", "CyclomaticComplexMethod")
 @Composable
 private fun MainStackComponent(
@@ -655,7 +661,7 @@ private fun MainStackComponent(
 ) {
     val safeDrawingInsets = WindowInsets.safeDrawing
     val scrollOrientation = stackState.scrollOrientation?.takeUnless { orientation ->
-        orientation in ancestorScrollOrientations && stackState.size.mainAxis(orientation) !is Fixed
+        orientation in ancestorScrollOrientations && !stackState.size.isMainAxisBounded(orientation)
     }
     val descendantScrollOrientations = if (scrollOrientation != null) {
         ancestorScrollOrientations + scrollOrientation

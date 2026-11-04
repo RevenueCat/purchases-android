@@ -31,6 +31,7 @@ import com.revenuecat.purchases.common.workflows.WorkflowStep
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.common.workflows.events.WorkflowEvent
+import com.revenuecat.purchases.common.workflows.events.WorkflowStepEntryReason
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
@@ -251,12 +252,6 @@ internal class PaywallViewModelImpl(
     // by the host, and which a restore only sets when shouldDisplayBlock auto-dismisses). Mirrors iOS's
     // per-session hasCompletedInSession (purchased || restored), reset at the dismiss boundary.
     private var workflowCompletedInSession: Boolean = false
-
-    private enum class WorkflowStepEntryReason(val value: String) {
-        START("start"),
-        FORWARD("forward"),
-        BACK("back"),
-    }
 
     private sealed interface ExitOfferData {
         val preloadRequested: Boolean
@@ -1623,15 +1618,8 @@ internal class PaywallViewModelImpl(
         )
     }
 
-    private fun experimentData(step: WorkflowStep): WorkflowEvent.ExperimentData? {
-        val experimentId = step.experimentId
-        val experimentVariant = step.experimentVariant
-        return if (experimentId == null || experimentVariant == null || currentWorkflowBlobRef == null) {
-            null
-        } else {
-            WorkflowEvent.ExperimentData(experimentId = experimentId, experimentVariant = experimentVariant)
-        }
-    }
+    private fun experimentData(step: WorkflowStep): WorkflowEvent.ExperimentData? =
+        step.experimentData(currentWorkflowBlobRef)
 
     // A branch navigates too, so it counts here the same way the navigator treats it.
     private fun isTerminalStep(workflow: PublishedWorkflow, stepId: String): Boolean {
@@ -1737,7 +1725,12 @@ internal class PaywallViewModelImpl(
         val offeringId = step.offeringIdentifier ?: screen.offeringIdentifier
             ?: return StepResolution.Ready(screenId, screen, offering = null)
         val offering = offerings[offeringId]
-            ?: return StepResolution.Invalid("Offering '$offeringId' not found for step '${step.id}'")
+            ?: return StepResolution.Invalid(
+                "Offering '$offeringId' not found for step '${step.id}' of workflow '${workflow.id}'. " +
+                    "The offering is either missing from the offerings response, or was dropped because none of " +
+                    "its packages resolved to a product fetched from the store. Check the logs for a " +
+                    "\"No packages could be found for offering\" warning.",
+            )
         return StepResolution.Ready(screenId, screen, offering)
     }
 
