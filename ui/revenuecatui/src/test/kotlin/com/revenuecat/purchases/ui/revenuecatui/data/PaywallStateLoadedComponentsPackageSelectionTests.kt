@@ -357,19 +357,19 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
     }
 
     @Test
-    fun `Should select nothing when every package is hidden and an authored default exists`() {
+    fun `Should select the authored default when every package is hidden`() {
         val state = paywallState(
             packagesOutsideTabs = emptyList(),
             packagesByTab = mapOf(
                 0 to listOf(
-                    packageInfo(TestData.Packages.annual, isSelectedByDefault = true, visible = false),
                     packageInfo(TestData.Packages.monthly, isSelectedByDefault = false, visible = false),
+                    packageInfo(TestData.Packages.annual, isSelectedByDefault = true, visible = false),
                 ),
             ),
             initialSelectedTabIndex = null,
         )
 
-        assertThat(state.selectedPackageInfo).isNull()
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
     }
 
     @Test

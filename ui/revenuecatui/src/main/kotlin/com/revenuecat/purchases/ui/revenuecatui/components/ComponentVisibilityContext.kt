@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import androidx.compose.ui.unit.DpSize
+import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageContext
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
@@ -8,6 +9,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.CarouselCompone
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.StickyFooterComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TabsComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState.Loaded.Components.SelectedPackageInfo
@@ -66,6 +68,8 @@ internal class ComponentVisibilityContext(
         is PackageComponentStyle -> resolve(style.overrides, style)?.partial?.visible ?: style.visible
         is CarouselComponentStyle -> style.resolveVisibility(resolve(style.overrides, style))
         is TabsComponentStyle -> style.resolveVisibility(resolve(style.overrides))
+        is StickyFooterComponentStyle ->
+            (resolve(style.overrides, readsState = true)?.layout ?: style.layout) != StickyFooterComponent.Layout.HIDDEN
         is ButtonComponentStyle -> resolve(style.overrides, style.stackComponentStyle, readsState = true)
             ?.partial?.visible ?: style.buttonVisible ?: true
         // Wrapper components render their inner stacks directly; paths contain those stacks.
