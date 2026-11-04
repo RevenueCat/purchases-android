@@ -12,6 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -302,7 +303,20 @@ internal suspend fun handleClick(
     componentInteractionTracker: PaywallComponentInteractionTracker,
 ) {
     when (action) {
-        is PaywallAction.External -> externalClickHandler(action)
+        is PaywallAction.External -> {
+            // Resolve an implicit purchase in the presentation that owns the button, before forwarding
+            // it to the view model, whose loaded state still belongs to the root paywall.
+            val selected = state.selectedPackageInfo
+            val resolvedAction = if (
+                state.isInSheet && action is PaywallAction.External.PurchasePackage && action.rcPackage == null
+            ) {
+                if (selected == null) return
+                action.copy(rcPackage = selected.rcPackage, resolvedOffer = selected.resolvedOffer)
+            } else {
+                action
+            }
+            externalClickHandler(resolvedAction)
+        }
         is PaywallAction.Internal -> when (action) {
             is PaywallAction.Internal.NavigateTo -> when (action.destination) {
                 is PaywallAction.Internal.NavigateTo.Destination.Sheet -> {
@@ -334,18 +348,22 @@ internal fun SimpleSheetState.show(
     state: PaywallState.Loaded.Components,
     componentInteractionTracker: PaywallComponentInteractionTracker,
     onClick: suspend (PaywallAction) -> Unit,
-) {
+): PaywallState.Loaded.Components {
+    val sheetState = state.createSheetState(sheet.presentationKey)
     show(
         backgroundBlur = sheet.backgroundBlur,
         content = {
+            LaunchedEffect(sheetState.paywallBoundsDp, sheetState.windowScreenCondition) {
+                sheetState.reconcileSelectionForWindowSize(sheetState.paywallBoundsDp)
+            }
             ComponentView(
                 style = sheet.stack,
-                state = state,
+                state = sheetState,
                 componentInteractionTracker = componentInteractionTracker,
                 onClick = { action ->
                     when (action) {
                         is PaywallAction.External.NavigateBack -> hide()
-                        else -> onClick(action)
+                        else -> handleClick(action, sheetState, { onClick(it) }, componentInteractionTracker)
                     }
                 },
                 modifier = Modifier
@@ -353,11 +371,11 @@ internal fun SimpleSheetState.show(
                     .conditional(sheet.size == null) { fillMaxWidth() },
             )
         },
-        contentKey = sheet.id,
+        contentKey = sheetState,
         presentationKey = sheet.presentationKey,
         onDismiss = {
-            val sheetSelected = state.selectedPackageInfo
-            val resulting = state.peekSelectedPackageInfoAfterSheetDismiss()
+            val sheetSelected = sheetState.selectedPackageInfo
+            val resulting = state.selectedPackageAfterSheetDismiss()
             componentInteractionTracker.track(
                 paywallPackageSelectionSheetClose(
                     sheetComponentName = sheet.name,
@@ -365,10 +383,9 @@ internal fun SimpleSheetState.show(
                     resultingRootPackage = resulting?.rcPackage,
                 ),
             )
-            state.restorePackageAfterSheetDismiss()
         },
     )
-    state.selectPackageForSheetEntry()
+    return sheetState
 }
 
 @Suppress("LongMethod")
