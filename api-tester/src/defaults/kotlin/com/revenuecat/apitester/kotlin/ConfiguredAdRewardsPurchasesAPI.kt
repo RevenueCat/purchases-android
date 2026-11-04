@@ -1,12 +1,10 @@
 package com.revenuecat.apitester.kotlin
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.ads.ConfiguredAdRewards
 import com.revenuecat.purchases.awaitGetAdRewards
 import com.revenuecat.purchases.interfaces.GetAdRewardsCallback
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Suppress("unused", "UNUSED_VARIABLE")
 private class ConfiguredAdRewardsPurchasesAPI {
     suspend fun check(purchases: Purchases, callback: GetAdRewardsCallback) {

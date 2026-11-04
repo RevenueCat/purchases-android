@@ -631,7 +631,7 @@ package com.revenuecat.purchases {
 
 package com.revenuecat.purchases.ads {
 
-  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public abstract class AdRewardConfiguration {
+  public abstract class AdRewardConfiguration {
   }
 
   @dev.drewhamilton.poko.Poko public static final class AdRewardConfiguration.Entitlement extends com.revenuecat.purchases.ads.AdRewardConfiguration {
@@ -653,7 +653,7 @@ package com.revenuecat.purchases.ads {
     property public String code;
   }
 
-  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @dev.drewhamilton.poko.Poko public final class ConfiguredAdRewards {
+  @dev.drewhamilton.poko.Poko public final class ConfiguredAdRewards {
     method @InaccessibleFromKotlin public java.util.List<com.revenuecat.purchases.ads.AdRewardConfiguration> getMoreRewards();
     method @InaccessibleFromKotlin public com.revenuecat.purchases.ads.AdRewardConfiguration? getReward();
     property public java.util.List<com.revenuecat.purchases.ads.AdRewardConfiguration> moreRewards;
@@ -996,7 +996,7 @@ package com.revenuecat.purchases.interfaces {
     method public void onReceived(T!);
   }
 
-  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public fun interface GetAdRewardsCallback {
+  public fun interface GetAdRewardsCallback {
     method public void onReceived(com.revenuecat.purchases.ads.ConfiguredAdRewards? rewards);
   }
 
