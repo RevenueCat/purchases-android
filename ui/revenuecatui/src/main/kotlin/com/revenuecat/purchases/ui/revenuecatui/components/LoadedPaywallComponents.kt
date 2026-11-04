@@ -65,6 +65,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.SheetPresentationKey
+import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleBottomSheetScaffold
 import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleSheetState
 import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
@@ -335,17 +336,31 @@ internal fun SimpleSheetState.show(
     componentInteractionTracker: PaywallComponentInteractionTracker,
     onClick: suspend (PaywallAction) -> Unit,
 ) {
+    val stack = sheet.stack as? StackComponentStyle
+    val scopeState = stack?.let { state.purchaseContextState(it) }?.also {
+        it.paywallBoundsDp = state.paywallBoundsDp
+        it.windowScreenCondition = state.windowScreenCondition
+        it.reconcilePurchaseContextSelection(initialize = true)
+    }
+    val sheetState = scopeState ?: state
+    val sheetStack = if (scopeState != null) stack.copy(purchaseContextPackages = null) else sheet.stack
     show(
         backgroundBlur = sheet.backgroundBlur,
         content = {
+            if (scopeState != null) {
+                scopeState.paywallBoundsDp = state.paywallBoundsDp
+                scopeState.headerHeightPx = state.headerHeightPx
+                scopeState.windowScreenCondition = state.windowScreenCondition
+                scopeState.reconcilePurchaseContextSelection()
+            }
             ComponentView(
-                style = sheet.stack,
-                state = state,
+                style = sheetStack,
+                state = sheetState,
                 componentInteractionTracker = componentInteractionTracker,
                 onClick = { action ->
                     when (action) {
                         is PaywallAction.External.NavigateBack -> hide()
-                        else -> onClick(action)
+                        else -> handleClick(action, sheetState, onClick, componentInteractionTracker)
                     }
                 },
                 modifier = Modifier
@@ -356,8 +371,12 @@ internal fun SimpleSheetState.show(
         contentKey = sheet.id,
         presentationKey = sheet.presentationKey,
         onDismiss = {
-            val sheetSelected = state.selectedPackageInfo
-            val resulting = state.peekSelectedPackageInfoAfterSheetDismiss()
+            val sheetSelected = sheetState.selectedPackageInfo
+            val resulting = if (stack?.purchaseContextPackages != null) {
+                state.selectedPackageInfo
+            } else {
+                state.peekSelectedPackageInfoAfterSheetDismiss()
+            }
             componentInteractionTracker.track(
                 paywallPackageSelectionSheetClose(
                     sheetComponentName = sheet.name,
@@ -365,10 +384,10 @@ internal fun SimpleSheetState.show(
                     resultingRootPackage = resulting?.rcPackage,
                 ),
             )
-            state.restorePackageAfterSheetDismiss()
+            if (scopeState == null) state.restorePackageAfterSheetDismiss()
         },
     )
-    state.selectPackageForSheetEntry()
+    if (scopeState == null) state.selectPackageForSheetEntry()
 }
 
 @Suppress("LongMethod")

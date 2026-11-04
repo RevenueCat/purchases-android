@@ -41,6 +41,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageContext
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageVisibilityPath
 import com.revenuecat.purchases.ui.revenuecatui.components.style.SheetPresentationKey
+import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleSheetState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.ProcessedLocalizedConfiguration
@@ -58,6 +59,7 @@ import java.text.NumberFormat
 import java.util.Date
 import java.util.Locale
 import android.os.LocaleList as FrameworkLocaleList
+import androidx.compose.ui.text.intl.Locale as ComposeLocale
 
 @Stable
 internal sealed interface PaywallState {
@@ -150,7 +152,56 @@ internal sealed interface PaywallState {
             val stateStore: PaywallStateStore = PaywallStateStore(emptyMap()),
             /** The view model's gate, so every step of a workflow reads the one flag. */
             private val viewModelActionInProgress: State<Boolean> = mutableStateOf(false),
+            internal val isIndependentPurchaseContext: Boolean = false,
+            private val purchaseContextParent: Components? = null,
         ) : Loaded {
+
+            internal fun purchaseContextState(style: StackComponentStyle): Components? {
+                val purchaseContextPackages = style.purchaseContextPackages ?: return null
+                return Components(
+                    stack = style,
+                    header = null,
+                    stickyFooter = null,
+                    background = background,
+                    showPricesWithDecimals = showPricesWithDecimals,
+                    variableConfig = variableConfig,
+                    variableDataProvider = variableDataProvider,
+                    offering = offering,
+                    locales = locales,
+                    storefrontCountryCode = storefrontCountryCode,
+                    dateProvider = dateProvider,
+                    packages = purchaseContextPackages,
+                    customVariables = customVariables,
+                    defaultCustomVariables = defaultCustomVariables,
+                    initialLocaleList = LocaleList(locale),
+                    initialSelectedTabIndex = style.purchaseContextTabIndex,
+                    initialSheetState = sheet,
+                    purchases = purchases,
+                    workflowScreen = workflowScreen,
+                    stateStore = stateStore,
+                    viewModelActionInProgress = viewModelActionInProgress,
+                    isIndependentPurchaseContext = true,
+                    purchaseContextParent = this,
+                ).also { child ->
+                    child.reconcilePurchaseContextSelection(initialize = true)
+                }
+            }
+
+            internal fun reconcilePurchaseContextSelection(initialize: Boolean = false) {
+                val owningSheet = (stack as? StackComponentStyle)?.purchaseContextPresentationKey
+                val presentedSheet = sheet.presentationKey.takeIf { sheet.visible }
+                val activePackages = (packages.packagesOutsideTabs + packages.packagesByTab[selectedTabIndex].orEmpty())
+                    .filter {
+                        it.sheetPresentationKey === owningSheet || it.sheetPresentationKey === presentedSheet
+                    }
+                val context = visibilityContext(paywallBoundsDp)
+                if (initialize || activePackages.none {
+                        it.uniqueId == selectedPackageUniqueId && it.resolvesVisible(context)
+                    }
+                ) {
+                    selectedPackageUniqueId = activePackages.defaultSelection(context)?.uniqueId
+                }
+            }
 
             /**
              * Custom variables merged from dashboard defaults and developer-provided overrides.
@@ -187,7 +238,7 @@ internal sealed interface PaywallState {
 
             /** A subset of the offering: packages the paywall never shows are not in it. */
             val paywallPackages: List<Package> by lazy {
-                (packages.packagesOutsideTabs + packages.packagesByTab.toSortedMap().values.flatten())
+                packages.allPackages
                     .map { it.pkg }
                     .distinctBy { it.identifier }
             }
@@ -195,6 +246,8 @@ internal sealed interface PaywallState {
             data class AvailablePackages(
                 val packagesOutsideTabs: List<Info>,
                 val packagesByTab: Map<Int, List<Info>>,
+                val nestedPackages: List<Info> = emptyList(),
+                val hasDeclaredPackages: Boolean = false,
             ) {
                 data class Info(
                     val pkg: Package,
@@ -236,10 +289,15 @@ internal sealed interface PaywallState {
                     AvailablePackages(
                         packagesOutsideTabs = packagesOutsideTabs + with?.packagesOutsideTabs.orEmpty(),
                         packagesByTab = packagesByTab.ifEmpty { with?.packagesByTab.orEmpty() },
+                        nestedPackages = nestedPackages + with?.nestedPackages.orEmpty(),
+                        hasDeclaredPackages = hasDeclaredPackages || with?.hasDeclaredPackages == true,
                     )
 
+                val allPackages: List<Info>
+                    get() = packagesOutsideTabs + packagesByTab.toSortedMap().values.flatten() + nestedPackages
+
                 val hasAnyPackages: Boolean
-                    get() = packagesOutsideTabs.isNotEmpty() || packagesByTab.isNotEmpty()
+                    get() = allPackages.isNotEmpty()
             }
 
             data class SelectedPackageInfo(
@@ -287,7 +345,7 @@ internal sealed interface PaywallState {
             /**
              * The locale to use for the paywall's localized content, such as text.
              */
-            val locale by derivedStateOf { localeId.toComposeLocale() }
+            val locale: ComposeLocale by derivedStateOf { purchaseContextParent?.locale ?: localeId.toComposeLocale() }
 
             /**
              * The locale to use when formatting currencies. This corresponds to the user's storefront country, to
@@ -351,7 +409,7 @@ internal sealed interface PaywallState {
                         )
                     }
                 }
-                ownSelection ?: defaultPackageInfo
+                ownSelection ?: defaultPackageInfo.takeUnless { isIndependentPurchaseContext }
             }
 
             private fun findPackageInfoByUniqueId(uniqueId: String): AvailablePackages.Info? {
@@ -391,6 +449,13 @@ internal sealed interface PaywallState {
                 } else {
                     TextPackageContext(fallbackPackage, fallbackSubscriptionOption, mostExpensivePricePerMonthMicros)
                 }
+            }
+
+            internal fun mostExpensivePricePerMonthMicrosForVariable(tabIndex: Int?): Long? {
+                if (!isIndependentPurchaseContext) return mostExpensivePricePerMonthMicros
+                val tabPackages = tabIndex?.let { packages.packagesByTab[it] }.orEmpty()
+                val ownedPackages = tabPackages.ifEmpty { packages.packagesOutsideTabs }
+                return ownedPackages.mostExpensivePricePerMonthMicros()
             }
 
             val currentDate: Date

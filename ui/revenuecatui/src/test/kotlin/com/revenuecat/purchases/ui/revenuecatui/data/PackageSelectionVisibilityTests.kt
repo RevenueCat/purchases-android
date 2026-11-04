@@ -9,6 +9,7 @@ import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialPackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
 import com.revenuecat.purchases.paywalls.components.PaywallComponent
+import com.revenuecat.purchases.paywalls.components.PurchaseContext
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
@@ -67,6 +68,45 @@ internal class PackageSelectionVisibilityTests {
         )
 
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
+    }
+
+    @Test
+    fun `independent contexts exclude packages inside hidden containers`() {
+        val state = state(
+            pkg(weekly, default = true),
+            StackComponent(
+                components = listOf(hiddenStack(pkg(monthly, default = true)), pkg(annual)),
+                purchaseContext = PurchaseContext(mode = "independent"),
+            ),
+        )
+        state.paywallBoundsDp = wide
+        val scopeStyle = (state.stack as StackComponentStyle).children[1] as StackComponentStyle
+        val scoped = requireNotNull(state.purchaseContextState(scopeStyle))
+        scoped.paywallBoundsDp = wide
+
+        scoped.reconcilePurchaseContextSelection()
+
+        assertThat(scoped.selectedPackageInfo?.rcPackage).isEqualTo(annual)
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(weekly)
+    }
+
+    @Test
+    fun `independent contexts clear selection when all package containers are hidden`() {
+        val state = state(
+            pkg(weekly, default = true),
+            StackComponent(
+                components = listOf(hiddenStack(pkg(monthly, default = true))),
+                purchaseContext = PurchaseContext(mode = "independent"),
+            ),
+        )
+        val scopeStyle = (state.stack as StackComponentStyle).children[1] as StackComponentStyle
+        val scoped = requireNotNull(state.purchaseContextState(scopeStyle))
+        scoped.paywallBoundsDp = wide
+
+        scoped.reconcilePurchaseContextSelection()
+
+        assertThat(scoped.selectedPackageInfo).isNull()
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(weekly)
     }
 
     @Test
