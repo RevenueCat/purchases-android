@@ -376,9 +376,17 @@ internal sealed interface PaywallState {
 
             fun textPackageContext(
                 tabIndex: Int?,
+                discountTabIndex: Int?,
                 fallbackPackage: Package?,
                 fallbackSubscriptionOption: SubscriptionOption?,
             ): TextPackageContext {
+                if (discountTabIndex != null) {
+                    return TextPackageContext(
+                        fallbackPackage,
+                        fallbackSubscriptionOption,
+                        packages.packagesByTab[discountTabIndex].orEmpty().mostExpensivePricePerMonthMicros(),
+                    )
+                }
                 val tabPackages = packages.packagesByTab[tabIndex].orEmpty()
                 val packageInfo = tabPackages.find { it.uniqueId == selectedPackageByTab[tabIndex] }
                     ?: tabPackages.defaultSelection(visibilityContext(windowDpSize = null))

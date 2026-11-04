@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -79,6 +80,7 @@ class TabControlDiscountTests {
 
         compose.onNodeWithText("Selected: $129.99", useUnmergedTree = true).assertExists()
         compose.onNodeWithText("Selected offer: $4.99", useUnmergedTree = true).assertExists()
+        compose.onNodeWithText("Premium annual discount: 46%", useUnmergedTree = true).assertExists()
         compose.onNodeWithText("Yearly offer: $1.99", useUnmergedTree = true).assertExists()
         compose.onNodeWithText("Yearly: 58%", useUnmergedTree = true).assertExists()
     }
@@ -90,7 +92,35 @@ class TabControlDiscountTests {
         compose.onNodeWithText("Selected: $129.99").assertExists()
     }
 
-    private fun render(emptyAnnualTab: Boolean = false) {
+    @Test
+    fun `Package card discount uses its tab plans when a sheet has more expensive plans`() {
+        render()
+        compose.onNodeWithText("Yearly: 43%").assertExists()
+        compose.onNodeWithText("Essential annual discount:", substring = true, useUnmergedTree = true)
+            .assertTextEquals("Essential annual discount: 43%")
+        compose.onNodeWithText("Other annual discount: 58%", useUnmergedTree = true).assertExists()
+
+        compose.onNodeWithText("Other annual").performClick()
+
+        compose.onNodeWithText("Essential annual discount: 43%", useUnmergedTree = true).assertExists()
+        compose.onNodeWithText("Other annual discount: 58%", useUnmergedTree = true).assertExists()
+        compose.onNodeWithText("Yearly: 58%", useUnmergedTree = true).assertExists()
+    }
+
+    @Test
+    fun `Package card discount uses its tab plans without a sheet`() {
+        render(includeSheet = false)
+        compose.onNodeWithText("Essential annual discount:", substring = true, useUnmergedTree = true)
+            .assertTextEquals("Essential annual discount: 43%")
+    }
+
+    @Test
+    fun `Root package card discount includes sheet plans without tabs`() {
+        render(includeTabs = false)
+        compose.onNodeWithText("Essential annual discount: 60%", useUnmergedTree = true).assertExists()
+    }
+
+    private fun render(emptyAnnualTab: Boolean = false, includeSheet: Boolean = true, includeTabs: Boolean = true) {
         val annualPlans = if (emptyAnnualTab) {
             listOf(TabControlComponent, text("No plans"))
         } else {
@@ -142,8 +172,9 @@ class TabControlDiscountTests {
         } else {
             emptyList()
         }
-        val root = StackComponent(components = rootPlans + listOf(
-            tabs, sheet, text("Selected: {{ product.price }}"), text("Selected offer: {{ product.offer_price }}"),
+        val root = StackComponent(components = rootPlans + listOfNotNull(
+            if (includeTabs) tabs else plan(annual, "Essential annual", true), sheet.takeIf { includeSheet },
+            text("Selected: {{ product.price }}"), text("Selected offer: {{ product.offer_price }}"),
         ))
         val data = PaywallComponentsData(
             templateName = "components", assetBaseURL = URL("https://assets.pawwalls.com"),
@@ -167,7 +198,7 @@ class TabControlDiscountTests {
 
     private fun plan(pkg: Package, label: String, selected: Boolean) = PackageComponent(
         packageId = pkg.identifier, isSelectedByDefault = selected,
-        stack = StackComponent(components = listOf(text(label))),
+        stack = StackComponent(components = listOf(text(label), text("$label discount: {{ product.relative_discount }}"))),
     )
 
     private fun text(value: String): TextComponent {

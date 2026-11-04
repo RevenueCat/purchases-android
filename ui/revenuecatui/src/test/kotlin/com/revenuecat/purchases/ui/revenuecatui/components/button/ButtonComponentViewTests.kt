@@ -101,6 +101,7 @@ class ButtonComponentViewTests {
                         .toPaddingValues(),
                     rcPackage = null,
                     tabIndex = null,
+                    discountTabIndex = null,
                     variableLocalizations = nonEmptyMapOf(
                         LocaleId("en_US") to variableLocalizationKeysForEnUs()
                     ),

@@ -1058,6 +1058,7 @@ internal class StyleFactory(
             variableLocalizations = variableLocalizations,
             overrides = presentedOverrides,
             componentName = component.name,
+            discountTabIndex = tabIndex.takeIf { rcPackage != null && sheetPresentationKey == null },
         )
     }
 
