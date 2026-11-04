@@ -35,7 +35,13 @@ internal class PackageSelectionResolver(
     }
 
     fun reconcile(current: String?, remembered: String?): String? = when {
-        current != null && rendersWhenSelected(current) -> current
+        // An explicit choice may hide its own card. Keep it while the card could still render
+        // unselected; viewport/container rules that hide both states still trigger reconciliation.
+        current != null && active.any { info ->
+            info.uniqueId == current && (
+                info.resolvesVisible(context.withSelection(null)) || rendersWhenSelected(current)
+                )
+        } -> current
         else -> defaultSelection(remembered)
             ?: current
             ?: allHiddenFallback()

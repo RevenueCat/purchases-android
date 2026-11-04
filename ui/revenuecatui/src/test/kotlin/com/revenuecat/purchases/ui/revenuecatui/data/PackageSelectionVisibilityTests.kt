@@ -264,6 +264,58 @@ internal class PackageSelectionVisibilityTests {
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(weekly)
     }
 
+    @Test
+    fun `terms sheet preserves explicit self hiding choice`() {
+        val state = state(
+            pkg(annual, default = true),
+            pkg(monthly, content = StackComponent(
+                components = emptyList(),
+                overrides = listOf(ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Selected),
+                    properties = PartialStackComponent(visible = false),
+                )),
+            )),
+            ButtonComponent(
+                action = ButtonComponent.Action.NavigateTo(ButtonComponent.Destination.Sheet(
+                    id = "terms", stack = StackComponent(emptyList()),
+                )),
+                stack = StackComponent(emptyList()),
+            ),
+        )
+        state.paywallBoundsDp = wide
+        state.update(selectedPackageUniqueId = monthly.identifier)
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthly)
+        val button = (state.stack as StackComponentStyle).children[2] as ButtonComponentStyle
+        val sheet = (button.action as ButtonComponentStyle.Action.NavigateTo).destination
+            as ButtonComponentStyle.Action.NavigateTo.Destination.Sheet
+        state.sheet.show(sheet, state, PaywallComponentInteractionTracker { }, onClick = {})
+        state.sheet.hide()
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthly)
+    }
+
+    @Test
+    fun `remeasurement preserves a self hiding choice until its container is hidden`() {
+        val state = state(
+            pkg(annual, default = true),
+            hiddenStack(pkg(monthly, content = StackComponent(
+                components = emptyList(),
+                overrides = listOf(ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Selected),
+                    properties = PartialStackComponent(visible = false),
+                )),
+            ))),
+        )
+        val narrow = DpSize(400.dp, 600.dp)
+        state.paywallBoundsDp = narrow
+        state.update(selectedPackageUniqueId = monthly.identifier)
+        state.reconcileSelectionForWindowSize(narrow)
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthly)
+
+        state.paywallBoundsDp = wide
+        state.reconcileSelectionForWindowSize(wide)
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
+    }
+
     private fun tabs(vararg contents: List<PaywallComponent>) = TabsComponent(
         tabs = contents.mapIndexed { index, children ->
             TabsComponent.Tab(id = index.toString(), stack = StackComponent(children))
