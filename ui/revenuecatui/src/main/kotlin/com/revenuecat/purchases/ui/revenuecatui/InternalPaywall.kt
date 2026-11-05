@@ -533,11 +533,15 @@ private fun handleLaunchWebCheckout(
         viewModel.notifyWebCheckoutOpened()
     }
     if (action.autoDismiss) {
-        Logger.d("Auto-dismissing paywall after launching web checkout.")
-        // Closing the paywall doesn't close an open sheet, which stays on screen when the host keeps the
-        // paywall mounted.
-        sheet.hide()
-        viewModel.closePaywall()
+        // Like iOS, auto-dismiss closes the innermost container: the sheet when the button was tapped inside one
+        // (the scrim blocks the page behind it), otherwise the paywall.
+        if (sheet.visible) {
+            Logger.d("Auto-dismissing sheet after launching web checkout.")
+            sheet.hide()
+        } else {
+            Logger.d("Auto-dismissing paywall after launching web checkout.")
+            viewModel.closePaywall()
+        }
     }
 }
 
