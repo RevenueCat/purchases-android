@@ -19,6 +19,7 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.encoding.encodeStructure
 import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.util.Date
@@ -398,15 +399,7 @@ internal object PaywallEventDataSerializer : KSerializer<PaywallEvent.Data> {
         val traceId = jsonObject["traceId"]?.let {
             decoder.json.decodeFromJsonElement(String.serializer(), it)
         }
-        val msSinceConfigure = jsonObject["msSinceConfigure"]?.let {
-            decoder.json.decodeFromJsonElement(Int.serializer(), it)
-        }
-        val loadingDurationMs = jsonObject["loadingDurationMs"]?.let {
-            decoder.json.decodeFromJsonElement(Int.serializer(), it)
-        }
-        val loadingIncompleteReason = jsonObject["loadingIncompleteReason"]?.let {
-            decoder.json.decodeFromJsonElement(String.serializer(), it)
-        }
+        val loadingFields = decodeLoadingFields(decoder, jsonObject)
 
         return PaywallEvent.Data(
             paywallIdentifier = paywallIdentifier,
@@ -425,9 +418,29 @@ internal object PaywallEventDataSerializer : KSerializer<PaywallEvent.Data> {
             workflowId = workflowId,
             stepId = stepId,
             traceId = traceId,
-            msSinceConfigure = msSinceConfigure,
-            loadingDurationMs = loadingDurationMs,
-            loadingIncompleteReason = loadingIncompleteReason,
+            msSinceConfigure = loadingFields.msSinceConfigure,
+            loadingDurationMs = loadingFields.loadingDurationMs,
+            loadingIncompleteReason = loadingFields.loadingIncompleteReason,
+        )
+    }
+
+    private data class LoadingFields(
+        val msSinceConfigure: Int?,
+        val loadingDurationMs: Int?,
+        val loadingIncompleteReason: String?,
+    )
+
+    private fun decodeLoadingFields(decoder: JsonDecoder, jsonObject: JsonObject): LoadingFields {
+        return LoadingFields(
+            msSinceConfigure = jsonObject["msSinceConfigure"]?.let {
+                decoder.json.decodeFromJsonElement(Int.serializer(), it)
+            },
+            loadingDurationMs = jsonObject["loadingDurationMs"]?.let {
+                decoder.json.decodeFromJsonElement(Int.serializer(), it)
+            },
+            loadingIncompleteReason = jsonObject["loadingIncompleteReason"]?.let {
+                decoder.json.decodeFromJsonElement(String.serializer(), it)
+            },
         )
     }
 }
