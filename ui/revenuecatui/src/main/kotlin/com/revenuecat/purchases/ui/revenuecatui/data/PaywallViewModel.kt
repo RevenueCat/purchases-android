@@ -18,7 +18,6 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchaseParams
-import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -556,7 +555,7 @@ internal class PaywallViewModelImpl(
             paywallPresentationData = null
         }
 
-        val newData = createEventData()?.copy(msSinceConfigure = msSinceConfigure()) ?: return
+        val newData = createEventData() ?: return
         paywallPresentationData = newData
         track(PaywallEventType.IMPRESSION)
         // On Android every input (products, offer eligibility) is resolved before the loaded state renders,
@@ -579,15 +578,6 @@ internal class PaywallViewModelImpl(
             type = PaywallEventType.LOADED,
         )
         purchases.track(event)
-    }
-
-    /**
-     * Milliseconds since [Purchases.configure] in this process, or `null` when not configured (previews, tests).
-     */
-    @OptIn(InternalRevenueCatAPI::class)
-    private fun msSinceConfigure(): Int? {
-        val configuredAt = Purchases.configurationTimeMillis ?: return null
-        return (android.os.SystemClock.elapsedRealtime() - configuredAt).coerceAtLeast(0L).toInt()
     }
 
     override fun trackExitOffer(exitOfferType: ExitOfferType, exitOfferingIdentifier: String) {
