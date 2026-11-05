@@ -727,6 +727,7 @@ class PaywallViewModelWorkflowTest {
         Dispatchers.setMain(testDispatcher)
         purchases = mockk {
             every { storefrontCountryCode } returns "US"
+            every { appUserID } returns "user-a"
             every { preferredUILocaleOverride } returns null
             every { purchasesAreCompletedBy } returns PurchasesAreCompletedBy.REVENUECAT
             every { track(any()) } just Runs
@@ -1459,6 +1460,66 @@ class PaywallViewModelWorkflowTest {
         coVerify(exactly = 1) { purchases.awaitCustomerInfo(CacheFetchPolicy.CACHED_OR_FETCHED) }
         assertThat(dismissals).isEqualTo(1)
         assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.PASSED)
+    }
+
+    @Test
+    fun `a gate cannot pass with entitlements read for the previous user`() {
+        val read = CompletableDeferred<CustomerInfo>()
+        coEvery { purchases.awaitCustomerInfo(CacheFetchPolicy.CACHED_OR_FETCHED) } coAnswers { read.await() }
+        var dismissals = 0
+        val outcomes = mutableListOf<CheckpointGateOutcome>()
+        val vm = createVm(dismissRequest = { dismissals++ }, gateContext = CheckpointGateContext(outcomes::add))
+        vm.startHardGate()
+
+        every { purchases.appUserID } returns "user-b"
+        read.complete(gatedCustomerInfo("pro"))
+        runGateRead()
+
+        assertThat(dismissals).isZero()
+        assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.NOT_PASSED)
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+        assertThat(vm.workflowState.value?.isSkeleton).isFalse()
+    }
+
+    @Test
+    fun `a purchase for the previous user cannot pass a hard gate`() = runTest {
+        assertPreviousUserCannotPassGate(isPurchase = true)
+    }
+
+    @Test
+    fun `a restore for the previous user cannot pass a hard gate`() = runTest {
+        assertPreviousUserCannotPassGate(isPurchase = false)
+    }
+
+    private suspend fun TestScope.assertPreviousUserCannotPassGate(isPurchase: Boolean) {
+        val result = CompletableDeferred<CustomerInfo>()
+        val transaction = mockk<StoreTransaction>()
+        coEvery { purchases.awaitPurchase(any()) } coAnswers { PurchaseResult(transaction, result.await()) }
+        coEvery { purchases.awaitRestore() } coAnswers { result.await() }
+        val listener = makeListener()
+        var dismissals = 0
+        val outcomes = mutableListOf<CheckpointGateOutcome>()
+        val vm = createVm(
+            dismissRequest = { dismissals++ }, listener = listener,
+            gateContext = CheckpointGateContext(outcomes::add),
+        )
+        vm.startHardGate()
+        val operation = launch {
+            if (isPurchase) vm.handlePackagePurchase(mockk<Activity>(), TestData.Packages.monthly)
+            else vm.handleRestorePurchases()
+        }
+        runCurrent()
+
+        every { purchases.appUserID } returns "user-b"
+        val customerInfo = gatedCustomerInfo("pro")
+        result.complete(customerInfo)
+        operation.join()
+
+        if (isPurchase) verify { listener.onPurchaseCompleted(customerInfo, transaction) }
+        else verify { listener.onRestoreCompleted(customerInfo) }
+        assertThat(dismissals).isZero()
+        assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.NOT_PASSED)
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
     }
 
     @Test
