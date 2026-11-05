@@ -1,0 +1,48 @@
+# Opens the `with-branch` workflow and progresses through its branch node (default locale) to the
+# "Limited time offer" paywall via Testimonials 1.
+# Run on CI by the `run-maestro-tests` job.
+#
+# Run locally against the test store:
+#   maestro test -e MAESTRO_STORE=test_store maestro/workflows/workflow_progresses_through_branch.yaml
+
+appId: com.revenuecat.e2etests
+name: A workflow progresses through its branch node
+env:
+  MAESTRO_STORE: ${MAESTRO_STORE || 'test_store'}
+
+---
+- launchApp:
+    clearState: true
+    arguments:
+      e2e_test_flow: open_workflow
+      workflow_offering_identifier: "with-branch"
+- extendedWaitUntil:
+    visible: "Present Paywall"
+    timeout: 15000
+- tapOn:
+    text: "Present Paywall"
+
+# Welcome screen 1, before the branch node.
+- extendedWaitUntil:
+    visible: "See how NatureCat can change your life"
+    timeout: 15000
+- takeScreenshot: "workflow_progresses_through_branch - welcome screen 1"
+- tapOn:
+    text: "Continue"
+
+# Branch 1 -> Testimonials 1 (fallback).
+- extendedWaitUntil:
+    visible: "(?s).*Over 1 million.*"
+    timeout: 15000
+- assertNotVisible: "Cat whisperer in your pocket"
+- takeScreenshot: "workflow_progresses_through_branch - testimonials 1"
+- tapOn:
+    text: "Continue"
+
+# Final screen, reached through the branch.
+- extendedWaitUntil:
+    visible: "Limited time offer"
+    timeout: 15000
+- assertVisible: "Lowest price guaranteed"
+- assertVisible: "25OFFSUMMER"
+- takeScreenshot: "workflow_progresses_through_branch - limited time offer"
