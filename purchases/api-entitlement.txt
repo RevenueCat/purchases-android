@@ -345,6 +345,7 @@ package com.revenuecat.purchases {
     method public static com.revenuecat.purchases.Purchases configureInCustomEntitlementsComputationMode(android.content.Context context, String apiKey, String appUserID);
     method public static com.revenuecat.purchases.Purchases configureInCustomEntitlementsComputationMode(com.revenuecat.purchases.PurchasesConfigurationForCustomEntitlementsComputationMode configuration);
     method @InaccessibleFromKotlin @kotlin.jvm.Synchronized public String getAppUserID();
+    method @InaccessibleFromKotlin public static Long? getConfigurationTimeMillis();
     method @InaccessibleFromKotlin public static String getFrameworkVersion();
     method @InaccessibleFromKotlin public static com.revenuecat.purchases.SimulatedHostFailures? getInternalSimulatedHostFailures();
     method @InaccessibleFromKotlin @kotlin.jvm.Synchronized public static com.revenuecat.purchases.LogHandler getLogHandler();

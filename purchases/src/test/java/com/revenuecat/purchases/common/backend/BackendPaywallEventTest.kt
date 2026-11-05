@@ -137,6 +137,28 @@ class BackendPaywallEventTest {
         )
     ).map { it.toBackendEvent() })
 
+    private val loadedEventRequest = EventsRequest(listOf(
+        BackendStoredEvent.Paywalls(
+            BackendEvent.Paywalls(
+                id = "loaded-id",
+                version = 1,
+                type = PaywallEventType.LOADED.value,
+                appUserID = "appUserID",
+                sessionID = "sessionID",
+                offeringID = "offeringID",
+                paywallID = "paywallID",
+                paywallRevision = 3,
+                timestamp = 123456789,
+                displayMode = "fullscreen",
+                darkMode = false,
+                localeIdentifier = "en_US",
+                msSinceConfigure = 1234,
+                loadingDurationMs = 850,
+                loadingIncompleteReason = "dismissed",
+            )
+        )
+    ).map { it.toBackendEvent() })
+
     private lateinit var appConfig: AppConfig
     private lateinit var httpClient: HTTPClient
 
@@ -273,6 +295,42 @@ class BackendPaywallEventTest {
                         "\"locale\":\"en_US\"," +
                         "\"exit_offer_type\":\"dismiss\"," +
                         "\"exit_offering_id\":\"exit-offering-id\"" +
+                    "}" +
+                "]" +
+            "}"
+        )
+    }
+
+    @Test
+    fun `postPaywallEvents posts loaded events correctly`() {
+        mockHttpResult()
+        backend.postEvents(
+            loadedEventRequest,
+            baseURL = AppConfig.paywallEventsURL,
+            delay = Delay.DEFAULT,
+            onSuccessHandler = {},
+            onErrorHandler = { _, _ -> },
+        )
+        verifyCallWithBody(
+            "{" +
+                "\"events\":[" +
+                    "{" +
+                        "\"discriminator\":\"paywalls\"," +
+                        "\"id\":\"loaded-id\"," +
+                        "\"version\":1," +
+                        "\"type\":\"paywall_loaded\"," +
+                        "\"app_user_id\":\"appUserID\"," +
+                        "\"session_id\":\"sessionID\"," +
+                        "\"offering_id\":\"offeringID\"," +
+                        "\"paywall_id\":\"paywallID\"," +
+                        "\"paywall_revision\":3," +
+                        "\"timestamp\":123456789," +
+                        "\"display_mode\":\"fullscreen\"," +
+                        "\"dark_mode\":false," +
+                        "\"locale\":\"en_US\"," +
+                        "\"ms_since_configure\":1234," +
+                        "\"loading_duration_ms\":850," +
+                        "\"loading_incomplete_reason\":\"dismissed\"" +
                     "}" +
                 "]" +
             "}"

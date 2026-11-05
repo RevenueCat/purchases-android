@@ -272,10 +272,22 @@ public class Purchases internal constructor(
                     ?: throw UninitializedPropertyAccessException(ConfigureStrings.NO_SINGLETON_INSTANCE)
 
             @VisibleForTesting(otherwise = VisibleForTesting.NONE)
+            @OptIn(InternalRevenueCatAPI::class)
             internal set(value) {
                 backingFieldSharedInstance?.close()
                 backingFieldSharedInstance = value
+                configurationTimeMillis = value?.let { android.os.SystemClock.elapsedRealtime() }
             }
+
+        /**
+         * [android.os.SystemClock.elapsedRealtime] when the current shared instance was set, i.e. when the
+         * app configured the SDK in this process. `null` until configured. Used by RevenueCatUI to tell
+         * paywalls shown at cold start from paywalls shown later.
+         */
+        @InternalRevenueCatAPI
+        @JvmStatic
+        public var configurationTimeMillis: Long? = null
+            private set
 
         /**
          * Current version of the Purchases SDK

@@ -179,6 +179,9 @@ internal fun PaywallEvent.toBackendStoredEvent(
             resultingPackageIdentifier = backendComponentFields.resultingPackageIdentifier,
             currentProductIdentifier = backendComponentFields.currentProductIdentifier,
             resultingProductIdentifier = backendComponentFields.resultingProductIdentifier,
+            msSinceConfigure = data.msSinceConfigure,
+            loadingDurationMs = data.loadingDurationMs,
+            loadingIncompleteReason = data.loadingIncompleteReason,
         ),
     )
 }

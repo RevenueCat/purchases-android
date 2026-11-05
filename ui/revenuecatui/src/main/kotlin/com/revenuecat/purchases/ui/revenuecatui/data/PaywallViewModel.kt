@@ -19,6 +19,7 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.PurchasesAreCompletedBy
+import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
@@ -198,6 +199,12 @@ internal class PaywallViewModelImpl(
         get() = (exitOfferData as? ExitOfferData.Configured)?.preloadedOffering
 
     private val _state: MutableStateFlow<PaywallState> = MutableStateFlow(PaywallState.Loading)
+
+    /**
+     * When the current loading UI started showing: view model creation (the paywall surface appearing)
+     * or the reset to [PaywallState.Loading] on dismiss. `paywall_loaded` measures from here.
+     */
+    private var loadingStartedAtMillis: Long = android.os.SystemClock.elapsedRealtime()
     private val _actionInProgress: MutableState<Boolean> = mutableStateOf(false)
     private val _actionError: MutableState<PurchasesError?> = mutableStateOf(null)
     private val _purchaseCompleted: MutableState<Boolean> = mutableStateOf(false)
@@ -403,6 +410,7 @@ internal class PaywallViewModelImpl(
         if (shouldReloadStateOnNextPresentation) {
             cancelStateUpdate()
             _state.value = PaywallState.Loading
+            loadingStartedAtMillis = android.os.SystemClock.elapsedRealtime()
         }
     }
 
@@ -548,9 +556,38 @@ internal class PaywallViewModelImpl(
             paywallPresentationData = null
         }
 
-        val newData = createEventData() ?: return
+        val newData = createEventData()?.copy(msSinceConfigure = msSinceConfigure()) ?: return
         paywallPresentationData = newData
         track(PaywallEventType.IMPRESSION)
+        // On Android every input (products, offer eligibility) is resolved before the loaded state renders,
+        // so the paywall is fully loaded as soon as it is impressed. The loading UI the user saw is the
+        // spinner between the paywall surface appearing and this impression; a re-impression of an already
+        // loaded paywall (locale/theme/step change) showed none.
+        val loadingDurationMs = if (existing == null) {
+            (android.os.SystemClock.elapsedRealtime() - loadingStartedAtMillis).coerceAtLeast(0L).toInt()
+        } else {
+            0
+        }
+        trackPaywallLoaded(loadingDurationMs)
+    }
+
+    private fun trackPaywallLoaded(loadingDurationMs: Int) {
+        val eventData = paywallPresentationData ?: return
+        val event = PaywallEvent(
+            creationData = PaywallEvent.CreationData(UUID.randomUUID(), Date()),
+            data = eventData.copy(loadingDurationMs = loadingDurationMs),
+            type = PaywallEventType.LOADED,
+        )
+        purchases.track(event)
+    }
+
+    /**
+     * Milliseconds since [Purchases.configure] in this process, or `null` when not configured (previews, tests).
+     */
+    @OptIn(InternalRevenueCatAPI::class)
+    private fun msSinceConfigure(): Int? {
+        val configuredAt = Purchases.configurationTimeMillis ?: return null
+        return (android.os.SystemClock.elapsedRealtime() - configuredAt).coerceAtLeast(0L).toInt()
     }
 
     override fun trackExitOffer(exitOfferType: ExitOfferType, exitOfferingIdentifier: String) {
