@@ -611,6 +611,7 @@ internal class PaywallViewModelImpl(
     private suspend fun performRestore() {
         val controller = checkpointGateController
         val generation = presentationGeneration
+        val appUserId = options.checkpointGateContext?.let { purchases.appUserID }
         val shouldResume = suspendCancellableCoroutine { continuation ->
             Logger.d("Restore Purchases Initiated… waiting for listener.onRestoreInitiated to proceed.")
             listener?.onRestoreInitiated { shouldResume ->
@@ -643,6 +644,7 @@ internal class PaywallViewModelImpl(
                                 isPurchase = false,
                                 controller,
                                 generation,
+                                appUserId,
                             )
                         }
                         is PurchaseLogicResult.Cancellation -> {
@@ -665,7 +667,7 @@ internal class PaywallViewModelImpl(
                     }
                     val customerInfo = purchases.awaitRestore()
                     Logger.i("Restore purchases successful: $customerInfo")
-                    completePurchaseOrRestore(customerInfo, isPurchase = false, controller, generation) {
+                    completePurchaseOrRestore(customerInfo, isPurchase = false, controller, generation, appUserId) {
                         listener?.onRestoreCompleted(customerInfo)
                     }
                 }
@@ -738,6 +740,7 @@ internal class PaywallViewModelImpl(
     ) {
         val controller = checkpointGateController
         val generation = presentationGeneration
+        val appUserId = options.checkpointGateContext?.let { purchases.appUserID }
         // Call onPurchasePackageInitiated and wait for resume() to be called
 
         val shouldResume = suspendCancellableCoroutine { continuation ->
@@ -784,6 +787,7 @@ internal class PaywallViewModelImpl(
                                 isPurchase = true,
                                 controller,
                                 generation,
+                                appUserId,
                             )
                         }
                         is PurchaseLogicResult.Cancellation -> {
@@ -832,6 +836,7 @@ internal class PaywallViewModelImpl(
                         isPurchase = true,
                         controller,
                         generation,
+                        appUserId,
                     ) {
                         listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
                     }
@@ -1380,6 +1385,7 @@ internal class PaywallViewModelImpl(
         val controller = checkpointGateController
         if (!controller.isGated(step)) return true
         val generation = presentationGeneration
+        val appUserId = purchases.appUserID
         val activeEntitlementIds = try {
             purchases.awaitCustomerInfo(CacheFetchPolicy.CACHED_OR_FETCHED).entitlements.active.keys
         } catch (e: PurchasesException) {
@@ -1388,7 +1394,9 @@ internal class PaywallViewModelImpl(
         }
         currentCoroutineContext().ensureActive()
         if (!ownsPresentation(controller, generation)) return false
-        val decision = controller.evaluate(step, activeEntitlementIds)
+        // A response still belongs to the user who started the read, even if logIn/logOut finished meanwhile.
+        val currentEntitlementIds = activeEntitlementIds.takeIf { purchases.appUserID == appUserId } ?: emptySet()
+        val decision = controller.evaluate(step, currentEntitlementIds)
         // The gate outcome callback is host-facing and can replace the presentation.
         if (!ownsPresentation(controller, generation)) return false
         if (decision == WorkflowGateDecision.PASSED) {
@@ -1403,9 +1411,11 @@ internal class PaywallViewModelImpl(
         isPurchase: Boolean,
         controller: CheckpointWorkflowGateController,
         generation: Int,
+        appUserId: String?,
         onCompleted: () -> Unit = {},
     ) {
-        if (!ownsPresentation(controller, generation)) {
+        val identityChanged = appUserId != null && purchases.appUserID != appUserId
+        if (!ownsPresentation(controller, generation) || identityChanged) {
             onCompleted()
             return
         }
