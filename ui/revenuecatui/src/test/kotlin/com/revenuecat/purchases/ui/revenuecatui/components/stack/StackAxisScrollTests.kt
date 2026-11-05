@@ -57,16 +57,17 @@ internal class StackAxisScrollTests(private val case: Case) {
     @get:Rule val rule = createComposeRule()
 
     @Test
-    fun `sizing scrolling and native taps work across nested Z layers scroll axes and RTL`() {
+    fun `sizing scrolling and native taps work across stack axes and RTL`() {
         val vertical = Dimension.Vertical(HorizontalAlignment.CENTER, FlexDistribution.START)
         val horizontal = Dimension.Horizontal(VerticalAlignment.CENTER, FlexDistribution.START)
-        val chains = (1..3).map { depth ->
-            List(depth) { Dimension.ZLayer(TwoDimensionalAlignment.CENTER) }
-        }
+        val axes = listOf(vertical, horizontal, Dimension.ZLayer(TwoDimensionalAlignment.CENTER))
+        val chains = axes.map { listOf(it) } +
+            axes.flatMap { a -> axes.map { b -> listOf(a, b) } } +
+            axes.flatMap { a -> axes.flatMap { b -> axes.map { c -> listOf(a, b, c) } } }
         val factory = StyleFactory()
         val scenarios = Orientation.values().flatMap { scroll ->
             LayoutDirection.values().flatMap { direction ->
-                (if (case.overflow == null) chains else chains.take(1)).map { chain ->
+                (if (case.overflow == null) chains else axes.map { listOf(it) }).map { chain ->
                     fun size(main: SizeConstraint) =
                         if (scroll == Orientation.Vertical) Size(Fill(), main) else Size(main, Fill())
                     var component: PaywallComponent = if (case.overflow != null) {

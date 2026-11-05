@@ -5,6 +5,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.requiredSize
@@ -12,17 +13,23 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
 import com.revenuecat.purchases.ui.revenuecatui.components.BoxWithUnboundedFillMinimums
+import com.revenuecat.purchases.ui.revenuecatui.components.modifier.ComponentSizeParentDataModifier
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
+import com.revenuecat.purchases.ui.revenuecatui.components.stack.ConstrainedFillLayout
+import com.revenuecat.purchases.ui.revenuecatui.extensions.trackMainAxisUnbounded
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -77,6 +84,37 @@ internal class WebViewSizeTest(private val horizontal: Boolean) {
         rule.runOnIdle {
             assertThat(if (horizontal) view.width else view.height).isEqualTo(with(rule.density) { 600.dp.roundToPx() })
         }
+    }
+
+    @Test
+    fun `zero capped scroll allocation stays zero through native fallback sizing`() {
+        lateinit var view: View
+        val size = if (horizontal) Size(Fill(max = 0u), Fill()) else Size(Fill(), Fill(max = 0u))
+        rule.setContent {
+            val scroll = rememberScrollState()
+            val unbounded = remember { mutableStateOf(false) }
+            val config = if (horizontal) {
+                ConstrainedFillLayout.Config.Horizontal(FlexDistribution.START, Arrangement.Start, Alignment.Top)
+            } else {
+                ConstrainedFillLayout.Config.Vertical(FlexDistribution.START, Arrangement.Top, Alignment.Start)
+            }
+            ConstrainedFillLayout(
+                config = config,
+                spacing = 0.dp,
+                modifier = Modifier.requiredSize(200.dp, 400.dp).then(
+                    if (horizontal) Modifier.horizontalScroll(scroll) else Modifier.verticalScroll(scroll),
+                ),
+            ) {
+                AndroidView(
+                    factory = { context -> FrameLayout(context).also { view = it } },
+                    modifier = ComponentSizeParentDataModifier(size)
+                        .fillUnboundedAxisFromMinimum(size)
+                        .trackMainAxisUnbounded(horizontal, unbounded)
+                        .size(webViewEffectiveSize(size, 0, 0, horizontal && unbounded.value, !horizontal && unbounded.value)),
+                )
+            }
+        }
+        rule.runOnIdle { assertThat(if (horizontal) view.width else view.height).isZero() }
     }
 
     @Test
