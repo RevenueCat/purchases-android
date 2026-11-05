@@ -116,6 +116,7 @@ public open class DeviceCache(
 
     @VisibleForTesting
     internal val storefrontCacheKey: String by lazy { "storefrontCacheKey" }
+    internal val initialStorefrontLoadTrackedCacheKey: String by lazy { "initialStorefrontLoadTrackedCacheKey" }
 
     private val productEntitlementMappingCacheKey: String by lazy {
         "$apiKeyPrefix.productEntitlementMapping"
@@ -318,6 +319,17 @@ public open class DeviceCache(
             debugLog { BillingStrings.BILLING_STOREFRONT_NULL_FROM_CACHE }
         }
         return storefront
+    }
+
+    /**
+     * Marks the initial storefront load diagnostic as sent for this device.
+     * Returns true only the first time, so the event is sent once per device instead of once per launch.
+     */
+    @Synchronized
+    internal fun markInitialStorefrontLoadTracked(): Boolean {
+        if (preferences.getBoolean(initialStorefrontLoadTrackedCacheKey, false)) return false
+        preferences.edit().putBoolean(initialStorefrontLoadTrackedCacheKey, true).apply()
+        return true
     }
 
     @Synchronized

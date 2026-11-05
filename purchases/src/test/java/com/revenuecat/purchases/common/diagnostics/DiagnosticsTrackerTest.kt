@@ -498,6 +498,24 @@ class DiagnosticsTrackerTest {
     }
 
     @Test
+    fun `trackGoogleInitialStorefrontLoad tracks correct event`() {
+        val expectedProperties = mapOf(
+            "play_store_version" to "123",
+            "play_services_version" to "456",
+            "successful" to true,
+            "response_time_millis" to 1234L
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackGoogleInitialStorefrontLoad(successful = true, responseTime = 1234L.milliseconds)
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event.name == DiagnosticsEntryName.GOOGLE_INITIAL_STOREFRONT_LOAD &&
+                    event.properties == expectedProperties
+            })
+        }
+    }
+
+    @Test
     fun `trackGooglePurchaseStarted tracks correct event`() {
         val expectedProperties = mapOf(
             "play_store_version" to "123",

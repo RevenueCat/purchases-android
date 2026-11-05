@@ -5,7 +5,9 @@
 
 package com.revenuecat.purchases.common
 
+import android.content.Context
 import android.content.SharedPreferences
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfoOriginalSource
 import com.revenuecat.purchases.ProductType
@@ -777,6 +779,18 @@ class DeviceCacheTest {
         val cachedStorefront = cache.getStorefront()
         assertThat(cachedStorefront).isNotNull
         assertThat(cachedStorefront).isEqualTo(storefront)
+    }
+
+    @Test
+    fun `markInitialStorefrontLoadTracked returns true only once per device`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val preferences = context.getSharedPreferences("initial_storefront_load_test", Context.MODE_PRIVATE)
+        preferences.edit().clear().commit()
+        val deviceCache = DeviceCache(preferences, apiKey)
+
+        assertThat(deviceCache.markInitialStorefrontLoadTracked()).isTrue
+        assertThat(deviceCache.markInitialStorefrontLoadTracked()).isFalse
+        assertThat(DeviceCache(preferences, apiKey).markInitialStorefrontLoadTracked()).isFalse
     }
 
     // endregion storefront
