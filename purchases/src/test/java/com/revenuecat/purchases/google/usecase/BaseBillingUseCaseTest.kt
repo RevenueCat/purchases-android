@@ -56,6 +56,8 @@ internal open class BaseBillingUseCaseTest {
         handler = MockHandlerFactory.createMockHandler()
 
         mockDiagnosticsTracker()
+        // A known storefront keeps the initial storefront load event out of unrelated tests.
+        every { mockDeviceCache.getStorefront() } returns "US"
         every { mockDateProvider.now } returns Date(1676379370000) // Tuesday, February 14, 2023 12:56:10 PM GMT
 
         val mockClientFactory: BillingWrapper.ClientFactory = mockk()
@@ -125,6 +127,7 @@ internal open class BaseBillingUseCaseTest {
         every { mockDiagnosticsTracker.trackGoogleBillingSetupFinished(any(), any(), any()) } just runs
         every { mockDiagnosticsTracker.trackGoogleBillingServiceDisconnected() } just runs
         every { mockDiagnosticsTracker.trackGoogleInitialStorefrontLoad(any(), any()) } just runs
+        every { mockDiagnosticsTracker.isCollectionDisabled } returns false
     }
 
 }

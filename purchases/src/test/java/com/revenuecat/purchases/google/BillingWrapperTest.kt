@@ -530,6 +530,30 @@ class BillingWrapperTest {
         verify(exactly = 0) { mockDeviceCache.markInitialStorefrontLoadTracked() }
     }
 
+    @Test
+    fun `terminal billing setup failures track an unsuccessful initial storefront load`() {
+        every { mockDeviceCache.getStorefront() } returns null
+        every { mockDeviceCache.markInitialStorefrontLoadTracked() } returns true
+
+        billingClientStateListener!!.onBillingSetupFinished(
+            BillingClient.BillingResponseCode.BILLING_UNAVAILABLE.buildResult(),
+        )
+
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleInitialStorefrontLoad(successful = false, any()) }
+    }
+
+    @Test
+    fun `retryable billing setup failures do not track the initial storefront load`() {
+        every { mockDeviceCache.getStorefront() } returns null
+        every { handler.postDelayed(any(), any()) } returns true
+
+        billingClientStateListener!!.onBillingSetupFinished(
+            BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
+        )
+
+        verify(exactly = 0) { mockDiagnosticsTracker.trackGoogleInitialStorefrontLoad(any(), any()) }
+    }
+
     private fun captureScheduledBillingRequests(): MutableList<Runnable> {
         every { mockClient.isReady } returns true
         val requests = mutableListOf<Runnable>()
@@ -2493,6 +2517,9 @@ class BillingWrapperTest {
         every { mockDiagnosticsTracker.trackGoogleBillingSetupFinished(any(), any(), any()) } just runs
         every { mockDiagnosticsTracker.trackGoogleBillingServiceDisconnected() } just runs
         every { mockDiagnosticsTracker.trackGoogleInitialStorefrontLoad(any(), any()) } just runs
+        every { mockDiagnosticsTracker.isCollectionDisabled } returns false
+        // A known storefront keeps the initial storefront load event out of unrelated tests.
+        every { mockDeviceCache.getStorefront() } returns "US"
         every { mockDiagnosticsTracker.trackGooglePurchaseStarted(any(), any(), any(), any()) } just runs
         every { mockDiagnosticsTracker.trackGooglePurchaseUpdateReceived(any(), any(), any(), any()) } just runs
     }

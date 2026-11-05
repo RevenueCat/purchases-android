@@ -56,6 +56,9 @@ internal class DiagnosticsTracker(
     val isCollectionEnabled: Boolean
         get() = collectionState.get() == CollectionState.ENABLED
 
+    val isCollectionDisabled: Boolean
+        get() = collectionState.get() == CollectionState.DISABLED
+
     private companion object {
         val diagnosticsSessionID: UUID = UUID.randomUUID()
 

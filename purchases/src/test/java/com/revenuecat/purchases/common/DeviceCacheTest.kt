@@ -5,7 +5,9 @@
 
 package com.revenuecat.purchases.common
 
+import android.content.Context
 import android.content.SharedPreferences
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfoOriginalSource
 import com.revenuecat.purchases.ProductType
@@ -780,25 +782,15 @@ class DeviceCacheTest {
     }
 
     @Test
-    fun `markInitialStorefrontLoadTracked persists the flag the first time`() {
-        every { mockPrefs.getBoolean(cache.initialStorefrontLoadTrackedCacheKey, false) } returns false
-        every { mockEditor.putBoolean(cache.initialStorefrontLoadTrackedCacheKey, true) } returns mockEditor
+    fun `markInitialStorefrontLoadTracked returns true only once per device`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val preferences = context.getSharedPreferences("initial_storefront_load_test", Context.MODE_PRIVATE)
+        preferences.edit().clear().commit()
+        val deviceCache = DeviceCache(preferences, apiKey)
 
-        assertThat(cache.markInitialStorefrontLoadTracked()).isTrue
-
-        verify(exactly = 1) {
-            mockEditor.putBoolean(cache.initialStorefrontLoadTrackedCacheKey, true)
-            mockEditor.apply()
-        }
-    }
-
-    @Test
-    fun `markInitialStorefrontLoadTracked returns false once already tracked`() {
-        every { mockPrefs.getBoolean(cache.initialStorefrontLoadTrackedCacheKey, false) } returns true
-
-        assertThat(cache.markInitialStorefrontLoadTracked()).isFalse
-
-        verify(exactly = 0) { mockEditor.putBoolean(any(), any()) }
+        assertThat(deviceCache.markInitialStorefrontLoadTracked()).isTrue
+        assertThat(deviceCache.markInitialStorefrontLoadTracked()).isFalse
+        assertThat(DeviceCache(preferences, apiKey).markInitialStorefrontLoadTracked()).isFalse
     }
 
     // endregion storefront

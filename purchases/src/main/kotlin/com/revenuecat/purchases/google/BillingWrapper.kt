@@ -751,6 +751,9 @@ internal class BillingWrapper(
                             .also { errorLog(it) }
                     }
 
+                    // The storefront load only starts once setup succeeds, so a terminal setup failure ends it here.
+                    if (isInitialStorefrontLoadPending()) trackInitialStorefrontLoadIfNeeded(successful = false)
+
                     // The calls will fail with an error that will be surfaced. We want to surface these errors
                     // Can't call executePendingRequests because it will not do anything since it checks for isReady()
                     sendErrorsToAllPendingRequests(error)
@@ -888,7 +891,7 @@ internal class BillingWrapper(
         onError: PurchasesErrorCallback,
     ) {
         verboseLog { BillingStrings.BILLING_INITIATE_GETTING_COUNTRY_CODE }
-        val isInitialLoad = diagnosticsTrackerIfEnabled != null && deviceCache.getStorefront() == null
+        val isInitialLoad = isInitialStorefrontLoadPending()
         val trackingOnError: PurchasesErrorCallback = { error ->
             if (isInitialLoad) trackInitialStorefrontLoadIfNeeded(successful = false)
             onError(error)
@@ -906,9 +909,17 @@ internal class BillingWrapper(
         ).run()
     }
 
+    // A tracker can exist with collection disabled; it would drop the event, so the device must not be marked.
+    private val storefrontLoadTracker: DiagnosticsTracker?
+        get() = diagnosticsTrackerIfEnabled?.takeUnless { it.isCollectionDisabled }
+
+    private fun isInitialStorefrontLoadPending(): Boolean =
+        storefrontLoadTracker != null && deviceCache.getStorefront() == null
+
     private fun trackInitialStorefrontLoadIfNeeded(successful: Boolean) {
-        if (diagnosticsTrackerIfEnabled == null || !deviceCache.markInitialStorefrontLoadTracked()) return
-        diagnosticsTrackerIfEnabled.trackGoogleInitialStorefrontLoad(
+        val tracker = storefrontLoadTracker ?: return
+        if (!deviceCache.markInitialStorefrontLoadTracked()) return
+        tracker.trackGoogleInitialStorefrontLoad(
             successful = successful,
             responseTime = Duration.between(createdAt, dateProvider.now),
         )

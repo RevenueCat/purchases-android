@@ -65,6 +65,18 @@ internal class GetBillingConfigUseCaseTest: BaseBillingUseCaseTest() {
     }
 
     @Test
+    fun `storefront load is not tracked and the device is not marked when diagnostics collection is disabled`() {
+        every { mockDiagnosticsTracker.isCollectionDisabled } returns true
+        mockGetBillingConfig()
+
+        wrapper.getStorefront(onSuccess = { }, onError = { fail("Should succeed") })
+
+        verify(exactly = 0) { mockDeviceCache.getStorefront() }
+        verify(exactly = 0) { mockDeviceCache.markInitialStorefrontLoadTracked() }
+        verify(exactly = 0) { mockDiagnosticsTracker.trackGoogleInitialStorefrontLoad(any(), any()) }
+    }
+
+    @Test
     fun `storefront load is not tracked when already tracked on this device`() {
         every { mockDeviceCache.markInitialStorefrontLoadTracked() } returns false
         mockGetBillingConfig()
