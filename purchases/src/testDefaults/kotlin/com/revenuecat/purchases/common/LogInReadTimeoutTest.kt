@@ -82,7 +82,7 @@ internal class LogInReadTimeoutTest : BaseHTTPClientTest() {
             Thread(runnable, "login-read-timeout")
         }
         val dispatcher = Dispatcher(executor)
-        val helper = BackendHelper("test-api-key", dispatcher, appConfig, client)
+        val helper = BackendHelper("test-api-key", dispatcher, appConfig, client, storefrontAwaiter = null)
         val backend = Backend(appConfig, dispatcher, dispatcher, client, helper)
         val attributes = SubscriberAttributesManager(
             attributesCache, SubscriberAttributesPoster(helper), mockk(), false,
@@ -127,6 +127,7 @@ internal class LogInReadTimeoutTest : BaseHTTPClientTest() {
             virtualCurrencyManager = mockk(relaxed = true),
             purchaseParamsValidator = mockk(relaxed = true),
             workflowManager = mockk(relaxed = true),
+            storefrontAwaiter = null,
             processLifecycleOwnerProvider = { mockk(relaxed = true) },
             blockstoreHelper = blockstore,
             backupManager = mockk(relaxed = true),

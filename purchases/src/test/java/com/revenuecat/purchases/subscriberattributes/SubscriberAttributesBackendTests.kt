@@ -55,7 +55,8 @@ class SubscriberAttributesPosterTests {
         API_KEY,
         dispatcher,
         mockAppConfig,
-        mockClient
+        mockClient,
+        storefrontAwaiter = null,
     )
     private var backend: Backend = Backend(
         mockAppConfig,

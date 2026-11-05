@@ -4,6 +4,8 @@ import android.Manifest
 import android.app.Application
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Handler
+import android.os.Looper
 import androidx.annotation.VisibleForTesting
 import androidx.core.os.UserManagerCompat
 import androidx.lifecycle.LifecycleOwner
@@ -20,6 +22,7 @@ import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.SharedPreferencesManager
+import com.revenuecat.purchases.common.StorefrontAwaiter
 import com.revenuecat.purchases.common.audiences.AudiencesConfigProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.LocalTransactionMetadataStore
@@ -288,7 +291,17 @@ internal class PurchasesFactory(
                 timeoutManager = timeoutManager,
                 tokenAuthenticator = TokenAuthenticator(tokenManager) { identityManager.currentAppUserID },
             )
-            val backendHelper = BackendHelper(apiKey, backendDispatcher, appConfig, httpClient)
+            // Only Play Billing reports the storefront asynchronously; overridden billing never calls back.
+            val storefrontAwaiter = if (finalStore == Store.PLAY_STORE && overrideBillingAbstract == null) {
+                val mainHandler = Handler(Looper.getMainLooper())
+                StorefrontAwaiter(
+                    storefrontProvider = cache,
+                    scheduleTimeout = { delay, task -> mainHandler.postDelayed(task, delay.inWholeMilliseconds) },
+                )
+            } else {
+                null
+            }
+            val backendHelper = BackendHelper(apiKey, backendDispatcher, appConfig, httpClient, storefrontAwaiter)
             val backend = Backend(
                 appConfig,
                 backendDispatcher,
@@ -635,6 +648,7 @@ internal class PurchasesFactory(
                 virtualCurrencyManager = virtualCurrencyManager,
                 purchaseParamsValidator = purchaseParamsValidator,
                 workflowManager = workflowManager,
+                storefrontAwaiter = storefrontAwaiter,
                 fileRepository = fileRepository,
                 remoteConfigManager = remoteConfigManager,
                 configuredAdRewardsProvider = configuredAdRewardsProvider,
