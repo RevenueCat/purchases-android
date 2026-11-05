@@ -46,7 +46,7 @@ class PollerTest {
             clientTransactionId = "ct_1",
             fetcher = { clientTransactionId ->
                 receivedClientTransactionId = clientTransactionId
-                RewardVerificationPollStatus.Verified(CoreVerifiedReward.NoReward)
+                RewardVerificationPollStatus.Verified(CoreVerifiedReward.NoReward, customerInfo = null)
             },
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
@@ -67,7 +67,7 @@ class PollerTest {
             clientTransactionId = "ct_1",
             fetcher = {
                 attempts++
-                RewardVerificationPollStatus.Verified(CoreVerifiedReward.VirtualCurrency(code = "gems", amount = 10))
+                RewardVerificationPollStatus.Verified(CoreVerifiedReward.VirtualCurrency(code = "gems", amount = 10), customerInfo = null)
             },
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
@@ -88,6 +88,7 @@ class PollerTest {
                 RewardVerificationPollStatus.Verified(
                     reward = CoreVerifiedReward.VirtualCurrency(code = "gems", amount = 10),
                     moreRewards = listOf(CoreVerifiedReward.Entitlement(identifier = "pro", expiresAt = expiresAt)),
+                    customerInfo = null,
                 )
             },
             sleepSeconds = noSleep,
@@ -136,7 +137,7 @@ class PollerTest {
                 if (attempts < 3) {
                     RewardVerificationPollStatus.PENDING
                 } else {
-                    RewardVerificationPollStatus.Verified(CoreVerifiedReward.VirtualCurrency(code = "gems", amount = 5))
+                    RewardVerificationPollStatus.Verified(CoreVerifiedReward.VirtualCurrency(code = "gems", amount = 5), customerInfo = null)
                 }
             },
             sleepSeconds = noSleep,
@@ -261,7 +262,7 @@ class PollerTest {
                         isServerError = false,
                     )
                 }
-                RewardVerificationPollStatus.Verified(CoreVerifiedReward.NoReward)
+                RewardVerificationPollStatus.Verified(CoreVerifiedReward.NoReward, customerInfo = null)
             },
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
@@ -286,7 +287,7 @@ class PollerTest {
                         isServerError = true,
                     )
                 }
-                RewardVerificationPollStatus.Verified(CoreVerifiedReward.NoReward)
+                RewardVerificationPollStatus.Verified(CoreVerifiedReward.NoReward, customerInfo = null)
             },
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
@@ -357,7 +358,7 @@ class PollerTest {
                         isServerError = true,
                     )
                 }
-                RewardVerificationPollStatus.Verified(CoreVerifiedReward.NoReward)
+                RewardVerificationPollStatus.Verified(CoreVerifiedReward.NoReward, customerInfo = null)
             },
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,

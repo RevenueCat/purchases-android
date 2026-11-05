@@ -139,6 +139,7 @@ internal object Poller {
                         Outcome.Verified(
                             reward = result.reward.toAdMobReward(),
                             moreRewards = result.moreRewards.map { it.toAdMobReward() },
+                            customerInfo = result.customerInfo,
                         ),
                     )
                 is RewardVerificationPollStatus.Failed ->

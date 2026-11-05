@@ -30,6 +30,7 @@ import com.revenuecat.purchases.common.networking.buildPostReceiptResponse
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfiguration
+import com.revenuecat.purchases.common.responses.CustomerInfoResponseJsonKeys
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
@@ -1194,7 +1195,9 @@ internal class Backend(
                             val response = json.decodeFromString<RewardVerificationResponse>(
                                 result.payloadText,
                             )
-                            onSuccessHandler(response.toRewardVerificationPollStatus())
+                            onSuccessHandler(
+                                response.toRewardVerificationPollStatus(rewardVerificationCustomerInfo(result)),
+                            )
                         } catch (e: SerializationException) {
                             onErrorHandler(
                                 RewardVerificationError(e.toPurchasesError().also { errorLog(it) }, false),
@@ -1224,6 +1227,16 @@ internal class Backend(
                 onSuccess to onError,
                 Delay.NONE,
             )
+        }
+    }
+
+    private fun rewardVerificationCustomerInfo(result: HTTPResult): CustomerInfo? {
+        if (!result.body.has(CustomerInfoResponseJsonKeys.SUBSCRIBER)) return null
+        return try {
+            CustomerInfoFactory.buildCustomerInfo(result)
+        } catch (e: JSONException) {
+            warnLog { NetworkStrings.REWARD_VERIFICATION_MALFORMED_CUSTOMER_INFO.format(e.localizedMessage) }
+            null
         }
     }
 
