@@ -496,6 +496,7 @@ class BillingWrapperTest {
     @Test
     fun `storefront returns an error if billing disconnects after scheduling`() {
         every { mockDeviceCache.getStorefront() } returns null
+        every { mockDeviceCache.markInitialStorefrontLoadTracked() } returns true
         val requests = captureScheduledBillingRequests()
         val errors = mutableListOf<PurchasesError>()
         wrapper.getStorefront(
@@ -507,6 +508,26 @@ class BillingWrapperTest {
         requests.single().run()
 
         assertThat(errors.map { it.code }).containsExactly(PurchasesErrorCode.StoreProblemError)
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleInitialStorefrontLoad(successful = false, any()) }
+    }
+
+    @Test
+    fun `storefront does not read the storefront cache when diagnostics are disabled`() {
+        val wrapperWithoutDiagnostics = BillingWrapper(
+            mockClientFactory,
+            handler,
+            handler,
+            mockDeviceCache,
+            diagnosticsTrackerIfEnabled = null,
+            purchasesStateProvider,
+            dateProvider = mockDateProvider,
+        )
+
+        // The cache read happens synchronously, before the billing request is queued.
+        wrapperWithoutDiagnostics.getStorefront(onSuccess = { }, onError = { })
+
+        verify(exactly = 0) { mockDeviceCache.getStorefront() }
+        verify(exactly = 0) { mockDeviceCache.markInitialStorefrontLoadTracked() }
     }
 
     private fun captureScheduledBillingRequests(): MutableList<Runnable> {

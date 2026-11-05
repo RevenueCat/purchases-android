@@ -779,6 +779,28 @@ class DeviceCacheTest {
         assertThat(cachedStorefront).isEqualTo(storefront)
     }
 
+    @Test
+    fun `markInitialStorefrontLoadTracked persists the flag the first time`() {
+        every { mockPrefs.getBoolean(cache.initialStorefrontLoadTrackedCacheKey, false) } returns false
+        every { mockEditor.putBoolean(cache.initialStorefrontLoadTrackedCacheKey, true) } returns mockEditor
+
+        assertThat(cache.markInitialStorefrontLoadTracked()).isTrue
+
+        verify(exactly = 1) {
+            mockEditor.putBoolean(cache.initialStorefrontLoadTrackedCacheKey, true)
+            mockEditor.apply()
+        }
+    }
+
+    @Test
+    fun `markInitialStorefrontLoadTracked returns false once already tracked`() {
+        every { mockPrefs.getBoolean(cache.initialStorefrontLoadTrackedCacheKey, false) } returns true
+
+        assertThat(cache.markInitialStorefrontLoadTracked()).isFalse
+
+        verify(exactly = 0) { mockEditor.putBoolean(any(), any()) }
+    }
+
     // endregion storefront
 
     // region virtualCurrencies

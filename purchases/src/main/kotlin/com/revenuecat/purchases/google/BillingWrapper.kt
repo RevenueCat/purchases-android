@@ -79,7 +79,6 @@ import java.io.StringWriter
 import java.lang.ref.WeakReference
 import java.util.Date
 import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.min
 import kotlin.time.Duration
 
@@ -113,7 +112,6 @@ internal class BillingWrapper(
 
     // Created at configure: measures how long a fresh install waits for its storefront.
     private val createdAt: Date = dateProvider.now
-    private val initialStorefrontLoadTracked = AtomicBoolean(false)
 
     private companion object {
         /**
@@ -890,7 +888,7 @@ internal class BillingWrapper(
         onError: PurchasesErrorCallback,
     ) {
         verboseLog { BillingStrings.BILLING_INITIATE_GETTING_COUNTRY_CODE }
-        val isInitialLoad = deviceCache.getStorefront() == null
+        val isInitialLoad = diagnosticsTrackerIfEnabled != null && deviceCache.getStorefront() == null
         val trackingOnError: PurchasesErrorCallback = { error ->
             if (isInitialLoad) trackInitialStorefrontLoadIfNeeded(successful = false)
             onError(error)
@@ -909,7 +907,7 @@ internal class BillingWrapper(
     }
 
     private fun trackInitialStorefrontLoadIfNeeded(successful: Boolean) {
-        if (diagnosticsTrackerIfEnabled == null || initialStorefrontLoadTracked.getAndSet(true)) return
+        if (diagnosticsTrackerIfEnabled == null || !deviceCache.markInitialStorefrontLoadTracked()) return
         diagnosticsTrackerIfEnabled.trackGoogleInitialStorefrontLoad(
             successful = successful,
             responseTime = Duration.between(createdAt, dateProvider.now),

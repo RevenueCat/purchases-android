@@ -37,6 +37,7 @@ internal class GetBillingConfigUseCaseTest: BaseBillingUseCaseTest() {
         super.setup()
         every { mockDeviceCache.setStorefront(expectedCountryCode) } just Runs
         every { mockDeviceCache.getStorefront() } returns null
+        every { mockDeviceCache.markInitialStorefrontLoadTracked() } returns true
     }
 
     @Test
@@ -64,13 +65,13 @@ internal class GetBillingConfigUseCaseTest: BaseBillingUseCaseTest() {
     }
 
     @Test
-    fun `storefront load is tracked only once`() {
+    fun `storefront load is not tracked when already tracked on this device`() {
+        every { mockDeviceCache.markInitialStorefrontLoadTracked() } returns false
         mockGetBillingConfig()
 
         wrapper.getStorefront(onSuccess = { }, onError = { fail("Should succeed") })
-        wrapper.getStorefront(onSuccess = { }, onError = { fail("Should succeed") })
 
-        verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleInitialStorefrontLoad(any(), any()) }
+        verify(exactly = 0) { mockDiagnosticsTracker.trackGoogleInitialStorefrontLoad(any(), any()) }
     }
 
     @Test
