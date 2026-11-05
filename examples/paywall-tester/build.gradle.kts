@@ -155,6 +155,9 @@ dependencies {
     implementation(libs.compose.ui.google.fonts)
     implementation(libs.androidx.appcompat)
 
+    testImplementation(libs.kotlin.test.junit)
+    testImplementation(libs.mockk)
+
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.androidx.test.compose.manifest)
     debugImplementation(libs.leakcanary.android)

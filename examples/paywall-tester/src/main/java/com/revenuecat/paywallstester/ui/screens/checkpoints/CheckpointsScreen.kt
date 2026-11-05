@@ -6,10 +6,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -18,7 +16,6 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -39,7 +36,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
@@ -92,6 +88,7 @@ fun CheckpointsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             HitCheckpointSection(state = state, onHit = viewModel::hit)
+            ProtectedContentCard(completed = state.checkpointCompleted, onReset = viewModel::resetTest)
             ResultCard(
                 waitingFor = state.waitingFor,
                 result = state.lastResult,
@@ -205,7 +202,7 @@ private fun HitCheckpointSection(state: UiState, onHit: (String) -> Unit) {
             enabled = identifier.isNotBlank(),
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text(text = "Hit checkpoint")
+            Text(text = "Open protected content")
         }
         Text(
             text = state.optionsSummary(),
@@ -244,7 +241,7 @@ private fun ResultCard(waitingFor: String?, result: CheckpointResultUi?) {
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             when {
-                waitingFor != null -> WaitingRow(waitingFor)
+                waitingFor != null -> WaitingForCallback(waitingFor)
                 result == null -> Text(
                     text = "Hit a checkpoint to see its result here.",
                     style = MaterialTheme.typography.bodyMedium,
@@ -276,17 +273,14 @@ private fun ResultCard(waitingFor: String?, result: CheckpointResultUi?) {
 }
 
 @Composable
-private fun WaitingRow(waitingFor: String) {
+private fun WaitingForCallback(checkpointIdentifier: String) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-            Text(text = "Waiting for '$waitingFor'…", style = MaterialTheme.typography.bodyMedium)
-        }
         Text(
-            text = "Backing out of a paywall never reports a result. Just hit the checkpoint again.",
+            text = "No completion callback yet for '$checkpointIdentifier'.",
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Text(
+            text = "Content stays locked until the callback runs. You can retry or reset the test.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -350,6 +344,7 @@ private fun CheckpointsScreenPreview() {
                 get() = MutableStateFlow(null)
 
             override fun hit(identifier: String) {}
+            override fun resetTest() {}
             override fun refreshConfigured() {}
             override fun setPresentWithAppPaywall(enabled: Boolean) {}
             override fun setPresentErrorsWithApp(enabled: Boolean) {}
