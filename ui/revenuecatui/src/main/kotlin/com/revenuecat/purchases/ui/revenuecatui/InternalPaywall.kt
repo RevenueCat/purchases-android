@@ -218,7 +218,6 @@ private fun InternalPaywallContent(
                     viewModel.trackPaywallImpressionIfNeeded()
                 }
             }
-            HideSheetOnPurchaseCompleted(state.sheet, viewModel.purchaseCompleted.value)
             PaywallFontScaling(
                 automaticallyScaleFontSize = paywallComponents?.dataOrNull?.automaticallyScaleFontSize ?: true,
             ) {
@@ -434,19 +433,6 @@ private fun PaywallState.Loaded.Legacy.configurationWithOverriddenLocale(): Conf
     configuration.setLocale(templateConfiguration.locale)
 
     return configuration
-}
-
-/**
- * A purchase made from inside a sheet only requests a paywall-level dismiss, which doesn't close the sheet. When the
- * paywall is embedded the host may keep it on screen, so close the sheet once a purchase completes.
- */
-@Composable
-private fun HideSheetOnPurchaseCompleted(sheet: SimpleSheetState, purchaseCompleted: Boolean) {
-    LaunchedEffect(purchaseCompleted) {
-        if (purchaseCompleted && sheet.visible) {
-            sheet.hide()
-        }
-    }
 }
 
 @Composable
