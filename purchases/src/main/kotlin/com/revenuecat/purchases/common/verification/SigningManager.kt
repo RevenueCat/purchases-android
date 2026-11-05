@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.verification
 
+import android.net.Uri
 import android.util.Base64
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.errorLog
@@ -240,7 +241,7 @@ internal class SigningManager(
                     signature.salt,
                     signingAuthValue(authorizationHeader),
                     nonce,
-                    urlPath,
+                    Uri.decode(urlPath),
                     postFieldsToSignHeader,
                     requestTime,
                     eTag,
