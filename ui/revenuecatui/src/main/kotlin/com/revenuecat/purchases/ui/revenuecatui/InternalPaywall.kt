@@ -46,6 +46,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.LoadedWorkflowPaywall
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.composables.CloseButton
 import com.revenuecat.purchases.ui.revenuecatui.composables.ErrorDialog
+import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleSheetState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModelFactory
@@ -217,6 +218,7 @@ private fun InternalPaywallContent(
                     viewModel.trackPaywallImpressionIfNeeded()
                 }
             }
+            HideSheetOnPurchaseCompleted(state.sheet, viewModel.purchaseCompleted.value)
             PaywallFontScaling(
                 automaticallyScaleFontSize = paywallComponents?.dataOrNull?.automaticallyScaleFontSize ?: true,
             ) {
@@ -226,13 +228,21 @@ private fun InternalPaywallContent(
                         LoadedWorkflowPaywall(
                             workflowState = workflowState,
                             onTransitionComplete = viewModel::onTransitionComplete,
-                            clickHandler = rememberPaywallActionHandler(viewModel, externalActionInterceptor),
+                            clickHandler = rememberPaywallActionHandler(
+                                viewModel,
+                                state.sheet,
+                                externalActionInterceptor,
+                            ),
                             componentInteractionTracker = componentInteractionTracker,
                         )
                     } else {
                         LoadedPaywallComponents(
                             state = state,
-                            clickHandler = rememberPaywallActionHandler(viewModel, externalActionInterceptor),
+                            clickHandler = rememberPaywallActionHandler(
+                                viewModel,
+                                state.sheet,
+                                externalActionInterceptor,
+                            ),
                             componentInteractionTracker = componentInteractionTracker,
                         )
                     }
@@ -426,14 +436,28 @@ private fun PaywallState.Loaded.Legacy.configurationWithOverriddenLocale(): Conf
     return configuration
 }
 
+/**
+ * A purchase made from inside a sheet only requests a paywall-level dismiss, which doesn't close the sheet. When the
+ * paywall is embedded the host may keep it on screen, so close the sheet once a purchase completes.
+ */
+@Composable
+private fun HideSheetOnPurchaseCompleted(sheet: SimpleSheetState, purchaseCompleted: Boolean) {
+    LaunchedEffect(purchaseCompleted) {
+        if (purchaseCompleted && sheet.visible) {
+            sheet.hide()
+        }
+    }
+}
+
 @Composable
 private fun rememberPaywallActionHandler(
     viewModel: PaywallViewModel,
+    sheet: SimpleSheetState,
     interceptor: (suspend (PaywallAction.External) -> Boolean)?,
 ): suspend (PaywallAction.External) -> Unit {
     val context: Context = LocalContext.current
     val activity: Activity? = context.getActivity()
-    return remember(viewModel, interceptor) {
+    return remember(viewModel, sheet, interceptor) {
         val handler: suspend (PaywallAction.External) -> Unit = { action ->
             when (action) {
                 is PaywallAction.External.RestorePurchases -> viewModel.handleRestorePurchases()
@@ -448,7 +472,8 @@ private fun rememberPaywallActionHandler(
                         )
                     }
 
-                is PaywallAction.External.LaunchWebCheckout -> handleLaunchWebCheckout(context, viewModel, action)
+                is PaywallAction.External.LaunchWebCheckout ->
+                    handleLaunchWebCheckout(context, viewModel, sheet, action)
 
                 is PaywallAction.External.NavigateBack -> {
                     if (!viewModel.handleBackNavigation()) {
@@ -494,6 +519,7 @@ private suspend fun handleInterceptedAction(
 private fun handleLaunchWebCheckout(
     context: Context,
     viewModel: PaywallViewModel,
+    sheet: SimpleSheetState,
     action: PaywallAction.External.LaunchWebCheckout,
 ) {
     val url = viewModel.getWebCheckoutUrl(action)
@@ -508,6 +534,9 @@ private fun handleLaunchWebCheckout(
     }
     if (action.autoDismiss) {
         Logger.d("Auto-dismissing paywall after launching web checkout.")
+        // Closing the paywall doesn't close an open sheet, which stays on screen when the host keeps the
+        // paywall mounted.
+        sheet.hide()
         viewModel.closePaywall()
     }
 }
