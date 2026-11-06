@@ -8,7 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import androidx.activity.ComponentDialog
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.platform.ComposeView
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
@@ -59,6 +59,7 @@ internal class CheckpointWorkflowPresenter(
     val displayedOffering: Offering?
         get() = displayedOfferingProvider?.invoke()
 
+    // Retained with the ViewModel so an in-flight restore can qualify between recreated windows.
     private var displayedOfferingProvider: (() -> Offering?)? = null
 
     // One sheet per presentation, not per window: a re-presented sheet composes where the previous one was, at
@@ -133,12 +134,8 @@ internal class CheckpointWorkflowPresenter(
         ComposeView(activity).apply {
             setContent {
                 val viewModel = getPaywallViewModel(options)
-                DisposableEffect(viewModel) {
-                    val provider = { viewModel.displayedOffering }
-                    displayedOfferingProvider = provider
-                    onDispose {
-                        if (displayedOfferingProvider === provider) displayedOfferingProvider = null
-                    }
+                SideEffect {
+                    displayedOfferingProvider = { viewModel.displayedOffering }
                 }
                 val sheet = sheetState
                 if (sheet == null) {
@@ -229,7 +226,6 @@ internal class CheckpointWorkflowPresenter(
     }
 
     private fun dismissWindowOnly() {
-        displayedOfferingProvider = null
         val dialog = this.dialog ?: return
         this.dialog = null
         // Dialog delivers the dismiss callback through a posted message, so the safety net must be detached
@@ -249,6 +245,7 @@ internal class CheckpointWorkflowPresenter(
 
     private fun teardown() {
         dismissWindowOnly()
+        displayedOfferingProvider = null
         application?.unregisterActivityLifecycleCallbacks(lifecycleCallbacks)
         application = null
         host = null

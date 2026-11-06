@@ -408,17 +408,17 @@ class FlowResultMappingTest {
     fun `a presented entitlement the user did not hold before is a grant`() {
         val customerInfo = customerInfoWithActive("plus", "pro")
 
-        assertThat(customerInfo.grantsPresentedEntitlement(setOf("plus"), listOf(setOf("pro")))).isTrue
-        assertThat(customerInfo.grantsPresentedEntitlement(null, listOf(setOf("pro")))).isTrue
+        assertThat(customerInfo.grantsPresentedEntitlement(setOf("plus"), setOf(setOf("pro")))).isTrue
+        assertThat(customerInfo.grantsPresentedEntitlement(null, setOf(setOf("pro")))).isTrue
     }
 
     @Test
     fun `an entitlement held before, or one no presented product grants, is not a grant`() {
         val customerInfo = customerInfoWithActive("plus", "pro")
 
-        assertThat(customerInfo.grantsPresentedEntitlement(setOf("plus", "pro"), listOf(setOf("pro")))).isFalse
-        assertThat(customerInfo.grantsPresentedEntitlement(setOf("plus"), listOf(setOf("gold")))).isFalse
-        assertThat(customerInfo.grantsPresentedEntitlement(null, emptyList())).isFalse
+        assertThat(customerInfo.grantsPresentedEntitlement(setOf("plus", "pro"), setOf(setOf("pro")))).isFalse
+        assertThat(customerInfo.grantsPresentedEntitlement(setOf("plus"), setOf(setOf("gold")))).isFalse
+        assertThat(customerInfo.grantsPresentedEntitlement(null, emptySet())).isFalse
     }
 
     @Test
