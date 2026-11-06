@@ -110,6 +110,7 @@ class TabControlDiscountTests {
     @Test
     fun `Package card discount excludes sheet plans inside its tab`() {
         render(sheetInsideTab = true)
+        compose.onNodeWithText("Yearly:", substring = true, useUnmergedTree = true).assertTextEquals("Yearly: 43%")
         compose.onNodeWithText("Essential annual discount:", substring = true, useUnmergedTree = true)
             .assertTextEquals("Essential annual discount: 43%")
     }

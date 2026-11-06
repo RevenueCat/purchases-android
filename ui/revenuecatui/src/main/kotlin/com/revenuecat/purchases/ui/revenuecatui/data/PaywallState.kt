@@ -396,7 +396,8 @@ internal sealed interface PaywallState {
                     TextPackageContext(
                         packageInfo.pkg,
                         packageInfo.resolvedOffer?.subscriptionOption,
-                        tabPackages.mostExpensivePricePerMonthMicros(),
+                        tabPackages.filter { it.sheetPresentationKey == null }
+                            .mostExpensivePricePerMonthMicros(),
                     )
                 } else {
                     TextPackageContext(fallbackPackage, fallbackSubscriptionOption, mostExpensivePricePerMonthMicros)
