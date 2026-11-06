@@ -349,6 +349,7 @@ internal fun previewTextComponentStyle(
         rcPackage = null,
         tabIndex = tabIndex,
         countdownDate = countdownDate,
+        discountTabIndex = null,
         countFrom = countFrom,
         variableLocalizations = nonEmptyMapOf(localeId to variableLocalizationKeysForEnUs()),
         overrides = overrides,

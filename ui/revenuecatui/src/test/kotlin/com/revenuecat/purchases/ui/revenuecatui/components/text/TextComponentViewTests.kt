@@ -1024,6 +1024,7 @@ class TextComponentViewTests {
             margin = PaddingValues(0.dp),
             rcPackage = null,
             tabIndex = null,
+            discountTabIndex = null,
             countdownDate = countdownDate,
             countFrom = CountdownComponent.CountFrom.DAYS,
             variableLocalizations = nonEmptyMapOf(
@@ -1083,6 +1084,7 @@ class TextComponentViewTests {
                 margin = PaddingValues(0.dp),
                 rcPackage = null,
                 tabIndex = null,
+                discountTabIndex = null,
                 countdownDate = null,
                 countFrom = CountdownComponent.CountFrom.DAYS,
                 variableLocalizations = nonEmptyMapOf(
@@ -1151,6 +1153,7 @@ class TextComponentViewTests {
                 margin = PaddingValues(0.dp),
                 rcPackage = null,
                 tabIndex = null,
+                discountTabIndex = null,
                 countdownDate = null,
                 countFrom = CountdownComponent.CountFrom.DAYS,
                 variableLocalizations = nonEmptyMapOf(

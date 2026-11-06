@@ -140,6 +140,9 @@ internal class TextComponentState(
     val tabIndexOutsidePackage: Int?
         get() = style.tabIndex.takeIf { style.rcPackage == null }
 
+    val discountTabIndex: Int?
+        get() = style.discountTabIndex
+
     val subscriptionOption: SubscriptionOption? by derivedStateOf {
         style.resolvedOffer?.subscriptionOption ?: selectedPackageInfoProvider()?.resolvedOffer?.subscriptionOption
     }
