@@ -312,6 +312,17 @@ class WebViewComponentTests {
     }
 
     @Test
+    fun `decodes null overrides as an empty list`() {
+        val json = fullJson.replace("\"visible\": true", "\"overrides\": null, \"visible\": true")
+
+        val component = JsonTools.json.decodeFromString<WebViewComponent>(json)
+        val paywallComponent = JsonTools.json.decodeFromString<PaywallComponent>(json) as WebViewComponent
+
+        assertThat(component.overrides).isEmpty()
+        assertThat(paywallComponent.overrides).isEmpty()
+    }
+
+    @Test
     fun `decodes a rule-based visibility override, matching the dashboard-published shape`() {
         // Regression test: a dashboard rule that shows/hides a web_view previously failed SDK
         // decoding entirely with `extra_forbidden` on `...web_view.overrides` (PWENG-152).
