@@ -36,6 +36,8 @@ internal data class TabControlButtonComponentStyle(
     val tabsDefaultTabIndex: Int = 0,
     @get:JvmSynthetic
     val stateUpdates: List<StateUpdate> = emptyList(),
+    @get:JvmSynthetic
+    val tabsScope: TabsScope? = null,
 ) : ComponentStyle {
     override val visible: Boolean = stack.visible
     override val size: Size = stack.size
@@ -57,6 +59,8 @@ internal class TabControlToggleComponentStyle(
     val tabIdsOrdered: List<String> = emptyList(),
     @get:JvmSynthetic
     val stateUpdates: List<StateUpdate> = emptyList(),
+    @get:JvmSynthetic
+    val tabsScope: TabsScope? = null,
 ) : ComponentStyle {
     override val visible: Boolean = true
     override val size: Size = Size(width = Fit(), height = Fit())
@@ -88,6 +92,8 @@ internal data class TabsComponentStyle(
     val overrides: List<PresentedOverride<PresentedTabsPartial>>,
     @get:JvmSynthetic
     val stateUpdates: List<StateUpdate>? = null,
+    @get:JvmSynthetic
+    val tabsScope: TabsScope? = null,
 ) : ComponentStyle {
 
     @Immutable

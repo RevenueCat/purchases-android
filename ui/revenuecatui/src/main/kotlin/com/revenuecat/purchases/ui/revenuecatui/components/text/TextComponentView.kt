@@ -157,6 +157,7 @@ private fun rememberProcessedText(
             val currencyLocale = state.currencyLocale.toJavaLocale()
             val textPackageContext = state.textPackageContext(
                 tabIndex = textState.tabIndexOutsidePackage,
+                tabsScope = textState.tabsScope,
                 fallbackPackage = textState.applicablePackage,
                 fallbackSubscriptionOption = textState.subscriptionOption,
             )

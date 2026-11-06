@@ -9,6 +9,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TabsComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.TabsScope
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState.Loaded.Components.SelectedPackageInfo
 import kotlinx.serialization.json.JsonPrimitive
@@ -25,8 +26,10 @@ internal class ComponentVisibilityContext(
     private val selectedOfferEligibility: () -> OfferEligibility,
     private val stateReader: (String) -> JsonPrimitive? = { null },
     val currentDate: Date = Date(),
+    private val scopedTabIndex: ((TabsScope) -> Int)? = null,
 ) {
-    fun isSelectedTab(index: Int): Boolean = selectedTabIndex() == index
+    fun isSelectedTab(index: Int, scope: TabsScope? = null): Boolean =
+        (scope?.let { scopedTabIndex?.invoke(it) } ?: selectedTabIndex()) == index
 
     fun withSelection(selection: SelectedPackageInfo?): ComponentVisibilityContext = ComponentVisibilityContext(
         screenCondition = screenCondition,
@@ -37,6 +40,7 @@ internal class ComponentVisibilityContext(
         selectedOfferEligibility = { selection?.offerEligibility ?: OfferEligibility.Ineligible },
         stateReader = stateReader,
         currentDate = currentDate,
+        scopedTabIndex = scopedTabIndex,
     )
 
     fun <T : PresentedPartial<T>> resolve(
@@ -47,7 +51,11 @@ internal class ComponentVisibilityContext(
         windowSize = screenCondition,
         offerEligibility = { packageContext?.offerEligibility ?: selectedOfferEligibility() },
         state = {
-            if (packageContext?.computeIsSelected(selectedPackage(), selectedTabIndex()) == true) {
+            if (packageContext?.computeIsSelected(
+                    selectedPackage(),
+                    packageContext.tabsScope?.let { scopedTabIndex?.invoke(it) } ?: selectedTabIndex(),
+                ) == true
+            ) {
                 ComponentViewState.SELECTED
             } else {
                 ComponentViewState.DEFAULT

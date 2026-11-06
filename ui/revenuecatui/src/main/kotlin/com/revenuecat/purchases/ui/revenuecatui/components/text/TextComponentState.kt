@@ -48,7 +48,7 @@ internal fun rememberUpdatedTextComponentState(
     windowDpSize = paywallState.paywallBoundsDp,
     localeProvider = { paywallState.locale },
     selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
-    selectedTabIndexProvider = { paywallState.selectedTabIndex },
+    selectedTabIndexProvider = { paywallState.selectedTabIndex(style.tabsScope) },
     selectedOfferEligibilityProvider = { paywallState.selectedOfferEligibility },
     customVariablesProvider = { paywallState.mergedCustomVariables },
     stateStoreProvider = { paywallState.stateStore },
@@ -136,6 +136,8 @@ internal class TextComponentState(
     val applicablePackage by derivedStateOf {
         style.rcPackage ?: selectedPackageInfoProvider()?.rcPackage
     }
+
+    val tabsScope get() = style.tabsScope
 
     val tabIndexOutsidePackage: Int?
         get() = style.tabIndex.takeIf { style.rcPackage == null }

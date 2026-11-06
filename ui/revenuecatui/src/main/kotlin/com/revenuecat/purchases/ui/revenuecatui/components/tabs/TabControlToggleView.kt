@@ -37,19 +37,20 @@ internal fun TabControlToggleView(
     modifier: Modifier = Modifier,
     componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
-    val checked by remember { derivedStateOf { state.selectedTabIndex > 0 } }
+    val checked by remember { derivedStateOf { state.selectedTabIndex(style.tabsScope) > 0 } }
 
     Switch(
         checked = checked,
         onCheckedChange = {
             val newTabIndex = if (it) 1 else 0
-            if (newTabIndex == state.selectedTabIndex) {
+            if (newTabIndex == state.selectedTabIndex(style.tabsScope)) {
                 return@Switch
             }
             state.selectTab(
                 index = newTabIndex,
                 tabId = style.tabIdsOrdered.getOrNull(newTabIndex),
                 stateUpdates = style.stateUpdates,
+                tabsScope = style.tabsScope,
             )
             componentInteractionTracker.track(
                 PaywallComponentInteractionData(
