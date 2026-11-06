@@ -45,7 +45,7 @@ internal object Poller {
     @Suppress("LongParameterList")
     suspend fun poll(
         clientTransactionId: String,
-        fetcher: RewardVerificationFetcher = RewardVerificationFetcher.default,
+        fetcher: RewardVerificationFetcher,
         sleepSeconds: suspend (Double) -> Unit = { delay((it * MILLIS_PER_SECOND).toLong()) },
         jitterSeconds: () -> Double = defaultJitterSeconds,
         maxAttempts: Int = DEFAULT_MAX_ATTEMPTS,

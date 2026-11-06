@@ -1278,12 +1278,13 @@ internal class PurchasesOrchestrator(
 
     @OptIn(InternalRevenueCatAPI::class)
     fun getRewardVerificationResult(
+        appUserID: String,
         clientTransactionId: String,
         adUnitId: String?,
         callback: GetRewardVerificationResultCallback,
     ) {
         backend.getRewardVerificationResult(
-            appUserID = identityManager.currentAppUserID,
+            appUserID = appUserID,
             clientTransactionId = clientTransactionId,
             adUnitId = adUnitId,
             onSuccess = { callback.onReceived(it) },
@@ -1291,9 +1292,9 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    fun cacheCustomerInfo(customerInfo: CustomerInfo) {
+    fun cacheCustomerInfo(customerInfo: CustomerInfo, appUserID: String) {
         offlineEntitlementsManager.resetOfflineCustomerInfoCache()
-        customerInfoUpdateHandler.cacheAndNotifyListeners(customerInfo, identityManager.currentAppUserID)
+        customerInfoUpdateHandler.cacheAndNotifyListeners(customerInfo, appUserID)
     }
 
     // region Subscriber Attributes

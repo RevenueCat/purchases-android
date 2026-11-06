@@ -2103,6 +2103,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         var receivedResult: RewardVerificationPollStatus? = null
         purchases.getRewardVerificationResult(
             clientTransactionId = "ct_1",
+            appUserID = appUserId,
             adUnitId = null,
             callback = object : GetRewardVerificationResultCallback {
                 override fun onReceived(result: RewardVerificationPollStatus) {
@@ -2116,6 +2117,40 @@ internal class PurchasesTest : BasePurchasesTest() {
         )
 
         assertThat(receivedResult).isEqualTo(expectedResult)
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `getRewardVerificationResult requests the given app user id`() {
+        every {
+            mockBackend.getRewardVerificationResult(
+                appUserID = "other-user",
+                clientTransactionId = "ct_1",
+                adUnitId = null,
+                onSuccess = captureLambda(),
+                onError = any(),
+            )
+        } answers {
+            lambda<(RewardVerificationPollStatus) -> Unit>().captured.invoke(RewardVerificationPollStatus.PENDING)
+        }
+
+        var receivedResult: RewardVerificationPollStatus? = null
+        purchases.getRewardVerificationResult(
+            clientTransactionId = "ct_1",
+            appUserID = "other-user",
+            adUnitId = null,
+            callback = object : GetRewardVerificationResultCallback {
+                override fun onReceived(result: RewardVerificationPollStatus) {
+                    receivedResult = result
+                }
+
+                override fun onError(error: RewardVerificationError) {
+                    fail("should be success")
+                }
+            },
+        )
+
+        assertThat(receivedResult).isEqualTo(RewardVerificationPollStatus.PENDING)
     }
 
     @OptIn(InternalRevenueCatAPI::class)
@@ -2142,6 +2177,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         val result = runBlocking {
             purchases.pollRewardVerification(
                 clientTransactionId = "ct_1",
+                appUserID = appUserId,
                 trackingMetadata = null,
                 captureMethod = AdCaptureMethod.MANUAL,
                 poll = { Outcome.Verified(PollReward.VirtualCurrency(code = "gems", amount = 5), moreRewards = emptyList(), customerInfo = null) },
@@ -2157,12 +2193,14 @@ internal class PurchasesTest : BasePurchasesTest() {
         runBlocking {
             purchases.pollRewardVerification(
                 clientTransactionId = "ct_1",
+                appUserID = appUserId,
                 trackingMetadata = null,
                 captureMethod = AdCaptureMethod.MANUAL,
                 poll = { Outcome.Verified(PollReward.NoReward, moreRewards = emptyList(), customerInfo = null) },
             )
             purchases.pollRewardVerification(
                 clientTransactionId = "ct_2",
+                appUserID = appUserId,
                 trackingMetadata = null,
                 captureMethod = AdCaptureMethod.MANUAL,
                 poll = { Outcome.Failed.ExhaustedWhilePending },
@@ -2247,6 +2285,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         runBlocking {
             purchases.pollRewardVerification(
                 clientTransactionId = "ct_1",
+                appUserID = appUserId,
                 trackingMetadata = null,
                 captureMethod = AdCaptureMethod.MANUAL,
                 poll = {
@@ -2267,6 +2306,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         val result = runBlocking {
             purchases.pollRewardVerification(
                 clientTransactionId = "ct_1",
+                appUserID = appUserId,
                 trackingMetadata = null,
                 captureMethod = AdCaptureMethod.MANUAL,
                 poll = {
@@ -2294,6 +2334,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         val result = runBlocking {
             purchases.pollRewardVerification(
                 clientTransactionId = "ct_1",
+                appUserID = appUserId,
                 trackingMetadata = null,
                 captureMethod = AdCaptureMethod.MANUAL,
                 poll = {
@@ -2316,6 +2357,32 @@ internal class PurchasesTest : BasePurchasesTest() {
         }
     }
 
+    @Test
+    fun `pollRewardVerification caches customer info under the user it was polled for`() {
+        val customerInfo = createCustomerInfo(Responses.validFullPurchaserResponse)
+        every { mockOfflineEntitlementsManager.resetOfflineCustomerInfoCache() } just Runs
+
+        runBlocking {
+            purchases.pollRewardVerification(
+                clientTransactionId = "ct_1",
+                appUserID = appUserId,
+                trackingMetadata = null,
+                captureMethod = AdCaptureMethod.MANUAL,
+                poll = {
+                    every { mockIdentityManager.currentAppUserID } returns "other-user"
+                    Outcome.Verified(
+                        reward = PollReward.Entitlement(identifier = "pro", expiresAt = Date(1_800_000_000_000L)),
+                        moreRewards = emptyList(),
+                        customerInfo = customerInfo,
+                    )
+                },
+            )
+        }
+
+        verify(exactly = 1) { mockCustomerInfoUpdateHandler.cacheAndNotifyListeners(customerInfo, appUserId) }
+        verify(exactly = 0) { mockCustomerInfoUpdateHandler.cacheAndNotifyListeners(any(), "other-user") }
+    }
+
     private val testTrackingMetadata = RewardedAdTrackingMetadata(
         networkName = "Google AdMob",
         mediatorName = AdMediatorName.AD_MOB,
@@ -2333,6 +2400,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         runBlocking {
             purchases.pollRewardVerification(
                 clientTransactionId = "ct_1",
+                appUserID = appUserId,
                 trackingMetadata = testTrackingMetadata,
                 captureMethod = AdCaptureMethod.MANUAL,
                 poll = poll,
@@ -2401,6 +2469,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             runBlocking {
                 purchases.pollRewardVerification(
                     clientTransactionId = "ct_1",
+                    appUserID = appUserId,
                     trackingMetadata = testTrackingMetadata,
                     captureMethod = AdCaptureMethod.MANUAL,
                     poll = { throw CancellationException() },
@@ -2422,6 +2491,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         runBlocking {
             purchases.pollRewardVerification(
                 clientTransactionId = "ct_1",
+                appUserID = appUserId,
                 trackingMetadata = null,
                 captureMethod = AdCaptureMethod.MANUAL,
                 poll = { Outcome.Verified(PollReward.VirtualCurrency(code = "gems", amount = 5), moreRewards = emptyList(), customerInfo = null) },
@@ -2470,6 +2540,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         var receivedError: PurchasesError? = null
         purchases.getRewardVerificationResult(
             clientTransactionId = "ct_1",
+            appUserID = appUserId,
             adUnitId = null,
             callback = object : GetRewardVerificationResultCallback {
                 override fun onReceived(result: RewardVerificationPollStatus) {

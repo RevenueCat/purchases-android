@@ -986,9 +986,14 @@ public class Purchases internal constructor(
         )
     }
 
+    /**
+     * [appUserID] is captured once by the caller so the poll requests and the cached [CustomerInfo] always
+     * refer to the same user, even if `logIn` lands mid-poll.
+     */
     @OptIn(InternalRevenueCatAPI::class)
     internal suspend fun pollRewardVerification(
         clientTransactionId: String,
+        appUserID: String,
         trackingMetadata: RewardedAdTrackingMetadata?,
         captureMethod: AdCaptureMethod,
         poll: suspend (String) -> Outcome,
@@ -1027,7 +1032,7 @@ public class Purchases internal constructor(
             purchasesOrchestrator.invalidateVirtualCurrenciesCache()
         }
         if (rewards.any { it is VerifiedReward.Entitlement }) {
-            (outcome as? Outcome.Verified)?.customerInfo?.let { purchasesOrchestrator.cacheCustomerInfo(it) }
+            (outcome as? Outcome.Verified)?.customerInfo?.let { purchasesOrchestrator.cacheCustomerInfo(it, appUserID) }
         }
         return result
     }
@@ -1100,11 +1105,13 @@ public class Purchases internal constructor(
 
     @OptIn(InternalRevenueCatAPI::class)
     internal fun getRewardVerificationResult(
+        appUserID: String,
         clientTransactionId: String,
         adUnitId: String?,
         callback: GetRewardVerificationResultCallback,
     ) {
         purchasesOrchestrator.getRewardVerificationResult(
+            appUserID = appUserID,
             clientTransactionId = clientTransactionId,
             adUnitId = adUnitId,
             callback = callback,
