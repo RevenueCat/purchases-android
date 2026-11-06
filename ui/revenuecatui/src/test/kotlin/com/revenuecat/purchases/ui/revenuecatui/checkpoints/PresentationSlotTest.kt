@@ -50,7 +50,7 @@ class PresentationSlotTest {
         callId = callId,
         presentation = null,
         activeEntitlementsBefore = null,
-        presentedEntitlements = { emptyList() },
+        presentedEntitlements = { emptySet() },
         customerInfoBefore = mockk(),
         flowFinished = CompletableDeferred(),
     )

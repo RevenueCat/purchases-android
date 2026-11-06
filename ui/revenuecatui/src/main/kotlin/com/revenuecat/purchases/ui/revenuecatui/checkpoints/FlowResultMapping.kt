@@ -17,6 +17,9 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Date
 import kotlin.coroutines.resume
 
+/** The entitlements one product grants, all of which must be active for it to count as obtained. */
+internal typealias ProductEntitlements = Set<String>
+
 /**
  * One customer info read under [policy], delivered as a value: what to do with the error is the caller's. The SDK
  * delivers a cached read inline when called on its handler's thread, so a warm read resumes without a dispatch.
@@ -100,23 +103,24 @@ internal val CheckpointResolution.presentedOfferings: List<Offering>
     }
 
 /**
- * One complete, nonempty entitlement set per offered product, per the SDK's product-entitlement [mapping]: none
+ * The complete, nonempty entitlement sets offered products grant, per the SDK's product-entitlement [mapping]: none
  * when it has not been cached yet. Keyed like [purchaseDate]: the store product identifier with its base plan first,
  * the plain one otherwise.
  */
-internal fun List<Offering>.entitlementsGrantedBy(mapping: ProductEntitlementMapping?): List<Set<String>> {
+internal fun List<Offering>.entitlementsGrantedBy(mapping: ProductEntitlementMapping?): Set<ProductEntitlements> {
     if (mapping == null) {
         Logger.d(
             "No product-entitlement mapping is cached: a restore during the flow " +
                 "cannot be tied to the presented products.",
         )
-        return emptyList()
+        return emptySet()
     }
     return flatMap { offering -> offering.availablePackages.map { it.product } }
         .mapNotNull { product ->
             val productMapping = mapping.mappings[product.id] ?: mapping.mappings[product.purchasingData.productId]
             productMapping?.entitlements?.toSet()?.takeIf { it.isNotEmpty() }
         }
+        .toSet()
 }
 
 /**
@@ -177,11 +181,11 @@ internal suspend fun CheckpointRun.customerInfoAfter(
  */
 internal fun CustomerInfo.grantsPresentedEntitlement(
     activeEntitlementsBefore: Set<String>?,
-    presentedEntitlements: List<Set<String>>,
+    presentedProducts: Set<ProductEntitlements>,
 ): Boolean {
     val active = activeEntitlementIds
     val newlyActive = active - activeEntitlementsBefore.orEmpty()
-    return presentedEntitlements.any { entitlements ->
+    return presentedProducts.any { entitlements ->
         active.containsAll(entitlements) && entitlements.any { it in newlyActive }
     }
 }
