@@ -986,17 +986,12 @@ public class Purchases internal constructor(
         )
     }
 
-    /**
-     * [appUserID] is captured once by the caller so the poll requests and the cached [CustomerInfo] always
-     * refer to the same user, even if `logIn` lands mid-poll.
-     */
     @OptIn(InternalRevenueCatAPI::class)
     internal suspend fun pollRewardVerification(
         clientTransactionId: String,
-        appUserID: String,
         trackingMetadata: RewardedAdTrackingMetadata?,
         captureMethod: AdCaptureMethod,
-        poll: suspend (String) -> Outcome,
+        poll: suspend (clientTransactionId: String, appUserID: String) -> Outcome,
     ): RewardVerificationResult {
         if (trackingMetadata != null) {
             adTracker.trackAdRewardEarnedUnverified(
@@ -1013,8 +1008,11 @@ public class Purchases internal constructor(
             )
         }
 
+        // Captured once so the poll requests and the cached CustomerInfo always refer to the same user,
+        // even if logIn lands mid-poll.
+        val appUserID = this.appUserID
         val outcome = try {
-            poll(clientTransactionId)
+            poll(clientTransactionId, appUserID)
         } catch (e: CancellationException) {
             if (trackingMetadata != null) {
                 trackRewardOutcome(trackingMetadata, Outcome.Failed.Cancelled, captureMethod)

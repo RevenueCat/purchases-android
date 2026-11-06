@@ -115,9 +115,8 @@ public suspend fun Purchases.awaitPollRewardVerification(
     trackingMetadata: RewardedAdTrackingMetadata?,
     captureMethod: AdCaptureMethod,
 ): RewardVerificationResult {
-    val appUserID = this.appUserID
-    return pollRewardVerification(clientTransactionId, appUserID, trackingMetadata, captureMethod) {
-        Poller.poll(it, RewardVerificationFetcher.forAdUnit(trackingMetadata?.adUnitId, appUserID))
+    return pollRewardVerification(clientTransactionId, trackingMetadata, captureMethod) { id, appUserID ->
+        Poller.poll(id, appUserID, RewardVerificationFetcher.forAdUnit(trackingMetadata?.adUnitId))
     }
 }
 

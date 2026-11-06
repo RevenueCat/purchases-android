@@ -44,7 +44,8 @@ class PollerTest {
 
         val result = Poller.poll(
             clientTransactionId = "ct_1",
-            fetcher = { clientTransactionId ->
+            appUserID = "user_1",
+            fetcher = { clientTransactionId, _ ->
                 receivedClientTransactionId = clientTransactionId
                 RewardVerificationPollStatus.Verified(CoreVerifiedReward.NoReward, customerInfo = null)
             },
@@ -65,7 +66,8 @@ class PollerTest {
 
         val result = Poller.poll(
             clientTransactionId = "ct_1",
-            fetcher = {
+            appUserID = "user_1",
+            fetcher = { _, _ ->
                 attempts++
                 RewardVerificationPollStatus.Verified(CoreVerifiedReward.VirtualCurrency(code = "gems", amount = 10), customerInfo = null)
             },
@@ -84,7 +86,8 @@ class PollerTest {
 
         val result = Poller.poll(
             clientTransactionId = "ct_1",
-            fetcher = {
+            appUserID = "user_1",
+            fetcher = { _, _ ->
                 RewardVerificationPollStatus.Verified(
                     reward = CoreVerifiedReward.VirtualCurrency(code = "gems", amount = 10),
                     moreRewards = listOf(CoreVerifiedReward.Entitlement(identifier = "pro", expiresAt = expiresAt)),
@@ -110,7 +113,8 @@ class PollerTest {
 
         val result = Poller.poll(
             clientTransactionId = "ct_1",
-            fetcher = {
+            appUserID = "user_1",
+            fetcher = { _, _ ->
                 attempts++
                 RewardVerificationPollStatus.Failed(failureReason = "ssv_not_enabled", message = backendMessage)
             },
@@ -132,7 +136,8 @@ class PollerTest {
 
         val result = Poller.poll(
             clientTransactionId = "ct_1",
-            fetcher = {
+            appUserID = "user_1",
+            fetcher = { _, _ ->
                 attempts++
                 if (attempts < 3) {
                     RewardVerificationPollStatus.PENDING
@@ -157,7 +162,8 @@ class PollerTest {
 
         val result = Poller.poll(
             clientTransactionId = "ct_1",
-            fetcher = {
+            appUserID = "user_1",
+            fetcher = { _, _ ->
                 attempts++
                 RewardVerificationPollStatus.PENDING
             },
@@ -181,7 +187,8 @@ class PollerTest {
 
         val result = Poller.poll(
             clientTransactionId = "ct_1",
-            fetcher = {
+            appUserID = "user_1",
+            fetcher = { _, _ ->
                 attempts++
                 RewardVerificationPollStatus.UNKNOWN
             },
@@ -204,7 +211,8 @@ class PollerTest {
 
         val result = Poller.poll(
             clientTransactionId = "ct_1",
-            fetcher = {
+            appUserID = "user_1",
+            fetcher = { _, _ ->
                 attempts++
                 // Unknown first, then transient errors until exhaustion: the unknown status wins.
                 if (attempts == 1) {
@@ -231,7 +239,8 @@ class PollerTest {
     fun `poll reports transient exhaustion when polls keep failing with transient errors`() = runBlocking {
         val result = Poller.poll(
             clientTransactionId = "ct_1",
-            fetcher = {
+            appUserID = "user_1",
+            fetcher = { _, _ ->
                 throw RewardVerificationException(
                     PurchasesError(PurchasesErrorCode.NetworkError),
                     isServerError = false,
@@ -254,7 +263,8 @@ class PollerTest {
 
         val result = Poller.poll(
             clientTransactionId = "ct_1",
-            fetcher = {
+            appUserID = "user_1",
+            fetcher = { _, _ ->
                 attempts++
                 if (attempts < 2) {
                     throw RewardVerificationException(
@@ -279,7 +289,8 @@ class PollerTest {
 
         val result = Poller.poll(
             clientTransactionId = "ct_1",
-            fetcher = {
+            appUserID = "user_1",
+            fetcher = { _, _ ->
                 attempts++
                 if (attempts < 2) {
                     throw RewardVerificationException(
@@ -303,7 +314,8 @@ class PollerTest {
 
         val result = Poller.poll(
             clientTransactionId = "ct_1",
-            fetcher = {
+            appUserID = "user_1",
+            fetcher = { _, _ ->
                 attempts++
                 throw RewardVerificationException(
                     PurchasesError(PurchasesErrorCode.UnexpectedBackendResponseError),
@@ -325,7 +337,8 @@ class PollerTest {
 
         val result = Poller.poll(
             clientTransactionId = "ct_1",
-            fetcher = {
+            appUserID = "user_1",
+            fetcher = { _, _ ->
                 attempts++
                 // A non-5xx unrecognized backend code is deterministic; retrying is pointless.
                 throw RewardVerificationException(
@@ -348,7 +361,8 @@ class PollerTest {
 
         val result = Poller.poll(
             clientTransactionId = "ct_1",
-            fetcher = {
+            appUserID = "user_1",
+            fetcher = { _, _ ->
                 attempts++
                 if (attempts < 2) {
                     // An infra 5xx with no recognized code surfaces as UnknownBackendError; retry is
@@ -374,7 +388,8 @@ class PollerTest {
 
         val result = Poller.poll(
             clientTransactionId = "ct_1",
-            fetcher = {
+            appUserID = "user_1",
+            fetcher = { _, _ ->
                 attempts++
                 throw RewardVerificationException(
                     PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
@@ -399,7 +414,8 @@ class PollerTest {
 
         val result = Poller.poll(
             clientTransactionId = "ct_1",
-            fetcher = {
+            appUserID = "user_1",
+            fetcher = { _, _ ->
                 attempts++
                 error("backend exploded")
             },
@@ -421,7 +437,8 @@ class PollerTest {
 
         val result = Poller.poll(
             clientTransactionId = "ct_1",
-            fetcher = {
+            appUserID = "user_1",
+            fetcher = { _, _ ->
                 attempts++
                 RewardVerificationPollStatus.PENDING
             },
@@ -443,7 +460,8 @@ class PollerTest {
         try {
             Poller.poll(
                 clientTransactionId = "ct_1",
-                fetcher = { throw CancellationException("cancelled") },
+                appUserID = "user_1",
+                fetcher = { _, _ -> throw CancellationException("cancelled") },
                 sleepSeconds = noSleep,
                 jitterSeconds = fixedJitter,
             )
@@ -458,7 +476,8 @@ class PollerTest {
         try {
             Poller.poll(
                 clientTransactionId = "ct_1",
-                fetcher = { RewardVerificationPollStatus.PENDING },
+                appUserID = "user_1",
+                fetcher = { _, _ -> RewardVerificationPollStatus.PENDING },
                 sleepSeconds = { throw CancellationException("cancelled") },
                 jitterSeconds = fixedJitter,
             )
