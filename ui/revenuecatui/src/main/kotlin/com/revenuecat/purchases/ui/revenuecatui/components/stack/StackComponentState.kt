@@ -2,6 +2,7 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components.stack
 
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
@@ -183,9 +184,12 @@ internal class StackComponentState(
     val scrollOrientation by derivedStateOf {
         // An explicit Overflow.NONE in a partial must disable scrolling, not fall
         // back to the base style — only an absent overflow inherits it.
+        // Split footer Z-layers keep their vertical fallback for explicit scroll overrides.
         when (val overflow = presentedPartial?.partial?.overflow) {
             null -> style.scrollOrientation
-            else -> overflow.toOrientation(dimension)
+            StackComponent.Overflow.NONE -> null
+            StackComponent.Overflow.SCROLL -> overflow.toOrientation(dimension)
+                ?: if (fillsAvailableHeight) Orientation.Vertical else null
         }
     }
 
