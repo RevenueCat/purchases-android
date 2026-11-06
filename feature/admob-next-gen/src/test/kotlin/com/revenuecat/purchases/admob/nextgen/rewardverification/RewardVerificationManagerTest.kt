@@ -81,7 +81,7 @@ internal class RewardVerificationManagerTest {
                 capture(polledClientTransactionId),
                 captureNullable(polledTrackingMetadata),
                 capture(polledCaptureMethod),
-                any<suspend (String) -> Outcome>(),
+                any<suspend (String, String) -> Outcome>(),
             )
         } returns RewardVerificationResult.verified(VerifiedReward.VirtualCurrency(code = "gems", amount = 7))
 
@@ -147,7 +147,7 @@ internal class RewardVerificationManagerTest {
                 capture(polledClientTransactionId),
                 captureNullable(polledTrackingMetadata),
                 capture(polledCaptureMethod),
-                any<suspend (String) -> Outcome>(),
+                any<suspend (String, String) -> Outcome>(),
             )
         } returns RewardVerificationResult.verified(VerifiedReward.VirtualCurrency(code = "coins", amount = 3))
 
@@ -204,7 +204,7 @@ internal class RewardVerificationManagerTest {
                 any(),
                 captureNullable(polledTrackingMetadata),
                 AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER,
-                any<suspend (String) -> Outcome>(),
+                any<suspend (String, String) -> Outcome>(),
             )
         } returns RewardVerificationResult.verified(VerifiedReward.VirtualCurrency(code = "gems", amount = 7))
 
@@ -297,7 +297,7 @@ internal class RewardVerificationManagerTest {
                 any(),
                 captureNullable(polledTrackingMetadata),
                 AdCaptureMethod.ANDROID_ADMOB_NEXT_GEN_ADAPTER,
-                any<suspend (String) -> Outcome>(),
+                any<suspend (String, String) -> Outcome>(),
             )
         } returns RewardVerificationResult.verified(VerifiedReward.VirtualCurrency(code = "coins", amount = 3))
 
