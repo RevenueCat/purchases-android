@@ -38,6 +38,7 @@ interface CheckpointsViewModel {
         val configured: List<String> = emptyList(),
         val waitingFor: String? = null,
         val lastResult: CheckpointResultUi? = null,
+        val checkpointCompleted: Boolean = false,
         val presentWithAppPaywall: Boolean = false,
         val presentErrorsWithApp: Boolean = false,
         val presentationMode: FlowPresentationMode = FlowPresentationMode.DEFAULT,
@@ -57,6 +58,8 @@ interface CheckpointsViewModel {
     val errorRequest: StateFlow<AppErrorPresenter.Request?>
 
     fun hit(identifier: String)
+
+    fun resetTest()
 
     fun refreshConfigured()
 
@@ -89,7 +92,11 @@ internal class CheckpointsViewModelImpl(
 
     private val _state = MutableStateFlow(UiState(recents = recentCheckpointsStore.recents()))
 
-    private val appPaywallPresenter = AppPaywallPresenter(onFinished = ::onAppPaywallFinished)
+    // Retries share an ID: the SDK may present an earlier call and skip a later call's callback.
+    // Only reset or completion invalidates the pending callbacks from this test.
+    private var testId = 0L
+
+    private val appPaywallPresenter = AppPaywallPresenter()
 
     override val paywallRequest: StateFlow<AppPaywallPresenter.Request?>
         get() = appPaywallPresenter.request
@@ -104,17 +111,39 @@ internal class CheckpointsViewModelImpl(
     override fun hit(identifier: String) {
         val checkpointIdentifier = identifier.trim()
         if (checkpointIdentifier.isEmpty()) return
+        val currentTestId = testId
         val updatedRecents = recentCheckpointsStore.recordUse(checkpointIdentifier)
-        _state.update { it.copy(recents = updatedRecents, waitingFor = checkpointIdentifier) }
+        _state.update {
+            it.copy(
+                recents = updatedRecents,
+                waitingFor = checkpointIdentifier,
+                lastResult = null,
+                checkpointCompleted = false,
+            )
+        }
+        val appPresenter = PaywallPresenter { params, completion ->
+            appPaywallPresenter.present(params, completion) { result ->
+                onAppPaywallFinished(currentTestId, result)
+            }
+        }
         val params = CheckpointParams {
             setCustomVariables(_state.value.customVariables)
-            if (_state.value.presentWithAppPaywall) paywallPresenter(appPaywallPresenter)
+            if (_state.value.presentWithAppPaywall) paywallPresenter(appPresenter)
             if (_state.value.presentErrorsWithApp) errorPresenter(appErrorPresenter)
             presentationMode(_state.value.presentationMode)
         }
         Purchases.sharedInstance.checkpoint(checkpointIdentifier, params) { result ->
-            _state.update { it.copy(waitingFor = null, lastResult = result.toUi()) }
+            if (currentTestId != testId) return@checkpoint
+            testId++
+            _state.update {
+                it.copy(waitingFor = null, lastResult = result.toUi(), checkpointCompleted = true)
+            }
         }
+    }
+
+    override fun resetTest() {
+        testId++
+        _state.update { it.copy(waitingFor = null, lastResult = null, checkpointCompleted = false) }
     }
 
     @OptIn(InternalRevenueCatAPI::class)
@@ -152,8 +181,14 @@ internal class CheckpointsViewModelImpl(
         _state.update { it.copy(customVariables = it.customVariables - name) }
     }
 
-    private fun onAppPaywallFinished(result: PaywallPresenter.Completion.Result) {
-        if (result != PaywallPresenter.Completion.Result.NavigatedBack) return
+    private fun onAppPaywallFinished(currentTestId: Long, result: PaywallPresenter.Completion.Result) {
+        if (
+            currentTestId != testId ||
+            result != PaywallPresenter.Completion.Result.NavigatedBack ||
+            _state.value.waitingFor == null
+        ) {
+            return
+        }
         _state.update {
             it.copy(
                 waitingFor = null,
