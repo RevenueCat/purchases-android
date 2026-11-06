@@ -3,6 +3,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.state
 
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.ui.revenuecatui.components.style.TabsScope
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
@@ -15,6 +16,8 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 internal interface PackageContext {
     /** The package this component is associated with, or null if outside a package scope. */
     val rcPackage: Package?
+
+    val tabsScope: TabsScope? get() = null
 
     /** The tab index this component is associated with, or null if not in a tab control. */
     val tabIndex: Int?

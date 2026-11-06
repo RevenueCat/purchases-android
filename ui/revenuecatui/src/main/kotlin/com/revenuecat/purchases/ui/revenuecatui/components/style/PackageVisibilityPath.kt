@@ -18,7 +18,7 @@ internal fun AvailablePackages.withVisibilityPaths(root: ComponentStyle): Availa
     paths.visit(root)
     fun AvailablePackages.Info.withPaths(tabIndex: Int?) =
         copy(visibilityPaths = paths.byPackage[this to tabIndex].orEmpty())
-    return AvailablePackages(
+    return copy(
         packagesOutsideTabs = packagesOutsideTabs.map { it.withPaths(null) },
         packagesByTab = packagesByTab.mapValues { (tabIndex, infos) -> infos.map { it.withPaths(tabIndex) } },
     )
@@ -34,9 +34,10 @@ private class PackageVisibilityPathCollector {
         tabIndex: Int? = null,
         sheet: SheetPresentationKey? = null,
         branches: List<(ComponentVisibilityContext) -> Boolean> = emptyList(),
+        tabsScope: TabsScope? = null,
     ) {
         val path = ancestors + style
-        fun child(child: ComponentStyle) = visit(child, path, tabIndex, sheet, branches)
+        fun child(child: ComponentStyle) = visit(child, path, tabIndex, sheet, branches, tabsScope)
         when (style) {
             is PackageComponentStyle -> {
                 val info = AvailablePackages.Info(
@@ -47,6 +48,7 @@ private class PackageVisibilityPathCollector {
                     visibilityOverrides = style.overrides,
                     offerEligibility = style.offerEligibility,
                     sheetPresentationKey = sheet,
+                    tab = tabIndex?.let { TabSelection(tabsScope, it) },
                 )
                 byPackage.getOrPut(info to tabIndex) { mutableListOf() }
                     .add(PackageVisibilityPath(path + style.stackComponentStyle, branches))
@@ -58,12 +60,24 @@ private class PackageVisibilityPathCollector {
                 val destination = (style.action as? ButtonComponentStyle.Action.NavigateTo)?.destination
                 if (destination is ButtonComponentStyle.Action.NavigateTo.Destination.Sheet) {
                     // A presented sheet is detached from the button and its containers.
-                    visit(destination.stack, tabIndex = tabIndex, sheet = destination.presentationKey)
+                    visit(
+                        destination.stack,
+                        tabIndex = tabIndex,
+                        sheet = destination.presentationKey,
+                        tabsScope = tabsScope,
+                    )
                 }
             }
             is TabsComponentStyle -> {
                 style.tabs.forEachIndexed { index, tab ->
-                    visit(tab.stack, path, index, sheet, branches + { it.isSelectedTab(index) })
+                    visit(
+                        tab.stack,
+                        path,
+                        index,
+                        sheet,
+                        branches + { it.isSelectedTab(index, style.tabsScope) },
+                        style.tabsScope,
+                    )
                 }
             }
             is CarouselComponentStyle -> style.pages.forEach { child(it) }
@@ -83,15 +97,23 @@ private class PackageVisibilityPathCollector {
                             }
                             active === stack
                         },
+                        tabsScope,
                     )
                 }
             }
-            is HeaderComponentStyle -> visit(style.stackComponentStyle, ancestors, tabIndex, sheet, branches)
-            is StickyFooterComponentStyle -> visit(style.stackComponentStyle, ancestors, tabIndex, sheet, branches)
-            is TabControlButtonComponentStyle -> visit(style.stack, ancestors, tabIndex, sheet, branches)
+            is HeaderComponentStyle -> visit(style.stackComponentStyle, ancestors, tabIndex, sheet, branches, tabsScope)
+            is StickyFooterComponentStyle -> visit(
+                style.stackComponentStyle,
+                ancestors,
+                tabIndex,
+                sheet,
+                branches,
+                tabsScope,
+            )
+            is TabControlButtonComponentStyle -> visit(style.stack, ancestors, tabIndex, sheet, branches, tabsScope)
             // Controls are built outside the tab scope and inserted into each tab that uses them.
-            is TabControlStyle.Buttons -> visit(style.stack, ancestors, null, sheet, branches)
-            is TabControlStyle.Toggle -> visit(style.stack, ancestors, null, sheet, branches)
+            is TabControlStyle.Buttons -> visit(style.stack, ancestors, null, sheet, branches, tabsScope)
+            is TabControlStyle.Toggle -> visit(style.stack, ancestors, null, sheet, branches, tabsScope)
             else -> Unit
         }
     }
