@@ -1056,6 +1056,34 @@ class PaywallViewModelTest {
     }
 
     @Test
+    fun `handlePackagePurchase success hides an open sheet every time`(): Unit = runBlocking {
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
+        )
+        val model = create(offering = offering)
+        val state = model.state.value as PaywallState.Loaded.Components
+        state.update(TestData.Packages.monthly.identifier)
+        coEvery {
+            purchases.awaitPurchase(any())
+        } returns PurchaseResult(mockk<StoreTransaction>(), customerInfo)
+
+        // A purchase made from inside a sheet doesn't close it on its own, and an embedded paywall can purchase
+        // more than once, so the sheet has to be closed after every purchase, not just the first.
+        repeat(2) {
+            state.sheet.show(backgroundBlur = false, content = {})
+            assertThat(state.sheet.visible).isTrue
+
+            model.handlePackagePurchase(activity, pkg = null)
+
+            assertThat(state.sheet.visible).isFalse
+        }
+    }
+
+    @Test
     fun `handlePackagePurchase success does not track CLOSE event`(): Unit = runBlocking {
         // A successful purchase dismisses the paywall but must not be counted as a
         // user-initiated close. Regression test: the dismiss path must not emit CLOSE.

@@ -46,6 +46,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.LoadedWorkflowPaywall
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.composables.CloseButton
 import com.revenuecat.purchases.ui.revenuecatui.composables.ErrorDialog
+import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleSheetState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModelFactory
@@ -226,13 +227,21 @@ private fun InternalPaywallContent(
                         LoadedWorkflowPaywall(
                             workflowState = workflowState,
                             onTransitionComplete = viewModel::onTransitionComplete,
-                            clickHandler = rememberPaywallActionHandler(viewModel, externalActionInterceptor),
+                            clickHandler = rememberPaywallActionHandler(
+                                viewModel,
+                                state.sheet,
+                                externalActionInterceptor,
+                            ),
                             componentInteractionTracker = componentInteractionTracker,
                         )
                     } else {
                         LoadedPaywallComponents(
                             state = state,
-                            clickHandler = rememberPaywallActionHandler(viewModel, externalActionInterceptor),
+                            clickHandler = rememberPaywallActionHandler(
+                                viewModel,
+                                state.sheet,
+                                externalActionInterceptor,
+                            ),
                             componentInteractionTracker = componentInteractionTracker,
                         )
                     }
@@ -429,11 +438,12 @@ private fun PaywallState.Loaded.Legacy.configurationWithOverriddenLocale(): Conf
 @Composable
 private fun rememberPaywallActionHandler(
     viewModel: PaywallViewModel,
+    sheet: SimpleSheetState,
     interceptor: (suspend (PaywallAction.External) -> Boolean)?,
 ): suspend (PaywallAction.External) -> Unit {
     val context: Context = LocalContext.current
     val activity: Activity? = context.getActivity()
-    return remember(viewModel, interceptor) {
+    return remember(viewModel, sheet, interceptor) {
         val handler: suspend (PaywallAction.External) -> Unit = { action ->
             when (action) {
                 is PaywallAction.External.RestorePurchases -> viewModel.handleRestorePurchases()
@@ -448,7 +458,8 @@ private fun rememberPaywallActionHandler(
                         )
                     }
 
-                is PaywallAction.External.LaunchWebCheckout -> handleLaunchWebCheckout(context, viewModel, action)
+                is PaywallAction.External.LaunchWebCheckout ->
+                    handleLaunchWebCheckout(context, viewModel, sheet, action)
 
                 is PaywallAction.External.NavigateBack -> {
                     if (!viewModel.handleBackNavigation()) {
@@ -494,6 +505,7 @@ private suspend fun handleInterceptedAction(
 private fun handleLaunchWebCheckout(
     context: Context,
     viewModel: PaywallViewModel,
+    sheet: SimpleSheetState,
     action: PaywallAction.External.LaunchWebCheckout,
 ) {
     val url = viewModel.getWebCheckoutUrl(action)
@@ -507,8 +519,15 @@ private fun handleLaunchWebCheckout(
         viewModel.notifyWebCheckoutOpened()
     }
     if (action.autoDismiss) {
-        Logger.d("Auto-dismissing paywall after launching web checkout.")
-        viewModel.closePaywall()
+        // Like iOS, auto-dismiss closes the innermost container: the sheet when the button was tapped inside one
+        // (the scrim blocks the page behind it), otherwise the paywall.
+        if (sheet.visible) {
+            Logger.d("Auto-dismissing sheet after launching web checkout.")
+            sheet.hide()
+        } else {
+            Logger.d("Auto-dismissing paywall after launching web checkout.")
+            viewModel.closePaywall()
+        }
     }
 }
 
