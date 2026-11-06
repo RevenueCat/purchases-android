@@ -569,7 +569,7 @@ class AmazonBillingTest {
     }
 
     @Test
-    fun `If purchase state is "purchased", purchase is fulfilled and cached`() {
+    fun `If purchase state is 'purchased', purchase is fulfilled and cached`() {
         setup()
         val dummyReceipt = dummyReceipt()
 
