@@ -6,6 +6,7 @@ import android.content.res.AssetManager
 import android.content.res.Resources
 import androidx.annotation.StringRes
 import androidx.compose.ui.text.font.FontFamily
+import androidx.core.os.LocaleListCompat
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.DownloadedFontFamily
@@ -25,6 +26,7 @@ internal interface ResourceProvider {
     fun getApplicationName(): String
     fun getString(@StringRes resId: Int, vararg formatArgs: Any): String
     fun getLocale(): Locale
+    fun getLocales(): LocaleListCompat = LocaleListCompat.getDefault()
     fun getResourceIdentifier(name: String, type: String): Int
     fun getXmlFontFamily(resourceId: Int): FontFamily?
     fun getAssetFontPaths(names: List<String>): Map<String, String>?
@@ -52,8 +54,12 @@ internal class PaywallResourceProvider(
     }
 
     override fun getLocale(): Locale {
-        return resources.configuration.locales.get(0)
+        return getLocales().get(0) ?: Locale.getDefault()
     }
+
+    override fun getLocales(): LocaleListCompat =
+        LocaleListCompat.wrap(resources.configuration.locales).takeUnless { it.isEmpty }
+            ?: LocaleListCompat.getDefault()
 
     /**
      * Use sparingly. The underlying platform API is discouraged because

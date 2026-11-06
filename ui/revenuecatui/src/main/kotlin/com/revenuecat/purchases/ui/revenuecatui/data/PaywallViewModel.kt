@@ -171,17 +171,18 @@ internal interface PaywallViewModel {
 
 @Suppress("TooManyFunctions", "LongParameterList", "LargeClass")
 internal class PaywallViewModelImpl(
-    override val resourceProvider: ResourceProvider,
+    override var resourceProvider: ResourceProvider,
     private val purchases: PurchasesType = PurchasesImpl(),
     private var options: PaywallOptions,
     colorScheme: ColorScheme,
     private var isDarkMode: Boolean,
     private val shouldDisplayBlock: ((CustomerInfo) -> Boolean)?,
-    preview: Boolean = false,
+    private val preview: Boolean = false,
     private val productChangeCalculator: ProductChangeCalculator = ProductChangeCalculator(purchases),
     private val backgroundDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : ViewModel(), PaywallViewModel {
-    private val variableDataProvider = VariableDataProvider(resourceProvider, preview)
+    private val variableDataProvider
+        get() = VariableDataProvider(resourceProvider, preview)
 
     override val state: StateFlow<PaywallState>
         get() = _state.asStateFlow()
@@ -203,6 +204,7 @@ internal class PaywallViewModelImpl(
     private val _purchaseCompleted: MutableState<Boolean> = mutableStateOf(false)
     private val _workflowState: MutableState<WorkflowPaywallUiState?> = mutableStateOf(null)
     private var workflowTraceId: String = UUID.randomUUID().toString()
+    private var preferApplicationLocale = false
     private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
     private val _colorScheme = MutableStateFlow(colorScheme)
 
@@ -879,6 +881,9 @@ internal class PaywallViewModelImpl(
     }
 
     private suspend fun updateStateFromOffering(offeringSelection: OfferingSelection) {
+        preferApplicationLocale = purchases.awaitGetPaywallsPreferApplicationLocale()
+        _lastLocaleList.value = getCurrentLocaleList()
+
         // Injected workflow (e.g. mobile app preview): render locally, no /workflows fetch.
         if (presentInjectedWorkflowIfNeeded(offeringSelection)) {
             return
@@ -1763,15 +1768,26 @@ internal class PaywallViewModelImpl(
     }
 
     private fun getCurrentLocaleList(): LocaleListCompat {
-        val preferredLocale = purchases.preferredUILocaleOverride ?: return LocaleListCompat.getDefault()
+        val deviceLocales = LocaleListCompat.getDefault()
+        val defaultLocales = if (preferApplicationLocale) {
+            LocaleListCompat.forLanguageTags(
+                "${resourceProvider.getLocales().toLanguageTags()},${deviceLocales.toLanguageTags()}",
+            )
+        } else {
+            deviceLocales
+        }
+        val preferredLocale = purchases.preferredUILocaleOverride ?: return defaultLocales
 
         return try {
             val locale = createLocaleFromString(preferredLocale)
-            val localeList = LocaleListCompat.create(locale)
-            localeList
+            if (preferApplicationLocale) {
+                LocaleListCompat.forLanguageTags("${locale.toLanguageTag()},${defaultLocales.toLanguageTags()}")
+            } else {
+                LocaleListCompat.create(locale)
+            }
         } catch (e: IllegalArgumentException) {
-            Logger.e("Invalid preferred locale format: $preferredLocale. Using system default.", e)
-            LocaleListCompat.getDefault()
+            Logger.e("Invalid preferred locale format: $preferredLocale. Using app or system default.", e)
+            defaultLocales
         }
     }
 
@@ -1782,7 +1798,10 @@ internal class PaywallViewModelImpl(
     }
 
     private fun LocaleListCompat.toLocaleIds(): List<LocaleId> =
-        List(size()) { index -> get(index)!!.toLocaleId() }
+        toLocales().map { it.toLocaleId() }
+
+    private fun LocaleListCompat.toLocales(): List<Locale> =
+        List(size()) { index -> get(index)!! }
 
     private fun calculateState(
         offering: Offering,
@@ -1825,6 +1844,7 @@ internal class PaywallViewModelImpl(
                 shouldDisplayDismissButton = options.shouldDisplayDismissButton,
                 storefrontCountryCode = storefrontCountryCode,
                 validationWarning = validationResult.warning,
+                preferredLocales = _lastLocaleList.value.toLocales(),
             )
             is PaywallValidationResult.Components -> offering.toComponentsPaywallState(
                 validationResult = validationResult,

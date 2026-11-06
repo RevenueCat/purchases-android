@@ -727,6 +727,7 @@ class PaywallViewModelWorkflowTest {
             every { purchasesAreCompletedBy } returns PurchasesAreCompletedBy.REVENUECAT
             every { track(any()) } just Runs
             coEvery { awaitOfferings() } returns testOfferings
+            coEvery { awaitGetPaywallsPreferApplicationLocale() } returns false
             coEvery { awaitWorkflowBlobRef(any()) } returns null
             coEvery { awaitCustomerInfo(any()) } returns mockk {
                 every { activeSubscriptions } returns setOf()

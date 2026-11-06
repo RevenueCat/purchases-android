@@ -392,11 +392,11 @@ internal fun getPaywallViewModel(
     options: PaywallOptions,
     shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null,
 ): PaywallViewModel {
-    val applicationContext = LocalContext.current.applicationContext
+    val resourceProvider = LocalContext.current.toResourceProvider()
     val viewModel = viewModel<PaywallViewModelImpl>(
         key = options.hashCode().toString(),
         factory = PaywallViewModelFactory(
-            applicationContext.toResourceProvider(),
+            resourceProvider,
             options,
             MaterialTheme.colorScheme,
             isSystemInDarkTheme(),
@@ -404,6 +404,7 @@ internal fun getPaywallViewModel(
             preview = isInPreviewMode(),
         ),
     )
+    viewModel.resourceProvider = resourceProvider
     viewModel.updateOptions(options)
     return viewModel
 }

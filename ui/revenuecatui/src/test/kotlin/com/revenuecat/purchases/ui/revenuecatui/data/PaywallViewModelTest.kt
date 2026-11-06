@@ -4,9 +4,11 @@ package com.revenuecat.purchases.ui.revenuecatui.data
 
 import android.app.Activity
 import android.content.Context
+import android.os.LocaleList
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.core.os.LocaleListCompat
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
@@ -76,6 +78,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPurchaseButtonAct
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toInteractionEvent
 import com.revenuecat.purchases.ui.revenuecatui.helpers.resolvedWebCheckoutInteractionUrl
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable
@@ -111,6 +114,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.shadows.ShadowLooper
 import java.net.URL
+import java.util.Locale
 
 private const val TEST_WAIT_MS = 5_000L
 
@@ -285,6 +289,7 @@ class PaywallViewModelTest {
         every { purchases.preferredUILocaleOverride } returns null
         coEvery { purchases.resolveWorkflow(any()) } returns WorkflowResolution.NoWorkflow
         coEvery { purchases.awaitGetUiConfig() } returns UiConfig()
+        coEvery { purchases.awaitGetPaywallsPreferApplicationLocale() } returns false
 
         every { listener.onPurchaseStarted(any()) } just runs
         every { listener.onPurchaseCompleted(any(), any()) } just runs
@@ -897,7 +902,94 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `locale changes revalidate the selected components localization`(): Unit = runBlocking {
+    fun `disabled application locale preference keeps the device locale and explicit overrides`() {
+        val previousLocales = LocaleList.getDefault()
+        try {
+            LocaleList.setDefault(LocaleList(Locale.US))
+            val resourceProvider = object : ResourceProvider by MockResourceProvider() {
+                override fun getLocales(): LocaleListCompat = LocaleListCompat.forLanguageTags("es-ES")
+            }
+            val model = create(offering = defaultOffering, resourceProvider = resourceProvider)
+            val initialState = model.state.value as PaywallState.Loaded.Legacy
+            assertThat(initialState.templateConfiguration.locale).isEqualTo(Locale.US)
+
+            every { purchases.preferredUILocaleOverride } returns "es_ES"
+            model.refreshStateIfLocaleChanged()
+            val updatedState = model.state.value as PaywallState.Loaded.Legacy
+            assertThat(updatedState.templateConfiguration.locale.toLanguageTag()).isEqualTo("es-ES")
+        } finally {
+            LocaleList.setDefault(previousLocales)
+        }
+    }
+
+    @Test
+    fun `enabled application locale preference falls back to device languages when unsupported`() {
+        val previousLocales = LocaleList.getDefault()
+        try {
+            LocaleList.setDefault(LocaleList(Locale.forLanguageTag("es-ES")))
+            coEvery { purchases.awaitGetPaywallsPreferApplicationLocale() } returns true
+            val resourceProvider = object : ResourceProvider by MockResourceProvider() {
+                override fun getLocales(): LocaleListCompat = LocaleListCompat.forLanguageTags("ja-JP")
+            }
+            val model = create(offering = defaultOffering, resourceProvider = resourceProvider)
+            val state = model.state.value as PaywallState.Loaded.Legacy
+            assertThat(state.templateConfiguration.locale.toLanguageTag()).isEqualTo("es-ES")
+        } finally {
+            LocaleList.setDefault(previousLocales)
+        }
+    }
+
+    @Test
+    fun `multi tier paywalls use the enabled application locale preference`() {
+        coEvery { purchases.awaitGetPaywallsPreferApplicationLocale() } returns true
+        val resourceProvider = object : ResourceProvider by MockResourceProvider() {
+            override fun getLocales(): LocaleListCompat = LocaleListCompat.forLanguageTags("en-AU")
+        }
+        val model = create(offering = TestData.template7Offering, resourceProvider = resourceProvider)
+        val state = model.state.value as PaywallState.Loaded.Legacy
+        assertThat(state.templateConfiguration.locale.toLanguageTag()).isEqualTo("en-AU")
+    }
+
+    @Test
+    fun `paywall waits for the application locale preference before its first render`(): Unit = runBlocking {
+        val preference = CompletableDeferred<Boolean>()
+        coEvery { purchases.awaitGetPaywallsPreferApplicationLocale() } coAnswers { preference.await() }
+        val resourceProvider = object : ResourceProvider by MockResourceProvider() {
+            override fun getLocales(): LocaleListCompat = LocaleListCompat.forLanguageTags("es-ES")
+        }
+        val model = create(offering = defaultOffering, resourceProvider = resourceProvider)
+        assertThat(model.state.value).isEqualTo(PaywallState.Loading)
+
+        preference.complete(true)
+        val loaded = model.state.first { it is PaywallState.Loaded } as PaywallState.Loaded.Legacy
+        assertThat(loaded.templateConfiguration.locale.toLanguageTag()).isEqualTo("es-ES")
+    }
+
+    @Test
+    fun `legacy paywalls prefer the app locale and respect explicit overrides`() {
+        coEvery { purchases.awaitGetPaywallsPreferApplicationLocale() } returns true
+        val resourceProvider = object : ResourceProvider by MockResourceProvider() {
+            override fun getLocales(): LocaleListCompat = LocaleListCompat.forLanguageTags("es-ES")
+        }
+        val model = create(offering = defaultOffering, resourceProvider = resourceProvider)
+        val initialState = model.state.value as PaywallState.Loaded.Legacy
+        assertThat(initialState.templateConfiguration.locale.toLanguageTag()).isEqualTo("es-ES")
+
+        every { purchases.preferredUILocaleOverride } returns "en_US"
+        model.refreshStateIfLocaleChanged()
+
+        val updatedState = model.state.value as PaywallState.Loaded.Legacy
+        assertThat(updatedState.templateConfiguration.locale.toLanguageTag()).isEqualTo("en-US")
+
+        every { purchases.preferredUILocaleOverride } returns "ja_JP"
+        model.refreshStateIfLocaleChanged()
+        val fallbackState = model.state.value as PaywallState.Loaded.Legacy
+        assertThat(fallbackState.templateConfiguration.locale.toLanguageTag()).isEqualTo("es-ES")
+    }
+
+    @Test
+    fun `app locale changes revalidate components and explicit overrides take priority`(): Unit = runBlocking {
+        coEvery { purchases.awaitGetPaywallsPreferApplicationLocale() } returns true
         val data = PaywallComponentsData(
             id = "paywall_id",
             templateName = "template",
@@ -913,17 +1005,20 @@ class PaywallViewModelTest {
             availablePackages = listOf(TestData.Packages.monthly),
             paywallComponents = Offering.PaywallComponents(UiConfig(), data),
         )
-        var preferredLocale = "en_US"
-        every { purchases.preferredUILocaleOverride } answers { preferredLocale }
-        val model = create(offering = offering, mode = PaywallMode.FULL_SCREEN)
+        val resourceProvider = object : ResourceProvider by MockResourceProvider() {
+            override fun getLocales(): LocaleListCompat = LocaleListCompat.forLanguageTags("en-US")
+        }
+        val model = create(offering = offering, mode = PaywallMode.FULL_SCREEN, resourceProvider = resourceProvider)
         assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
 
-        preferredLocale = "es_ES"
+        model.resourceProvider = object : ResourceProvider by MockResourceProvider() {
+            override fun getLocales(): LocaleListCompat = LocaleListCompat.forLanguageTags("es-ES")
+        }
         model.refreshStateIfLocaleChanged()
 
         assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Legacy::class.java)
 
-        preferredLocale = "en_US"
+        every { purchases.preferredUILocaleOverride } returns "en_US"
         model.refreshStateIfLocaleChanged()
 
         assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
@@ -4200,6 +4295,7 @@ class PaywallViewModelTest {
         dismissRequestWithExitOffering: ((Offering?, PaywallResult?, PaywallDismissReason) -> Unit)? = null,
         dismissRequest: () -> Unit = { dismissInvoked = true },
         errorPresenter: PaywallErrorPresenter? = null,
+        resourceProvider: ResourceProvider = MockResourceProvider(),
         shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null,
     ): PaywallViewModelImpl {
         val builder = PaywallOptions.Builder(dismissRequest = dismissRequest)
@@ -4212,7 +4308,7 @@ class PaywallViewModelTest {
             builder.setDismissRequestWithExitOffering(it)
         }
         return PaywallViewModelImpl(
-            MockResourceProvider(),
+            resourceProvider,
             purchases,
             builder.build(),
             TestData.Constants.currentColorScheme,
