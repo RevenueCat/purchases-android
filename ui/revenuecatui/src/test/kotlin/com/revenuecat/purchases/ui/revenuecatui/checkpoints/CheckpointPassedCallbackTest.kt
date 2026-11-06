@@ -813,6 +813,7 @@ class CheckpointPassedCallbackTest {
     private fun workflowListener() = manager.paywallOptions(presentedCallIds.last()) {}!!.listener!!
 
     private fun resolvesTo(resolution: CheckpointResolution) {
+        every { mockPresenter.displayedOffering } returns resolution.presentedOfferings.firstOrNull()
         coEvery { mockPurchases.internalResolveCp(any(), any()) } returns resolution
     }
 

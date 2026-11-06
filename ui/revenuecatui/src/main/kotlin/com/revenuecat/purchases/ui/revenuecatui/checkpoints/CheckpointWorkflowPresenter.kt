@@ -8,16 +8,19 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import androidx.activity.ComponentDialog
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.ComposeView
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.ui.revenuecatui.Paywall
+import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.composables.ModalSheetState
+import com.revenuecat.purchases.ui.revenuecatui.getPaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.helpers.EDGE_TO_EDGE_WINDOW_THEME
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.applyEdgeToEdge
@@ -50,12 +53,13 @@ internal class CheckpointWorkflowPresenter(
     private val callId: String,
     private val presentationHost: CheckpointPresentationHost,
     presentationMode: FlowPresentationMode = FlowPresentationMode.MODAL_FULL_SCREEN,
-    private val createContent: (Activity, PaywallOptions, ModalSheetState?) -> View = { activity, options, sheet ->
-        ComposeView(activity).apply {
-            setContent { if (sheet == null) Paywall(options) else SheetWorkflowContent(sheet, options) }
-        }
-    },
+    private val createContent: ((Activity, PaywallOptions, ModalSheetState?) -> View)? = null,
 ) {
+
+    val displayedOffering: Offering?
+        get() = displayedOfferingProvider?.invoke()
+
+    private var displayedOfferingProvider: (() -> Offering?)? = null
 
     // One sheet per presentation, not per window: a re-presented sheet composes where the previous one was, at
     // rest or mid-hide, and a hide that lost its window completes in the next one.
@@ -109,7 +113,7 @@ internal class CheckpointWorkflowPresenter(
         // decides what back does.
         dialog.setCancelable(false)
         dialog.setContentView(
-            createContent(activity, options, sheetState),
+            createContent?.invoke(activity, options, sheetState) ?: createPaywallContent(activity, options),
             ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
         )
         dialog.window?.decorView?.setViewTreeViewModelStoreOwner(viewModelStoreOwner)
@@ -124,6 +128,26 @@ internal class CheckpointWorkflowPresenter(
             dialog.show()
         }
     }
+
+    private fun createPaywallContent(activity: Activity, options: PaywallOptions): View =
+        ComposeView(activity).apply {
+            setContent {
+                val viewModel = getPaywallViewModel(options)
+                DisposableEffect(viewModel) {
+                    val provider = { viewModel.displayedOffering }
+                    displayedOfferingProvider = provider
+                    onDispose {
+                        if (displayedOfferingProvider === provider) displayedOfferingProvider = null
+                    }
+                }
+                val sheet = sheetState
+                if (sheet == null) {
+                    InternalPaywall(options, viewModel)
+                } else {
+                    SheetWorkflowContent(sheet, options, viewModel)
+                }
+            }
+        }
 
     // The manager already took the call, so this only takes the window down and stops observing: completing
     // here would double-report.
@@ -205,6 +229,7 @@ internal class CheckpointWorkflowPresenter(
     }
 
     private fun dismissWindowOnly() {
+        displayedOfferingProvider = null
         val dialog = this.dialog ?: return
         this.dialog = null
         // Dialog delivers the dismiss callback through a posted message, so the safety net must be detached

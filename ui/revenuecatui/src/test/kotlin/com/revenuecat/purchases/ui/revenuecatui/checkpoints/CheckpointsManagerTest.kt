@@ -74,6 +74,7 @@ class CheckpointsManagerTest {
     private val defaultPresenterModes = mutableListOf<FlowPresentationMode>()
     private val results = mutableListOf<CheckpointResult>()
 
+    private var displayedOffering: Offering? = null
     private lateinit var manager: CheckpointsManager
 
     @Before
@@ -85,7 +86,9 @@ class CheckpointsManagerTest {
         presentedCallIds.clear()
         results.clear()
         mockActivity = mockk(relaxed = true)
-        mockPresenter = mockk(relaxed = true)
+        mockPresenter = mockk(relaxed = true) {
+            every { displayedOffering } answers { this@CheckpointsManagerTest.displayedOffering }
+        }
         defaultPresenter = null
         defaultErrorPresenters.clear()
         defaultPresentedErrors.clear()
@@ -571,6 +574,82 @@ class CheckpointsManagerTest {
     }
 
     @Test
+    fun `restoring an unvisited workflow offering leaves the current paywall open`() = runTest(dispatcher) {
+        val first = offering(product("monthly"))
+        val alternate = offering(product("annual"))
+        resolvesTo(CheckpointResolution.MatchedWorkflow(
+            workflow("first", "alternate"), mockk(), offeringsById("first" to first, "alternate" to alternate),
+            checkpointRuleId = null, traceId = "trace-id", workflowBlobRef = null,
+        ))
+        mappingGrants("monthly" to listOf("pro"), "annual" to listOf("premium"))
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+        val options = manager.paywallOptions(currentCallId()) {}!!
+        val restored = customerInfoWithActive("premium")
+
+        options.listener!!.onRestoreCompleted(restored)
+        assertThat(options.shouldDisplayBlock!!(restored)).isTrue
+        finishPaywall(outcome = null, navigatedBack = true)
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Dismissed)
+        assertThat(run!!.backedOut).isTrue
+    }
+
+    @Test
+    fun `a workflow restore reads the current offering again after navigation and back`() = runTest(dispatcher) {
+        val first = offering(product("monthly"))
+        val alternate = offering(product("annual"))
+        resolvesTo(CheckpointResolution.MatchedWorkflow(
+            workflow("first", "alternate"), mockk(), offeringsById("first" to first, "alternate" to alternate),
+            checkpointRuleId = null, traceId = "trace-id", workflowBlobRef = null,
+        ))
+        mappingGrants("monthly" to listOf("pro"), "annual" to listOf("premium", "bonus"))
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+        val options = manager.paywallOptions(currentCallId()) {}!!
+        displayedOffering = alternate
+        val originalRestored = customerInfoWithActive("pro")
+
+        options.listener!!.onRestoreCompleted(originalRestored)
+        assertThat(options.shouldDisplayBlock!!(originalRestored)).isTrue
+        val partial = customerInfoWithActive("premium")
+        options.listener!!.onRestoreCompleted(partial)
+        assertThat(options.shouldDisplayBlock!!(partial)).isTrue
+        displayedOffering = first
+        val alternateRestored = customerInfoWithActive("premium", "bonus")
+        options.listener!!.onRestoreCompleted(alternateRestored)
+        assertThat(options.shouldDisplayBlock!!(alternateRestored)).isTrue
+        val currentRestored = customerInfoWithActive("pro")
+        options.listener!!.onRestoreCompleted(currentRestored)
+        assertThat(options.shouldDisplayBlock!!(currentRestored)).isFalse
+        finishPaywall(outcome = null, navigatedBack = true)
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Restored(currentRestored))
+        assertThat(run!!.backedOut).isFalse
+    }
+
+    @Test
+    fun `restoring with no workflow offering displayed leaves the flow open`() = runTest(dispatcher) {
+        resolvesToWorkflow(product("monthly"))
+        mappingGrants("monthly" to listOf("pro"))
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+        val options = manager.paywallOptions(currentCallId()) {}!!
+        displayedOffering = null
+        val restored = customerInfoWithActive("pro")
+
+        options.listener!!.onRestoreCompleted(restored)
+        assertThat(options.shouldDisplayBlock!!(restored)).isTrue
+        finishPaywall(outcome = null, navigatedBack = true)
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Dismissed)
+        assertThat(run!!.backedOut).isTrue
+    }
+
+    @Test
     fun `a workflow restore of only part of an offered entitlement set stays open and does not pass on back`() =
         runTest(dispatcher) {
             resolvesToWorkflow(product("monthly"))
@@ -580,8 +659,8 @@ class CheckpointsManagerTest {
             val call = launch { run = runCheckpoint() }
             val options = manager.paywallOptions(currentCallId()) {}!!
 
-            assertThat(options.shouldDisplayBlock!!(restored)).isTrue
             options.listener!!.onRestoreCompleted(restored)
+            assertThat(options.shouldDisplayBlock!!(restored)).isTrue
             finishPaywall(outcome = null, navigatedBack = true)
             call.join()
 
@@ -599,8 +678,8 @@ class CheckpointsManagerTest {
         val call = launch { run = runCheckpoint() }
         val options = manager.paywallOptions(currentCallId()) {}!!
 
-        assertThat(options.shouldDisplayBlock!!(restored)).isFalse
         options.listener!!.onRestoreCompleted(restored)
+        assertThat(options.shouldDisplayBlock!!(restored)).isFalse
         finishPaywall(outcome = null, navigatedBack = true)
         call.join()
 
@@ -618,10 +697,14 @@ class CheckpointsManagerTest {
             mappingGrants("monthly" to listOf("pro"))
             val call = launch { runCheckpoint() }
 
-            val shouldDisplay = manager.paywallOptions(currentCallId()) {}!!.shouldDisplayBlock!!
-            assertThat(shouldDisplay(customerInfoWithActive("plus", "pro"))).isFalse
-            assertThat(shouldDisplay(customerInfoWithActive("plus"))).isTrue
-            assertThat(shouldDisplay(customerInfoWithActive())).isTrue
+            val options = manager.paywallOptions(currentCallId()) {}!!
+            for (restored in listOf(customerInfoWithActive("plus"), customerInfoWithActive())) {
+                options.listener!!.onRestoreCompleted(restored)
+                assertThat(options.shouldDisplayBlock!!(restored)).isTrue
+            }
+            val restored = customerInfoWithActive("plus", "pro")
+            options.listener!!.onRestoreCompleted(restored)
+            assertThat(options.shouldDisplayBlock!!(restored)).isFalse
 
             finishPaywall(outcome = null)
             call.join()
@@ -635,9 +718,13 @@ class CheckpointsManagerTest {
             mappingGrants("monthly" to listOf("pro"))
             val call = launch { runCheckpoint() }
 
-            val shouldDisplay = manager.paywallOptions(currentCallId()) {}!!.shouldDisplayBlock!!
-            assertThat(shouldDisplay(customerInfoWithActive("pro"))).isFalse
-            assertThat(shouldDisplay(customerInfoWithActive())).isTrue
+            val options = manager.paywallOptions(currentCallId()) {}!!
+            val empty = customerInfoWithActive()
+            options.listener!!.onRestoreCompleted(empty)
+            assertThat(options.shouldDisplayBlock!!(empty)).isTrue
+            val restored = customerInfoWithActive("pro")
+            options.listener!!.onRestoreCompleted(restored)
+            assertThat(options.shouldDisplayBlock!!(restored)).isFalse
 
             finishPaywall(outcome = null)
             call.join()
@@ -653,8 +740,8 @@ class CheckpointsManagerTest {
             val restored = customerInfoWithActive("plus")
 
             val options = manager.paywallOptions(currentCallId()) {}!!
-            assertThat(options.shouldDisplayBlock!!(restored)).isTrue
             options.listener!!.onRestoreCompleted(restored)
+            assertThat(options.shouldDisplayBlock!!(restored)).isTrue
             finishPaywall(outcome = null, navigatedBack = true)
             call.join()
 
@@ -681,8 +768,8 @@ class CheckpointsManagerTest {
             val restored = customerInfoWithActive("plus")
 
             val options = manager.paywallOptions(currentCallId()) {}!!
-            assertThat(options.shouldDisplayBlock!!(restored)).isTrue
             options.listener!!.onRestoreCompleted(restored)
+            assertThat(options.shouldDisplayBlock!!(restored)).isTrue
             finishPaywall(outcome = null, navigatedBack = true)
             call.join()
 
@@ -699,11 +786,51 @@ class CheckpointsManagerTest {
         val restored = customerInfoWithActive("pro")
 
         val options = manager.paywallOptions(currentCallId()) {}!!
-        assertThat(options.shouldDisplayBlock!!(restored)).isTrue
         options.listener!!.onRestoreCompleted(restored)
+        assertThat(options.shouldDisplayBlock!!(restored)).isTrue
         finishPaywall(outcome = null, navigatedBack = true)
         call.join()
 
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Dismissed)
+        assertThat(run!!.backedOut).isTrue
+    }
+
+    @Test
+    fun `a workflow restore keeps its granting decision if PEM changes before dismissal`() = runTest(dispatcher) {
+        resolvesToWorkflow(product("monthly"))
+        mappingGrants("monthly" to listOf("pro"))
+        val restored = customerInfoWithActive("pro")
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+        val options = manager.paywallOptions(currentCallId()) {}!!
+
+        options.listener!!.onRestoreCompleted(restored)
+        mappingGrants("monthly" to listOf("pro", "premium"))
+        val shouldDisplay = options.shouldDisplayBlock!!(restored)
+        finishPaywall(outcome = null, navigatedBack = shouldDisplay)
+        call.join()
+
+        assertThat(shouldDisplay).isFalse
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Restored(restored))
+        assertThat(run!!.backedOut).isFalse
+    }
+
+    @Test
+    fun `a workflow restore keeps its rejecting decision if PEM arrives before dismissal`() = runTest(dispatcher) {
+        resolvesToWorkflow(product("monthly"))
+        noMapping()
+        val restored = customerInfoWithActive("pro")
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+        val options = manager.paywallOptions(currentCallId()) {}!!
+
+        options.listener!!.onRestoreCompleted(restored)
+        mappingGrants("monthly" to listOf("pro"))
+        val shouldDisplay = options.shouldDisplayBlock!!(restored)
+        finishPaywall(outcome = null, navigatedBack = shouldDisplay)
+        call.join()
+
+        assertThat(shouldDisplay).isTrue
         assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Dismissed)
         assertThat(run!!.backedOut).isTrue
     }
@@ -1937,6 +2064,7 @@ class CheckpointsManagerTest {
     }
 
     private fun resolvesTo(resolution: CheckpointResolution) {
+        displayedOffering = resolution.presentedOfferings.firstOrNull()
         coEvery { mockPurchases.internalResolveCp(any(), any()) } returns resolution
     }
 

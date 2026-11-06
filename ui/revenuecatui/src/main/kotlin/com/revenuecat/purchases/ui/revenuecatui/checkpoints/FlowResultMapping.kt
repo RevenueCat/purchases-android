@@ -171,7 +171,10 @@ internal suspend fun CheckpointRun.customerInfoAfter(
     ?: purchases.customerInfo(CacheFetchPolicy.CACHE_ONLY).getOrNull()
     ?: customerInfoBefore
 
-/** Whether a complete offered product's entitlement set is active, with at least one entitlement newly active. */
+/**
+ * Whether the user now holds a complete offered product's entitlement set, including at least one entitlement
+ * they did not hold in [activeEntitlementsBefore].
+ */
 internal fun CustomerInfo.grantsPresentedEntitlement(
     activeEntitlementsBefore: Set<String>?,
     presentedEntitlements: List<Set<String>>,

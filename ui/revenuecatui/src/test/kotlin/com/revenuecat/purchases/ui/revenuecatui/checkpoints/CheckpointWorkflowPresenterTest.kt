@@ -11,6 +11,8 @@ import android.widget.EditText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.DangerousSettings
+import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
@@ -24,9 +26,14 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.composables.ModalSheetState
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
+import io.mockk.just
+import io.mockk.Runs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -93,6 +100,39 @@ class CheckpointWorkflowPresenterTest {
                 }
             },
         )
+    }
+
+    @Test
+    fun `window exposes the composed offering only while its paywall is visible`() {
+        val offering = TestData.template1Offering
+        val options = PaywallOptions.Builder(dismissRequest = {}).setOffering(offering).build()
+        val host = mockk<CheckpointPresentationHost>(relaxed = true) {
+            every { paywallOptions(any(), any()) } returns options
+        }
+        mockkObject(Purchases)
+        every { Purchases.sharedInstance } returns mockPurchases
+        every { mockPurchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.REVENUECAT
+        every { mockPurchases.storefrontCountryCode } returns "US"
+        every { mockPurchases.preferredUILocaleOverride } returns null
+        every { mockPurchases.track(any()) } just Runs
+        every { mockPurchases.currentConfiguration } returns mockk {
+            every { dangerousSettings } returns DangerousSettings()
+        }
+        try {
+            listOf(FlowPresentationMode.MODAL_FULL_SCREEN, FlowPresentationMode.MODAL_SHEET).forEach { mode ->
+                val window = CheckpointWorkflowPresenter("rendered", host, mode)
+                assertThat(window.displayedOffering).isNull()
+
+                window.show(controller.get())
+                shadowOf(Looper.getMainLooper()).idle()
+
+                assertThat(window.displayedOffering).isSameAs(offering)
+                window.abandon()
+                assertThat(window.displayedOffering).isNull()
+            }
+        } finally {
+            unmockkObject(Purchases)
+        }
     }
 
     @After
