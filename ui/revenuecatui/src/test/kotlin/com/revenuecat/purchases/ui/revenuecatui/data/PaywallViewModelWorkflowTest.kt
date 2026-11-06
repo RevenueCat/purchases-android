@@ -22,6 +22,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
@@ -1701,6 +1702,70 @@ class PaywallViewModelWorkflowTest {
         assertThat(started.fromStepId).isEqualTo("step-2")
         assertThat(started.isFirstStep).isTrue
         assertThat(started.isLastStep).isFalse
+    }
+
+    @Test
+    fun `system back cannot dismiss a workflow step without a dismiss button`() {
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
+
+        assertThat(vm.handleBackNavigation()).isFalse
+        assertThat(vm.canDismissWithSystemBack()).isFalse
+    }
+
+    @Test
+    fun `system back can dismiss a workflow step with a close workflow button`() {
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(
+            workflowWithFirstStepButton(ButtonComponent.Action.CloseWorkflow),
+            testOfferings,
+            null,
+            uiConfig,
+        )
+
+        assertThat(vm.canDismissWithSystemBack()).isTrue
+    }
+
+    @Test
+    fun `system back can dismiss a workflow step with a navigate back button`() {
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(
+            workflowWithFirstStepButton(ButtonComponent.Action.NavigateBack),
+            testOfferings,
+            null,
+            uiConfig,
+        )
+
+        assertThat(vm.canDismissWithSystemBack()).isTrue
+    }
+
+    @Test
+    fun `system back on a later step without a dismiss button navigates back instead of dismissing`() {
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        vm.onTransitionComplete(vm.workflowState.value!!.pendingTransition!!.id)
+
+        assertThat(vm.handleBackNavigation()).isTrue
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+    }
+
+    private fun workflowWithFirstStepButton(action: ButtonComponent.Action): PublishedWorkflow {
+        val screen = makeScreen(screenId1).copy(
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(
+                        components = listOf(
+                            TestData.Components.monthlyPackageComponent,
+                            ButtonComponent(action = action, stack = StackComponent(components = emptyList())),
+                        ),
+                    ),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+        )
+        return workflow.copy(screens = workflow.screens + (screenId1 to screen))
     }
 
     @Test

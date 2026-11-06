@@ -1489,6 +1489,13 @@ class PaywallViewModelTest {
     }
 
     @Test
+    fun `canDismissWithSystemBack returns true for regular paywall`() {
+        val model = create()
+
+        assertThat(model.canDismissWithSystemBack()).isTrue()
+    }
+
+    @Test
     fun `handleWorkflowAction does nothing when no workflow is loaded`() {
         val model = create()
         val stateBefore = model.state.value
