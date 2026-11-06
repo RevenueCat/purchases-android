@@ -6,14 +6,19 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
+import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrNull
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Date
 import kotlin.coroutines.resume
+
+/** The entitlements one product grants, all of which must be active for it to count as obtained. */
+internal typealias ProductEntitlements = Set<String>
 
 /**
  * One customer info read under [policy], delivered as a value: what to do with the error is the caller's. The SDK
@@ -80,13 +85,43 @@ internal fun CheckpointRun.toResult(customerInfoBefore: CustomerInfo, customer: 
         )
     }
 
-/** The offerings a resolved checkpoint can present: the matched one, or every offering for a workflow. */
+/**
+ * The offerings a resolved checkpoint can present: the matched one, or the ones a workflow's steps reference, on
+ * the step itself or on its screen. Exit offers are not presented for checkpoints.
+ */
 internal val CheckpointResolution.presentedOfferings: List<Offering>
     get() = when (this) {
         is CheckpointResolution.MatchedOffering -> listOf(offering)
-        is CheckpointResolution.MatchedWorkflow -> offerings.all.values.toList()
+        is CheckpointResolution.MatchedWorkflow ->
+            workflow.steps.values
+                .mapNotNull { step ->
+                    step.offeringIdentifier ?: step.screenId?.let { workflow.screens[it]?.offeringIdentifier }
+                }
+                .distinct()
+                .mapNotNull { offerings[it] }
         is CheckpointResolution.NoAction -> emptyList()
     }
+
+/**
+ * The complete, nonempty entitlement sets offered products grant, per the SDK's product-entitlement [mapping]: none
+ * when it has not been cached yet. Keyed like [purchaseDate]: the store product identifier with its base plan first,
+ * the plain one otherwise.
+ */
+internal fun List<Offering>.entitlementsGrantedBy(mapping: ProductEntitlementMapping?): Set<ProductEntitlements> {
+    if (mapping == null) {
+        Logger.d(
+            "No product-entitlement mapping is cached: a restore during the flow " +
+                "cannot be tied to the presented products.",
+        )
+        return emptySet()
+    }
+    return flatMap { offering -> offering.availablePackages.map { it.product } }
+        .mapNotNull { product ->
+            val productMapping = mapping.mappings[product.id] ?: mapping.mappings[product.purchasingData.productId]
+            productMapping?.entitlements?.toSet()?.takeIf { it.isNotEmpty() }
+        }
+        .toSet()
+}
 
 /**
  * The products among those [presentedOfferings] sell purchased since [customerInfoBefore]: those whose purchase
@@ -140,9 +175,20 @@ internal suspend fun CheckpointRun.customerInfoAfter(
     ?: purchases.customerInfo(CacheFetchPolicy.CACHE_ONLY).getOrNull()
     ?: customerInfoBefore
 
-/** Whether the user now holds an entitlement they did not in [activeEntitlementsBefore]. */
-internal fun CustomerInfo.grantsNewEntitlements(activeEntitlementsBefore: Set<String>?): Boolean =
-    obtainedEntitlements(activeEntitlementsBefore).isNotEmpty()
+/**
+ * Whether the user now holds a complete offered product's entitlement set, including at least one entitlement
+ * they did not hold in [activeEntitlementsBefore].
+ */
+internal fun CustomerInfo.grantsPresentedEntitlement(
+    activeEntitlementsBefore: Set<String>?,
+    presentedProducts: Set<ProductEntitlements>,
+): Boolean {
+    val active = activeEntitlementIds
+    val newlyActive = active - activeEntitlementsBefore.orEmpty()
+    return presentedProducts.any { entitlements ->
+        active.containsAll(entitlements) && entitlements.any { it in newlyActive }
+    }
+}
 
 /** The entitlements active now that were not in [activeEntitlementsBefore]; all of them when that is unknown. */
 internal fun CustomerInfo.obtainedEntitlements(
