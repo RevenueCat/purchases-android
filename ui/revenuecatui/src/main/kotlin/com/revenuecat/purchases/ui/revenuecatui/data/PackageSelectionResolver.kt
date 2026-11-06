@@ -65,10 +65,7 @@ internal class PackageSelectionResolver(
     private fun allHiddenFallback(): String? {
         val candidates = sheet.ifEmpty { active }
         return candidates.firstOrNull()?.uniqueId.takeIf {
-            candidates.none { it.isSelectedByDefault } && candidates.none { info ->
-                info.resolvesVisible(context.withSelection(null)) ||
-                    info.resolvesVisible(context.withSelection(info.selectionInfo()))
-            }
+            candidates.none { it.isSelectedByDefault } && candidates.allHidden(context)
         }
     }
 
@@ -110,7 +107,7 @@ internal fun AvailablePackages.Info.canSelect(
     visiblePackages: List<AvailablePackages.Info>,
 ): Boolean = resolvesVisible(context.withSelection(null)) && visiblePackages.rendersWhenSelected(uniqueId, context)
 
-/** The authored card must render before or after selection, and some copy must remain visible once selected. */
+/** Prefer visible authored defaults, allowing a hidden default only when every candidate is hidden. */
 internal fun List<AvailablePackages.Info>.authoredDefaultSelection(
     context: ComponentVisibilityContext,
     visiblePackages: List<AvailablePackages.Info> = this,
@@ -121,6 +118,11 @@ internal fun List<AvailablePackages.Info>.authoredDefaultSelection(
                 info.resolvesVisible(context.withSelection(info.selectionInfo()))
             ) &&
         visiblePackages.rendersWhenSelected(info.uniqueId, context)
+} ?: firstOrNull { it.isSelectedByDefault }?.takeIf { visiblePackages.allHidden(context) }
+
+private fun List<AvailablePackages.Info>.allHidden(context: ComponentVisibilityContext): Boolean = none { info ->
+    info.resolvesVisible(context.withSelection(null)) ||
+        info.resolvesVisible(context.withSelection(info.selectionInfo()))
 }
 
 internal fun List<AvailablePackages.Info>.defaultSelection(

@@ -9,6 +9,7 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fi
 import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedButtonPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedCarouselPartial
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedFooterPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedIconPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedImagePartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
@@ -106,6 +107,7 @@ private val PresentedPartial<*>.size: Size?
         is PresentedCarouselPartial -> partial.size
         is PresentedTabsPartial -> partial.size
         is PresentedTimelinePartial -> partial.size
+        is PresentedFooterPartial,
         is PresentedButtonPartial,
         is PresentedWebViewPartial,
         is PresentedTimelineItemPartial,

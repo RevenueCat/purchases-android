@@ -8,6 +8,7 @@ import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -295,6 +296,7 @@ private fun WorkflowStepContent(
             // The header for a workflow step is rendered by the scaffold, so hasHeader is false here.
             // A sticky footer, when present, overlays the bottom on top of the full-height content and
             // reserves clearance via footerBottomPadding (see PaywallComponentsScaffold).
+            val footerBodyInsets = footerBodyBottomInsets(stepState)
             OverlayLayout(
                 state = stepState,
                 modifier = Modifier.fillMaxSize(),
@@ -318,6 +320,7 @@ private fun WorkflowStepContent(
                         .conditional(stepState.header != null && !stepState.mainStackHasHeroImage) {
                             headerTopPadding(stepState)
                         }
+                        .windowInsetsPadding(footerBodyInsets)
                         .conditional(stepState.stickyFooter != null) {
                             footerBottomPadding(stepState)
                         },

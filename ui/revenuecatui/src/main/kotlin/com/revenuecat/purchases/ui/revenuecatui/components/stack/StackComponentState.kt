@@ -2,6 +2,7 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components.stack
 
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
@@ -15,6 +16,8 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.paywalls.components.properties.Size
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentVisibilityContext
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
@@ -120,6 +123,9 @@ internal class StackComponentState(
     val children = style.children
 
     @get:JvmSynthetic
+    val fillsAvailableHeight = style.fillsAvailableHeight
+
+    @get:JvmSynthetic
     val applyTopWindowInsets = style.applyTopWindowInsets
 
     @get:JvmSynthetic
@@ -148,7 +154,16 @@ internal class StackComponentState(
 
     @get:JvmSynthetic
     val size by derivedStateOf {
-        (presentedPartial?.partial?.size ?: style.size).addMargin(margin, layoutDirection)
+        val resolvedSize = presentedPartial?.partial?.size ?: style.size
+        val containerSize = if (style.fillsAvailableHeight) {
+            Size(
+                width = resolvedSize.width,
+                height = Fill(),
+            )
+        } else {
+            resolvedSize
+        }
+        containerSize.addMargin(margin, layoutDirection)
     }
 
     @get:JvmSynthetic
@@ -169,9 +184,12 @@ internal class StackComponentState(
     val scrollOrientation by derivedStateOf {
         // An explicit Overflow.NONE in a partial must disable scrolling, not fall
         // back to the base style — only an absent overflow inherits it.
+        // Split footer Z-layers keep their vertical fallback for explicit scroll overrides.
         when (val overflow = presentedPartial?.partial?.overflow) {
             null -> style.scrollOrientation
-            else -> overflow.toOrientation(dimension)
+            StackComponent.Overflow.NONE -> null
+            StackComponent.Overflow.SCROLL -> overflow.toOrientation(dimension)
+                ?: if (fillsAvailableHeight) Orientation.Vertical else null
         }
     }
 
