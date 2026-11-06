@@ -61,6 +61,28 @@ class PollerTest {
     }
 
     @Test
+    fun `poll passes the same app user id to every attempt`() = runBlocking {
+        val receivedAppUserIDs = mutableListOf<String>()
+
+        Poller.poll(
+            clientTransactionId = "ct_1",
+            appUserID = "user_1",
+            fetcher = { _, appUserID ->
+                receivedAppUserIDs.add(appUserID)
+                if (receivedAppUserIDs.size < 2) {
+                    RewardVerificationPollStatus.PENDING
+                } else {
+                    RewardVerificationPollStatus.Verified(CoreVerifiedReward.NoReward, customerInfo = null)
+                }
+            },
+            sleepSeconds = noSleep,
+            jitterSeconds = fixedJitter,
+        )
+
+        assertEquals(listOf("user_1", "user_1"), receivedAppUserIDs)
+    }
+
+    @Test
     fun `poll maps verified status to terminal verified outcome without retrying`() = runBlocking {
         var attempts = 0
 
