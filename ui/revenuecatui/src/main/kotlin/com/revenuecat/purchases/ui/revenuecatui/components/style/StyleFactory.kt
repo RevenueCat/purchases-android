@@ -134,6 +134,7 @@ internal class StyleFactory(
          * If this is non-null, it means the branch currently being built is inside a tab component.
          */
         var tabIndex: Int? = null,
+        var tabsScope: TabsScope? = null,
         /**
          * Identifies the sheet whose content is currently being built, or null for root content.
          */
@@ -292,7 +293,14 @@ internal class StyleFactory(
         val heroImageDetected: Boolean
             get() = windowInsetsState.heroImageDetected
 
-        var defaultTabIndex: Int? = null
+        private var unscopedDefaultTabIndex: Int? = null
+        private val tabsScopes = mutableListOf<TabsScope>()
+        var defaultTabIndex: Int?
+            get() = tabsScopes.firstOrNull()?.defaultTabIndex ?: unscopedDefaultTabIndex
+            set(value) {
+                val scope = tabsScope
+                if (scope != null) scope.defaultTabIndex = value ?: 0 else unscopedDefaultTabIndex = value
+            }
         val rcPackage: Package?
             get() = packageInfo?.pkg
         val resolvedOffer: ResolvedOffer?
@@ -306,6 +314,7 @@ internal class StyleFactory(
             get() = AvailablePackages(
                 packagesOutsideTabs = packagesOutsideTabs,
                 packagesByTab = packagesByTab,
+                tabsScopes = tabsScopes,
             )
 
         /**
@@ -384,6 +393,9 @@ internal class StyleFactory(
             stateUpdates: List<StateUpdate>,
             block: StyleFactoryScope.() -> T,
         ): T {
+            val previousScope = tabsScope
+            val parent = tabIndex?.let { TabSelection(previousScope, it) }
+            tabsScope = TabsScope(parent).also { tabsScopes.add(it) }
             val previousName = enclosingTabsComponentName
             val previousIds = enclosingTabsOrderedTabIds
             val previousStateUpdates = enclosingTabsStateUpdates
@@ -403,6 +415,7 @@ internal class StyleFactory(
             try {
                 return block()
             } finally {
+                tabsScope = previousScope
                 enclosingTabsComponentName = previousName
                 enclosingTabsOrderedTabIds = previousIds
                 enclosingTabsStateUpdates = previousStateUpdates
@@ -523,7 +536,10 @@ internal class StyleFactory(
             }
 
         private fun recordPackage(pkg: AvailablePackages.Info) {
-            val scopedPackage = pkg.copy(sheetPresentationKey = sheetPresentationKey)
+            val scopedPackage = pkg.copy(
+                sheetPresentationKey = sheetPresentationKey,
+                tab = tabIndex?.let { TabSelection(tabsScope, it) },
+            )
             val currentTabIndex = tabIndex
             if (currentTabIndex == null) {
                 packagesOutsideTabs.add(scopedPackage)
@@ -637,6 +653,7 @@ internal class StyleFactory(
                     rcPackage = rcPackage,
                     resolvedOffer = resolvedOffer,
                     tabIndex = tabControlIndex,
+                    tabsScope = tabsScope,
                     offerEligibility = offerEligibility,
                     ignoreTopWindowInsets = ignoreTopWindowInsets,
                 )
@@ -1001,6 +1018,7 @@ internal class StyleFactory(
             rcPackage = rcPackage,
             resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
+            tabsScope = tabsScope,
             offerEligibility = offerEligibility,
             countdownDate = countdownDate,
             countFrom = countFrom,
@@ -1052,6 +1070,7 @@ internal class StyleFactory(
             rcPackage = rcPackage,
             resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
+            tabsScope = tabsScope,
             offerEligibility = offerEligibility,
             countdownDate = countdownDate,
             countFrom = countFrom,
@@ -1094,6 +1113,7 @@ internal class StyleFactory(
             rcPackage = rcPackage,
             resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
+            tabsScope = tabsScope,
             offerEligibility = offerEligibility,
             overrides = presentedOverrides,
             ignoreTopWindowInsets = ignoreTopWindowInsets,
@@ -1135,6 +1155,7 @@ internal class StyleFactory(
             rcPackage = rcPackage,
             resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
+            tabsScope = tabsScope,
             offerEligibility = offerEligibility,
             overrides = presentedOverrides ?: emptyList(),
             showControls = component.showControls,
@@ -1174,6 +1195,7 @@ internal class StyleFactory(
                 rcPackage = rcPackage,
                 resolvedOffer = resolvedOffer,
                 tabIndex = tabControlIndex,
+                tabsScope = tabsScope,
                 offerEligibility = offerEligibility,
                 overrides = presentedOverrides,
             )
@@ -1202,6 +1224,7 @@ internal class StyleFactory(
             rcPackage = rcPackage,
             resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
+            tabsScope = tabsScope,
             offerEligibility = offerEligibility,
             overrides = presentedOverrides,
         )
@@ -1238,6 +1261,7 @@ internal class StyleFactory(
             rcPackage = rcPackage,
             resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
+            tabsScope = tabsScope,
             offerEligibility = offerEligibility,
             overrides = presentedOverrides,
         )
@@ -1279,6 +1303,7 @@ internal class StyleFactory(
             rcPackage = rcPackage,
             resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
+            tabsScope = tabsScope,
             offerEligibility = offerEligibility,
             overrides = presentedOverrides,
             componentName = component.name,
@@ -1303,6 +1328,7 @@ internal class StyleFactory(
                         tabContextNamesById = enclosingTabContextNamesById,
                         tabsDefaultTabIndex = enclosingTabsDefaultTabIndexForInteraction,
                         stateUpdates = enclosingTabsStateUpdates,
+                        tabsScope = tabsScope,
                     )
                 }
         }
@@ -1325,6 +1351,7 @@ internal class StyleFactory(
                 componentName = enclosingTabsComponentName ?: component.name,
                 tabIdsOrdered = enclosingTabsOrderedTabIds,
                 stateUpdates = enclosingTabsStateUpdates,
+                tabsScope = tabsScope,
             )
         }
 
@@ -1369,6 +1396,7 @@ internal class StyleFactory(
                         tabs = tabs,
                         overrides = overrides,
                         stateUpdates = component.stateUpdates,
+                        tabsScope = tabsScope,
                     )
                 }
             }

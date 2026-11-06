@@ -38,7 +38,7 @@ internal fun rememberUpdatedStackComponentState(
     style = style,
     windowDpSize = paywallState.paywallBoundsDp,
     selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
-    selectedTabIndexProvider = { paywallState.selectedTabIndex },
+    selectedTabIndexProvider = { paywallState.selectedTabIndex(style.tabsScope) },
     selectedOfferEligibilityProvider = { paywallState.selectedOfferEligibility },
     customVariablesProvider = { paywallState.mergedCustomVariables },
     stateStoreProvider = { paywallState.stateStore },

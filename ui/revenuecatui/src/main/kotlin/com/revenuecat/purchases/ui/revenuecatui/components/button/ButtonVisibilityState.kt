@@ -30,7 +30,7 @@ internal fun rememberUpdatedButtonVisibilityState(
     style = style,
     windowDpSize = paywallState.paywallBoundsDp,
     selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
-    selectedTabIndexProvider = { paywallState.selectedTabIndex },
+    selectedTabIndexProvider = { paywallState.selectedTabIndex(style.stackComponentStyle.tabsScope) },
     selectedOfferEligibilityProvider = { paywallState.selectedOfferEligibility },
     customVariablesProvider = { paywallState.mergedCustomVariables },
     stateStoreProvider = { paywallState.stateStore },
