@@ -266,7 +266,7 @@ public class SubscriptionInfo(
         unsubscribeDetectedAt = response.unsubscribeDetectedAt,
         billingIssuesDetectedAt = response.billingIssuesDetectedAt,
         gracePeriodExpiresDate = response.gracePeriodExpiresDate,
-        ownershipType = response.ownershipType,
+        ownershipType = OwnershipType.fromString(response.ownershipType),
         periodType = response.periodType,
         refundedAt = response.refundedAt,
         storeTransactionId = response.storeTransactionId,
