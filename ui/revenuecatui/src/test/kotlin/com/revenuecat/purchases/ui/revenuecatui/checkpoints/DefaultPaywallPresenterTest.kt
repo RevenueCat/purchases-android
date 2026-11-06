@@ -47,6 +47,7 @@ class DefaultPaywallPresenterTest {
     private val offering = mockk<Offering> {
         every { availablePackages } returns listOf(mockk<Package> { every { product } returns monthlyProduct })
     }
+    private var displayedOffering: Offering? = offering
     private val params = PaywallPresenter.Params(
         offering,
         "test_checkpoint",
@@ -78,7 +79,9 @@ class DefaultPaywallPresenterTest {
         mockPurchases = mockk { every { currentActivity } returns mockActivity }
         cachedActiveEntitlements()
         noMapping()
-        mockWindow = mockk(relaxed = true)
+        mockWindow = mockk(relaxed = true) {
+            every { displayedOffering } answers { this@DefaultPaywallPresenterTest.displayedOffering }
+        }
         presenter = DefaultPaywallPresenter(mockPurchases, errorPresenter = { _, _ -> }) { callId, host, mode ->
             windowCallId = callId
             windowMode = mode
@@ -227,7 +230,7 @@ class DefaultPaywallPresenterTest {
         mappingGrants("monthly" to listOf("pro"))
         present()
 
-        options().listener!!.onRestoreCompleted(customerInfoWithActive("plus", "pro"))
+        restore(customerInfoWithActive("plus", "pro"))
         assertThat(dismissals).containsExactly(false)
         finished(navigatedBack = false)
 
@@ -239,7 +242,7 @@ class DefaultPaywallPresenterTest {
         mappingGrants("monthly" to listOf("pro", "premium"))
         present()
 
-        options().listener!!.onRestoreCompleted(customerInfoWithActive("pro"))
+        restore(customerInfoWithActive("pro"))
         assertThat(dismissals).isEmpty()
         finished(navigatedBack = true)
 
@@ -252,11 +255,60 @@ class DefaultPaywallPresenterTest {
         mappingGrants("monthly" to listOf("pro", "premium"))
         present()
 
-        options().listener!!.onRestoreCompleted(customerInfoWithActive("pro", "premium"))
+        restore(customerInfoWithActive("pro", "premium"))
         assertThat(dismissals).containsExactly(false)
         finished(navigatedBack = true)
 
         assertThat(results).containsExactly(Result.Continued)
+    }
+
+    @Test
+    fun `restoring the original offering does not close a different displayed offering`() {
+        mappingGrants("monthly" to listOf("pro"))
+        present()
+        displayedOffering = mockk { every { availablePackages } returns emptyList() }
+
+        restore(customerInfoWithActive("pro"))
+        finished(navigatedBack = true)
+
+        assertThat(dismissals).isEmpty()
+        assertThat(results).containsExactly(Result.NavigatedBack)
+    }
+
+    @Test
+    fun `restoring a displayed branch offering closes using its complete entitlement set`() {
+        cachedActiveEntitlements("pro")
+        mappingGrants("annual" to listOf("pro", "premium"))
+        present()
+        val paywallOptions = options()
+        val annual = mockk<StoreProduct> {
+            every { id } returns "annual"
+            every { purchasingData.productId } returns "annual"
+        }
+        displayedOffering = mockk {
+            every { availablePackages } returns listOf(mockk<Package> { every { product } returns annual })
+        }
+
+        restore(customerInfoWithActive("premium"), paywallOptions)
+        assertThat(dismissals).isEmpty()
+        restore(customerInfoWithActive("pro", "premium"), paywallOptions)
+        finished(navigatedBack = true)
+
+        assertThat(dismissals).containsExactly(false)
+        assertThat(results).containsExactly(Result.Continued)
+    }
+
+    @Test
+    fun `restoring before an offering is displayed leaves the paywall open`() {
+        mappingGrants("monthly" to listOf("pro"))
+        present()
+        displayedOffering = null
+
+        restore(customerInfoWithActive("pro"))
+        finished(navigatedBack = true)
+
+        assertThat(dismissals).isEmpty()
+        assertThat(results).containsExactly(Result.NavigatedBack)
     }
 
     @Test
@@ -265,7 +317,7 @@ class DefaultPaywallPresenterTest {
         mappingGrants("monthly" to listOf("plus"))
         present()
 
-        options().listener!!.onRestoreCompleted(customerInfoWithActive("plus"))
+        restore(customerInfoWithActive("plus"))
         assertThat(dismissals).isEmpty()
         finished(navigatedBack = true)
 
@@ -278,7 +330,7 @@ class DefaultPaywallPresenterTest {
         mappingGrants("monthly" to listOf("pro"))
         present()
 
-        options().listener!!.onRestoreCompleted(customerInfoWithActive("pro"))
+        restore(customerInfoWithActive("pro"))
 
         assertThat(dismissals).containsExactly(false)
         finished(navigatedBack = true)
@@ -290,7 +342,7 @@ class DefaultPaywallPresenterTest {
         mappingGrants("monthly" to listOf("pro"))
         present()
 
-        options().listener!!.onRestoreCompleted(customerInfoWithActive("plus"))
+        restore(customerInfoWithActive("plus"))
         assertThat(dismissals).isEmpty()
         finished(navigatedBack = true)
 
@@ -301,7 +353,7 @@ class DefaultPaywallPresenterTest {
     fun `without a cached product-entitlement mapping a granting restore changes nothing`() {
         present()
 
-        options().listener!!.onRestoreCompleted(customerInfoWithActive("pro"))
+        restore(customerInfoWithActive("pro"))
         assertThat(dismissals).isEmpty()
         finished(navigatedBack = true)
 
@@ -312,14 +364,14 @@ class DefaultPaywallPresenterTest {
     fun `a restore uses a mapping cached after an earlier restore`() {
         cachedActiveEntitlements("pro")
         present()
-        val listener = options().listener!!
+        val paywallOptions = options()
         val restored = customerInfoWithActive("pro", "premium")
 
-        listener.onRestoreCompleted(restored)
+        restore(restored, paywallOptions)
         assertThat(dismissals).isEmpty()
 
         mappingGrants("monthly" to listOf("pro", "premium"))
-        listener.onRestoreCompleted(restored)
+        restore(restored, paywallOptions)
         finished(navigatedBack = true)
 
         assertThat(dismissals).containsExactly(false)
@@ -330,10 +382,10 @@ class DefaultPaywallPresenterTest {
     fun `a mapping refreshed during presentation still requires the complete offered entitlement set`() {
         mappingGrants("monthly" to listOf("pro"))
         present()
-        val listener = options().listener!!
+        val paywallOptions = options()
 
         mappingGrants("monthly" to listOf("pro", "premium"))
-        listener.onRestoreCompleted(customerInfoWithActive("pro"))
+        restore(customerInfoWithActive("pro"), paywallOptions)
         finished(navigatedBack = true)
 
         assertThat(dismissals).isEmpty()
@@ -344,10 +396,10 @@ class DefaultPaywallPresenterTest {
     fun `a late mapping does not make already active entitlements newly obtained`() {
         cachedActiveEntitlements("pro", "premium")
         present()
-        val listener = options().listener!!
+        val paywallOptions = options()
 
         mappingGrants("monthly" to listOf("pro", "premium"))
-        listener.onRestoreCompleted(customerInfoWithActive("pro", "premium", "unrelated"))
+        restore(customerInfoWithActive("pro", "premium", "unrelated"), paywallOptions)
         finished(navigatedBack = true)
 
         assertThat(dismissals).isEmpty()
@@ -362,7 +414,7 @@ class DefaultPaywallPresenterTest {
         presenter.paywallOptions(windowCallId!!) { firstDismissals += it }
 
         // A re-present after a configuration change asks for options again with the new window's wiring.
-        options().listener!!.onRestoreCompleted(customerInfoWithActive("pro"))
+        restore(customerInfoWithActive("pro"))
 
         assertThat(firstDismissals).isEmpty()
         assertThat(dismissals).containsExactly(false)
@@ -372,7 +424,7 @@ class DefaultPaywallPresenterTest {
     fun `a later error does not erase a recorded grant`() {
         mappingGrants("monthly" to listOf("pro"))
         present()
-        options().listener!!.onRestoreCompleted(customerInfoWithActive("pro"))
+        restore(customerInfoWithActive("pro"))
         options().listener!!.onPurchaseError(PurchasesError(PurchasesErrorCode.StoreProblemError, "boom"))
 
         finished(navigatedBack = true)
@@ -486,10 +538,10 @@ class DefaultPaywallPresenterTest {
     @Test
     fun `paywall events after the report are ignored`() {
         present()
-        val listener = options().listener!!
+        val paywallOptions = options()
         finished(navigatedBack = false)
 
-        listener.onRestoreCompleted(customerInfoWithActive("pro"))
+        restore(customerInfoWithActive("pro"), paywallOptions)
 
         assertThat(dismissals).isEmpty()
         assertThat(results).containsExactly(Result.Closed)
@@ -518,6 +570,11 @@ class DefaultPaywallPresenterTest {
 
     // What the window asks its host for on each show.
     private fun options(): PaywallOptions = presenter.paywallOptions(windowCallId!!) { dismissals += it }!!
+
+    private fun restore(customerInfo: CustomerInfo, paywallOptions: PaywallOptions = options()) {
+        paywallOptions.listener!!.onRestoreCompleted(customerInfo)
+        if (paywallOptions.shouldDisplayBlock?.invoke(customerInfo) == false) paywallOptions.dismissRequest()
+    }
 
     private fun finished(navigatedBack: Boolean, finishPresentation: () -> Unit = {}) =
         presenter.onPresentationFinished(windowCallId!!, navigatedBack, finishPresentation)
