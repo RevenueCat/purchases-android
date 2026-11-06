@@ -108,6 +108,13 @@ class TabControlDiscountTests {
     }
 
     @Test
+    fun `Package card discount excludes sheet plans inside its tab`() {
+        render(sheetInsideTab = true)
+        compose.onNodeWithText("Essential annual discount:", substring = true, useUnmergedTree = true)
+            .assertTextEquals("Essential annual discount: 43%")
+    }
+
+    @Test
     fun `Package card discount uses its tab plans without a sheet`() {
         render(includeSheet = false)
         compose.onNodeWithText("Essential annual discount:", substring = true, useUnmergedTree = true)
@@ -120,7 +127,21 @@ class TabControlDiscountTests {
         compose.onNodeWithText("Essential annual discount: 60%", useUnmergedTree = true).assertExists()
     }
 
-    private fun render(emptyAnnualTab: Boolean = false, includeSheet: Boolean = true, includeTabs: Boolean = true) {
+    private fun render(
+        emptyAnnualTab: Boolean = false,
+        includeSheet: Boolean = true,
+        includeTabs: Boolean = true,
+        sheetInsideTab: Boolean = false,
+    ) {
+        val sheet = ButtonComponent(
+            action = ButtonComponent.Action.NavigateTo(ButtonComponent.Destination.Sheet(
+                id = "all-plans",
+                stack = StackComponent(components = listOf(
+                    plan(sheetAnnual, "Premium annual", true), plan(sheetMonthly, "Premium monthly", false),
+                )),
+            )),
+            stack = StackComponent(components = listOf(text("All plans"))),
+        )
         val annualPlans = if (emptyAnnualTab) {
             listOf(TabControlComponent, text("No plans"))
         } else {
@@ -150,7 +171,8 @@ class TabControlDiscountTests {
                 )),
             ),
             tabs = listOf(
-                TabsComponent.Tab("annual", stack = StackComponent(components = annualPlans)),
+                TabsComponent.Tab("annual", stack = StackComponent(components = annualPlans +
+                    listOfNotNull(sheet.takeIf { includeSheet && sheetInsideTab }))),
                 TabsComponent.Tab("monthly", stack = StackComponent(components = listOf(
                     TabControlComponent,
                     plan(monthly, "Monthly plan", true),
@@ -158,22 +180,13 @@ class TabControlDiscountTests {
             ),
             defaultTabId = "annual",
         )
-        val sheet = ButtonComponent(
-            action = ButtonComponent.Action.NavigateTo(ButtonComponent.Destination.Sheet(
-                id = "all-plans",
-                stack = StackComponent(components = listOf(
-                    plan(sheetAnnual, "Premium annual", true), plan(sheetMonthly, "Premium monthly", false),
-                )),
-            )),
-            stack = StackComponent(components = listOf(text("All plans"))),
-        )
         val rootPlans = if (emptyAnnualTab) {
             listOf(plan(sheetAnnual, "Root annual", true), plan(sheetMonthly, "Root monthly", false))
         } else {
             emptyList()
         }
         val root = StackComponent(components = rootPlans + listOfNotNull(
-            if (includeTabs) tabs else plan(annual, "Essential annual", true), sheet.takeIf { includeSheet },
+            if (includeTabs) tabs else plan(annual, "Essential annual", true), sheet.takeIf { includeSheet && !sheetInsideTab },
             text("Selected: {{ product.price }}"), text("Selected offer: {{ product.offer_price }}"),
         ))
         val data = PaywallComponentsData(

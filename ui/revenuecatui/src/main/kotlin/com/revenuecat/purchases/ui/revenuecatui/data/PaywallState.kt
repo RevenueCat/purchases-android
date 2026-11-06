@@ -384,7 +384,9 @@ internal sealed interface PaywallState {
                     return TextPackageContext(
                         fallbackPackage,
                         fallbackSubscriptionOption,
-                        packages.packagesByTab[discountTabIndex].orEmpty().mostExpensivePricePerMonthMicros(),
+                        packages.packagesByTab[discountTabIndex].orEmpty()
+                            .filter { it.sheetPresentationKey == null }
+                            .mostExpensivePricePerMonthMicros(),
                     )
                 }
                 val tabPackages = packages.packagesByTab[tabIndex].orEmpty()
