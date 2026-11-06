@@ -91,7 +91,10 @@ internal class CheckpointsViewModelImpl(
         get() = _state.asStateFlow()
 
     private val _state = MutableStateFlow(UiState(recents = recentCheckpointsStore.recents()))
-    private var attemptId = 0L
+
+    // Retries share an ID: the SDK may present an earlier call and skip a later call's callback.
+    // Only reset or completion invalidates the pending callbacks from this test.
+    private var testId = 0L
 
     private val appPaywallPresenter = AppPaywallPresenter()
 
@@ -108,7 +111,7 @@ internal class CheckpointsViewModelImpl(
     override fun hit(identifier: String) {
         val checkpointIdentifier = identifier.trim()
         if (checkpointIdentifier.isEmpty()) return
-        val currentAttemptId = ++attemptId
+        val currentTestId = testId
         val updatedRecents = recentCheckpointsStore.recordUse(checkpointIdentifier)
         _state.update {
             it.copy(
@@ -120,7 +123,7 @@ internal class CheckpointsViewModelImpl(
         }
         val appPresenter = PaywallPresenter { params, completion ->
             appPaywallPresenter.present(params, completion) { result ->
-                onAppPaywallFinished(currentAttemptId, result)
+                onAppPaywallFinished(currentTestId, result)
             }
         }
         val params = CheckpointParams {
@@ -130,7 +133,8 @@ internal class CheckpointsViewModelImpl(
             presentationMode(_state.value.presentationMode)
         }
         Purchases.sharedInstance.checkpoint(checkpointIdentifier, params) { result ->
-            if (currentAttemptId != attemptId) return@checkpoint
+            if (currentTestId != testId) return@checkpoint
+            testId++
             _state.update {
                 it.copy(waitingFor = null, lastResult = result.toUi(), checkpointCompleted = true)
             }
@@ -138,7 +142,7 @@ internal class CheckpointsViewModelImpl(
     }
 
     override fun resetTest() {
-        attemptId++
+        testId++
         _state.update { it.copy(waitingFor = null, lastResult = null, checkpointCompleted = false) }
     }
 
@@ -177,9 +181,9 @@ internal class CheckpointsViewModelImpl(
         _state.update { it.copy(customVariables = it.customVariables - name) }
     }
 
-    private fun onAppPaywallFinished(currentAttemptId: Long, result: PaywallPresenter.Completion.Result) {
+    private fun onAppPaywallFinished(currentTestId: Long, result: PaywallPresenter.Completion.Result) {
         if (
-            currentAttemptId != attemptId ||
+            currentTestId != testId ||
             result != PaywallPresenter.Completion.Result.NavigatedBack ||
             _state.value.waitingFor == null
         ) {
