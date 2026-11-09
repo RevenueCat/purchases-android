@@ -1,14 +1,19 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsNotDisplayed
@@ -57,6 +62,26 @@ internal class OverlayLayoutFooterTests {
 
     @Test
     fun `leading split follows RTL`() = assertSplit(StickyFooterComponent.Layout.SPLIT_LEADING, LayoutDirection.Rtl)
+
+    @Test
+    fun `split columns only pad their outer edge in LTR`() {
+        assertSplitHorizontalInsets(StickyFooterComponent.Layout.SPLIT_LEADING, LayoutDirection.Ltr)
+    }
+
+    @Test
+    fun `trailing split columns only pad their outer edge in LTR`() {
+        assertSplitHorizontalInsets(StickyFooterComponent.Layout.SPLIT_TRAILING, LayoutDirection.Ltr)
+    }
+
+    @Test
+    fun `split columns only pad their outer edge in RTL`() {
+        assertSplitHorizontalInsets(StickyFooterComponent.Layout.SPLIT_TRAILING, LayoutDirection.Rtl)
+    }
+
+    @Test
+    fun `leading split columns only pad their outer edge in RTL`() {
+        assertSplitHorizontalInsets(StickyFooterComponent.Layout.SPLIT_LEADING, LayoutDirection.Rtl)
+    }
 
     @Test
     fun `hidden footer can omit its content without a missing measurable crash`() {
@@ -124,6 +149,62 @@ internal class OverlayLayoutFooterTests {
         val footerOnLeft = (layout == StickyFooterComponent.Layout.SPLIT_LEADING) == (direction == LayoutDirection.Ltr)
         assertThat(if (footerOnLeft) footer.right else body.right).isEqualTo(if (footerOnLeft) body.left else footer.left)
         assertThat(state.footerHeightPx).isZero()
+    }
+
+    private fun assertSplitHorizontalInsets(layout: StickyFooterComponent.Layout, direction: LayoutDirection) {
+        val insets = WindowInsets(left = 24, top = 0, right = 36, bottom = 0)
+        val state = FakePaywallState(stickyFooter = StickyFooterComponent(StackComponent(emptyList()), layout = layout))
+        composeTestRule.setContent {
+            CompositionLocalProvider(LocalLayoutDirection provides direction) {
+                OverlayLayout(state, Modifier.fillMaxSize(), hasFooter = true) {
+                    SplitInsetColumn(layout, insets, isFooter = false, tag = "body")
+                    SplitInsetColumn(layout, insets, isFooter = true, tag = "footer")
+                }
+            }
+        }
+        val body = composeTestRule.onNodeWithTag("body").fetchSemanticsNode().boundsInRoot
+        val footer = composeTestRule.onNodeWithTag("footer").fetchSemanticsNode().boundsInRoot
+        val bodyLeft = composeTestRule.onNodeWithTag("bodyLeft").fetchSemanticsNode().boundsInRoot
+        val bodyRight = composeTestRule.onNodeWithTag("bodyRight").fetchSemanticsNode().boundsInRoot
+        val footerLeft = composeTestRule.onNodeWithTag("footerLeft").fetchSemanticsNode().boundsInRoot
+        val footerRight = composeTestRule.onNodeWithTag("footerRight").fetchSemanticsNode().boundsInRoot
+        val footerOnLeft = (layout == StickyFooterComponent.Layout.SPLIT_LEADING) == (direction == LayoutDirection.Ltr)
+        val leftColumn = if (footerOnLeft) footer else body
+        val rightColumn = if (footerOnLeft) body else footer
+        val leftContent = if (footerOnLeft) footerLeft else bodyLeft
+        val leftInnerContent = if (footerOnLeft) footerRight else bodyRight
+        val rightInnerContent = if (footerOnLeft) bodyLeft else footerLeft
+        val rightContent = if (footerOnLeft) bodyRight else footerRight
+        assertThat(leftContent.left).isEqualTo(leftColumn.left + 24f)
+        assertThat(leftInnerContent.right).isEqualTo(leftColumn.right)
+        assertThat(rightInnerContent.left).isEqualTo(rightColumn.left)
+        assertThat(rightContent.right).isEqualTo(rightColumn.right - 36f)
+    }
+
+    @Composable
+    private fun SplitInsetColumn(
+        layout: StickyFooterComponent.Layout,
+        insets: WindowInsets,
+        isFooter: Boolean,
+        tag: String,
+    ) {
+        Box(
+            Modifier.fillMaxSize().testTag(tag)
+                .consumeSplitInnerHorizontalInset(layout = layout, isFooter = isFooter, windowInsets = insets),
+        ) {
+            Box(Modifier.fillMaxSize().windowInsetsPadding(insets)) {
+                Box(Modifier.align(if (LocalLayoutDirection.current == LayoutDirection.Ltr) {
+                    Alignment.CenterStart
+                } else {
+                    Alignment.CenterEnd
+                }).size(1.dp).testTag("${tag}Left"))
+                Box(Modifier.align(if (LocalLayoutDirection.current == LayoutDirection.Ltr) {
+                    Alignment.CenterEnd
+                } else {
+                    Alignment.CenterStart
+                }).size(1.dp).testTag("${tag}Right"))
+            }
+        }
     }
 
     @Test

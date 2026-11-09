@@ -6,8 +6,10 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -281,6 +283,8 @@ private fun WorkflowStepContent(
     val shouldWrapMainContentInVerticalScroll = shouldWrapMainContentInVerticalScroll(stepState.stack, stepState)
     val mainScrollState = rememberScrollState()
     val layoutDirection = LocalLayoutDirection.current
+    val footerLayout = resolvedFooterLayout(stepState)
+    val safeDrawingInsets = WindowInsets.safeDrawing
 
     Box(
         modifier = Modifier
@@ -314,6 +318,11 @@ private fun WorkflowStepContent(
                     },
                     modifier = Modifier
                         .fillMaxSize()
+                        .consumeSplitInnerHorizontalInset(
+                            layout = footerLayout,
+                            isFooter = false,
+                            windowInsets = safeDrawingInsets,
+                        )
                         .conditional(shouldWrapMainContentInVerticalScroll) {
                             verticalScroll(mainScrollState)
                         }
@@ -331,7 +340,11 @@ private fun WorkflowStepContent(
                         state = stepState,
                         onClick = onClick,
                         componentInteractionTracker = tracker,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().consumeSplitInnerHorizontalInset(
+                            layout = footerLayout,
+                            isFooter = true,
+                            windowInsets = safeDrawingInsets,
+                        ),
                     )
                 }
             }

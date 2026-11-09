@@ -6,8 +6,10 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 import android.content.res.Configuration
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -105,6 +107,8 @@ internal fun LoadedPaywallComponents(
     CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
         MeasurePaywallBounds(state, modifier) {
             val footerBodyInsets = footerBodyBottomInsets(state)
+            val footerLayout = resolvedFooterLayout(state)
+            val safeDrawingInsets = WindowInsets.safeDrawing
             resolveHeroInsets(state.stack, state)
             val wrapInVerticalScroll = shouldWrapMainContentInVerticalScroll(state.stack, state)
             PaywallComponentsScaffold(
@@ -115,7 +119,11 @@ internal fun LoadedPaywallComponents(
                             style = headerStyle,
                             state = state,
                             onClick = onClick,
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().consumeSplitInnerHorizontalInset(
+                                layout = footerLayout,
+                                isFooter = false,
+                                windowInsets = safeDrawingInsets,
+                            ),
                         )
                     }
                 },
@@ -126,7 +134,11 @@ internal fun LoadedPaywallComponents(
                             state = state,
                             onClick = onClick,
                             componentInteractionTracker = componentInteractionTracker,
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().consumeSplitInnerHorizontalInset(
+                                layout = footerLayout,
+                                isFooter = true,
+                                windowInsets = safeDrawingInsets,
+                            ),
                         )
                     }
                 },
@@ -139,6 +151,11 @@ internal fun LoadedPaywallComponents(
                     ancestorScrollOrientations = setOfNotNull(Orientation.Vertical.takeIf { wrapInVerticalScroll }),
                     modifier = Modifier
                         .fillMaxSize()
+                        .consumeSplitInnerHorizontalInset(
+                            layout = footerLayout,
+                            isFooter = false,
+                            windowInsets = safeDrawingInsets,
+                        )
                         .conditional(wrapInVerticalScroll) {
                             verticalScroll(mainScrollState)
                         }

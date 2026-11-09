@@ -2,9 +2,11 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StickyFooterComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -34,3 +36,17 @@ internal fun footerBodyBottomInsets(state: PaywallState.Loaded.Components): Wind
     } else {
         WindowInsets(0)
     }
+
+/** Keeps a split column's content clear of the window edge without padding its shared edge. */
+internal fun Modifier.consumeSplitInnerHorizontalInset(
+    layout: StickyFooterComponent.Layout,
+    isFooter: Boolean,
+    windowInsets: WindowInsets,
+): Modifier {
+    val innerSide = when (layout) {
+        StickyFooterComponent.Layout.SPLIT_LEADING -> if (isFooter) WindowInsetsSides.End else WindowInsetsSides.Start
+        StickyFooterComponent.Layout.SPLIT_TRAILING -> if (isFooter) WindowInsetsSides.Start else WindowInsetsSides.End
+        else -> return this
+    }
+    return consumeWindowInsets(windowInsets.only(innerSide))
+}
