@@ -97,6 +97,7 @@ class NestedTabsTests {
     @Test
     fun `Sheet tabs preserve the nested selection after dismissal`() {
         val state = render(includeSheet = true)
+        compose.runOnIdle { assertThat(state.selectedTabIndex).isEqualTo(1) }
         compose.onNodeWithText("Monthly").performClick()
         compose.onNodeWithText("All plans").performClick()
         compose.onNodeWithText("Sheet annual plan", useUnmergedTree = true).assertExists()
@@ -171,6 +172,29 @@ class NestedTabsTests {
         compose.runOnIdle { assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(goldMonthly) }
     }
 
+    @Test
+    fun `Closed sheet products do not supply parent tab control prices`() {
+        val sheet = ButtonComponent(
+            action = ButtonComponent.Action.NavigateTo(ButtonComponent.Destination.Sheet(
+                id = "tab-sheet",
+                stack = StackComponent(components = listOf(
+                    tabs(listOf("Sheet annual"), listOf(StackComponent(components = listOf(
+                        TabControlComponent, plan(silverAnnual, "Sheet annual plan", true),
+                    ))), 0),
+                )),
+            )),
+            stack = StackComponent(components = listOf(text("All plans"))),
+        )
+        render(StackComponent(components = listOf(tabs(
+            listOf("Other: {{ product.price }}", "Gold"),
+            listOf(
+                StackComponent(components = listOf(TabControlComponent, sheet)),
+                StackComponent(components = listOf(TabControlComponent, plan(goldMonthly, "Gold plan", true))),
+            ), 1,
+        ))))
+        compose.onNodeWithText("Other: $12.00").assertExists()
+    }
+
     private fun tabs(labels: List<String>, contents: List<StackComponent>, default: Int, toggle: Boolean = false) = TabsComponent(
         control = if (toggle) TabsComponent.TabControl.Toggle(StackComponent(components = listOf(
             TabControlToggleComponent(defaultValue = true, thumbColorOn = color, thumbColorOff = color,
@@ -211,8 +235,9 @@ class NestedTabsTests {
             )),
             stack = StackComponent(components = listOf(text("All plans"))),
         )
-        val root = StackComponent(components = listOf(tiers, text("Selected: {{ product.price }}")) +
-            if (includeSheet) listOf(sheet) else emptyList())
+        val root = StackComponent(components =
+            (if (includeSheet) listOf(sheet) else emptyList()) +
+                listOf(tiers, text("Selected: {{ product.price }}")))
         return render(root)
     }
 

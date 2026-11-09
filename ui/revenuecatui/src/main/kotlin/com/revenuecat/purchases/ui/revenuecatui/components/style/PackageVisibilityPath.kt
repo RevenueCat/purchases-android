@@ -62,9 +62,7 @@ private class PackageVisibilityPathCollector {
                     // A presented sheet is detached from the button and its containers.
                     visit(
                         destination.stack,
-                        tabIndex = tabIndex,
                         sheet = destination.presentationKey,
-                        tabsScope = tabsScope,
                     )
                 }
             }

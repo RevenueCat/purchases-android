@@ -253,10 +253,12 @@ internal sealed interface PaywallState {
             var selectedTabIndex by mutableIntStateOf(initialSelectedTabIndex ?: 0)
                 private set
 
+            private val mainTabsScope = packages.tabsScopes.firstOrNull { it.sheetPresentationKey == null }
+
             private val selectedTabs = mutableStateMapOf<TabsScope, Int>()
 
             fun selectedTabIndex(scope: TabsScope?): Int = when (scope) {
-                null, packages.tabsScopes.firstOrNull() -> selectedTabIndex
+                null, mainTabsScope -> selectedTabIndex
                 else -> selectedTabs[scope] ?: scope.defaultTabIndex
             }
 
@@ -288,7 +290,7 @@ internal sealed interface PaywallState {
                 candidate == tab || candidate.scope?.parent?.let { belongsToTab(it, tab) } == true
 
             private val currentTab: TabSelection
-                get() = TabSelection(packages.tabsScopes.firstOrNull(), selectedTabIndex)
+                get() = TabSelection(mainTabsScope, selectedTabIndex)
 
             private val initialVisibilityContext = ComponentVisibilityContext(
                 screenCondition = ScreenCondition.COMPACT,
@@ -421,12 +423,12 @@ internal sealed interface PaywallState {
                     return TextPackageContext(
                         fallbackPackage,
                         fallbackSubscriptionOption,
-                        tabPackages(TabSelection(tabsScope ?: packages.tabsScopes.firstOrNull(), discountTabIndex))
+                        tabPackages(TabSelection(tabsScope ?: mainTabsScope, discountTabIndex))
                             .filter { it.sheetPresentationKey == null }
                             .mostExpensivePricePerMonthMicros(),
                     )
                 }
-                val tab = tabIndex?.let { TabSelection(tabsScope ?: packages.tabsScopes.firstOrNull(), it) }
+                val tab = tabIndex?.let { TabSelection(tabsScope ?: mainTabsScope, it) }
                 val tabPackages = tab?.let { tabPackages(it) }.orEmpty()
                 val packageInfo = tabPackages.find { it.uniqueId == selectedPackageByTab[tab] }
                     ?: tabPackages.defaultSelection(visibilityContext(windowDpSize = null, tab = tab))
@@ -489,12 +491,12 @@ internal sealed interface PaywallState {
             ) {
                 if (index == selectedTabIndex(tabsScope)) return
                 if (tabId != null) stateStore.applyUpdates(stateUpdates, payload = JsonPrimitive(tabId))
-                if (tabsScope == null || tabsScope === packages.tabsScopes.firstOrNull()) {
+                if (tabsScope == null || tabsScope === mainTabsScope) {
                     selectedTabIndex = index
                 } else {
                     selectedTabs[tabsScope] = index
                 }
-                val tab = TabSelection(tabsScope ?: packages.tabsScopes.firstOrNull(), index)
+                val tab = TabSelection(tabsScope ?: mainTabsScope, index)
                 val presentation = sheet.presentationKey.takeIf { sheet.visible }
                 val candidates = tabPackages().inPresentation(presentation)
                 val resolved = selectionResolver(tab = tab).switchTab(

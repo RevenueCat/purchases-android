@@ -296,7 +296,8 @@ internal class StyleFactory(
         private var unscopedDefaultTabIndex: Int? = null
         private val tabsScopes = mutableListOf<TabsScope>()
         var defaultTabIndex: Int?
-            get() = tabsScopes.firstOrNull()?.defaultTabIndex ?: unscopedDefaultTabIndex
+            get() = tabsScopes.firstOrNull { it.sheetPresentationKey == null }?.defaultTabIndex
+                ?: unscopedDefaultTabIndex
             set(value) {
                 val scope = tabsScope
                 if (scope != null) scope.defaultTabIndex = value ?: 0 else unscopedDefaultTabIndex = value
@@ -378,11 +379,17 @@ internal class StyleFactory(
             block: StyleFactoryScope.() -> T,
         ): T {
             val previousKey = sheetPresentationKey
+            val previousTabIndex = tabIndex
+            val previousTabsScope = tabsScope
             sheetPresentationKey = presentationKey
+            tabIndex = null
+            tabsScope = null
             try {
                 return block()
             } finally {
                 sheetPresentationKey = previousKey
+                tabIndex = previousTabIndex
+                tabsScope = previousTabsScope
             }
         }
 
