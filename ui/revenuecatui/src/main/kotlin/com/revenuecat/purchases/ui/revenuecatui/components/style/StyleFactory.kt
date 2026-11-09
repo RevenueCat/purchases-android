@@ -395,7 +395,7 @@ internal class StyleFactory(
         ): T {
             val previousScope = tabsScope
             val parent = tabIndex?.let { TabSelection(previousScope, it) }
-            tabsScope = TabsScope(parent).also { tabsScopes.add(it) }
+            tabsScope = TabsScope(parent, sheetPresentationKey).also { tabsScopes.add(it) }
             val previousName = enclosingTabsComponentName
             val previousIds = enclosingTabsOrderedTabIds
             val previousStateUpdates = enclosingTabsStateUpdates

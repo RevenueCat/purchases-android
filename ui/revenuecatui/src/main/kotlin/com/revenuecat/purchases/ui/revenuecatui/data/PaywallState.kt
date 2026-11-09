@@ -352,7 +352,10 @@ internal sealed interface PaywallState {
             private val selectedPackageByTab = mutableStateMapOf<TabSelection, String?>().apply {
                 if (!initialSheetState.visible) {
                     activeTabSelections().forEach { tab ->
-                        if (tabPackages(tab).any { it.uniqueId == initialSelectedPackageUniqueId }) {
+                        if (tabPackages(tab).any {
+                                it.sheetPresentationKey == null && it.uniqueId == initialSelectedPackageUniqueId
+                            }
+                        ) {
                             put(tab, initialSelectedPackageUniqueId)
                         }
                     }
@@ -397,8 +400,8 @@ internal sealed interface PaywallState {
             }
 
             val mostExpensivePricePerMonthMicros by derivedStateOf {
-                (packages.packagesOutsideTabs + tabPackages())
-                    .mostExpensivePricePerMonthMicros()
+                val presentedTabPackages = tabPackages().inPresentation(sheet.presentationKey.takeIf { sheet.visible })
+                (packages.packagesOutsideTabs + presentedTabPackages).mostExpensivePricePerMonthMicros()
             }
 
             data class TextPackageContext(
@@ -522,11 +525,13 @@ internal sealed interface PaywallState {
             fun update(selectedPackageUniqueId: String) {
                 this.selectedPackageUniqueId = selectedPackageUniqueId
 
-                if (!sheet.visible) {
-                    activeTabSelections().forEach { tab ->
-                        if (tabPackages(tab).any { it.uniqueId == selectedPackageUniqueId }) {
-                            selectedPackageByTab[tab] = selectedPackageUniqueId
+                val presentation = sheet.presentationKey.takeIf { sheet.visible }
+                activeTabSelections().filter { it.scope?.sheetPresentationKey === presentation }.forEach { tab ->
+                    if (tabPackages(tab).any {
+                            it.sheetPresentationKey === presentation && it.uniqueId == selectedPackageUniqueId
                         }
+                    ) {
+                        selectedPackageByTab[tab] = selectedPackageUniqueId
                     }
                 }
             }

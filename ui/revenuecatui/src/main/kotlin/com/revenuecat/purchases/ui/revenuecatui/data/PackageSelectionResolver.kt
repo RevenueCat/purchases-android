@@ -18,7 +18,7 @@ internal class PackageSelectionResolver(
     private val outside = (packages.packagesOutsideTabs + otherTabPackages).inPresentation(presentedSheet)
     private val tab = activeTabPackages.inPresentation(presentedSheet)
     private val active = outside + tab
-    private val sheet = active.filter { presentedSheet != null && it.sheetPresentationKey === presentedSheet }
+    private val sheet = (tab + outside).filter { presentedSheet != null && it.sheetPresentationKey === presentedSheet }
 
     fun initialSelection(): String? = defaultSelection(remembered = null) ?: allHiddenFallback()
 

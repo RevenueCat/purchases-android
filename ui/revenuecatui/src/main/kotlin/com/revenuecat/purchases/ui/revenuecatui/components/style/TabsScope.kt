@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.style
 
-internal class TabsScope(val parent: TabSelection?) {
+internal class TabsScope(val parent: TabSelection?, val sheetPresentationKey: SheetPresentationKey?) {
     var defaultTabIndex: Int = 0
 }
 

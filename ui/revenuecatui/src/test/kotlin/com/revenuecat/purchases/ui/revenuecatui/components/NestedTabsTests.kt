@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -107,6 +108,52 @@ class NestedTabsTests {
     }
 
     @Test
+    fun `Sheet tabs prefer their default and remember a manual choice over a root package`() {
+        val state = render(includeSheet = true, includeSheetRoot = true)
+        compose.onNodeWithText("All plans").performClick()
+        compose.runOnIdle { assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(silverAnnual) }
+        compose.onNodeWithText("Sheet monthly").performClick()
+        compose.onNodeWithText("Sheet annual").performClick()
+        compose.runOnIdle { assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(silverAnnual) }
+        compose.onNodeWithText("Sheet alternative", useUnmergedTree = true).performClick()
+        compose.onNodeWithText("Sheet monthly").performClick()
+        compose.runOnIdle { assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(silverMonthly) }
+        compose.onNodeWithText("Sheet annual").performClick()
+        compose.runOnIdle { assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(goldAnnual) }
+        compose.onNodeWithText("Back").performClick()
+        compose.runOnIdle { assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(goldAnnual) }
+    }
+
+    @Test
+    fun `Closed sheet tabs do not change the main paywall discount`() {
+        val comparison = productPackage("comparison", 24_000_000, false)
+        val expensiveSheet = productPackage("sheet_annual", 480_000_000, true)
+        val sheet = ButtonComponent(
+            action = ButtonComponent.Action.NavigateTo(ButtonComponent.Destination.Sheet(
+                id = "expensive-sheet",
+                stack = StackComponent(components = listOf(
+                    tabs(listOf("Sheet plan"), listOf(StackComponent(components = listOf(
+                        TabControlComponent, plan(expensiveSheet, "Sheet annual", true),
+                    ))), 0),
+                    ButtonComponent(action = ButtonComponent.Action.NavigateBack,
+                        stack = StackComponent(components = listOf(text("Back")))),
+                )),
+            )),
+            stack = StackComponent(components = listOf(text("All plans"))),
+        )
+        render(StackComponent(components = listOf(
+            duration("Gold", goldAnnual, goldMonthly, false),
+            plan(comparison, "Comparison plan", false),
+            text("Discount: {{ product.relative_discount }}"), sheet,
+        )), additionalPackages = listOf(comparison, expensiveSheet))
+        compose.onNodeWithText("Discount:", substring = true, useUnmergedTree = true).assertTextEquals("Discount: 58%")
+        compose.onNodeWithText("All plans").performClick()
+        compose.onNodeWithText("Sheet annual", useUnmergedTree = true).assertExists()
+        compose.onNodeWithText("Back").performClick()
+        compose.onNodeWithText("Discount:", substring = true, useUnmergedTree = true).assertTextEquals("Discount: 58%")
+    }
+
+    @Test
     fun `Nested tabs without packages preserve a manual choice in their parent`() {
         val details = tabs(listOf("Less", "More"), listOf(
             StackComponent(components = listOf(TabControlComponent, text("Summary"))),
@@ -143,7 +190,7 @@ class NestedTabsTests {
         )) }, 0, toggle,
     )
 
-    private fun render(toggle: Boolean = false, includeSheet: Boolean = false): PaywallState.Loaded.Components {
+    private fun render(toggle: Boolean = false, includeSheet: Boolean = false, includeSheetRoot: Boolean = false): PaywallState.Loaded.Components {
         val tiers = tabs(listOf("Silver", "Gold"), listOf(
             StackComponent(components = listOf(TabControlComponent, duration("Silver", silverAnnual, silverMonthly, toggle))),
             StackComponent(components = listOf(TabControlComponent, duration("Gold", goldAnnual, goldMonthly, toggle))),
@@ -151,10 +198,12 @@ class NestedTabsTests {
         val sheet = ButtonComponent(
             action = ButtonComponent.Action.NavigateTo(ButtonComponent.Destination.Sheet(
                 id = "all-plans",
-                stack = StackComponent(components = listOf(
+                stack = StackComponent(components = listOfNotNull(
+                    plan(goldMonthly, "Sheet root", true).takeIf { includeSheetRoot },
                     tabs(listOf("Sheet annual", "Sheet monthly"), listOf(silverAnnual, silverMonthly).mapIndexed { index, pkg ->
-                        StackComponent(components = listOf(TabControlComponent,
-                            plan(pkg, "Sheet ${if (index == 0) "annual" else "monthly"} plan", true)))
+                        StackComponent(components = listOfNotNull(TabControlComponent,
+                            plan(pkg, "Sheet ${if (index == 0) "annual" else "monthly"} plan", true),
+                            plan(goldAnnual, "Sheet alternative", false).takeIf { includeSheetRoot && index == 0 }))
                     }, 0),
                     ButtonComponent(action = ButtonComponent.Action.NavigateBack,
                         stack = StackComponent(components = listOf(text("Back")))),
@@ -167,7 +216,7 @@ class NestedTabsTests {
         return render(root)
     }
 
-    private fun render(root: StackComponent): PaywallState.Loaded.Components {
+    private fun render(root: StackComponent, additionalPackages: List<Package> = emptyList()): PaywallState.Loaded.Components {
         val data = PaywallComponentsData(
             templateName = "components", assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(base = PaywallComponentsConfig(
@@ -179,7 +228,7 @@ class NestedTabsTests {
         )
         val offering = Offering(
             identifier = "offering", serverDescription = "description", metadata = emptyMap(),
-            availablePackages = listOf(silverAnnual, silverMonthly, goldAnnual, goldMonthly),
+            availablePackages = listOf(silverAnnual, silverMonthly, goldAnnual, goldMonthly) + additionalPackages,
             paywallComponents = Offering.PaywallComponents(UiConfig(), data),
         )
         val state = offering.toComponentsPaywallState(
