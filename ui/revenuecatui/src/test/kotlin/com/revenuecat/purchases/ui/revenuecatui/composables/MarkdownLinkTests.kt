@@ -84,6 +84,14 @@ class MarkdownLinkTests {
         assertThat(build()).isEqualTo(build())
     }
 
+    @Test
+    fun `link annotation uses the text color without an underline`() {
+        val annotation = linkAnnotation("https://rev.cat/terms", Color.Red, uriHandler = null)
+
+        assertThat(annotation.styles?.style?.color).isEqualTo(Color.Red)
+        assertThat(annotation.styles?.style?.textDecoration).isNull()
+    }
+
     private fun ComposeContentTestRule.linkAnnotations(text: String): List<LinkAnnotation.Url> {
         val annotated = onNodeWithText(text, useUnmergedTree = true)
             .fetchSemanticsNode()
