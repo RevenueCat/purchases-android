@@ -87,7 +87,7 @@ private class PackageVisibilityPathCollector {
                 }
             }
             is HeaderComponentStyle -> visit(style.stackComponentStyle, ancestors, tabIndex, sheet, branches)
-            is StickyFooterComponentStyle -> visit(style.stackComponentStyle, ancestors, tabIndex, sheet, branches)
+            is StickyFooterComponentStyle -> child(style.stackComponentStyle)
             is TabControlButtonComponentStyle -> visit(style.stack, ancestors, tabIndex, sheet, branches)
             // Controls are built outside the tab scope and inserted into each tab that uses them.
             is TabControlStyle.Buttons -> visit(style.stack, ancestors, null, sheet, branches)

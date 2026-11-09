@@ -8,8 +8,10 @@ import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialPackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
+import com.revenuecat.purchases.paywalls.components.PartialStickyFooterComponent
 import com.revenuecat.purchases.paywalls.components.PaywallComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.ui.revenuecatui.components.show
@@ -39,6 +41,103 @@ internal class PackageSelectionVisibilityTests {
         conditions = listOf(wideCondition),
         properties = PartialStackComponent(visible = false),
     )
+
+    @Test
+    fun `hidden footer default does not override a visible body package`() {
+        val state = FakePaywallState(
+            components = listOf(pkg(monthly)),
+            packages = listOf(monthly, annual),
+            addPackageComponents = false,
+            stickyFooter = StickyFooterComponent(
+                stack = StackComponent(listOf(pkg(annual, default = true))),
+                layout = StickyFooterComponent.Layout.HIDDEN,
+            ),
+        )
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthly)
+        assertThat(state.defaultPackageForPackageRowAnalytics()).isEqualTo(monthly)
+    }
+
+    @Test
+    fun `hidden footer default is selected when every package is hidden`() {
+        val state = FakePaywallState(
+            packages = listOf(monthly, annual),
+            addPackageComponents = false,
+            stickyFooter = StickyFooterComponent(
+                stack = StackComponent(listOf(pkg(monthly), pkg(annual, default = true))),
+                layout = StickyFooterComponent.Layout.HIDDEN,
+            ),
+        )
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
+        assertThat(state.defaultPackageForPackageRowAnalytics()).isEqualTo(annual)
+    }
+
+    @Test
+    fun `visible footer default takes precedence over a visible body package`() {
+        val state = FakePaywallState(
+            components = listOf(pkg(monthly)),
+            packages = listOf(monthly, annual),
+            addPackageComponents = false,
+            stickyFooter = StickyFooterComponent(StackComponent(listOf(pkg(annual, default = true)))),
+        )
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
+    }
+
+    @Test
+    fun `hiding a footer on resize replaces its default with a visible body package`() {
+        val state = FakePaywallState(
+            components = listOf(pkg(monthly)),
+            packages = listOf(monthly, annual),
+            addPackageComponents = false,
+            stickyFooter = StickyFooterComponent(
+                stack = StackComponent(listOf(pkg(annual, default = true))),
+                overrides = listOf(ComponentOverride(
+                    conditions = listOf(wideCondition),
+                    properties = PartialStickyFooterComponent(layout = StickyFooterComponent.Layout.HIDDEN),
+                )),
+            ),
+        )
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
+
+        state.reconcileSelectionForWindowSize(wide)
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthly)
+    }
+
+    @Test
+    fun `hidden tab default does not override a visible root package`() {
+        val state = state(pkg(monthly), tabs(listOf(StackComponent(
+            components = listOf(pkg(annual, default = true)),
+            visible = false,
+        ))))
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthly)
+    }
+
+    @Test
+    fun `all hidden sheet selects its authored default ahead of the visible root package`() {
+        val state = state(
+            pkg(weekly, default = true),
+            ButtonComponent(
+                action = ButtonComponent.Action.NavigateTo(ButtonComponent.Destination.Sheet(
+                    id = "plans",
+                    stack = StackComponent(listOf(pkg(monthly), pkg(annual, default = true)), visible = false),
+                )),
+                stack = StackComponent(emptyList()),
+            ),
+        )
+        val button = (state.stack as StackComponentStyle).children[1] as ButtonComponentStyle
+        val sheet = (button.action as ButtonComponentStyle.Action.NavigateTo).destination
+            as ButtonComponentStyle.Action.NavigateTo.Destination.Sheet
+
+        state.sheet.show(sheet, state, PaywallComponentInteractionTracker { }, onClick = {})
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
+        state.sheet.hide()
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(weekly)
+    }
 
     @Test
     fun `initial selection skips hidden containers when no default is authored`() {
@@ -88,7 +187,7 @@ internal class PackageSelectionVisibilityTests {
     }
 
     @Test
-    fun `measurement selects a newly revealed default`() {
+    fun `hidden default remains selected when measurement reveals it`() {
         val state = state(PackageComponent(
             packageId = monthly.identifier,
             isSelectedByDefault = true,
@@ -99,7 +198,7 @@ internal class PackageSelectionVisibilityTests {
                 properties = PartialPackageComponent(visible = true),
             )),
         ))
-        assertThat(state.selectedPackageInfo).isNull()
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthly)
 
         state.reconcileSelectionForWindowSize(wide)
 

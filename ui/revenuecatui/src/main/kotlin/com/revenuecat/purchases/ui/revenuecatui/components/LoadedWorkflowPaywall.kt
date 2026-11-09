@@ -6,8 +6,11 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -280,6 +283,8 @@ private fun WorkflowStepContent(
     val shouldWrapMainContentInVerticalScroll = shouldWrapMainContentInVerticalScroll(stepState.stack, stepState)
     val mainScrollState = rememberScrollState()
     val layoutDirection = LocalLayoutDirection.current
+    val footerLayout = resolvedFooterLayout(stepState)
+    val safeDrawingInsets = WindowInsets.safeDrawing
 
     Box(
         modifier = Modifier
@@ -295,6 +300,7 @@ private fun WorkflowStepContent(
             // The header for a workflow step is rendered by the scaffold, so hasHeader is false here.
             // A sticky footer, when present, overlays the bottom on top of the full-height content and
             // reserves clearance via footerBottomPadding (see PaywallComponentsScaffold).
+            val footerBodyInsets = footerBodyBottomInsets(stepState)
             OverlayLayout(
                 state = stepState,
                 modifier = Modifier.fillMaxSize(),
@@ -312,12 +318,18 @@ private fun WorkflowStepContent(
                     },
                     modifier = Modifier
                         .fillMaxSize()
+                        .consumeSplitInnerHorizontalInset(
+                            layout = footerLayout,
+                            isFooter = false,
+                            windowInsets = safeDrawingInsets,
+                        )
                         .conditional(shouldWrapMainContentInVerticalScroll) {
                             verticalScroll(mainScrollState)
                         }
                         .conditional(stepState.header != null && !stepState.mainStackHasHeroImage) {
                             headerTopPadding(stepState)
                         }
+                        .windowInsetsPadding(footerBodyInsets)
                         .conditional(stepState.stickyFooter != null) {
                             footerBottomPadding(stepState)
                         },
@@ -328,7 +340,11 @@ private fun WorkflowStepContent(
                         state = stepState,
                         onClick = onClick,
                         componentInteractionTracker = tracker,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().consumeSplitInnerHorizontalInset(
+                            layout = footerLayout,
+                            isFooter = true,
+                            windowInsets = safeDrawingInsets,
+                        ),
                     )
                 }
             }

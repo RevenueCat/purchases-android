@@ -506,7 +506,7 @@ private fun Offering.PaywallComponents.variableLocalizationMapsFor(
 internal fun PaywallComponentsConfig.containsUnsupportedCondition(): Boolean =
     stack.containsUnsupportedCondition() ||
         header?.stack?.containsUnsupportedCondition() == true ||
-        stickyFooter?.stack?.containsUnsupportedCondition() == true
+        stickyFooter?.containsUnsupportedCondition() == true
 
 @JvmSynthetic
 internal fun StackComponent.containsUnsupportedCondition(): Boolean =
@@ -537,7 +537,7 @@ internal fun PaywallComponent.containsUnsupportedCondition(): Boolean = when (th
     is PackageComponent -> overrides.hasUnsupportedCondition() || stack.containsUnsupportedCondition()
     is PurchaseButtonComponent -> stack.containsUnsupportedCondition()
     is HeaderComponent -> stack.containsUnsupportedCondition()
-    is StickyFooterComponent -> stack.containsUnsupportedCondition()
+    is StickyFooterComponent -> overrides.hasUnsupportedCondition() || stack.containsUnsupportedCondition()
     is CarouselComponent -> overrides.hasUnsupportedCondition() ||
         pages.any { it.containsUnsupportedCondition() }
     is TabsComponent -> overrides.hasUnsupportedCondition() ||
