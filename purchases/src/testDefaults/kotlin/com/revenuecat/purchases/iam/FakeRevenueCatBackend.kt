@@ -47,10 +47,6 @@ internal class FakeRevenueCatBackend : Dispatcher() {
     private val spendsByKey = ConcurrentHashMap<String, () -> MockResponse>()
     private val serial = AtomicInteger()
 
-    /** Whether an anonymous login adopts the `app_user_id` it's sent (iOS #8017 behavior). */
-    @Volatile
-    var adoptsAnonymousAppUserID: Boolean = true
-
     /** The app user ID the next non-anonymous login resolves to. */
     @Volatile
     var identifiedAppUserID: String = "identified-user"
@@ -162,7 +158,6 @@ internal class FakeRevenueCatBackend : Dispatcher() {
         val method = body.optString("method")
         val appUserID = when {
             method != "anonymous" -> identifiedAppUserID
-            adoptsAnonymousAppUserID && body.has("app_user_id") -> body.getString("app_user_id")
             else -> "server-anonymous-${serial.incrementAndGet()}"
         }
         val amr = if (method == "anonymous") listOf("anonymous") else listOf("anonymous", method)

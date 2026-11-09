@@ -25,7 +25,6 @@ internal class IAMLogoutEndToEndTest : IAMEndToEndTest() {
         assertThat(revoke.body?.getString("token")).isEqualTo(identifiedRefreshToken)
         val paths = backend.requests.map { it.path }
         assertThat(paths.lastIndexOf("/auth/login")).isGreaterThan(paths.indexOf("/auth/revoke"))
-        // Today the anonymous login starts from the identified user, so nothing is migrated (Step C changes this).
         assertThat(backend.requests("/auth/login").last().body?.has("app_user_id")).isFalse()
         assertThat(currentAppUserID).startsWith("server-anonymous-")
         assertThat(purchases.isAnonymous).isTrue()
@@ -68,7 +67,7 @@ internal class IAMLogoutEndToEndTest : IAMEndToEndTest() {
     }
 
     @Test
-    fun `after the fallback, the next foreground bootstraps the local anonymous ID`() {
+    fun `after the fallback, the next foreground bootstraps a server-assigned anonymous ID`() {
         logInIdentified()
         backend.respondOnce("/auth/login") { MockResponse().setResponseCode(SERVER_ERROR).setBody("{}") }
         awaitCustomerInfo { purchases.authentication.logOut(it) }
@@ -78,24 +77,12 @@ internal class IAMLogoutEndToEndTest : IAMEndToEndTest() {
         background()
         foregroundAndBootstrap()
 
-        assertThat(backend.requests("/auth/login").last().body?.getString("app_user_id")).isEqualTo(localID)
-        assertThat(currentAppUserID).isEqualTo(localID)
+        assertThat(backend.requests("/auth/login").last().body?.has("app_user_id")).isFalse()
+        assertThat(currentAppUserID).isNotEqualTo(localID).startsWith("server-anonymous-")
     }
 
     @Test
     fun `logging out an anonymous user fails without revoking`() {
-        configure()
-        foregroundAndBootstrap()
-
-        val result = awaitCustomerInfo { purchases.authentication.logOut(it) }
-
-        assertThat(result.purchasesError?.code).isEqualTo(PurchasesErrorCode.LogOutWithAnonymousUserError)
-        assertThat(backend.requests("/auth/revoke")).isEmpty()
-    }
-
-    @Test
-    fun `logging out a server-assigned anonymous user fails too`() {
-        backend.adoptsAnonymousAppUserID = false
         configure()
         foregroundAndBootstrap()
 
