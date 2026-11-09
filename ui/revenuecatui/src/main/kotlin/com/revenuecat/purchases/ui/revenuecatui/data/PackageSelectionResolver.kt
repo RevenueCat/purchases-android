@@ -13,9 +13,7 @@ internal class PackageSelectionResolver(
     presentedSheet: SheetPresentationKey?,
     private val context: ComponentVisibilityContext,
 ) {
-    private val onlySheetPackages =
-        (packages.packagesOutsideTabs + packages.packagesByTab.values.flatten())
-            .all { it.sheetPresentationKey != null }
+    private val onlySheetPackages = packages.hasAnyPackages && !packages.hasRootPackages
     private val sheetOnlyInitialCandidates =
         packages.packagesOutsideTabs + packages.packagesByTab[selectedTabIndex].orEmpty()
     private val outside = packages.packagesOutsideTabs.inPresentation(presentedSheet)

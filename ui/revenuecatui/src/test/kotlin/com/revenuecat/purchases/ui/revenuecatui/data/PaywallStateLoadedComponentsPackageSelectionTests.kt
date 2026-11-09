@@ -973,7 +973,7 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
         state.sheet.hide()
         assertThat(state.sheet.presentationKey).isNull()
-        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.weekly)
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
     }
 
     private fun hiddenWhenWiderThanOverride(width: Double) = PresentedOverride(

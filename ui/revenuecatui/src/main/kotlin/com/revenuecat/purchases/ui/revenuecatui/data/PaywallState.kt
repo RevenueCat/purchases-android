@@ -240,6 +240,10 @@ internal sealed interface PaywallState {
 
                 val hasAnyPackages: Boolean
                     get() = packagesOutsideTabs.isNotEmpty() || packagesByTab.isNotEmpty()
+
+                val hasRootPackages: Boolean
+                    get() = (packagesOutsideTabs + packagesByTab.values.flatten())
+                        .any { it.sheetPresentationKey == null }
             }
 
             data class SelectedPackageInfo(
@@ -524,7 +528,11 @@ internal sealed interface PaywallState {
 
             fun restorePackageAfterSheetDismiss() {
                 if (packageSelectionBeforeSheet == null) return
-                selectedPackageUniqueId = selectionBeforeSheetAtCurrentBounds()
+                // A sheet-only paywall has no root choice to restore. Its latest sheet choice also
+                // supplies the package for purchase buttons on the root paywall.
+                if (packages.hasRootPackages) {
+                    selectedPackageUniqueId = selectionBeforeSheetAtCurrentBounds()
+                }
                 packageSelectionBeforeSheet = null
             }
 
@@ -563,6 +571,7 @@ internal sealed interface PaywallState {
 
             fun peekSelectedPackageInfoAfterSheetDismiss(): SelectedPackageInfo? {
                 packageSelectionBeforeSheet?.let {
+                    if (!packages.hasRootPackages) return selectedPackageInfo
                     return selectionBeforeSheetAtCurrentBounds()?.let { findPackageInfoByUniqueId(it)?.selectionInfo() }
                         ?: defaultPackageInfo
                 }
