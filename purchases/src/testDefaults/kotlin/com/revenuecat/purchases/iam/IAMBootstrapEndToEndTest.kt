@@ -30,18 +30,16 @@ internal class IAMBootstrapEndToEndTest : IAMEndToEndTest() {
     }
 
     @Test
-    fun `the first foreground logs in anonymously once, migrating the local anonymous ID`() {
+    fun `the first foreground logs in anonymously once`() {
         configure()
-        val localID = currentAppUserID
 
         foregroundAndBootstrap()
 
         val login = backend.requests("/auth/login").single()
         assertThat(login.body?.getString("method")).isEqualTo("anonymous")
-        assertThat(login.body?.getString("app_user_id")).isEqualTo(localID)
+        assertThat(login.body?.has("app_user_id")).isFalse()
         assertThat(login.authorization).isEqualTo("Bearer $API_KEY")
-        assertThat(currentAppUserID).isEqualTo(localID)
-        assertThat(delegate.tokens.map { backend.ownerOf(it) }).containsExactly(localID)
+        assertThat(delegate.tokens.map { backend.ownerOf(it) }).containsExactly(currentAppUserID)
     }
 
     @Test
@@ -59,7 +57,6 @@ internal class IAMBootstrapEndToEndTest : IAMEndToEndTest() {
 
     @Test
     fun `a server-assigned ID replaces the local one and becomes the user`() {
-        backend.adoptsAnonymousAppUserID = false
         configure()
         val localID = currentAppUserID
 
@@ -93,7 +90,7 @@ internal class IAMBootstrapEndToEndTest : IAMEndToEndTest() {
     }
 
     @Test
-    fun `a pre-IAM anonymous user keeps their ID when IAM is turned on`() {
+    fun `a pre-IAM anonymous user gets a server-assigned ID when IAM is turned on`() {
         configure(iamEnabled = false)
         foreground()
         awaitUntil("the pre-IAM CustomerInfo") { customerInfoUpdates.isNotEmpty() }
@@ -103,8 +100,8 @@ internal class IAMBootstrapEndToEndTest : IAMEndToEndTest() {
         relaunch(iamEnabled = true)
         foregroundAndBootstrap()
 
-        assertThat(backend.requests("/auth/login").single().body?.getString("app_user_id")).isEqualTo(legacyID)
-        assertThat(currentAppUserID).isEqualTo(legacyID)
+        assertThat(backend.requests("/auth/login").single().body?.has("app_user_id")).isFalse()
+        assertThat(currentAppUserID).isNotEqualTo(legacyID).startsWith("server-anonymous-")
     }
 
     @Test
