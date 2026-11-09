@@ -127,15 +127,28 @@ class NestedTabsTests {
 
     @Test
     fun `Closed sheet tabs do not change the main paywall discount`() {
+        assertClosedSheetDiscount(sheetHasTabs = true)
+    }
+
+    @Test
+    fun `Closed sheet root products do not change the main paywall discount`() {
+        assertClosedSheetDiscount(sheetHasTabs = false)
+    }
+
+    private fun assertClosedSheetDiscount(sheetHasTabs: Boolean) {
         val comparison = productPackage("comparison", 24_000_000, false)
         val expensiveSheet = productPackage("sheet_annual", 480_000_000, true)
         val sheet = ButtonComponent(
             action = ButtonComponent.Action.NavigateTo(ButtonComponent.Destination.Sheet(
                 id = "expensive-sheet",
                 stack = StackComponent(components = listOf(
-                    tabs(listOf("Sheet plan"), listOf(StackComponent(components = listOf(
-                        TabControlComponent, plan(expensiveSheet, "Sheet annual", true),
-                    ))), 0),
+                    if (sheetHasTabs) {
+                        tabs(listOf("Sheet plan"), listOf(StackComponent(components = listOf(
+                            TabControlComponent, plan(expensiveSheet, "Sheet annual", true),
+                        ))), 0)
+                    } else {
+                        plan(expensiveSheet, "Sheet annual", true)
+                    },
                     ButtonComponent(action = ButtonComponent.Action.NavigateBack,
                         stack = StackComponent(components = listOf(text("Back")))),
                 )),

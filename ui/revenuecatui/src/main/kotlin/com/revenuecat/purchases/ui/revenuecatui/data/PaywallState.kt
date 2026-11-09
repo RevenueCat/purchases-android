@@ -402,8 +402,13 @@ internal sealed interface PaywallState {
             }
 
             val mostExpensivePricePerMonthMicros by derivedStateOf {
-                val presentedTabPackages = tabPackages().inPresentation(sheet.presentationKey.takeIf { sheet.visible })
-                (packages.packagesOutsideTabs + presentedTabPackages).mostExpensivePricePerMonthMicros()
+                val presentation = sheet.presentationKey.takeIf { sheet.visible }
+                val outside = if (mainTabsScope == null) {
+                    packages.packagesOutsideTabs
+                } else {
+                    packages.packagesOutsideTabs.inPresentation(presentation)
+                }
+                (outside + tabPackages().inPresentation(presentation)).mostExpensivePricePerMonthMicros()
             }
 
             data class TextPackageContext(
