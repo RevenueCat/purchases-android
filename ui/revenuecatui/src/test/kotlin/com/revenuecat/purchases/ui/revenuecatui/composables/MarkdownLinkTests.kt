@@ -9,7 +9,9 @@ import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
@@ -92,13 +94,34 @@ class MarkdownLinkTests {
         assertThat(annotation.styles?.style?.textDecoration).isNull()
     }
 
-    private fun ComposeContentTestRule.linkAnnotations(text: String): List<LinkAnnotation.Url> {
-        val annotated = onNodeWithText(text, useUnmergedTree = true)
+    /**
+     * Links are only underlined when the author wraps them in `<u>`, so a plain link must not be underlined.
+     */
+    @Test
+    fun `only links wrapped in u tags are underlined`(): Unit = with(composeTestRule) {
+        setContent {
+            Markdown(text = "<u>[terms](https://rev.cat/terms)</u> and [privacy](https://rev.cat/privacy)")
+        }
+
+        val annotated = annotatedText("terms and privacy")
+
+        val underlined = annotated.spanStyles
+            .filter { it.item.textDecoration == TextDecoration.Underline }
+            .map { annotated.text.substring(it.start, it.end) }
+        assertThat(underlined).containsExactly("terms")
+        assertThat(annotated.getLinkAnnotations(0, annotated.length)).hasSize(2)
+    }
+
+    private fun ComposeContentTestRule.annotatedText(text: String): AnnotatedString =
+        onNodeWithText(text, useUnmergedTree = true)
             .fetchSemanticsNode()
             .config
             .getOrNull(SemanticsProperties.Text)
             .orEmpty()
             .single()
+
+    private fun ComposeContentTestRule.linkAnnotations(text: String): List<LinkAnnotation.Url> {
+        val annotated = annotatedText(text)
         return annotated.getLinkAnnotations(0, annotated.length).map { it.item as LinkAnnotation.Url }
     }
 }
