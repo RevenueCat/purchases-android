@@ -41,9 +41,9 @@ internal fun TabControlButtonView(
             // tracked after it. Tracking reaches the app's PaywallListener on this same main thread
             // message, so switching first lets the frame be scheduled before the app's callback.
             val selection = if (ordered.isNotEmpty()) {
-                val originIndex = state.selectedTabIndex.coerceIn(0, ordered.lastIndex)
+                val originIndex = state.selectedTabIndex(style.tabsScope).coerceIn(0, ordered.lastIndex)
                 if (originIndex == resolvedTabIndex) {
-                    state.update(selectedTabIndex = resolvedTabIndex)
+                    state.selectTab(resolvedTabIndex, null, emptyList(), style.tabsScope)
                     return@onStackClick
                 }
                 val originTabId = ordered[originIndex]
@@ -72,6 +72,7 @@ internal fun TabControlButtonView(
                 index = resolvedTabIndex,
                 tabId = ordered.getOrNull(resolvedTabIndex) ?: style.tabId,
                 stateUpdates = style.stateUpdates,
+                tabsScope = style.tabsScope,
             )
             componentInteractionTracker.track(selection)
         },

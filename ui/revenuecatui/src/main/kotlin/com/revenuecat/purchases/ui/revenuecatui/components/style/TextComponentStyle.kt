@@ -68,6 +68,8 @@ internal class TextComponentStyle(
     override val tabIndex: Int?,
     @get:JvmSynthetic
     val discountTabIndex: Int?,
+    @get:JvmSynthetic
+    override val tabsScope: TabsScope? = null,
     /**
      * The pre-computed offer eligibility for this component's package context.
      * Used for applying conditional overrides based on intro/promo offer status.
