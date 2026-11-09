@@ -244,6 +244,48 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
     }
 
     @Test
+    fun `Sheet default is selected initially when the paywall has no root packages`() {
+        val sheetKey = SheetPresentationKey()
+        val state = paywallState(
+            packagesOutsideTabs = listOf(
+                packageInfo(TestData.Packages.monthly, isSelectedByDefault = false, sheetPresentationKey = sheetKey),
+                packageInfo(TestData.Packages.annual, isSelectedByDefault = true, sheetPresentationKey = sheetKey),
+            ),
+            packagesByTab = emptyMap(),
+            initialSelectedTabIndex = null,
+        )
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+        state.sheet.show(backgroundBlur = false, content = {}, presentationKey = sheetKey)
+        state.selectPackageForSheetEntry()
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+        state.sheet.hide()
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
+    @Test
+    fun `Sheet initial fallback skips packages in inactive tabs`() {
+        val state = paywallState(
+            packagesOutsideTabs = emptyList(),
+            packagesByTab = mapOf(
+                0 to listOf(packageInfo(
+                    TestData.Packages.monthly,
+                    isSelectedByDefault = true,
+                    sheetPresentationKey = SheetPresentationKey(),
+                )),
+                1 to listOf(packageInfo(
+                    TestData.Packages.annual,
+                    isSelectedByDefault = true,
+                    sheetPresentationKey = SheetPresentationKey(),
+                )),
+            ),
+            initialSelectedTabIndex = 0,
+        )
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
+    }
+
+    @Test
     fun `Tab entry restores a valid manual destination choice ahead of tab and root defaults`() {
         val state = paywallState(
             packagesOutsideTabs = listOf(packageInfo(TestData.Packages.weekly, isSelectedByDefault = true)),
@@ -912,7 +954,7 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
             packagesByTab = emptyMap(),
             initialSelectedTabIndex = null,
         )
-        assertThat(state.selectedPackageInfo).isNull()
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.weekly)
 
         state.sheet.show(
             sheet = ButtonComponentStyle.Action.NavigateTo.Destination.Sheet(
@@ -931,7 +973,7 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
         state.sheet.hide()
         assertThat(state.sheet.presentationKey).isNull()
-        assertThat(state.selectedPackageInfo).isNull()
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.weekly)
     }
 
     private fun hiddenWhenWiderThanOverride(width: Double) = PresentedOverride(
