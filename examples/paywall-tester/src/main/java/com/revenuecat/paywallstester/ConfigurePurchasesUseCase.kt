@@ -1,6 +1,7 @@
 package com.revenuecat.paywallstester
 
 import android.content.Context
+import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesConfiguration
@@ -14,6 +15,7 @@ internal class ConfigurePurchasesUseCase(
             .purchasesAreCompletedBy(PurchasesAreCompletedBy.REVENUECAT)
             .appUserID(null)
             .diagnosticsEnabled(true)
+            .dangerousSettings(DangerousSettings(autoSyncPurchases = BuildConfig.PAYWALL_TESTER_AUTO_SYNC_PURCHASES))
 
         if (Constants.PREFERRED_UI_LOCALE_OVERRIDE.isNotEmpty()) {
             builder.preferredUILocaleOverride(

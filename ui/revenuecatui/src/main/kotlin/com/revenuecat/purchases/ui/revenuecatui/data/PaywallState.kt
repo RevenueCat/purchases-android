@@ -376,9 +376,19 @@ internal sealed interface PaywallState {
 
             fun textPackageContext(
                 tabIndex: Int?,
+                discountTabIndex: Int?,
                 fallbackPackage: Package?,
                 fallbackSubscriptionOption: SubscriptionOption?,
             ): TextPackageContext {
+                if (discountTabIndex != null) {
+                    return TextPackageContext(
+                        fallbackPackage,
+                        fallbackSubscriptionOption,
+                        packages.packagesByTab[discountTabIndex].orEmpty()
+                            .filter { it.sheetPresentationKey == null }
+                            .mostExpensivePricePerMonthMicros(),
+                    )
+                }
                 val tabPackages = packages.packagesByTab[tabIndex].orEmpty()
                 val packageInfo = tabPackages.find { it.uniqueId == selectedPackageByTab[tabIndex] }
                     ?: tabPackages.defaultSelection(visibilityContext(windowDpSize = null))
@@ -386,7 +396,8 @@ internal sealed interface PaywallState {
                     TextPackageContext(
                         packageInfo.pkg,
                         packageInfo.resolvedOffer?.subscriptionOption,
-                        tabPackages.mostExpensivePricePerMonthMicros(),
+                        tabPackages.filter { it.sheetPresentationKey == null }
+                            .mostExpensivePricePerMonthMicros(),
                     )
                 } else {
                     TextPackageContext(fallbackPackage, fallbackSubscriptionOption, mostExpensivePricePerMonthMicros)

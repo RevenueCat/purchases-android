@@ -56,6 +56,9 @@ internal class DiagnosticsTracker(
     val isCollectionEnabled: Boolean
         get() = collectionState.get() == CollectionState.ENABLED
 
+    val isCollectionDisabled: Boolean
+        get() = collectionState.get() == CollectionState.DISABLED
+
     private companion object {
         val diagnosticsSessionID: UUID = UUID.randomUUID()
 
@@ -235,6 +238,16 @@ internal class DiagnosticsTracker(
                 BILLING_RESPONSE_CODE to responseCode,
                 BILLING_DEBUG_MESSAGE to debugMessage,
                 PENDING_REQUEST_COUNT to pendingRequestCount,
+            ),
+        )
+    }
+
+    fun trackGoogleInitialStorefrontLoad(successful: Boolean, responseTime: Duration) {
+        trackEvent(
+            eventName = DiagnosticsEntryName.GOOGLE_INITIAL_STOREFRONT_LOAD,
+            properties = mapOf(
+                SUCCESSFUL_KEY to successful,
+                RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
             ),
         )
     }

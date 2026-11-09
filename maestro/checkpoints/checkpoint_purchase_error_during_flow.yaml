@@ -52,12 +52,10 @@ env:
 # Acknowledging resumes the flow where it was: the paywall is still up.
 - assertVisible: "Continue"
 
-# Swiping the sheet down closes the flow like a close action: the checkpoint passes with nothing obtained, and
-# the call count shows the callback had not fired while the error dialog was up.
-- swipe:
-    start: "50%,10%"
-    end: "50%,90%"
-    duration: 600
+# Tap the fixture's unlabeled close icon (top-right). A swipe can leave the sheet open on CI.
+# The checkpoint passes with nothing obtained, and the call count shows the callback had not fired earlier.
+- tapOn:
+    point: "92%,8%"
 - extendedWaitUntil:
     visible: "Callback: passed, entitlements: none (call #1)"
     timeout: 15000

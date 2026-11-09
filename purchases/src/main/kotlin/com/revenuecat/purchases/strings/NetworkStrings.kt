@@ -29,4 +29,6 @@ internal object NetworkStrings {
         " not be decoded. '%s'"
     const val VERIFICATION_ERROR = "Verification: Request to '%s' failed verification."
     const val VERIFICATION_SUCCESS = "Verification: Request to '%s' verified successfully."
+    const val REWARD_VERIFICATION_MALFORMED_CUSTOMER_INFO = "Ignoring malformed customer info in reward " +
+        "verification response: %s"
 }

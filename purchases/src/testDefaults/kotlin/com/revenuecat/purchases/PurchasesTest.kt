@@ -17,6 +17,7 @@ import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.PlatformInfo
+import com.revenuecat.purchases.common.createCustomerInfo
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.SharedConstants
@@ -69,6 +70,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import io.mockk.verifyAll
+import io.mockk.verifyOrder
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -2085,7 +2087,7 @@ internal class PurchasesTest : BasePurchasesTest() {
     @OptIn(InternalRevenueCatAPI::class)
     @Test
     fun `getRewardVerificationResult returns result from backend on success`() {
-        val expectedResult = RewardVerificationPollStatus.Verified(VerifiedReward.VirtualCurrency(code = "coins", amount = 10))
+        val expectedResult = RewardVerificationPollStatus.Verified(VerifiedReward.VirtualCurrency(code = "coins", amount = 10), customerInfo = null)
         every {
             mockBackend.getRewardVerificationResult(
                 appUserID = appUserId,
@@ -2142,7 +2144,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 clientTransactionId = "ct_1",
                 trackingMetadata = null,
                 captureMethod = AdCaptureMethod.MANUAL,
-                poll = { Outcome.Verified(PollReward.VirtualCurrency(code = "gems", amount = 5), moreRewards = emptyList()) },
+                poll = { Outcome.Verified(PollReward.VirtualCurrency(code = "gems", amount = 5), moreRewards = emptyList(), customerInfo = null) },
             )
         }
 
@@ -2157,7 +2159,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 clientTransactionId = "ct_1",
                 trackingMetadata = null,
                 captureMethod = AdCaptureMethod.MANUAL,
-                poll = { Outcome.Verified(PollReward.NoReward, moreRewards = emptyList()) },
+                poll = { Outcome.Verified(PollReward.NoReward, moreRewards = emptyList(), customerInfo = null) },
             )
             purchases.pollRewardVerification(
                 clientTransactionId = "ct_2",
@@ -2196,7 +2198,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             )
         } answers {
             lambda<(RewardVerificationPollStatus) -> Unit>().captured.invoke(
-                RewardVerificationPollStatus.Verified(VerifiedReward.NoReward),
+                RewardVerificationPollStatus.Verified(VerifiedReward.NoReward, customerInfo = null),
             )
         }
 
@@ -2251,6 +2253,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                     Outcome.Verified(
                         reward = PollReward.NoReward,
                         moreRewards = listOf(PollReward.VirtualCurrency(code = "gems", amount = 5)),
+                        customerInfo = null,
                     )
                 },
             )
@@ -2260,9 +2263,7 @@ internal class PurchasesTest : BasePurchasesTest() {
     }
 
     @Test
-    fun `pollRewardVerification refreshes customer info on verified entitlement reward`() {
-        mockCustomerInfoHelper()
-
+    fun `pollRewardVerification does not fetch customer info on entitlement reward without inline customer info`() {
         val result = runBlocking {
             purchases.pollRewardVerification(
                 clientTransactionId = "ct_1",
@@ -2272,29 +2273,23 @@ internal class PurchasesTest : BasePurchasesTest() {
                     Outcome.Verified(
                         reward = PollReward.Entitlement(identifier = "pro", expiresAt = Date(1_800_000_000_000L)),
                         moreRewards = emptyList(),
+                        customerInfo = null,
                     )
                 },
             )
         }
 
         assertThat(result.failed).isFalse
-        verify(exactly = 1) {
-            mockCustomerInfoHelper.retrieveCustomerInfo(
-                appUserId,
-                CacheFetchPolicy.FETCH_CURRENT,
-                any(),
-                any(),
-                any(),
-                any(),
-            )
+        verify(exactly = 0) {
+            mockCustomerInfoHelper.retrieveCustomerInfo(any(), any(), any(), any(), any(), any())
         }
+        verify(exactly = 0) { mockCustomerInfoUpdateHandler.cacheAndNotifyListeners(any(), any()) }
     }
 
     @Test
-    fun `pollRewardVerification returns failed when entitlement customer info refresh fails`() {
-        mockCustomerInfoHelper(
-            errorGettingCustomerInfo = PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken"),
-        )
+    fun `pollRewardVerification caches customer info from the poll on entitlement reward`() {
+        val customerInfo = createCustomerInfo(Responses.validFullPurchaserResponse)
+        every { mockOfflineEntitlementsManager.resetOfflineCustomerInfoCache() } just Runs
 
         val result = runBlocking {
             purchases.pollRewardVerification(
@@ -2305,12 +2300,20 @@ internal class PurchasesTest : BasePurchasesTest() {
                     Outcome.Verified(
                         reward = PollReward.Entitlement(identifier = "pro", expiresAt = Date(1_800_000_000_000L)),
                         moreRewards = emptyList(),
+                        customerInfo = customerInfo,
                     )
                 },
             )
         }
 
-        assertThat(result.failed).isTrue
+        assertThat(result.failed).isFalse
+        verifyOrder {
+            mockOfflineEntitlementsManager.resetOfflineCustomerInfoCache()
+            mockCustomerInfoUpdateHandler.cacheAndNotifyListeners(customerInfo, appUserId)
+        }
+        verify(exactly = 0) {
+            mockCustomerInfoHelper.retrieveCustomerInfo(any(), any(), any(), any(), any(), any())
+        }
     }
 
     private val testTrackingMetadata = RewardedAdTrackingMetadata(
@@ -2340,7 +2343,7 @@ internal class PurchasesTest : BasePurchasesTest() {
 
     @Test
     fun `pollRewardVerification with tracking metadata fires earned then verified when nothing is granted`() {
-        val tracked = pollWithTracking { Outcome.Verified(PollReward.NoReward, moreRewards = emptyList()) }
+        val tracked = pollWithTracking { Outcome.Verified(PollReward.NoReward, moreRewards = emptyList(), customerInfo = null) }
 
         assertThat(tracked).hasSize(2)
         assertThat(tracked[0]).isInstanceOf(AdEvent.RewardEarnedUnverified::class.java)
@@ -2350,7 +2353,7 @@ internal class PurchasesTest : BasePurchasesTest() {
     @Test
     fun `pollRewardVerification with tracking metadata fires one granted event for a single reward`() {
         val tracked = pollWithTracking {
-            Outcome.Verified(PollReward.VirtualCurrency(code = "gems", amount = 5), moreRewards = emptyList())
+            Outcome.Verified(PollReward.VirtualCurrency(code = "gems", amount = 5), moreRewards = emptyList(), customerInfo = null)
         }
 
         assertThat(tracked).hasSize(3)
@@ -2366,6 +2369,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             Outcome.Verified(
                 reward = PollReward.VirtualCurrency(code = "gems", amount = 5),
                 moreRewards = listOf(PollReward.Entitlement(identifier = "pro", expiresAt = Date(1_800_000_000_000L))),
+                customerInfo = null,
             )
         }
 
@@ -2420,7 +2424,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 clientTransactionId = "ct_1",
                 trackingMetadata = null,
                 captureMethod = AdCaptureMethod.MANUAL,
-                poll = { Outcome.Verified(PollReward.VirtualCurrency(code = "gems", amount = 5), moreRewards = emptyList()) },
+                poll = { Outcome.Verified(PollReward.VirtualCurrency(code = "gems", amount = 5), moreRewards = emptyList(), customerInfo = null) },
             )
         }
 
@@ -2441,7 +2445,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             )
         } answers {
             lambda<(RewardVerificationPollStatus) -> Unit>().captured.invoke(
-                RewardVerificationPollStatus.Verified(VerifiedReward.VirtualCurrency(code = "coins", amount = 10)),
+                RewardVerificationPollStatus.Verified(VerifiedReward.VirtualCurrency(code = "coins", amount = 10), customerInfo = null),
             )
         }
     }
