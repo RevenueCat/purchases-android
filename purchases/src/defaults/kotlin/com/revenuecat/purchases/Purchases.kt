@@ -991,7 +991,7 @@ public class Purchases internal constructor(
         clientTransactionId: String,
         trackingMetadata: RewardedAdTrackingMetadata?,
         captureMethod: AdCaptureMethod,
-        poll: suspend (String) -> Outcome,
+        poll: suspend (clientTransactionId: String, appUserID: String) -> Outcome,
     ): RewardVerificationResult {
         if (trackingMetadata != null) {
             adTracker.trackAdRewardEarnedUnverified(
@@ -1008,8 +1008,11 @@ public class Purchases internal constructor(
             )
         }
 
+        // Captured once so the poll requests and the cached CustomerInfo always refer to the same user,
+        // even if logIn lands mid-poll.
+        val appUserID = this.appUserID
         val outcome = try {
-            poll(clientTransactionId)
+            poll(clientTransactionId, appUserID)
         } catch (e: CancellationException) {
             if (trackingMetadata != null) {
                 trackRewardOutcome(trackingMetadata, Outcome.Failed.Cancelled, captureMethod)
@@ -1027,7 +1030,7 @@ public class Purchases internal constructor(
             purchasesOrchestrator.invalidateVirtualCurrenciesCache()
         }
         if (rewards.any { it is VerifiedReward.Entitlement }) {
-            (outcome as? Outcome.Verified)?.customerInfo?.let { purchasesOrchestrator.cacheCustomerInfo(it) }
+            (outcome as? Outcome.Verified)?.customerInfo?.let { purchasesOrchestrator.cacheCustomerInfo(it, appUserID) }
         }
         return result
     }
@@ -1100,11 +1103,13 @@ public class Purchases internal constructor(
 
     @OptIn(InternalRevenueCatAPI::class)
     internal fun getRewardVerificationResult(
+        appUserID: String,
         clientTransactionId: String,
         adUnitId: String?,
         callback: GetRewardVerificationResultCallback,
     ) {
         purchasesOrchestrator.getRewardVerificationResult(
+            appUserID = appUserID,
             clientTransactionId = clientTransactionId,
             adUnitId = adUnitId,
             callback = callback,

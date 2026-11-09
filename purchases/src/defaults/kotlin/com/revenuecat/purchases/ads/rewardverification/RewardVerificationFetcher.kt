@@ -7,13 +7,12 @@ import com.revenuecat.purchases.awaitGetRewardVerificationResult
 
 @OptIn(InternalRevenueCatAPI::class)
 internal fun interface RewardVerificationFetcher {
-    suspend fun fetch(clientTransactionId: String): RewardVerificationPollStatus
+    suspend fun fetch(clientTransactionId: String, appUserID: String): RewardVerificationPollStatus
 
     companion object {
-        val default: RewardVerificationFetcher = forAdUnit(adUnitId = null)
-
-        fun forAdUnit(adUnitId: String?): RewardVerificationFetcher = RewardVerificationFetcher { clientTransactionId ->
-            Purchases.sharedInstance.awaitGetRewardVerificationResult(clientTransactionId, adUnitId)
-        }
+        fun forAdUnit(adUnitId: String?): RewardVerificationFetcher =
+            RewardVerificationFetcher { clientTransactionId, appUserID ->
+                Purchases.sharedInstance.awaitGetRewardVerificationResult(clientTransactionId, adUnitId, appUserID)
+            }
     }
 }
