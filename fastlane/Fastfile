@@ -250,10 +250,7 @@ platform :android do
   desc "Build SDK size app and upload it to Emerge and Sentry"
   lane :sdk_size_tests do
     gradle_properties = {
-      "signing.keyId" => ENV['GPG_SIGNING_KEY_ID_NEW'],
-      "signing.password" => ENV['GPG_SIGNING_KEY_PW_NEW'],
-      "signing.secretKeyRingFile" => "/home/circleci/.gnupg/secring.gpg",
-      "RELEASE_SIGNING_ENABLED" => true
+      "RELEASE_SIGNING_ENABLED" => false
     }
     gradle(task: "publishToMavenLocal", properties: gradle_properties)
     Dir.chdir("../test-apps/sdksizetesting/app") do
@@ -330,10 +327,9 @@ platform :android do
   desc "Upload and close a release"
   lane :deploy do |options|
     version = current_version_number
+    ENV["ORG_GRADLE_PROJECT_signingInMemoryKey"] = ENV["SIGNING_GPG_IN_MEMORY"]
+    ENV["ORG_GRADLE_PROJECT_signingInMemoryKeyPassword"] = ENV["GPG_SIGNING_KEY_PW_NEW"]
     gradle_properties = {
-      "signing.keyId" => ENV['GPG_SIGNING_KEY_ID_NEW'],
-      "signing.password" => ENV['GPG_SIGNING_KEY_PW_NEW'],
-      "signing.secretKeyRingFile" => "/home/circleci/.gnupg/secring.gpg",
       "mavenCentralUsername" => ENV['MAVEN_CENTRAL_PORTAL_USERNAME'],
       "mavenCentralPassword" => ENV['MAVEN_CENTRAL_PORTAL_PASSWORD'],
       "RELEASE_SIGNING_ENABLED" => true

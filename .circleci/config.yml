@@ -66,25 +66,6 @@ commands:
             echo 'export ORG_GRADLE_PROJECT_releaseKeystorePassword="$RELEASE_KEYSTORE_PASSWORD"' >> "$BASH_ENV"
             echo 'export ORG_GRADLE_PROJECT_releaseKeyPassword="$RELEASE_KEY_PASSWORD"' >> "$BASH_ENV"
 
-  prepare-signing-key:
-    steps:
-      - run:
-          name: Prepare GPG keystore file
-          command: |
-            export GPG_KEY_FILE=`mktemp`
-            echo "export GPG_KEY=$GPG_KEY_FILE" >> $BASH_ENV
-      - run:
-          name: Base64 decode gpg keystore to file
-          command: echo $SIGNING_GPG_BASE64 | base64 --decode > $GPG_KEY
-      - run:
-          name: Import GPG keys
-          command: gpg --batch --import $GPG_KEY
-      - run:
-          name: Fixing GPG compatibility
-          command: |
-            echo $GPG_SIGNING_KEY_PW_NEW | gpg --batch --pinentry-mode=loopback --passphrase-fd 0 \
-            --export-secret-keys > /home/circleci/.gnupg/secring.gpg
-
   build-paywall-tester:
     steps:
       - accept-android-licenses
@@ -468,7 +449,6 @@ jobs:
       - revenuecat/trust-github-key
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v2
-      - prepare-signing-key
       - android/restore_gradle_cache
       - android/restore_build_cache
       - run:
@@ -504,7 +484,6 @@ jobs:
           cache_prefix: v1a
       - android/restore_build_cache:
           cache_prefix: v1a
-      - prepare-signing-key
       - run:
           name: Deployment
           command: |
@@ -718,7 +697,6 @@ jobs:
           tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v2
-      - prepare-signing-key
       - android/restore_gradle_cache
       - run:
           name: Upload size testing app to Emerge and Sentry
