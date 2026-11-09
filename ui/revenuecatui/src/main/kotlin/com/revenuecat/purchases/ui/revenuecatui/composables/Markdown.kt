@@ -683,9 +683,10 @@ internal fun markdownPlainText(markdown: String): String {
 }
 
 internal fun linkAnnotation(destination: String, color: Color, uriHandler: UriHandler?): LinkAnnotation.Url {
-    val underline = SpanStyle(color, textDecoration = TextDecoration.Underline)
+    // Links take the text color but are only underlined when the author wraps them in <u>...</u>, matching iOS.
+    val style = SpanStyle(color)
     val listener = uriHandler?.let { OpenUriListener(it, destination) }
-    return LinkAnnotation.Url(destination, TextLinkStyles(underline), listener)
+    return LinkAnnotation.Url(destination, TextLinkStyles(style), listener)
 }
 
 /**
