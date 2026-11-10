@@ -11,6 +11,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
@@ -75,7 +76,9 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.toLegacyPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
 import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorStrings
+import com.revenuecat.purchases.ui.revenuecatui.workflow.CheckpointWorkflowGateController
 import com.revenuecat.purchases.ui.revenuecatui.workflow.NavigationDirection
+import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowGateDecision
 import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowNavigator
 import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowScreenMapper
 import com.revenuecat.purchases.withPresentedCheckpointIdentifier
@@ -84,6 +87,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -237,6 +241,10 @@ internal class PaywallViewModelImpl(
 
     // Shared across all screens of a workflow presentation so state-driven values survive screen navigation.
     private var currentWorkflowStateStore: PaywallStateStore? = null
+    private var checkpointGateController = CheckpointWorkflowGateController()
+
+    // Reads the customer's entitlements for a gated step being navigated to; the navigation waits on it.
+    private var gateEntryJob: Job? = null
 
     // Reused across full state refreshes (e.g. color changes) of a standalone paywall so its state-driven values
     // are not lost. Tied to this ViewModel's lifetime, so it resets when the paywall is presented again.
@@ -244,8 +252,8 @@ internal class PaywallViewModelImpl(
     private var preWarmJob: Job? = null
     private var transitionIdCounter: Int = 0
 
-    // Per-session flag: a completed purchase or a successful restore is a natural workflow exit, not an
-    // abandonment, so it suppresses workflow_close. The session boundary is the dismiss (reset in
+    // Per-session flag: a purchase or restore satisfying any reached hard gate is a natural workflow exit,
+    // so it suppresses workflow_close. The session boundary is the dismiss (reset in
     // clearWorkflowState), NOT each render/refresh, so an in-session completion that leaves the paywall
     // visible (e.g. a restore with no shouldDisplayBlock) survives option/locale/color refreshes. Tracked
     // separately from the sticky, public _purchaseCompleted (which also gates exit offers and is observed
@@ -373,9 +381,11 @@ internal class PaywallViewModelImpl(
 
     override fun closePaywall(result: PaywallResult?, reason: PaywallDismissReason) {
         Logger.d("Paywalls: Close paywall initiated")
+        val gateUnresolved = checkpointGateController.hasUnresolvedGate
+        if (gateUnresolved && handleBackNavigation()) return
         trackCurrentWorkflowLeft()
         trackPaywallClose()
-        val exitOffering = if (!_purchaseCompleted.value && shouldTriggerExitOfferForCurrentStep) {
+        val exitOffering = if (!gateUnresolved && !_purchaseCompleted.value && shouldTriggerExitOfferForCurrentStep) {
             preloadedExitOffering
         } else {
             null
@@ -423,6 +433,8 @@ internal class PaywallViewModelImpl(
         branchResolveJob = null
         initialStepJob?.cancel()
         initialStepJob = null
+        gateEntryJob?.cancel()
+        gateEntryJob = null
         resolvedInitialStepId = null
         workflowNavigator = null
         currentWorkflow = null
@@ -432,6 +444,7 @@ internal class PaywallViewModelImpl(
         currentWorkflowStepTracksPaywallEvents = true
         workflowStepStateCache.clear()
         currentWorkflowStateStore = null
+        checkpointGateController = CheckpointWorkflowGateController()
         _workflowState.value = null
         // The dismiss is the session boundary: the next presentation on this ViewModel is a new session,
         // so completion from this one must not suppress its abandonment. Runs after closePaywall has
@@ -606,6 +619,9 @@ internal class PaywallViewModelImpl(
 
     @Suppress("NestedBlockDepth", "CyclomaticComplexMethod", "LongMethod")
     private suspend fun performRestore() {
+        val controller = checkpointGateController
+        val generation = presentationGeneration
+        val appUserId = options.checkpointGateContext?.let { purchases.appUserID }
         val shouldResume = suspendCancellableCoroutine { continuation ->
             Logger.d("Restore Purchases Initiated… waiting for listener.onRestoreInitiated to proceed.")
             listener?.onRestoreInitiated { shouldResume ->
@@ -633,20 +649,13 @@ internal class PaywallViewModelImpl(
                     when (val result = customRestoreHandler(customerInfo)) {
                         is PurchaseLogicResult.Success -> {
                             val updatedCustomerInfo = purchases.awaitSyncPurchases()
-                            // A successful restore is a natural workflow exit, not an abandonment, even if
-                            // the paywall stays visible (no shouldDisplayBlock). Suppress workflow_close.
-                            workflowCompletedInSession = true
-
-                            shouldDisplayBlock?.let {
-                                if (!it(updatedCustomerInfo)) {
-                                    _purchaseCompleted.value = true
-                                    Logger.d(
-                                        "Dismissing paywall after restore since display " +
-                                            "condition has not been met",
-                                    )
-                                    closePaywall(PaywallResult.Restored(updatedCustomerInfo))
-                                }
-                            }
+                            completePurchaseOrRestore(
+                                updatedCustomerInfo,
+                                isPurchase = false,
+                                controller,
+                                generation,
+                                appUserId,
+                            )
                         }
                         is PurchaseLogicResult.Cancellation -> {
                             // silently ignore
@@ -668,20 +677,8 @@ internal class PaywallViewModelImpl(
                     }
                     val customerInfo = purchases.awaitRestore()
                     Logger.i("Restore purchases successful: $customerInfo")
-                    // A successful restore is a natural workflow exit, not an abandonment, even if the
-                    // paywall stays visible (no shouldDisplayBlock). Suppress workflow_close on dismiss.
-                    workflowCompletedInSession = true
-                    listener?.onRestoreCompleted(customerInfo)
-
-                    shouldDisplayBlock?.let {
-                        if (!it(customerInfo)) {
-                            _purchaseCompleted.value = true
-                            Logger.d("Dismissing paywall after restore since display condition has not been met")
-                            trackCurrentWorkflowStepCompleted()
-                            // Bypasses closePaywall, so end the retained ViewModel's presentation session here.
-                            endPresentationSession()
-                            options.dismissRequest()
-                        }
+                    completePurchaseOrRestore(customerInfo, isPurchase = false, controller, generation, appUserId) {
+                        listener?.onRestoreCompleted(customerInfo)
                     }
                 }
 
@@ -751,6 +748,9 @@ internal class PaywallViewModelImpl(
         productChangeConfig: ProductChangeConfig? = null,
         subscriptionOption: SubscriptionOption?,
     ) {
+        val controller = checkpointGateController
+        val generation = presentationGeneration
+        val appUserId = options.checkpointGateContext?.let { purchases.appUserID }
         // Call onPurchasePackageInitiated and wait for resume() to be called
 
         val shouldResume = suspendCancellableCoroutine { continuation ->
@@ -791,12 +791,13 @@ internal class PaywallViewModelImpl(
                     when (result) {
                         is PurchaseLogicResult.Success -> {
                             val customerInfo = purchases.awaitSyncPurchases()
-                            _purchaseCompleted.value = true
-                            hideOpenSheet()
-                            // Set before closePaywall so the abandonment gate sees this as a completion.
-                            workflowCompletedInSession = true
-                            Logger.d("Dismissing paywall after purchase")
-                            closePaywall(PaywallResult.Purchased(customerInfo))
+                            completePurchaseOrRestore(
+                                customerInfo,
+                                isPurchase = true,
+                                controller,
+                                generation,
+                                appUserId,
+                            )
                         }
                         is PurchaseLogicResult.Cancellation -> {
                             trackPaywallCancel()
@@ -838,16 +839,15 @@ internal class PaywallViewModelImpl(
                     }
 
                     val purchaseResult = purchases.awaitPurchase(purchaseParamsBuilder)
-                    _purchaseCompleted.value = true
-                    hideOpenSheet()
-                    workflowCompletedInSession = true
-                    listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
-                    Logger.d("Dismissing paywall after purchase")
-                    trackCurrentWorkflowStepCompleted()
-                    // This direct-dismiss completion bypasses closePaywall, so end the retained ViewModel's
-                    // presentation session here.
-                    endPresentationSession()
-                    options.dismissRequest()
+                    completePurchaseOrRestore(
+                        purchaseResult.customerInfo,
+                        isPurchase = true,
+                        controller,
+                        generation,
+                        appUserId,
+                    ) {
+                        listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
+                    }
                 }
                 else -> {
                     Logger.e("Unsupported purchase completion type: ${purchases.purchasesAreCompletedBy}")
@@ -1213,23 +1213,19 @@ internal class PaywallViewModelImpl(
         preWarmJob?.cancel()
         workflowStepStateCache.clear()
         _workflowState.value = null
-        if (isNewWorkflowImpression) {
-            workflowTraceId = initialWorkflowTraceId(workflow, presentedOfferingContext)
-            // Fresh presentation: seed the shared store from every screen, sorted by id, so the build order
-            // never decides which declaration of a key wins.
-            // Rebuilds (navigation, color change) reuse the existing store so values persist across screens.
-            currentWorkflowStateStore = PaywallStateStore(workflow.mergedStateDeclarations())
-        }
+        prepareWorkflowImpression(workflow, presentedOfferingContext, isNewWorkflowImpression)
 
         // A rebuild during the wait is still the wait: keep the skeleton, but do not resolve again.
         val awaitingInitialStep = isNewWorkflowImpression || initialStepJob?.isActive == true
         val unresolvedInitialBranch = workflow.initialBranch?.takeIf { awaitingInitialStep }
+        // A gated first step waits on the customer's entitlements, so a customer who already passes never sees it.
+        val showsSkeleton = unresolvedInitialBranch != null || awaitsInitialGate(currentStep, awaitingInitialStep)
 
         // Pre-compute the package step so its default package is available in cache
         // for early packageless steps to use as context. The skeleton caches nothing, so the step it
         // replaces still needs this even when it is the current step.
         val stepWithPackages = workflow.singleStepFallbackId?.let { workflow.steps[it] }
-        if (stepWithPackages != null && (unresolvedInitialBranch != null || stepWithPackages.id != currentStep.id)) {
+        if (stepWithPackages != null && (showsSkeleton || stepWithPackages.id != currentStep.id)) {
             buildStateFromStep(
                 stepWithPackages,
                 workflow,
@@ -1241,8 +1237,8 @@ internal class PaywallViewModelImpl(
         }
         // A rebuild is the same visit, so re-resolving there could route the step somewhere else. The
         // skeleton resolves nothing: its answers belong to a step the branch may route away from.
-        if (isNewWorkflowImpression && unresolvedInitialBranch == null) resolveBranchesFor(currentStep)
-        if (unresolvedInitialBranch != null) {
+        if (isNewWorkflowImpression && !showsSkeleton) resolveBranchesFor(currentStep)
+        if (showsSkeleton) {
             // The step to show is not known yet, so the fallback renders as a skeleton.
             buildStateFromStep(
                 currentStep,
@@ -1268,11 +1264,31 @@ internal class PaywallViewModelImpl(
         preWarmWorkflowStepCache(workflow, uiConfig, offerings, presentedOfferingContext)
     }
 
+    private fun prepareWorkflowImpression(
+        workflow: PublishedWorkflow,
+        presentedOfferingContext: PresentedOfferingContext?,
+        isNewWorkflowImpression: Boolean,
+    ) {
+        if (!isNewWorkflowImpression) return
+
+        workflowTraceId = initialWorkflowTraceId(workflow, presentedOfferingContext)
+        // Fresh presentation: seed the shared store from every screen, sorted by id, so the build order
+        // never decides which declaration of a key wins.
+        // Rebuilds (navigation, color change) reuse the existing store so values persist across screens.
+        currentWorkflowStateStore = PaywallStateStore(workflow.mergedStateDeclarations())
+        checkpointGateController = CheckpointWorkflowGateController()
+        checkpointGateController.reset(options.checkpointGateContext)
+    }
+
+    private fun awaitsInitialGate(step: WorkflowStep, awaitingInitialStep: Boolean): Boolean =
+        awaitingInitialStep && checkpointGateController.isGated(step)
+
     /**
-     * The one resolve the UI waits on. Nothing renders until the first step is known.
+     * The one resolve the UI waits on. Nothing renders until the first step is known: its [branch], if any, is
+     * resolved, and then its gate, if any, is evaluated.
      */
     private fun resolveInitialStep(
-        branch: WorkflowTriggerAction.Branch,
+        branch: WorkflowTriggerAction.Branch?,
         workflow: PublishedWorkflow,
         uiConfig: UiConfig,
         offerings: WorkflowOfferings,
@@ -1280,16 +1296,24 @@ internal class PaywallViewModelImpl(
     ) {
         val navigator = workflowNavigator ?: return
         initialStepJob?.cancel()
+        // An already-known first gate must block passage even before the read coroutine starts.
+        val initialStep = navigator.currentStep
+        if (branch == null && initialStep != null && !markGateReached(initialStep)) return
         initialStepJob = viewModelScope.launch {
-            val stepId = purchases.resolveBranch(
-                branch,
-                options.customVariables.mapValues { (_, value) -> value.asRulesDimensionValue },
-            )
-            ensureActive()
             if (navigator !== workflowNavigator) return@launch
-            navigator.enterInitialStep(stepId)
+            if (branch != null) {
+                val stepId = purchases.resolveBranch(
+                    branch,
+                    options.customVariables.mapValues { (_, value) -> value.asRulesDimensionValue },
+                )
+                ensureActive()
+                if (navigator !== workflowNavigator) return@launch
+                navigator.enterInitialStep(stepId)
+            }
             val step = navigator.currentStep ?: return@launch
             resolvedInitialStepId = step.id
+            if (branch != null && !markGateReached(step)) return@launch
+            if (!enterGatedStep(step)) return@launch
             resolveBranchesFor(step)
             buildStateFromStep(step, workflow, uiConfig, offerings, presentedOfferingContext)
             if (_workflowState.value != null) {
@@ -1301,6 +1325,15 @@ internal class PaywallViewModelImpl(
             }
             preWarmWorkflowStepCache(workflow, uiConfig, offerings, presentedOfferingContext)
         }
+    }
+
+    private fun markGateReached(step: WorkflowStep): Boolean {
+        val controller = checkpointGateController
+        val generation = presentationGeneration
+        // Until its customer's entitlements are known, a reached gate fails closed.
+        controller.evaluate(step, emptySet())
+        // Reporting the unresolved outcome can replace the presentation through host code.
+        return ownsPresentation(controller, generation)
     }
 
     /** Nothing waits on this: until it lands, a branch takes its fallback. */
@@ -1333,6 +1366,123 @@ internal class PaywallViewModelImpl(
         state is PaywallState.Loaded.Components &&
         state.workflowScreen?.hasOffering != false &&
         step.tracksPaywallEvents(workflow)
+
+    /**
+     * Enters [step] through its gate. A step without an enforced gate is entered right away. A gated step waits
+     * for the customer's entitlements, read now (normally from the cache): [enter] runs if the gate blocks, and
+     * the checkpoint completes without showing the step if it passes. Further workflow actions are ignored until
+     * then, and back navigation abandons the entry.
+     */
+    private fun enterThroughGate(step: WorkflowStep, enter: () -> Unit) {
+        gateEntryJob?.cancel()
+        if (!checkpointGateController.isGated(step)) {
+            enter()
+            return
+        }
+        if (!markGateReached(step)) return
+        gateEntryJob = viewModelScope.launch {
+            if (enterGatedStep(step)) enter()
+        }
+    }
+
+    /**
+     * Reads the customer's entitlements and evaluates [step]'s gate. Returns true when the step should be shown:
+     * it is not gated, or its gate blocks. A customer read that fails blocks, so the gate fails closed.
+     */
+    @Suppress("ReturnCount")
+    private suspend fun enterGatedStep(step: WorkflowStep): Boolean {
+        val controller = checkpointGateController
+        if (!controller.isGated(step)) return true
+        val generation = presentationGeneration
+        val appUserId = purchases.appUserID
+        val activeEntitlementIds = try {
+            purchases.awaitCustomerInfo(CacheFetchPolicy.CACHED_OR_FETCHED).entitlements.active.keys
+        } catch (e: PurchasesException) {
+            Logger.e("Workflow gate on step '${step.id}' could not read the customer's entitlements: ${e.error}")
+            emptySet()
+        }
+        currentCoroutineContext().ensureActive()
+        if (!ownsPresentation(controller, generation)) return false
+        // A response still belongs to the user who started the read, even if logIn/logOut finished meanwhile.
+        val currentEntitlementIds = activeEntitlementIds.takeIf { purchases.appUserID == appUserId } ?: emptySet()
+        val decision = controller.evaluate(step, currentEntitlementIds)
+        // The gate outcome callback is host-facing and can replace the presentation.
+        if (!ownsPresentation(controller, generation)) return false
+        if (decision == WorkflowGateDecision.PASSED) {
+            completeCheckpointWorkflowGate(controller, generation)
+            return false
+        }
+        return true
+    }
+
+    private fun completePurchaseOrRestore(
+        customerInfo: CustomerInfo,
+        isPurchase: Boolean,
+        controller: CheckpointWorkflowGateController,
+        generation: Int,
+        appUserId: String?,
+        onCompleted: () -> Unit = {},
+    ) {
+        val identityChanged = appUserId != null && purchases.appUserID != appUserId
+        if (!ownsPresentation(controller, generation) || identityChanged) {
+            onCompleted()
+            return
+        }
+        if (isPurchase) {
+            _purchaseCompleted.value = true
+            hideOpenSheet()
+        }
+        val decision = controller.update(customerInfo)
+        if (decision != WorkflowGateDecision.BLOCKED && ownsPresentation(controller, generation)) {
+            workflowCompletedInSession = true
+        }
+        // Preserve completion accounting before a success listener can close the paywall.
+        onCompleted()
+        // Either the gate outcome callback or the listener can replace this presentation.
+        if (!ownsPresentation(controller, generation)) return
+        when (decision) {
+            WorkflowGateDecision.BLOCKED -> Unit
+            WorkflowGateDecision.PASSED -> completeCheckpointWorkflowGate(controller, generation)
+            WorkflowGateDecision.NOT_GATED -> {
+                val shouldDismiss = isPurchase || shouldDisplayBlock?.invoke(customerInfo) == false
+                // The display predicate is host code and can replace the presentation too.
+                if (shouldDismiss && ownsPresentation(controller, generation)) {
+                    _purchaseCompleted.value = true
+                    dismissAfterPurchaseOrRestore(customerInfo, isPurchase)
+                }
+            }
+        }
+    }
+
+    private fun ownsPresentation(controller: CheckpointWorkflowGateController, generation: Int): Boolean =
+        controller === checkpointGateController && generation == presentationGeneration
+
+    private fun dismissAfterPurchaseOrRestore(customerInfo: CustomerInfo, isPurchase: Boolean) {
+        if (purchases.purchasesAreCompletedBy == PurchasesAreCompletedBy.MY_APP) {
+            val result = if (isPurchase) {
+                PaywallResult.Purchased(customerInfo)
+            } else {
+                PaywallResult.Restored(customerInfo)
+            }
+            closePaywall(result)
+        } else {
+            trackCurrentWorkflowStepCompleted()
+            endPresentationSession()
+            options.dismissRequest()
+        }
+    }
+
+    private fun completeCheckpointWorkflowGate(controller: CheckpointWorkflowGateController, generation: Int) {
+        if (!ownsPresentation(controller, generation)) return
+        trackCurrentWorkflowStepCompleted()
+        endPresentationSession()
+        val dismiss = options.dismissRequestWithExitOffering
+        if (dismiss != null) {
+            dismiss(null, null, PaywallDismissReason.CLOSE)
+        } else {
+            options.dismissRequest()
+        }
+    }
 
     private fun buildStateFromStep(
         step: WorkflowStep,
@@ -1507,17 +1657,27 @@ internal class PaywallViewModelImpl(
 
     @Suppress("ReturnCount")
     override fun handleWorkflowAction(componentId: String, triggerType: WorkflowTriggerType) {
+        if (gateEntryJob?.isActive == true) return
         val navigator = workflowNavigator ?: return
+        if (navigator.currentStep?.let(checkpointGateController::blocksForwardNavigation) == true) return
+        val candidate = navigator.peekTriggerStep(componentId, triggerType) ?: return
+        enterThroughGate(candidate) { navigateForward(navigator, candidate) }
+    }
+
+    @Suppress("ReturnCount")
+    private fun navigateForward(
+        navigator: WorkflowNavigator,
+        candidate: WorkflowStep,
+    ) {
+        if (navigator !== workflowNavigator) return
         val workflow = currentWorkflow ?: return
         val offerings = currentWorkflowOfferings ?: return
-        val candidate = navigator.peekTriggerStep(componentId, triggerType) ?: return
         prepareStateForStep(candidate, workflow, offerings) ?: return
         val fromStep = navigator.currentStep
         val fromStepId = fromStep?.id
-        // triggerAction repeats the same lookup as peekTriggerStep. It should not return null
-        // given the peek succeeded, but guard anyway to avoid a hard crash.
-        val newStep = navigator.triggerAction(componentId, triggerType) ?: run {
-            Logger.e("triggerAction returned null after peekTriggerStep succeeded — this is a bug")
+        // Branch resolution can finish during the gate read. Enter the checked destination from the tap.
+        val newStep = navigator.navigateForward(candidate.id) ?: run {
+            Logger.e("navigateForward returned null for a checked workflow step — this is a bug")
             return
         }
         resolveBranchesFor(newStep)
@@ -1539,18 +1699,28 @@ internal class PaywallViewModelImpl(
 
     @Suppress("ReturnCount")
     override fun handleBackNavigation(): Boolean {
+        // Back is the user's latest intent: a gated step still waiting on its customer read is not entered.
+        gateEntryJob?.cancel()
         val navigator = workflowNavigator ?: return false
         if (!navigator.canNavigateBack) return false
-        val workflow = currentWorkflow ?: return false
-        val offerings = currentWorkflowOfferings ?: return false
+        if (currentWorkflow == null || currentWorkflowOfferings == null) return false
         val candidate = navigator.peekBackStep ?: return false
-        prepareStateForStep(candidate, workflow, offerings) ?: return true
+        enterThroughGate(candidate) { navigateBack(navigator, candidate) }
+        return true
+    }
+
+    @Suppress("ReturnCount")
+    private fun navigateBack(navigator: WorkflowNavigator, candidate: WorkflowStep) {
+        if (navigator !== workflowNavigator) return
+        val workflow = currentWorkflow ?: return
+        val offerings = currentWorkflowOfferings ?: return
+        prepareStateForStep(candidate, workflow, offerings) ?: return
         val fromStep = navigator.currentStep
         val fromStepId = fromStep?.id
         // navigateBack should not return null given canNavigateBack is true, but guard to be safe.
         val newStep = navigator.navigateBack() ?: run {
             Logger.e("navigateBack returned null after canNavigateBack was true — this is a bug")
-            return false
+            return
         }
         resolveBranchesFor(newStep)
         buildStateFromStep(
@@ -1567,7 +1737,6 @@ internal class PaywallViewModelImpl(
             toStep = newStep,
             entryReason = WorkflowStepEntryReason.BACK,
         )
-        return true
     }
 
     private fun trackWorkflowStepNavigation(
@@ -1663,7 +1832,7 @@ internal class PaywallViewModelImpl(
 
     private fun trackCurrentWorkflowLeft() {
         trackCurrentWorkflowStepCompleted()
-        if (!workflowCompletedInSession) {
+        if (checkpointGateController.hasUnresolvedGate || !workflowCompletedInSession) {
             trackCurrentWorkflowAbandoned()
         }
     }
