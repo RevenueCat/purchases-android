@@ -373,9 +373,6 @@ internal class CheckpointsManager(
         }
     }
 
-    // Gate passage takes precedence over purchase/restore bookkeeping. Without a gate, a recorded purchase or
-    // restore still means the user went through however the window went away. A paywall that went away without
-    // reporting anything was dismissed.
     override fun onPresentationFinished(
         callId: String,
         navigatedBack: Boolean,
@@ -400,10 +397,8 @@ internal class CheckpointsManager(
         )
     }
 
-    // Like onPresentationFinished, for a presentation that failed: a purchase or granting restore the paywall
-    // already reported (e.g. before the configuration change) still wins. Otherwise the window is gone and the
-    // flow cannot go on, so the error is presented and the run ends with it once the app's error UI is done. An
-    // unpassed gate still blocks checkpoint passage even when the purchase/restore outcome is retained.
+    // Keep the recorded purchase or restore outcome if the presentation fails after activity recreation.
+    // Do not invoke the checkpoint callback if the gate did not pass.
     override fun onPresentationFailed(callId: String, error: PurchasesError) {
         val failed = slot.take(callId) ?: return
         val gateNotPassed = failed.gateOutcome == CheckpointGateOutcome.NOT_PASSED
