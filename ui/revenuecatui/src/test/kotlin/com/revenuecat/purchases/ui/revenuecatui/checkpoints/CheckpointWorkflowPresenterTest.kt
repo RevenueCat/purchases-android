@@ -3,19 +3,27 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
 import android.app.Activity
+import android.app.Application
 import androidx.activity.ComponentDialog
 import android.os.Looper
 import android.view.View
 import android.view.WindowManager
 import android.widget.EditText
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.findViewTreeViewModelStoreOwner
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.DangerousSettings
+import com.revenuecat.purchases.EntitlementInfo
+import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
+import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
+import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
@@ -23,9 +31,15 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.composables.ModalSheetState
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModelImpl
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
+import io.mockk.just
+import io.mockk.Runs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -67,9 +81,10 @@ class CheckpointWorkflowPresenterTest {
         mockPurchases = mockk {
             every { currentActivity } answers { controller.get() }
             every { preferredUILocaleOverride } returns null
+            every { internalProductEntitlementMapping() } returns null
             coEvery { internalResolveCp(any(), any()) } returns
                 CheckpointResolution.MatchedWorkflow(
-                    mockk(),
+                    mockk<PublishedWorkflow> { every { steps } returns emptyMap() },
                     mockk(),
                     mockk<Offerings> { every { all } returns emptyMap() },
                     checkpointRuleId = null,
@@ -91,6 +106,111 @@ class CheckpointWorkflowPresenterTest {
                 }
             },
         )
+    }
+
+    @Test
+    fun `window exposes the composed offering only while its paywall is visible`() {
+        val offering = TestData.template1Offering
+        val options = PaywallOptions.Builder(dismissRequest = {}).setOffering(offering).build()
+        val host = mockk<CheckpointPresentationHost>(relaxed = true) {
+            every { paywallOptions(any(), any()) } returns options
+        }
+        mockPurchasesForRendering()
+        try {
+            listOf(FlowPresentationMode.MODAL_FULL_SCREEN, FlowPresentationMode.MODAL_SHEET).forEach { mode ->
+                val window = CheckpointWorkflowPresenter("rendered", host, mode)
+                assertThat(window.displayedOffering).isNull()
+
+                window.show(controller.get())
+                shadowOf(Looper.getMainLooper()).idle()
+
+                assertThat(window.displayedOffering).isSameAs(offering)
+                window.abandon()
+                assertThat(window.displayedOffering).isNull()
+            }
+        } finally {
+            unmockkObject(Purchases)
+        }
+    }
+
+    @Test
+    fun `a granting restore between activity windows completes a full screen checkpoint`() {
+        assertRestoreDuringRecreation(FlowPresentationMode.MODAL_FULL_SCREEN, grantsAccess = true)
+    }
+
+    @Test
+    fun `a granting restore between activity windows completes a sheet checkpoint`() {
+        assertRestoreDuringRecreation(FlowPresentationMode.MODAL_SHEET, grantsAccess = true)
+    }
+
+    @Test
+    fun `an unrelated restore between activity windows still allows backing out`() {
+        assertRestoreDuringRecreation(FlowPresentationMode.MODAL_FULL_SCREEN, grantsAccess = false)
+    }
+
+    private fun assertRestoreDuringRecreation(mode: FlowPresentationMode, grantsAccess: Boolean) {
+        val offering = TestData.template1Offering
+        val entitlement = if (grantsAccess) "pro" else "unrelated"
+        val restored = mockk<CustomerInfo> {
+            every { entitlements.active } returns mapOf(
+                entitlement to mockk<EntitlementInfo> { every { identifier } returns entitlement },
+            )
+        }
+        val results = mutableListOf<PaywallPresenter.Completion.Result>()
+        lateinit var window: CheckpointWorkflowPresenter
+        val presenter = DefaultPaywallPresenter(mockPurchases, errorPresenter = { _, _ -> }) { callId, host, mode ->
+            CheckpointWorkflowPresenter(callId, host, mode).also { window = it }
+        }
+        every { mockPurchases.getCustomerInfo(CacheFetchPolicy.CACHE_ONLY, any()) } answers {
+            secondArg<ReceiveCustomerInfoCallback>()
+                .onReceived(mockk { every { entitlements.active } returns emptyMap() })
+        }
+        every { mockPurchases.internalProductEntitlementMapping() } returns ProductEntitlementMapping(
+            offering.availablePackages.associate { pkg ->
+                pkg.product.id to ProductEntitlementMapping.Mapping(pkg.product.id, null, listOf("pro"))
+            },
+        )
+        lateinit var restoreCallback: ReceiveCustomerInfoCallback
+        every { mockPurchases.restorePurchases(any()) } answers { restoreCallback = firstArg() }
+        mockPurchasesForRendering()
+        val application = controller.get().application
+        val lifecycle = mockk<Application.ActivityLifecycleCallbacks>(relaxed = true)
+        try {
+            presenter.present(PaywallPresenter.Params(offering, "restore", emptyMap(), mode)) { results += it }
+            shadowOf(Looper.getMainLooper()).idle()
+            assertThat(window.displayedOffering).isSameAs(offering)
+            val owner = ShadowDialog.getLatestDialog().window!!.decorView.findViewTreeViewModelStoreOwner()!!
+            val viewModel = ViewModelProvider(owner).get(
+                owner.viewModelStore.keys().single { it.toIntOrNull() != null },
+                PaywallViewModelImpl::class.java,
+            )
+            viewModel.restorePurchases()
+
+            // Registered after the presenter: finish the pending restore after it removes the old window,
+            // before the replacement activity starts and composes another paywall.
+            every { lifecycle.onActivityDestroyed(any()) } answers {
+                assertThat(ShadowDialog.getLatestDialog().isShowing).isFalse
+                restoreCallback.onReceived(restored)
+            }
+            application.registerActivityLifecycleCallbacks(lifecycle)
+            controller.recreate()
+            shadowOf(Looper.getMainLooper()).idle()
+
+            if (grantsAccess) {
+                assertThat(results).containsExactly(PaywallPresenter.Completion.Result.Continued)
+            } else {
+                assertThat(results).isEmpty()
+                assertThat(window.displayedOffering).isSameAs(offering)
+                viewModel.closePaywall(reason = PaywallDismissReason.NAVIGATED_BACK)
+                assertThat(results).containsExactly(PaywallPresenter.Completion.Result.NavigatedBack)
+            }
+            assertThat(ShadowDialog.getLatestDialog().isShowing).isFalse
+            assertThat(window.displayedOffering).isNull()
+        } finally {
+            application.unregisterActivityLifecycleCallbacks(lifecycle)
+            window.abandon()
+            unmockkObject(Purchases)
+        }
     }
 
     @After
@@ -116,7 +236,7 @@ class CheckpointWorkflowPresenterTest {
     @Test
     fun `the workflow is presented against the offerings the checkpoint resolved to`() {
         val resolution = CheckpointResolution.MatchedWorkflow(
-            mockk(),
+            mockk<PublishedWorkflow> { every { steps } returns emptyMap() },
             mockk(),
             mockk<Offerings> { every { all } returns emptyMap() },
             checkpointRuleId = null,
@@ -474,6 +594,17 @@ class CheckpointWorkflowPresenterTest {
 
     private fun launchCheckpoint(params: CheckpointParams? = null): Job = CoroutineScope(dispatcher).launch {
         result = manager.runCheckpoint(mockPurchases, "test_checkpoint", params)
+    }
+
+    private fun mockPurchasesForRendering() {
+        mockkObject(Purchases)
+        every { Purchases.sharedInstance } returns mockPurchases
+        every { mockPurchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.REVENUECAT
+        every { mockPurchases.storefrontCountryCode } returns "US"
+        every { mockPurchases.track(any()) } just Runs
+        every { mockPurchases.currentConfiguration } returns mockk {
+            every { dangerousSettings } returns DangerousSettings()
+        }
     }
 
     private fun launchSheetCheckpoint(): Job =
