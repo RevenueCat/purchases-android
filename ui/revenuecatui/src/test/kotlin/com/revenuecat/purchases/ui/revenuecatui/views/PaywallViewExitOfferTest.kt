@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.views
 
 import android.os.Looper
 import android.widget.FrameLayout
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
@@ -243,9 +244,7 @@ class PaywallViewExitOfferTest {
 
         originalViewModel.closePaywall()
         // Re-targeting recomposes the view with a new view model.
-        composeTestRule.waitForIdle()
-
-        val exitViewModel = exitViewModelOrNull(activity, originalViewModel)
+        val exitViewModel = awaitExitViewModel(activity, originalViewModel)
         assertThat(exitViewModel)
             .withFailMessage(
                 "No exit view model. dismissCount=%s, viewModelKeys=%s",
@@ -289,6 +288,22 @@ class PaywallViewExitOfferTest {
             Thread.sleep(PRELOAD_POLL_MILLIS)
         }
         assertThat(viewModel.preloadedExitOffering).isNotNull
+    }
+
+    private fun awaitExitViewModel(
+        activity: PaywallViewHostActivity,
+        originalViewModel: PaywallViewModelImpl,
+    ): PaywallViewModelImpl? {
+        repeat(PRELOAD_POLLS) {
+            exitViewModelOrNull(activity, originalViewModel)?.let { return it }
+            // Do what waitForIdle() does to get the recomposition, without also waiting for process-wide idleness,
+            // which other test classes in the same JVM can leave unreachable: deliver the snapshot write, then a frame.
+            Snapshot.sendApplyNotifications()
+            composeTestRule.mainClock.advanceTimeByFrame()
+            shadowOf(Looper.getMainLooper()).idle()
+            Thread.sleep(PRELOAD_POLL_MILLIS)
+        }
+        return exitViewModelOrNull(activity, originalViewModel)
     }
 
     private fun exitViewModelOrNull(

@@ -8,6 +8,7 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.lifecycle.viewModelScope
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
@@ -82,6 +83,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import com.revenuecat.purchases.common.workflows.WorkflowStepID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -1339,6 +1341,7 @@ class PaywallViewModelWorkflowTest {
         val previousHandler = mainThread.uncaughtExceptionHandler
         mainThread.uncaughtExceptionHandler = Thread.UncaughtExceptionHandler { _, e -> uncaught += e }
         val backgroundDispatcher = FinishBeforeReturnDispatcher()
+        var vm: PaywallViewModelImpl? = null
         try {
             coEvery { purchases.resolveWorkflow(offeringId) } returns WorkflowResolution.Found(workflow.id)
             coEvery { purchases.awaitGetWorkflow(workflow.id) } returns fetchResult
@@ -1346,7 +1349,7 @@ class PaywallViewModelWorkflowTest {
 
             // Mirrors Recomposer.composing(): viewModel() constructs the VM inside a mutable snapshot.
             val snapshot = Snapshot.takeMutableSnapshot()
-            val vm = snapshot.enter {
+            vm = snapshot.enter {
                 PaywallViewModelImpl(
                     resourceProvider = MockResourceProvider(),
                     purchases = purchases,
@@ -1362,8 +1365,10 @@ class PaywallViewModelWorkflowTest {
             shadowOf(Looper.getMainLooper()).idle()
 
             assertThat(uncaught).isEmpty()
-            assertThat(vm.workflowState.value?.stepStates?.keys).containsExactlyInAnyOrder("step-1", "step-2")
+            assertThat(vm!!.workflowState.value?.stepStates?.keys).containsExactlyInAnyOrder("step-1", "step-2")
         } finally {
+            // This VM runs on the real Main. Leaving its scope active keeps it running into later Compose tests.
+            vm?.viewModelScope?.cancel()
             mainThread.uncaughtExceptionHandler = previousHandler
             backgroundDispatcher.close()
             Dispatchers.setMain(testDispatcher)
