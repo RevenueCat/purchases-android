@@ -451,9 +451,7 @@ internal class CheckpointsManager(
             callId = UUID.randomUUID().toString(),
             presentation = null,
             activeEntitlementsBefore = customerInfoBefore.activeEntitlementIds,
-            presentedEntitlements = {
-                listOf(params.offering).entitlementsGrantedBy(purchases.internalProductEntitlementMapping())
-            },
+            presentedEntitlements = { emptySet() },
             customerInfoBefore = customerInfoBefore,
             flowFinished = CompletableDeferred(),
         )
