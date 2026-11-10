@@ -1302,7 +1302,7 @@ internal class PaywallViewModelImpl(
         initialStepJob?.cancel()
         // An already-known first gate must block passage even before the read coroutine starts.
         val initialStep = navigator.currentStep
-        if (branch == null && initialStep != null && !markInitialGateReached(initialStep)) return
+        if (branch == null && initialStep != null && !markGateReached(initialStep)) return
         initialStepJob = viewModelScope.launch {
             if (navigator !== workflowNavigator) return@launch
             if (branch != null) {
@@ -1316,7 +1316,7 @@ internal class PaywallViewModelImpl(
             }
             val step = navigator.currentStep ?: return@launch
             resolvedInitialStepId = step.id
-            if (branch != null && !markInitialGateReached(step)) return@launch
+            if (branch != null && !markGateReached(step)) return@launch
             if (!enterGatedStep(step)) return@launch
             resolveBranchesFor(step)
             buildStateFromStep(step, workflow, uiConfig, offerings, presentedOfferingContext)
@@ -1331,7 +1331,7 @@ internal class PaywallViewModelImpl(
         }
     }
 
-    private fun markInitialGateReached(step: WorkflowStep): Boolean {
+    private fun markGateReached(step: WorkflowStep): Boolean {
         val controller = checkpointGateController
         val generation = presentationGeneration
         // Until its customer's entitlements are known, a reached gate fails closed.
@@ -1383,6 +1383,7 @@ internal class PaywallViewModelImpl(
             enter()
             return
         }
+        if (!markGateReached(step)) return
         gateEntryJob = viewModelScope.launch {
             if (enterGatedStep(step)) enter()
         }

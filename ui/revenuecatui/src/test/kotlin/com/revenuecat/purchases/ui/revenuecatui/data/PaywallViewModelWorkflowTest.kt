@@ -1585,7 +1585,75 @@ class PaywallViewModelWorkflowTest {
         runGateRead()
 
         assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
-        assertThat(outcomes).containsExactly(CheckpointGateOutcome.NOT_APPLICABLE)
+        assertThat(outcomes).containsExactly(
+            CheckpointGateOutcome.NOT_APPLICABLE,
+            CheckpointGateOutcome.NOT_PASSED,
+        )
+    }
+
+    @Test
+    fun `closing a pending later hard gate preserves its unresolved outcome`() {
+        val read = CompletableDeferred<CustomerInfo>()
+        coEvery { purchases.awaitCustomerInfo(CacheFetchPolicy.CACHED_OR_FETCHED) } coAnswers { read.await() }
+        val outcomes = mutableListOf<CheckpointGateOutcome>()
+        val reasons = mutableListOf<PaywallDismissReason>()
+        val vm = createVm(
+            gateContext = CheckpointGateContext(outcomes::add),
+            dismissRequestWithExitOffering = { _, _, reason -> reasons.add(reason) },
+        )
+        vm.startWorkflowPresentationFromResult(
+            workflow.copy(steps = mapOf(step1.id to step1, step2.id to step2.withHardGate())),
+            testOfferings, null, uiConfig,
+        )
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        runGateRead()
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo(step1.id)
+
+        vm.closePaywall()
+        read.complete(gatedCustomerInfo("pro"))
+        runGateRead()
+
+        assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.NOT_PASSED)
+        assertThat(reasons).containsExactly(PaywallDismissReason.CLOSE)
+        assertThat(vm.workflowState.value).isNull()
+    }
+
+    @Test
+    fun `a later hard gate blocks passage before its read coroutine starts`() {
+        val outcomes = mutableListOf<CheckpointGateOutcome>()
+        val vm = createVm(gateContext = CheckpointGateContext(outcomes::add))
+        vm.startWorkflowPresentationFromResult(
+            workflow.copy(steps = mapOf(step1.id to step1, step2.id to step2.withHardGate())),
+            testOfferings, null, uiConfig,
+        )
+
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        vm.closePaywall()
+
+        assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.NOT_PASSED)
+        assertThat(vm.workflowState.value).isNull()
+    }
+
+    @Test
+    fun `later unresolved gate callback cannot overwrite a replacement presentation`() {
+        lateinit var vm: PaywallViewModelImpl
+        vm = createVm(gateContext = CheckpointGateContext { outcome ->
+            if (outcome == CheckpointGateOutcome.NOT_PASSED) {
+                vm.startWorkflowPresentationFromResult(
+                    workflow.copy(initialStepId = step2.id), testOfferings, null, uiConfig,
+                )
+            }
+        })
+        vm.startWorkflowPresentationFromResult(
+            workflow.copy(steps = mapOf(step1.id to step1, step2.id to step2.withHardGate())),
+            testOfferings, null, uiConfig,
+        )
+
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        runGateRead()
+
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo(step2.id)
+        assertThat(vm.workflowState.value?.isSkeleton).isFalse()
     }
 
     @Test
