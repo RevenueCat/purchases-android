@@ -993,6 +993,20 @@ jobs:
       - store_artifacts:
           path: ui/revenuecatui/src/main/generated/baselineProfiles/baseline-prof.txt
 
+  # Opens the purchases-android bump PR in the RevenueCat Android app
+  # (revenuecat-mobile-android's bump_sdk lane). Mirrors purchases-ios.
+  bump-sdk-in-rc-mobile-app:
+    docker:
+      - image: cimg/ruby:3.3
+    resource_class: small
+    steps:
+      - checkout
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v2
+      - run:
+          name: Trigger the RevenueCat Android app's SDK bump
+          command: bundle exec fastlane android trigger_bump_sdk_in_rc_mobile_app
+
   update-paywall-preview-resources-submodule:
     docker:
       - image: cimg/ruby:3.3
@@ -1292,6 +1306,10 @@ workflows:
               - deploy
               - docs-deploy
           <<: *release-tags
+      - bump-sdk-in-rc-mobile-app:
+          requires:
+            - deploy
+          <<: *release-tags
       - revenuecat/merge-release-pr:
           context: github-bot-public
           ruby_version: "3.3"
@@ -1301,6 +1319,7 @@ workflows:
             - publish-purchase-tester-release
             - publish-paywall-tester-release
             - publish-rct-tester-release
+            - bump-sdk-in-rc-mobile-app
           <<: *release-tags
 
   on-main-branch:

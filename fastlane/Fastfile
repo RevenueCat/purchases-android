@@ -847,6 +847,47 @@ DESC
     trigger_action_in_circle_ci(action: 'bump', repo_name: repo_name)
   end
 
+  desc "Trigger the revenuecat-mobile-android pipeline that opens the purchases-android bump PR"
+  lane :trigger_bump_sdk_in_rc_mobile_app do
+    require 'rest-client'
+
+    version = current_version_number
+    if is_snapshot_version?(version)
+      UI.message("#{version} is a snapshot; not bumping the RevenueCat app")
+      next
+    end
+
+    circle_token = ENV["RC_APP_CIRCLE_CI_TOKEN"]
+    UI.user_error!("Please set the RC_APP_CIRCLE_CI_TOKEN environment variable") unless circle_token
+
+    definition_id = ENV["RC_APP_CIRCLE_CI_PIPELINE_DEFINITION_ID"]
+    UI.user_error!("Please set the RC_APP_CIRCLE_CI_PIPELINE_DEFINITION_ID environment variable") unless definition_id
+
+    project_slug = ENV["RC_APP_CIRCLE_CI_PROJECT_SLUG"]
+    UI.user_error!("Please set the RC_APP_CIRCLE_CI_PROJECT_SLUG environment variable") unless project_slug
+
+    headers = { "Circle-Token": circle_token, "Content-Type": "application/json", "Accept": "application/json" }
+    data = {
+      definition_id: definition_id,
+      config: { branch: "main" },
+      checkout: { branch: "main" },
+      parameters: {
+        bump_sdk: true,
+        sdk_version: version
+      }
+    }
+    url = "https://circleci.com/api/v2/project/#{project_slug}/pipeline/run"
+
+    begin
+      RestClient.post url, data.to_json, headers
+      UI.success "RC App Pipeline triggered successfully"
+    rescue => e
+      UI.error "Failed to trigger RC App Pipeline: #{e.message}"
+      UI.error "Response body: #{e.response.body}" if e.respond_to?(:response) && e.response
+      raise e
+    end
+  end
+
   desc "Records Paywall template screenshots and pushes them to the repository at target_repository_path"
   lane :record_and_push_paywall_template_screenshots do |options|
     UI.user_error!("Please provide the target_repository_path, and make sure it is cloned.") unless options[:target_repository_path]
