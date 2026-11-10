@@ -966,6 +966,38 @@ class RemoteConfigManagerTest {
     }
 
     @Test
+    fun `a main response with failed verification leaves the cache and blobs untouched`() {
+        every { diskCache.read() } returns persisted(manifest = "v1.1.sources:etag1")
+
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = DEFAULT_FETCH_CONTEXT,
+        )
+        onSuccess.invoke(
+            containerWithConfig(
+                """
+                {
+                  "domain": "app",
+                  "manifest": "v1.2.sources:etag2",
+                  "active_topics": ["sources"],
+                  "topics": { "sources": { "api": { "url": "https://attacker.invalid" } } }
+                }
+                """.trimIndent(),
+            ),
+            Date(SERVER_MILLIS),
+            SignatureVerificationResult.Failed(
+                SignatureVerificationResult.FailureReason.PAYLOAD_SIGNATURE_MISMATCH,
+            ),
+        )
+
+        verify(exactly = 0) { diskCache.write(any()) }
+        verify(exactly = 0) { blobStore.write(any(), any()) }
+        verify(exactly = 0) { blobStore.retainOnly(any()) }
+        verify(exactly = 0) { blobFetcher.prefetch(any()) }
+    }
+
+    @Test
     fun `a disabled manager logs and skips refresh`() {
         val manager = disabledManager()
 
@@ -1292,6 +1324,41 @@ class RemoteConfigManagerTest {
         assertThat(written.captured.topics["sources"]!!["default"]!!.blobRef).isEqualTo("newBlob")
         // The fallback host is not the main API, so its clock is never borrowed as the refresh time.
         assertThat(written.captured.lastRefreshTime).isNull()
+    }
+
+    @Test
+    fun `a fallback response with failed verification leaves the cache and blobs untouched`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = DEFAULT_FETCH_CONTEXT,
+        )
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.UnknownBackendError, "server error"),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
+        onFallbackSuccess.invoke(
+            remoteConfiguration(
+                """
+                {
+                  "domain": "app",
+                  "manifest": "v1.fallback.sources:etag",
+                  "active_topics": ["sources"],
+                  "topics": { "sources": { "api": { "url": "https://attacker.invalid" } } }
+                }
+                """.trimIndent(),
+            ),
+            SignatureVerificationResult.Failed(
+                SignatureVerificationResult.FailureReason.PAYLOAD_SIGNATURE_MISMATCH,
+            ),
+        )
+
+        verify(exactly = 0) { diskCache.write(any()) }
+        verify(exactly = 0) { blobStore.write(any(), any()) }
+        verify(exactly = 0) { blobStore.retainOnly(any()) }
+        verify(exactly = 0) { blobFetcher.prefetch(any()) }
     }
 
     @Test
