@@ -1011,6 +1011,8 @@ class PaywallViewModelWorkflowTest {
         runCurrent()
         vm.closePaywall()
         vm.startHardGate()
+        val replacementState = vm.state.value as PaywallState.Loaded.Components
+        replacementState.sheet.show(backgroundBlur = false, content = {})
         events.clear()
         outcomes.clear()
         val customerInfo = gatedCustomerInfo("pro")
@@ -1021,6 +1023,8 @@ class PaywallViewModelWorkflowTest {
             if (isPurchase) verify(exactly = 1) { listener.onPurchaseCompleted(customerInfo, transaction) }
             else verify(exactly = 1) { listener.onRestoreCompleted(customerInfo) }
         }
+        assertThat(vm.purchaseCompleted.value).isFalse()
+        assertThat(replacementState.sheet.visible).isTrue()
         assertThat(dismissals).isEqualTo(1)
         assertThat(outcomes).doesNotContain(CheckpointGateOutcome.PASSED)
         assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")

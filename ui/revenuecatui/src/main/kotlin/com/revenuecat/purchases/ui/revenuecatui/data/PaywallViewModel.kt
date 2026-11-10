@@ -791,8 +791,6 @@ internal class PaywallViewModelImpl(
                     when (result) {
                         is PurchaseLogicResult.Success -> {
                             val customerInfo = purchases.awaitSyncPurchases()
-                            _purchaseCompleted.value = true
-                            hideOpenSheet()
                             completePurchaseOrRestore(
                                 customerInfo,
                                 isPurchase = true,
@@ -841,8 +839,6 @@ internal class PaywallViewModelImpl(
                     }
 
                     val purchaseResult = purchases.awaitPurchase(purchaseParamsBuilder)
-                    _purchaseCompleted.value = true
-                    hideOpenSheet()
                     completePurchaseOrRestore(
                         purchaseResult.customerInfo,
                         isPurchase = true,
@@ -1431,6 +1427,10 @@ internal class PaywallViewModelImpl(
         if (!ownsPresentation(controller, generation) || identityChanged) {
             onCompleted()
             return
+        }
+        if (isPurchase) {
+            _purchaseCompleted.value = true
+            hideOpenSheet()
         }
         val decision = controller.update(customerInfo)
         if (decision != WorkflowGateDecision.BLOCKED && ownsPresentation(controller, generation)) {
