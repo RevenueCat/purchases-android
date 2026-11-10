@@ -1,3 +1,7 @@
+## 10.30.2
+### 🔄 Other Changes
+* feat(paywalls): add internal exit offer handler to PaywallView (#4534) via Cesar de la Vega (@vegaro)
+
 ## 10.30.1
 ## RevenueCatUI SDK
 ### Paywallsv2
