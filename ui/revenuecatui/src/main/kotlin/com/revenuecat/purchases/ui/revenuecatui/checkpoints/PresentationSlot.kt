@@ -25,6 +25,9 @@ internal class PresentationSlot {
         // losing the window (configuration change) doesn't reset it.
         var outcome: CheckpointFlowOutcome? = null
 
+        // Retained with the call across window recreation, independently of purchase/restore bookkeeping.
+        var gateOutcome: CheckpointGateOutcome = CheckpointGateOutcome.NOT_APPLICABLE
+
         // Only used to take an orphaned workflow window down when its call is abandoned.
         var presenter: CheckpointWorkflowPresenter? = null
     }

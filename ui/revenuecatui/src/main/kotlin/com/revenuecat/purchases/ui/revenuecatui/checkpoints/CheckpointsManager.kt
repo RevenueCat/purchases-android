@@ -41,9 +41,13 @@ internal class CheckpointPresentation(
 )
 
 /**
- * What a checkpoint run produced: the terminal [flowOutcome] of whatever it presented (null when nothing was),
- * and [backedOut], true when the presented flow went away because the user navigated back (system back, or a
- * navigate-back action on a workflow's first step) without purchasing or restoring.
+ * The result of a checkpoint run.
+ *
+ * [flowOutcome] is the terminal outcome of the presented flow, or null if no flow appeared.
+ * [backedOut] is true when:
+ * - The workflow did not pass its gate.
+ * - An ungated flow closed through back navigation without a purchase or restore.
+ *   Back navigation includes system back and a navigate-back action on the first step.
  *
  * [failed] is true when the checkpoint could not be served before anything was on screen: the failure went to
  * the error presenter and the run is not reported as passed. [blockedByPresentedFlow] is true when the checkpoint
@@ -323,6 +327,11 @@ internal class CheckpointsManager(
                 }
                 .setErrorPresenter(presentation.errorPresenter)
                 .setCustomVariables(presentation.customVariables)
+                .setCheckpointGateContext(
+                    CheckpointGateContext { outcome ->
+                        slot.with(callId) { it.gateOutcome = outcome }
+                    },
+                )
                 .setListener(OutcomeListener(callId))
                 .injectedWorkflow(
                     presentation.workflow.workflow,
@@ -364,9 +373,6 @@ internal class CheckpointsManager(
         }
     }
 
-    // A recorded purchase or restore means the user went through, however the window went away: checkpoint
-    // paywalls don't auto-dismiss on restore, so a user who restored and then backed out still went through. A
-    // paywall that went away without reporting anything was dismissed.
     override fun onPresentationFinished(
         callId: String,
         navigatedBack: Boolean,
@@ -380,22 +386,26 @@ internal class CheckpointsManager(
         finished.flowFinished.complete(
             CheckpointRun(
                 recorded ?: CheckpointFlowOutcome.Dismissed,
-                backedOut = navigatedBack && !recorded.isObtained,
+                backedOut = when (finished.gateOutcome) {
+                    CheckpointGateOutcome.NOT_PASSED -> true
+                    CheckpointGateOutcome.PASSED -> false
+                    CheckpointGateOutcome.NOT_APPLICABLE -> navigatedBack && !recorded.isObtained
+                },
                 finishPresentation = finishPresentation,
                 customerInfoBefore = finished.customerInfoBefore,
             ),
         )
     }
 
-    // Like onPresentationFinished, for a presentation that failed: a purchase or granting restore the paywall
-    // already reported (e.g. before the configuration change) still wins. Otherwise the window is gone and the
-    // flow cannot go on, so the error is presented and the run ends with it once the app's error UI is done.
+    // Keep the recorded purchase or restore outcome if the presentation fails after activity recreation.
+    // Do not invoke the checkpoint callback if the gate did not pass.
     override fun onPresentationFailed(callId: String, error: PurchasesError) {
         val failed = slot.take(callId) ?: return
+        val gateNotPassed = failed.gateOutcome == CheckpointGateOutcome.NOT_PASSED
         val obtained = failed.outcome.takeIf { it.isObtained }
         if (obtained != null) {
             failed.flowFinished.complete(
-                CheckpointRun(obtained, backedOut = false, customerInfoBefore = failed.customerInfoBefore),
+                CheckpointRun(obtained, backedOut = gateNotPassed, customerInfoBefore = failed.customerInfoBefore),
             )
             return
         }
@@ -403,7 +413,7 @@ internal class CheckpointsManager(
             failed.flowFinished.complete(
                 CheckpointRun(
                     CheckpointFlowOutcome.Error(error),
-                    backedOut = false,
+                    backedOut = gateNotPassed,
                     customerInfoBefore = failed.customerInfoBefore,
                 ),
             )
