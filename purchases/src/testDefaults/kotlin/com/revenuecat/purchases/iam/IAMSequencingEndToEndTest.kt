@@ -22,7 +22,6 @@ internal class IAMSequencingEndToEndTest : IAMEndToEndTest() {
 
     @Test
     fun `a purchase arriving during the bootstrap posts its receipt as the bootstrapped user`() {
-        backend.adoptsAnonymousAppUserID = false
         configure()
         val localID = currentAppUserID
         backend.hold("/auth/login")
@@ -70,7 +69,6 @@ internal class IAMSequencingEndToEndTest : IAMEndToEndTest() {
 
     @Test
     fun `an explicit login during the bootstrap waits for it and links its identity`() {
-        backend.adoptsAnonymousAppUserID = false
         configure()
         backend.hold("/auth/login")
         foreground()

@@ -45,7 +45,8 @@ internal object Poller {
     @Suppress("LongParameterList")
     suspend fun poll(
         clientTransactionId: String,
-        fetcher: RewardVerificationFetcher = RewardVerificationFetcher.default,
+        appUserID: String,
+        fetcher: RewardVerificationFetcher,
         sleepSeconds: suspend (Double) -> Unit = { delay((it * MILLIS_PER_SECOND).toLong()) },
         jitterSeconds: () -> Double = defaultJitterSeconds,
         maxAttempts: Int = DEFAULT_MAX_ATTEMPTS,
@@ -53,6 +54,7 @@ internal object Poller {
     ): Outcome {
         val outcome = pollOutcome(
             clientTransactionId = clientTransactionId,
+            appUserID = appUserID,
             fetcher = fetcher,
             sleepSeconds = sleepSeconds,
             jitterSeconds = jitterSeconds,
@@ -64,8 +66,10 @@ internal object Poller {
         return outcome
     }
 
+    @Suppress("LongParameterList")
     private suspend fun pollOutcome(
         clientTransactionId: String,
+        appUserID: String,
         fetcher: RewardVerificationFetcher,
         sleepSeconds: suspend (Double) -> Unit,
         jitterSeconds: () -> Double,
@@ -83,7 +87,7 @@ internal object Poller {
             if (attempt > 0 && !awaitBackoff(sleepSeconds, jitterSeconds)) {
                 finalOutcome = Outcome.Failed.TerminalError(BACKOFF_SCHEDULING_FAILED_DESCRIPTION)
             } else {
-                when (val step = fetchStep(clientTransactionId, fetcher)) {
+                when (val step = fetchStep(clientTransactionId, appUserID, fetcher)) {
                     is Step.Terminal -> finalOutcome = step.outcome
                     Step.RetryPending -> lastRetryWasTransientError = false
                     Step.RetryTransientError -> lastRetryWasTransientError = true
@@ -126,10 +130,11 @@ internal object Poller {
     @Suppress("TooGenericExceptionCaught")
     private suspend fun fetchStep(
         clientTransactionId: String,
+        appUserID: String,
         fetcher: RewardVerificationFetcher,
     ): Step {
         return try {
-            val result = fetcher.fetch(clientTransactionId)
+            val result = fetcher.fetch(clientTransactionId, appUserID)
             verboseLog {
                 "Reward verification poll result=${result.logDescription()} transactionId=$clientTransactionId"
             }
@@ -139,6 +144,7 @@ internal object Poller {
                         Outcome.Verified(
                             reward = result.reward.toAdMobReward(),
                             moreRewards = result.moreRewards.map { it.toAdMobReward() },
+                            customerInfo = result.customerInfo,
                         ),
                     )
                 is RewardVerificationPollStatus.Failed ->

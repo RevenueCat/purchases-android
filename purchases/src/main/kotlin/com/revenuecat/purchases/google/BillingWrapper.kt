@@ -36,6 +36,7 @@ import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.StoreProductsCallback
+import com.revenuecat.purchases.common.between
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
@@ -76,8 +77,10 @@ import com.revenuecat.purchases.utils.Result
 import java.io.PrintWriter
 import java.io.StringWriter
 import java.lang.ref.WeakReference
+import java.util.Date
 import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.math.min
+import kotlin.time.Duration
 
 private const val RECONNECT_TIMER_START_MILLISECONDS = 1L * 1000L
 private const val RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 15 minutes
@@ -106,6 +109,9 @@ internal class BillingWrapper(
 
     private val backgroundHandler: Handler =
         backgroundHandler ?: Handler(ownedBackgroundThread!!.looper)
+
+    // Created at configure: measures how long a fresh install waits for its storefront.
+    private val createdAt: Date = dateProvider.now
 
     private companion object {
         /**
@@ -745,6 +751,9 @@ internal class BillingWrapper(
                             .also { errorLog(it) }
                     }
 
+                    // The storefront load only starts once setup succeeds, so a terminal setup failure ends it here.
+                    if (isInitialStorefrontLoadPending()) trackInitialStorefrontLoadIfNeeded(successful = false)
+
                     // The calls will fail with an error that will be surfaced. We want to surface these errors
                     // Can't call executePendingRequests because it will not do anything since it checks for isReady()
                     sendErrorsToAllPendingRequests(error)
@@ -882,14 +891,38 @@ internal class BillingWrapper(
         onError: PurchasesErrorCallback,
     ) {
         verboseLog { BillingStrings.BILLING_INITIATE_GETTING_COUNTRY_CODE }
+        val isInitialLoad = isInitialStorefrontLoadPending()
+        val trackingOnError: PurchasesErrorCallback = { error ->
+            if (isInitialLoad) trackInitialStorefrontLoadIfNeeded(successful = false)
+            onError(error)
+        }
         GetBillingConfigUseCase(
             GetBillingConfigUseCaseParams(appInBackground),
             deviceCache = deviceCache,
-            onReceive = { billingConfig -> onSuccess(billingConfig.countryCode) },
-            onError = onError,
-            withConnectedClient = { withConnectedClient(onError, it) },
+            onReceive = { billingConfig ->
+                if (isInitialLoad) trackInitialStorefrontLoadIfNeeded(successful = true)
+                onSuccess(billingConfig.countryCode)
+            },
+            onError = trackingOnError,
+            withConnectedClient = { withConnectedClient(trackingOnError, it) },
             executeRequestOnUIThread = ::executeRequestOnUIThread,
         ).run()
+    }
+
+    // A tracker can exist with collection disabled; it would drop the event, so the device must not be marked.
+    private val storefrontLoadTracker: DiagnosticsTracker?
+        get() = diagnosticsTrackerIfEnabled?.takeUnless { it.isCollectionDisabled }
+
+    private fun isInitialStorefrontLoadPending(): Boolean =
+        storefrontLoadTracker != null && deviceCache.getStorefront() == null
+
+    private fun trackInitialStorefrontLoadIfNeeded(successful: Boolean) {
+        val tracker = storefrontLoadTracker ?: return
+        if (!deviceCache.markInitialStorefrontLoadTracked()) return
+        tracker.trackGoogleInitialStorefrontLoad(
+            successful = successful,
+            responseTime = Duration.between(createdAt, dateProvider.now),
+        )
     }
 
     private fun withConnectedClient(

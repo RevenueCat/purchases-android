@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -79,6 +80,7 @@ class TabControlDiscountTests {
 
         compose.onNodeWithText("Selected: $129.99", useUnmergedTree = true).assertExists()
         compose.onNodeWithText("Selected offer: $4.99", useUnmergedTree = true).assertExists()
+        compose.onNodeWithText("Premium annual discount: 46%", useUnmergedTree = true).assertExists()
         compose.onNodeWithText("Yearly offer: $1.99", useUnmergedTree = true).assertExists()
         compose.onNodeWithText("Yearly: 58%", useUnmergedTree = true).assertExists()
     }
@@ -90,7 +92,57 @@ class TabControlDiscountTests {
         compose.onNodeWithText("Selected: $129.99").assertExists()
     }
 
-    private fun render(emptyAnnualTab: Boolean = false) {
+    @Test
+    fun `Package card discount uses its tab plans when a sheet has more expensive plans`() {
+        render()
+        compose.onNodeWithText("Yearly: 43%").assertExists()
+        compose.onNodeWithText("Essential annual discount:", substring = true, useUnmergedTree = true)
+            .assertTextEquals("Essential annual discount: 43%")
+        compose.onNodeWithText("Other annual discount: 58%", useUnmergedTree = true).assertExists()
+
+        compose.onNodeWithText("Other annual").performClick()
+
+        compose.onNodeWithText("Essential annual discount: 43%", useUnmergedTree = true).assertExists()
+        compose.onNodeWithText("Other annual discount: 58%", useUnmergedTree = true).assertExists()
+        compose.onNodeWithText("Yearly: 58%", useUnmergedTree = true).assertExists()
+    }
+
+    @Test
+    fun `Package card discount excludes sheet plans inside its tab`() {
+        render(sheetInsideTab = true)
+        compose.onNodeWithText("Yearly:", substring = true, useUnmergedTree = true).assertTextEquals("Yearly: 43%")
+        compose.onNodeWithText("Essential annual discount:", substring = true, useUnmergedTree = true)
+            .assertTextEquals("Essential annual discount: 43%")
+    }
+
+    @Test
+    fun `Package card discount uses its tab plans without a sheet`() {
+        render(includeSheet = false)
+        compose.onNodeWithText("Essential annual discount:", substring = true, useUnmergedTree = true)
+            .assertTextEquals("Essential annual discount: 43%")
+    }
+
+    @Test
+    fun `Root package card discount includes sheet plans without tabs`() {
+        render(includeTabs = false)
+        compose.onNodeWithText("Essential annual discount: 60%", useUnmergedTree = true).assertExists()
+    }
+
+    private fun render(
+        emptyAnnualTab: Boolean = false,
+        includeSheet: Boolean = true,
+        includeTabs: Boolean = true,
+        sheetInsideTab: Boolean = false,
+    ) {
+        val sheet = ButtonComponent(
+            action = ButtonComponent.Action.NavigateTo(ButtonComponent.Destination.Sheet(
+                id = "all-plans",
+                stack = StackComponent(components = listOf(
+                    plan(sheetAnnual, "Premium annual", true), plan(sheetMonthly, "Premium monthly", false),
+                )),
+            )),
+            stack = StackComponent(components = listOf(text("All plans"))),
+        )
         val annualPlans = if (emptyAnnualTab) {
             listOf(TabControlComponent, text("No plans"))
         } else {
@@ -120,7 +172,8 @@ class TabControlDiscountTests {
                 )),
             ),
             tabs = listOf(
-                TabsComponent.Tab("annual", stack = StackComponent(components = annualPlans)),
+                TabsComponent.Tab("annual", stack = StackComponent(components = annualPlans +
+                    listOfNotNull(sheet.takeIf { includeSheet && sheetInsideTab }))),
                 TabsComponent.Tab("monthly", stack = StackComponent(components = listOf(
                     TabControlComponent,
                     plan(monthly, "Monthly plan", true),
@@ -128,22 +181,14 @@ class TabControlDiscountTests {
             ),
             defaultTabId = "annual",
         )
-        val sheet = ButtonComponent(
-            action = ButtonComponent.Action.NavigateTo(ButtonComponent.Destination.Sheet(
-                id = "all-plans",
-                stack = StackComponent(components = listOf(
-                    plan(sheetAnnual, "Premium annual", true), plan(sheetMonthly, "Premium monthly", false),
-                )),
-            )),
-            stack = StackComponent(components = listOf(text("All plans"))),
-        )
         val rootPlans = if (emptyAnnualTab) {
             listOf(plan(sheetAnnual, "Root annual", true), plan(sheetMonthly, "Root monthly", false))
         } else {
             emptyList()
         }
-        val root = StackComponent(components = rootPlans + listOf(
-            tabs, sheet, text("Selected: {{ product.price }}"), text("Selected offer: {{ product.offer_price }}"),
+        val root = StackComponent(components = rootPlans + listOfNotNull(
+            if (includeTabs) tabs else plan(annual, "Essential annual", true), sheet.takeIf { includeSheet && !sheetInsideTab },
+            text("Selected: {{ product.price }}"), text("Selected offer: {{ product.offer_price }}"),
         ))
         val data = PaywallComponentsData(
             templateName = "components", assetBaseURL = URL("https://assets.pawwalls.com"),
@@ -167,7 +212,7 @@ class TabControlDiscountTests {
 
     private fun plan(pkg: Package, label: String, selected: Boolean) = PackageComponent(
         packageId = pkg.identifier, isSelectedByDefault = selected,
-        stack = StackComponent(components = listOf(text(label))),
+        stack = StackComponent(components = listOf(text(label), text("$label discount: {{ product.relative_discount }}"))),
     )
 
     private fun text(value: String): TextComponent {

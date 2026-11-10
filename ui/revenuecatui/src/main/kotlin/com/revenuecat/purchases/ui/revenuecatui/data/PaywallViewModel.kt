@@ -441,6 +441,16 @@ internal class PaywallViewModelImpl(
         workflowCompletedInSession = false
     }
 
+    /**
+     * A purchase made from inside a sheet only requests a paywall-level dismiss, which doesn't close the sheet. When
+     * the paywall is embedded the host may keep it on screen, so close the sheet once a purchase completes. This runs
+     * before the presentation session ends so the sheet's close is still tracked.
+     */
+    private fun hideOpenSheet() {
+        val sheet = (_state.value as? PaywallState.Loaded.Components)?.sheet ?: return
+        if (sheet.visible) sheet.hide()
+    }
+
     private fun endPresentationSession() {
         cancelStateUpdate()
         paywallPresentationData = null
@@ -782,6 +792,7 @@ internal class PaywallViewModelImpl(
                         is PurchaseLogicResult.Success -> {
                             val customerInfo = purchases.awaitSyncPurchases()
                             _purchaseCompleted.value = true
+                            hideOpenSheet()
                             // Set before closePaywall so the abandonment gate sees this as a completion.
                             workflowCompletedInSession = true
                             Logger.d("Dismissing paywall after purchase")
@@ -828,6 +839,7 @@ internal class PaywallViewModelImpl(
 
                     val purchaseResult = purchases.awaitPurchase(purchaseParamsBuilder)
                     _purchaseCompleted.value = true
+                    hideOpenSheet()
                     workflowCompletedInSession = true
                     listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
                     Logger.d("Dismissing paywall after purchase")

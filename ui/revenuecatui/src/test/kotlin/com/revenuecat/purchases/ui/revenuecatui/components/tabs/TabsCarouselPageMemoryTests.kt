@@ -111,9 +111,8 @@ class TabsCarouselPageMemoryTests {
     }
 
     @Test
-    fun `A smaller Tabs component stays on its last tab when a bigger one moves past it`(): Unit =
+    fun `Separate Tabs components retain independent selections`(): Unit =
         with(composeTestRule) {
-            // Arrange: the selected tab index is paywall-wide, so both Tabs components follow it.
             val bigTabs = listOf("x", "y", "z")
             val smallTabs = listOf("p", "q")
             val tabsComponents = listOf(simpleTabsComponent(bigTabs), simpleTabsComponent(smallTabs))
@@ -138,13 +137,16 @@ class TabsCarouselPageMemoryTests {
                 }
             }
 
-            // Act: tab 1 -> tab 2 on the bigger one; both indices clamp to 1 on the smaller one.
             onNodeWithText(tabButtonText("y")).performClick()
             waitForIdle()
             onNodeWithText(tabButtonText("z")).performClick()
             waitForIdle()
 
             // Assert
+            onNodeWithText(pageText("z", 0)).assertExists()
+            onNodeWithText(pageText("p", 0)).assertExists()
+            onNodeWithText(tabButtonText("q")).performClick()
+            waitForIdle()
             onNodeWithText(pageText("z", 0)).assertExists()
             onNodeWithText(pageText("q", 0)).assertExists()
         }

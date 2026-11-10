@@ -94,9 +94,7 @@ internal fun TabsComponentView(
     // published id above the visibility gate keeps a hidden -> visible transition from republishing and
     // clobbering a value another component already set (mirrors iOS's didSeedInitialState). The declared state
     // default is expected to match default_tab_id.
-    // The selected index is paywall-wide, so on a Tabs component with fewer tabs two different indices can map to
-    // the same tab. Everything below uses the clamped index so they're treated as the same tab.
-    val selectedTabIndex = state.selectedTabIndex.coerceIn(0..style.tabs.lastIndex)
+    val selectedTabIndex = state.selectedTabIndex(style.tabsScope).coerceIn(0..style.tabs.lastIndex)
     val selectedTabId = style.tabs[selectedTabIndex].id
     val lastPublishedTabId = remember { mutableStateOf<String?>(null) }
     LaunchedEffect(tabsState.visible, selectedTabId) {
