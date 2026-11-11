@@ -516,6 +516,23 @@ class DiagnosticsTrackerTest {
     }
 
     @Test
+    fun `trackGoogleBillingPendingRequestTimedOut tracks correct event`() {
+        val expectedProperties = mapOf(
+            "play_store_version" to "123",
+            "play_services_version" to "456",
+            "pending_request_count" to 3,
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(pendingRequestCount = 3)
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event.name == DiagnosticsEntryName.GOOGLE_BILLING_PENDING_REQUEST_TIMED_OUT &&
+                    event.properties == expectedProperties
+            })
+        }
+    }
+
+    @Test
     fun `trackGooglePurchaseStarted tracks correct event`() {
         val expectedProperties = mapOf(
             "play_store_version" to "123",

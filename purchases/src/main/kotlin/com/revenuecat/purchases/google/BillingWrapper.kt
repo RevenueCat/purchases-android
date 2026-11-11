@@ -85,6 +85,10 @@ import kotlin.time.Duration
 private const val RECONNECT_TIMER_START_MILLISECONDS = 1L * 1000L
 private const val RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 15 minutes
 
+// How long a request waits for the billing service to connect before failing with an error.
+@VisibleForTesting
+internal const val PENDING_REQUEST_TIMEOUT_MILLISECONDS = 10_000L
+
 @OptIn(InternalRevenueCatAPI::class)
 @Suppress("LargeClass", "TooManyFunctions", "LongParameterList")
 internal class BillingWrapper(
@@ -198,10 +202,12 @@ internal class BillingWrapper(
             log(LogIntent.GOOGLE_ERROR) {
                 BillingStrings.ILLEGAL_STATE_EXCEPTION_WHEN_CONNECTING.format(e)
             }
+            replaceBillingClient()
             val error = PurchasesError(PurchasesErrorCode.StoreProblemError, e.message)
             sendErrorsToAllPendingRequests(error)
         } catch (e: SecurityException) {
             errorLog(e) { BillingStrings.SECURITY_EXCEPTION_WHEN_CONNECTING }
+            replaceBillingClient()
             val error = PurchasesError(PurchasesErrorCode.StoreProblemError, e.message)
             sendErrorsToAllPendingRequests(error)
         } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
@@ -210,6 +216,14 @@ internal class BillingWrapper(
             // main thread so the failure is visible in the same way.
             errorLog(e) { "Unexpected error while starting the billing connection" }
             mainHandler.post { throw e }
+        }
+    }
+
+    // A BillingClient whose startConnection threw stays in its connecting state and can never connect again.
+    private fun replaceBillingClient() {
+        synchronized(this@BillingWrapper) {
+            billingClient?.endConnection()
+            billingClient = clientFactory.buildClient(this)
         }
     }
 
@@ -235,8 +249,11 @@ internal class BillingWrapper(
     @Synchronized
     private fun executeRequestOnUIThread(delayMilliseconds: Long? = null, request: (PurchasesError?) -> Unit) {
         if (purchasesUpdatedListener != null) {
-            serviceRequests.add(request to delayMilliseconds)
-            if (billingClient?.isReady == false) {
+            val pendingRequest = request to delayMilliseconds
+            serviceRequests.add(pendingRequest)
+            val isReady = billingClient?.isReady
+            if (isReady != true) failIfStillPendingAfterTimeout(pendingRequest)
+            if (isReady == false) {
                 startConnection()
             } else {
                 executePendingRequests()
@@ -246,6 +263,30 @@ internal class BillingWrapper(
             request(PurchasesError(PurchasesErrorCode.UnknownError, "BillingWrapper is not attached to a listener"))
         }
     }
+
+    // A billing service that is slow, never answers or keeps disconnecting would otherwise hang the request forever.
+    private fun failIfStillPendingAfterTimeout(pendingRequest: Pair<(PurchasesError?) -> Unit, Long?>) {
+        mainHandler.postDelayed(
+            {
+                // remove() only succeeds while the request is still queued, so it can't also run on connection.
+                if (serviceRequests.remove(pendingRequest)) {
+                    log(LogIntent.GOOGLE_WARNING) { BillingStrings.BILLING_PENDING_REQUEST_TIMED_OUT }
+                    diagnosticsTrackerIfEnabled?.trackGoogleBillingPendingRequestTimedOut(pendingRequestCount())
+                    pendingRequest.first(
+                        PurchasesError(
+                            PurchasesErrorCode.StoreProblemError,
+                            BillingStrings.BILLING_PENDING_REQUEST_TIMED_OUT,
+                        ),
+                    )
+                }
+            },
+            PENDING_REQUEST_TIMEOUT_MILLISECONDS,
+        )
+    }
+
+    // serviceRequests.size is O(n), so cap our count to MAX_PENDING_REQUEST_COUNT_REPORTED items.
+    private fun pendingRequestCount(): Int =
+        serviceRequests.asSequence().take(MAX_PENDING_REQUEST_COUNT_REPORTED).count()
 
     @Suppress("LongMethod")
     override fun queryProductDetailsAsync(
@@ -707,8 +748,7 @@ internal class BillingWrapper(
         diagnosticsTrackerIfEnabled?.trackGoogleBillingSetupFinished(
             responseCode = billingResult.responseCode,
             debugMessage = billingResult.debugMessage,
-            // serviceRequests.size is O(n), so cap our count to MAX_PENDING_REQUEST_COUNT_REPORTED items.
-            pendingRequestCount = serviceRequests.asSequence().take(MAX_PENDING_REQUEST_COUNT_REPORTED).count(),
+            pendingRequestCount = pendingRequestCount(),
         )
         mainHandler.post {
             when (billingResult.responseCode) {

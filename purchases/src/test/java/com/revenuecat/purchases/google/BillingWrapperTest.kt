@@ -104,6 +104,7 @@ class BillingWrapperTest {
     private var purchasesUpdatedListener: PurchasesUpdatedListener? = null
     private var billingClientStateListener: BillingClientStateListener? = null
     private var handler: Handler = mockk()
+    private val pendingRequestTimeouts = mutableListOf<Runnable>()
     private var mockDeviceCache: DeviceCache = mockk()
     private var mockDiagnosticsTracker: DiagnosticsTracker = mockk()
     private var mockDateProvider: DateProvider = mockk()
@@ -654,6 +655,60 @@ class BillingWrapperTest {
         }
         assertThat(error).isNotNull
         assertThat(error?.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+    }
+
+    @Test
+    fun `If starting connection throws, the billing client is replaced`() {
+        every { mockClient.isReady } returns false
+        every { mockClient.startConnection(any()) } throws IllegalStateException("Too many bind requests")
+
+        wrapper.queryPurchases(appUserID = "appUserID", onSuccess = { fail("should be an error") }, onError = {})
+
+        verify(exactly = 1) { mockClient.endConnection() }
+        // 1 in setup, 1 to replace the client that can no longer connect
+        verify(exactly = 2) { mockClientFactory.buildClient(any()) }
+    }
+
+    @Test
+    fun `pending request fails if billing does not connect before the timeout`() {
+        every { mockClient.isReady } returns false
+        val errors = mutableListOf<PurchasesError>()
+        wrapper.queryPurchases(
+            appUserID = "appUserID",
+            onSuccess = { fail("should be an error") },
+            onError = { errors.add(it) },
+        )
+        assertThat(errors).isEmpty()
+
+        pendingRequestTimeouts.forEach { it.run() }
+
+        assertThat(errors.map { it.code }).containsExactly(PurchasesErrorCode.StoreProblemError)
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(0) }
+
+        // The timed out request must not also run once billing connects.
+        every { mockClient.isReady } returns true
+        wrapper.onBillingSetupFinished(billingClientOKResult)
+        assertThat(errors).hasSize(1)
+    }
+
+    @Test
+    fun `pending request timeout does nothing if billing connected in time`() {
+        every { mockClient.isReady } returns false
+        var successCount = 0
+        wrapper.queryPurchases(
+            appUserID = "appUserID",
+            onSuccess = { successCount++ },
+            onError = { fail("shouldn't be an error") },
+        )
+        every { mockClient.isReady } returns true
+        wrapper.onBillingSetupFinished(billingClientOKResult)
+        assertThat(successCount).isEqualTo(1)
+
+        assertThat(pendingRequestTimeouts).isNotEmpty
+        pendingRequestTimeouts.forEach { it.run() }
+
+        assertThat(successCount).isEqualTo(1)
+        verify(exactly = 0) { mockDiagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(any()) }
     }
 
     @Test
@@ -1391,7 +1446,7 @@ class BillingWrapperTest {
 
         // ensure calls to startConnection - 1 happens in setup, 1 more here
         verify(exactly = 2) {
-            handler.postDelayed(any(), any())
+            handler.postDelayed(any(), 0L)
         }
 
         every { mockClient.isReady } returns true
@@ -2498,6 +2553,11 @@ class BillingWrapperTest {
             delayedSlot.captured.run()
             true
         }
+
+        // Timeouts must not fire inline, or requests would fail before the connection has a chance to complete.
+        every {
+            handler.postDelayed(capture(pendingRequestTimeouts), PENDING_REQUEST_TIMEOUT_MILLISECONDS)
+        } returns true
     }
 
     private fun mockDiagnosticsTracker() {
@@ -2516,6 +2576,7 @@ class BillingWrapperTest {
         every { mockDiagnosticsTracker.trackGoogleBillingStartConnection() } just runs
         every { mockDiagnosticsTracker.trackGoogleBillingSetupFinished(any(), any(), any()) } just runs
         every { mockDiagnosticsTracker.trackGoogleBillingServiceDisconnected() } just runs
+        every { mockDiagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(any()) } just runs
         every { mockDiagnosticsTracker.trackGoogleInitialStorefrontLoad(any(), any()) } just runs
         every { mockDiagnosticsTracker.isCollectionDisabled } returns false
         // A known storefront keeps the initial storefront load event out of unrelated tests.

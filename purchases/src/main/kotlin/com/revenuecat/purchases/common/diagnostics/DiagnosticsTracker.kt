@@ -259,6 +259,13 @@ internal class DiagnosticsTracker(
         )
     }
 
+    fun trackGoogleBillingPendingRequestTimedOut(pendingRequestCount: Int) {
+        trackEvent(
+            eventName = DiagnosticsEntryName.GOOGLE_BILLING_PENDING_REQUEST_TIMED_OUT,
+            properties = mapOf(PENDING_REQUEST_COUNT to pendingRequestCount),
+        )
+    }
+
     fun trackGooglePurchaseStarted(
         productId: String,
         oldProductId: String?,
