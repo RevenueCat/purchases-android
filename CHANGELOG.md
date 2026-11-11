@@ -124,6 +124,17 @@ See the [v11 migration guide](https://github.com/RevenueCat/purchases-android/bl
 * Drop the AGP 9 built-in Kotlin opt-out (#4120) via Álvaro Brey (@AlvaroBrey)
 * Move MagicWeatherCompose and CustomEntitlementComputationSample to AGP 9 (#4115) via Álvaro Brey (@AlvaroBrey)
 
+## 10.30.2
+### 🔄 Other Changes
+* feat(paywalls): add internal exit offer handler to PaywallView (#4534) via Cesar de la Vega (@vegaro)
+
+## 10.30.1
+## RevenueCatUI SDK
+### Paywallsv2
+#### 🐞 Bugfixes
+* Fix duplicate paywall image requests and reset cache retry state when images change (#4529) via Josh Holtz (@joshdholtz)
+* Deduplicate shared paywall image prefetches across offerings and workflows (#4544) via Josh Holtz (@joshdholtz)
+
 ## 10.30.0
 ## RevenueCat SDK
 ### ✨ New Features
