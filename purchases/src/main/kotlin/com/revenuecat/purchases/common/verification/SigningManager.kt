@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.verification
 
+import android.net.Uri
 import android.util.Base64
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.errorLog
@@ -19,8 +20,9 @@ internal class SigningManager(
     private val appConfig: AppConfig,
     private val apiKey: String,
 ) {
-    private companion object {
-        const val NONCE_BYTES_SIZE = 12
+    companion object {
+        const val SIGNATURE_VERSION_2_PREFIX = "v2."
+        private const val NONCE_BYTES_SIZE = 12
         const val POST_PARAMS_ALGORITHM = "sha256"
         const val POST_PARAMS_SEPARATOR = 0x00.toByte()
         const val BEARER_PREFIX = "Bearer "
@@ -218,9 +220,10 @@ internal class SigningManager(
             return SignatureVerificationResult.Failed(FailureReason.MISSING_SIGNED_PAYLOAD)
         }
 
+        val isVersion2 = signatureString.startsWith(SIGNATURE_VERSION_2_PREFIX)
         val signature: Signature
         try {
-            signature = Signature.fromString(signatureString)
+            signature = Signature.fromString(signatureString.removePrefix(SIGNATURE_VERSION_2_PREFIX))
         } catch (e: InvalidSignatureSizeException) {
             errorLog { NetworkStrings.VERIFICATION_INVALID_SIZE.format(urlPath, e.message) }
             return SignatureVerificationResult.Failed(FailureReason.INVALID_SIGNATURE_FORMAT)
@@ -240,7 +243,7 @@ internal class SigningManager(
                     signature.salt,
                     signingAuthValue(authorizationHeader),
                     nonce,
-                    urlPath,
+                    if (isVersion2) Uri.decode(urlPath) else urlPath,
                     postFieldsToSignHeader,
                     requestTime,
                     eTag,

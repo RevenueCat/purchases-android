@@ -61,6 +61,31 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
 
         val recordedRequest = server.takeRequest()
         assertThat(recordedRequest.getHeader("X-Nonce")).isEqualTo("test-nonce")
+        assertThat(recordedRequest.getHeader("X-Signature-Version")).isEqualTo("2")
+    }
+
+    @Test
+    fun `performRequest adds signature version header without nonce on statically signed endpoints`() {
+        val endpoint = Endpoint.GetOfferings("test-user-id")
+        enqueue(
+            urlPath = endpoint.getPath(),
+            expectedResult = HTTPResult.createResult(verificationResult = SignatureVerificationResult.Verified),
+            verificationResult = SignatureVerificationResult.Verified
+        )
+
+        mockSigningResult(SignatureVerificationResult.Verified)
+
+        client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            requestHeaders = emptyMap()
+        )
+
+        val recordedRequest = server.takeRequest()
+        assertThat(recordedRequest.getHeader("X-Nonce")).isNull()
+        assertThat(recordedRequest.getHeader("X-Signature-Version")).isEqualTo("2")
     }
 
     @Test
@@ -442,7 +467,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         every { mockSigningManager.signatureVerificationMode } returns mockk<SignatureVerificationMode.Enforced>()
         val diagnosticsTracker = mockk<DiagnosticsTracker>()
         every {
-            diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+            diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
         } just Runs
         val deviceNow = Date(1676379370000L) // Tuesday, February 14, 2023 12:56:10 PM GMT
         val requestDate = Date(deviceNow.time - 2.hours.inWholeMilliseconds)
@@ -480,6 +505,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
                 backendErrorCode = null,
                 resultOrigin = null,
                 SignatureVerificationResult.Failed(FailureReason.PAYLOAD_SIGNATURE_MISMATCH),
+                signatureVersion = null,
                 deviceClockOffset = 2.hours,
                 isRetry = false,
                 connectionErrorReason = null,

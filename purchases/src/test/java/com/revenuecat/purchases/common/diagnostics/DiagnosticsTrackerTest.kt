@@ -182,6 +182,7 @@ class DiagnosticsTrackerTest {
             null,
             HTTPResult.Origin.CACHE,
             SignatureVerificationResult.NotRequested,
+            signatureVersion = null,
             deviceClockOffset = null,
             isRetry = false,
             connectionErrorReason = ConnectionErrorReason.NO_NETWORK,
@@ -219,6 +220,7 @@ class DiagnosticsTrackerTest {
             1234,
             HTTPResult.Origin.BACKEND,
             SignatureVerificationResult.NotRequested,
+            signatureVersion = null,
             deviceClockOffset = null,
             isRetry = false,
             connectionErrorReason = ConnectionErrorReason.NO_NETWORK,
@@ -256,6 +258,7 @@ class DiagnosticsTrackerTest {
             1234,
             HTTPResult.Origin.BACKEND,
             SignatureVerificationResult.NotRequested,
+            signatureVersion = null,
             deviceClockOffset = null,
             isRetry = true,
             connectionErrorReason = ConnectionErrorReason.NO_NETWORK,
@@ -291,6 +294,7 @@ class DiagnosticsTrackerTest {
             null,
             HTTPResult.Origin.BACKEND,
             SignatureVerificationResult.Verified,
+            signatureVersion = null,
             deviceClockOffset = null,
             isRetry = false,
             connectionErrorReason = null,
@@ -327,6 +331,7 @@ class DiagnosticsTrackerTest {
             null,
             HTTPResult.Origin.BACKEND,
             SignatureVerificationResult.Failed(FailureReason.MISSING_SIGNATURE),
+            signatureVersion = null,
             deviceClockOffset = null,
             isRetry = false,
             connectionErrorReason = null,
@@ -351,6 +356,18 @@ class DiagnosticsTrackerTest {
     fun `trackHttpRequestPerformed does not track a failure reason for a verified result`() {
         val properties = trackHttpRequestPerformedProperties(verificationResult = SignatureVerificationResult.Verified)
         Assertions.assertThat(properties).doesNotContainKey("verification_failure_reason")
+    }
+
+    @Test
+    fun `trackHttpRequestPerformed tracks the signature version`() {
+        val properties = trackHttpRequestPerformedProperties(signatureVersion = 2)
+        Assertions.assertThat(properties["signature_version"]).isEqualTo(2)
+    }
+
+    @Test
+    fun `trackHttpRequestPerformed does not track a signature version for unsigned responses`() {
+        val properties = trackHttpRequestPerformedProperties(signatureVersion = null)
+        Assertions.assertThat(properties).doesNotContainKey("signature_version")
     }
 
     @Test
@@ -379,6 +396,7 @@ class DiagnosticsTrackerTest {
 
     private fun trackHttpRequestPerformedProperties(
         verificationResult: SignatureVerificationResult = SignatureVerificationResult.Verified,
+        signatureVersion: Int? = null,
         deviceClockOffset: Duration? = null,
     ): Map<String, Any> {
         val trackedEvents = mutableListOf<DiagnosticsEntry>()
@@ -392,6 +410,7 @@ class DiagnosticsTrackerTest {
             null,
             HTTPResult.Origin.BACKEND,
             verificationResult,
+            signatureVersion,
             deviceClockOffset,
             isRetry = false,
             connectionErrorReason = null,
