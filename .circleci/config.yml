@@ -49,8 +49,11 @@ orbs:
 parameters:
   action:
     type: enum
-    enum: [default, bump, paywall_tester_release, rct_tester_release, deploy_snapshot_release, update_paywall_templates, update_error_codes]
+    enum: [default, bump, paywall_tester_release, rct_tester_release, deploy_snapshot_release, update_paywall_templates, update_error_codes, run_rules_engine_conformance_tests]
     default: default
+  khepri_ref:
+    type: string
+    default: ""
   paywall_tester_track:
     type: enum
     enum: [internal, alpha, beta, production]
@@ -155,6 +158,33 @@ commands:
             git submodule update << parameters.path >>
 
 jobs:
+  run-rules-engine-conformance-tests:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - revenuecat/setup-git-credentials
+      - revenuecat/trust-github-key
+      - revenuecat/install-mise-tools:
+          tools: java
+      - accept-android-licenses
+      - android/restore_gradle_cache
+      - run:
+          name: Check conformance downloader
+          command: python3 scripts/rules_engine/test_download_predicate_conformance_fixtures.py
+      - run:
+          name: Download Khepri conformance cases
+          environment:
+            KHEPRI_REF: << pipeline.parameters.khepri_ref >>
+          command: bash scripts/rules_engine/download_predicate_conformance_fixtures.sh "$KHEPRI_REF" purchases/src/testDefaults/resources/predicate-fixtures/predicate_conformance_v1.json
+      - run:
+          name: Run predicate conformance tests
+          command: ./gradlew :purchases:testDefaultsDebugUnitTest --tests 'com.revenuecat.purchases.rules.PredicateFixtureTest' --rerun-tasks --no-daemon
+      - store_test_results:
+          path: purchases/build/test-results/testDefaultsDebugUnitTest
+      - store_artifacts:
+          path: purchases/build/reports/tests/testDefaultsDebugUnitTest
+
 
   assemble-magic-weather-compose-sample-app:
     <<: *android-executor
@@ -1376,6 +1406,13 @@ workflows:
       - generate-baseline-profiles:
           context:
             - github-bot-public
+
+  manual-run-rules-engine-conformance-tests:
+    when:
+      equal: [ run_rules_engine_conformance_tests, << pipeline.parameters.action >> ]
+    jobs:
+      - run-rules-engine-conformance-tests:
+          context: github-bot-public
 
   manual-trigger-bump:
     when:
