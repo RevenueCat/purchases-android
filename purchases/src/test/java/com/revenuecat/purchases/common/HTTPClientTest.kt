@@ -1441,7 +1441,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     }
 
     @Test
-    fun `performRequest tracks the signature version of the response in the diagnostic event`() {
+    fun `performRequest does not track the signature version when verification was not requested`() {
         val diagnosticsTracker = mockk<DiagnosticsTracker>()
         every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
         client = createClient(diagnosticsTracker = diagnosticsTracker)
@@ -1461,7 +1461,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 null,
                 HTTPResult.Origin.BACKEND,
                 SignatureVerificationResult.NotRequested,
-                signatureVersion = 2,
+                signatureVersion = null,
                 deviceClockOffset = null,
                 isRetry = false,
                 connectionErrorReason = null,

@@ -704,7 +704,7 @@ internal class HTTPClient(
                 callResult?.backendErrorCode,
                 origin,
                 verificationResult,
-                signatureVersion,
+                signatureVersion.takeIf { verificationResult != SignatureVerificationResult.NotRequested },
                 deviceClockOffset,
                 isRetry,
                 connectionErrorReason,

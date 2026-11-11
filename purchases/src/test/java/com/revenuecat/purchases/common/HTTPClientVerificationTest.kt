@@ -89,6 +89,45 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
     }
 
     @Test
+    fun `performRequest tracks the version of a verified signature in the diagnostic event`() {
+        val diagnosticsTracker = mockk<DiagnosticsTracker>()
+        every {
+            diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+        } just Runs
+        client = createClient(diagnosticsTracker = diagnosticsTracker)
+        val endpoint = Endpoint.GetCustomerInfo("test-user-id")
+        mockSigningResult(SignatureVerificationResult.Verified)
+
+        listOf("v2.test-signature" to 2, "test-signature" to 1).forEach { (signatureHeader, expectedVersion) ->
+            enqueue(
+                urlPath = endpoint.getPath(),
+                expectedResult = HTTPResult.createResult(verificationResult = SignatureVerificationResult.Verified),
+                verificationResult = SignatureVerificationResult.Verified,
+                signatureHeader = signatureHeader,
+            )
+            client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, requestHeaders = emptyMap())
+            server.takeRequest()
+
+            verify(exactly = 1) {
+                diagnosticsTracker.trackHttpRequestPerformed(
+                    server.hostName,
+                    endpoint,
+                    responseTime = any(),
+                    wasSuccessful = true,
+                    RCHTTPStatusCodes.SUCCESS,
+                    backendErrorCode = null,
+                    HTTPResult.Origin.BACKEND,
+                    SignatureVerificationResult.Verified,
+                    signatureVersion = expectedVersion,
+                    deviceClockOffset = null,
+                    isRetry = false,
+                    connectionErrorReason = null,
+                )
+            }
+        }
+    }
+
+    @Test
     fun `performRequest does not verify response on unsupported endpoints`() {
         val endpoint = Endpoint.PostDiagnostics
         every { mockSigningManager.shouldVerifyEndpoint(endpoint) } returns false

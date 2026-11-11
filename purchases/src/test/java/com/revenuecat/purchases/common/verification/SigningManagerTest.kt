@@ -302,6 +302,25 @@ class SigningManagerTest {
     }
 
     @Test
+    fun `verifyResponse with v2 signature decodes non-ascii ids and the query string once`() {
+        val signingManager = realInformationalSigningManager()
+        listOf(
+            "/v1/subscribers/Jos%C3%A9/offerings" to "/v1/subscribers/José/offerings",
+            "/v1/subscribers/%2524literal/offerings" to "/v1/subscribers/%24literal/offerings",
+            "/v1/subscribers/user/ads/reward_verifications/txn?ad_unit_id=ca-app-pub%2F123%26x" to
+                "/v1/subscribers/user/ads/reward_verifications/txn?ad_unit_id=ca-app-pub/123&x",
+        ).forEach { (requestPath, signedPath) ->
+            val verificationResult = callVerifyResponse(
+                signingManager,
+                requestPath = requestPath,
+                signature = "v2." + createFakeSignature(requestPath = signedPath, postParamsHeader = fakePostParamsHeader),
+                postParamsHeader = fakePostParamsHeader,
+            )
+            assertThat(verificationResult).describedAs(requestPath).isEqualTo(SignatureVerificationResult.Verified)
+        }
+    }
+
+    @Test
     fun `verifyResponse with v2 signature does not verify a signature over the encoded path`() {
         val signingManager = realInformationalSigningManager()
         val encodedPath = "/v1/subscribers/\$RCAnonymousID%3A1af512a3b9c848899fe427f39dd69f2b"
