@@ -9,6 +9,11 @@ import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.checkpoints.CheckpointResolution
+import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointsManager
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
@@ -1719,6 +1724,119 @@ class PaywallViewModelWorkflowTest {
 
         assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.NOT_PASSED)
         assertThat(vm.workflowState.value).isNull()
+    }
+
+    @Test
+    fun `closing before the initial branch resolves preserves its unresolved outcome`() {
+        val branch = CompletableDeferred<WorkflowStepID>()
+        coEvery { purchases.resolveBranch(any(), any()) } coAnswers { branch.await() }
+        val outcomes = mutableListOf<CheckpointGateOutcome>()
+        val vm = createVm(gateContext = CheckpointGateContext(outcomes::add))
+        vm.startWorkflowPresentationFromResult(
+            workflow.copy(
+                initialTrigger = WorkflowTriggerAction.Branch(routes = emptyList(), fallbackStepId = step1.id),
+                steps = mapOf(step1.id to step1, step2.id to step2.withHardGate()),
+            ),
+            testOfferings, null, uiConfig,
+        )
+        runGateRead()
+
+        vm.closePaywall()
+        assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.NOT_PASSED)
+
+        branch.complete(step2.id)
+        runGateRead()
+        assertThat(outcomes.last()).isEqualTo(CheckpointGateOutcome.NOT_PASSED)
+        assertThat(vm.workflowState.value).isNull()
+    }
+
+    @Test
+    fun `checkpoint callback does not run when closed before the initial branch resolves`() {
+        val branch = CompletableDeferred<WorkflowStepID>()
+        val (vm, results) = startBranchedCheckpoint(branch, gatedCustomerInfo())
+
+        vm.closePaywall()
+        runGateRead()
+        assertThat(results).isEmpty()
+
+        branch.complete(step2.id)
+        runGateRead()
+        assertThat(results).isEmpty()
+    }
+
+    @Test
+    fun `checkpoint callback runs when the initial branch selects a gate with a required entitlement`() {
+        val branch = CompletableDeferred<WorkflowStepID>()
+        val customer = gatedCustomerInfo("pro")
+        val (_, results) = startBranchedCheckpoint(branch, customer)
+        assertThat(results).isEmpty()
+
+        branch.complete(step2.id)
+        runGateRead()
+
+        assertThat(results).hasSize(1)
+        assertThat(results.single().customer).isSameAs(customer)
+    }
+
+    @Test
+    fun `checkpoint callback runs when the initial branch selects an ungated step`() {
+        val branch = CompletableDeferred<WorkflowStepID>()
+        val (vm, results) = startBranchedCheckpoint(branch, gatedCustomerInfo())
+
+        branch.complete(step1.id)
+        runGateRead()
+        vm.closePaywall()
+        runGateRead()
+
+        assertThat(results).hasSize(1)
+    }
+
+    private fun startBranchedCheckpoint(
+        branch: CompletableDeferred<WorkflowStepID>,
+        customer: CustomerInfo,
+    ): Pair<PaywallViewModelImpl, List<CheckpointResult>> {
+        customer.entitlements.active.forEach { (id, entitlement) ->
+            every { entitlement.identifier } returns id
+        }
+        every { customer.getPurchaseDateForProductId(any()) } returns null
+        val branchedWorkflow = workflow.copy(
+            initialTrigger = WorkflowTriggerAction.Branch(routes = emptyList(), fallbackStepId = step1.id),
+            steps = mapOf(step1.id to step1, step2.id to step2.withHardGate()),
+        )
+        coEvery { purchases.resolveBranch(any(), any()) } coAnswers { branch.await() }
+        coEvery { purchases.awaitCustomerInfo(CacheFetchPolicy.CACHED_OR_FETCHED) } returns customer
+        val corePurchases = mockk<Purchases> {
+            every { currentActivity } returns mockk(relaxed = true)
+            every { getCustomerInfo(any(), any()) } answers {
+                secondArg<ReceiveCustomerInfoCallback>().onReceived(customer)
+            }
+            coEvery { internalResolveCp(any(), any()) } returns CheckpointResolution.MatchedWorkflow(
+                branchedWorkflow, uiConfig, testOfferings, checkpointRuleId = null,
+                traceId = "trace-id", workflowBlobRef = null,
+            )
+        }
+        lateinit var callId: String
+        val manager = CheckpointsManager(presenterFactory = { id, _, _ ->
+            callId = id
+            mockk(relaxed = true)
+        })
+        val results = mutableListOf<CheckpointResult>()
+        manager.checkpoint(corePurchases, "test_checkpoint", null) { results += it }
+        runGateRead()
+        val options = manager.paywallOptions(callId) { navigatedBack ->
+            manager.onPresentationFinished(callId, navigatedBack)
+        }!!
+        val vm = PaywallViewModelImpl(
+            resourceProvider = MockResourceProvider(),
+            purchases = purchases,
+            options = options,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+            backgroundDispatcher = testDispatcher,
+        )
+        runGateRead()
+        return vm to results
     }
 
     @Test
