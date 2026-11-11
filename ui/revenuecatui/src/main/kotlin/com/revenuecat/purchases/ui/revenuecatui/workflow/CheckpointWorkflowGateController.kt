@@ -32,13 +32,22 @@ internal class CheckpointWorkflowGateController {
         context?.onOutcomeChanged?.invoke(outcome)
     }
 
+    /** Until the initial branch resolves, its destination may enforce a gate. */
+    fun markInitialBranchPending() {
+        if (context != null) reportOutcome(CheckpointGateOutcome.NOT_PASSED)
+    }
+
     /** Whether entering [step] needs the customer's current entitlements first. */
     fun isGated(step: WorkflowStep): Boolean = context != null && step.gating.isEnforced
 
     /** Evaluates [step]'s gate against [activeEntitlementIds], read for the customer as the gate was reached. */
     fun evaluate(step: WorkflowStep, activeEntitlementIds: Set<String>): WorkflowGateDecision {
         val gate = step.gating?.takeIf { it.isEnforced }
-        if (context == null || gate == null) return WorkflowGateDecision.NOT_GATED
+        if (context == null || gate == null) {
+            // An ungated initial destination clears the pending branch, but never a previously reached gate.
+            if (context != null && reachedGate == null) reportOutcome(CheckpointGateOutcome.NOT_APPLICABLE)
+            return WorkflowGateDecision.NOT_GATED
+        }
         this.activeEntitlementIds = activeEntitlementIds
         return evaluateGate(gate)
     }
@@ -57,10 +66,14 @@ internal class CheckpointWorkflowGateController {
         val passed = gate.isSatisfiedBy(activeEntitlementIds)
         reachedGate = gate
         val newOutcome = if (passed) CheckpointGateOutcome.PASSED else CheckpointGateOutcome.NOT_PASSED
+        reportOutcome(newOutcome)
+        return if (passed) WorkflowGateDecision.PASSED else WorkflowGateDecision.BLOCKED
+    }
+
+    private fun reportOutcome(newOutcome: CheckpointGateOutcome) {
         if (newOutcome != outcome) {
             outcome = newOutcome
             context?.onOutcomeChanged?.invoke(newOutcome)
         }
-        return if (passed) WorkflowGateDecision.PASSED else WorkflowGateDecision.BLOCKED
     }
 }
