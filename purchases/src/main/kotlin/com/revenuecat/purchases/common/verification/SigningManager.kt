@@ -21,11 +21,14 @@ internal class SigningManager(
     private val apiKey: String,
 ) {
     companion object {
-        const val SIGNATURE_VERSION_2_PREFIX = "v2."
+        private const val SIGNATURE_VERSION_2_PREFIX = "v2."
         private const val NONCE_BYTES_SIZE = 12
-        const val POST_PARAMS_ALGORITHM = "sha256"
-        const val POST_PARAMS_SEPARATOR = 0x00.toByte()
-        const val BEARER_PREFIX = "Bearer "
+        private const val POST_PARAMS_ALGORITHM = "sha256"
+        private const val POST_PARAMS_SEPARATOR = 0x00.toByte()
+        private const val BEARER_PREFIX = "Bearer "
+
+        fun signatureVersion(signatureHeader: String?): Int? =
+            signatureHeader?.let { if (it.startsWith(SIGNATURE_VERSION_2_PREFIX)) 2 else 1 }
     }
 
     private data class Parameters(
@@ -220,7 +223,7 @@ internal class SigningManager(
             return SignatureVerificationResult.Failed(FailureReason.MISSING_SIGNED_PAYLOAD)
         }
 
-        val isVersion2 = signatureString.startsWith(SIGNATURE_VERSION_2_PREFIX)
+        val isVersion2 = signatureVersion(signatureString) == 2
         val signature: Signature
         try {
             signature = Signature.fromString(signatureString.removePrefix(SIGNATURE_VERSION_2_PREFIX))

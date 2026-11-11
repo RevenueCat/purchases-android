@@ -281,11 +281,7 @@ class SigningManagerTest {
 
     @Test
     fun `verifyResponse with v2 signature verifies against the decoded path`() {
-        val signingManager = SigningManager(
-            SignatureVerificationMode.Informational(IntermediateSignatureHelper(realTestRootVerifier())),
-            appConfig,
-            apiKey,
-        )
+        val signingManager = realInformationalSigningManager()
         val signature = "v2." + createFakeSignature(
             requestPath = "/v1/subscribers/\$RCAnonymousID:1af512a3b9c848899fe427f39dd69f2b",
             postParamsHeader = fakePostParamsHeader,
@@ -307,11 +303,7 @@ class SigningManagerTest {
 
     @Test
     fun `verifyResponse with v2 signature does not verify a signature over the encoded path`() {
-        val signingManager = SigningManager(
-            SignatureVerificationMode.Informational(IntermediateSignatureHelper(realTestRootVerifier())),
-            appConfig,
-            apiKey,
-        )
+        val signingManager = realInformationalSigningManager()
         val encodedPath = "/v1/subscribers/\$RCAnonymousID%3A1af512a3b9c848899fe427f39dd69f2b"
         val verificationResult = callVerifyResponse(
             signingManager,
@@ -325,11 +317,7 @@ class SigningManagerTest {
 
     @Test
     fun `verifyResponse with v2 prefix and malformed signature fails with invalid format`() {
-        val signingManager = SigningManager(
-            SignatureVerificationMode.Informational(IntermediateSignatureHelper(realTestRootVerifier())),
-            appConfig,
-            apiKey,
-        )
+        val signingManager = realInformationalSigningManager()
         val verificationResult = callVerifyResponse(signingManager, signature = "v2.not-a-signature")
         assertThat(verificationResult)
             .isEqualTo(SignatureVerificationResult.Failed(FailureReason.INVALID_SIGNATURE_FORMAT))

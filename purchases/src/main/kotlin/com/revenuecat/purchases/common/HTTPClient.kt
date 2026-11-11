@@ -527,7 +527,10 @@ internal class HTTPClient(
         }
         // The response arrived in full. Everything below only inspects it, so failures from here on say
         // nothing about how responsive the host is.
-        onResponseReceived(responseCode, getSignatureVersion(connection))
+        onResponseReceived(
+            responseCode,
+            SigningManager.signatureVersion(connection.getHeaderField(HTTPResult.SIGNATURE_HEADER_NAME)),
+        )
 
         if (payloadBytes == null &&
             (responseCode != RCHTTPStatusCodes.NO_CONTENT || !endpoint.expectsRCFormatResponse)
@@ -849,10 +852,6 @@ internal class HTTPClient(
     }
 
     private fun getETagHeader(connection: URLConnection) = connection.getHeaderField(HTTPResult.ETAG_HEADER_NAME)
-    private fun getSignatureVersion(connection: URLConnection): Int? =
-        connection.getHeaderField(HTTPResult.SIGNATURE_HEADER_NAME)?.let {
-            if (it.startsWith(SigningManager.SIGNATURE_VERSION_2_PREFIX)) 2 else 1
-        }
     private fun getRequestTimeHeader(connection: URLConnection): String? {
         // A header that isn't epoch millis counts as missing for both signing and the request date, as on iOS.
         // Throwing here would escape every catch on the request path and be rethrown on the main thread.
