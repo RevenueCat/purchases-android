@@ -13,4 +13,7 @@ internal object WebViewMessageType {
 
     /** Host → content: replaces the snapshot the handshake seeded, when it changes. */
     const val CONTEXT = "context"
+
+    /** Content → host request: open `{ url, method? }` outside the component; answered with `{ opened }`. */
+    const val OPEN_URL = "open_url"
 }

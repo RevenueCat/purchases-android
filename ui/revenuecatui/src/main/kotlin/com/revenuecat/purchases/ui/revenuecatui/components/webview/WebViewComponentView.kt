@@ -45,6 +45,8 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.extensions.trackMainAxisUnbounded
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpener
+import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpeningMethod
 import kotlinx.coroutines.flow.drop
 import kotlinx.serialization.json.JsonObject
 
@@ -158,6 +160,7 @@ internal fun WebViewComponentView(
                             onDocumentReset = onDocumentReset,
                             onLoadFailed = onLoadFailed,
                             onLoadFinished = { PaywallWebViewPrewarmer.shared.markWarmed(resolvedUrl) },
+                            onOpenUrl = { url, method -> URLOpener.openURL(context, url, method) },
                             contextSnapshotProvider = contextSnapshotProvider,
                         )
                     } catch (error: Throwable) {
@@ -294,6 +297,7 @@ internal fun createPaywallWebView(
     onDocumentReset: () -> Unit = {},
     onLoadFailed: () -> Unit,
     onLoadFinished: () -> Unit = {},
+    onOpenUrl: (url: String, method: URLOpeningMethod) -> Boolean = { _, _ -> false },
     contextSnapshotProvider: () -> JsonObject,
 ): ConfiguredPaywallWebView? {
     var terminalFailure = false
@@ -312,6 +316,7 @@ internal fun createPaywallWebView(
                 terminalFailure = true
                 onLoadFailed()
             },
+            onOpenUrl = onOpenUrl,
             contextSnapshotProvider = contextSnapshotProvider,
         )
         bridge.attach()
