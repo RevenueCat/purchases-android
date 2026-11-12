@@ -128,7 +128,7 @@ internal open class BaseBillingUseCaseTest {
             mockDiagnosticsTracker.trackProductDetailsNotSupported(any(), any())
         } just Runs
         every { mockDiagnosticsTracker.trackGoogleBillingStartConnection() } just runs
-        every { mockDiagnosticsTracker.trackGoogleBillingSetupFinished(any(), any(), any(), any()) } just runs
+        every { mockDiagnosticsTracker.trackGoogleBillingSetupFinished(any(), any(), any()) } just runs
         every { mockDiagnosticsTracker.trackGoogleBillingServiceDisconnected() } just runs
         every { mockDiagnosticsTracker.trackGoogleInitialStorefrontLoad(any(), any()) } just runs
         every { mockDiagnosticsTracker.isCollectionDisabled } returns false
