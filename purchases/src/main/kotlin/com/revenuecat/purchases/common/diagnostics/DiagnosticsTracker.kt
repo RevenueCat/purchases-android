@@ -231,14 +231,20 @@ internal class DiagnosticsTracker(
         )
     }
 
-    fun trackGoogleBillingSetupFinished(responseCode: Int, debugMessage: String, pendingRequestCount: Int) {
+    fun trackGoogleBillingSetupFinished(
+        responseCode: Int,
+        debugMessage: String,
+        pendingRequestCount: Int,
+        connectionDurationMillis: Long?,
+    ) {
         trackEvent(
             eventName = DiagnosticsEntryName.GOOGLE_BILLING_SETUP_FINISHED,
-            properties = mapOf(
-                BILLING_RESPONSE_CODE to responseCode,
-                BILLING_DEBUG_MESSAGE to debugMessage,
-                PENDING_REQUEST_COUNT to pendingRequestCount,
-            ),
+            properties = buildMap {
+                put(BILLING_RESPONSE_CODE, responseCode)
+                put(BILLING_DEBUG_MESSAGE, debugMessage)
+                put(PENDING_REQUEST_COUNT, pendingRequestCount)
+                connectionDurationMillis?.let { put("connection_duration_millis", it) }
+            },
         )
     }
 
@@ -256,6 +262,37 @@ internal class DiagnosticsTracker(
         trackEvent(
             eventName = DiagnosticsEntryName.GOOGLE_BILLING_SERVICE_DISCONNECTED,
             properties = emptyMap(),
+        )
+    }
+
+    fun trackGoogleBillingClientRetired(closed: Boolean) {
+        trackEvent(
+            eventName = DiagnosticsEntryName.GOOGLE_BILLING_CLIENT_RETIRED,
+            properties = mapOf("reason" to "connection_timeout", "closed" to closed),
+        )
+    }
+
+    @Suppress("LongParameterList")
+    fun trackGoogleBillingPendingRequestTimedOut(
+        pendingRequestCount: Int,
+        requestType: String,
+        billingClientState: String,
+        connectionElapsedMillis: Long?,
+        setupCallbackReceived: Boolean?,
+        reconnectionDelayMillis: Long?,
+    ) {
+        trackEvent(
+            eventName = DiagnosticsEntryName.GOOGLE_BILLING_PENDING_REQUEST_TIMED_OUT,
+            properties = buildMap {
+                // Count is measured after the timed-out request is removed.
+                put(PENDING_REQUEST_COUNT, pendingRequestCount)
+                put("request_type", requestType)
+                put("billing_client_state", billingClientState)
+                connectionElapsedMillis?.let { put("connection_elapsed_millis", it) }
+                setupCallbackReceived?.let { put("setup_callback_received", it) }
+                put("reconnection_scheduled", reconnectionDelayMillis != null)
+                reconnectionDelayMillis?.let { put("reconnection_delay_millis", it) }
+            },
         )
     }
 
