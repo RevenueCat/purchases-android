@@ -463,6 +463,15 @@ internal sealed interface PaywallState {
                 if (localeList != null) localeId = LocaleList(localeList.toLanguageTags()).toLocaleId()
 
                 if (selectedTabIndex != null && selectedTabIndex != this.selectedTabIndex) {
+                    // A dismissed sheet's choice belongs to the underlying tab on sheet-only paywalls.
+                    // Sheet interactions deliberately don't update root tab memory while presented.
+                    val currentSelection = selectedPackageUniqueId
+                    if (!sheet.visible && !packages.hasRootPackages && currentSelection != null &&
+                        packages.packagesByTab[this.selectedTabIndex].orEmpty()
+                            .any { it.uniqueId == currentSelection }
+                    ) {
+                        selectedPackageByTab[this.selectedTabIndex] = currentSelection
+                    }
                     this.selectedTabIndex = selectedTabIndex
                     val tabPackages = packages.packagesByTab[selectedTabIndex].orEmpty()
                         .inPresentation(sheet.presentationKey.takeIf { sheet.visible })

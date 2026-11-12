@@ -310,6 +310,54 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
     }
 
+    @Test
+    fun `content only tab switch preserves a manual sheet only choice`() {
+        val sheetKey = SheetPresentationKey()
+        val state = paywallState(
+            packagesOutsideTabs = listOf(
+                packageInfo(TestData.Packages.monthly, isSelectedByDefault = true, sheetPresentationKey = sheetKey),
+                packageInfo(TestData.Packages.annual, isSelectedByDefault = false, sheetPresentationKey = sheetKey),
+            ),
+            packagesByTab = emptyMap(),
+            initialSelectedTabIndex = 0,
+        )
+        state.update(selectedPackageUniqueId = TestData.Packages.annual.identifier)
+
+        state.update(selectedTabIndex = 1)
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
+    @Test
+    fun `sheet only tab switches select the destination default and remember manual choices`() {
+        val firstSheet = SheetPresentationKey()
+        val secondSheet = SheetPresentationKey()
+        val state = paywallState(
+            packagesOutsideTabs = emptyList(),
+            packagesByTab = mapOf(
+                0 to listOf(
+                    packageInfo(TestData.Packages.monthly, isSelectedByDefault = true, sheetPresentationKey = firstSheet),
+                    packageInfo(TestData.Packages.annual, isSelectedByDefault = false, sheetPresentationKey = firstSheet),
+                ),
+                1 to listOf(
+                    packageInfo(TestData.Packages.weekly, isSelectedByDefault = true, sheetPresentationKey = secondSheet),
+                ),
+            ),
+            initialSelectedTabIndex = 0,
+        )
+        state.sheet.show(backgroundBlur = false, content = {}, presentationKey = firstSheet)
+        state.selectPackageForSheetEntry()
+        state.update(selectedPackageUniqueId = TestData.Packages.annual.identifier)
+        state.sheet.hide()
+        state.restorePackageAfterSheetDismiss()
+
+        state.update(selectedTabIndex = 1)
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.weekly)
+
+        state.update(selectedTabIndex = 0)
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
     // region Visibility-aware default selection
 
     @Test

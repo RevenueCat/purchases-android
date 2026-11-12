@@ -13,9 +13,11 @@ internal class PackageSelectionResolver(
     presentedSheet: SheetPresentationKey?,
     private val context: ComponentVisibilityContext,
 ) {
-    private val onlySheetPackages = packages.hasAnyPackages && !packages.hasRootPackages
+    private val onlySheetPackages = presentedSheet == null && packages.hasAnyPackages && !packages.hasRootPackages
+    private val sheetOnlyOutside = packages.packagesOutsideTabs
+    private val sheetOnlyTab = packages.packagesByTab[selectedTabIndex].orEmpty()
     private val sheetOnlyInitialCandidates =
-        packages.packagesOutsideTabs + packages.packagesByTab[selectedTabIndex].orEmpty()
+        sheetOnlyOutside + sheetOnlyTab
     private val outside = packages.packagesOutsideTabs.inPresentation(presentedSheet)
     private val tab = packages.packagesByTab[selectedTabIndex].orEmpty().inPresentation(presentedSheet)
     private val active = outside + tab
@@ -37,6 +39,14 @@ internal class PackageSelectionResolver(
             ?: defaultSelection(remembered = null)
             ?: remembered?.takeIf { uid -> active.any { it.uniqueId == uid } }
             ?: allHiddenFallback()
+            ?: sheetOnlyTabSelection(current, remembered)
+
+    private fun sheetOnlyTabSelection(current: String?, remembered: String?): String? {
+        if (!onlySheetPackages) return null
+        return current?.takeIf { sheetOnlyTab.isEmpty() && sheetOnlyOutside.couldBeSelected(it, context) }
+            ?: remembered?.takeIf { sheetOnlyInitialCandidates.couldBeSelected(it, context) }
+            ?: sheetOnlyInitialSelection()
+    }
 
     fun enterSheet(current: String?): String? {
         if (sheet.isEmpty()) return current
