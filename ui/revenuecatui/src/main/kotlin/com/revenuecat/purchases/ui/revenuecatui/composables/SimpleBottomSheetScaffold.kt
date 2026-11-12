@@ -120,7 +120,7 @@ internal class SimpleSheetState {
     }
 
     fun hide() {
-        backgroundBlur = false
+        // Retain the sheet's styling until its scrim finishes fading out.
         visible = false
         presentationKey = null
         onDismiss?.invoke()
@@ -137,7 +137,7 @@ private fun Scrim(
     content: @Composable () -> Unit,
 ) {
     val targetRadius by animateDpAsState(
-        targetValue = if (backgroundBlur) 10.dp else 0.dp,
+        targetValue = if (show && backgroundBlur) 10.dp else 0.dp,
         animationSpec = blurAnimationSpec(),
     )
 
