@@ -723,6 +723,21 @@ class BillingWrapperTest {
     }
 
     @Test
+    fun `request times out if billing disconnects between readiness checks`() {
+        every { mockClient.isReady } returnsMany listOf(true, false)
+        val errors = mutableListOf<PurchasesError>()
+        wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("product_a"), {}, { errors.add(it) })
+
+        pendingRequestTimeouts.toList().forEach { it.run() }
+
+        assertThat(errors.map { it.code }).containsExactly(PurchasesErrorCode.StoreProblemError)
+        every { mockClient.isReady } returns true
+        wrapper.onBillingSetupFinished(billingClientOKResult)
+        assertThat(errors).hasSize(1)
+        verify(exactly = 0) { mockClient.queryProductDetailsAsync(any(), any()) }
+    }
+
+    @Test
     fun `pending request fails if billing does not connect before the timeout`() {
         every { mockClient.isReady } returns false
         val errors = mutableListOf<PurchasesError>()

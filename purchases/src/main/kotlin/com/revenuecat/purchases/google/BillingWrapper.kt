@@ -263,11 +263,14 @@ internal class BillingWrapper(
             val pendingRequest = request to delayMilliseconds
             serviceRequests.add(pendingRequest)
             val isReady = billingClient?.isReady
-            if (isReady != true) failIfStillPendingAfterTimeout(pendingRequest, requestType)
             if (isReady == false) {
                 startConnection()
             } else {
                 executePendingRequests()
+            }
+            // The client may disconnect between the readiness check and the queue drain.
+            if (serviceRequests.contains(pendingRequest)) {
+                failIfStillPendingAfterTimeout(pendingRequest, requestType)
             }
         } else {
             // This shouldn't happen, but if it does, we want to propagate an error instead of hanging.
