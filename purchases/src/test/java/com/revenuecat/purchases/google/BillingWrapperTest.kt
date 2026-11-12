@@ -733,15 +733,37 @@ class BillingWrapperTest {
         )
         assertThat(errors).isEmpty()
 
+        every { mockDateProvider.now } returns Date(1676379380000)
         pendingRequestTimeouts.forEach { it.run() }
 
         assertThat(errors.map { it.code }).containsExactly(PurchasesErrorCode.StoreProblemError)
-        verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(0) }
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(
+                0, "query_purchases", "disconnected", 10000L, false, null,
+            )
+        }
 
         // The timed out request must not also run once billing connects.
         every { mockClient.isReady } returns true
         wrapper.onBillingSetupFinished(billingClientOKResult)
         assertThat(errors).hasSize(1)
+    }
+
+    @Test
+    fun `timeout reports a scheduled retry even when another connection attempt is skipped`() {
+        every { handler.postDelayed(any(), 1000L) } returns true
+        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTING
+        wrapper.onBillingSetupFinished(BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult())
+
+        wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("product_a"), {}, {})
+        pendingRequestTimeouts.forEach { it.run() }
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(
+                0, "product_details", "connecting", 0L, true, 1000L,
+            )
+        }
     }
 
     @Test
@@ -761,7 +783,7 @@ class BillingWrapperTest {
         pendingRequestTimeouts.forEach { it.run() }
 
         assertThat(successCount).isEqualTo(1)
-        verify(exactly = 0) { mockDiagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(any()) }
+        verify(exactly = 0) { mockDiagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -2088,6 +2110,7 @@ class BillingWrapperTest {
                 onError = { fail("shouldn't be an error") }
             )
         }
+        every { mockDateProvider.now } returns Date(1676379372500)
         wrapper.onBillingSetupFinished(billingResult)
 
         // Assert
@@ -2096,6 +2119,7 @@ class BillingWrapperTest {
                 responseCode = expectedResponseCode,
                 debugMessage = expectedDebugMessage,
                 pendingRequestCount = expectedPendingRequestCount,
+                connectionDurationMillis = 2500L,
             )
         }
     }
@@ -2627,9 +2651,9 @@ class BillingWrapperTest {
             mockDiagnosticsTracker.trackProductDetailsNotSupported(any(), any())
         } just Runs
         every { mockDiagnosticsTracker.trackGoogleBillingStartConnection() } just runs
-        every { mockDiagnosticsTracker.trackGoogleBillingSetupFinished(any(), any(), any()) } just runs
+        every { mockDiagnosticsTracker.trackGoogleBillingSetupFinished(any(), any(), any(), any()) } just runs
         every { mockDiagnosticsTracker.trackGoogleBillingServiceDisconnected() } just runs
-        every { mockDiagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(any()) } just runs
+        every { mockDiagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(any(), any(), any(), any(), any(), any()) } just runs
         every { mockDiagnosticsTracker.trackGoogleInitialStorefrontLoad(any(), any()) } just runs
         every { mockDiagnosticsTracker.isCollectionDisabled } returns false
         // A known storefront keeps the initial storefront load event out of unrelated tests.
