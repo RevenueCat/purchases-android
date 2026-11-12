@@ -10,6 +10,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Padding.Companion
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
+import com.revenuecat.purchases.utils.serializers.NullToEmptyListSerializer
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -44,6 +45,7 @@ public class TimelineComponent(
     @get:JvmSynthetic
     public val items: List<Item> = emptyList(),
     @get:JvmSynthetic
+    @Serializable(with = NullToEmptyListSerializer::class)
     public val overrides: List<ComponentOverride<PartialTimelineComponent>> = emptyList(),
 ) : PaywallComponent {
 
@@ -70,6 +72,7 @@ public class TimelineComponent(
         @get:JvmSynthetic
         public val connector: Connector? = null,
         @get:JvmSynthetic
+        @Serializable(with = NullToEmptyListSerializer::class)
         public val overrides: List<ComponentOverride<PartialTimelineComponentItem>> = emptyList(),
     )
 

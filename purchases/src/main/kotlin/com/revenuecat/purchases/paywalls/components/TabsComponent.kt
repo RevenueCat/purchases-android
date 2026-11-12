@@ -15,6 +15,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
+import com.revenuecat.purchases.utils.serializers.NullToEmptyListSerializer
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -101,6 +102,7 @@ public class TabsComponent(
     @SerialName("default_tab_id")
     public val defaultTabId: String? = null,
     @get:JvmSynthetic
+    @Serializable(with = NullToEmptyListSerializer::class)
     public val overrides: List<ComponentOverride<PartialTabsComponent>> = emptyList(),
     @get:JvmSynthetic
     @SerialName("state_updates")

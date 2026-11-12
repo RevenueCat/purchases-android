@@ -14,6 +14,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
+import com.revenuecat.purchases.utils.serializers.NullToEmptyListSerializer
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -47,6 +48,7 @@ public class IconComponent(
     @SerialName("icon_background")
     public val iconBackground: IconBackground? = null,
     @get:JvmSynthetic
+    @Serializable(with = NullToEmptyListSerializer::class)
     public val overrides: List<ComponentOverride<PartialIconComponent>> = emptyList(),
 ) : PaywallComponent {
 
