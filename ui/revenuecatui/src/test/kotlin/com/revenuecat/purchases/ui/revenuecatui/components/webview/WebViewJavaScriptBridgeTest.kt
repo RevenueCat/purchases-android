@@ -100,6 +100,11 @@ internal class WebViewJavaScriptBridgeTest {
     /** Every outbound script in delivery order; [ShadowWebView.getLastEvaluatedJavascript] keeps only the last. */
     private fun scripts(): List<String> = Shadow.extract<RecordingShadowWebView>(webView).evaluatedScripts
 
+    /** Decodes the envelope an outbound script hands to the receive function. */
+    private fun String.deliveredEnvelope(): WebViewEnvelope? = WebViewEnvelope.parse(
+        substringAfter("window.__rcWebComponentsReceive(").substringBeforeLast("); }"),
+    )
+
     /**
      * Exercises the genuine production inbound path:
      * `webMessageListener.onPostMessage` → per-document scope enqueue → protocol handling.
@@ -576,6 +581,41 @@ internal class WebViewJavaScriptBridgeTest {
         idleMainLooper()
 
         assertThat(resizes).containsExactly(null to 250)
+        assertThat(scripts().none { it.contains("\"kind\":\"error\"") }).isTrue()
+    }
+
+    @Test
+    fun `replies with an error envelope to a request of an unsupported type`() {
+        val bridge = bridge()
+        bridge.connect()
+        val afterHandshake = scripts().size
+
+        bridge.postFromWeb(appMessage(type = "fetch", kind = "request", id = "fetch-1"))
+        idleMainLooper()
+
+        assertThat(scripts()).hasSize(afterHandshake + 1)
+        assertThat(scripts().last().deliveredEnvelope()).isEqualTo(
+            WebViewEnvelope(
+                kind = WebViewEnvelope.Kind.ERROR,
+                protocolVersion = WebViewEnvelope.DEFAULT_PROTOCOL_VERSION,
+                componentId = componentId,
+                type = "fetch",
+                id = "fetch-1",
+                error = "No handler registered for request type \"fetch\"",
+            ),
+        )
+    }
+
+    @Test
+    fun `drops a message of an unsupported type without replying`() {
+        val bridge = bridge()
+        bridge.connect()
+        val afterHandshake = scripts().size
+
+        bridge.postFromWeb(appMessage(type = "fetch"))
+        idleMainLooper()
+
+        assertThat(scripts()).hasSize(afterHandshake)
     }
 
     @Test

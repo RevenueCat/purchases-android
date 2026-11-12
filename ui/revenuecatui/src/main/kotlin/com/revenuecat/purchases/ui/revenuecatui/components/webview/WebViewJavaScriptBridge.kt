@@ -290,7 +290,23 @@ internal class WebViewJavaScriptBridge(
             handleResize(envelope)
         } else {
             Logger.w("Dropping inbound web view message: unsupported message type '${envelope.type}'.")
+            if (envelope.kind == WebViewEnvelope.Kind.REQUEST) sendUnhandledRequestError(envelope)
         }
+    }
+
+    /** Rejects the content's pending request now instead of letting it wait out its timeout. */
+    private fun sendUnhandledRequestError(request: WebViewEnvelope) {
+        deliverEnvelopeNow(
+            WebViewEnvelope(
+                kind = WebViewEnvelope.Kind.ERROR,
+                protocolVersion = protocolVersion,
+                componentId = componentId,
+                type = request.type,
+                id = request.id,
+                error = "No handler registered for request type \"${request.type}\"",
+            ),
+            allowBeforeNavigation = false,
+        )
     }
 
     @MainThread
