@@ -265,6 +265,13 @@ internal class DiagnosticsTracker(
         )
     }
 
+    fun trackGoogleBillingClientRetired(closed: Boolean) {
+        trackEvent(
+            eventName = DiagnosticsEntryName.GOOGLE_BILLING_CLIENT_RETIRED,
+            properties = mapOf("reason" to "connection_timeout", "closed" to closed),
+        )
+    }
+
     @Suppress("LongParameterList")
     fun trackGoogleBillingPendingRequestTimedOut(
         pendingRequestCount: Int,
