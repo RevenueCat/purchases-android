@@ -618,7 +618,9 @@ jobs:
     steps:
       - checkout
       - revenuecat/install-mise-tools:
-          tools: java
+          tools: java,ruby
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v2
       - android/create_avd:
           avd_name: billing-connection-repro
           system_image: system-images;android-33;google_apis_playstore;x86_64
@@ -628,7 +630,7 @@ jobs:
           post_emulator_launch_assemble_command: ./gradlew :purchases:assembleDefaultsDebugAndroidTest
       - run:
           name: Run billing connection repro
-          command: .circleci/scripts/run-billing-connection-repro.sh
+          command: bundle exec fastlane android run_billing_connection_repro
       - store_artifacts:
           path: /tmp/billing-repro
           destination: billing-repro
