@@ -366,9 +366,11 @@ class PaywallViewModelWorkflowTest {
         gate.complete("step-1")
         testDispatcher.scheduler.advanceUntilIdle()
 
-        // Composition asks again once the real step is on screen, and that one must land.
+        // Composition asks again once the real step is on screen, and that one must land
+        // (as an impression followed by its paywall_loaded event).
         vm.trackPaywallImpressionIfNeeded()
-        assertThat(captured.filterIsInstance<PaywallEvent>()).hasSize(1)
+        assertThat(captured.filterIsInstance<PaywallEvent>().map { it.type })
+            .containsExactly(PaywallEventType.IMPRESSION, PaywallEventType.LOADED)
     }
 
     @Test

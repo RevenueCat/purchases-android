@@ -2098,9 +2098,27 @@ class PaywallViewModelTest {
         model.trackPaywallImpressionIfNeeded()
         model.trackPaywallImpressionIfNeeded()
         model.trackPaywallImpressionIfNeeded()
-        verify(exactly = 1) {
+        // One impression, plus the paywall_loaded event that follows every impression.
+        verifyEventTracked(PaywallEventType.IMPRESSION, 1)
+        verifyEventTracked(PaywallEventType.LOADED, 1)
+        verify(exactly = 2) {
             purchases.track(any())
         }
+    }
+
+    @Test
+    fun `trackPaywallImpression tracks loaded with loading duration right after the impression`() {
+        val events = mutableListOf<PaywallEvent>()
+        every { purchases.track(any()) } answers { events += firstArg<PaywallEvent>() }
+
+        val model = create()
+        model.trackPaywallImpressionIfNeeded()
+
+        assertThat(events.map { it.type }).containsExactly(PaywallEventType.IMPRESSION, PaywallEventType.LOADED)
+        assertThat(events[0].data.loadingDurationMs).isNull()
+        assertThat(events[1].data.loadingDurationMs).isNotNull()
+        assertThat(events[1].data.loadingDurationMs).isGreaterThanOrEqualTo(0)
+        assertThat(events[1].data.sessionIdentifier).isEqualTo(events[0].data.sessionIdentifier)
     }
 
     @Test
@@ -2123,8 +2141,10 @@ class PaywallViewModelTest {
 
         assertThat(eventTypes).containsExactly(
             PaywallEventType.IMPRESSION,
+            PaywallEventType.LOADED,
             PaywallEventType.CLOSE,
             PaywallEventType.IMPRESSION,
+            PaywallEventType.LOADED,
         )
     }
 

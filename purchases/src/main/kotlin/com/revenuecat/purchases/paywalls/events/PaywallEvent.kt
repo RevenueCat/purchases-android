@@ -19,6 +19,7 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.encoding.encodeStructure
 import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.util.Date
@@ -34,6 +35,12 @@ public enum class PaywallEventType(public val value: String) {
      * The paywall was shown to the user.
      */
     IMPRESSION("paywall_impression"),
+
+    /**
+     * The paywall finished loading: no loading UI is shown anymore. Sent once per impression,
+     * with [PaywallEvent.Data.loadingDurationMs] (0 when nothing was ever loading).
+     */
+    LOADED("paywall_loaded"),
 
     /**
      * The user cancelled a purchase.
@@ -182,6 +189,21 @@ public data class PaywallEvent(
          * standalone paywalls.
          */
         val traceId: String? = null,
+        /**
+         * Milliseconds between [com.revenuecat.purchases.Purchases.configure] and this paywall being shown.
+         * Distinguishes paywalls shown at cold start from paywalls shown later in the session.
+         */
+        val msSinceConfigure: Int? = null,
+        /**
+         * Milliseconds the user saw loading UI after the paywall surface appeared. Only set on
+         * [PaywallEventType.LOADED]. 0 means content was ready at first render.
+         */
+        val loadingDurationMs: Int? = null,
+        /**
+         * Why loading did not finish normally (`error`, `timeout`, `dismissed`). Only set on
+         * [PaywallEventType.LOADED].
+         */
+        val loadingIncompleteReason: String? = null,
     )
 
     internal fun toPaywallPostReceiptData(): PaywallPostReceiptData {
@@ -220,6 +242,9 @@ internal object PaywallEventDataSerializer : KSerializer<PaywallEvent.Data> {
     private const val WORKFLOW_ID_INDEX = 14
     private const val STEP_ID_INDEX = 15
     private const val TRACE_ID_INDEX = 16
+    private const val MS_SINCE_CONFIGURE_INDEX = 17
+    private const val LOADING_DURATION_MS_INDEX = 18
+    private const val LOADING_INCOMPLETE_REASON_INDEX = 19
 
     private val nullableStringSerializer = String.serializer().nullable
     private val nullableIntSerializer = Int.serializer().nullable
@@ -244,6 +269,9 @@ internal object PaywallEventDataSerializer : KSerializer<PaywallEvent.Data> {
         element("workflowId", nullableStringSerializer.descriptor)
         element("stepId", nullableStringSerializer.descriptor)
         element("traceId", nullableStringSerializer.descriptor)
+        element("msSinceConfigure", nullableIntSerializer.descriptor)
+        element("loadingDurationMs", nullableIntSerializer.descriptor)
+        element("loadingIncompleteReason", nullableStringSerializer.descriptor)
     }
 
     override fun serialize(encoder: Encoder, value: PaywallEvent.Data) {
@@ -292,6 +320,15 @@ internal object PaywallEventDataSerializer : KSerializer<PaywallEvent.Data> {
             }
             value.traceId?.let {
                 encodeStringElement(descriptor, TRACE_ID_INDEX, it)
+            }
+            value.msSinceConfigure?.let {
+                encodeIntElement(descriptor, MS_SINCE_CONFIGURE_INDEX, it)
+            }
+            value.loadingDurationMs?.let {
+                encodeIntElement(descriptor, LOADING_DURATION_MS_INDEX, it)
+            }
+            value.loadingIncompleteReason?.let {
+                encodeStringElement(descriptor, LOADING_INCOMPLETE_REASON_INDEX, it)
             }
         }
     }
@@ -362,6 +399,7 @@ internal object PaywallEventDataSerializer : KSerializer<PaywallEvent.Data> {
         val traceId = jsonObject["traceId"]?.let {
             decoder.json.decodeFromJsonElement(String.serializer(), it)
         }
+        val loadingFields = decodeLoadingFields(decoder, jsonObject)
 
         return PaywallEvent.Data(
             paywallIdentifier = paywallIdentifier,
@@ -380,6 +418,29 @@ internal object PaywallEventDataSerializer : KSerializer<PaywallEvent.Data> {
             workflowId = workflowId,
             stepId = stepId,
             traceId = traceId,
+            msSinceConfigure = loadingFields.msSinceConfigure,
+            loadingDurationMs = loadingFields.loadingDurationMs,
+            loadingIncompleteReason = loadingFields.loadingIncompleteReason,
+        )
+    }
+
+    private data class LoadingFields(
+        val msSinceConfigure: Int?,
+        val loadingDurationMs: Int?,
+        val loadingIncompleteReason: String?,
+    )
+
+    private fun decodeLoadingFields(decoder: JsonDecoder, jsonObject: JsonObject): LoadingFields {
+        return LoadingFields(
+            msSinceConfigure = jsonObject["msSinceConfigure"]?.let {
+                decoder.json.decodeFromJsonElement(Int.serializer(), it)
+            },
+            loadingDurationMs = jsonObject["loadingDurationMs"]?.let {
+                decoder.json.decodeFromJsonElement(Int.serializer(), it)
+            },
+            loadingIncompleteReason = jsonObject["loadingIncompleteReason"]?.let {
+                decoder.json.decodeFromJsonElement(String.serializer(), it)
+            },
         )
     }
 }

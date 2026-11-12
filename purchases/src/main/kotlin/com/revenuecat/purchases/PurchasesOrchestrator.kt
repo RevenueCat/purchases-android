@@ -11,6 +11,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.util.Pair
 import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.LifecycleOwner
@@ -123,6 +124,7 @@ import com.revenuecat.purchases.paywalls.DownloadedFontFamily
 import com.revenuecat.purchases.paywalls.FontLoader
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
+import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.storage.DefaultFileRepository
 import com.revenuecat.purchases.storage.FileRepository
 import com.revenuecat.purchases.strings.AttributionStrings
@@ -347,6 +349,9 @@ internal class PurchasesOrchestrator(
     // Identity-operation state, guarded by identityLock: whether a bootstrap or an explicit IAM identity change is
     // in flight, and what waits for it, in arrival order.
     private val identityLock = Any()
+
+    // The orchestrator is created by configure(), so this is when the SDK was configured in this process.
+    private val configuredAtMillis = SystemClock.elapsedRealtime()
     private var identityOperationInFlight = false
     private val awaitingIdentity = mutableListOf<AwaitingIdentity>()
 
@@ -1242,14 +1247,26 @@ internal class PurchasesOrchestrator(
 
     @OptIn(InternalRevenueCatAPI::class)
     fun track(event: FeatureEvent) {
-        when (event) {
+        val trackedEvent = withMsSinceConfigure(event)
+        when (trackedEvent) {
             is PaywallEvent ->
-                paywallPresentedCache.receiveEvent(event)
+                paywallPresentedCache.receiveEvent(trackedEvent)
         }
 
-        eventsManager.track(event)
+        eventsManager.track(trackedEvent)
 
-        trackedEventListener?.onEventTracked(event)
+        trackedEventListener?.onEventTracked(trackedEvent)
+    }
+
+    private fun withMsSinceConfigure(event: FeatureEvent): FeatureEvent {
+        val isUnstampedImpression = event is PaywallEvent &&
+            event.type == PaywallEventType.IMPRESSION &&
+            event.data.msSinceConfigure == null
+        if (!isUnstampedImpression || event !is PaywallEvent) {
+            return event
+        }
+        val msSinceConfigure = (SystemClock.elapsedRealtime() - configuredAtMillis).coerceAtLeast(0L).toInt()
+        return event.copy(data = event.data.copy(msSinceConfigure = msSinceConfigure))
     }
 
     @OptIn(InternalRevenueCatAPI::class)
