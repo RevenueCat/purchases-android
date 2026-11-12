@@ -78,6 +78,7 @@ import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorSt
 import com.revenuecat.purchases.ui.revenuecatui.workflow.NavigationDirection
 import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowNavigator
 import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowScreenMapper
+import com.revenuecat.purchases.ui.revenuecatui.workflow.hasDismissButton
 import com.revenuecat.purchases.withPresentedCheckpointIdentifier
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -157,6 +158,12 @@ internal interface PaywallViewModel {
      * (previous step rendered), false to fall through to dismiss.
      */
     fun handleBackNavigation(): Boolean
+
+    /**
+     * Whether system back may dismiss the paywall once [handleBackNavigation] has nowhere to go back to. False on a
+     * workflow step that has no button to close it, so back cannot skip a step that offers no way out.
+     */
+    fun canDismissWithSystemBack(): Boolean
 
     /**
      * Called by the UI when a slide animation completes. Clears the [WorkflowPendingTransition]
@@ -1585,6 +1592,13 @@ internal class PaywallViewModelImpl(
             entryReason = WorkflowStepEntryReason.BACK,
         )
         return true
+    }
+
+    override fun canDismissWithSystemBack(): Boolean {
+        // Without a step on screen (a standalone paywall, an error, or the skeleton while routing) back stays the
+        // way out.
+        val screen = currentWorkflowStep?.screenId?.let { currentWorkflow?.screens?.get(it) }
+        return screen?.hasDismissButton() ?: true
     }
 
     private fun trackWorkflowStepNavigation(
