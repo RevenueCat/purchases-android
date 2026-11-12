@@ -11,6 +11,10 @@ import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignme
 import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
+import org.assertj.core.api.Assertions.assertThat
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.experimental.runners.Enclosed
@@ -196,6 +200,18 @@ internal class TextComponentTests {
                     )
                 ),
             )
+        }
+
+        @Test
+        fun `decodes null overrides as an empty list`() {
+            val original = JsonTools.json.parseToJsonElement(args.json).jsonObject
+            val json = JsonObject(original + ("overrides" to JsonNull)).toString()
+
+            val component = JsonTools.json.decodeFromString<TextComponent>(json)
+            val paywallComponent = JsonTools.json.decodeFromString<PaywallComponent>(json) as TextComponent
+
+            assertThat(component.overrides).isEmpty()
+            assertThat(paywallComponent.overrides).isEmpty()
         }
 
         @Test
