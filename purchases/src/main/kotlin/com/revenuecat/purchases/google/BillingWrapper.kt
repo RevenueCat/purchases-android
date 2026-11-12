@@ -192,7 +192,9 @@ internal class BillingWrapper(
                     billingClient = clientFactory.buildClient(this)
                 }
                 reconnectionAlreadyScheduled = false
-                billingClient?.takeIf { !it.isReady }
+                billingClient?.takeIf {
+                    !it.isReady && it.connectionState != BillingClient.ConnectionState.CONNECTING
+                }
             } ?: return
 
             log(LogIntent.DEBUG) { BillingStrings.BILLING_CLIENT_STARTING.format(clientToStart) }
@@ -202,12 +204,10 @@ internal class BillingWrapper(
             log(LogIntent.GOOGLE_ERROR) {
                 BillingStrings.ILLEGAL_STATE_EXCEPTION_WHEN_CONNECTING.format(e)
             }
-            replaceBillingClient()
             val error = PurchasesError(PurchasesErrorCode.StoreProblemError, e.message)
             sendErrorsToAllPendingRequests(error)
         } catch (e: SecurityException) {
             errorLog(e) { BillingStrings.SECURITY_EXCEPTION_WHEN_CONNECTING }
-            replaceBillingClient()
             val error = PurchasesError(PurchasesErrorCode.StoreProblemError, e.message)
             sendErrorsToAllPendingRequests(error)
         } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
@@ -216,14 +216,6 @@ internal class BillingWrapper(
             // main thread so the failure is visible in the same way.
             errorLog(e) { "Unexpected error while starting the billing connection" }
             mainHandler.post { throw e }
-        }
-    }
-
-    // A BillingClient whose startConnection threw stays in its connecting state and can never connect again.
-    private fun replaceBillingClient() {
-        synchronized(this@BillingWrapper) {
-            billingClient?.endConnection()
-            billingClient = clientFactory.buildClient(this)
         }
     }
 
@@ -400,7 +392,11 @@ internal class BillingWrapper(
         isPersonalizedPrice: Boolean?,
     ) {
         val buildParamsAndLaunch = { shouldSetObfuscatedAccountId: Boolean ->
-            executeRequestOnUIThread {
+            executeRequestOnUIThread { connectionError ->
+                if (connectionError != null) {
+                    purchasesUpdatedListener?.onPurchasesFailedToUpdate(connectionError)
+                    return@executeRequestOnUIThread
+                }
                 val result = buildPurchaseParams(
                     googlePurchasingData,
                     replaceProductInfo,
@@ -435,9 +431,17 @@ internal class BillingWrapper(
                     }
                     buildParamsAndLaunch(false)
                 },
-                // Not a real error: this is the expected path when the device has no active purchase
-                // of this subscription (never bought, or expired), so the lookup doesn't find it.
-                onError = { buildParamsAndLaunch(true) },
+                // A missing purchase is expected, but a timed-out billing connection must fail the purchase
+                // instead of queuing it behind the same stalled connection.
+                onError = { error ->
+                    if (error.code == PurchasesErrorCode.StoreProblemError &&
+                        error.underlyingErrorMessage == BillingStrings.BILLING_PENDING_REQUEST_TIMED_OUT
+                    ) {
+                        purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
+                    } else {
+                        buildParamsAndLaunch(true)
+                    }
+                },
             )
             else -> buildParamsAndLaunch(true)
         }
