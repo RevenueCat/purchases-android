@@ -521,9 +521,22 @@ class DiagnosticsTrackerTest {
             "play_store_version" to "123",
             "play_services_version" to "456",
             "pending_request_count" to 3,
+            "billing_client_state" to "connecting",
+            "request_type" to "purchase_launch",
+            "connection_elapsed_millis" to 15000L,
+            "setup_callback_received" to false,
+            "reconnection_scheduled" to true,
+            "reconnection_delay_millis" to 500L,
         )
         every { diagnosticsFileHelper.appendEvent(any()) } just Runs
-        diagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(pendingRequestCount = 3)
+        diagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(
+            pendingRequestCount = 3,
+            requestType = "purchase_launch",
+            billingClientState = "connecting",
+            connectionElapsedMillis = 15000L,
+            setupCallbackReceived = false,
+            reconnectionDelayMillis = 500L,
+        )
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEvent(match { event ->
                 event.name == DiagnosticsEntryName.GOOGLE_BILLING_PENDING_REQUEST_TIMED_OUT &&
