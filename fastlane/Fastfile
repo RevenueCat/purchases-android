@@ -554,6 +554,32 @@ platform :android do
     end
     UI.user_error!('Reconnection race was not observed after 10 attempts; repro is inconclusive') unless reconnected
     UI.success('Pending requests completed after reconnecting')
+
+    recreated = false
+    10.times do |index|
+      attempt = index + 1
+      UI.message("Billing client recreation repro: attempt #{attempt} of 10")
+      sh(*adb, 'logcat', '-c')
+      result, status = Open3.capture2e(
+        *adb, 'shell', 'am', 'instrument', '-w',
+        '-e', 'billingRepro', 'true', '-e', 'class',
+        'com.revenuecat.purchases.google.ConnectionRecreationReproTest',
+        'com.revenuecat.purchases.integrationTest/androidx.test.runner.AndroidJUnitRunner'
+      )
+      File.write(File.join(artifacts, "recreation-#{attempt}.txt"), result)
+      UI.message(result)
+      UI.user_error!('Recreation instrumentation failed to run') unless status.success?
+      logs, log_status = Open3.capture2e(*adb, 'logcat', '-d', '-v', 'threadtime')
+      File.write(File.join(artifacts, "recreation-#{attempt}-logcat.txt"), logs)
+      UI.user_error!('Could not collect logcat') unless log_status.success?
+      if result.include?('OK (1 test)')
+        recreated = true
+        break
+      end
+      UI.user_error!('Recreation test failed') unless result.include?('Recreation race may not have reproduced')
+    end
+    UI.user_error!('Recreation race was not observed after 10 attempts; repro is inconclusive') unless recreated
+    UI.success('A later request completed on a fresh billing client')
   end
 
   desc "Run backend integration tests"
