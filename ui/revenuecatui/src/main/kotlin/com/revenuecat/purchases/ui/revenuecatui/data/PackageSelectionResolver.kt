@@ -25,9 +25,9 @@ internal class PackageSelectionResolver(
 
     fun initialSelection(): String? = defaultSelection(remembered = null)
         ?: allHiddenFallback()
-        ?: sheetOnlyInitialSelection()
+        ?: sheetOnlyDefaultSelection()
 
-    private fun sheetOnlyInitialSelection(): String? {
+    private fun sheetOnlyDefaultSelection(): String? {
         if (!onlySheetPackages) return null
         return sheetOnlyInitialCandidates.groupBy { it.sheetPresentationKey }
             .values.firstNotNullOfOrNull { it.defaultSelection(context)?.uniqueId }
@@ -45,7 +45,7 @@ internal class PackageSelectionResolver(
         if (!onlySheetPackages) return null
         return current?.takeIf { sheetOnlyTab.isEmpty() && sheetOnlyOutside.couldBeSelected(it, context) }
             ?: remembered?.takeIf { sheetOnlyInitialCandidates.couldBeSelected(it, context) }
-            ?: sheetOnlyInitialSelection()
+            ?: sheetOnlyDefaultSelection()
     }
 
     fun enterSheet(current: String?): String? {
@@ -58,11 +58,17 @@ internal class PackageSelectionResolver(
     fun reconcile(current: String?, remembered: String?): String? = when {
         // An explicit choice may hide its own card. Keep it while the card could still render
         // unselected; viewport/container rules that hide both states still trigger reconciliation.
-        current != null && sheet.ifEmpty { active }.couldBeSelected(current, context) -> current
+        current != null && reconciliationCandidates.couldBeSelected(current, context) -> current
         else -> defaultSelection(remembered)
+            ?: sheetOnlyDefaultSelection()
             ?: current
             ?: allHiddenFallback()
     }
+
+    // A closed sheet still supplies the root CTA on sheet-only paywalls. Independent
+    // visibility rules must be checked against that inventory, not the empty root inventory.
+    private val reconciliationCandidates
+        get() = if (onlySheetPackages) sheetOnlyInitialCandidates else sheet.ifEmpty { active }
 
     fun reset(current: String?, remembered: String?): String? = defaultSelection(remembered)
         ?: current.takeIf {

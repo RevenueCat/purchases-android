@@ -466,11 +466,10 @@ internal sealed interface PaywallState {
                     // A dismissed sheet's choice belongs to the underlying tab on sheet-only paywalls.
                     // Sheet interactions deliberately don't update root tab memory while presented.
                     val currentSelection = selectedPackageUniqueId
-                    if (!sheet.visible && !packages.hasRootPackages && currentSelection != null &&
-                        packages.packagesByTab[this.selectedTabIndex].orEmpty()
-                            .any { it.uniqueId == currentSelection }
-                    ) {
-                        selectedPackageByTab[this.selectedTabIndex] = currentSelection
+                    if (!sheet.visible && !packages.hasRootPackages) {
+                        currentSelection?.takeIf { uid ->
+                            packages.packagesByTab[this.selectedTabIndex].orEmpty().any { it.uniqueId == uid }
+                        }?.let { selectedPackageByTab[this.selectedTabIndex] = it }
                     }
                     this.selectedTabIndex = selectedTabIndex
                     val tabPackages = packages.packagesByTab[selectedTabIndex].orEmpty()
@@ -580,9 +579,12 @@ internal sealed interface PaywallState {
 
             fun peekSelectedPackageInfoAfterSheetDismiss(): SelectedPackageInfo? {
                 packageSelectionBeforeSheet?.let {
-                    if (!packages.hasRootPackages) return selectedPackageInfo
-                    return selectionBeforeSheetAtCurrentBounds()?.let { findPackageInfoByUniqueId(it)?.selectionInfo() }
-                        ?: defaultPackageInfo
+                    return if (!packages.hasRootPackages) {
+                        selectedPackageInfo
+                    } else {
+                        selectionBeforeSheetAtCurrentBounds()?.let { findPackageInfoByUniqueId(it)?.selectionInfo() }
+                            ?: defaultPackageInfo
+                    }
                 }
                 val uid = peekDefaultPackageUniqueIdAfterSheetDismiss()
                 val info = uid?.let { findPackageInfoByUniqueId(it) }
