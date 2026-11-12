@@ -3462,6 +3462,26 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         }
     }
 
+    @Test
+    fun `on billing wrapper connected, releases held requests once the storefront is received`() {
+        mockGetStorefront()
+        capturedBillingWrapperStateListener.captured.onConnected()
+        verify(exactly = 1) { mockStorefrontAwaiter.release() }
+    }
+
+    @Test
+    fun `on billing wrapper connected, releases held requests when getting the storefront fails`() {
+        every {
+            mockBillingAbstract.getStorefront(onSuccess = any(), onError = captureLambda())
+        } answers {
+            lambda<(PurchasesError) -> Unit>().captured.invoke(
+                PurchasesError(PurchasesErrorCode.StoreProblemError),
+            )
+        }
+        capturedBillingWrapperStateListener.captured.onConnected()
+        verify(exactly = 1) { mockStorefrontAwaiter.release() }
+    }
+
     // region Private Methods
     private fun mockSynchronizeSubscriberAttributesForAllUsers() {
         every {

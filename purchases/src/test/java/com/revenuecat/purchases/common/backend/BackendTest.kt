@@ -125,7 +125,7 @@ class BackendTest {
         every { store } returns Store.PLAY_STORE
     }
     private val dispatcher = spyk(SyncDispatcher())
-    private val backendHelper = BackendHelper(API_KEY, dispatcher, mockAppConfig, mockClient)
+    private val backendHelper = BackendHelper(API_KEY, dispatcher, mockAppConfig, mockClient, storefrontAwaiter = null)
     private var backend: Backend = Backend(
         mockAppConfig,
         dispatcher,
@@ -144,7 +144,7 @@ class BackendTest {
             )
         )
     )
-    private var asyncBackendHelper: BackendHelper = BackendHelper(API_KEY, asyncDispatcher, mockAppConfig, mockClient)
+    private var asyncBackendHelper: BackendHelper = BackendHelper(API_KEY, asyncDispatcher, mockAppConfig, mockClient, storefrontAwaiter = null)
     private var asyncBackend: Backend = Backend(
         mockAppConfig,
         asyncDispatcher,

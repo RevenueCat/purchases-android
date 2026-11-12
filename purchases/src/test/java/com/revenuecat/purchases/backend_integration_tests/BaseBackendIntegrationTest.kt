@@ -149,7 +149,7 @@ internal abstract class BaseBackendIntegrationTest {
             requestResponseListener = ResponseCodeRecordingListener(goldenFileRecorder, recordedResponseCodes),
             tokenAuthenticator = disabledTokenAuthenticator(),
         )
-        backendHelper = BackendHelper(apiKey(), dispatcher, appConfig, httpClient)
+        backendHelper = BackendHelper(apiKey(), dispatcher, appConfig, httpClient, storefrontAwaiter = null)
         backend = Backend(
             appConfig,
             dispatcher,

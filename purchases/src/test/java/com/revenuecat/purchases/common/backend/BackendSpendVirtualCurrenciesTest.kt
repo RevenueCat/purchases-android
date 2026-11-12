@@ -48,7 +48,7 @@ class BackendSpendVirtualCurrenciesTest {
     @Before
     fun setUp() {
         val dispatcher = SyncDispatcher()
-        val helper = BackendHelper(apiKey, dispatcher, appConfig, httpClient)
+        val helper = BackendHelper(apiKey, dispatcher, appConfig, httpClient, storefrontAwaiter = null)
         backend = Backend(appConfig, dispatcher, dispatcher, httpClient, helper)
     }
 
