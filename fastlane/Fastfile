@@ -528,6 +528,32 @@ platform :android do
       stop_churn << true
       churn.join
     end
+
+    reconnected = false
+    10.times do |index|
+      attempt = index + 1
+      UI.message("Billing reconnection repro: attempt #{attempt} of 10")
+      sh(*adb, 'logcat', '-c')
+      result, status = Open3.capture2e(
+        *adb, 'shell', 'am', 'instrument', '-w',
+        '-e', 'billingRepro', 'true', '-e', 'class',
+        'com.revenuecat.purchases.google.ConnectionRecoveryReproTest',
+        'com.revenuecat.purchases.integrationTest/androidx.test.runner.AndroidJUnitRunner'
+      )
+      File.write(File.join(artifacts, "reconnect-#{attempt}.txt"), result)
+      UI.message(result)
+      UI.user_error!('Reconnection instrumentation failed to run') unless status.success?
+      logs, log_status = Open3.capture2e(*adb, 'logcat', '-d', '-v', 'threadtime')
+      File.write(File.join(artifacts, "reconnect-#{attempt}-logcat.txt"), logs)
+      UI.user_error!('Could not collect logcat') unless log_status.success?
+      if result.include?('OK (1 test)')
+        reconnected = true
+        break
+      end
+      UI.user_error!('Reconnection test failed') unless result.include?('Reconnection race may not have reproduced')
+    end
+    UI.user_error!('Reconnection race was not observed after 10 attempts; repro is inconclusive') unless reconnected
+    UI.success('Pending requests completed after reconnecting')
   end
 
   desc "Run backend integration tests"
