@@ -10,10 +10,8 @@ import com.revenuecat.purchases.galaxy.GalaxyStoreTest
 import com.revenuecat.purchases.galaxy.IAPHelperProvider
 import com.revenuecat.purchases.galaxy.constants.GalaxyErrorCode
 import com.revenuecat.purchases.galaxy.listener.PromotionEligibilityResponseListener
-import com.revenuecat.purchases.galaxy.logging.LogIntent
 import com.revenuecat.purchases.galaxy.logging.currentLogHandler
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
-import com.revenuecat.purchases.galaxy.GalaxyStrings
 import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.models.StoreProduct
@@ -54,6 +52,7 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
         productDataHandler.getProductDetails(
             productIds = emptySet(),
             productType = ProductType.INAPP,
+            logUnfetchedProducts = true,
             onReceive = { receivedProducts = it },
             onError = unexpectedOnError,
         )
@@ -71,6 +70,7 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
         productDataHandler.getProductDetails(
             productIds = productIds,
             productType = ProductType.INAPP,
+            logUnfetchedProducts = true,
             onReceive = unexpectedOnReceive,
             onError = unexpectedOnError,
         )
@@ -78,6 +78,7 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
         productDataHandler.getProductDetails(
             productIds = setOf("second"),
             productType = ProductType.SUBS,
+            logUnfetchedProducts = true,
             onReceive = unexpectedOnReceive,
             onError = { receivedError = it },
         )
@@ -106,6 +107,7 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
         productDataHandler.getProductDetails(
             productIds = productIds,
             productType = ProductType.SUBS,
+            logUnfetchedProducts = true,
             onReceive = { receivedProducts = it },
             onError = unexpectedOnError,
         )
@@ -135,6 +137,7 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
         productDataHandler.getProductDetails(
             productIds = productIds,
             productType = ProductType.SUBS,
+            logUnfetchedProducts = true,
             onReceive = unexpectedOnReceive,
             onError = unexpectedOnError,
         )
@@ -170,6 +173,7 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
         productDataHandler.getProductDetails(
             productIds = setOf("iap", "sub"),
             productType = ProductType.INAPP,
+            logUnfetchedProducts = true,
             onReceive = { receivedProducts = it },
             onError = unexpectedOnError,
         )
@@ -206,6 +210,7 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
         productDataHandler.getProductDetails(
             productIds = setOf("iap"),
             productType = ProductType.INAPP,
+            logUnfetchedProducts = true,
             onReceive = { receivedProducts = it },
             onError = unexpectedOnError,
         )
@@ -234,6 +239,7 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
         productDataHandler.getProductDetails(
             productIds = setOf("iap"),
             productType = ProductType.INAPP,
+            logUnfetchedProducts = true,
             onReceive = { receivedProducts = it },
             onError = unexpectedOnError,
         )
@@ -263,6 +269,7 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
         productDataHandler.getProductDetails(
             productIds = productIds,
             productType = ProductType.INAPP,
+            logUnfetchedProducts = true,
             onReceive = { receivedProducts = it },
             onError = unexpectedOnError,
         )
@@ -287,6 +294,7 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
         productDataHandler.getProductDetails(
             productIds = setOf("iap"),
             productType = ProductType.INAPP,
+            logUnfetchedProducts = true,
             onReceive = unexpectedOnReceive,
             onError = { receivedError = it },
         )
@@ -304,6 +312,7 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
         productDataHandler.getProductDetails(
             productIds = setOf("next"),
             productType = ProductType.INAPP,
+            logUnfetchedProducts = true,
             onReceive = unexpectedOnReceive,
             onError = unexpectedOnError,
         )
@@ -324,6 +333,7 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
         productDataHandler.getProductDetails(
             productIds = setOf("iap"),
             productType = ProductType.INAPP,
+            logUnfetchedProducts = true,
             onReceive = unexpectedOnReceive,
             onError = { receivedError = it },
         )
@@ -360,6 +370,7 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
         productDataHandler.getProductDetails(
             productIds = setOf("subscription"),
             productType = ProductType.SUBS,
+            logUnfetchedProducts = true,
             onReceive = unexpectedOnReceive,
             onError = { receivedError = it },
         )
@@ -384,6 +395,7 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
         productDataHandler.getProductDetails(
             productIds = setOf("next"),
             productType = ProductType.INAPP,
+            logUnfetchedProducts = true,
             onReceive = unexpectedOnReceive,
             onError = unexpectedOnError,
         )
@@ -414,6 +426,7 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
             productDataHandler.getProductDetails(
                 productIds = setOf("iap", "missing"),
                 productType = ProductType.INAPP,
+                logUnfetchedProducts = true,
                 onReceive = { },
                 onError = unexpectedOnError,
             )
@@ -430,11 +443,9 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
             Config.logLevel = previousLogLevel
         }
 
-        val expectedMessage = "${LogIntent.GALAXY_WARNING.emojiList.joinToString("")} " +
-            GalaxyStrings.GET_PRODUCT_DETAILS_RESPONSE_MISSING_PRODUCTS.format(
-                "iap, missing",
-                "missing",
-            )
+        val expectedMessage =
+            "✨‼️ The Galaxy Store returned product details for only some of the requested product IDs. " +
+                "Requested: iap, missing. Missing: missing"
         assertThat(loggedMessages).contains(expectedMessage)
     }
 
@@ -462,6 +473,7 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
             productDataHandler.getProductDetails(
                 productIds = setOf("iap", "sub"),
                 productType = ProductType.INAPP,
+                logUnfetchedProducts = true,
                 onReceive = { },
                 onError = unexpectedOnError,
             )
@@ -481,6 +493,49 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
             Config.logLevel = previousLogLevel
         }
 
-        assertThat(loggedMessages).noneMatch { it.contains("returned product details for only") }
+        assertThat(loggedMessages).isEmpty()
+    }
+
+    @OptIn(GalaxySerialOperation::class, InternalRevenueCatAPI::class)
+    @Test
+    fun `missing products are not logged when logging is disabled`() {
+        val capturedListener = slot<OnGetProductsDetailsListener>()
+        every { iapHelperProvider.getProductsDetails(any(), capture(capturedListener)) } returns Unit
+        val previousLogHandler = currentLogHandler
+        val previousLogLevel = Config.logLevel
+        val loggedMessages = mutableListOf<String>()
+        currentLogHandler = object : LogHandler {
+            override fun v(tag: String, msg: String) = Unit
+            override fun d(tag: String, msg: String) = Unit
+            override fun i(tag: String, msg: String) = Unit
+            override fun w(tag: String, msg: String) { loggedMessages.add(msg) }
+            override fun e(tag: String, msg: String, throwable: Throwable?) = Unit
+        }
+        Config.logLevel = LogLevel.VERBOSE
+
+        try {
+            productDataHandler.getProductDetails(
+                productIds = setOf("iap", "missing"),
+                productType = ProductType.INAPP,
+                logUnfetchedProducts = false,
+                onReceive = {},
+                onError = unexpectedOnError,
+            )
+            val successErrorVo = mockk<ErrorVo> {
+                every { errorCode } returns GalaxyErrorCode.IAP_ERROR_NONE.code
+            }
+            capturedListener.captured.onGetProducts(
+                successErrorVo,
+                arrayListOf(createProductVo(itemId = "iap", type = "item")),
+            )
+        } finally {
+            currentLogHandler = previousLogHandler
+            Config.logLevel = previousLogLevel
+        }
+
+        val expectedMessage =
+            "✨‼️ The Galaxy Store returned product details for only some of the requested product IDs. " +
+                "Requested: iap, missing. Missing: missing"
+        assertThat(loggedMessages).doesNotContain(expectedMessage)
     }
 }

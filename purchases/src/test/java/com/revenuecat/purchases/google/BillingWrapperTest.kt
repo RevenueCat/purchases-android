@@ -1675,6 +1675,7 @@ class BillingWrapperTest {
         wrapper.queryProductDetailsAsync(
             ProductType.SUBS,
             setOf("product_a"),
+            true,
             {},
             {
                 fail("shouldn't be an error")
