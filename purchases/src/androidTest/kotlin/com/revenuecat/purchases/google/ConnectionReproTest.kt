@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit
 
 /**
  * Manual repro for https://github.com/RevenueCat/purchases-android/issues/3922.
+ * Run the CircleCI workflow with pipeline parameter `action=billing_connection_repro`.
  *
  * Install the defaults debug Android test APK on a dedicated Play Store emulator. In one terminal, run:
  * `while true; do adb -s "$SERIAL" shell am force-stop com.android.vending; sleep 0.15; done`
