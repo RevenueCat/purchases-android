@@ -516,6 +516,18 @@ class DiagnosticsTrackerTest {
     }
 
     @Test
+    fun `trackGoogleBillingClientRetired tracks reason and close outcome`() {
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackGoogleBillingClientRetired(closed = true)
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event.name == DiagnosticsEntryName.GOOGLE_BILLING_CLIENT_RETIRED &&
+                    event.properties["reason"] == "connection_timeout" && event.properties["closed"] == true
+            })
+        }
+    }
+
+    @Test
     fun `trackGoogleBillingPendingRequestTimedOut tracks correct event`() {
         val expectedProperties = mapOf(
             "play_store_version" to "123",
