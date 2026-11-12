@@ -72,6 +72,7 @@ internal fun FakePaywallState(
     viewModelActionInProgress: State<Boolean> = mutableStateOf(false),
     addPackageComponents: Boolean = true,
     stateDeclarations: Map<String, StateDeclaration> = emptyMap(),
+    rootStack: StackComponent? = null,
     dateProvider: () -> Date = { Date() },
 ): PaywallState.Loaded.Components {
     // Only synthesize a PackageComponent for packages the caller's components don't already
@@ -93,7 +94,7 @@ internal fun FakePaywallState(
         assetBaseURL = URL("https://assets.pawwalls.com"),
         componentsConfig = ComponentsConfig(
             base = PaywallComponentsConfig(
-                stack = StackComponent(components = components + packageComponents),
+                stack = rootStack ?: StackComponent(components = components + packageComponents),
                 background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
                 header = header,
                 stickyFooter = stickyFooter,

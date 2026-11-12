@@ -191,6 +191,7 @@ internal fun WebViewComponentView(
                 },
                 // Clip: content can briefly overflow while a fit axis animates placeholder -> measured.
                 modifier = modifier
+                    .fillUnboundedAxisFromMinimum(style.size)
                     // Only Fill axes ever consult these (resolveAxis's Fixed/Fit branches ignore them).
                     .conditional(style.size.width is Fill) {
                         trackMainAxisUnbounded(isHorizontal = true, unboundedState = widthAxisUnboundedState)
