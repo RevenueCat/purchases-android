@@ -81,6 +81,7 @@ internal open class BaseBillingUseCaseTest {
             mockClient.endConnection()
         } just Runs
 
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
         every {
             mockClient.isReady
         } returns false andThen true

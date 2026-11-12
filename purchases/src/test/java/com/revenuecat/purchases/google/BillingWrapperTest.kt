@@ -162,6 +162,7 @@ class BillingWrapperTest {
             secondArg<PurchasesResponseListener>().onQueryPurchasesResponse(billingClientOKResult, emptyList())
         }
 
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
         every {
             mockClient.isReady
         } returns false andThen true
@@ -658,15 +659,67 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `If starting connection throws, the billing client is replaced`() {
+    fun `does not start another connection while billing is connecting`() {
         every { mockClient.isReady } returns false
-        every { mockClient.startConnection(any()) } throws IllegalStateException("Too many bind requests")
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTING
 
-        wrapper.queryPurchases(appUserID = "appUserID", onSuccess = { fail("should be an error") }, onError = {})
+        val errors = mutableListOf<PurchasesError>()
+        wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("product_a"), {}, { errors.add(it) })
+        wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("product_b"), {}, { errors.add(it) })
 
-        verify(exactly = 1) { mockClient.endConnection() }
-        // 1 in setup, 1 to replace the client that can no longer connect
-        verify(exactly = 2) { mockClientFactory.buildClient(any()) }
+        // Only the initial connection from setup should have been started.
+        verify(exactly = 1) { mockClient.startConnection(any()) }
+        pendingRequestTimeouts.forEach { it.run() }
+        assertThat(errors.map { it.code }).containsExactly(
+            PurchasesErrorCode.StoreProblemError,
+            PurchasesErrorCode.StoreProblemError,
+        )
+    }
+
+    @Test
+    fun `starts a new connection when billing is disconnected`() {
+        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
+
+        wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("product_a"), {}, {})
+
+        verify(exactly = 2) { mockClient.startConnection(any()) }
+    }
+
+    @Test
+    fun `purchase timeout reports the error without launching after billing reconnects`() {
+        every { mockClient.isReady } returns false
+        val errors = mutableListOf<PurchasesError>()
+        every { mockPurchasesListener.onPurchasesFailedToUpdate(any()) } answers { errors.add(firstArg()) }
+        val purchasingData = createStoreProductWithoutOffers().subscriptionOptions!!.first().purchasingData
+        wrapper.makePurchaseAsync(
+            mockActivity, appUserId, purchasingData, mockReplaceSkuInfo(), PresentedOfferingContext("offering_a"),
+        )
+        every { mockClient.isReady } returns true
+        every { mockClient.launchBillingFlow(any(), any()) } returns billingClientOKResult
+
+        pendingRequestTimeouts.forEach { it.run() }
+        wrapper.onBillingSetupFinished(billingClientOKResult)
+
+        assertThat(errors.map { it.underlyingErrorMessage })
+            .containsExactly(BillingStrings.BILLING_PENDING_REQUEST_TIMED_OUT)
+        verify(exactly = 0) { mockClient.launchBillingFlow(any(), any()) }
+    }
+
+    @Test
+    fun `purchase history timeout fails the purchase without queuing a second request`() {
+        every { mockClient.isReady } returns false
+        val errors = mutableListOf<PurchasesError>()
+        every { mockPurchasesListener.onPurchasesFailedToUpdate(any()) } answers { errors.add(firstArg()) }
+        val purchasingData = createStoreProductWithoutOffers().subscriptionOptions!!.first().purchasingData
+        wrapper.makePurchaseAsync(mockActivity, appUserId, purchasingData, null, PresentedOfferingContext("offering_a"))
+
+        pendingRequestTimeouts.toList().forEach { it.run() }
+
+        assertThat(errors.map { it.underlyingErrorMessage })
+            .containsExactly(BillingStrings.BILLING_PENDING_REQUEST_TIMED_OUT)
+        assertThat(pendingRequestTimeouts).hasSize(1)
+        verify(exactly = 0) { mockClient.launchBillingFlow(any(), any()) }
     }
 
     @Test
