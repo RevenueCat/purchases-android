@@ -7,7 +7,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.createResult
-import com.revenuecat.purchases.common.networking.TokenLoginOperation.LinkedIdentity
 import com.revenuecat.purchases.identity.IdentityAuthToken
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
@@ -23,34 +22,9 @@ class TokenOperationsTest {
 
     @Test
     fun `anonymous body has only method and scope`() {
-        val body = TokenLoginOperation.body(IdentityAuthToken.Anonymous, linkedIdentity = null)
+        val body = TokenLoginOperation.body(IdentityAuthToken.Anonymous, linkToID = "ignored")
 
         assertThat(body).isEqualTo(mapOf("method" to "anonymous", "scope" to "openid offline_access"))
-    }
-
-    @Test
-    fun `anonymous body carries a linked app user ID`() {
-        val linked = LinkedIdentity.AppUserID("\$RCAnonymousID:abc")
-        val body = TokenLoginOperation.body(IdentityAuthToken.Anonymous, linked)
-
-        assertThat(body).isEqualTo(
-            mapOf("method" to "anonymous", "scope" to "openid offline_access", "app_user_id" to "\$RCAnonymousID:abc"),
-        )
-    }
-
-    @Test
-    fun `anonymous body ignores a linked ID token`() {
-        val body = TokenLoginOperation.body(IdentityAuthToken.Anonymous, LinkedIdentity.IDToken("id-token"))
-
-        assertThat(body).isEqualTo(mapOf("method" to "anonymous", "scope" to "openid offline_access"))
-    }
-
-    @Test
-    fun `standard bodies ignore a linked app user ID`() {
-        val google = IdentityAuthToken.Google("token".toByteArray())
-        val body = TokenLoginOperation.body(google, LinkedIdentity.AppUserID("user"))
-
-        assertThat(body).doesNotContainKeys("link_to_id", "app_user_id")
     }
 
     @Test
@@ -62,7 +36,7 @@ class TokenOperationsTest {
             IdentityAuthToken.Firebase("firebase-token".toByteArray()) to "firebase",
         )
         for ((token, method) in cases) {
-            assertThat(TokenLoginOperation.body(token, LinkedIdentity.IDToken("current-id-token"))).isEqualTo(
+            assertThat(TokenLoginOperation.body(token, linkToID = "current-id-token")).isEqualTo(
                 mapOf(
                     "method" to method,
                     "scope" to "openid offline_access",
@@ -75,7 +49,7 @@ class TokenOperationsTest {
 
     @Test
     fun `a null link_to_id is omitted`() {
-        val body = TokenLoginOperation.body(IdentityAuthToken.Google("token".toByteArray()), linkedIdentity = null)
+        val body = TokenLoginOperation.body(IdentityAuthToken.Google("token".toByteArray()), linkToID = null)
 
         assertThat(body).doesNotContainKey("link_to_id")
         assertThat(body["id_token"]).isEqualTo("token")
@@ -85,7 +59,7 @@ class TokenOperationsTest {
     fun `facebook body carries the email when present`() {
         val body = TokenLoginOperation.body(
             IdentityAuthToken.Facebook("fb-token".toByteArray(), email = "a@b.c"),
-            LinkedIdentity.IDToken("current-id-token"),
+            linkToID = "current-id-token",
         )
 
         assertThat(body).isEqualTo(
@@ -110,7 +84,7 @@ class TokenOperationsTest {
     fun `an identity token that isn't valid UTF-8 is sent as base64`() {
         val bytes = byteArrayOf(0xC3.toByte(), 0x28)
 
-        val body = TokenLoginOperation.body(IdentityAuthToken.Oidc(bytes), linkedIdentity = null)
+        val body = TokenLoginOperation.body(IdentityAuthToken.Oidc(bytes), linkToID = null)
 
         assertThat(body["id_token"]).isEqualTo(Base64.encodeToString(bytes, Base64.NO_WRAP))
     }

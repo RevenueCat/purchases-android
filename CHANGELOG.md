@@ -1,3 +1,20 @@
+## 11.2.1
+## RevenueCat SDK
+### 🐞 Bugfixes
+* fix(ads): poll reward verification for the user captured before polling (#4587) via Peter Porfy (@peterporfy)
+
+## RevenueCatUI SDK
+### Paywallsv2
+#### 🐞 Bugfixes
+* PWENG-264: Fix nested paywall tab selection (#4590) via Facundo Menzella (@facumenzella)
+* ONC-50 | Only underline markdown links wrapped in <u> (#4594) via Rosie Watson (@RosieWatson)
+* Fix package card discounts inside tabs (#4575) via Facundo Menzella (@facumenzella)
+
+### 🔄 Other Changes
+* Revert anonymous id migration (#4597) via Dave DeLong (@davedelong)
+* Restrict GitHub tokens to the jobs that need them (#4593) via Antonio Pallares (@ajpallares)
+* Fix flaky checkpoint purchase failure Maestro test (#4588) via Cesar de la Vega (@vegaro)
+
 ## 11.2.0
 ## RevenueCat SDK
 ### ✨ New Features
@@ -106,6 +123,17 @@ See the [v11 migration guide](https://github.com/RevenueCat/purchases-android/bl
 * Move sdksizetesting to AGP 9 (#4128) via Álvaro Brey (@AlvaroBrey)
 * Drop the AGP 9 built-in Kotlin opt-out (#4120) via Álvaro Brey (@AlvaroBrey)
 * Move MagicWeatherCompose and CustomEntitlementComputationSample to AGP 9 (#4115) via Álvaro Brey (@AlvaroBrey)
+
+## 10.30.2
+### 🔄 Other Changes
+* feat(paywalls): add internal exit offer handler to PaywallView (#4534) via Cesar de la Vega (@vegaro)
+
+## 10.30.1
+## RevenueCatUI SDK
+### Paywallsv2
+#### 🐞 Bugfixes
+* Fix duplicate paywall image requests and reset cache retry state when images change (#4529) via Josh Holtz (@joshdholtz)
+* Deduplicate shared paywall image prefetches across offerings and workflows (#4544) via Josh Holtz (@joshdholtz)
 
 ## 10.30.0
 ## RevenueCat SDK

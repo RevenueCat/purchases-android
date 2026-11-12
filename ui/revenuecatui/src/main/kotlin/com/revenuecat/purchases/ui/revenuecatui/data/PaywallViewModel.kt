@@ -135,6 +135,21 @@ internal interface PaywallViewModel {
      */
     val workflowState: State<WorkflowPaywallUiState?>
 
+    /** The offering on the current screen; null while loading or on a screen without an offering. */
+    val displayedOffering: Offering?
+        get() {
+            val loaded = state.value as? PaywallState.Loaded
+            val workflow = workflowState.value.takeIf { loaded is PaywallState.Loaded.Components }
+            val displayed = when {
+                loaded == null || workflow?.isSkeleton == true -> null
+                workflow != null -> workflow.stepStates[workflow.currentStepId]
+                else -> loaded
+            }
+            return displayed?.takeUnless {
+                (it as? PaywallState.Loaded.Components)?.workflowScreen?.hasOffering == false
+            }?.offering
+        }
+
     fun handleWorkflowAction(componentId: String, triggerType: WorkflowTriggerType)
 
     /**
@@ -244,13 +259,13 @@ internal class PaywallViewModelImpl(
     private var preWarmJob: Job? = null
     private var transitionIdCounter: Int = 0
 
-    // Per-session flag: a completed purchase or a successful restore is a natural workflow exit, not an
-    // abandonment, so it suppresses workflow_close. The session boundary is the dismiss (reset in
+    // Per-session flag: a completed purchase or a qualifying restore is a natural workflow exit, not an
+    // abandonment, so it suppresses workflow_close. A successful restore qualifies when there is no
+    // shouldDisplayBlock or when that block auto-dismisses the paywall. The session boundary is the dismiss (reset in
     // clearWorkflowState), NOT each render/refresh, so an in-session completion that leaves the paywall
     // visible (e.g. a restore with no shouldDisplayBlock) survives option/locale/color refreshes. Tracked
-    // separately from the sticky, public _purchaseCompleted (which also gates exit offers and is observed
-    // by the host, and which a restore only sets when shouldDisplayBlock auto-dismisses). Mirrors iOS's
-    // per-session hasCompletedInSession (purchased || restored), reset at the dismiss boundary.
+    // separately from the sticky _purchaseCompleted state (exposed as purchaseCompleted), which also gates exit
+    // offers and which a restore only sets when shouldDisplayBlock auto-dismisses.
     private var workflowCompletedInSession: Boolean = false
 
     private sealed interface ExitOfferData {
@@ -633,12 +648,13 @@ internal class PaywallViewModelImpl(
                     when (val result = customRestoreHandler(customerInfo)) {
                         is PurchaseLogicResult.Success -> {
                             val updatedCustomerInfo = purchases.awaitSyncPurchases()
-                            // A successful restore is a natural workflow exit, not an abandonment, even if
-                            // the paywall stays visible (no shouldDisplayBlock). Suppress workflow_close.
-                            workflowCompletedInSession = true
+                            // Without shouldDisplayBlock, a successful restore is a natural workflow exit even if
+                            // the paywall stays visible, so a later dismissal must not emit workflow_close.
+                            if (shouldDisplayBlock == null) workflowCompletedInSession = true
 
                             shouldDisplayBlock?.let {
                                 if (!it(updatedCustomerInfo)) {
+                                    workflowCompletedInSession = true
                                     _purchaseCompleted.value = true
                                     Logger.d(
                                         "Dismissing paywall after restore since display " +
@@ -668,13 +684,14 @@ internal class PaywallViewModelImpl(
                     }
                     val customerInfo = purchases.awaitRestore()
                     Logger.i("Restore purchases successful: $customerInfo")
-                    // A successful restore is a natural workflow exit, not an abandonment, even if the
-                    // paywall stays visible (no shouldDisplayBlock). Suppress workflow_close on dismiss.
-                    workflowCompletedInSession = true
+                    // Without shouldDisplayBlock, a successful restore is a natural workflow exit even if
+                    // the paywall stays visible, so a later dismissal must not emit workflow_close.
+                    if (shouldDisplayBlock == null) workflowCompletedInSession = true
                     listener?.onRestoreCompleted(customerInfo)
 
                     shouldDisplayBlock?.let {
                         if (!it(customerInfo)) {
+                            workflowCompletedInSession = true
                             _purchaseCompleted.value = true
                             Logger.d("Dismissing paywall after restore since display condition has not been met")
                             trackCurrentWorkflowStepCompleted()

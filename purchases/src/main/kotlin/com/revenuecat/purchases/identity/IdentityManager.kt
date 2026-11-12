@@ -349,18 +349,14 @@ internal class IdentityManager(
     @Synchronized
     private fun switchToIAMUserIfStillCurrent(oldAppUserID: String, newAppUserID: String): Boolean {
         if (currentAppUserID != oldAppUserID) return false
-        // Only clear caches if the new user id is different.
-        // Migrating a pre-IAM anonymous account can preserve the user id, and should also preserve caches
-        if (oldAppUserID != newAppUserID) {
-            deviceCache.clearCachesForAppUserID(oldAppUserID)
-            clearRemoteConfigThenOfferingsCaches(newAppUserID)
-            subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
-            commitAppUserID(newAppUserID)
-            copySubscriberAttributesToNewUserIfOldIsAnonymous(oldAppUserID, newAppUserID)
-            clearPaywallWebViewStorageIfUserChanged(oldAppUserID, newAppUserID)
-            offlineEntitlementsManager.resetOfflineCustomerInfoCache()
-            backend.clearCaches()
-        }
+        deviceCache.clearCachesForAppUserID(oldAppUserID)
+        clearRemoteConfigThenOfferingsCaches(newAppUserID)
+        subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
+        commitAppUserID(newAppUserID)
+        copySubscriberAttributesToNewUserIfOldIsAnonymous(oldAppUserID, newAppUserID)
+        clearPaywallWebViewStorageIfUserChanged(oldAppUserID, newAppUserID)
+        offlineEntitlementsManager.resetOfflineCustomerInfoCache()
+        backend.clearCaches()
         return true
     }
 

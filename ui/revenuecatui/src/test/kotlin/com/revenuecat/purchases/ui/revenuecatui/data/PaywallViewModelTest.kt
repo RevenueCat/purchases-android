@@ -301,6 +301,16 @@ class PaywallViewModelTest {
         clearAllMocks()
     }
 
+    @Test
+    fun `displayed offering is the resolved standalone offering and clears after dismissal`() {
+        val model = create(offering = defaultOffering)
+
+        assertThat(model.displayedOffering).isSameAs(defaultOffering)
+        model.closePaywall()
+        model.onPaywallDismissed()
+        assertThat(model.displayedOffering).isNull()
+    }
+
     // Completion Handler Callback Tests
 
     @Test

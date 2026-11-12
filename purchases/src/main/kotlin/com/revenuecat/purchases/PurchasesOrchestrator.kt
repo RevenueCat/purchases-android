@@ -60,6 +60,7 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.TokenManager
 import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
+import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.sdksettings.SdkSettings
@@ -297,6 +298,9 @@ internal class PurchasesOrchestrator(
 
     val currentActivity: Activity?
         get() = currentActivityTracker.currentActivity
+
+    /** The cached product-entitlement mapping, read and parsed on each call; null when none has been fetched yet. */
+    fun productEntitlementMapping(): ProductEntitlementMapping? = deviceCache.getProductEntitlementMapping()
 
     val isAnonymous: Boolean
         get() = identityManager.currentUserIsAnonymous()
@@ -1278,12 +1282,13 @@ internal class PurchasesOrchestrator(
 
     @OptIn(InternalRevenueCatAPI::class)
     fun getRewardVerificationResult(
+        appUserID: String,
         clientTransactionId: String,
         adUnitId: String?,
         callback: GetRewardVerificationResultCallback,
     ) {
         backend.getRewardVerificationResult(
-            appUserID = identityManager.currentAppUserID,
+            appUserID = appUserID,
             clientTransactionId = clientTransactionId,
             adUnitId = adUnitId,
             onSuccess = { callback.onReceived(it) },
@@ -1291,9 +1296,9 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    fun cacheCustomerInfo(customerInfo: CustomerInfo) {
+    fun cacheCustomerInfo(customerInfo: CustomerInfo, appUserID: String) {
         offlineEntitlementsManager.resetOfflineCustomerInfoCache()
-        customerInfoUpdateHandler.cacheAndNotifyListeners(customerInfo, identityManager.currentAppUserID)
+        customerInfoUpdateHandler.cacheAndNotifyListeners(customerInfo, appUserID)
     }
 
     // region Subscriber Attributes

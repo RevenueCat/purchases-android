@@ -993,6 +993,20 @@ jobs:
       - store_artifacts:
           path: ui/revenuecatui/src/main/generated/baselineProfiles/baseline-prof.txt
 
+  # Opens the purchases-android bump PR in the RevenueCat Android app
+  # (revenuecat-mobile-android's bump_sdk lane). Mirrors purchases-ios.
+  bump-sdk-in-rc-mobile-app:
+    docker:
+      - image: cimg/ruby:3.3
+    resource_class: small
+    steps:
+      - checkout
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v2
+      - run:
+          name: Trigger the RevenueCat Android app's SDK bump
+          command: bundle exec fastlane android trigger_bump_sdk_in_rc_mobile_app
+
   update-paywall-preview-resources-submodule:
     docker:
       - image: cimg/ruby:3.3
@@ -1069,6 +1083,7 @@ workflows:
         - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
       - revenuecat/danger:
+          context: danger-bot
           ruby_version: "3.3"
           post-steps:
             - run:
@@ -1249,6 +1264,7 @@ workflows:
           type: approval
           <<: *release-branches
       - revenuecat/tag-current-branch:
+          context: github-bot-public
           ruby_version: "3.3"
           requires:
             - wait-for-pr-approval
@@ -1269,7 +1285,9 @@ workflows:
           <<: *release-branches
       - deploy:
           <<: *release-tags
-          context: maven-central-publishing
+          context:
+            - maven-central-publishing
+            - github-bot-public
       - docs-deploy: *release-tags
       - publish-purchase-tester-release:
           requires:
@@ -1288,7 +1306,12 @@ workflows:
               - deploy
               - docs-deploy
           <<: *release-tags
+      - bump-sdk-in-rc-mobile-app:
+          requires:
+            - deploy
+          <<: *release-tags
       - revenuecat/merge-release-pr:
+          context: github-bot-public
           ruby_version: "3.3"
           repo_name: purchases-android
           use_merge_queue: true
@@ -1296,6 +1319,7 @@ workflows:
             - publish-purchase-tester-release
             - publish-paywall-tester-release
             - publish-rct-tester-release
+            - bump-sdk-in-rc-mobile-app
           <<: *release-tags
 
   on-main-branch:
@@ -1306,7 +1330,8 @@ workflows:
         - equal: [ "main", << pipeline.git.branch >> ]
         - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
-      - prepare-next-version
+      - prepare-next-version:
+          context: github-bot-public
       - publish-paywall-tester-release:
           track: "internal"
       - publish-rct-tester-release:
@@ -1339,6 +1364,7 @@ workflows:
         - equal: [ "release-train", << pipeline.schedule.name >> ]
     jobs:
       - revenuecat/automatic-bump:
+          context: github-bot-public
           ruby_version: "3.3"
 
   biweekly-baseline-profiles:
@@ -1356,6 +1382,7 @@ workflows:
       equal: [ bump, << pipeline.parameters.action >> ]
     jobs:
       - revenuecat/automatic-bump:
+          context: github-bot-public
           ruby_version: "3.3"
 
   manual-paywall-tester-release:
@@ -1376,13 +1403,15 @@ workflows:
     when:
       equal: [ update_paywall_templates, << pipeline.parameters.action >> ]
     jobs:
-      - update-paywall-preview-resources-submodule
+      - update-paywall-preview-resources-submodule:
+          context: github-bot-public
 
   update-error-codes:
     when:
       equal: [ update_error_codes, << pipeline.parameters.action >> ]
     jobs:
       - revenuecat/update-error-codes:
+          context: github-bot-public
           platform: android
           outputs: "PurchasesErrorCode.kt:purchases/src/main/kotlin/generated/com/revenuecat/purchases/PurchasesErrorCode.kt"
           commit_paths: "purchases/src/main/kotlin/generated/com/revenuecat/purchases/PurchasesErrorCode.kt,purchases/api-defauts.txt,purchases/api-entitlement.txt"

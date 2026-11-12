@@ -115,8 +115,8 @@ public suspend fun Purchases.awaitPollRewardVerification(
     trackingMetadata: RewardedAdTrackingMetadata?,
     captureMethod: AdCaptureMethod,
 ): RewardVerificationResult {
-    return pollRewardVerification(clientTransactionId, trackingMetadata, captureMethod) {
-        Poller.poll(it, RewardVerificationFetcher.forAdUnit(trackingMetadata?.adUnitId))
+    return pollRewardVerification(clientTransactionId, trackingMetadata, captureMethod) { id, appUserID ->
+        Poller.poll(id, appUserID, RewardVerificationFetcher.forAdUnit(trackingMetadata?.adUnitId))
     }
 }
 
@@ -309,8 +309,18 @@ public suspend fun Purchases.awaitGetRewardVerificationResult(
     clientTransactionId: String,
     adUnitId: String? = null,
 ): RewardVerificationPollStatus {
+    return awaitGetRewardVerificationResult(clientTransactionId, adUnitId, appUserID)
+}
+
+@OptIn(InternalRevenueCatAPI::class)
+internal suspend fun Purchases.awaitGetRewardVerificationResult(
+    clientTransactionId: String,
+    adUnitId: String?,
+    appUserID: String,
+): RewardVerificationPollStatus {
     return suspendCancellableCoroutine { continuation ->
         getRewardVerificationResult(
+            appUserID = appUserID,
             clientTransactionId = clientTransactionId,
             adUnitId = adUnitId,
             callback = object : GetRewardVerificationResultCallback {

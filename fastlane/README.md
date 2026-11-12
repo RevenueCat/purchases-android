@@ -295,6 +295,14 @@ Updates paywall-preview-resources submodule and creates/updates PR
 
 Trigger bump
 
+### android trigger_bump_sdk_in_rc_mobile_app
+
+```sh
+[bundle exec] fastlane android trigger_bump_sdk_in_rc_mobile_app
+```
+
+Trigger the revenuecat-mobile-android pipeline that opens the purchases-android bump PR
+
 ### android record_and_push_paywall_template_screenshots
 
 ```sh
