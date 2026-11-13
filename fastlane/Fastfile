@@ -329,9 +329,9 @@ platform :android do
     version = current_version_number
     ENV["ORG_GRADLE_PROJECT_signingInMemoryKey"] = ENV["SIGNING_GPG_IN_MEMORY"]
     ENV["ORG_GRADLE_PROJECT_signingInMemoryKeyPassword"] = ENV["GPG_SIGNING_KEY_PW_NEW"]
+    ENV["ORG_GRADLE_PROJECT_mavenCentralUsername"] = ENV["MAVEN_CENTRAL_PORTAL_USERNAME"]
+    ENV["ORG_GRADLE_PROJECT_mavenCentralPassword"] = ENV["MAVEN_CENTRAL_PORTAL_PASSWORD"]
     gradle_properties = {
-      "mavenCentralUsername" => ENV['MAVEN_CENTRAL_PORTAL_USERNAME'],
-      "mavenCentralPassword" => ENV['MAVEN_CENTRAL_PORTAL_PASSWORD'],
       "RELEASE_SIGNING_ENABLED" => true
     }
     UI.verbose("Deploying #{version}")
