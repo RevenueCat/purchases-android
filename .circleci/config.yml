@@ -833,14 +833,15 @@ jobs:
               PR_ARG="--pr-number $PR_NUM"
             fi
 
+            set -o pipefail
             emerge upload snapshots \
               --name "TestPurchasesUIAndroidCompatibility Paparazzi" \
               --id "com.revenuecat.testpurchasesuiandroidcompatibility.paparazzi" \
               --repo-name "RevenueCat/purchases-android" \
-              --debug \
               --client-library paparazzi \
               $PR_ARG \
-              --project-root .
+              --project-root . 2>&1 \
+              | sed -uE 's#(https?://[^ ?"]+)\?[^ "]*(X-Amz-|X-Goog-|Signature=)[^ "]*#\1?<redacted>#g'
       - android/save_build_cache
 
   record-and-push-paywall-template-screenshots:
