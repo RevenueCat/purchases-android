@@ -11,6 +11,8 @@
 #
 
 require "cgi"
+require "open3"
+require "fileutils"
 
 # Uncomment the line if you want fastlane to automatically update itself
 # update_fastlane
@@ -473,6 +475,102 @@ platform :android do
   lane :publish_rct_tester do |options|
     options[:package_name] = 'com.revenuecat.rcttester'
     publish_to_track(options)
+  end
+
+  desc "Run the Play Billing connection hang repro on a dedicated emulator"
+  lane :run_billing_connection_repro do
+    serial = ENV.fetch('ANDROID_SERIAL', 'emulator-5554')
+    artifacts = ENV.fetch('BILLING_REPRO_ARTIFACTS', '/tmp/billing-repro')
+    FileUtils.mkdir_p(artifacts)
+    adb = ['adb', '-s', serial]
+    package_output, package_status = Open3.capture2e(*adb, 'shell', 'pm', 'path', 'com.android.vending')
+    UI.user_error!('The emulator does not have the Play Store installed') unless package_status.success? && package_output.include?('package:')
+
+    apk = File.expand_path('../purchases/build/outputs/apk/androidTest/defaults/debug/purchases-defaults-debug-androidTest.apk', __dir__)
+    sh(*adb, 'install', '-r', apk)
+    stop_churn = Queue.new
+    churn = Thread.new do
+      while stop_churn.empty?
+        Open3.capture2e(*adb, 'shell', 'am', 'force-stop', 'com.android.vending')
+        sleep 0.15
+      end
+    end
+
+    begin
+      reproduced = false
+      10.times do |index|
+        attempt = index + 1
+        UI.message("Billing connection repro: attempt #{attempt} of 10")
+        sh(*adb, 'logcat', '-c')
+        result, status = Open3.capture2e(
+          *adb, 'shell', 'am', 'instrument', '-w',
+          '-e', 'billingRepro', 'true', '-e', 'class',
+          'com.revenuecat.purchases.google.ConnectionReproTest',
+          'com.revenuecat.purchases.integrationTest/androidx.test.runner.AndroidJUnitRunner'
+        )
+        File.write(File.join(artifacts, "attempt-#{attempt}.txt"), result)
+        UI.message(result)
+        UI.user_error!('Instrumentation failed to run') unless status.success?
+        logs, log_status = Open3.capture2e(*adb, 'logcat', '-d', '-v', 'threadtime')
+        File.write(File.join(artifacts, "attempt-#{attempt}-logcat.txt"), logs)
+        UI.user_error!('Could not collect logcat') unless log_status.success?
+        if result.include?('OK (1 test)')
+          reproduced = true
+          break
+        end
+        unless result.include?('race may not have reproduced') || result.include?('Billing service death was not observed')
+          UI.user_error!('Test failed after triggering the repro or failed unexpectedly')
+        end
+      end
+      UI.user_error!('Race was not observed after 10 attempts; repro is inconclusive') unless reproduced
+      UI.success('Billing service death and both timeout callbacks observed')
+    ensure
+      stop_churn << true
+      churn.join
+    end
+
+    reconnected = false
+    10.times do |index|
+      attempt = index + 1
+      UI.message("Billing reconnection repro: attempt #{attempt} of 10")
+      sh(*adb, 'logcat', '-c')
+      result, status = Open3.capture2e(
+        *adb, 'shell', 'am', 'instrument', '-w',
+        '-e', 'billingRepro', 'true', '-e', 'class',
+        'com.revenuecat.purchases.google.ConnectionRecoveryReproTest',
+        'com.revenuecat.purchases.integrationTest/androidx.test.runner.AndroidJUnitRunner'
+      )
+      File.write(File.join(artifacts, "reconnect-#{attempt}.txt"), result)
+      UI.message(result)
+      UI.user_error!('Reconnection instrumentation failed to run') unless status.success?
+      logs, log_status = Open3.capture2e(*adb, 'logcat', '-d', '-v', 'threadtime')
+      File.write(File.join(artifacts, "reconnect-#{attempt}-logcat.txt"), logs)
+      UI.user_error!('Could not collect logcat') unless log_status.success?
+      if result.include?('OK (1 test)')
+        reconnected = true
+        break
+      end
+      UI.user_error!('Reconnection test failed') unless result.include?('Reconnection race may not have reproduced')
+    end
+    UI.user_error!('Reconnection race was not observed after 10 attempts; repro is inconclusive') unless reconnected
+    UI.success('Pending requests completed after reconnecting')
+
+    UI.message('Testing null binding, request timeouts, and a fresh billing connection')
+    sh(*adb, 'logcat', '-c')
+    result, status = Open3.capture2e(
+      *adb, 'shell', 'am', 'instrument', '-w',
+      '-e', 'billingRepro', 'true', '-e', 'class',
+      'com.revenuecat.purchases.google.ConnectionRecreationReproTest',
+      'com.revenuecat.purchases.integrationTest/androidx.test.runner.AndroidJUnitRunner'
+    )
+    File.write(File.join(artifacts, 'recreation.txt'), result)
+    UI.message(result)
+    logs, log_status = Open3.capture2e(*adb, 'logcat', '-d', '-v', 'threadtime')
+    File.write(File.join(artifacts, 'recreation-logcat.txt'), logs)
+    UI.user_error!('Could not collect logcat') unless log_status.success?
+    UI.user_error!('Recreation instrumentation failed to run') unless status.success?
+    UI.user_error!('Null-binding recreation test failed') unless result.include?('OK (1 test)')
+    UI.success('Purchase and product requests timed out; a later request completed on a fresh billing client')
   end
 
   desc "Run backend integration tests"

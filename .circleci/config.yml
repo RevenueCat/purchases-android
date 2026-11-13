@@ -49,7 +49,7 @@ orbs:
 parameters:
   action:
     type: enum
-    enum: [default, bump, paywall_tester_release, rct_tester_release, deploy_snapshot_release, update_paywall_templates, update_error_codes]
+    enum: [default, bump, paywall_tester_release, rct_tester_release, deploy_snapshot_release, update_paywall_templates, update_error_codes, billing_connection_repro]
     default: default
   paywall_tester_track:
     type: enum
@@ -613,6 +613,29 @@ jobs:
           command: |
             bundle exec fastlane android publish_rct_tester aab_path:'examples/rcttester/build/outputs/bundle/release/rcttester-release.aab' track:'<< parameters.track >>'
 
+  billing-connection-repro:
+    description: "Reproduce a Play Billing connection hang on a dedicated emulator."
+    <<: *android-machine-emulator
+    steps:
+      - checkout
+      - revenuecat/install-mise-tools:
+          tools: java,ruby
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v2
+      - android/create_avd:
+          avd_name: billing-connection-repro
+          system_image: system-images;android-33;google_apis_playstore;x86_64
+          install: true
+      - android/start_emulator:
+          avd_name: billing-connection-repro
+          post_emulator_launch_assemble_command: ./gradlew :purchases:assembleDefaultsDebugAndroidTest
+      - run:
+          name: Run billing connection repro
+          command: bundle exec fastlane android run_billing_connection_repro
+      - store_artifacts:
+          path: /tmp/billing-repro
+          destination: billing-repro
+
   run-purchases-integration-tests:
     description: "Run purchases module integration tests on CircleCI emulator. Accepts backend_environment parameter: 'production' or 'load_shedder_us_east_1' or 'load_shedder_us_east_2'"
     <<: *android-machine-emulator
@@ -1077,6 +1100,12 @@ jobs:
 
 workflows:
   version: 2
+  manual-billing-connection-repro:
+    when:
+      equal: [ billing_connection_repro, << pipeline.parameters.action >> ]
+    jobs:
+      - billing-connection-repro
+
   danger:
     when:
       and:
