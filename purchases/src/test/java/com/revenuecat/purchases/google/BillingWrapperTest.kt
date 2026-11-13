@@ -885,7 +885,7 @@ class BillingWrapperTest {
         )
         assertThat(errors).isEmpty()
 
-        every { mockDateProvider.now } returns Date(1676379380000)
+        connectionClockMillis = 10_000
         pendingRequestTimeouts.forEach { it.run() }
 
         assertThat(errors.map { it.code }).containsExactly(PurchasesErrorCode.StoreProblemError)
@@ -902,18 +902,20 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `timeout reports a scheduled retry even when another connection attempt is skipped`() {
+    fun `timeout diagnostics use monotonic connection and retry timing`() {
         every { handler.postDelayed(any(), 1000L) } returns true
         every { mockClient.isReady } returns false
         every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTING
         wrapper.onBillingSetupFinished(BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult())
 
         wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("product_a"), {}, {})
+        connectionClockMillis = 250
+        every { mockDateProvider.now } returns Date(0)
         pendingRequestTimeouts.toList().forEach { it.run() }
 
         verify(exactly = 1) {
             mockDiagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(
-                0, "product_details", "connecting", 0L, true, 1000L,
+                0, "product_details", "connecting", 250L, true, 750L,
             )
         }
     }
@@ -2239,7 +2241,7 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `onBillingSetupFinished tracks diagnostics call with correct parameters`() {
+    fun `onBillingSetupFinished tracks diagnostics using monotonic connection duration`() {
         // Arrange
         every { mockClient.queryProductDetailsAsync(any(), any()) } just runs
         // BillingClient is not connected, to check pendingRequestCount.
@@ -2262,7 +2264,8 @@ class BillingWrapperTest {
                 onError = { fail("shouldn't be an error") }
             )
         }
-        every { mockDateProvider.now } returns Date(1676379372500)
+        connectionClockMillis = 2500
+        every { mockDateProvider.now } returns Date(0)
         wrapper.onBillingSetupFinished(billingResult)
 
         // Assert
