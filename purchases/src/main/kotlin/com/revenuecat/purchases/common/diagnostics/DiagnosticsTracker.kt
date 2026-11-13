@@ -94,6 +94,14 @@ internal class DiagnosticsTracker(
         const val IS_RETRY = "is_retry"
         const val REQUEST_STATUS_KEY = "request_status"
         const val CONNECTION_ERROR_REASON_KEY = "connection_error_reason"
+        const val CONNECTION_DURATION_MILLIS = "connection_duration_millis"
+        const val REQUEST_TYPE = "request_type"
+        const val BILLING_CLIENT_STATE = "billing_client_state"
+        const val SETUP_CALLBACK_RECEIVED = "setup_callback_received"
+        const val RECONNECTION_SCHEDULED = "reconnection_scheduled"
+        const val RECONNECTION_DELAY_MILLIS = "reconnection_delay_millis"
+        const val REASON = "reason"
+        const val CLOSED = "closed"
     }
 
     private val commonProperties = if (appConfig.store == Store.PLAY_STORE) {
@@ -243,7 +251,7 @@ internal class DiagnosticsTracker(
                 put(BILLING_RESPONSE_CODE, responseCode)
                 put(BILLING_DEBUG_MESSAGE, debugMessage)
                 put(PENDING_REQUEST_COUNT, pendingRequestCount)
-                connectionDurationMillis?.let { put("connection_duration_millis", it) }
+                connectionDurationMillis?.let { put(CONNECTION_DURATION_MILLIS, it) }
             },
         )
     }
@@ -268,7 +276,7 @@ internal class DiagnosticsTracker(
     fun trackGoogleBillingClientRetired(closed: Boolean) {
         trackEvent(
             eventName = DiagnosticsEntryName.GOOGLE_BILLING_CLIENT_RETIRED,
-            properties = mapOf("reason" to "connection_timeout", "closed" to closed),
+            properties = mapOf(REASON to "connection_timeout", CLOSED to closed),
         )
     }
 
@@ -286,12 +294,12 @@ internal class DiagnosticsTracker(
             properties = buildMap {
                 // Count is measured after the timed-out request is removed.
                 put(PENDING_REQUEST_COUNT, pendingRequestCount)
-                put("request_type", requestType)
-                put("billing_client_state", billingClientState)
-                connectionDurationMillis?.let { put("connection_duration_millis", it) }
-                setupCallbackReceived?.let { put("setup_callback_received", it) }
-                put("reconnection_scheduled", reconnectionDelayMillis != null)
-                reconnectionDelayMillis?.let { put("reconnection_delay_millis", it) }
+                put(REQUEST_TYPE, requestType)
+                put(BILLING_CLIENT_STATE, billingClientState)
+                connectionDurationMillis?.let { put(CONNECTION_DURATION_MILLIS, it) }
+                setupCallbackReceived?.let { put(SETUP_CALLBACK_RECEIVED, it) }
+                put(RECONNECTION_SCHEDULED, reconnectionDelayMillis != null)
+                reconnectionDelayMillis?.let { put(RECONNECTION_DELAY_MILLIS, it) }
             },
         )
     }
