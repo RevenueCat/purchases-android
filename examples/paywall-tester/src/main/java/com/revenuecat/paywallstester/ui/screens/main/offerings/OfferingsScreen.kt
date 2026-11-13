@@ -479,7 +479,10 @@ private fun OfferingsListScreen(
 
 @Composable
 private fun FullScreenPaywall(options: PaywallOptions, onDismiss: () -> Unit) {
-    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
+    ) {
         Paywall(options)
     }
 }
