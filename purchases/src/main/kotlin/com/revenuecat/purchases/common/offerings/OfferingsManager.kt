@@ -4,6 +4,8 @@ import android.os.Handler
 import android.os.Looper
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offerings
+import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.PackagePurchaseReference
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
@@ -95,7 +97,51 @@ internal class OfferingsManager(
         }
     }
 
-    fun getOfferingsForPurchase(
+    fun getPackagesForPurchase(
+        appUserID: String,
+        appInBackground: Boolean,
+        packageReference: PackagePurchaseReference,
+        addOnPackageReferences: List<PackagePurchaseReference>,
+        onError: (PurchasesError) -> Unit,
+        onSuccess: (Package, List<Package>) -> Unit,
+    ) {
+        getOfferingsForPurchase(appUserID, appInBackground, onError) { offerings ->
+            val main = offerings[packageReference.offeringIdentifier]?.availablePackages?.firstOrNull {
+                it.identifier.equals(packageReference.packageIdentifier, ignoreCase = true)
+            }
+            if (main == null) {
+                onError(
+                    PurchasesError(
+                        PurchasesErrorCode.ProductNotAvailableForPurchaseError,
+                        "Couldn't find product for package ${packageReference.packageIdentifier}",
+                    ),
+                )
+            } else {
+                val addOnPackages = try {
+                    addOnPackageReferences.map { resolveAddOnPackage(offerings, it) }
+                } catch (error: IllegalArgumentException) {
+                    onError(PurchasesError(PurchasesErrorCode.PurchaseInvalidError, error.message))
+                    return@getOfferingsForPurchase
+                }
+                onSuccess(main, addOnPackages)
+            }
+        }
+    }
+
+    private fun resolveAddOnPackage(offerings: Offerings, reference: PackagePurchaseReference): Package {
+        val offering = offerings[reference.offeringIdentifier]
+            ?: throw IllegalArgumentException(
+                "Could not find offering with identifier ${reference.offeringIdentifier} " +
+                    "for add-on package ${reference.packageIdentifier}",
+            )
+        return offering.availablePackages.firstOrNull { it.identifier == reference.packageIdentifier }
+            ?: throw IllegalArgumentException(
+                "Could not find package with identifier ${reference.packageIdentifier}" +
+                    " in offering with identifier ${reference.offeringIdentifier}",
+            )
+    }
+
+    private fun getOfferingsForPurchase(
         appUserID: String,
         appInBackground: Boolean,
         onError: (PurchasesError) -> Unit,

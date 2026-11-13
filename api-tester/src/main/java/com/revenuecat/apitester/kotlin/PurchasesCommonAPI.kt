@@ -10,6 +10,7 @@ import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.PackagePurchaseReference
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.PurchaseResult
@@ -29,6 +30,7 @@ import com.revenuecat.purchases.awaitStorefrontCountryCode
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.getProductsWith
 import com.revenuecat.purchases.getStorefrontCountryCodeWith
+import com.revenuecat.purchases.interfaces.GetPackagesForPurchaseCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
@@ -74,7 +76,17 @@ private class PurchasesCommonAPI {
         }
 
         purchases.getOfferings(receiveOfferingsCallback)
-        purchases.getOfferingsForPurchase(receiveOfferingsCallback)
+        val reference = PackagePurchaseReference("offering", "package")
+        val offeringIdentifier: String = reference.offeringIdentifier
+        val packageIdentifier: String = reference.packageIdentifier
+        purchases.getPackagesForPurchase(
+            reference,
+            listOf(reference),
+            object : GetPackagesForPurchaseCallback {
+                override fun onReceived(packageToPurchase: Package, addOnPackages: List<Package>) {}
+                override fun onError(error: PurchasesError) {}
+            },
+        )
 
         purchases.getProducts(productIds, productsResponseCallback)
         purchases.getProducts(productIds, ProductType.SUBS, productsResponseCallback)

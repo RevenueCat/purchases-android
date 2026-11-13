@@ -1,7 +1,12 @@
 package com.revenuecat.purchases.common.offerings
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.PackagePurchaseReference
+import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -22,6 +27,7 @@ import com.revenuecat.purchases.utils.prewarmTargetOfferings
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
 import com.revenuecat.purchases.utils.STUB_PRODUCT_IDENTIFIER
 import com.revenuecat.purchases.utils.stubOfferings
+import com.revenuecat.purchases.utils.stubStoreProduct
 import io.mockk.CapturingSlot
 import io.mockk.Runs
 import io.mockk.every
@@ -39,6 +45,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
+@OptIn(InternalRevenueCatAPI::class)
 @Suppress("LargeClass")
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -996,11 +1003,14 @@ class OfferingsManagerTest {
         var purchaseCallbacks = 0
         offeringsManager.getOfferings(appUserId, false, onSuccess = { ordinaryCallbacks++ })
 
-        offeringsManager.getOfferingsForPurchase(
+        offeringsManager.getPackagesForPurchase(
             appUserId, false,
+            PackagePurchaseReference(STUB_OFFERING_IDENTIFIER, "\$rc_monthly"),
+            emptyList(),
             onError = { fail("Expected cached offerings: $it") },
-            onSuccess = {
-                assertThat(it).isSameAs(testOfferings)
+            onSuccess = { main, addOns ->
+                assertThat(main).isSameAs(testOfferings.current!!.availablePackages.first())
+                assertThat(addOns).isEmpty()
                 purchaseCallbacks++
             },
         )
@@ -1021,11 +1031,14 @@ class OfferingsManagerTest {
         every { mockWorkflowManager.onPaywallConfigReady(capture(pendingReadiness)) } just Runs
         var callbacks = 0
 
-        offeringsManager.getOfferingsForPurchase(
+        offeringsManager.getPackagesForPurchase(
             appUserId, false,
+            PackagePurchaseReference(STUB_OFFERING_IDENTIFIER, "\$rc_monthly"),
+            emptyList(),
             onError = { fail("Expected fetched offerings: $it") },
-            onSuccess = {
-                assertThat(it).isSameAs(testOfferings)
+            onSuccess = { main, addOns ->
+                assertThat(main).isSameAs(testOfferings.current!!.availablePackages.first())
+                assertThat(addOns).isEmpty()
                 callbacks++
             },
         )
@@ -1044,10 +1057,12 @@ class OfferingsManagerTest {
         mockBackendResponseError(expected)
         var receivedError: PurchasesError? = null
 
-        offeringsManager.getOfferingsForPurchase(
+        offeringsManager.getPackagesForPurchase(
             appUserId, false,
+            PackagePurchaseReference(STUB_OFFERING_IDENTIFIER, "\$rc_monthly"),
+            emptyList(),
             onError = { receivedError = it },
-            onSuccess = { fail("Expected fetch error") },
+            onSuccess = { _, _ -> fail("Expected fetch error") },
         )
 
         assertThat(receivedError).isSameAs(expected)
@@ -1063,16 +1078,184 @@ class OfferingsManagerTest {
         every { mockWorkflowManager.onPaywallConfigReady(capture(pendingReadiness)) } just Runs
         var callbacks = 0
 
-        offeringsManager.getOfferingsForPurchase(
+        offeringsManager.getPackagesForPurchase(
             appUserId, false,
+            PackagePurchaseReference(STUB_OFFERING_IDENTIFIER, "\$rc_monthly"),
+            emptyList(),
             onError = { fail("Expected cached offerings: $it") },
-            onSuccess = { callbacks++ },
+            onSuccess = { _, _ -> callbacks++ },
         )
 
         assertThat(callbacks).isEqualTo(1)
         verify(exactly = 1) { backend.getOfferings(appUserId, false, any(), any()) }
         pendingReadiness.forEach { it() }
         assertThat(callbacks).isEqualTo(1)
+    }
+
+    @Test
+    fun `package batch resolves main and ordered duplicate add ons from one cached snapshot`() {
+        val main = purchasePackage("main-offering", "monthly", "main-product")
+        val sameIdentifierElsewhere = purchasePackage("other-offering", "monthly", "other-product")
+        val addOn = purchasePackage("main-offering", "Extra", "extra-product")
+        val snapshot = purchaseOfferings(sameIdentifierElsewhere, main, addOn)
+        every { cache.cachedOfferings } returnsMany listOf(snapshot, testOfferings)
+        mockCacheStale()
+        val pending = mutableListOf<() -> Unit>()
+        every { mockWorkflowManager.onPaywallConfigReady(capture(pending)) } just Runs
+        var callbacks = 0
+        var receivedMain: Package? = null
+        var receivedAddOns: List<Package>? = null
+
+        offeringsManager.getPackagesForPurchase(
+            appUserId, false,
+            PackagePurchaseReference("main-offering", "MONTHLY"),
+            listOf(
+                PackagePurchaseReference("other-offering", "monthly"),
+                PackagePurchaseReference("main-offering", "Extra"),
+                PackagePurchaseReference("other-offering", "monthly"),
+            ),
+            onError = { fail("Expected resolved packages: $it") },
+            onSuccess = { base, addOns ->
+                receivedMain = base
+                receivedAddOns = addOns
+                callbacks++
+            },
+        )
+
+        assertThat(receivedMain).isSameAs(main)
+        assertThat(receivedAddOns).containsExactly(sameIdentifierElsewhere, addOn, sameIdentifierElsewhere)
+        assertThat(receivedAddOns!![0]).isSameAs(sameIdentifierElsewhere)
+        assertThat(callbacks).isEqualTo(1)
+        assertThat(pending).isEmpty()
+        verify(exactly = 1) { cache.cachedOfferings }
+        verify(exactly = 0) { backend.getOfferings(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `package batch does not return partial result when later add on is missing`() {
+        val main = purchasePackage("offering", "monthly", "main-product")
+        val addOn = purchasePackage("offering", "Extra", "extra-product")
+        every { cache.cachedOfferings } returns purchaseOfferings(main, addOn)
+        mockCacheStale()
+        var received: PurchasesError? = null
+        var successCalls = 0
+
+        offeringsManager.getPackagesForPurchase(
+            appUserId, false,
+            PackagePurchaseReference("offering", "monthly"),
+            listOf(
+                PackagePurchaseReference("offering", "Extra"),
+                PackagePurchaseReference("offering", "missing"),
+            ),
+            onError = { received = it },
+            onSuccess = { _, _ -> successCalls++ },
+        )
+
+        assertThat(successCalls).isZero()
+        assertThat(received?.code).isEqualTo(PurchasesErrorCode.PurchaseInvalidError)
+        assertThat(received?.underlyingErrorMessage)
+            .isEqualTo("Could not find package with identifier missing in offering with identifier offering")
+    }
+
+    @Test
+    fun `package batch preserves exact matching for add ons`() {
+        val main = purchasePackage("offering", "monthly", "main-product")
+        val addOn = purchasePackage("offering", "Extra", "extra-product")
+        every { cache.cachedOfferings } returns purchaseOfferings(main, addOn)
+        mockCacheStale()
+        var received: PurchasesError? = null
+
+        offeringsManager.getPackagesForPurchase(
+            appUserId, false,
+            PackagePurchaseReference("offering", "MONTHLY"),
+            listOf(PackagePurchaseReference("offering", "extra")),
+            onError = { received = it },
+            onSuccess = { _, _ -> fail("Case-mismatched add on must not resolve") },
+        )
+
+        assertThat(received?.code).isEqualTo(PurchasesErrorCode.PurchaseInvalidError)
+    }
+
+    @Test
+    fun `package batch reports missing add on offering`() {
+        val main = purchasePackage("offering", "monthly", "main-product")
+        every { cache.cachedOfferings } returns purchaseOfferings(main)
+        mockCacheStale()
+        var received: PurchasesError? = null
+
+        offeringsManager.getPackagesForPurchase(
+            appUserId, false,
+            PackagePurchaseReference("offering", "monthly"),
+            listOf(PackagePurchaseReference("missing-offering", "Extra")),
+            onError = { received = it },
+            onSuccess = { _, _ -> fail("Missing offering must fail the complete lookup") },
+        )
+
+        assertThat(received?.code).isEqualTo(PurchasesErrorCode.PurchaseInvalidError)
+        assertThat(received?.underlyingErrorMessage)
+            .isEqualTo("Could not find offering with identifier missing-offering for add-on package Extra")
+    }
+
+    @Test
+    fun `package batch distinguishes missing main package from fetch failure`() {
+        val main = purchasePackage("offering", "monthly", "main-product")
+        every { cache.cachedOfferings } returns purchaseOfferings(main)
+        mockCacheStale()
+        var received: PurchasesError? = null
+
+        offeringsManager.getPackagesForPurchase(
+            appUserId, false,
+            PackagePurchaseReference("offering", "missing"),
+            emptyList(),
+            onError = { received = it },
+            onSuccess = { _, _ -> fail("Missing main package must fail") },
+        )
+
+        assertThat(received?.code).isEqualTo(PurchasesErrorCode.ProductNotAvailableForPurchaseError)
+        assertThat(received?.underlyingErrorMessage).isEqualTo("Couldn't find product for package missing")
+    }
+
+    @Test
+    fun `cold package batch resolves all packages from fetched snapshot after readiness`() {
+        val main = purchasePackage("main-offering", "monthly", "main-product")
+        val addOn = purchasePackage("other-offering", "Extra", "extra-product")
+        every { cache.cachedOfferings } returns null
+        mockDeviceCache()
+        mockOfferingsFactory(purchaseOfferings(main, addOn))
+        val pending = slot<() -> Unit>()
+        every { mockWorkflowManager.onPaywallConfigReady(capture(pending)) } just Runs
+        var callbacks = 0
+
+        offeringsManager.getPackagesForPurchase(
+            appUserId, false,
+            PackagePurchaseReference("main-offering", "MONTHLY"),
+            listOf(PackagePurchaseReference("other-offering", "Extra")),
+            onError = { fail("Expected fetched packages: $it") },
+            onSuccess = { base, addOns ->
+                assertThat(base).isSameAs(main)
+                assertThat(addOns).containsExactly(addOn)
+                callbacks++
+            },
+        )
+
+        assertThat(callbacks).isZero()
+        pending.captured()
+        assertThat(callbacks).isEqualTo(1)
+        verify(exactly = 1) { backend.getOfferings(any(), any(), any(), any()) }
+    }
+
+    private fun purchasePackage(offeringId: String, packageId: String, productId: String) = Package(
+        identifier = packageId,
+        packageType = PackageType.CUSTOM,
+        product = stubStoreProduct(productId),
+        presentedOfferingContext = PresentedOfferingContext(offeringId),
+    )
+
+    private fun purchaseOfferings(vararg packages: Package): Offerings {
+        val all = packages.groupBy { it.presentedOfferingContext.offeringIdentifier }.mapValues { (id, items) ->
+            Offering(id, "Description", emptyMap(), items)
+        }
+        return Offerings(all.values.first(), all)
     }
 
     // region helpers
