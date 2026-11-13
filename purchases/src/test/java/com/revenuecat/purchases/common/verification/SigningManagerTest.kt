@@ -262,7 +262,33 @@ class SigningManagerTest {
     }
 
     @Test
-    fun `verifyResponse with encoded url verifies correctly`() {
+    fun `verifyResponse with encoded url verifies against the decoded path`() {
+        // Signed path: /v1/subscribers/$RCAnonymousID:1af512a3b9c848899fe427f39dd69f2b
+        val decodedPathSignature = "xoDYyUeHnIlSIAeOOzmvdNPOlbNSKK+xE0fE/ufS1fsAAMNQ1HiPDL34Vx0Uy74KPV5mztuk3DHBpucT/rSYVlkxIa3ModYmPfYZ20lnlbSB1UiP6oJHwAA2pXlS6AQ5eLSuAmm2UIYPrDGEEC8Lgj1sAn2UoAqkJ7pIrsdK/LaHb+rB3gYO9a773iOLPyj5LmTz1/hMzuyGuHYtef+q16V67z6DII+YLBp4i6DhVTmPeCMG"
+        val rootVerifier = DefaultSignatureVerifier("yg2wZGAr8Af+Unt9RImQDbL7qA81txk+ga0I+ylmcyo=")
+        val signingManager = SigningManager(
+            SignatureVerificationMode.Informational(IntermediateSignatureHelper(rootVerifier)),
+            appConfig,
+            apiKey,
+        )
+        listOf(
+            "/v1/subscribers/%24RCAnonymousID%3A1af512a3b9c848899fe427f39dd69f2b",
+            "/v1/subscribers/\$RCAnonymousID%3A1af512a3b9c848899fe427f39dd69f2b",
+            "/v1/subscribers/\$RCAnonymousID:1af512a3b9c848899fe427f39dd69f2b",
+        ).forEach { requestPath ->
+            val verificationResult = callVerifyResponse(
+                signingManager,
+                requestPath = requestPath,
+                signature = decodedPathSignature,
+            )
+            assertThat(verificationResult).isEqualTo(SignatureVerificationResult.Verified)
+        }
+    }
+
+    @Test
+    fun `verifyResponse with encoded url does not verify against the encoded path signature`() {
+        // Signed path: /v1/subscribers/$RCAnonymousID%3A1af512a3b9c848899fe427f39dd69f2b
+        val encodedPathSignature = "xoDYyUeHnIlSIAeOOzmvdNPOlbNSKK+xE0fE/ufS1fsAAMNQ1HiPDL34Vx0Uy74KPV5mztuk3DHBpucT/rSYVlkxIa3ModYmPfYZ20lnlbSB1UiP6oJHwAA2pXlS6AQ5eLSuAmm2UIYPrDGEEC8Lgj1sAn2fGMRMx2eaPNzDPBGTxxZROfjkI1wtsyJC0w0I7d8TkLeXjUTlWNafmc4GVMleE/tQZZGIoNrnar0HqICUnB8B"
         val rootVerifier = DefaultSignatureVerifier("yg2wZGAr8Af+Unt9RImQDbL7qA81txk+ga0I+ylmcyo=")
         val signingManager = SigningManager(
             SignatureVerificationMode.Informational(IntermediateSignatureHelper(rootVerifier)),
@@ -272,9 +298,11 @@ class SigningManagerTest {
         val verificationResult = callVerifyResponse(
             signingManager,
             requestPath = "/v1/subscribers/\$RCAnonymousID%3A1af512a3b9c848899fe427f39dd69f2b",
-            signature = "xoDYyUeHnIlSIAeOOzmvdNPOlbNSKK+xE0fE/ufS1fsAAMNQ1HiPDL34Vx0Uy74KPV5mztuk3DHBpucT/rSYVlkxIa3ModYmPfYZ20lnlbSB1UiP6oJHwAA2pXlS6AQ5eLSuAmm2UIYPrDGEEC8Lgj1sAn2fGMRMx2eaPNzDPBGTxxZROfjkI1wtsyJC0w0I7d8TkLeXjUTlWNafmc4GVMleE/tQZZGIoNrnar0HqICUnB8B",
+            signature = encodedPathSignature,
         )
-        assertThat(verificationResult).isEqualTo(SignatureVerificationResult.Verified)
+        assertThat(verificationResult).isEqualTo(
+            SignatureVerificationResult.Failed(FailureReason.PAYLOAD_SIGNATURE_MISMATCH),
+        )
     }
 
     @Test
