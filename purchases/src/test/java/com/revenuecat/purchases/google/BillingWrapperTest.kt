@@ -921,6 +921,51 @@ class BillingWrapperTest {
     }
 
     @Test
+    fun `timeout diagnostics report the state of the timed out client when it is replaced`() {
+        val timedOutClient = mockk<BillingClient>(relaxed = true)
+        val replacementClient = mockk<BillingClient>(relaxed = true)
+        val clientFactory = mockk<BillingWrapper.ClientFactory>()
+        every { clientFactory.buildClient(any()) } returns timedOutClient
+        every { timedOutClient.isReady } returns false
+        every { timedOutClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
+        every { replacementClient.connectionState } returns BillingClient.ConnectionState.CONNECTED
+        var clockReadCount = 0
+        lateinit var wrapperUnderTest: BillingWrapper
+        wrapperUnderTest = BillingWrapper(
+            clientFactory = clientFactory,
+            mainHandler = handler,
+            backgroundHandler = handler,
+            deviceCache = mockDeviceCache,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            purchasesStateProvider = purchasesStateProvider,
+            dateProvider = mockDateProvider,
+            elapsedRealtime = {
+                clockReadCount++
+                if (clockReadCount == 2) {
+                    wrapperUnderTest.billingClient = replacementClient
+                    10_000L
+                } else {
+                    0L
+                }
+            },
+        )
+        wrapperUnderTest.purchasesUpdatedListener = mockPurchasesListener
+        wrapperUnderTest.startConnection()
+        every { timedOutClient.connectionState } returns BillingClient.ConnectionState.CONNECTING
+
+        wrapperUnderTest.queryProductDetailsAsync(ProductType.SUBS, setOf("product_a"), {}, {})
+        every { timedOutClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
+        pendingRequestTimeouts.toList().forEach { it.run() }
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(
+                0, "product_details", "disconnected", 10_000L, false, null,
+            )
+        }
+        assertThat(wrapperUnderTest.billingClient).isSameAs(replacementClient)
+    }
+
+    @Test
     fun `pending request timeout does nothing if billing connected in time`() {
         every { mockClient.isReady } returns false
         var successCount = 0
