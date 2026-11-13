@@ -12,6 +12,7 @@ import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.google.BillingWrapper
+import com.revenuecat.purchases.google.PENDING_REQUEST_TIMEOUT_MILLISECONDS
 import com.revenuecat.purchases.utils.MockHandlerFactory
 import io.mockk.Runs
 import io.mockk.clearAllMocks
@@ -54,6 +55,8 @@ internal open class BaseBillingUseCaseTest {
     @Before
     open fun setup() {
         handler = MockHandlerFactory.createMockHandler()
+        // Timeouts must not fire inline, or requests would fail before the connection has a chance to complete.
+        every { handler.postDelayed(any(), PENDING_REQUEST_TIMEOUT_MILLISECONDS) } returns true
 
         mockDiagnosticsTracker()
         every { mockDateProvider.now } returns Date(1676379370000) // Tuesday, February 14, 2023 12:56:10 PM GMT
@@ -76,6 +79,7 @@ internal open class BaseBillingUseCaseTest {
             mockClient.endConnection()
         } just Runs
 
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
         every {
             mockClient.isReady
         } returns false andThen true
