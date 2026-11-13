@@ -740,6 +740,9 @@ jobs:
           working_directory: integration-tests
           command: echo $RELEASE_KEYSTORE | base64 -d > keystore
       - export-release-signing-properties
+      - run:
+          name: Export API key property
+          command: echo 'export ORG_GRADLE_PROJECT_REVENUECAT_API_KEY="$API_KEY"' >> "$BASH_ENV"
       - android/restore_build_cache
       - android/create_avd:
           avd_name: test-integration
@@ -749,12 +752,9 @@ jobs:
           avd_name: test-integration
           post_emulator_launch_assemble_command: >-
             ./gradlew -p integration-tests assembleRelease assembleAndroidTest -PtestBuildType=release
-            -PREVENUECAT_API_KEY=$API_KEY
       - run:
           name: Run integration tests on emulator
-          command: |
-            ./gradlew -p integration-tests connectedAndroidTest -PtestBuildType=release \
-            -PREVENUECAT_API_KEY=$API_KEY
+          command: ./gradlew -p integration-tests connectedAndroidTest -PtestBuildType=release
       - android/save_build_cache
       - store_test_results:
           path: integration-tests/build/outputs/androidTest-results
@@ -909,6 +909,9 @@ jobs:
           at: .
       - revenuecat/install-mise-tools:
           tools: java
+      - run:
+          name: Export API key property
+          command: echo 'export ORG_GRADLE_PROJECT_MAESTRO_TEST_STORE_API_KEY="$MAESTRO_TEST_STORE_API_KEY"' >> "$BASH_ENV"
       - android/create_avd:
           avd_name: test-e2e-tester
           system_image: system-images;android-32;google_apis;x86_64
@@ -916,7 +919,7 @@ jobs:
       - android/start_emulator:
           avd_name: test-e2e-tester
           # Test Store API key for the automated_sdk_tests RevenueCat project.
-          post_emulator_launch_assemble_command: ./gradlew test-apps:e2etests:assembleDebug test-apps:e2etests:assembleRelease -PMAESTRO_TEST_STORE_API_KEY=$MAESTRO_TEST_STORE_API_KEY
+          post_emulator_launch_assemble_command: ./gradlew test-apps:e2etests:assembleDebug test-apps:e2etests:assembleRelease
       - android/restore_gradle_cache
       - revenuecat/install-maestro
       - run:
