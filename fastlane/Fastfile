@@ -249,10 +249,7 @@ platform :android do
 
   desc "Build SDK size app and upload it to Emerge and Sentry"
   lane :sdk_size_tests do
-    gradle_properties = {
-      "RELEASE_SIGNING_ENABLED" => false
-    }
-    gradle(task: "publishToMavenLocal", properties: gradle_properties)
+    gradle(task: "publishToMavenLocal")
     Dir.chdir("../test-apps/sdksizetesting/app") do
       # Keep Emerge enabled during the migration. This task produces the APK
       # that Sentry uploads below, so both services analyze the same file.
