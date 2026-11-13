@@ -178,6 +178,22 @@ internal class HiddenHeroRuntimeTest {
     }
 
     @Test
+    fun `Fixed header overlays for either a body hero or a header image`() {
+        val empty = StackComponent(components = emptyList())
+        val headerImage = HeaderComponent(stack = StackComponent(components = listOf(media())))
+        val emptyHeader = HeaderComponent(stack = empty)
+        val cases = listOf(
+            FakePaywallState(components = listOf(empty, media()), header = emptyHeader) to false,
+            FakePaywallState(components = listOf(media()), header = emptyHeader) to true,
+            FakePaywallState(components = listOf(empty), header = headerImage) to true,
+            FakePaywallState(components = listOf(empty, media()), header = headerImage) to true,
+        )
+        for ((state, expected) in cases) {
+            assertThat(state.shouldOverlayHeader).isEqualTo(expected)
+        }
+    }
+
+    @Test
     fun `resolved dimensions determine which ancestors pad their overlays`() {
         val root = StyleFactory().create(StackComponent(
             components = listOf(media()),

@@ -140,7 +140,7 @@ internal fun LoadedPaywallComponents(
                         .conditional(wrapInVerticalScroll) {
                             verticalScroll(mainScrollState)
                         }
-                        .conditional(state.header != null && !state.mainStackHasHeroImage) {
+                        .conditional(state.header != null && !state.shouldOverlayHeader) {
                             headerTopPadding(state)
                         }
                         .conditional(state.stickyFooter != null) {

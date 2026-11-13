@@ -116,4 +116,14 @@ internal data class StackComponentStyle(
      */
     @get:JvmSynthetic
     val applyHorizontalWindowInsets: Boolean = false,
-) : ComponentStyle, PackageContext
+) : ComponentStyle, PackageContext {
+    /** Fallback headers are absent from [children]; only the first authored branch can lead to the hero. */
+    val heroChildIndex: Int?
+        get() = when (val child = children.firstOrNull()) {
+            is StackComponentStyle -> child.heroChildIndex != null
+            is ImageComponentStyle -> child.ignoreTopWindowInsets
+            is VideoComponentStyle -> child.ignoreTopWindowInsets
+            is WebViewComponentStyle -> child.ignoreTopWindowInsets
+            else -> false
+        }.let { if (it) 0 else null }
+}

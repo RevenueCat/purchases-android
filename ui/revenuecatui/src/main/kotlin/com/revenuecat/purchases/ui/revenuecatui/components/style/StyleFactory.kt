@@ -171,124 +171,59 @@ internal class StyleFactory(
         )
 
         private class WindowInsetsState {
-            /**
-             * The stack that should apply the top window insets, if any. Tracked by reference rather than a flag
-             * consumed by the next stack style built, because children styles are built before their parent's. A flag
-             * intended for a hero ZLayer would otherwise be consumed by the first stack nested inside an overlay
-             * child, such as a close button's stack. That inner stack then pads its own content by the status bar,
-             * stretching the button background.
-             */
-            private var stackAwaitingTopWindowInsets: StackComponent? = null
+            var isHeader: Boolean = false
+                private set
 
-            /**
-             * Whether [component] should apply the top window insets.
-             */
+            private var heroPath: List<PaywallComponent> = emptyList()
+
+            val heroImageDetected: Boolean
+                get() = heroPath.isNotEmpty()
+
+            val topWindowInsetsApplied: Boolean
+                get() = heroPath.any { it is StackComponent && it.dimension is Dimension.ZLayer }
+
+            /** Match iOS: follow only the first authored child, ignoring fallback headers, not visibility. */
+            fun resolve(root: PaywallComponent) {
+                isHeader = root is HeaderComponent
+                val component = if (root is HeaderComponent) root.stack else root
+                val path = firstMediaPath(component)
+                // Only images in the fixed header itself ignore the safe area on iOS.
+                heroPath = if (root is HeaderComponent && path.lastOrNull() !is ImageComponent) emptyList() else path
+            }
+
             fun shouldApplyTopWindowInsets(component: StackComponent): Boolean =
-                stackAwaitingTopWindowInsets === component
+                isOnHeroPath(component) && component.dimension is Dimension.ZLayer
 
-            /**
-             * Whether the current component should ignore the top window insets. This field is reset when it is read,
-             * as it should only be set on a single component.
-             */
-            var ignoreTopWindowInsets = false
-                get() {
-                    val value = field
-                    field = false
-                    return value
+            fun isOnHeroPath(component: PaywallComponent): Boolean = heroPath.any { it === component }
+
+            private fun firstMediaPath(component: PaywallComponent): List<PaywallComponent> = when (component) {
+                is StackComponent -> component.components.firstOrNull { it !is FallbackHeaderComponent }
+                    ?.let { firstMediaPath(it) }
+                    ?.takeIf { it.isNotEmpty() }
+                    ?.let { listOf(component) + it }
+                    .orEmpty()
+                is ImageComponent -> if (component.size.width is SizeConstraint.Fill) listOf(component) else emptyList()
+                is VideoComponent -> if (component.size.width is SizeConstraint.Fill) listOf(component) else emptyList()
+                is WebViewComponent -> {
+                    if (component.size.width is SizeConstraint.Fill) listOf(component) else emptyList()
                 }
-
-            /**
-             * Whether we have applied the top window insets to any component.
-             */
-            var topWindowInsetsApplied = false
-
-            /**
-             * Whether the first visual component in the tree is a full-width image, video or web_view (a
-             * "hero image").
-             * This is tracked separately from [topWindowInsetsApplied] because a hero image can appear
-             * outside a ZLayer (e.g. directly in a Vertical stack), in which case it doesn't affect
-             * top window insets application but still needs to be detected for header padding logic.
-             */
-            var heroImageDetected = false
-
-            /**
-             * We're only interested in the first non-container component. After that, we can stop looking.
-             */
-            private var stillLookingForHeaderMedia = true
-
-            /**
-             * This will be called for every component in the tree, and will determine whether we have header media
-             * that needs special top-window-insets treatment. Header media is found if the first non-container
-             * component is an image, video or web_view component with a Fill width and a ZLayer parent stack.
-             */
-            fun handleHeaderMediaViewWindowInsets(component: PaywallComponent) {
-                when (component) {
-                    is StackComponent -> if (stillLookingForHeaderMedia) {
-                        when (component.dimension) {
-                            is Dimension.ZLayer -> handleZLayerHeaderStack(component)
-
-                            is Dimension.Horizontal,
-                            is Dimension.Vertical,
-                            -> Unit
-                        }
-                    }
-
-                    is ImageComponent,
-                    is VideoComponent,
-                    is WebViewComponent,
-                    -> {
-                        if (stillLookingForHeaderMedia) {
-                            val isHero = component.isHeaderMedia
-                            ignoreTopWindowInsets = isHero
-                            heroImageDetected = isHero
-                        }
-                        stillLookingForHeaderMedia = false
-                    }
-
-                    is FallbackHeaderComponent -> { /* Skip: does not affect hero image detection. */ }
-                    else -> stillLookingForHeaderMedia = false
-                }
+                else -> emptyList()
             }
-
-            private fun handleZLayerHeaderStack(component: StackComponent) {
-                val hasHero = component.components.firstOrNull()?.isHeaderMedia == true
-                topWindowInsetsApplied = hasHero
-                heroImageDetected = hasHero
-                if (hasHero) stackAwaitingTopWindowInsets = component
-            }
-
-            private val PaywallComponent.isHeaderMedia: Boolean
-                get() = when (this) {
-                    is ImageComponent -> size.width.isFill
-                    is VideoComponent -> size.width.isFill
-                    is WebViewComponent -> size.width.isFill
-                    else -> false
-                }
-
-            private val SizeConstraint.isFill: Boolean
-                get() = when (this) {
-                    is SizeConstraint.Fill -> true
-                    is SizeConstraint.Fit,
-                    is SizeConstraint.Fixed,
-                    -> false
-                }
         }
 
-        val windowInsetsState = WindowInsetsState()
+        private val windowInsetsState = WindowInsetsState()
 
-        /**
-         * Whether [component] should apply the top window insets.
-         */
+        fun resolveWindowInsets(root: PaywallComponent) = windowInsetsState.resolve(root)
+
         fun shouldApplyTopWindowInsets(component: StackComponent): Boolean =
             windowInsetsState.shouldApplyTopWindowInsets(component)
 
-        /**
-         * Whether the current component should ignore the top window insets.
-         */
-        val ignoreTopWindowInsets by windowInsetsState::ignoreTopWindowInsets
+        val isHeader: Boolean get() = windowInsetsState.isHeader
+
+        fun ignoresTopWindowInsets(component: PaywallComponent): Boolean = windowInsetsState.isOnHeroPath(component)
 
         /**
-         * Whether the first visual component in the tree is a full-width hero image or video.
+         * Whether the first authored content is a full-width image, video, or web view.
          */
         val heroImageDetected: Boolean
             get() = windowInsetsState.heroImageDetected
@@ -479,8 +414,6 @@ internal class StyleFactory(
                     countValues[key] = currentValue + 1
                 }
             }
-
-            windowInsetsState.handleHeaderMediaViewWindowInsets(component)
         }
 
         /**
@@ -579,6 +512,7 @@ internal class StyleFactory(
         applyHorizontalWindowInsets: Boolean = false,
     ): Result<StyleResult, NonEmptyList<PaywallValidationError>> =
         with(StyleFactoryScope()) {
+            resolveWindowInsets(component)
             createInternal(component)
                 .flatMap { componentStyle ->
                     componentStyle?.let { Result.Success(it) }
@@ -662,7 +596,7 @@ internal class StyleFactory(
                     tabIndex = tabControlIndex,
                     tabsScope = tabsScope,
                     offerEligibility = offerEligibility,
-                    ignoreTopWindowInsets = ignoreTopWindowInsets,
+                    ignoreTopWindowInsets = ignoresTopWindowInsets(component),
                 )
             }
 
@@ -691,7 +625,7 @@ internal class StyleFactory(
         // tabControlIndex is null because a header cannot be _inside_ a tab control.
         withSelectedScope(packageInfo = null, tabControlIndex = null) {
             createStackComponentStyle(component.stack).map {
-                HeaderComponentStyle(stackComponentStyle = it)
+                HeaderComponentStyle(stackComponentStyle = it, firstItemIgnoresSafeArea = heroImageDetected)
             }
         }
 
@@ -1031,6 +965,7 @@ internal class StyleFactory(
             countFrom = countFrom,
             overrides = presentedOverrides,
             applyTopWindowInsets = shouldApplyTopWindowInsets(component),
+            ignoreHeaderHeight = isHeader,
         )
     }
 
@@ -1123,7 +1058,7 @@ internal class StyleFactory(
             tabsScope = tabsScope,
             offerEligibility = offerEligibility,
             overrides = presentedOverrides,
-            ignoreTopWindowInsets = ignoreTopWindowInsets,
+            ignoreTopWindowInsets = ignoresTopWindowInsets(component),
         )
     }
 
@@ -1171,7 +1106,7 @@ internal class StyleFactory(
             muteAudio = component.muteAudio,
             shape = component.maskShape?.toShape(),
             contentScale = component.fitMode.toContentScale(),
-            ignoreTopWindowInsets = ignoreTopWindowInsets,
+            ignoreTopWindowInsets = ignoresTopWindowInsets(component),
         )
     }
 

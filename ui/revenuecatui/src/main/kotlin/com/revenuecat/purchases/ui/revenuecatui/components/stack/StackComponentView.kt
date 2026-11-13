@@ -1049,12 +1049,17 @@ internal val FlexDistribution.usesAllAvailableSpace: Boolean
     }
 
 private fun StackComponentState.appliesTopInsets(state: PaywallState.Loaded.Components): Boolean =
-    state.heroInsetsFor(style)?.appliesTo(style) ?: applyTopWindowInsets
+    state.heroInsetsFor(style)?.appliesTo(style) ?: if (state.header != null && style.heroChildIndex != null) {
+        dimension is Dimension.ZLayer
+    } else {
+        applyTopWindowInsets
+    }
 
 private fun StackComponentState.childIgnoresTopInsets(
     child: ComponentStyle,
     state: PaywallState.Loaded.Components,
-): Boolean = state.heroInsetsFor(style)?.let { it.exemptChildFor(style) === child } ?: child.shouldIgnoreTopWindowInsets
+): Boolean = state.heroInsetsFor(style)?.let { it.exemptChildFor(style) === child }
+    ?: (style.heroChildIndex?.let { children.getOrNull(it) === child } ?: child.shouldIgnoreTopWindowInsets)
 
 private fun StackComponentState.isFirstVisibleChild(
     child: ComponentStyle,

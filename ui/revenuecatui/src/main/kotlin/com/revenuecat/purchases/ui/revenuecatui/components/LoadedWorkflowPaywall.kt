@@ -176,7 +176,7 @@ private fun workflowHeaderState(
 ): WorkflowHeaderPresentation {
     val headerStepInfo = stepStates.mapValues { (_, stepState) ->
         WorkflowHeaderStepInfo(
-            hasHeroImage = stepState.mainStackHasHeroImage,
+            hasHeroImage = stepState.mainStackHasHeroImage || stepState.shouldOverlayHeader,
             hasHeader = stepState.header != null,
         )
     }
@@ -315,7 +315,7 @@ private fun WorkflowStepContent(
                         .conditional(shouldWrapMainContentInVerticalScroll) {
                             verticalScroll(mainScrollState)
                         }
-                        .conditional(stepState.header != null && !stepState.mainStackHasHeroImage) {
+                        .conditional(stepState.header != null && !stepState.shouldOverlayHeader) {
                             headerTopPadding(stepState)
                         }
                         .conditional(stepState.stickyFooter != null) {
