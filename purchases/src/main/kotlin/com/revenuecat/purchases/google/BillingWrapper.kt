@@ -146,11 +146,9 @@ internal class BillingWrapper(
     @set:Synchronized
     private var reconnectionAlreadyScheduled = false
 
-    @Volatile
-    private var connectionStartedAt: Date? = null
-
     private val connectionAttemptGeneration = AtomicLong()
 
+    @Volatile
     private var connectionStartedAtElapsedMillis: Long? = null
 
     private var failedRetirementClient: BillingClient? = null
@@ -159,7 +157,7 @@ internal class BillingWrapper(
     private var setupCallbackReceived: Boolean? = null
 
     @Volatile
-    private var scheduledReconnectAt: Long? = null
+    private var scheduledReconnectAtElapsedMillis: Long? = null
 
     val appInBackground: Boolean
         get() = purchasesStateProvider.purchasesState.appInBackground
@@ -198,7 +196,7 @@ internal class BillingWrapper(
     override fun startConnection(delayMilliseconds: Long) {
         backgroundHandler.postDelayed(
             {
-                if (delayMilliseconds > 0) scheduledReconnectAt = null
+                if (delayMilliseconds > 0) scheduledReconnectAtElapsedMillis = null
                 performStartConnection()
             },
             delayMilliseconds,
@@ -221,7 +219,6 @@ internal class BillingWrapper(
 
             log(LogIntent.DEBUG) { BillingStrings.BILLING_CLIENT_STARTING.format(clientToStart) }
             synchronized(this@BillingWrapper) {
-                connectionStartedAt = dateProvider.now
                 connectionStartedAtElapsedMillis = elapsedRealtime()
                 connectionAttemptGeneration.incrementAndGet()
             }
@@ -311,7 +308,7 @@ internal class BillingWrapper(
                     log(LogIntent.GOOGLE_WARNING) { BillingStrings.BILLING_PENDING_REQUEST_TIMED_OUT }
                     val timedOutClient = billingClient
                     diagnosticsTrackerIfEnabled?.let { tracker ->
-                        val now = dateProvider.now.time
+                        val now = elapsedRealtime()
                         val state = billingClient?.connectionState
                         tracker.trackGoogleBillingPendingRequestTimedOut(
                             pendingRequestCount = pendingRequestCount(),
@@ -324,9 +321,13 @@ internal class BillingWrapper(
                                 null -> "no_client"
                                 else -> "unknown"
                             },
-                            connectionElapsedMillis = connectionStartedAt?.let { (now - it.time).coerceAtLeast(0) },
+                            connectionElapsedMillis = connectionStartedAtElapsedMillis?.let {
+                                (now - it).coerceAtLeast(0)
+                            },
                             setupCallbackReceived = setupCallbackReceived,
-                            reconnectionDelayMillis = scheduledReconnectAt?.let { (it - now).coerceAtLeast(0) },
+                            reconnectionDelayMillis = scheduledReconnectAtElapsedMillis?.let {
+                                (it - now).coerceAtLeast(0)
+                            },
                         )
                     }
                     timedOutClient?.let { retireStuckClient(it) }
@@ -864,8 +865,8 @@ internal class BillingWrapper(
     @Suppress("LongMethod", "CyclomaticComplexMethod")
     private fun onBillingSetupFinishedForClient(billingResult: BillingResult, client: BillingClient?) {
         if (client != null && billingClient !== client) return
-        val connectionDurationMillis = connectionStartedAt?.let {
-            (dateProvider.now.time - it.time).coerceAtLeast(0)
+        val connectionDurationMillis = connectionStartedAtElapsedMillis?.let {
+            (elapsedRealtime() - it).coerceAtLeast(0)
         }
         setupCallbackReceived = true
         diagnosticsTrackerIfEnabled?.trackGoogleBillingSetupFinished(
@@ -973,7 +974,7 @@ internal class BillingWrapper(
         } else {
             log(LogIntent.WARNING) { BillingStrings.BILLING_CLIENT_RETRY.format(reconnectMilliseconds) }
             reconnectionAlreadyScheduled = true
-            scheduledReconnectAt = dateProvider.now.time + reconnectMilliseconds
+            scheduledReconnectAtElapsedMillis = elapsedRealtime() + reconnectMilliseconds
             startConnection(reconnectMilliseconds)
             reconnectMilliseconds = min(
                 reconnectMilliseconds * 2,
