@@ -309,7 +309,7 @@ internal class BillingWrapper(
                     val timedOutClient = billingClient
                     diagnosticsTrackerIfEnabled?.let { tracker ->
                         val now = elapsedRealtime()
-                        val state = billingClient?.connectionState
+                        val state = timedOutClient?.connectionState
                         tracker.trackGoogleBillingPendingRequestTimedOut(
                             pendingRequestCount = pendingRequestCount(),
                             requestType = requestType,
