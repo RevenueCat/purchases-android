@@ -1,2 +1,3 @@
-### 🔄 Other Changes
-* feat(paywalls): add internal exit offer handler to PaywallView (#4534) via Cesar de la Vega (@vegaro)
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Fix billing requests hanging while connecting (#4613) via Jacob Rakidzich (@JZDesign)
