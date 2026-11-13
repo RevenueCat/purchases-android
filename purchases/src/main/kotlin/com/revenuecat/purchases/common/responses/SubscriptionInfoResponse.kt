@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.common.responses
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.SharedConstants.MICRO_MULTIPLIER
@@ -35,7 +34,7 @@ internal data class SubscriptionInfoResponse(
     @SerialName("grace_period_expires_date") @Serializable(with = ISO8601DateSerializer::class)
     val gracePeriodExpiresDate: Date? = null,
     @SerialName("ownership_type")
-    val ownershipType: OwnershipType = OwnershipType.UNKNOWN,
+    val ownershipType: String? = null,
     @SerialName("period_type")
     val periodType: PeriodType,
     @SerialName("refunded_at") @Serializable(with = ISO8601DateSerializer::class)
