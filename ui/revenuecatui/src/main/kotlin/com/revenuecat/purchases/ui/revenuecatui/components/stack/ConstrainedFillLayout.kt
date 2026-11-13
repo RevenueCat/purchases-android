@@ -101,15 +101,16 @@ internal object ConstrainedFillLayout {
             val availableForFill = (targetMainAxisSize - nonFillSize - totalSpacing).coerceAtLeast(0)
             val fillSizes = allocateConstrainedFillSpace(availableForFill, fillConstraints, this)
             measurables.forEachIndexed { index, measurable ->
-                if (fillConstraints[index] != null) {
+                val fill = fillConstraints[index]
+                if (fill != null) {
                     placeables[index] = measurable.measure(
-                        constraints.withExactMainAxisSize(fillSizes[index], orientation),
+                        constraints.forFillChild(fillSizes[index], fill, orientation),
                     )
                 }
             }
 
             // Inside a scroll the max is infinite and the target falls back to the viewport (the min). Fill children
-            // still share that viewport, but the stack itself has to report its full content size or the scroll
+            // use their share as a minimum, but the stack itself has to report its full content size or the scroll
             // has no range and everything past the viewport is unreachable.
             val measured = placeables.requireNoNulls().asList()
             val contentSize = measured.sumOf { it.mainAxisSize(orientation) } + totalSpacing
@@ -178,12 +179,20 @@ private fun Constraints.mainAxisMin(orientation: Orientation): Int =
 private fun Constraints.mainAxisMax(orientation: Orientation): Int =
     if (orientation == Orientation.Horizontal) maxWidth else maxHeight
 
-private fun Constraints.withExactMainAxisSize(size: Int, orientation: Orientation): Constraints =
-    if (orientation == Orientation.Horizontal) {
-        copy(minWidth = size, maxWidth = size, minHeight = 0)
+private fun Constraints.forFillChild(size: Int, fill: Fill, orientation: Orientation): Constraints {
+    // A scroll removes the maximum but can keep a viewport minimum. Uncapped Fill children must be
+    // allowed to exceed their share, otherwise their content is clipped without creating scroll range.
+    val maximum = if (mainAxisMax(orientation) == Constraints.Infinity && fill.max == null) {
+        Constraints.Infinity
     } else {
-        copy(minWidth = 0, minHeight = size, maxHeight = size)
+        size
     }
+    return if (orientation == Orientation.Horizontal) {
+        copy(minWidth = size, maxWidth = maximum, minHeight = 0)
+    } else {
+        copy(minWidth = 0, minHeight = size, maxHeight = maximum)
+    }
+}
 
 private fun Placeable.mainAxisSize(orientation: Orientation): Int =
     if (orientation == Orientation.Horizontal) width else height

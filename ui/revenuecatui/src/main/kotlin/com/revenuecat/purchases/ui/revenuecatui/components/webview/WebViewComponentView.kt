@@ -193,10 +193,18 @@ internal fun WebViewComponentView(
                 modifier = modifier
                     // Only Fill axes ever consult these (resolveAxis's Fixed/Fit branches ignore them).
                     .conditional(style.size.width is Fill) {
-                        trackMainAxisUnbounded(isHorizontal = true, unboundedState = widthAxisUnboundedState)
+                        trackMainAxisUnbounded(
+                            isHorizontal = true,
+                            unboundedState = widthAxisUnboundedState,
+                            requireZeroMinimum = true,
+                        )
                     }
                     .conditional(style.size.height is Fill) {
-                        trackMainAxisUnbounded(isHorizontal = false, unboundedState = heightAxisUnboundedState)
+                        trackMainAxisUnbounded(
+                            isHorizontal = false,
+                            unboundedState = heightAxisUnboundedState,
+                            requireZeroMinimum = true,
+                        )
                     }
                     .size(effectiveSize)
                     .clipToBounds(),

@@ -43,9 +43,8 @@ internal fun Size.mainAxis(orientation: Orientation): SizeConstraint =
     if (orientation == Orientation.Horizontal) width else height
 
 /**
- * Whether this stack needs [ConstrainedFillLayout] instead of a plain Row/Column. This is the only entry point into
- * the min/max layout code: stacks whose Fill children carry no min/max (i.e. every pre-existing paywall) keep using
- * Row/Column unchanged.
+ * Whether child limits require [ConstrainedFillLayout] instead of a plain Row/Column. Stacks also use that layout
+ * when their main-axis maximum is unbounded, allowing uncapped Fill children to grow past their allocated share.
  *
  * Row/Column implement Fill children with `weight`, which splits leftover space equally but cannot redistribute it
  * when a child is capped by a maximum or floored by a minimum.

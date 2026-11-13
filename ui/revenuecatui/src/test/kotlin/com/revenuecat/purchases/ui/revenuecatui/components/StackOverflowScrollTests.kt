@@ -4,9 +4,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
@@ -245,6 +247,40 @@ internal class StackOverflowScrollTests {
         )
 
         assertThat(verticallyScrollableNodeCount()).isEqualTo(1)
+    }
+
+    @Test
+    fun `scrolling root grows with its uncapped Fill child`() {
+        assertRootScrollsThroughFillChild(overflow = StackComponent.Overflow.SCROLL, height = SizeConstraint.Fill())
+    }
+
+    @Test
+    fun `automatic root scroll grows with its uncapped Fill child`() {
+        assertRootScrollsThroughFillChild(overflow = null, height = SizeConstraint.Fill())
+    }
+
+    @Test
+    fun `scrolling root grows with its minimum constrained Fill child`() {
+        assertRootScrollsThroughFillChild(
+            overflow = StackComponent.Overflow.SCROLL,
+            height = SizeConstraint.Fill(min = 100u),
+        )
+    }
+
+    private fun assertRootScrollsThroughFillChild(overflow: StackComponent.Overflow?, height: SizeConstraint) {
+        setPaywallContent(rootStack(overflow = overflow, children = listOf(scrollingChild(height = height))))
+
+        assertThat(verticallyScrollableNodeCount()).isEqualTo(1)
+        val node = composeTestRule.onAllNodes(verticallyScrollable)[0]
+        val semanticsNode = node.fetchSemanticsNode()
+        val range = semanticsNode.config[SemanticsProperties.VerticalScrollAxisRange]
+        val contentHeight = with(composeTestRule.density) { 4000.dp.roundToPx() }
+        val expectedRange = (contentHeight - semanticsNode.size.height).toFloat()
+        assertThat(range.maxValue()).isEqualTo(expectedRange)
+
+        node.performSemanticsAction(SemanticsActions.ScrollBy) { scrollBy -> scrollBy(0f, expectedRange) }
+        composeTestRule.waitForIdle()
+        assertThat(range.value()).isEqualTo(expectedRange)
     }
 
     private fun matchingWindowOverride(
