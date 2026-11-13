@@ -102,7 +102,7 @@ internal class WebViewJavaScriptBridgeTest {
 
     /** Decodes the envelope an outbound script hands to the receive function. */
     private fun String.deliveredEnvelope(): WebViewEnvelope? = WebViewEnvelope.parse(
-        substringAfter("window.__rcWebComponentsReceive(").substringBeforeLast("); }"),
+        substringAfter("window.${WebViewEnvelope.RECEIVE_FUNCTION}(").substringBeforeLast("); }"),
     )
 
     /**
@@ -613,6 +613,25 @@ internal class WebViewJavaScriptBridgeTest {
         val afterHandshake = scripts().size
 
         bridge.postFromWeb(appMessage(type = "fetch"))
+        idleMainLooper()
+
+        assertThat(scripts()).hasSize(afterHandshake)
+    }
+
+    @Test
+    fun `drops a request without a type without replying`() {
+        val bridge = bridge()
+        bridge.connect()
+        val afterHandshake = scripts().size
+
+        bridge.postFromWeb(
+            frame {
+                put("protocol_version", 1)
+                put("kind", "request")
+                put("component_id", componentId)
+                put("id", "untyped-1")
+            },
+        )
         idleMainLooper()
 
         assertThat(scripts()).hasSize(afterHandshake)

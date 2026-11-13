@@ -286,24 +286,34 @@ internal class WebViewJavaScriptBridge(
             return
         }
 
-        if (envelope.type == WebViewMessageType.RESIZE) {
-            handleResize(envelope)
-        } else {
-            Logger.w("Dropping inbound web view message: unsupported message type '${envelope.type}'.")
-            if (envelope.kind == WebViewEnvelope.Kind.REQUEST) sendUnhandledRequestError(envelope)
+        val type = envelope.type ?: run {
+            Logger.w("Dropping inbound web view message: missing a type.")
+            return
+        }
+
+        when {
+            type == WebViewMessageType.RESIZE -> handleResize(envelope)
+            envelope.kind == WebViewEnvelope.Kind.REQUEST -> {
+                Logger.w("Rejecting inbound web view request: unsupported type '${type.take(MAX_LOGGED_TYPE_LENGTH)}'.")
+                sendUnhandledRequestError(type, envelope.id)
+            }
+            else -> Logger.w(
+                "Dropping inbound web view message: unsupported message type '${type.take(MAX_LOGGED_TYPE_LENGTH)}'.",
+            )
         }
     }
 
     /** Rejects the content's pending request now instead of letting it wait out its timeout. */
-    private fun sendUnhandledRequestError(request: WebViewEnvelope) {
+    @MainThread
+    private fun sendUnhandledRequestError(type: String, id: String?) {
         deliverEnvelopeNow(
             WebViewEnvelope(
                 kind = WebViewEnvelope.Kind.ERROR,
                 protocolVersion = protocolVersion,
                 componentId = componentId,
-                type = request.type,
-                id = request.id,
-                error = "No handler registered for request type \"${request.type}\"",
+                type = type,
+                id = id,
+                error = "No handler registered for request type \"$type\"",
             ),
             allowBeforeNavigation = false,
         )
@@ -398,6 +408,9 @@ internal class WebViewJavaScriptBridge(
 
         /** Minimum per-axis change (CSS px) before a new report is applied. */
         private const val RESIZE_APPLY_THRESHOLD_CSS_PX = 1
+
+        /** Content-supplied message types are truncated before logging. */
+        private const val MAX_LOGGED_TYPE_LENGTH = 64
 
         /**
          * Clamped positive resize dimension, or `null` unless the value is a genuine finite JSON
