@@ -92,6 +92,13 @@ private const val RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 1
 @VisibleForTesting
 internal const val PENDING_REQUEST_TIMEOUT_MILLISECONDS = 10_000L
 
+private data class BillingConnectionDiagnosticsSnapshot(
+    val client: BillingClient?,
+    val connectionStartedAtElapsedMillis: Long?,
+    val setupCallbackReceived: Boolean?,
+    val scheduledReconnectAtElapsedMillis: Long?,
+)
+
 @OptIn(InternalRevenueCatAPI::class)
 @Suppress("LargeClass", "TooManyFunctions", "LongParameterList")
 internal class BillingWrapper(
@@ -221,8 +228,8 @@ internal class BillingWrapper(
             synchronized(this@BillingWrapper) {
                 connectionStartedAtElapsedMillis = elapsedRealtime()
                 connectionAttemptGeneration.incrementAndGet()
+                setupCallbackReceived = false
             }
-            setupCallbackReceived = false
             diagnosticsTrackerIfEnabled?.trackGoogleBillingStartConnection()
             clientToStart.startConnection(object : BillingClientStateListener {
                 override fun onBillingSetupFinished(billingResult: BillingResult) {
@@ -306,10 +313,17 @@ internal class BillingWrapper(
                 // remove() only succeeds while the request is still queued, so it can't also run on connection.
                 if (serviceRequests.remove(pendingRequest)) {
                     log(LogIntent.GOOGLE_WARNING) { BillingStrings.BILLING_PENDING_REQUEST_TIMED_OUT }
-                    val timedOutClient = billingClient
+                    val connectionSnapshot = synchronized(this@BillingWrapper) {
+                        BillingConnectionDiagnosticsSnapshot(
+                            client = billingClient,
+                            connectionStartedAtElapsedMillis = connectionStartedAtElapsedMillis,
+                            setupCallbackReceived = setupCallbackReceived,
+                            scheduledReconnectAtElapsedMillis = scheduledReconnectAtElapsedMillis,
+                        )
+                    }
                     diagnosticsTrackerIfEnabled?.let { tracker ->
                         val now = elapsedRealtime()
-                        val state = timedOutClient?.connectionState
+                        val state = connectionSnapshot.client?.connectionState
                         tracker.trackGoogleBillingPendingRequestTimedOut(
                             pendingRequestCount = pendingRequestCount(),
                             requestType = requestType,
@@ -321,16 +335,16 @@ internal class BillingWrapper(
                                 null -> "no_client"
                                 else -> "unknown"
                             },
-                            connectionDurationMillis = connectionStartedAtElapsedMillis?.let {
+                            connectionDurationMillis = connectionSnapshot.connectionStartedAtElapsedMillis?.let {
                                 (now - it).coerceAtLeast(0)
                             },
-                            setupCallbackReceived = setupCallbackReceived,
-                            reconnectionDelayMillis = scheduledReconnectAtElapsedMillis?.let {
+                            setupCallbackReceived = connectionSnapshot.setupCallbackReceived,
+                            reconnectionDelayMillis = connectionSnapshot.scheduledReconnectAtElapsedMillis?.let {
                                 (it - now).coerceAtLeast(0)
                             },
                         )
                     }
-                    timedOutClient?.let { retireStuckClient(it) }
+                    connectionSnapshot.client?.let { retireStuckClient(it) }
                     pendingRequest.first(
                         PurchasesError(
                             PurchasesErrorCode.StoreProblemError,
@@ -864,11 +878,14 @@ internal class BillingWrapper(
 
     @Suppress("LongMethod", "CyclomaticComplexMethod")
     private fun onBillingSetupFinishedForClient(billingResult: BillingResult, client: BillingClient?) {
-        if (client != null && billingClient !== client) return
-        val connectionDurationMillis = connectionStartedAtElapsedMillis?.let {
+        val connectionStartedAt = synchronized(this@BillingWrapper) {
+            if (client != null && billingClient !== client) return
+            setupCallbackReceived = true
+            connectionStartedAtElapsedMillis
+        }
+        val connectionDurationMillis = connectionStartedAt?.let {
             (elapsedRealtime() - it).coerceAtLeast(0)
         }
-        setupCallbackReceived = true
         diagnosticsTrackerIfEnabled?.trackGoogleBillingSetupFinished(
             connectionDurationMillis = connectionDurationMillis,
             responseCode = billingResult.responseCode,
