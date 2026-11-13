@@ -92,7 +92,19 @@ internal data class ReceiptInfo(
 
     @IgnoredOnParcel
     val duration: String? = period?.iso8601?.takeUnless { it.isEmpty() }
+
+    /**
+     * The base plan the given product was purchased with, if it was purchased through the SDK's purchase flow and
+     * its product details were available. Null for products without base plans and for stores other than Google.
+     */
+    fun basePlanIdFor(productId: String): String? = platformProductIds
+        .firstOrNull { it[PRODUCT_ID_KEY] == productId }
+        ?.get(BASE_PLAN_ID_KEY)
 }
+
+private const val PRODUCT_ID_KEY = "product_id"
+private const val BASE_PLAN_ID_KEY = "base_plan_id"
+private const val OFFER_ID_KEY = "offer_id"
 
 private fun StoreProduct.platformProductId(): PlatformProductId {
     return PlatformProductId(id)
@@ -112,7 +124,7 @@ private fun SubscriptionOption.platformProductId(): PlatformProductId? {
 private open class PlatformProductId(open val productId: String) {
     open val asMap: Map<String, String?>
         get() = mapOf(
-            "product_id" to productId,
+            PRODUCT_ID_KEY to productId,
         )
 }
 
@@ -123,8 +135,8 @@ private class GooglePlatformProductId(
 ) : PlatformProductId(productId) {
     override val asMap: Map<String, String?>
         get() = mapOf(
-            "product_id" to productId,
-            "base_plan_id" to basePlanId,
-            "offer_id" to offerId,
+            PRODUCT_ID_KEY to productId,
+            BASE_PLAN_ID_KEY to basePlanId,
+            OFFER_ID_KEY to offerId,
         )
 }

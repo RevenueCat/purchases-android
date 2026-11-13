@@ -12,8 +12,11 @@ import com.revenuecat.purchases.PresentedOfferingContextSerializer
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.ReplacementMode
 import com.revenuecat.purchases.TargetingContextSerializer
+import com.revenuecat.purchases.models.GoogleStoreProduct
+import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.PeriodSerializer
+import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PriceSerializer
 import com.revenuecat.purchases.models.PricingPhase
@@ -24,6 +27,7 @@ import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.utils.mockProductDetails
 import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubStoreProduct
 import com.revenuecat.purchases.utils.stubSubscriptionOption
@@ -123,6 +127,64 @@ class ReceiptInfoTest {
         assertThat(receiptInfo.currency).isEqualTo("USD")
         assertThat(receiptInfo.duration).isNull()
         assertThat(receiptInfo.pricingPhases).isNull()
+    }
+
+    @Test
+    fun `basePlanIdFor returns the base plan the Google subscription was purchased with`() {
+        val basePlanId = "premium-monthly"
+        val productId = mockGooglePurchase.products.first()
+        val productDetails = mockProductDetails(productId = productId)
+        val purchasedOption = GoogleSubscriptionOption(
+            productId = productId,
+            basePlanId = basePlanId,
+            offerId = null,
+            pricingPhases = listOf(
+                PricingPhase(
+                    billingPeriod = Period.create("P1M"),
+                    recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
+                    billingCycleCount = 0,
+                    price = Price(formatted = "$9.00", amountMicros = 9000000, currencyCode = "USD"),
+                )
+            ),
+            tags = emptyList(),
+            productDetails = productDetails,
+            offerToken = "offer-token",
+        )
+        val storeProduct = GoogleStoreProduct(
+            productId = productId,
+            basePlanId = basePlanId,
+            type = ProductType.SUBS,
+            price = purchasedOption.fullPricePhase!!.price,
+            name = "name",
+            title = "title",
+            description = "description",
+            period = Period.create("P1M"),
+            subscriptionOptions = SubscriptionOptions(listOf(purchasedOption)),
+            defaultOption = purchasedOption,
+            productDetails = productDetails,
+        )
+
+        val receiptInfo = ReceiptInfo.from(
+            storeTransaction = makeMockStoreTransaction(
+                purchaseState = PurchaseState.PURCHASED,
+                subscriptionOptionId = purchasedOption.id,
+            ),
+            storeProduct = storeProduct,
+            subscriptionOptionsForProductIDs = null,
+        )
+
+        assertThat(receiptInfo.basePlanIdFor(productId)).isEqualTo(basePlanId)
+        assertThat(receiptInfo.basePlanIdFor("another-product")).isNull()
+    }
+
+    @Test
+    fun `basePlanIdFor returns null for a product purchased without a base plan`() {
+        val receiptInfo = ReceiptInfo(
+            productIDs = listOf(productIdentifier),
+            platformProductIds = listOf(mapOf("product_id" to productIdentifier)),
+        )
+
+        assertThat(receiptInfo.basePlanIdFor(productIdentifier)).isNull()
     }
 
     @Test

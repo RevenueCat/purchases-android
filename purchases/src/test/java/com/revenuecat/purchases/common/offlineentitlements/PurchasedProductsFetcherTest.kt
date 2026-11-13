@@ -50,6 +50,7 @@ class PurchasedProductsFetcherTest {
     private val testDatePlusOneDay = Date(1680135026287L) // Tue Mar 29 17:10:26 PDT 2023
 
     private val appUserID = "appUserID"
+    private val productWithBasePlans = "pro_sub"
 
     private val unexpectedOnError: (PurchasesError) -> Unit = {
         fail("Should not have errored")
@@ -561,6 +562,148 @@ class PurchasedProductsFetcherTest {
     }
 
     @Test
+    fun `a purchase of a product whose base plans grant different entitlements only unlocks the shared ones`() {
+        mockEntitlementMappingWithBasePlans(
+            productIdentifier = productWithBasePlans,
+            backwardsCompatibleBasePlanId = "premium-monthly",
+            entitlementsByBasePlanId = mapOf(
+                "premium-monthly" to listOf("premium", "pro"),
+                "basic-monthly" to listOf("pro"),
+            ),
+        )
+        val activePurchase = stubStoreTransactionFromGooglePurchase(
+            productIds = listOf(productWithBasePlans),
+            purchaseTime = testDate.time,
+        )
+        mockActivePurchases(listOf(activePurchase))
+        var receivedListOfPurchasedProducts: List<PurchasedProduct> = emptyList()
+
+        fetcher.queryActiveProducts(
+            appUserID = appUserID,
+            onSuccess = { receivedListOfPurchasedProducts = it },
+            unexpectedOnError,
+        )
+
+        assertThat(receivedListOfPurchasedProducts).hasSize(1)
+        assertThat(receivedListOfPurchasedProducts[0].entitlements).containsExactly("pro")
+        assertThat(receivedListOfPurchasedProducts[0].basePlanId).isNull()
+    }
+
+    @Test
+    fun `a purchase of a product whose base plans grant no entitlements in common unlocks none`() {
+        mockEntitlementMappingWithBasePlans(
+            productIdentifier = productWithBasePlans,
+            backwardsCompatibleBasePlanId = "premium-monthly",
+            entitlementsByBasePlanId = mapOf(
+                "premium-monthly" to listOf("premium"),
+                "basic-monthly" to listOf("basic"),
+            ),
+        )
+        val activePurchase = stubStoreTransactionFromGooglePurchase(
+            productIds = listOf(productWithBasePlans),
+            purchaseTime = testDate.time,
+        )
+        mockActivePurchases(listOf(activePurchase))
+        var receivedListOfPurchasedProducts: List<PurchasedProduct> = emptyList()
+
+        fetcher.queryActiveProducts(
+            appUserID = appUserID,
+            onSuccess = { receivedListOfPurchasedProducts = it },
+            unexpectedOnError,
+        )
+
+        assertThat(receivedListOfPurchasedProducts).hasSize(1)
+        assertThat(receivedListOfPurchasedProducts[0].entitlements).isEmpty()
+        assertThat(receivedListOfPurchasedProducts[0].basePlanId).isNull()
+    }
+
+    @Test
+    fun `a purchase of a product whose base plans grant the same entitlements unlocks them`() {
+        mockEntitlementMappingWithBasePlans(
+            productIdentifier = productWithBasePlans,
+            backwardsCompatibleBasePlanId = "premium-monthly",
+            entitlementsByBasePlanId = mapOf(
+                "premium-monthly" to listOf("premium"),
+                "premium-yearly" to listOf("premium"),
+            ),
+        )
+        val activePurchase = stubStoreTransactionFromGooglePurchase(
+            productIds = listOf(productWithBasePlans),
+            purchaseTime = testDate.time,
+        )
+        mockActivePurchases(listOf(activePurchase))
+        var receivedListOfPurchasedProducts: List<PurchasedProduct> = emptyList()
+
+        fetcher.queryActiveProducts(
+            appUserID = appUserID,
+            onSuccess = { receivedListOfPurchasedProducts = it },
+            unexpectedOnError,
+        )
+
+        assertThat(receivedListOfPurchasedProducts).hasSize(1)
+        assertThat(receivedListOfPurchasedProducts[0].entitlements).containsExactly("premium")
+        assertThat(receivedListOfPurchasedProducts[0].basePlanId).isEqualTo("premium-monthly")
+    }
+
+    @Test
+    fun `a purchase whose saved base plan is known unlocks the entitlements of that base plan`() {
+        mockEntitlementMappingWithBasePlans(
+            productIdentifier = productWithBasePlans,
+            backwardsCompatibleBasePlanId = "premium-monthly",
+            entitlementsByBasePlanId = mapOf(
+                "premium-monthly" to listOf("premium"),
+                "basic-monthly" to listOf("basic"),
+            ),
+        )
+        val activePurchase = stubStoreTransactionFromGooglePurchase(
+            productIds = listOf(productWithBasePlans),
+            purchaseTime = testDate.time,
+        )
+        mockActivePurchases(listOf(activePurchase))
+        mockSavedBasePlanId(activePurchase, basePlanId = "basic-monthly")
+        var receivedListOfPurchasedProducts: List<PurchasedProduct> = emptyList()
+
+        fetcher.queryActiveProducts(
+            appUserID = appUserID,
+            onSuccess = { receivedListOfPurchasedProducts = it },
+            unexpectedOnError,
+        )
+
+        assertThat(receivedListOfPurchasedProducts).hasSize(1)
+        assertThat(receivedListOfPurchasedProducts[0].entitlements).containsExactly("basic")
+        assertThat(receivedListOfPurchasedProducts[0].basePlanId).isEqualTo("basic-monthly")
+    }
+
+    @Test
+    fun `a purchase whose saved base plan is missing from the mapping only unlocks the shared entitlements`() {
+        mockEntitlementMappingWithBasePlans(
+            productIdentifier = productWithBasePlans,
+            backwardsCompatibleBasePlanId = "premium-monthly",
+            entitlementsByBasePlanId = mapOf(
+                "premium-monthly" to listOf("premium", "pro"),
+                "basic-monthly" to listOf("pro"),
+            ),
+        )
+        val activePurchase = stubStoreTransactionFromGooglePurchase(
+            productIds = listOf(productWithBasePlans),
+            purchaseTime = testDate.time,
+        )
+        mockActivePurchases(listOf(activePurchase))
+        mockSavedBasePlanId(activePurchase, basePlanId = "plan-added-after-the-mapping-was-cached")
+        var receivedListOfPurchasedProducts: List<PurchasedProduct> = emptyList()
+
+        fetcher.queryActiveProducts(
+            appUserID = appUserID,
+            onSuccess = { receivedListOfPurchasedProducts = it },
+            unexpectedOnError,
+        )
+
+        assertThat(receivedListOfPurchasedProducts).hasSize(1)
+        assertThat(receivedListOfPurchasedProducts[0].entitlements).containsExactly("pro")
+        assertThat(receivedListOfPurchasedProducts[0].basePlanId).isNull()
+    }
+
+    @Test
     fun `a purchase whose saved option starts with a free phase is a trial`() {
         assertThat(periodTypesWithSavedPricingPhases(listOf(freeTrialPhase, fullPricePhase)))
             .containsExactly(PeriodType.TRIAL)
@@ -667,6 +810,46 @@ class PurchasedProductsFetcherTest {
             val map = activePurchases.associateBy { it.purchaseToken.sha1() }
             lambda<(Map<String, StoreTransaction>) -> Unit>().captured.invoke(map)
         }
+    }
+
+    /**
+     * Mocks a mapping shaped like the backend's: one entry per base plan, keyed by `productId:basePlanId`, plus a
+     * bare `productId` entry duplicating the backwards compatible base plan.
+     */
+    private fun mockEntitlementMappingWithBasePlans(
+        productIdentifier: String,
+        backwardsCompatibleBasePlanId: String,
+        entitlementsByBasePlanId: Map<String, List<String>>,
+    ) {
+        val mappings = entitlementsByBasePlanId.entries.associate { (basePlanId, entitlements) ->
+            "$productIdentifier:$basePlanId" to ProductEntitlementMapping.Mapping(
+                productIdentifier,
+                basePlanId,
+                entitlements,
+            )
+        } + mapOf(
+            productIdentifier to ProductEntitlementMapping.Mapping(
+                productIdentifier,
+                backwardsCompatibleBasePlanId,
+                entitlementsByBasePlanId.getValue(backwardsCompatibleBasePlanId),
+            ),
+        )
+        every { deviceCache.getProductEntitlementMapping() } returns ProductEntitlementMapping(mappings)
+    }
+
+    private fun mockSavedBasePlanId(transaction: StoreTransaction, basePlanId: String) {
+        every {
+            localTransactionMetadataStore.getLocalTransactionMetadata(transaction.purchaseToken)
+        } returns LocalTransactionMetadata(
+            token = transaction.purchaseToken,
+            receiptInfo = ReceiptInfo(
+                productIDs = transaction.productIds,
+                platformProductIds = transaction.productIds.map { productId ->
+                    mapOf("product_id" to productId, "base_plan_id" to basePlanId, "offer_id" to null)
+                },
+            ),
+            purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+        )
     }
 
     private fun mockEntitlementMapping(
