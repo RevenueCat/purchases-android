@@ -9,5 +9,6 @@
             android:debuggable="true"
             tools:ignore="HardcodedDebugMode">
         <activity android:name="com.revenuecat.purchases.MainActivity" android:exported="true"/>
+        <service android:name="com.revenuecat.purchases.google.NullBillingService" android:exported="false"/>
     </application>
 </manifest>
