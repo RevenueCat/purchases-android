@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components.text
 import android.os.LocaleList
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -391,6 +392,39 @@ class TextComponentViewTests {
         onNodeWithText(expectedTextUnselected)
             .assertTextLayoutResult("Text has FontWeight.Light") {
                 it.layoutInput.style.fontWeight == FontWeight.Light
+            }
+    }
+
+    @Test
+    fun `Should not inherit letter spacing or line height from a Material3 theme`(): Unit = with(composeTestRule) {
+        // Arrange
+        val component = TextComponent(
+            text = selectedLocalizationKey,
+            color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+        )
+        val state = FakePaywallState(
+            localizations = localizations,
+            defaultLocaleIdentifier = localeIdEnUs,
+            packages = listOf(TestData.Packages.monthly),
+            components = listOf(component),
+        )
+        setContent {
+            val style = styleFactory.create(component).getOrThrow().componentStyle as TextComponentStyle
+
+            // Act
+            // Material3's default LocalTextStyle is bodyLarge, which has letterSpacing = 0.5.sp and lineHeight = 24.sp.
+            MaterialTheme {
+                TextComponentView(style = style, state = state)
+            }
+        }
+
+        // Assert
+        onNodeWithText(expectedTextSelected)
+            .assertTextLayoutResult("Text has unspecified letter spacing") {
+                it.layoutInput.style.letterSpacing == TextUnit.Unspecified
+            }
+            .assertTextLayoutResult("Text has unspecified line height") {
+                it.layoutInput.style.lineHeight == TextUnit.Unspecified
             }
     }
 
