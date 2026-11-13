@@ -44,7 +44,7 @@ version: 2.1
 orbs:
   android: circleci/android@3.2.0
   revenuecat: revenuecat/sdks-common-config@4.7.0
-  codecov: codecov/codecov@3.2.4
+  codecov: codecov/codecov@6.1.0
 
 parameters:
   action:
@@ -342,7 +342,8 @@ jobs:
                 name: Generate Kover XML
                 command: ./gradlew purchases:koverXmlReportDefaultsRelease
             - codecov/upload:
-                file: purchases/build/reports/kover/reportDefaultsRelease.xml
+                files: purchases/build/reports/kover/reportDefaultsRelease.xml
+                disable_search: true
       - run:
           name: Collect JUnit XMLs
           when: always
@@ -448,7 +449,7 @@ jobs:
       - install-awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/10.30.2 s3://purchases-docs/android/10.30.2 --delete
+          command: aws s3 sync ~/project/docs/10.30.3 s3://purchases-docs/android/10.30.3 --delete
       - run:
           name: Invalidate CloudFront caches
           command: aws cloudfront create-invalidation --distribution-id EPTW7F3CB566V --paths "/*"
@@ -832,14 +833,15 @@ jobs:
               PR_ARG="--pr-number $PR_NUM"
             fi
 
+            set -o pipefail
             emerge upload snapshots \
               --name "TestPurchasesUIAndroidCompatibility Paparazzi" \
               --id "com.revenuecat.testpurchasesuiandroidcompatibility.paparazzi" \
               --repo-name "RevenueCat/purchases-android" \
-              --debug \
               --client-library paparazzi \
               $PR_ARG \
-              --project-root .
+              --project-root . 2>&1 \
+              | sed -uE 's#(https?://[^ ?"]+)\?[^ "]*(X-Amz-|X-Goog-|Signature=)[^ "]*#\1?<redacted>#g'
       - android/save_build_cache
 
   record-and-push-paywall-template-screenshots:

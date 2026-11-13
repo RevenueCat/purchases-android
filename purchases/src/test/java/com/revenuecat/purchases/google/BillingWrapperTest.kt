@@ -104,9 +104,11 @@ class BillingWrapperTest {
     private var purchasesUpdatedListener: PurchasesUpdatedListener? = null
     private var billingClientStateListener: BillingClientStateListener? = null
     private var handler: Handler = mockk()
+    private val pendingRequestTimeouts = mutableListOf<Runnable>()
     private var mockDeviceCache: DeviceCache = mockk()
     private var mockDiagnosticsTracker: DiagnosticsTracker = mockk()
     private var mockDateProvider: DateProvider = mockk()
+    private var connectionClockMillis = 0L
 
     private var mockPurchasesListener: BillingAbstract.PurchasesUpdatedListener = mockk()
 
@@ -126,6 +128,7 @@ class BillingWrapperTest {
 
     @Before
     fun setup() {
+        connectionClockMillis = 0L
         storeProducts = null
         purchasesUpdatedListener = null
         billingClientStateListener = null
@@ -161,6 +164,7 @@ class BillingWrapperTest {
             secondArg<PurchasesResponseListener>().onQueryPurchasesResponse(billingClientOKResult, emptyList())
         }
 
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
         every {
             mockClient.isReady
         } returns false andThen true
@@ -180,6 +184,7 @@ class BillingWrapperTest {
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             purchasesStateProvider = purchasesStateProvider,
             dateProvider = mockDateProvider,
+            elapsedRealtime = { connectionClockMillis },
         )
         wrapper.purchasesUpdatedListener = mockPurchasesListener
         wrapper.startConnection()
@@ -423,7 +428,7 @@ class BillingWrapperTest {
         ) {  }
 
         verify(exactly = 2) {
-            mockClient.startConnection(billingClientStateListener!!)
+            mockClient.startConnection(any())
         }
     }
 
@@ -608,6 +613,259 @@ class BillingWrapperTest {
         }
         assertThat(error).isNotNull
         assertThat(error?.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+    }
+
+    @Test
+    fun `does not start another connection while billing is connecting`() {
+        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTING
+
+        val errors = mutableListOf<PurchasesError>()
+        wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("product_a"), {}, { errors.add(it) })
+        wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("product_b"), {}, { errors.add(it) })
+
+        // Only the initial connection from setup should have been started.
+        verify(exactly = 1) { mockClient.startConnection(any()) }
+        pendingRequestTimeouts.toList().forEach { it.run() }
+        assertThat(errors.map { it.code }).containsExactly(
+            PurchasesErrorCode.StoreProblemError,
+            PurchasesErrorCode.StoreProblemError,
+        )
+    }
+
+    @Test
+    fun `timed out connecting client is retired once and a later request creates a new client`() {
+        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTING
+        val errors = mutableListOf<PurchasesError>()
+        val oldListener = billingClientStateListener!!
+        wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("a"), {}, { errors.add(it) })
+        wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("b"), {}, { errors.add(it) })
+
+        every { mockDateProvider.now } returns Date(1676379380000)
+        connectionClockMillis = 10_000
+        pendingRequestTimeouts.toList().forEach { it.run() }
+
+        assertThat(errors).hasSize(2)
+        verify(exactly = 1) { mockClient.endConnection() }
+        verify(exactly = 1) { mockClientFactory.buildClient(any()) }
+        assertThat(wrapper.billingClient).isNull()
+
+        val replacement = mockk<BillingClient>(relaxed = true)
+        val replacementListener = slot<BillingClientStateListener>()
+        every { replacement.startConnection(capture(replacementListener)) } just Runs
+        every { replacement.isReady } returns false
+        every { replacement.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
+        every { mockClientFactory.buildClient(any()) } returns replacement
+        wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("c"), {}, { errors.add(it) })
+        verify(exactly = 1) { replacement.startConnection(any()) }
+        assertThat(wrapper.billingClient).isSameAs(replacement)
+
+        oldListener.onBillingSetupFinished(BillingClient.BillingResponseCode.BILLING_UNAVAILABLE.buildResult())
+        assertThat(errors).hasSize(2)
+        replacementListener.captured.onBillingSetupFinished(
+            BillingClient.BillingResponseCode.BILLING_UNAVAILABLE.buildResult(),
+        )
+        assertThat(errors).hasSize(3)
+        assertThat(errors.last().code).isEqualTo(PurchasesErrorCode.PurchaseNotAllowedError)
+    }
+
+    @Test
+    fun `setup callback posted before retirement cannot fail later requests`() {
+        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTING
+        val errors = mutableListOf<PurchasesError>()
+        wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("a"), {}, { errors.add(it) })
+        val posted = slot<Runnable>()
+        every { handler.post(capture(posted)) } returns true
+        billingClientStateListener!!.onBillingSetupFinished(
+            BillingClient.BillingResponseCode.BILLING_UNAVAILABLE.buildResult(),
+        )
+        val oldCallback = posted.captured
+        every { handler.post(any()) } answers { firstArg<Runnable>().run(); true }
+        every { mockDateProvider.now } returns Date(1676379380000)
+        connectionClockMillis = 10_000
+        pendingRequestTimeouts.toList().forEach { it.run() }
+        oldCallback.run()
+        assertThat(errors.map { it.underlyingErrorMessage })
+            .containsExactly(BillingStrings.BILLING_PENDING_REQUEST_TIMED_OUT)
+    }
+
+    @Test
+    fun `retiring a client reports whether closing it failed`() {
+        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTING
+        every { mockClient.endConnection() } throws IllegalStateException("close failed")
+        val errors = mutableListOf<PurchasesError>()
+        wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("a"), {}, { errors.add(it) })
+        every { mockDateProvider.now } returns Date(1676379380000)
+        connectionClockMillis = 10_000
+        pendingRequestTimeouts.toList().forEach { it.run() }
+        assertThat(errors).hasSize(1)
+        assertThat(wrapper.billingClient).isSameAs(mockClient)
+        wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("b"), {}, { errors.add(it) })
+        pendingRequestTimeouts.toList().forEach { it.run() }
+        verify(exactly = 1) { mockClient.endConnection() }
+    }
+
+    @Test
+    fun `timeout waits for a newer connection attempt to reach its own deadline`() {
+        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTING
+        wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("a"), {}, {})
+        every { mockDateProvider.now } returns Date(1676379379000)
+        connectionClockMillis = 9_000
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
+        wrapper.startConnection()
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTING
+        every { mockDateProvider.now } returns Date(1676379380000)
+        connectionClockMillis = 10_000
+        val deferred = slot<Runnable>()
+        every { handler.postDelayed(capture(deferred), 9000L) } returns true
+
+        pendingRequestTimeouts.toList().forEach { it.run() }
+        verify(exactly = 0) { mockClient.endConnection() }
+        every { mockDateProvider.now } returns Date(1676379389000)
+        connectionClockMillis = 19_000
+        deferred.captured.run()
+        verify(exactly = 1) { mockClient.endConnection() }
+    }
+
+    @Test
+    fun `retirement timer does not retire a newer connection attempt`() {
+        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTING
+        wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("a"), {}, {})
+        connectionClockMillis = 9_000
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
+        wrapper.startConnection()
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTING
+        connectionClockMillis = 10_000
+        val deferred = slot<Runnable>()
+        every { handler.postDelayed(capture(deferred), 9000L) } returns true
+        pendingRequestTimeouts.toList().forEach { it.run() }
+
+        connectionClockMillis = 15_000
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
+        wrapper.startConnection()
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTING
+        connectionClockMillis = 19_000
+        deferred.captured.run()
+        verify(exactly = 0) { mockClient.endConnection() }
+        assertThat(wrapper.billingClient).isSameAs(mockClient)
+    }
+
+    @Test
+    fun `timeout does not retire a client that is no longer connecting`() {
+        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
+        wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("a"), {}, {})
+        pendingRequestTimeouts.toList().forEach { it.run() }
+        verify(exactly = 0) { mockClient.endConnection() }
+        assertThat(wrapper.billingClient).isSameAs(mockClient)
+    }
+
+    @Test
+    fun `starts a new connection when billing is disconnected`() {
+        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
+
+        wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("product_a"), {}, {})
+
+        verify(exactly = 2) { mockClient.startConnection(any()) }
+    }
+
+    @Test
+    fun `purchase timeout reports the error without launching after billing reconnects`() {
+        every { mockClient.isReady } returns false
+        val errors = mutableListOf<PurchasesError>()
+        every { mockPurchasesListener.onPurchasesFailedToUpdate(any()) } answers { errors.add(firstArg()) }
+        val purchasingData = createStoreProductWithoutOffers().subscriptionOptions!!.first().purchasingData
+        wrapper.makePurchaseAsync(
+            mockActivity, appUserId, purchasingData, mockReplaceSkuInfo(), PresentedOfferingContext("offering_a"),
+        )
+        every { mockClient.isReady } returns true
+        every { mockClient.launchBillingFlow(any(), any()) } returns billingClientOKResult
+
+        pendingRequestTimeouts.forEach { it.run() }
+        wrapper.onBillingSetupFinished(billingClientOKResult)
+
+        assertThat(errors.map { it.underlyingErrorMessage })
+            .containsExactly(BillingStrings.BILLING_PENDING_REQUEST_TIMED_OUT)
+        verify(exactly = 0) { mockClient.launchBillingFlow(any(), any()) }
+    }
+
+    @Test
+    fun `purchase history timeout fails the purchase without queuing a second request`() {
+        every { mockClient.isReady } returns false
+        val errors = mutableListOf<PurchasesError>()
+        every { mockPurchasesListener.onPurchasesFailedToUpdate(any()) } answers { errors.add(firstArg()) }
+        val purchasingData = createStoreProductWithoutOffers().subscriptionOptions!!.first().purchasingData
+        wrapper.makePurchaseAsync(mockActivity, appUserId, purchasingData, null, PresentedOfferingContext("offering_a"))
+
+        pendingRequestTimeouts.toList().forEach { it.run() }
+
+        assertThat(errors.map { it.underlyingErrorMessage })
+            .containsExactly(BillingStrings.BILLING_PENDING_REQUEST_TIMED_OUT)
+        assertThat(pendingRequestTimeouts).hasSize(1)
+        verify(exactly = 0) { mockClient.launchBillingFlow(any(), any()) }
+    }
+
+    @Test
+    fun `request times out if billing disconnects between readiness checks`() {
+        every { mockClient.isReady } returnsMany listOf(true, false)
+        val errors = mutableListOf<PurchasesError>()
+        wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("product_a"), {}, { errors.add(it) })
+
+        pendingRequestTimeouts.toList().forEach { it.run() }
+
+        assertThat(errors.map { it.code }).containsExactly(PurchasesErrorCode.StoreProblemError)
+        every { mockClient.isReady } returns true
+        wrapper.onBillingSetupFinished(billingClientOKResult)
+        assertThat(errors).hasSize(1)
+        verify(exactly = 0) { mockClient.queryProductDetailsAsync(any(), any()) }
+    }
+
+    @Test
+    fun `pending request fails if billing does not connect before the timeout`() {
+        every { mockClient.isReady } returns false
+        val errors = mutableListOf<PurchasesError>()
+        wrapper.queryPurchases(
+            appUserID = "appUserID",
+            onSuccess = { fail("should be an error") },
+            onError = { errors.add(it) },
+        )
+        assertThat(errors).isEmpty()
+
+        every { mockDateProvider.now } returns Date(1676379380000)
+        pendingRequestTimeouts.forEach { it.run() }
+
+        assertThat(errors.map { it.code }).containsExactly(PurchasesErrorCode.StoreProblemError)
+
+
+        // The timed out request must not also run once billing connects.
+        every { mockClient.isReady } returns true
+        wrapper.onBillingSetupFinished(billingClientOKResult)
+        assertThat(errors).hasSize(1)
+    }
+
+    @Test
+    fun `pending request timeout does nothing if billing connected in time`() {
+        every { mockClient.isReady } returns false
+        var successCount = 0
+        wrapper.queryPurchases(
+            appUserID = "appUserID",
+            onSuccess = { successCount++ },
+            onError = { fail("shouldn't be an error") },
+        )
+        every { mockClient.isReady } returns true
+        wrapper.onBillingSetupFinished(billingClientOKResult)
+        assertThat(successCount).isEqualTo(1)
+
+        assertThat(pendingRequestTimeouts).isNotEmpty
+        pendingRequestTimeouts.forEach { it.run() }
+
+        assertThat(successCount).isEqualTo(1)
     }
 
     @Test
@@ -1345,7 +1603,7 @@ class BillingWrapperTest {
 
         // ensure calls to startConnection - 1 happens in setup, 1 more here
         verify(exactly = 2) {
-            handler.postDelayed(any(), any())
+            handler.postDelayed(any(), 0L)
         }
 
         every { mockClient.isReady } returns true
@@ -1577,7 +1835,7 @@ class BillingWrapperTest {
     @Test
     fun whenSettingListenerStartConnection() {
         verify {
-            mockClient.startConnection(eq(wrapper))
+            mockClient.startConnection(any())
         }
 
         assertThat(wrapper.purchasesUpdatedListener).isNotNull
@@ -1595,7 +1853,7 @@ class BillingWrapperTest {
         ) { }
 
         verify(exactly = 1) { // Just the original connection
-            mockClient.startConnection(wrapper)
+            mockClient.startConnection(any())
         }
     }
 
@@ -1934,6 +2192,7 @@ class BillingWrapperTest {
                 onError = { fail("shouldn't be an error") }
             )
         }
+        every { mockDateProvider.now } returns Date(1676379372500)
         wrapper.onBillingSetupFinished(billingResult)
 
         // Assert
@@ -2447,6 +2706,11 @@ class BillingWrapperTest {
             delayedSlot.captured.run()
             true
         }
+
+        // Timeouts must not fire inline, or requests would fail before the connection has a chance to complete.
+        every {
+            handler.postDelayed(capture(pendingRequestTimeouts), PENDING_REQUEST_TIMEOUT_MILLISECONDS)
+        } returns true
     }
 
     private fun mockDiagnosticsTracker() {

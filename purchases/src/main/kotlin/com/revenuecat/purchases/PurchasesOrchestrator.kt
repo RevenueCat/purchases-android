@@ -90,6 +90,7 @@ import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
+import com.revenuecat.purchases.interfaces.GetPackagesForPurchaseCallback
 import com.revenuecat.purchases.interfaces.GetRewardVerificationResultCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontCallback
@@ -777,6 +778,21 @@ internal class PurchasesOrchestrator(
             { listener.onError(it) },
             { listener.onReceived(it) },
             fetchCurrent,
+        )
+    }
+
+    fun getPackagesForPurchase(
+        packageReference: PackagePurchaseReference,
+        addOnPackageReferences: List<PackagePurchaseReference>,
+        callback: GetPackagesForPurchaseCallback,
+    ) {
+        offeringsManager.getPackagesForPurchase(
+            identityManager.currentAppUserID,
+            state.appInBackground,
+            packageReference,
+            addOnPackageReferences,
+            { callback.onError(it) },
+            { main, addOns -> callback.onReceived(main, addOns) },
         )
     }
 
