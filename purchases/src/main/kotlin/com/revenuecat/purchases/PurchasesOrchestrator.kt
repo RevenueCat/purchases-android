@@ -795,6 +795,15 @@ internal class PurchasesOrchestrator(
         )
     }
 
+    fun getOfferingsForPurchase(listener: ReceiveOfferingsCallback) {
+        offeringsManager.getOfferingsForPurchase(
+            identityManager.currentAppUserID,
+            state.appInBackground,
+            { listener.onError(it) },
+            { listener.onReceived(it) },
+        )
+    }
+
     /**
      * Resolves a workflow by workflow or offering id, or throws [PurchasesException] when it can't be served.
      * Memory-first via [WorkflowManager.getWorkflow]: a warm cache resumes synchronously on the caller's thread

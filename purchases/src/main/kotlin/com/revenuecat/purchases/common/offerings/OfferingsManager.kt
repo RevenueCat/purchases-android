@@ -90,8 +90,31 @@ internal class OfferingsManager(
                 cachedOfferings,
                 startTime,
                 onSuccess,
+                waitForPaywallConfig = true,
             )
         }
+    }
+
+    fun getOfferingsForPurchase(
+        appUserID: String,
+        appInBackground: Boolean,
+        onError: (PurchasesError) -> Unit,
+        onSuccess: (Offerings) -> Unit,
+    ) {
+        val cachedOfferings = offeringsCache.cachedOfferings
+        if (uiPreviewMode || cachedOfferings == null) {
+            getOfferings(appUserID, appInBackground, onError, onSuccess)
+            return
+        }
+        trackGetOfferingsStartedIfNeeded()
+        vendCachedOfferingsAndMaybeRefresh(
+            appUserID,
+            appInBackground,
+            cachedOfferings,
+            dateProvider.now,
+            onSuccess,
+            waitForPaywallConfig = false,
+        )
     }
 
     private fun createTrackedOfferingsCallbacks(
@@ -150,6 +173,7 @@ internal class OfferingsManager(
         cachedOfferings: Offerings,
         startTime: Date,
         onSuccess: ((Offerings) -> Unit)?,
+        waitForPaywallConfig: Boolean,
     ) {
         log(LogIntent.DEBUG) { OfferingStrings.VENDING_OFFERINGS_CACHE }
         val isCacheStale = offeringsCache.isOfferingsCacheStale(appInBackground)
@@ -160,7 +184,12 @@ internal class OfferingsManager(
             null,
             null,
         )
-        workflowManager.onPaywallConfigReady(onComplete = { dispatch { onSuccess?.invoke(cachedOfferings) } })
+        val onComplete = { dispatch { onSuccess?.invoke(cachedOfferings) } }
+        if (waitForPaywallConfig) {
+            workflowManager.onPaywallConfigReady(onComplete = onComplete)
+        } else {
+            onComplete()
+        }
         if (isCacheStale) {
             log(LogIntent.DEBUG) {
                 if (appInBackground) {

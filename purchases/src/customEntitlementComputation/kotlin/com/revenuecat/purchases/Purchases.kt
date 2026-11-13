@@ -84,6 +84,16 @@ public class Purchases internal constructor(
     }
 
     /**
+     * Retrieves offerings for a hybrid package purchase. In-memory cached offerings are returned without
+     * waiting for paywall configuration. On a cache miss, this uses the normal offerings fetch behavior.
+     * These offerings must not be used to present a paywall before its configuration is ready.
+     */
+    @InternalRevenueCatAPI
+    public fun getOfferingsForPurchase(listener: ReceiveOfferingsCallback) {
+        purchasesOrchestrator.getOfferingsForPurchase(listener)
+    }
+
+    /**
      * Gets the StoreProduct(s) for the given list of product ids for all product types.
      * @param [productIds] List of productIds
      * @param [callback] Response callback

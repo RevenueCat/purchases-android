@@ -986,6 +986,95 @@ class OfferingsManagerTest {
 
     // endregion UI Preview Mode
 
+    @Test
+    fun `purchase lookup returns cached offerings while ordinary lookup waits for config`() {
+        every { cache.cachedOfferings } returns testOfferings
+        mockCacheStale()
+        val pendingReadiness = mutableListOf<() -> Unit>()
+        every { mockWorkflowManager.onPaywallConfigReady(capture(pendingReadiness)) } just Runs
+        var ordinaryCallbacks = 0
+        var purchaseCallbacks = 0
+        offeringsManager.getOfferings(appUserId, false, onSuccess = { ordinaryCallbacks++ })
+
+        offeringsManager.getOfferingsForPurchase(
+            appUserId, false,
+            onError = { fail("Expected cached offerings: $it") },
+            onSuccess = {
+                assertThat(it).isSameAs(testOfferings)
+                purchaseCallbacks++
+            },
+        )
+
+        assertThat(purchaseCallbacks).isEqualTo(1)
+        assertThat(ordinaryCallbacks).isZero()
+        pendingReadiness.forEach { it() }
+        assertThat(ordinaryCallbacks).isEqualTo(1)
+        assertThat(purchaseCallbacks).isEqualTo(1)
+    }
+
+    @Test
+    fun `purchase lookup keeps cold cache readiness behavior`() {
+        every { cache.cachedOfferings } returns null
+        mockDeviceCache()
+        mockOfferingsFactory()
+        val pendingReadiness = slot<() -> Unit>()
+        every { mockWorkflowManager.onPaywallConfigReady(capture(pendingReadiness)) } just Runs
+        var callbacks = 0
+
+        offeringsManager.getOfferingsForPurchase(
+            appUserId, false,
+            onError = { fail("Expected fetched offerings: $it") },
+            onSuccess = {
+                assertThat(it).isSameAs(testOfferings)
+                callbacks++
+            },
+        )
+
+        assertThat(callbacks).isZero()
+        pendingReadiness.captured()
+        assertThat(callbacks).isEqualTo(1)
+    }
+
+    @Test
+    fun `purchase lookup propagates cold cache fetch failure`() {
+        every { cache.cachedOfferings } returns null
+        every { cache.cachedOfferingsResponse } returns null
+        mockDeviceCache(wasSuccessful = false)
+        val expected = PurchasesError(PurchasesErrorCode.NetworkError, "lookup failed")
+        mockBackendResponseError(expected)
+        var receivedError: PurchasesError? = null
+
+        offeringsManager.getOfferingsForPurchase(
+            appUserId, false,
+            onError = { receivedError = it },
+            onSuccess = { fail("Expected fetch error") },
+        )
+
+        assertThat(receivedError).isSameAs(expected)
+    }
+
+    @Test
+    fun `purchase lookup still refreshes stale offerings without replaying callback`() {
+        every { cache.cachedOfferings } returns testOfferings
+        mockCacheStale(offeringsStale = true)
+        mockDeviceCache()
+        mockOfferingsFactory()
+        val pendingReadiness = mutableListOf<() -> Unit>()
+        every { mockWorkflowManager.onPaywallConfigReady(capture(pendingReadiness)) } just Runs
+        var callbacks = 0
+
+        offeringsManager.getOfferingsForPurchase(
+            appUserId, false,
+            onError = { fail("Expected cached offerings: $it") },
+            onSuccess = { callbacks++ },
+        )
+
+        assertThat(callbacks).isEqualTo(1)
+        verify(exactly = 1) { backend.getOfferings(appUserId, false, any(), any()) }
+        pendingReadiness.forEach { it() }
+        assertThat(callbacks).isEqualTo(1)
+    }
+
     // region helpers
 
     private fun mockOfferingsFactory(

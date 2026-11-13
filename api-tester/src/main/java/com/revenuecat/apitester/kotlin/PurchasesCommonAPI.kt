@@ -5,6 +5,7 @@ import android.content.Context
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementVerificationMode
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Offerings
@@ -48,7 +49,7 @@ import java.util.concurrent.ExecutorService
 
 @Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock")
 private class PurchasesCommonAPI {
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
     @SuppressWarnings("LongParameterList")
     fun check(
         purchases: Purchases,
@@ -73,6 +74,7 @@ private class PurchasesCommonAPI {
         }
 
         purchases.getOfferings(receiveOfferingsCallback)
+        purchases.getOfferingsForPurchase(receiveOfferingsCallback)
 
         purchases.getProducts(productIds, productsResponseCallback)
         purchases.getProducts(productIds, ProductType.SUBS, productsResponseCallback)

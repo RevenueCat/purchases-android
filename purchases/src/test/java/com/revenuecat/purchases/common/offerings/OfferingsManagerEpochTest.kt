@@ -83,6 +83,28 @@ class OfferingsManagerEpochTest {
     }
 
     @Test
+    fun `purchase lookup after identity change fetches instead of returning previous user cache`() {
+        cache.cacheOfferings(offerings, responsePayload = null)
+        cache.clearCache()
+        val pendingReadiness = mutableListOf<() -> Unit>()
+        every { workflowManager.onPaywallConfigReady(capture(pendingReadiness)) } just Runs
+        var callbacks = 0
+
+        manager.getOfferingsForPurchase(
+            "new-user", false,
+            onError = { throw AssertionError(it) },
+            onSuccess = { callbacks++ },
+        )
+
+        verify(exactly = 1) { backend.getOfferings("new-user", false, any(), any()) }
+        assertThat(callbacks).isZero()
+        respond!!()
+        assertThat(callbacks).isZero()
+        pendingReadiness.forEach { it() }
+        assertThat(callbacks).isEqualTo(1)
+    }
+
+    @Test
     fun `a response for the current user is cached`() {
         manager.fetchAndCacheOfferings("old-user", appInBackground = false)
         respond!!()

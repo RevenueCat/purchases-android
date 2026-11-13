@@ -10,6 +10,7 @@ import androidx.annotation.OptIn;
 import com.revenuecat.purchases.CustomerInfo;
 import com.revenuecat.purchases.EntitlementVerificationMode;
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI;
+import com.revenuecat.purchases.InternalRevenueCatAPI;
 import com.revenuecat.purchases.LogHandler;
 import com.revenuecat.purchases.LogLevel;
 import com.revenuecat.purchases.Offerings;
@@ -42,6 +43,7 @@ import java.util.concurrent.ExecutorService;
 
 @SuppressWarnings({"unused"})
 final class PurchasesCommonAPI {
+    @OptIn(markerClass = InternalRevenueCatAPI.class)
     static void check(final Purchases purchases, final Activity activity) {
         final ArrayList<String> productIds = new ArrayList<>();
 
@@ -74,6 +76,7 @@ final class PurchasesCommonAPI {
         };
 
         purchases.getOfferings(receiveOfferingsListener);
+        purchases.getOfferingsForPurchase(receiveOfferingsListener);
         purchases.getProducts(productIds, productResponseListener);
         purchases.getProducts(productIds, ProductType.SUBS, productResponseListener);
 
