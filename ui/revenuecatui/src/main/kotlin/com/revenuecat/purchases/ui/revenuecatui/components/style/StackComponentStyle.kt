@@ -96,6 +96,9 @@ internal data class StackComponentStyle(
      */
     @get:JvmSynthetic
     val applyTopWindowInsets: Boolean = false,
+    /** Reserve top clearance inside this stack's decoration, outside its authored content size. */
+    @get:JvmSynthetic
+    val applyTopWindowInsetsToContainer: Boolean = false,
     /** Whether this is a factory root, and whether that root requests top insets. */
     val windowInsetsRoot: Boolean? = null,
     /**
@@ -116,4 +119,14 @@ internal data class StackComponentStyle(
      */
     @get:JvmSynthetic
     val applyHorizontalWindowInsets: Boolean = false,
-) : ComponentStyle, PackageContext
+) : ComponentStyle, PackageContext {
+    /** Fallback headers are absent from [children]; only the first authored branch can lead to the hero. */
+    val heroChildIndex: Int?
+        get() = when (val child = children.firstOrNull()) {
+            is StackComponentStyle -> child.heroChildIndex != null
+            is ImageComponentStyle -> child.ignoreTopWindowInsets
+            is VideoComponentStyle -> child.ignoreTopWindowInsets
+            is WebViewComponentStyle -> child.ignoreTopWindowInsets
+            else -> false
+        }.let { if (it) 0 else null }
+}

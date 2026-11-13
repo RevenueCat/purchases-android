@@ -39,6 +39,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageContext
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.HeaderComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageVisibilityPath
 import com.revenuecat.purchases.ui.revenuecatui.components.style.SheetPresentationKey
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TabSelection
@@ -171,6 +172,10 @@ internal sealed interface PaywallState {
 
             var mainStackHasHeroImage by mutableStateOf(mainStackHasHeroImage)
                 internal set
+
+            val shouldOverlayHeader: Boolean
+                get() = header != null &&
+                    (mainStackHasHeroImage || (header as? HeaderComponentStyle)?.firstItemIgnoresSafeArea == true)
 
             internal var resolvedHeroInsets by mutableStateOf<Map<ComponentStyleIdentity, ResolvedHeroInsets>>(
                 emptyMap(),
@@ -459,10 +464,11 @@ internal sealed interface PaywallState {
              * The measured height of the header overlay in pixels. Set during the layout phase by
              * the custom Layout in [LoadedPaywallComponents] so that ZLayer stacks can read it
              * during their own layout phase (via [Modifier.layout]) to offset non-hero children
-             * below the header — all in a single pass, without recomposition.
+             * below the header — all in a single pass. Observable so header or inset resizing also
+             * invalidates body measurements whose constraints have not changed.
              */
             @get:JvmSynthetic
-            var headerHeightPx: Int = 0
+            var headerHeightPx: Int by mutableIntStateOf(0)
                 @JvmSynthetic internal set
 
             /**

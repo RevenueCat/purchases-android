@@ -2185,6 +2185,78 @@ class StyleFactoryTests {
         assertThat(style.action).isEqualTo(ButtonComponentStyle.Action.CloseWorkflow)
     }
 
+    @Test
+    fun `Authored hero search stops at empty stacks including hidden and fallback-only stacks`() {
+        val media = ImageComponent(source = imageUrls("hero"), size = Size(SizeConstraint.Fill(), SizeConstraint.Fit()))
+        val leadingStacks = listOf(
+            StackComponent(components = emptyList()),
+            StackComponent(components = emptyList(), size = Size(SizeConstraint.Fill(), SizeConstraint.Fixed(80u))),
+            StackComponent(visible = false, components = emptyList()),
+            StackComponent(components = listOf(FallbackHeaderComponent)),
+            StackComponent(components = listOf(StackComponent(components = emptyList()))),
+        )
+        for (leading in leadingStacks) {
+            val result = styleFactory.create(StackComponent(components = listOf(leading, media)),
+                applyTopWindowInsets = false).getOrThrow()
+            assertThat(result.heroImageDetected).describedAs("Leading stack: %s", leading).isFalse()
+            val root = result.componentStyle as StackComponentStyle
+            assertThat(root.heroChildIndex).isNull()
+            assertThat((root.children.last() as ImageComponentStyle).ignoreTopWindowInsets).isFalse()
+        }
+    }
+
+    @Test
+    fun `Authored hero search follows hidden first children without considering later siblings`() {
+        val media = ImageComponent(source = imageUrls("hero"), size = Size(SizeConstraint.Fill(), SizeConstraint.Fit()),
+            visible = false)
+        val hiddenMedia = StackComponent(visible = false, components = listOf(FallbackHeaderComponent, media))
+        assertThat(styleFactory.create(StackComponent(components = listOf(hiddenMedia))).getOrThrow()
+            .heroImageDetected).isTrue()
+        val hiddenText = TextComponent(text = LOCALIZATION_KEY_TEXT_1, visible = false,
+            color = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())))
+        assertThat(styleFactory.create(StackComponent(components = listOf(hiddenText, media))).getOrThrow()
+            .heroImageDetected).isFalse()
+        val narrowMedia = ImageComponent(source = imageUrls("narrow"),
+            size = Size(SizeConstraint.Fixed(100u), SizeConstraint.Fit()))
+        assertThat(styleFactory.create(StackComponent(components = listOf(narrowMedia, media))).getOrThrow()
+            .heroImageDetected).isFalse()
+    }
+
+    @Test
+    fun `Nested authored hero exempts its branch at every overlapping ancestor`() {
+        val media = heroWebViewComponent()
+        val nested = StackComponent(components = listOf(StackComponent(components = listOf(media))),
+            dimension = Dimension.ZLayer(TwoDimensionalAlignment.TOP))
+        val result = styleFactory.create(StackComponent(
+            components = listOf(FallbackHeaderComponent, nested, StackComponent(components = emptyList())),
+            dimension = Dimension.ZLayer(TwoDimensionalAlignment.TOP),
+        ), applyTopWindowInsets = false).getOrThrow()
+        val root = result.componentStyle as StackComponentStyle
+        val child = root.children.first() as StackComponentStyle
+        assertThat(result.heroImageDetected).isTrue()
+        assertThat(root.applyTopWindowInsets).isTrue()
+        assertThat(root.heroChildIndex).isZero()
+        assertThat(child.applyTopWindowInsets).isTrue()
+        assertThat(child.heroChildIndex).isZero()
+        assertThat((child.children.first() as StackComponentStyle).heroChildIndex).isZero()
+        assertThat((root.children.last() as StackComponentStyle).heroChildIndex).isNull()
+    }
+
+    @Test
+    fun `Only an authored leading image in the fixed header ignores safe area`() {
+        val image = ImageComponent(source = imageUrls("header"), size = Size(SizeConstraint.Fill(), SizeConstraint.Fit()))
+        val video = videoComponent(videoUrls("header"), fallbackSource = null, overrideVideoLid = null)
+        for (media in listOf(image, video, heroWebViewComponent())) {
+            val result = styleFactory.create(HeaderComponent(stack = StackComponent(components = listOf(
+                StackComponent(components = listOf(media)),
+            )))).getOrThrow()
+            val header = result.componentStyle as HeaderComponentStyle
+            assertThat(header.firstItemIgnoresSafeArea).isEqualTo(media === image)
+            assertThat(header.stackComponentStyle.ignoreHeaderHeight).isTrue()
+            assertThat((header.stackComponentStyle.children.first() as StackComponentStyle).ignoreHeaderHeight).isTrue()
+        }
+    }
+
     private fun videoUrls(name: String) = ThemeVideoUrls(
         light = VideoUrls(width = 100u, height = 100u, url = URL("https://video.test/$name.mp4")),
         dark = null,

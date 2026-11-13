@@ -19,7 +19,15 @@ internal fun HeaderComponentView(
     ancestorScrollOrientations: Set<Orientation> = emptySet(),
 ) {
     StackComponentView(
-        style = style.stackComponentStyle,
+        // The header owns its top clearance, including when its stack is empty or fixed-height.
+        style = if (style.firstItemIgnoresSafeArea) {
+            style.stackComponentStyle
+        } else {
+            style.stackComponentStyle.copy(
+                applyTopWindowInsets = false,
+                applyTopWindowInsetsToContainer = true,
+            )
+        },
         state = state,
         clickHandler = clickHandler,
         modifier = modifier,

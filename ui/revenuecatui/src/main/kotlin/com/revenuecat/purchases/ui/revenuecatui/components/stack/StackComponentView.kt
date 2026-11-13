@@ -674,15 +674,23 @@ private fun MainStackComponent(
     // see. The clickable plain path moves it onto a wrapper `Box` (so parent-data modifiers like
     // `weight`/`align` reach the parent Row/Column) and passes `Modifier` here.
     val stack: @Composable (Modifier, Modifier) -> Unit = { outerModifier, rootModifier ->
+        // Header decoration includes the safe area; its authored height still describes the content below it.
+        val containerInsets = stackState.style.applyTopWindowInsetsToContainer
+        val layoutModifier = if (containerInsets) {
+            outerModifier.then(rootModifier).windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
+        } else {
+            outerModifier
+        }
+        val contentModifier = if (containerInsets) Modifier else rootModifier
         val scrollState = scrollOrientation?.let { rememberScrollState() }
 
         // Columns and Rows don't draw anything if they don't have any children. A Box does. We want users to be able
         // to draw "boxes" using whatever stack they please, for instance to create dividers.
         if (stackState.children.isEmpty()) {
             Box(
-                modifier = outerModifier
+                modifier = layoutModifier
                     .size(stackState.size)
-                    .then(rootModifier),
+                    .then(contentModifier),
             )
         } else {
             when (val dimension = stackState.dimension) {
@@ -698,12 +706,12 @@ private fun MainStackComponent(
                         spacing = stackState.spacing,
                         items = stackState.children,
                         mainAxisUnbounded = mainAxisUnbounded.value,
-                        modifier = outerModifier
+                        modifier = layoutModifier
                             .size(stackState.size, verticalAlignment = dimension.alignment.toAlignment())
                             .applyIfNotNull(scrollState, scrollOrientation) { state, orientation ->
                                 scrollable(state, orientation)
                             }
-                            .then(rootModifier)
+                            .then(contentModifier)
                             .conditional(hasFillWidthChild) {
                                 trackMainAxisUnbounded(isHorizontal = true, unboundedState = mainAxisUnbounded)
                             },
@@ -736,12 +744,12 @@ private fun MainStackComponent(
                         spacing = stackState.spacing,
                         items = stackState.children,
                         mainAxisUnbounded = mainAxisUnbounded.value,
-                        modifier = outerModifier
+                        modifier = layoutModifier
                             .size(stackState.size, horizontalAlignment = dimension.alignment.toAlignment())
                             .applyIfNotNull(scrollState, scrollOrientation) { state, orientation ->
                                 scrollable(state, orientation)
                             }
-                            .then(rootModifier)
+                            .then(contentModifier)
                             .conditional(hasFillHeightChild) {
                                 trackMainAxisUnbounded(isHorizontal = false, unboundedState = mainAxisUnbounded)
                             },
@@ -778,7 +786,7 @@ private fun MainStackComponent(
                     val useWindowInsetsPadding =
                         stackState.ignoreHeaderHeight || state.heroInsetsFor(stackState.style) != null
                     Box(
-                        modifier = outerModifier
+                        modifier = layoutModifier
                             .onConsumedWindowInsetsChanged { consumedTopInsetPx.intValue = it.getTop(density) }
                             .size(
                                 size = stackState.size,
@@ -788,7 +796,7 @@ private fun MainStackComponent(
                             .applyIfNotNull(scrollState, scrollOrientation) { state, orientation ->
                                 scrollable(state, orientation)
                             }
-                            .then(rootModifier),
+                            .then(contentModifier),
                         contentAlignment = dimension.alignment.toAlignment(),
                     ) {
                         stackState.children.forEach { child ->
@@ -869,7 +877,7 @@ private fun MainStackComponent(
                 background = backgroundStyle,
                 shape = composeShape,
                 modifier = modifier
-                    .size(stackState.size)
+                    .conditional(!stackState.style.applyTopWindowInsetsToContainer) { size(stackState.size) }
                     .then(outerShapeModifier)
                     .clip(composeShape)
                     .then(clickModifier)
@@ -1049,12 +1057,17 @@ internal val FlexDistribution.usesAllAvailableSpace: Boolean
     }
 
 private fun StackComponentState.appliesTopInsets(state: PaywallState.Loaded.Components): Boolean =
-    state.heroInsetsFor(style)?.appliesTo(style) ?: applyTopWindowInsets
+    state.heroInsetsFor(style)?.appliesTo(style) ?: if (state.header != null && style.heroChildIndex != null) {
+        dimension is Dimension.ZLayer
+    } else {
+        applyTopWindowInsets
+    }
 
 private fun StackComponentState.childIgnoresTopInsets(
     child: ComponentStyle,
     state: PaywallState.Loaded.Components,
-): Boolean = state.heroInsetsFor(style)?.let { it.exemptChildFor(style) === child } ?: child.shouldIgnoreTopWindowInsets
+): Boolean = state.heroInsetsFor(style)?.let { it.exemptChildFor(style) === child }
+    ?: (style.heroChildIndex?.let { children.getOrNull(it) === child } ?: child.shouldIgnoreTopWindowInsets)
 
 private fun StackComponentState.isFirstVisibleChild(
     child: ComponentStyle,

@@ -7,6 +7,8 @@ import com.revenuecat.purchases.paywalls.components.properties.Size
 internal data class HeaderComponentStyle(
     @get:JvmSynthetic
     val stackComponentStyle: StackComponentStyle,
+    @get:JvmSynthetic
+    val firstItemIgnoresSafeArea: Boolean,
 ) : ComponentStyle {
     override val visible: Boolean = stackComponentStyle.visible
     override val size: Size = stackComponentStyle.size
