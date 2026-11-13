@@ -96,6 +96,9 @@ internal data class StackComponentStyle(
      */
     @get:JvmSynthetic
     val applyTopWindowInsets: Boolean = false,
+    /** Reserve top clearance inside this stack's decoration, outside its authored content size. */
+    @get:JvmSynthetic
+    val applyTopWindowInsetsToContainer: Boolean = false,
     /** Whether this is a factory root, and whether that root requests top insets. */
     val windowInsetsRoot: Boolean? = null,
     /**

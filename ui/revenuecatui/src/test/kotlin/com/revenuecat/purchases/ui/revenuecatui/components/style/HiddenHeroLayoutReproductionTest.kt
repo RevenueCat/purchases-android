@@ -19,6 +19,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
@@ -31,6 +32,7 @@ import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAli
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.resolveHeroInsets
 import com.revenuecat.purchases.ui.revenuecatui.components.LoadedPaywallComponents
+import com.revenuecat.purchases.ui.revenuecatui.components.header.HeaderComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.StyleFactory
@@ -143,9 +145,45 @@ internal class HiddenHeroLayoutReproductionTest {
             .describedAs("header height %s, body hero %s, overlay %s", withSpacer.headerHeightPx,
                 withSpacer.mainStackHasHeroImage, withSpacer.shouldOverlayHeader)
             .isEqualTo(100 + contentClearancePx)
+        assertThat(reserved.getPixel(reserved.width / 2, 0)).isEqualTo(Color.Blue.toArgb())
         composeTestRule.runOnIdle { showSpacer.value = false }
         val overlay = capture(view, "fixed-header-leading-hero.png")
-        assertThat(firstRedRow(overlay)).isZero()
+        assertThat(overlay.getPixel(overlay.width / 2, 0)).isEqualTo(Color.Blue.toArgb())
+        assertThat(firstRedRow(overlay)).isEqualTo(withoutSpacer.headerHeightPx)
+    }
+
+    @Test
+    fun `header background and border cover safe area while children stay below it`() {
+        val header = HeaderComponent(stack = StackComponent(
+            components = listOf(StackComponent(
+                components = emptyList(), size = Size(SizeConstraint.Fill(), SizeConstraint.Fixed(40u)),
+                backgroundColor = ColorScheme(ColorInfo.Hex(Color.Green.toArgb())),
+            )),
+            backgroundColor = ColorScheme(ColorInfo.Hex(Color.Blue.toArgb())),
+            border = Border(color = ColorScheme(ColorInfo.Hex(Color.Red.toArgb())), width = 2.0),
+        ))
+        val state = FakePaywallState(header = header)
+        lateinit var view: View
+        var borderPx = 0
+        composeTestRule.setContent {
+            view = LocalView.current
+            borderPx = with(LocalDensity.current) { 2.dp.roundToPx() }
+            HeaderComponentView(state.header as HeaderComponentStyle, state, {})
+        }
+        composeTestRule.waitForIdle()
+        for (topInset in listOf(100, 40)) {
+            composeTestRule.runOnUiThread {
+                ViewCompat.dispatchApplyWindowInsets(view, WindowInsetsCompat.Builder()
+                    .setInsets(WindowInsetsCompat.Type.statusBars(), Insets.of(0, topInset, 0, 0)).build())
+            }
+            val bitmap = capture(view, "header-decoration-safe-area-$topInset.png")
+            val centerX = bitmap.width / 2
+            assertThat(bitmap.getPixel(centerX, 0)).isEqualTo(Color.Red.toArgb())
+            assertThat(bitmap.getPixel(centerX, topInset / 2)).isEqualTo(Color.Blue.toArgb())
+            assertThat(bitmap.getPixel(0, topInset / 2)).isEqualTo(Color.Red.toArgb())
+            val firstGreen = (0 until bitmap.height).first { bitmap.getPixel(centerX, it) == Color.Green.toArgb() }
+            assertThat(firstGreen).isEqualTo(topInset + borderPx)
+        }
     }
 
     private fun capture(view: View, name: String): Bitmap {
