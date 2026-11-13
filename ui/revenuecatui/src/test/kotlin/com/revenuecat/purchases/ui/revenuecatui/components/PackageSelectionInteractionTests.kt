@@ -267,21 +267,22 @@ internal class PackageSelectionInteractionTests {
     }
 
     @Test
-    fun `dismissing a sheet restores an originally unselected paywall`() {
-        val state = state(sheetButton(pkg(monthlyXl, default = true), pkg(annualXl)))
-        val button = (state.stack as StackComponentStyle).children[0] as ButtonComponentStyle
+    fun `dismissing a sheet keeps the manual choice when the root has no packages`() {
+        val state = state(
+            sheetButton(pkg(monthlyXl, default = true)),
+            sheetButton(pkg(annual, default = true), pkg(annualXl)),
+        )
+        val button = (state.stack as StackComponentStyle).children[1] as ButtonComponentStyle
         val tracker = PaywallComponentInteractionTracker { }
-        assertThat(state.selectedPackageInfo).isNull()
-
-        state.sheet.show(sheetDestination(button), state, tracker, onClick = {})
-        state.update(selectedPackageUniqueId = annualXl.identifier)
-        state.sheet.hide()
-
-        assertThat(state.selectedPackageInfo).isNull()
-        state.sheet.show(sheetDestination(button), state, tracker, onClick = {})
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(monthlyXl)
+
+        state.sheet.show(sheetDestination(button), state, tracker, onClick = {})
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
+        state.update(selectedPackageUniqueId = annualXl.identifier)
+        assertThat(state.peekSelectedPackageInfoAfterSheetDismiss()?.rcPackage).isEqualTo(annualXl)
         state.sheet.hide()
-        assertThat(state.selectedPackageInfo).isNull()
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annualXl)
     }
 
     @Test

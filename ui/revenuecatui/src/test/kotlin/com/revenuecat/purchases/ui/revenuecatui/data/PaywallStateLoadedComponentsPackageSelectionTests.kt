@@ -244,6 +244,48 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
     }
 
     @Test
+    fun `Sheet default is selected initially when the paywall has no root packages`() {
+        val sheetKey = SheetPresentationKey()
+        val state = paywallState(
+            packagesOutsideTabs = listOf(
+                packageInfo(TestData.Packages.monthly, isSelectedByDefault = false, sheetPresentationKey = sheetKey),
+                packageInfo(TestData.Packages.annual, isSelectedByDefault = true, sheetPresentationKey = sheetKey),
+            ),
+            packagesByTab = emptyMap(),
+            initialSelectedTabIndex = null,
+        )
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+        state.sheet.show(backgroundBlur = false, content = {}, presentationKey = sheetKey)
+        state.selectPackageForSheetEntry()
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+        state.sheet.hide()
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
+    @Test
+    fun `Sheet initial fallback skips packages in inactive tabs`() {
+        val state = paywallState(
+            packagesOutsideTabs = emptyList(),
+            packagesByTab = mapOf(
+                0 to listOf(packageInfo(
+                    TestData.Packages.monthly,
+                    isSelectedByDefault = true,
+                    sheetPresentationKey = SheetPresentationKey(),
+                )),
+                1 to listOf(packageInfo(
+                    TestData.Packages.annual,
+                    isSelectedByDefault = true,
+                    sheetPresentationKey = SheetPresentationKey(),
+                )),
+            ),
+            initialSelectedTabIndex = 0,
+        )
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
+    }
+
+    @Test
     fun `Tab entry restores a valid manual destination choice ahead of tab and root defaults`() {
         val state = paywallState(
             packagesOutsideTabs = listOf(packageInfo(TestData.Packages.weekly, isSelectedByDefault = true)),
@@ -265,6 +307,147 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
 
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
         state.reconcileSelectionForWindowSize(DpSize(400.dp, 800.dp))
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
+    @Test
+    fun `content only tab switch preserves a manual sheet only choice`() {
+        val sheetKey = SheetPresentationKey()
+        val state = paywallState(
+            packagesOutsideTabs = listOf(
+                packageInfo(TestData.Packages.monthly, isSelectedByDefault = true, sheetPresentationKey = sheetKey),
+                packageInfo(TestData.Packages.annual, isSelectedByDefault = false, sheetPresentationKey = sheetKey),
+            ),
+            packagesByTab = emptyMap(),
+            initialSelectedTabIndex = 0,
+        )
+        state.update(selectedPackageUniqueId = TestData.Packages.annual.identifier)
+
+        state.update(selectedTabIndex = 1)
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
+    @Test
+    fun `sheet only tab switches select the destination default and remember manual choices`() {
+        val firstSheet = SheetPresentationKey()
+        val secondSheet = SheetPresentationKey()
+        val state = paywallState(
+            packagesOutsideTabs = emptyList(),
+            packagesByTab = mapOf(
+                0 to listOf(
+                    packageInfo(TestData.Packages.monthly, isSelectedByDefault = true, sheetPresentationKey = firstSheet),
+                    packageInfo(TestData.Packages.annual, isSelectedByDefault = false, sheetPresentationKey = firstSheet),
+                ),
+                1 to listOf(
+                    packageInfo(TestData.Packages.weekly, isSelectedByDefault = true, sheetPresentationKey = secondSheet),
+                ),
+            ),
+            initialSelectedTabIndex = 0,
+        )
+        state.sheet.show(backgroundBlur = false, content = {}, presentationKey = firstSheet)
+        state.selectPackageForSheetEntry()
+        state.update(selectedPackageUniqueId = TestData.Packages.annual.identifier)
+        state.sheet.hide()
+        state.restorePackageAfterSheetDismiss()
+
+        state.update(selectedTabIndex = 1)
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.weekly)
+
+        state.update(selectedTabIndex = 0)
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
+    @Test
+    fun `closed sheet choices reconcile on resize without resetting valid choices`() {
+        for (inTab in listOf(false, true)) {
+            val sheetKey = SheetPresentationKey()
+            val candidates = listOf(
+                packageInfo(
+                    TestData.Packages.annual,
+                    isSelectedByDefault = true,
+                    visibilityOverrides = listOf(hiddenWhenWiderThanOverride(width = 700.0)),
+                    sheetPresentationKey = sheetKey,
+                ),
+                packageInfo(TestData.Packages.monthly, isSelectedByDefault = false, sheetPresentationKey = sheetKey),
+            )
+            val state = paywallState(
+                packagesOutsideTabs = if (inTab) emptyList() else candidates,
+                packagesByTab = if (inTab) mapOf(0 to candidates) else emptyMap(),
+                initialSelectedTabIndex = 0,
+            )
+            assertThat(state.sheet.visible).isFalse()
+            assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+
+            state.reconcileSelectionForWindowSize(DpSize(800.dp, 600.dp))
+            assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
+
+            state.reconcileSelectionForWindowSize(DpSize(400.dp, 800.dp))
+            assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
+        }
+    }
+
+    @Test
+    fun `closed sheet reconciliation preserves a manual choice hidden by selection`() {
+        val sheetKey = SheetPresentationKey()
+        val state = paywallState(
+            packagesOutsideTabs = listOf(
+                packageInfo(TestData.Packages.annual, isSelectedByDefault = true, sheetPresentationKey = sheetKey),
+                packageInfo(
+                    TestData.Packages.monthly,
+                    isSelectedByDefault = false,
+                    visibilityOverrides = listOf(hiddenWhenOverride(ComponentOverride.Condition.Selected)),
+                    sheetPresentationKey = sheetKey,
+                ),
+            ),
+            packagesByTab = emptyMap(),
+            initialSelectedTabIndex = 0,
+        )
+        state.update(selectedPackageUniqueId = TestData.Packages.monthly.identifier)
+
+        state.reconcileSelectionForWindowSize(DpSize(800.dp, 600.dp))
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
+    }
+
+    @Test
+    fun `closed sheet reconciliation retains a choice if every package becomes hidden`() {
+        val state = paywallState(
+            packagesOutsideTabs = listOf(packageInfo(
+                TestData.Packages.annual,
+                isSelectedByDefault = true,
+                visibilityOverrides = listOf(hiddenWhenWiderThanOverride(width = 700.0)),
+                sheetPresentationKey = SheetPresentationKey(),
+            )),
+            packagesByTab = emptyMap(),
+            initialSelectedTabIndex = 0,
+        )
+
+        state.reconcileSelectionForWindowSize(DpSize(800.dp, 600.dp))
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
+    @Test
+    fun `closed sheet reconciliation selects a package that becomes available after measurement`() {
+        val state = paywallState(
+            packagesOutsideTabs = listOf(packageInfo(
+                TestData.Packages.annual,
+                isSelectedByDefault = true,
+                visible = false,
+                visibilityOverrides = listOf(visibleWhenOverride(ComponentOverride.Condition.WindowWidthRule(
+                    operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                    value = 700.0,
+                ))),
+                sheetPresentationKey = SheetPresentationKey(),
+            )),
+            packagesByTab = emptyMap(),
+            initialSelectedTabIndex = 0,
+        )
+        assertThat(state.selectedPackageInfo).isNull()
+
+        state.reconcileSelectionForWindowSize(DpSize(800.dp, 600.dp))
+
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
     }
 
@@ -912,7 +1095,7 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
             packagesByTab = emptyMap(),
             initialSelectedTabIndex = null,
         )
-        assertThat(state.selectedPackageInfo).isNull()
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.weekly)
 
         state.sheet.show(
             sheet = ButtonComponentStyle.Action.NavigateTo.Destination.Sheet(
@@ -931,7 +1114,7 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
         state.sheet.hide()
         assertThat(state.sheet.presentationKey).isNull()
-        assertThat(state.selectedPackageInfo).isNull()
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
     }
 
     private fun hiddenWhenWiderThanOverride(width: Double) = PresentedOverride(

@@ -241,6 +241,10 @@ internal sealed interface PaywallState {
 
                 val hasAnyPackages: Boolean
                     get() = packagesOutsideTabs.isNotEmpty() || packagesByTab.isNotEmpty()
+
+                val hasRootPackages: Boolean
+                    get() = (packagesOutsideTabs + packagesByTab.values.flatten())
+                        .any { it.sheetPresentationKey == null }
             }
 
             data class SelectedPackageInfo(
@@ -495,6 +499,14 @@ internal sealed interface PaywallState {
                 tabsScope: TabsScope? = null,
             ) {
                 if (index == selectedTabIndex(tabsScope)) return
+                // A dismissed sheet's choice belongs to its underlying tab on sheet-only paywalls.
+                // Save it using the scope of the tab being left, including nested tabs.
+                if (!sheet.visible && !packages.hasRootPackages) {
+                    val previousTab = TabSelection(tabsScope ?: mainTabsScope, selectedTabIndex(tabsScope))
+                    selectedPackageUniqueId?.takeIf { uid ->
+                        tabPackages(previousTab).any { it.uniqueId == uid }
+                    }?.let { selectedPackageByTab[previousTab] = it }
+                }
                 if (tabId != null) stateStore.applyUpdates(stateUpdates, payload = JsonPrimitive(tabId))
                 if (tabsScope == null || tabsScope === mainTabsScope) {
                     selectedTabIndex = index
@@ -584,7 +596,11 @@ internal sealed interface PaywallState {
 
             fun restorePackageAfterSheetDismiss() {
                 if (packageSelectionBeforeSheet == null) return
-                selectedPackageUniqueId = selectionBeforeSheetAtCurrentBounds()
+                // A sheet-only paywall has no root choice to restore. Its latest sheet choice also
+                // supplies the package for purchase buttons on the root paywall.
+                if (packages.hasRootPackages) {
+                    selectedPackageUniqueId = selectionBeforeSheetAtCurrentBounds()
+                }
                 packageSelectionBeforeSheet = null
             }
 
@@ -623,8 +639,12 @@ internal sealed interface PaywallState {
 
             fun peekSelectedPackageInfoAfterSheetDismiss(): SelectedPackageInfo? {
                 packageSelectionBeforeSheet?.let {
-                    return selectionBeforeSheetAtCurrentBounds()?.let { findPackageInfoByUniqueId(it)?.selectionInfo() }
-                        ?: defaultPackageInfo
+                    return if (!packages.hasRootPackages) {
+                        selectedPackageInfo
+                    } else {
+                        selectionBeforeSheetAtCurrentBounds()?.let { findPackageInfoByUniqueId(it)?.selectionInfo() }
+                            ?: defaultPackageInfo
+                    }
                 }
                 val uid = peekDefaultPackageUniqueIdAfterSheetDismiss()
                 val info = uid?.let { findPackageInfoByUniqueId(it) }

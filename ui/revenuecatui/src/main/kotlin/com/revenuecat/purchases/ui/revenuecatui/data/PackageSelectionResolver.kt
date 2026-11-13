@@ -15,12 +15,25 @@ internal class PackageSelectionResolver(
     activeTabPackages: List<AvailablePackages.Info> = packages.packagesByTab[selectedTabIndex].orEmpty(),
     otherTabPackages: List<AvailablePackages.Info> = emptyList(),
 ) {
-    private val outside = (packages.packagesOutsideTabs + otherTabPackages).inPresentation(presentedSheet)
-    private val tab = activeTabPackages.inPresentation(presentedSheet)
+    private val onlySheetPackages = presentedSheet == null && packages.hasAnyPackages && !packages.hasRootPackages
+    private val sheetOnlyOutside = packages.packagesOutsideTabs + otherTabPackages
+    private val sheetOnlyTab = activeTabPackages
+    private val sheetOnlyInitialCandidates =
+        sheetOnlyOutside + sheetOnlyTab
+    private val outside = sheetOnlyOutside.inPresentation(presentedSheet)
+    private val tab = sheetOnlyTab.inPresentation(presentedSheet)
     private val active = outside + tab
     private val sheet = (tab + outside).filter { presentedSheet != null && it.sheetPresentationKey === presentedSheet }
 
-    fun initialSelection(): String? = defaultSelection(remembered = null) ?: allHiddenFallback()
+    fun initialSelection(): String? = defaultSelection(remembered = null)
+        ?: allHiddenFallback()
+        ?: sheetOnlyDefaultSelection()
+
+    private fun sheetOnlyDefaultSelection(): String? {
+        if (!onlySheetPackages) return null
+        return sheetOnlyInitialCandidates.groupBy { it.sheetPresentationKey }
+            .values.firstNotNullOfOrNull { it.defaultSelection(context)?.uniqueId }
+    }
 
     fun switchTab(current: String?, remembered: String?): String? =
         current?.takeIf { tab.isEmpty() && outside.couldBeSelected(it, context) }
@@ -28,6 +41,14 @@ internal class PackageSelectionResolver(
             ?: defaultSelection(remembered = null)
             ?: remembered?.takeIf { uid -> active.any { it.uniqueId == uid } }
             ?: allHiddenFallback()
+            ?: sheetOnlyTabSelection(current, remembered)
+
+    private fun sheetOnlyTabSelection(current: String?, remembered: String?): String? {
+        if (!onlySheetPackages) return null
+        return current?.takeIf { sheetOnlyTab.isEmpty() && sheetOnlyOutside.couldBeSelected(it, context) }
+            ?: remembered?.takeIf { sheetOnlyInitialCandidates.couldBeSelected(it, context) }
+            ?: sheetOnlyDefaultSelection()
+    }
 
     fun enterSheet(current: String?): String? {
         if (sheet.isEmpty()) return current
@@ -39,11 +60,17 @@ internal class PackageSelectionResolver(
     fun reconcile(current: String?, remembered: String?): String? = when {
         // An explicit choice may hide its own card. Keep it while the card could still render
         // unselected; viewport/container rules that hide both states still trigger reconciliation.
-        current != null && sheet.ifEmpty { active }.couldBeSelected(current, context) -> current
+        current != null && reconciliationCandidates.couldBeSelected(current, context) -> current
         else -> defaultSelection(remembered)
+            ?: sheetOnlyDefaultSelection()
             ?: current
             ?: allHiddenFallback()
     }
+
+    // A closed sheet still supplies the root CTA on sheet-only paywalls. Independent
+    // visibility rules must be checked against that inventory, not the empty root inventory.
+    private val reconciliationCandidates
+        get() = if (onlySheetPackages) sheetOnlyInitialCandidates else sheet.ifEmpty { active }
 
     fun reset(current: String?, remembered: String?): String? = defaultSelection(remembered)
         ?: current.takeIf {
