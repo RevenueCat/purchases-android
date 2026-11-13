@@ -921,7 +921,7 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `timeout diagnostics report the state of the timed out client when it is replaced`() {
+    fun `timeout diagnostics use one connection snapshot when the client is replaced`() {
         val timedOutClient = mockk<BillingClient>(relaxed = true)
         val replacementClient = mockk<BillingClient>(relaxed = true)
         val clientFactory = mockk<BillingWrapper.ClientFactory>()
@@ -941,9 +941,12 @@ class BillingWrapperTest {
             dateProvider = mockDateProvider,
             elapsedRealtime = {
                 clockReadCount++
-                if (clockReadCount == 2) {
+                if (clockReadCount == 3) {
                     wrapperUnderTest.billingClient = replacementClient
+                    wrapperUnderTest.startConnection()
                     10_000L
+                } else if (clockReadCount == 4) {
+                    9_000L
                 } else {
                     0L
                 }
@@ -954,12 +957,13 @@ class BillingWrapperTest {
         every { timedOutClient.connectionState } returns BillingClient.ConnectionState.CONNECTING
 
         wrapperUnderTest.queryProductDetailsAsync(ProductType.SUBS, setOf("product_a"), {}, {})
+        wrapperUnderTest.onBillingSetupFinished(billingClientOKResult)
         every { timedOutClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
         pendingRequestTimeouts.toList().forEach { it.run() }
 
         verify(exactly = 1) {
             mockDiagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(
-                0, "product_details", "disconnected", 10_000L, false, null,
+                0, "product_details", "disconnected", 10_000L, true, null,
             )
         }
         assertThat(wrapperUnderTest.billingClient).isSameAs(replacementClient)
