@@ -91,10 +91,10 @@ class StackFillUnboundedCollapseTest {
     fun `Fill child still stretches under the real root scroll chain`() {
         // Regression (template_019): LoadedPaywallComponents applies `fillMaxSize().verticalScroll()`
         // to the root stack's own node, so the stack sees minHeight = viewport with maxHeight =
-        // Infinity. Compose distributes that min, so weight still works and must NOT be skipped --
-        // treating "max is Infinity" alone as unbounded made every Fill child on such a paywall wrap
-        // its content instead of stretching. (Wrapping the scroll around a parent Box does not
-        // reproduce this: Box relaxes its child's min to 0.)
+        // Infinity. Fill children must retain their share of that minimum even while they are free
+        // to grow past it. Simply removing weight made every Fill child on such a paywall wrap its
+        // content instead of stretching. (Wrapping the scroll around a parent Box does not reproduce
+        // this: Box relaxes its child's min to 0.)
         val fillChild = StackComponent(
             components = emptyList(),
             size = Size(width = Fill(), height = Fill()),
@@ -126,7 +126,7 @@ class StackFillUnboundedCollapseTest {
 
         composeTestRule.waitForIdle()
         // The Fill child must stretch through the remaining height, so near the bottom edge is red.
-        // Without weight it wraps its (empty) content to zero and nothing is drawn there.
+        // Without its allocated minimum it wraps its (empty) content to zero and nothing is drawn there.
         val node = composeTestRule.onNodeWithTag("stack")
         val bottom = node.fetchSemanticsNode().size.height - 5
         node.assertPixelColorEquals(Color.Red, startX = 10, startY = bottom, width = 1, height = 1)

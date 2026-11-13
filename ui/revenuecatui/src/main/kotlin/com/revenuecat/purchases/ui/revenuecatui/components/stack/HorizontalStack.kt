@@ -23,7 +23,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
  * A horizontal stack of components which properly handles the arrangement of items.
  *
  * @param mainAxisUnbounded Whether this stack is being measured with an unbounded width (e.g. inside a horizontal
- * scroll). Fill children are not given `weight` in that case, as they would collapse to zero.
+ * scroll). Fill children use their allocated share as a minimum and can grow to fit their content.
  * @param itemContent Emits a child. The provided modifier must be applied to the child's outermost layout node.
  */
 @Suppress("LongParameterList")
@@ -37,7 +37,7 @@ internal fun HorizontalStack(
     modifier: Modifier = Modifier,
     itemContent: @Composable (index: Int, item: ComponentStyle, modifier: Modifier) -> Unit,
 ) {
-    if (needsConstrainedFillLayout(items, Orientation.Horizontal)) {
+    if (mainAxisUnbounded || needsConstrainedFillLayout(items, Orientation.Horizontal)) {
         ConstrainedFillLayout(
             config = ConstrainedFillLayout.Config.Horizontal(
                 distribution = dimension.distribution,
@@ -80,7 +80,7 @@ internal fun HorizontalStack(
 
         edgeSpacerIfNeeded()
         items.forEachIndexed { index, item ->
-            val childModifier = if (item.size.width is Fill && !mainAxisUnbounded) {
+            val childModifier = if (item.size.width is Fill) {
                 Modifier.weight(1f)
             } else {
                 Modifier
