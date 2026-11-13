@@ -5,6 +5,7 @@ internal object BillingStrings {
     const val BILLING_CLIENT_ENDING = "Ending connection for %s"
     const val BILLING_CLIENT_ERROR = "Billing Service Setup finished with error code: %s"
     const val BILLING_CLIENT_STARTING = "Starting connection for %s"
+    const val BILLING_PENDING_REQUEST_TIMED_OUT = "Timed out waiting for the billing service to connect."
     const val BILLING_INTENT_FAILED = "Failed to launch billing intent. %s"
     const val BILLING_SERVICE_DISCONNECTED = "Billing Service disconnected"
     const val BILLING_SERVICE_DISCONNECTED_INSTANCE = "Billing Service disconnected for %s"
