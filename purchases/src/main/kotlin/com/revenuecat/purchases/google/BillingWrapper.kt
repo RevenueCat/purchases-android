@@ -51,6 +51,7 @@ import com.revenuecat.purchases.google.usecase.AcknowledgePurchaseUseCase
 import com.revenuecat.purchases.google.usecase.AcknowledgePurchaseUseCaseParams
 import com.revenuecat.purchases.google.usecase.ConsumePurchaseUseCase
 import com.revenuecat.purchases.google.usecase.ConsumePurchaseUseCaseParams
+import com.revenuecat.purchases.google.usecase.ExecuteRequestOnUIThreadFunction
 import com.revenuecat.purchases.google.usecase.GetBillingConfigUseCase
 import com.revenuecat.purchases.google.usecase.GetBillingConfigUseCaseParams
 import com.revenuecat.purchases.google.usecase.QueryProductDetailsUseCase
@@ -147,9 +148,16 @@ internal class BillingWrapper(
 
     private val connectionAttemptGeneration = AtomicLong()
 
+    @Volatile
     private var connectionStartedAtElapsedMillis: Long? = null
 
     private var failedRetirementClient: BillingClient? = null
+
+    @Volatile
+    private var setupCallbackReceived: Boolean? = null
+
+    @Volatile
+    private var scheduledReconnectAtElapsedMillis: Long? = null
 
     val appInBackground: Boolean
         get() = purchasesStateProvider.purchasesState.appInBackground
@@ -187,7 +195,10 @@ internal class BillingWrapper(
 
     override fun startConnection(delayMilliseconds: Long) {
         backgroundHandler.postDelayed(
-            { performStartConnection() },
+            {
+                if (delayMilliseconds > 0) scheduledReconnectAtElapsedMillis = null
+                performStartConnection()
+            },
             delayMilliseconds,
         )
     }
@@ -211,6 +222,7 @@ internal class BillingWrapper(
                 connectionStartedAtElapsedMillis = elapsedRealtime()
                 connectionAttemptGeneration.incrementAndGet()
             }
+            setupCallbackReceived = false
             diagnosticsTrackerIfEnabled?.trackGoogleBillingStartConnection()
             clientToStart.startConnection(object : BillingClientStateListener {
                 override fun onBillingSetupFinished(billingResult: BillingResult) {
@@ -261,6 +273,7 @@ internal class BillingWrapper(
 
     @Synchronized
     private fun executeRequestOnUIThread(
+        requestType: String,
         delayMilliseconds: Long? = null,
         request: (PurchasesError?) -> Unit,
     ) {
@@ -275,7 +288,7 @@ internal class BillingWrapper(
             }
             // The client may disconnect between the readiness check and the queue drain.
             if (serviceRequests.contains(pendingRequest)) {
-                failIfStillPendingAfterTimeout(pendingRequest)
+                failIfStillPendingAfterTimeout(pendingRequest, requestType)
             }
         } else {
             // This shouldn't happen, but if it does, we want to propagate an error instead of hanging.
@@ -286,6 +299,7 @@ internal class BillingWrapper(
     // A billing service that is slow, never answers or keeps disconnecting would otherwise hang the request forever.
     private fun failIfStillPendingAfterTimeout(
         pendingRequest: Pair<(PurchasesError?) -> Unit, Long?>,
+        requestType: String,
     ) {
         mainHandler.postDelayed(
             {
@@ -293,6 +307,29 @@ internal class BillingWrapper(
                 if (serviceRequests.remove(pendingRequest)) {
                     log(LogIntent.GOOGLE_WARNING) { BillingStrings.BILLING_PENDING_REQUEST_TIMED_OUT }
                     val timedOutClient = billingClient
+                    diagnosticsTrackerIfEnabled?.let { tracker ->
+                        val now = elapsedRealtime()
+                        val state = timedOutClient?.connectionState
+                        tracker.trackGoogleBillingPendingRequestTimedOut(
+                            pendingRequestCount = pendingRequestCount(),
+                            requestType = requestType,
+                            billingClientState = when (state) {
+                                BillingClient.ConnectionState.DISCONNECTED -> "disconnected"
+                                BillingClient.ConnectionState.CONNECTING -> "connecting"
+                                BillingClient.ConnectionState.CONNECTED -> "connected"
+                                BillingClient.ConnectionState.CLOSED -> "closed"
+                                null -> "no_client"
+                                else -> "unknown"
+                            },
+                            connectionDurationMillis = connectionStartedAtElapsedMillis?.let {
+                                (now - it).coerceAtLeast(0)
+                            },
+                            setupCallbackReceived = setupCallbackReceived,
+                            reconnectionDelayMillis = scheduledReconnectAtElapsedMillis?.let {
+                                (it - now).coerceAtLeast(0)
+                            },
+                        )
+                    }
                     timedOutClient?.let { retireStuckClient(it) }
                     pendingRequest.first(
                         PurchasesError(
@@ -323,15 +360,18 @@ internal class BillingWrapper(
                 }
             }
             if (retired) {
-                try {
+                val closed = try {
                     client.endConnection()
+                    true
                 } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                     errorLog(e) { "Error closing timed-out billing client" }
                     synchronized(this@BillingWrapper) {
                         failedRetirementClient = client
                         if (billingClient == null) billingClient = client
                     }
+                    false
                 }
+                diagnosticsTrackerIfEnabled?.trackGoogleBillingClientRetired(closed)
             }
         }, delay)
     }
@@ -340,6 +380,10 @@ internal class BillingWrapper(
     private fun isStuckClient(client: BillingClient): Boolean {
         if (billingClient !== client || failedRetirementClient === client) return false
         return !client.isReady && client.connectionState == BillingClient.ConnectionState.CONNECTING
+    }
+
+    private fun requestExecutor(requestType: String): ExecuteRequestOnUIThreadFunction = { delay, request ->
+        executeRequestOnUIThread(requestType, delay, request)
     }
 
     // serviceRequests.size is O(n), so cap our count to MAX_PENDING_REQUEST_COUNT_REPORTED items.
@@ -365,7 +409,7 @@ internal class BillingWrapper(
             onReceive,
             onError,
             { withConnectedClient(onError, it) },
-            ::executeRequestOnUIThread,
+            requestExecutor("product_details"),
         )
         useCase.run()
     }
@@ -458,7 +502,7 @@ internal class BillingWrapper(
         isPersonalizedPrice: Boolean?,
     ) {
         val buildParamsAndLaunch = { shouldSetObfuscatedAccountId: Boolean ->
-            executeRequestOnUIThread { connectionError ->
+            executeRequestOnUIThread("purchase_launch") { connectionError ->
                 if (connectionError != null) {
                     purchasesUpdatedListener?.onPurchasesFailedToUpdate(connectionError)
                     return@executeRequestOnUIThread
@@ -549,7 +593,7 @@ internal class BillingWrapper(
             onReceivePurchaseHistory,
             onReceivePurchaseHistoryError,
             { withConnectedClient(onReceivePurchaseHistoryError, it) },
-            ::executeRequestOnUIThread,
+            requestExecutor("purchase_history"),
         ).run()
     }
 
@@ -643,7 +687,7 @@ internal class BillingWrapper(
                 // TODO-retry: if ITEM_NOT_OWNED queryPurchasesAsync
             },
             { withConnectedClient(receivingFunction = it) },
-            ::executeRequestOnUIThread,
+            requestExecutor("consume"),
         ).run()
     }
 
@@ -664,7 +708,7 @@ internal class BillingWrapper(
                 // TODO-retry: if ITEM_NOT_OWNED queryPurchasesAsync
             },
             { withConnectedClient(receivingFunction = it) },
-            ::executeRequestOnUIThread,
+            requestExecutor("acknowledge"),
         ).run()
     }
 
@@ -684,7 +728,7 @@ internal class BillingWrapper(
             onSuccess,
             onError,
             { withConnectedClient(onError, it) },
-            ::executeRequestOnUIThread,
+            requestExecutor("query_purchases"),
         ).run()
     }
 
@@ -717,7 +761,7 @@ internal class BillingWrapper(
                 },
                 onError,
                 { withConnectedClient(onError, it) },
-                ::executeRequestOnUIThread,
+                requestExecutor("purchase_history_for_purchase"),
             ).run()
         } ?: onError(
             PurchasesError(PurchasesErrorCode.PurchaseInvalidError, PurchaseStrings.NOT_RECOGNIZED_PRODUCT_TYPE),
@@ -762,7 +806,7 @@ internal class BillingWrapper(
             },
             onError = onError,
             withConnectedClient = { withConnectedClient(onError, it) },
-            executeRequestOnUIThread = ::executeRequestOnUIThread,
+            executeRequestOnUIThread = requestExecutor("query_purchases_by_type"),
         ).run()
     }
 
@@ -821,7 +865,12 @@ internal class BillingWrapper(
     @Suppress("LongMethod", "CyclomaticComplexMethod")
     private fun onBillingSetupFinishedForClient(billingResult: BillingResult, client: BillingClient?) {
         if (client != null && billingClient !== client) return
+        val connectionDurationMillis = connectionStartedAtElapsedMillis?.let {
+            (elapsedRealtime() - it).coerceAtLeast(0)
+        }
+        setupCallbackReceived = true
         diagnosticsTrackerIfEnabled?.trackGoogleBillingSetupFinished(
+            connectionDurationMillis = connectionDurationMillis,
             responseCode = billingResult.responseCode,
             debugMessage = billingResult.debugMessage,
             pendingRequestCount = pendingRequestCount(),
@@ -925,6 +974,7 @@ internal class BillingWrapper(
         } else {
             log(LogIntent.WARNING) { BillingStrings.BILLING_CLIENT_RETRY.format(reconnectMilliseconds) }
             reconnectionAlreadyScheduled = true
+            scheduledReconnectAtElapsedMillis = elapsedRealtime() + reconnectMilliseconds
             startConnection(reconnectMilliseconds)
             reconnectMilliseconds = min(
                 reconnectMilliseconds * 2,
@@ -952,7 +1002,7 @@ internal class BillingWrapper(
         val inAppMessageParams = inAppMessageParamsBuilder.build()
         val weakActivity = WeakReference(activity)
 
-        executeRequestOnUIThread { error ->
+        executeRequestOnUIThread("in_app_message") { error ->
             if (error != null) {
                 errorLog { BillingStrings.BILLING_CONNECTION_ERROR_INAPP_MESSAGES.format(error) }
                 return@executeRequestOnUIThread
@@ -1022,7 +1072,7 @@ internal class BillingWrapper(
             },
             onError = trackingOnError,
             withConnectedClient = { withConnectedClient(trackingOnError, it) },
-            executeRequestOnUIThread = ::executeRequestOnUIThread,
+            executeRequestOnUIThread = requestExecutor("billing_config"),
         ).run()
     }
 

@@ -94,6 +94,14 @@ internal class DiagnosticsTracker(
         const val IS_RETRY = "is_retry"
         const val REQUEST_STATUS_KEY = "request_status"
         const val CONNECTION_ERROR_REASON_KEY = "connection_error_reason"
+        const val CONNECTION_DURATION_MILLIS = "connection_duration_millis"
+        const val REQUEST_TYPE = "request_type"
+        const val BILLING_CLIENT_STATE = "billing_client_state"
+        const val SETUP_CALLBACK_RECEIVED = "setup_callback_received"
+        const val RECONNECTION_SCHEDULED = "reconnection_scheduled"
+        const val RECONNECTION_DELAY_MILLIS = "reconnection_delay_millis"
+        const val REASON = "reason"
+        const val CLOSED = "closed"
     }
 
     private val commonProperties = if (appConfig.store == Store.PLAY_STORE) {
@@ -231,14 +239,20 @@ internal class DiagnosticsTracker(
         )
     }
 
-    fun trackGoogleBillingSetupFinished(responseCode: Int, debugMessage: String, pendingRequestCount: Int) {
+    fun trackGoogleBillingSetupFinished(
+        responseCode: Int,
+        debugMessage: String,
+        pendingRequestCount: Int,
+        connectionDurationMillis: Long?,
+    ) {
         trackEvent(
             eventName = DiagnosticsEntryName.GOOGLE_BILLING_SETUP_FINISHED,
-            properties = mapOf(
-                BILLING_RESPONSE_CODE to responseCode,
-                BILLING_DEBUG_MESSAGE to debugMessage,
-                PENDING_REQUEST_COUNT to pendingRequestCount,
-            ),
+            properties = buildMap {
+                put(BILLING_RESPONSE_CODE, responseCode)
+                put(BILLING_DEBUG_MESSAGE, debugMessage)
+                put(PENDING_REQUEST_COUNT, pendingRequestCount)
+                connectionDurationMillis?.let { put(CONNECTION_DURATION_MILLIS, it) }
+            },
         )
     }
 
@@ -256,6 +270,37 @@ internal class DiagnosticsTracker(
         trackEvent(
             eventName = DiagnosticsEntryName.GOOGLE_BILLING_SERVICE_DISCONNECTED,
             properties = emptyMap(),
+        )
+    }
+
+    fun trackGoogleBillingClientRetired(closed: Boolean) {
+        trackEvent(
+            eventName = DiagnosticsEntryName.GOOGLE_BILLING_CLIENT_RETIRED,
+            properties = mapOf(REASON to "connection_timeout", CLOSED to closed),
+        )
+    }
+
+    @Suppress("LongParameterList")
+    fun trackGoogleBillingPendingRequestTimedOut(
+        pendingRequestCount: Int,
+        requestType: String,
+        billingClientState: String,
+        connectionDurationMillis: Long?,
+        setupCallbackReceived: Boolean?,
+        reconnectionDelayMillis: Long?,
+    ) {
+        trackEvent(
+            eventName = DiagnosticsEntryName.GOOGLE_BILLING_PENDING_REQUEST_TIMED_OUT,
+            properties = buildMap {
+                // Count is measured after the timed-out request is removed.
+                put(PENDING_REQUEST_COUNT, pendingRequestCount)
+                put(REQUEST_TYPE, requestType)
+                put(BILLING_CLIENT_STATE, billingClientState)
+                connectionDurationMillis?.let { put(CONNECTION_DURATION_MILLIS, it) }
+                setupCallbackReceived?.let { put(SETUP_CALLBACK_RECEIVED, it) }
+                put(RECONNECTION_SCHEDULED, reconnectionDelayMillis != null)
+                reconnectionDelayMillis?.let { put(RECONNECTION_DELAY_MILLIS, it) }
+            },
         )
     }
 
