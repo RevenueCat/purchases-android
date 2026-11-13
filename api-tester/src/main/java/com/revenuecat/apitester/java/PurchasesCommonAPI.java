@@ -10,10 +10,12 @@ import androidx.annotation.OptIn;
 import com.revenuecat.purchases.CustomerInfo;
 import com.revenuecat.purchases.EntitlementVerificationMode;
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI;
+import com.revenuecat.purchases.InternalRevenueCatAPI;
 import com.revenuecat.purchases.LogHandler;
 import com.revenuecat.purchases.LogLevel;
 import com.revenuecat.purchases.Offerings;
 import com.revenuecat.purchases.Package;
+import com.revenuecat.purchases.PackagePurchaseReference;
 import com.revenuecat.purchases.ProductType;
 import com.revenuecat.purchases.PurchaseParams;
 import com.revenuecat.purchases.Purchases;
@@ -21,6 +23,7 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy;
 import com.revenuecat.purchases.PurchasesConfiguration;
 import com.revenuecat.purchases.PurchasesError;
 import com.revenuecat.purchases.Store;
+import com.revenuecat.purchases.interfaces.GetPackagesForPurchaseCallback;
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback;
 import com.revenuecat.purchases.interfaces.GetStorefrontCallback;
 import com.revenuecat.purchases.interfaces.PurchaseCallback;
@@ -37,11 +40,13 @@ import com.revenuecat.purchases.models.SubscriptionOption;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 @SuppressWarnings({"unused"})
 final class PurchasesCommonAPI {
+    @OptIn(markerClass = InternalRevenueCatAPI.class)
     static void check(final Purchases purchases, final Activity activity) {
         final ArrayList<String> productIds = new ArrayList<>();
 
@@ -74,6 +79,19 @@ final class PurchasesCommonAPI {
         };
 
         purchases.getOfferings(receiveOfferingsListener);
+        final PackagePurchaseReference reference = new PackagePurchaseReference("offering", "package");
+        final String offeringIdentifier = reference.getOfferingIdentifier();
+        final String packageIdentifier = reference.getPackageIdentifier();
+        purchases.getPackagesForPurchase(reference, Collections.singletonList(reference),
+                new GetPackagesForPurchaseCallback() {
+                    @Override
+                    public void onReceived(@NonNull Package packageToPurchase, @NonNull List<Package> addOnPackages) {
+                    }
+
+                    @Override
+                    public void onError(@NonNull PurchasesError error) {
+                    }
+                });
         purchases.getProducts(productIds, productResponseListener);
         purchases.getProducts(productIds, ProductType.SUBS, productResponseListener);
 
