@@ -70,6 +70,7 @@ internal class DiagnosticsTracker(
         const val ETAG_HIT_KEY = "etag_hit"
         const val VERIFICATION_RESULT_KEY = "verification_result"
         const val VERIFICATION_FAILURE_REASON_KEY = "verification_failure_reason"
+        const val SIGNATURE_VERSION_KEY = "signature_version"
         const val VERIFICATION_DEVICE_CLOCK_OFFSET_MINUTES_KEY = "verification_device_clock_offset_minutes"
         const val RESPONSE_TIME_MILLIS_KEY = "response_time_millis"
         const val PRODUCT_TYPE_QUERIED_KEY = "product_type_queried"
@@ -143,6 +144,7 @@ internal class DiagnosticsTracker(
         backendErrorCode: Int?,
         resultOrigin: HTTPResult.Origin?,
         verificationResult: SignatureVerificationResult,
+        signatureVersion: Int?,
         deviceClockOffset: Duration?,
         isRetry: Boolean,
         connectionErrorReason: ConnectionErrorReason?,
@@ -160,6 +162,7 @@ internal class DiagnosticsTracker(
                 ETAG_HIT_KEY to eTagHit,
                 VERIFICATION_RESULT_KEY to verificationResult.result.name,
                 VERIFICATION_FAILURE_REASON_KEY to verificationResult.failureReason?.name,
+                SIGNATURE_VERSION_KEY to signatureVersion,
                 VERIFICATION_DEVICE_CLOCK_OFFSET_MINUTES_KEY to deviceClockOffset?.inWholeMinutes,
                 IS_RETRY to isRetry,
                 CONNECTION_ERROR_REASON_KEY to connectionErrorReason?.name,

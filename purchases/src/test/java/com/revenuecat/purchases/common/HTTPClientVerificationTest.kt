@@ -61,6 +61,70 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
 
         val recordedRequest = server.takeRequest()
         assertThat(recordedRequest.getHeader("X-Nonce")).isEqualTo("test-nonce")
+        assertThat(recordedRequest.getHeader("X-Signature-Version")).isEqualTo("2")
+    }
+
+    @Test
+    fun `performRequest adds signature version header without nonce on statically signed endpoints`() {
+        val endpoint = Endpoint.GetOfferings("test-user-id")
+        enqueue(
+            urlPath = endpoint.getPath(),
+            expectedResult = HTTPResult.createResult(verificationResult = SignatureVerificationResult.Verified),
+            verificationResult = SignatureVerificationResult.Verified
+        )
+
+        mockSigningResult(SignatureVerificationResult.Verified)
+
+        client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            requestHeaders = emptyMap()
+        )
+
+        val recordedRequest = server.takeRequest()
+        assertThat(recordedRequest.getHeader("X-Nonce")).isNull()
+        assertThat(recordedRequest.getHeader("X-Signature-Version")).isEqualTo("2")
+    }
+
+    @Test
+    fun `performRequest tracks the version of a verified signature in the diagnostic event`() {
+        val diagnosticsTracker = mockk<DiagnosticsTracker>()
+        every {
+            diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+        } just Runs
+        client = createClient(diagnosticsTracker = diagnosticsTracker)
+        val endpoint = Endpoint.GetCustomerInfo("test-user-id")
+        mockSigningResult(SignatureVerificationResult.Verified)
+
+        listOf("v2.test-signature" to 2, "test-signature" to 1).forEach { (signatureHeader, expectedVersion) ->
+            enqueue(
+                urlPath = endpoint.getPath(),
+                expectedResult = HTTPResult.createResult(verificationResult = SignatureVerificationResult.Verified),
+                verificationResult = SignatureVerificationResult.Verified,
+                signatureHeader = signatureHeader,
+            )
+            client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, requestHeaders = emptyMap())
+            server.takeRequest()
+
+            verify(exactly = 1) {
+                diagnosticsTracker.trackHttpRequestPerformed(
+                    server.hostName,
+                    endpoint,
+                    responseTime = any(),
+                    wasSuccessful = true,
+                    RCHTTPStatusCodes.SUCCESS,
+                    backendErrorCode = null,
+                    HTTPResult.Origin.BACKEND,
+                    SignatureVerificationResult.Verified,
+                    signatureVersion = expectedVersion,
+                    deviceClockOffset = null,
+                    isRetry = false,
+                    connectionErrorReason = null,
+                )
+            }
+        }
     }
 
     @Test
@@ -442,7 +506,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         every { mockSigningManager.signatureVerificationMode } returns mockk<SignatureVerificationMode.Enforced>()
         val diagnosticsTracker = mockk<DiagnosticsTracker>()
         every {
-            diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+            diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
         } just Runs
         val deviceNow = Date(1676379370000L) // Tuesday, February 14, 2023 12:56:10 PM GMT
         val requestDate = Date(deviceNow.time - 2.hours.inWholeMilliseconds)
@@ -480,6 +544,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
                 backendErrorCode = null,
                 resultOrigin = null,
                 SignatureVerificationResult.Failed(FailureReason.PAYLOAD_SIGNATURE_MISMATCH),
+                signatureVersion = null,
                 deviceClockOffset = 2.hours,
                 isRetry = false,
                 connectionErrorReason = null,

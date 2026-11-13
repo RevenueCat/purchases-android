@@ -1341,6 +1341,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
         val recordedRequest = server.takeRequest()
         assertThat(recordedRequest.getHeader("X-Nonce")).isNull()
+        assertThat(recordedRequest.getHeader("X-Signature-Version")).isNull()
     }
 
     @Test
@@ -1397,7 +1398,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     fun `performRequest tracks http request performed diagnostic event if request successful`() {
         val dateProvider = mockk<DateProvider>()
         val diagnosticsTracker = mockk<DiagnosticsTracker>()
-        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
 
         client = createClient(diagnosticsTracker = diagnosticsTracker, dateProvider = dateProvider)
 
@@ -1431,7 +1432,37 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 backendErrorCode = null,
                 HTTPResult.Origin.BACKEND,
                 SignatureVerificationResult.NotRequested,
+                signatureVersion = null,
                 deviceClockOffset,
+                isRetry = false,
+                connectionErrorReason = null,
+            )
+        }
+    }
+
+    @Test
+    fun `performRequest does not track the signature version when verification was not requested`() {
+        val diagnosticsTracker = mockk<DiagnosticsTracker>()
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
+        client = createClient(diagnosticsTracker = diagnosticsTracker)
+        val endpoint = Endpoint.LogIn
+
+        enqueue(endpoint.getPath(), expectedResult = HTTPResult.createResult(), signatureHeader = "v2.test-signature")
+        client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
+        server.takeRequest()
+
+        verify(exactly = 1) {
+            diagnosticsTracker.trackHttpRequestPerformed(
+                server.hostName,
+                endpoint,
+                any(),
+                true,
+                RCHTTPStatusCodes.SUCCESS,
+                null,
+                HTTPResult.Origin.BACKEND,
+                SignatureVerificationResult.NotRequested,
+                signatureVersion = null,
+                deviceClockOffset = null,
                 isRetry = false,
                 connectionErrorReason = null,
             )
@@ -1442,7 +1473,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     fun `performRequest tracks http request performed diagnostic event if request fails`() {
         val dateProvider = mockk<DateProvider>()
         val diagnosticsTracker = mockk<DiagnosticsTracker>()
-        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
 
         client = createClient(diagnosticsTracker = diagnosticsTracker, dateProvider = dateProvider)
 
@@ -1473,6 +1504,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 backendErrorCode,
                 HTTPResult.Origin.BACKEND,
                 SignatureVerificationResult.NotRequested,
+                signatureVersion = null,
                 deviceClockOffset = null,
                 isRetry = false,
                 connectionErrorReason = null,
@@ -1484,7 +1516,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     fun `performRequest tracks http request performed diagnostic event if request throws Exception`() {
         val dateProvider = mockk<DateProvider>()
         val diagnosticsTracker = mockk<DiagnosticsTracker>()
-        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
         every { dateProvider.now } returns Date(1676379370000) // Tuesday, February 14, 2023 12:56:10 PM GMT
         client = createClient(diagnosticsTracker = diagnosticsTracker, dateProvider = dateProvider)
 
@@ -1520,6 +1552,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                     backendErrorCode = null,
                     resultOrigin = null,
                     SignatureVerificationResult.NotRequested,
+                    signatureVersion = null,
                     deviceClockOffset = null,
                     isRetry = false,
                     connectionErrorReason = null,
@@ -1533,7 +1566,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     @Test
     fun `performRequest tracks connection error if response has no status code`() {
         val diagnosticsTracker = mockk<DiagnosticsTracker>()
-        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
         every { mockSigningManager.shouldVerifyEndpoint(any()) } returns true
         every { mockSigningManager.createRandomNonce() } returns "test-nonce"
         every {
@@ -1571,6 +1604,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 backendErrorCode = null,
                 resultOrigin = null,
                 SignatureVerificationResult.NotRequested,
+                signatureVersion = null,
                 deviceClockOffset = null,
                 isRetry = false,
                 connectionErrorReason = ConnectionErrorReason.OTHER,
@@ -1581,7 +1615,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     @Test
     fun `if there's an error getting ETag, retry call passes track diagnostics parameter isRetry to true`() {
         val diagnosticsTracker = mockk<DiagnosticsTracker>()
-        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
         client = createClient(diagnosticsTracker = diagnosticsTracker)
 
         val response =
@@ -1645,6 +1679,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 null,
                 HTTPResult.Origin.BACKEND,
                 SignatureVerificationResult.NotRequested,
+                signatureVersion = null,
                 deviceClockOffset = null,
                 isRetry = true,
                 connectionErrorReason = null,
@@ -1886,7 +1921,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     @Test
     fun `if performRequest uses a fallback host URL, then the correct track diagnostics calls happen`() {
         val diagnosticsTracker = mockk<DiagnosticsTracker>()
-        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
         client = createClient(diagnosticsTracker = diagnosticsTracker)
 
         // This test requires an endpoint that supports fallback host URLs
@@ -1929,6 +1964,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 null,
                 HTTPResult.Origin.BACKEND,
                 SignatureVerificationResult.NotRequested,
+                signatureVersion = null,
                 deviceClockOffset = null,
                 isRetry = false,
                 connectionErrorReason = null,
@@ -1945,6 +1981,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 null,
                 HTTPResult.Origin.BACKEND,
                 SignatureVerificationResult.NotRequested,
+                signatureVersion = null,
                 deviceClockOffset = null,
                 isRetry = false,
                 connectionErrorReason = null,

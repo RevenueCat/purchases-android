@@ -27,6 +27,8 @@ import java.security.SecureRandom
 class SigningManagerTest {
 
     private val apiKey = "test-api-key"
+    private val fakePostParamsHeader =
+        "test-field-1,test-field-2:sha256:0a1d806f908079361fc0d18073dfcfcacb730afe4ace3d0478602479892e81d3"
 
     private lateinit var intermediateKeyVerifier: SignatureVerifier
     private lateinit var appConfig: AppConfig
@@ -275,6 +277,69 @@ class SigningManagerTest {
             signature = "xoDYyUeHnIlSIAeOOzmvdNPOlbNSKK+xE0fE/ufS1fsAAMNQ1HiPDL34Vx0Uy74KPV5mztuk3DHBpucT/rSYVlkxIa3ModYmPfYZ20lnlbSB1UiP6oJHwAA2pXlS6AQ5eLSuAmm2UIYPrDGEEC8Lgj1sAn2fGMRMx2eaPNzDPBGTxxZROfjkI1wtsyJC0w0I7d8TkLeXjUTlWNafmc4GVMleE/tQZZGIoNrnar0HqICUnB8B",
         )
         assertThat(verificationResult).isEqualTo(SignatureVerificationResult.Verified)
+    }
+
+    @Test
+    fun `verifyResponse with v2 signature verifies against the decoded path`() {
+        val signingManager = realInformationalSigningManager()
+        val signature = "v2." + createFakeSignature(
+            requestPath = "/v1/subscribers/\$RCAnonymousID:1af512a3b9c848899fe427f39dd69f2b",
+            postParamsHeader = fakePostParamsHeader,
+        )
+        listOf(
+            "/v1/subscribers/%24RCAnonymousID%3A1af512a3b9c848899fe427f39dd69f2b",
+            "/v1/subscribers/\$RCAnonymousID%3A1af512a3b9c848899fe427f39dd69f2b",
+            "/v1/subscribers/\$RCAnonymousID:1af512a3b9c848899fe427f39dd69f2b",
+        ).forEach { requestPath ->
+            val verificationResult = callVerifyResponse(
+                signingManager,
+                requestPath = requestPath,
+                signature = signature,
+                postParamsHeader = fakePostParamsHeader,
+            )
+            assertThat(verificationResult).describedAs(requestPath).isEqualTo(SignatureVerificationResult.Verified)
+        }
+    }
+
+    @Test
+    fun `verifyResponse with v2 signature decodes non-ascii ids and the query string once`() {
+        val signingManager = realInformationalSigningManager()
+        listOf(
+            "/v1/subscribers/Jos%C3%A9/offerings" to "/v1/subscribers/José/offerings",
+            "/v1/subscribers/%2524literal/offerings" to "/v1/subscribers/%24literal/offerings",
+            "/v1/subscribers/user/ads/reward_verifications/txn?ad_unit_id=ca-app-pub%2F123%26x" to
+                "/v1/subscribers/user/ads/reward_verifications/txn?ad_unit_id=ca-app-pub/123&x",
+        ).forEach { (requestPath, signedPath) ->
+            val verificationResult = callVerifyResponse(
+                signingManager,
+                requestPath = requestPath,
+                signature = "v2." + createFakeSignature(requestPath = signedPath, postParamsHeader = fakePostParamsHeader),
+                postParamsHeader = fakePostParamsHeader,
+            )
+            assertThat(verificationResult).describedAs(requestPath).isEqualTo(SignatureVerificationResult.Verified)
+        }
+    }
+
+    @Test
+    fun `verifyResponse with v2 signature does not verify a signature over the encoded path`() {
+        val signingManager = realInformationalSigningManager()
+        val encodedPath = "/v1/subscribers/\$RCAnonymousID%3A1af512a3b9c848899fe427f39dd69f2b"
+        val verificationResult = callVerifyResponse(
+            signingManager,
+            requestPath = encodedPath,
+            signature = "v2." + createFakeSignature(requestPath = encodedPath, postParamsHeader = fakePostParamsHeader),
+            postParamsHeader = fakePostParamsHeader,
+        )
+        assertThat(verificationResult)
+            .isEqualTo(SignatureVerificationResult.Failed(FailureReason.PAYLOAD_SIGNATURE_MISMATCH))
+    }
+
+    @Test
+    fun `verifyResponse with v2 prefix and malformed signature fails with invalid format`() {
+        val signingManager = realInformationalSigningManager()
+        val verificationResult = callVerifyResponse(signingManager, signature = "v2.not-a-signature")
+        assertThat(verificationResult)
+            .isEqualTo(SignatureVerificationResult.Failed(FailureReason.INVALID_SIGNATURE_FORMAT))
     }
 
     @Test
@@ -631,7 +696,7 @@ class SigningManagerTest {
         intermediatePublicKeyEncoded: String = "xoDYyUeHnIlSIAeOOzmvdNPOlbNSKK+xE0fE/ufS1fs=",
         intermediateKeyExpirationDaysBytes: ByteArray = ByteBuffer.allocate(Int.SIZE_BYTES).putInt(50_000).order(ByteOrder.LITTLE_ENDIAN).array(),
         requestPath: String = "test-url-path",
-        postParamsHeader: String = "test-field-1,test-field-2:sha256:0a1d806f908079361fc0d18073dfcfcacb730afe4ace3d0478602479892e81d3",
+        postParamsHeader: String = fakePostParamsHeader,
         apiKey: String = this.apiKey,
         body: String? = "{\"request_date\":\"2023-02-21T18:58:36Z\",\"request_date_ms\":1677005916011,\"subscriber\":{\"entitlements\":{},\"first_seen\":\"2023-02-21T18:58:35Z\",\"last_seen\":\"2023-02-21T18:58:35Z\",\"management_url\":null,\"non_subscriptions\":{},\"original_app_user_id\":\"login\",\"original_application_version\":null,\"original_purchase_date\":null,\"other_purchases\":{},\"subscriptions\":{}}}\n",
         requestTime: String? = "1677005916012",

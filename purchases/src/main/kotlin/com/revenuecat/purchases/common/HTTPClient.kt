@@ -349,6 +349,7 @@ internal class HTTPClient(
         var requestResult: HTTPTimeoutManager.RequestResult = HTTPTimeoutManager.RequestResult.OTHER_RESULT
         var exceptionHit: IOException? = null
         var responseCode: Int? = null
+        var signatureVersion: Int? = null
         var failedVerificationResult: SignatureVerificationResult? = null
         var failedVerificationRequestDate: Date? = null
 
@@ -361,7 +362,10 @@ internal class HTTPClient(
                 postFieldsToSign,
                 requestHeaders,
                 refreshETag,
-                onResponseReceived = { responseCode = it },
+                onResponseReceived = { code, version ->
+                    responseCode = code
+                    signatureVersion = version
+                },
                 onVerificationFailed = { verificationResult, requestDate ->
                     failedVerificationResult = verificationResult
                     failedVerificationRequestDate = requestDate
@@ -389,6 +393,7 @@ internal class HTTPClient(
                 callResult,
                 failedVerificationResult,
                 failedVerificationRequestDate,
+                signatureVersion,
                 isRetry = refreshETag,
                 connectionException = exceptionHit,
             )
@@ -426,7 +431,7 @@ internal class HTTPClient(
         postFieldsToSign: List<Pair<String, String>>?,
         requestHeaders: Map<String, String>,
         refreshETag: Boolean,
-        onResponseReceived: (responseCode: Int) -> Unit,
+        onResponseReceived: (responseCode: Int, signatureVersion: Int?) -> Unit,
         onVerificationFailed: (verificationResult: SignatureVerificationResult, requestDate: Date?) -> Unit,
     ): HTTPResult? {
         val jsonBody = body?.let { mapConverter.convertToJSON(it) }
@@ -522,7 +527,10 @@ internal class HTTPClient(
         }
         // The response arrived in full. Everything below only inspects it, so failures from here on say
         // nothing about how responsive the host is.
-        onResponseReceived(responseCode)
+        onResponseReceived(
+            responseCode,
+            SigningManager.signatureVersion(connection.getHeaderField(HTTPResult.SIGNATURE_HEADER_NAME)),
+        )
 
         if (payloadBytes == null &&
             (responseCode != RCHTTPStatusCodes.NO_CONTENT || !endpoint.expectsRCFormatResponse)
@@ -665,6 +673,7 @@ internal class HTTPClient(
         callResult: HTTPResult?,
         failedVerificationResult: SignatureVerificationResult?,
         failedVerificationRequestDate: Date?,
+        signatureVersion: Int?,
         isRetry: Boolean,
         connectionException: IOException?,
     ) {
@@ -695,6 +704,7 @@ internal class HTTPClient(
                 callResult?.backendErrorCode,
                 origin,
                 verificationResult,
+                signatureVersion.takeIf { verificationResult != SignatureVerificationResult.NotRequested },
                 deviceClockOffset,
                 isRetry,
                 connectionErrorReason,
@@ -737,6 +747,7 @@ internal class HTTPClient(
             "X-Client-Bundle-ID" to appConfig.packageName,
             "X-Observer-Mode-Enabled" to if (appConfig.finishTransactions) "false" else "true",
             "X-Nonce" to nonce,
+            "X-Signature-Version" to if (shouldSignResponse) "2" else null,
             HTTPRequest.POST_PARAMS_HASH to postFieldsToSignHeader,
             "X-Custom-Entitlements-Computation" to if (appConfig.customEntitlementComputation) "true" else null,
             "X-UI-Preview-Mode" to if (appConfig.uiPreviewMode) "true" else null,

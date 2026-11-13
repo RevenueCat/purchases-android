@@ -143,6 +143,7 @@ internal abstract class BaseHTTPClientTest {
         requestDateHeader: Date? = null,
         server: MockWebServer = this.server,
         isFallbackURL: Boolean = false,
+        signatureHeader: String? = null,
     ) {
         val urlString = server.url(urlPath).toString()
         every {
@@ -164,6 +165,9 @@ internal abstract class BaseHTTPClientTest {
             .apply {
                 if (requestDateHeader != null) {
                     setHeader(HTTPResult.REQUEST_TIME_HEADER_NAME, requestDateHeader.time)
+                }
+                if (signatureHeader != null) {
+                    setHeader(HTTPResult.SIGNATURE_HEADER_NAME, signatureHeader)
                 }
             }
         server.enqueue(response)
