@@ -51,10 +51,19 @@ internal class SdkSettingsConfigProvider(
      * The committed settings, or [SdkSettings.DEFAULT] when the topic or its `default` item is absent. A cold
      * read happens under one config generation: [readConsistent] re-reads once if a commit races the read, and
      * gives up with the defaults if that read is superseded too.
+     * With [waitForInFlightRefresh], a paywall waits for the current refresh before resolving its language,
+     * rather than rendering with the previous session's warmed settings.
      */
-    suspend fun getSettings(): SdkSettings {
-        cachedSettings()?.let { return it }
-        return manager.readConsistent(what = { "the sdk_settings topic" }) { _ -> readSettings() }
+    suspend fun getSettings(waitForInFlightRefresh: Boolean = false): SdkSettings {
+        if (!waitForInFlightRefresh) cachedSettings()?.let { return it }
+        return manager.readConsistent(what = { "the sdk_settings topic" }) { _ ->
+            if (waitForInFlightRefresh) {
+                manager.committedTopicAfterInFlightRefresh(RemoteConfigTopic.SdkSettings)
+                    ?.get(ITEM_DEFAULT)?.let { SdkSettings.parse(it.metadata) } ?: readSettings()
+            } else {
+                readSettings()
+            }
+        }
             ?: SdkSettings.DEFAULT
     }
 

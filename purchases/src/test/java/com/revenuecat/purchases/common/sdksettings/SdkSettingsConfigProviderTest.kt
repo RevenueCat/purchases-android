@@ -242,6 +242,25 @@ internal class SdkSettingsConfigProviderTest {
     }
 
     @Test
+    fun `paywall reads wait for refreshed settings instead of returning the warm cache`() = runTest {
+        commitTopic("""{"paywalls":{"prefer_application_locale":false}}""")
+        provider.warm(generation = 0)
+        refreshSettles("""{"paywalls":{"prefer_application_locale":true}}""")
+
+        assertThat(provider.getSettings(waitForInFlightRefresh = true).paywalls?.preferApplicationLocale).isTrue()
+        coVerify(exactly = 0) { manager.topic(any()) }
+    }
+
+    @Test
+    fun `paywall reads fetch config when nothing is committed`() = runTest {
+        coEvery { manager.topic(RemoteConfigTopic.SdkSettings) } returns topic(
+            """{"paywalls":{"prefer_application_locale":true}}""",
+        )
+
+        assertThat(provider.getSettings(waitForInFlightRefresh = true).paywalls?.preferApplicationLocale).isTrue()
+    }
+
+    @Test
     fun `getSettings returns the default settings when the topic is absent`() = runTest {
         assertThat(provider.getSettings()).isEqualTo(SdkSettings.DEFAULT)
     }

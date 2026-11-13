@@ -60,7 +60,9 @@ import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefault
 import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefaultForIdentifiers
 import com.revenuecat.purchases.ui.revenuecatui.extensions.defaultTemplate
+import com.revenuecat.purchases.utils.getDefaultLocales
 import java.util.Date
+import java.util.Locale
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result as RcResult
 
 @Suppress("ReturnCount")
@@ -326,6 +328,7 @@ internal fun Offering.toLegacyPaywallState(
     shouldDisplayDismissButton: Boolean,
     storefrontCountryCode: String?,
     validationWarning: PaywallWarning? = null,
+    preferredLocales: List<Locale> = getDefaultLocales(),
 ): PaywallState {
     val createTemplateConfigurationResult = TemplateConfigurationFactory.create(
         variableDataProvider = variableDataProvider,
@@ -334,6 +337,7 @@ internal fun Offering.toLegacyPaywallState(
         availablePackages = availablePackages,
         template,
         storefrontCountryCode = storefrontCountryCode,
+        preferredLocales = preferredLocales,
     )
     val templateConfiguration = createTemplateConfigurationResult.getOrElse {
         return PaywallState.Error(it.message ?: "Unknown error")

@@ -7,6 +7,7 @@ import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.errors.PackageConfigurationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import com.revenuecat.purchases.utils.getDefaultLocales
 import java.util.Locale
 
 internal object PackageConfigurationFactory {
@@ -19,6 +20,7 @@ internal object PackageConfigurationFactory {
         configurationType: PackageConfigurationType,
         paywallData: PaywallData,
         storefrontCountryCode: String?,
+        preferredLocales: List<Locale> = getDefaultLocales(),
     ): Result<Pair<Locale, TemplateConfiguration.PackageConfiguration>> {
         val availablePackagesById = availablePackages.associateBy { it.identifier }
         val filteredRCPackages = packageIdsInConfig.mapNotNull {
@@ -43,6 +45,7 @@ internal object PackageConfigurationFactory {
                     variableDataProvider,
                     paywallData,
                     storefrontCountryCode,
+                    preferredLocales,
                 )
             }
             PackageConfigurationType.MULTIPLE -> {
@@ -52,6 +55,7 @@ internal object PackageConfigurationFactory {
                     paywallData,
                     default,
                     storefrontCountryCode,
+                    preferredLocales,
                 )
             }
             PackageConfigurationType.MULTITIER -> {
@@ -61,6 +65,7 @@ internal object PackageConfigurationFactory {
                     availablePackages,
                     variableDataProvider,
                     storefrontCountryCode,
+                    preferredLocales,
                 )
             }
         }
@@ -73,12 +78,15 @@ internal object PackageConfigurationFactory {
         availablePackages: List<Package>,
         variableDataProvider: VariableDataProvider,
         storefrontCountryCode: String?,
+        preferredLocales: List<Locale>,
     ): Result<Pair<Locale, TemplateConfiguration.PackageConfiguration.MultiTier>> {
         val tiers = paywallData.config.tiers ?: return Result.failure(
             PackageConfigurationError("No tier found for $packageIdsInConfig"),
         )
 
-        val (locale, localizedConfigurationByTier) = paywallData.tieredLocalizedConfiguration
+        val (locale, localizedConfigurationByTier) = preferredLocales.firstNotNullOfOrNull { locale ->
+            paywallData.tieredConfigForLocale(locale)?.let { locale to it }
+        } ?: paywallData.tieredLocalizedConfiguration
 
         val all = tiers.associate { tier ->
             val localizationForTier = localizedConfigurationByTier[tier.id]
@@ -153,12 +161,14 @@ internal object PackageConfigurationFactory {
         paywallData: PaywallData,
         default: String?,
         storefrontCountryCode: String?,
+        preferredLocales: List<Locale>,
     ): Result<Pair<Locale, TemplateConfiguration.PackageConfiguration.Multiple>> {
         val (locale, packageInfos) = makePackageInfo(
             packages = filteredRCPackages,
             variableDataProvider = variableDataProvider,
             paywallData = paywallData,
             storefrontCountryCode = storefrontCountryCode,
+            preferredLocales = preferredLocales,
         )
 
         val firstPackage = packageInfos.first()
@@ -181,12 +191,14 @@ internal object PackageConfigurationFactory {
         variableDataProvider: VariableDataProvider,
         paywallData: PaywallData,
         storefrontCountryCode: String?,
+        preferredLocales: List<Locale>,
     ): Result<Pair<Locale, TemplateConfiguration.PackageConfiguration.Single>> {
         val (locale, packageInfos) = makePackageInfo(
             packages = filteredRCPackages,
             variableDataProvider = variableDataProvider,
             paywallData = paywallData,
             storefrontCountryCode = storefrontCountryCode,
+            preferredLocales = preferredLocales,
         )
 
         val firstPackage = packageInfos.first()
@@ -204,10 +216,11 @@ internal object PackageConfigurationFactory {
         variableDataProvider: VariableDataProvider,
         paywallData: PaywallData,
         storefrontCountryCode: String?,
+        preferredLocales: List<Locale>,
     ): Pair<Locale, List<TemplateConfiguration.PackageInfo>> {
         val mostExpensivePricePerMonth = mostExpensivePricePerMonth(packages)
 
-        val (locale, localization) = paywallData.localizedConfiguration
+        val (locale, localization) = paywallData.localizedConfiguration(preferredLocales)
         val packageInfos = packages.map {
             val discountRelativeToMostExpensivePerMonth = productDiscount(
                 it.product.pricePerMonth(),

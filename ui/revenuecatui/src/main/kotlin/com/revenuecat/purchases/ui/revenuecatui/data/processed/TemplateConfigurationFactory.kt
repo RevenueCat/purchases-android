@@ -4,6 +4,8 @@ import android.net.Uri
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
+import com.revenuecat.purchases.utils.getDefaultLocales
+import java.util.Locale
 
 internal object TemplateConfigurationFactory {
     @Suppress("LongParameterList", "ThrowsCount")
@@ -14,6 +16,7 @@ internal object TemplateConfigurationFactory {
         availablePackages: List<Package>,
         template: PaywallTemplate,
         storefrontCountryCode: String?,
+        preferredLocales: List<Locale> = getDefaultLocales(),
     ): Result<TemplateConfiguration> {
         val sourceImages = paywallData.config.images
 
@@ -40,6 +43,7 @@ internal object TemplateConfigurationFactory {
                 configurationType = template.configurationType,
                 paywallData = paywallData,
                 storefrontCountryCode = storefrontCountryCode,
+                preferredLocales = preferredLocales,
             )
         val (locale, packageConfiguration) = createPackageResult.getOrElse {
             return Result.failure(it)
