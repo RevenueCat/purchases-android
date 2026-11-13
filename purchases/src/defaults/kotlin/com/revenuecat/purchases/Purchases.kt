@@ -44,6 +44,7 @@ import com.revenuecat.purchases.identity.Authentication
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
+import com.revenuecat.purchases.interfaces.GetPackagesForPurchaseCallback
 import com.revenuecat.purchases.interfaces.GetRewardVerificationResultCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontCallback
@@ -468,6 +469,20 @@ public class Purchases internal constructor(
         listener: ReceiveOfferingsCallback,
     ) {
         purchasesOrchestrator.getOfferings(listener)
+    }
+
+    /**
+     * Resolves the main package and ordered add-on packages for a hybrid purchase from one offerings snapshot.
+     * The main package identifier is matched case-insensitively; add-on identifiers are matched exactly.
+     * In-memory cached packages do not wait for paywall configuration. A cache miss uses normal offerings fetching.
+     */
+    @InternalRevenueCatAPI
+    public fun getPackagesForPurchase(
+        packageReference: PackagePurchaseReference,
+        addOnPackageReferences: List<PackagePurchaseReference>,
+        callback: GetPackagesForPurchaseCallback,
+    ) {
+        purchasesOrchestrator.getPackagesForPurchase(packageReference, addOnPackageReferences, callback)
     }
 
     @InternalRevenueCatAPI

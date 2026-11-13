@@ -1,6 +1,8 @@
 package com.revenuecat.purchases.common.offerings
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.PackagePurchaseReference
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -28,6 +30,7 @@ import org.robolectric.annotation.Config
 /** A late offerings response for the previous user mustn't overwrite the cache wiped by an identity change. */
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
+@OptIn(InternalRevenueCatAPI::class)
 class OfferingsManagerEpochTest {
 
     private val offerings = stubOfferings("product").second
@@ -80,6 +83,30 @@ class OfferingsManagerEpochTest {
                 )
             }
         }
+    }
+
+    @Test
+    fun `purchase lookup after identity change fetches instead of returning previous user cache`() {
+        cache.cacheOfferings(offerings, responsePayload = null)
+        cache.clearCache()
+        val pendingReadiness = mutableListOf<() -> Unit>()
+        every { workflowManager.onPaywallConfigReady(capture(pendingReadiness)) } just Runs
+        var callbacks = 0
+
+        manager.getPackagesForPurchase(
+            "new-user", false,
+            PackagePurchaseReference(offerings.current!!.identifier, "\$rc_monthly"),
+            emptyList(),
+            onError = { throw AssertionError(it) },
+            onSuccess = { _, _ -> callbacks++ },
+        )
+
+        verify(exactly = 1) { backend.getOfferings("new-user", false, any(), any()) }
+        assertThat(callbacks).isZero()
+        respond!!()
+        assertThat(callbacks).isZero()
+        pendingReadiness.forEach { it() }
+        assertThat(callbacks).isEqualTo(1)
     }
 
     @Test

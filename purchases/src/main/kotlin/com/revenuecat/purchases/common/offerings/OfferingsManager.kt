@@ -4,6 +4,8 @@ import android.os.Handler
 import android.os.Looper
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offerings
+import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.PackagePurchaseReference
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
@@ -60,6 +62,24 @@ internal class OfferingsManager(
         onSuccess: ((Offerings) -> Unit)? = null,
         fetchCurrent: Boolean = false,
     ) {
+        getOfferingsInternal(
+            appUserID = appUserID,
+            appInBackground = appInBackground,
+            fetchCurrent = fetchCurrent,
+            waitForCachedPaywallConfig = true,
+            onError = onError,
+            onSuccess = onSuccess,
+        )
+    }
+
+    private fun getOfferingsInternal(
+        appUserID: String,
+        appInBackground: Boolean,
+        fetchCurrent: Boolean,
+        waitForCachedPaywallConfig: Boolean,
+        onError: ((PurchasesError) -> Unit)?,
+        onSuccess: ((Offerings) -> Unit)?,
+    ) {
         if (uiPreviewMode) {
             dispatch { onSuccess?.invoke(emptyOfferings) }
             return
@@ -90,8 +110,59 @@ internal class OfferingsManager(
                 cachedOfferings,
                 startTime,
                 onSuccess,
+                waitForPaywallConfig = waitForCachedPaywallConfig,
             )
         }
+    }
+
+    fun getPackagesForPurchase(
+        appUserID: String,
+        appInBackground: Boolean,
+        packageReference: PackagePurchaseReference,
+        addOnPackageReferences: List<PackagePurchaseReference>,
+        onError: (PurchasesError) -> Unit,
+        onSuccess: (Package, List<Package>) -> Unit,
+    ) {
+        getOfferingsInternal(
+            appUserID = appUserID,
+            appInBackground = appInBackground,
+            fetchCurrent = false,
+            waitForCachedPaywallConfig = false,
+            onError = onError,
+        ) { offerings ->
+            val main = offerings[packageReference.offeringIdentifier]?.availablePackages?.firstOrNull {
+                it.identifier.equals(packageReference.packageIdentifier, ignoreCase = true)
+            }
+            if (main == null) {
+                onError(
+                    PurchasesError(
+                        PurchasesErrorCode.ProductNotAvailableForPurchaseError,
+                        "Couldn't find product for package ${packageReference.packageIdentifier}",
+                    ),
+                )
+            } else {
+                val addOnPackages = try {
+                    addOnPackageReferences.map { resolveAddOnPackage(offerings, it) }
+                } catch (error: IllegalArgumentException) {
+                    onError(PurchasesError(PurchasesErrorCode.PurchaseInvalidError, error.message))
+                    return@getOfferingsInternal
+                }
+                onSuccess(main, addOnPackages)
+            }
+        }
+    }
+
+    private fun resolveAddOnPackage(offerings: Offerings, reference: PackagePurchaseReference): Package {
+        val offering = offerings[reference.offeringIdentifier]
+            ?: throw IllegalArgumentException(
+                "Could not find offering with identifier ${reference.offeringIdentifier} " +
+                    "for add-on package ${reference.packageIdentifier}",
+            )
+        return offering.availablePackages.firstOrNull { it.identifier == reference.packageIdentifier }
+            ?: throw IllegalArgumentException(
+                "Could not find package with identifier ${reference.packageIdentifier}" +
+                    " in offering with identifier ${reference.offeringIdentifier}",
+            )
     }
 
     private fun createTrackedOfferingsCallbacks(
@@ -150,6 +221,7 @@ internal class OfferingsManager(
         cachedOfferings: Offerings,
         startTime: Date,
         onSuccess: ((Offerings) -> Unit)?,
+        waitForPaywallConfig: Boolean,
     ) {
         log(LogIntent.DEBUG) { OfferingStrings.VENDING_OFFERINGS_CACHE }
         val isCacheStale = offeringsCache.isOfferingsCacheStale(appInBackground)
@@ -160,7 +232,12 @@ internal class OfferingsManager(
             null,
             null,
         )
-        workflowManager.onPaywallConfigReady(onComplete = { dispatch { onSuccess?.invoke(cachedOfferings) } })
+        val onComplete = { dispatch { onSuccess?.invoke(cachedOfferings) } }
+        if (waitForPaywallConfig) {
+            workflowManager.onPaywallConfigReady(onComplete = onComplete)
+        } else {
+            onComplete()
+        }
         if (isCacheStale) {
             log(LogIntent.DEBUG) {
                 if (appInBackground) {
