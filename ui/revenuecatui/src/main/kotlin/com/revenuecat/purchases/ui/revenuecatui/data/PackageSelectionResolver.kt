@@ -20,7 +20,12 @@ internal class PackageSelectionResolver(
     private val active = outside + tab
     private val sheet = (tab + outside).filter { presentedSheet != null && it.sheetPresentationKey === presentedSheet }
 
-    fun initialSelection(): String? = defaultSelection(remembered = null) ?: allHiddenFallback()
+    private val sheetScoped = (packages.packagesOutsideTabs + otherTabPackages + activeTabPackages)
+        .filter { it.sheetPresentationKey != null && it.sheetPresentationKey !== presentedSheet }
+
+    fun initialSelection(): String? = defaultSelection(remembered = null)
+        ?: sheetScopedSelection()
+        ?: allHiddenFallback()
 
     fun switchTab(current: String?, remembered: String?): String? =
         current?.takeIf { tab.isEmpty() && outside.couldBeSelected(it, context) }
@@ -61,6 +66,12 @@ internal class PackageSelectionResolver(
             ?: tab.firstOrNull { canSelect(it) }?.uniqueId
             ?: outside.firstOrNull { canSelect(it) }?.uniqueId
     }
+
+    // The root renders variables bound to the selection even when every package sits in a sheet.
+    private fun sheetScopedSelection(): String? = sheetScoped
+        .takeIf { active.isEmpty() }
+        ?.authoredDefaultSelection(context)
+        ?.uniqueId
 
     // Only unselected, unauthored, entirely hidden contexts get a terminal purchase fallback.
     // A visible card that hides itself on selection must not become an automatic candidate.
