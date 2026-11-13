@@ -479,15 +479,15 @@ platform :android do
   lane :run_backend_integration_tests do |options|
     UI.user_error!("REVENUECAT_API_KEY environment variable is not set") if ENV['REVENUECAT_API_KEY'].to_s.empty?
     UI.user_error!("LOAD_SHEDDER_REVENUECAT_API_KEY environment variable is not set") if ENV['LOAD_SHEDDER_REVENUECAT_API_KEY'].to_s.empty?
+    export_gradle_project_properties(
+      "BACKEND_INTEGRATION_API_KEY" => ENV['REVENUECAT_API_KEY'],
+      "BACKEND_INTEGRATION_LOAD_SHEDDER_API_KEY" => ENV['LOAD_SHEDDER_REVENUECAT_API_KEY']
+    )
 
     gradle(
       task: ':purchases:testDefaultsDebugUnitTest',
       flags: '--tests "com.revenuecat.purchases.backend_integration_tests.*"',
-      properties: {
-        "minSdkVersion" => 23,
-        "BACKEND_INTEGRATION_API_KEY" => ENV['REVENUECAT_API_KEY'],
-        "BACKEND_INTEGRATION_LOAD_SHEDDER_API_KEY" => ENV['LOAD_SHEDDER_REVENUECAT_API_KEY'],
-      }
+      properties: { "minSdkVersion" => 23 }
     )
   end
 
@@ -515,7 +515,7 @@ platform :android do
     else # loadshedder
       test_properties = purchases_load_shedder_test_properties
     end
-    test_properties["TEST_PACKAGE_FILTER"] = package_filter
+    export_gradle_project_properties(test_properties)
 
     max_retries = 3
     success = false
@@ -527,7 +527,7 @@ platform :android do
 
         gradle(
           task: ":purchases:connectedDefaultsReleaseAndroidTest",
-          properties: { "testBuildType" => "release", "minSdkVersion" => 23 }.merge(test_properties)
+          properties: { "testBuildType" => "release", "minSdkVersion" => 23, "TEST_PACKAGE_FILTER" => package_filter }
         )
 
         success = true
@@ -571,10 +571,16 @@ platform :android do
         ENV['CUSTOM_ENTITLEMENT_COMPUTATION_ACTIVE_ENTITLEMENT_IDS_TO_VERIFY'] || '',
     }
 
+    export_gradle_project_properties(test_properties)
     gradle(
       task: ":purchases:connectedCustomEntitlementComputationReleaseAndroidTest",
-      properties: { "testBuildType" => "release", "minSdkVersion" => 23 }.merge(test_properties)
+      properties: { "testBuildType" => "release", "minSdkVersion" => 23 }
     )
+  end
+
+  # Gradle reads ORG_GRADLE_PROJECT_<name> environment variables as project properties.
+  def export_gradle_project_properties(properties)
+    properties.each { |name, value| ENV["ORG_GRADLE_PROJECT_#{name}"] = value }
   end
 
   def purchases_production_test_properties

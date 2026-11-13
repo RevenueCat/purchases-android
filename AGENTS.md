@@ -187,7 +187,7 @@ Variant names combine the flavor and build type, e.g. `defaultsDebug`, `customEn
 ### Backend Integration Testing
 - Set `BACKEND_INTEGRATION_API_KEY` and `BACKEND_INTEGRATION_LOAD_SHEDDER_API_KEY` in `local.properties` to run locally
 - Tests self-skip when API keys are not configured
-- On CI, keys are passed via Gradle `-P` flags from Fastlane
+- On CI, Fastlane passes keys as `ORG_GRADLE_PROJECT_*` environment variables
 - Located in `backend_integration_tests` packages
 - See `local.properties.example` for all configurable properties
 
