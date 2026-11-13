@@ -415,9 +415,9 @@ platform :android do
 
     build_number = ENV['CIRCLE_BUILD_NUM'] || UI.user_error!('Could not find CircleCI build number.')
     version_name = current_version_number
-    release_key_alias = ENV["#{env_prefix}_RELEASE_KEY_ALIAS"] || UI.user_error!("Release key alias not found for #{build_task}")
-    release_key_password = ENV["#{env_prefix}_RELEASE_KEY_PASSWORD"] || UI.user_error!("Release key password not found for #{build_task}")
-    release_keystore_password = ENV["#{env_prefix}_RELEASE_KEYSTORE_PASSWORD"] || UI.user_error!("Release keystore password not found for #{build_task}")
+    ENV["ORG_GRADLE_PROJECT_releaseKeyAlias"] = ENV["#{env_prefix}_RELEASE_KEY_ALIAS"] || UI.user_error!("Release key alias not found for #{build_task}")
+    ENV["ORG_GRADLE_PROJECT_releaseKeyPassword"] = ENV["#{env_prefix}_RELEASE_KEY_PASSWORD"] || UI.user_error!("Release key password not found for #{build_task}")
+    ENV["ORG_GRADLE_PROJECT_releaseKeystorePassword"] = ENV["#{env_prefix}_RELEASE_KEYSTORE_PASSWORD"] || UI.user_error!("Release keystore password not found for #{build_task}")
 
     gradle(
       task: build_task,
@@ -425,10 +425,7 @@ platform :android do
       print_command: false,
       properties: {
         "#{gradle_properties_prefix}VersionCode": build_number,
-        "#{gradle_properties_prefix}VersionName": version_name,
-        releaseKeyAlias: release_key_alias,
-        releaseKeyPassword: release_key_password,
-        releaseKeystorePassword: release_keystore_password
+        "#{gradle_properties_prefix}VersionName": version_name
       }.merge(extra_properties)  
     )
   end

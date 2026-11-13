@@ -57,6 +57,15 @@ parameters:
     default: alpha
 
 commands:
+  export-release-signing-properties:
+    steps:
+      - run:
+          name: Export release signing properties
+          command: |
+            echo 'export ORG_GRADLE_PROJECT_releaseKeyAlias="$RELEASE_KEY_ALIAS"' >> "$BASH_ENV"
+            echo 'export ORG_GRADLE_PROJECT_releaseKeystorePassword="$RELEASE_KEYSTORE_PASSWORD"' >> "$BASH_ENV"
+            echo 'export ORG_GRADLE_PROJECT_releaseKeyPassword="$RELEASE_KEY_PASSWORD"' >> "$BASH_ENV"
+
   prepare-signing-key:
     steps:
       - run:
@@ -517,13 +526,10 @@ jobs:
           name: Prepare Keystore
           working_directory: examples/purchase-tester
           command: echo $RELEASE_KEYSTORE | base64 -d > keystore
+      - export-release-signing-properties
       - run:
           name: Assemble
-          command: |
-            ./gradlew -p examples/purchase-tester assemble \
-            -PreleaseKeyAlias=$RELEASE_KEY_ALIAS \
-            -PreleaseKeystorePassword=$RELEASE_KEYSTORE_PASSWORD \
-            -PreleaseKeyPassword=$RELEASE_KEY_PASSWORD
+          command: ./gradlew -p examples/purchase-tester assemble
       - store_artifacts:
           path: examples/purchase-tester/build/outputs/apk/release/purchase-tester-release.apk
       - store_artifacts:
@@ -733,6 +739,7 @@ jobs:
           name: Prepare Keystore
           working_directory: integration-tests
           command: echo $RELEASE_KEYSTORE | base64 -d > keystore
+      - export-release-signing-properties
       - android/restore_build_cache
       - android/create_avd:
           avd_name: test-integration
@@ -743,17 +750,11 @@ jobs:
           post_emulator_launch_assemble_command: >-
             ./gradlew -p integration-tests assembleRelease assembleAndroidTest -PtestBuildType=release
             -PREVENUECAT_API_KEY=$API_KEY
-            -PreleaseKeyAlias=$RELEASE_KEY_ALIAS
-            -PreleaseKeystorePassword=$RELEASE_KEYSTORE_PASSWORD
-            -PreleaseKeyPassword=$RELEASE_KEY_PASSWORD
       - run:
           name: Run integration tests on emulator
           command: |
             ./gradlew -p integration-tests connectedAndroidTest -PtestBuildType=release \
-            -PREVENUECAT_API_KEY=$API_KEY \
-            -PreleaseKeyAlias=$RELEASE_KEY_ALIAS \
-            -PreleaseKeystorePassword=$RELEASE_KEYSTORE_PASSWORD \
-            -PreleaseKeyPassword=$RELEASE_KEY_PASSWORD
+            -PREVENUECAT_API_KEY=$API_KEY
       - android/save_build_cache
       - store_test_results:
           path: integration-tests/build/outputs/androidTest-results
