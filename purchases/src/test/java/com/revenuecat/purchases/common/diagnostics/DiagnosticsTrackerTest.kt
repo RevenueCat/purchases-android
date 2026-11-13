@@ -535,7 +535,7 @@ class DiagnosticsTrackerTest {
             "pending_request_count" to 3,
             "billing_client_state" to "connecting",
             "request_type" to "purchase_launch",
-            "connection_elapsed_millis" to 15000L,
+            "connection_duration_millis" to 15000L,
             "setup_callback_received" to false,
             "reconnection_scheduled" to true,
             "reconnection_delay_millis" to 500L,
@@ -545,7 +545,7 @@ class DiagnosticsTrackerTest {
             pendingRequestCount = 3,
             requestType = "purchase_launch",
             billingClientState = "connecting",
-            connectionElapsedMillis = 15000L,
+            connectionDurationMillis = 15000L,
             setupCallbackReceived = false,
             reconnectionDelayMillis = 500L,
         )

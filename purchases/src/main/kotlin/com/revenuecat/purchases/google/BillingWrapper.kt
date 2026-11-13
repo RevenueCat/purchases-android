@@ -321,7 +321,7 @@ internal class BillingWrapper(
                                 null -> "no_client"
                                 else -> "unknown"
                             },
-                            connectionElapsedMillis = connectionStartedAtElapsedMillis?.let {
+                            connectionDurationMillis = connectionStartedAtElapsedMillis?.let {
                                 (now - it).coerceAtLeast(0)
                             },
                             setupCallbackReceived = setupCallbackReceived,

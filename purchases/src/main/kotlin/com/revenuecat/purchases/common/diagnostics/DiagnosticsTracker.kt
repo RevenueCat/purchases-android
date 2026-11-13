@@ -277,7 +277,7 @@ internal class DiagnosticsTracker(
         pendingRequestCount: Int,
         requestType: String,
         billingClientState: String,
-        connectionElapsedMillis: Long?,
+        connectionDurationMillis: Long?,
         setupCallbackReceived: Boolean?,
         reconnectionDelayMillis: Long?,
     ) {
@@ -288,7 +288,7 @@ internal class DiagnosticsTracker(
                 put(PENDING_REQUEST_COUNT, pendingRequestCount)
                 put("request_type", requestType)
                 put("billing_client_state", billingClientState)
-                connectionElapsedMillis?.let { put("connection_elapsed_millis", it) }
+                connectionDurationMillis?.let { put("connection_duration_millis", it) }
                 setupCallbackReceived?.let { put("setup_callback_received", it) }
                 put("reconnection_scheduled", reconnectionDelayMillis != null)
                 reconnectionDelayMillis?.let { put("reconnection_delay_millis", it) }
