@@ -1049,6 +1049,37 @@ class OfferingsManagerTest {
     }
 
     @Test
+    fun `purchase cache miss does not recheck a concurrently populated cache`() {
+        // Simulate another request filling the cache after our first read.
+        every { cache.cachedOfferings } returnsMany listOf(null, testOfferings)
+        mockCacheStale()
+        mockDeviceCache()
+        mockOfferingsFactory()
+        val pendingReadiness = slot<() -> Unit>()
+        every { mockWorkflowManager.onPaywallConfigReady(capture(pendingReadiness)) } just Runs
+        var callbacks = 0
+
+        offeringsManager.getPackagesForPurchase(
+            appUserId, false,
+            PackagePurchaseReference(STUB_OFFERING_IDENTIFIER, "\$rc_monthly"),
+            emptyList(),
+            onError = { fail("Expected fetched offerings: $it") },
+            onSuccess = { main, addOns ->
+                assertThat(main).isSameAs(testOfferings.current!!.availablePackages.first())
+                assertThat(addOns).isEmpty()
+                callbacks++
+            },
+        )
+
+        // A miss keeps the normal fetch path instead of switching to a config-gated cache hit.
+        verify(exactly = 1) { backend.getOfferings(appUserId, false, any(), any()) }
+        verify(exactly = 1) { cache.cachedOfferings }
+        assertThat(callbacks).isZero()
+        pendingReadiness.captured()
+        assertThat(callbacks).isEqualTo(1)
+    }
+
+    @Test
     fun `purchase lookup propagates cold cache fetch failure`() {
         every { cache.cachedOfferings } returns null
         every { cache.cachedOfferingsResponse } returns null

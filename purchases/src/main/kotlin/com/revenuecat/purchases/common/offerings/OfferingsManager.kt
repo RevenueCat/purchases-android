@@ -62,6 +62,24 @@ internal class OfferingsManager(
         onSuccess: ((Offerings) -> Unit)? = null,
         fetchCurrent: Boolean = false,
     ) {
+        getOfferingsInternal(
+            appUserID = appUserID,
+            appInBackground = appInBackground,
+            fetchCurrent = fetchCurrent,
+            waitForCachedPaywallConfig = true,
+            onError = onError,
+            onSuccess = onSuccess,
+        )
+    }
+
+    private fun getOfferingsInternal(
+        appUserID: String,
+        appInBackground: Boolean,
+        fetchCurrent: Boolean,
+        waitForCachedPaywallConfig: Boolean,
+        onError: ((PurchasesError) -> Unit)?,
+        onSuccess: ((Offerings) -> Unit)?,
+    ) {
         if (uiPreviewMode) {
             dispatch { onSuccess?.invoke(emptyOfferings) }
             return
@@ -92,7 +110,7 @@ internal class OfferingsManager(
                 cachedOfferings,
                 startTime,
                 onSuccess,
-                waitForPaywallConfig = true,
+                waitForPaywallConfig = waitForCachedPaywallConfig,
             )
         }
     }
@@ -105,7 +123,13 @@ internal class OfferingsManager(
         onError: (PurchasesError) -> Unit,
         onSuccess: (Package, List<Package>) -> Unit,
     ) {
-        getOfferingsForPurchase(appUserID, appInBackground, onError) { offerings ->
+        getOfferingsInternal(
+            appUserID = appUserID,
+            appInBackground = appInBackground,
+            fetchCurrent = false,
+            waitForCachedPaywallConfig = false,
+            onError = onError,
+        ) { offerings ->
             val main = offerings[packageReference.offeringIdentifier]?.availablePackages?.firstOrNull {
                 it.identifier.equals(packageReference.packageIdentifier, ignoreCase = true)
             }
@@ -121,7 +145,7 @@ internal class OfferingsManager(
                     addOnPackageReferences.map { resolveAddOnPackage(offerings, it) }
                 } catch (error: IllegalArgumentException) {
                     onError(PurchasesError(PurchasesErrorCode.PurchaseInvalidError, error.message))
-                    return@getOfferingsForPurchase
+                    return@getOfferingsInternal
                 }
                 onSuccess(main, addOnPackages)
             }
@@ -139,28 +163,6 @@ internal class OfferingsManager(
                 "Could not find package with identifier ${reference.packageIdentifier}" +
                     " in offering with identifier ${reference.offeringIdentifier}",
             )
-    }
-
-    private fun getOfferingsForPurchase(
-        appUserID: String,
-        appInBackground: Boolean,
-        onError: (PurchasesError) -> Unit,
-        onSuccess: (Offerings) -> Unit,
-    ) {
-        val cachedOfferings = offeringsCache.cachedOfferings
-        if (uiPreviewMode || cachedOfferings == null) {
-            getOfferings(appUserID, appInBackground, onError, onSuccess)
-            return
-        }
-        trackGetOfferingsStartedIfNeeded()
-        vendCachedOfferingsAndMaybeRefresh(
-            appUserID,
-            appInBackground,
-            cachedOfferings,
-            dateProvider.now,
-            onSuccess,
-            waitForPaywallConfig = false,
-        )
     }
 
     private fun createTrackedOfferingsCallbacks(
