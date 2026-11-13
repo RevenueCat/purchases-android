@@ -1,8 +1,11 @@
 package com.revenuecat.purchases.ui.revenuecatui.views
 
+import android.app.Activity
 import android.os.Looper
+import android.view.KeyEvent
 import android.widget.FrameLayout
 import androidx.activity.ComponentActivity
+import androidx.activity.findViewTreeOnBackPressedDispatcherOwner
 import androidx.lifecycle.ViewModelProvider
 import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.Offerings
@@ -86,6 +89,76 @@ class PaywallViewLifecycleTest {
         shadowOf(Looper.getMainLooper()).idle()
 
         assertThat(viewModel.state.value).isEqualTo(PaywallState.Loading)
+    }
+
+    @Test
+    fun `PaywallView composes when the host is not a ComponentActivity`() {
+        val activity = Robolectric.buildActivity(Activity::class.java).setup().get()
+        val container = FrameLayout(activity)
+        activity.setContentView(container)
+        val paywallView = PaywallView(
+            context = activity,
+            offering = TestData.template1Offering,
+            listener = null,
+            fontProvider = null,
+            shouldDisplayDismissButton = true,
+            dismissHandler = {},
+        )
+
+        container.addView(paywallView)
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertThat(container.findViewTreeOnBackPressedDispatcherOwner()).isNotNull
+        assertThat(paywallView.childCount).isEqualTo(1)
+
+        container.removeAllViews()
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertThat(container.findViewTreeOnBackPressedDispatcherOwner()).isNull()
+    }
+
+    @Test
+    fun `back press dismisses PaywallView once when the host is not a ComponentActivity`() {
+        val activity = Robolectric.buildActivity(Activity::class.java).setup().get()
+        val container = FrameLayout(activity)
+        activity.setContentView(container)
+        var dismissCount = 0
+        val paywallView = PaywallView(
+            context = activity,
+            offering = TestData.template1Offering,
+            listener = null,
+            fontProvider = null,
+            shouldDisplayDismissButton = true,
+            dismissHandler = { dismissCount++ },
+        )
+        container.addView(paywallView)
+        shadowOf(Looper.getMainLooper()).idle()
+
+        paywallView.dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK))
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertThat(dismissCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `PaywallView leaves the host's OnBackPressedDispatcherOwner in place`() {
+        val activity = Robolectric.buildActivity(PaywallViewHostActivity::class.java).setup().get()
+        val container = FrameLayout(activity)
+        activity.setContentView(container)
+
+        container.addView(
+            PaywallView(
+                context = activity,
+                offering = TestData.template1Offering,
+                listener = null,
+                fontProvider = null,
+                shouldDisplayDismissButton = true,
+                dismissHandler = {},
+            ),
+        )
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertThat(container.findViewTreeOnBackPressedDispatcherOwner()).isSameAs(activity)
     }
 }
 
