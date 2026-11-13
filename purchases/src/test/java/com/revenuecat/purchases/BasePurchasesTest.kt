@@ -485,6 +485,7 @@ internal open class BasePurchasesTest {
         store: Store = Store.PLAY_STORE,
         subscriberAttributesManager: SubscriberAttributesManager = mockSubscriberAttributesManager,
         diagnosticsEnabled: Boolean = true,
+        offeringsManager: OfferingsManager = mockOfferingsManager,
     ) {
         appConfig = AppConfig(
             context = mockContext,
@@ -521,7 +522,7 @@ internal open class BasePurchasesTest {
             postTransactionWithProductDetailsHelper = postTransactionsHelper,
             postPendingTransactionsHelper = mockPostPendingTransactionsHelper,
             syncPurchasesHelper = mockSyncPurchasesHelper,
-            offeringsManager = mockOfferingsManager,
+            offeringsManager = offeringsManager,
             eventsManager = mockEventsManager,
             adEventsManager = mockAdEventsManager,
             paywallPresentedCache = paywallPresentedCache,

@@ -158,6 +158,7 @@ private fun rememberProcessedText(
             val textPackageContext = state.textPackageContext(
                 tabIndex = textState.tabIndexOutsidePackage,
                 discountTabIndex = textState.discountTabIndex,
+                tabsScope = textState.tabsScope,
                 fallbackPackage = textState.applicablePackage,
                 fallbackSubscriptionOption = textState.subscriptionOption,
             )

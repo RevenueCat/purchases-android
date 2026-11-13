@@ -12,16 +12,18 @@ internal class PackageSelectionResolver(
     selectedTabIndex: Int,
     presentedSheet: SheetPresentationKey?,
     private val context: ComponentVisibilityContext,
+    activeTabPackages: List<AvailablePackages.Info> = packages.packagesByTab[selectedTabIndex].orEmpty(),
+    otherTabPackages: List<AvailablePackages.Info> = emptyList(),
 ) {
     private val onlySheetPackages = presentedSheet == null && packages.hasAnyPackages && !packages.hasRootPackages
-    private val sheetOnlyOutside = packages.packagesOutsideTabs
-    private val sheetOnlyTab = packages.packagesByTab[selectedTabIndex].orEmpty()
+    private val sheetOnlyOutside = packages.packagesOutsideTabs + otherTabPackages
+    private val sheetOnlyTab = activeTabPackages
     private val sheetOnlyInitialCandidates =
         sheetOnlyOutside + sheetOnlyTab
-    private val outside = packages.packagesOutsideTabs.inPresentation(presentedSheet)
-    private val tab = packages.packagesByTab[selectedTabIndex].orEmpty().inPresentation(presentedSheet)
+    private val outside = sheetOnlyOutside.inPresentation(presentedSheet)
+    private val tab = sheetOnlyTab.inPresentation(presentedSheet)
     private val active = outside + tab
-    private val sheet = active.filter { presentedSheet != null && it.sheetPresentationKey === presentedSheet }
+    private val sheet = (tab + outside).filter { presentedSheet != null && it.sheetPresentationKey === presentedSheet }
 
     fun initialSelection(): String? = defaultSelection(remembered = null)
         ?: allHiddenFallback()

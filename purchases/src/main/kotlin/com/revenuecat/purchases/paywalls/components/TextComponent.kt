@@ -15,6 +15,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Padding.Companion
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
+import com.revenuecat.purchases.utils.serializers.NullToEmptyListSerializer
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -70,6 +71,7 @@ constructor(
     @get:JvmSynthetic
     public val margin: Padding = zero,
     @get:JvmSynthetic
+    @Serializable(with = NullToEmptyListSerializer::class)
     public val overrides: List<ComponentOverride<PartialTextComponent>> = emptyList(),
     @get:JvmSynthetic
     public val name: String? = null,

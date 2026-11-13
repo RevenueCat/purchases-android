@@ -5,6 +5,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.PromoOfferConfig
 import com.revenuecat.purchases.paywalls.components.common.ResilientPromoOfferConfigSerializer
+import com.revenuecat.purchases.utils.serializers.NullToEmptyListSerializer
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -33,6 +34,7 @@ public class PackageComponent(
     @get:JvmSynthetic
     public val visible: Boolean? = null,
     @get:JvmSynthetic
+    @Serializable(with = NullToEmptyListSerializer::class)
     public val overrides: List<ComponentOverride<PartialPackageComponent>> = emptyList(),
 ) : PaywallComponent
 

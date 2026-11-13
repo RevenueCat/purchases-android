@@ -15,6 +15,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
+import com.revenuecat.purchases.utils.serializers.NullToEmptyListSerializer
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -68,6 +69,7 @@ public class CarouselComponent(
     @SerialName("auto_advance")
     public val autoAdvance: AutoAdvancePages? = null,
     @get:JvmSynthetic
+    @Serializable(with = NullToEmptyListSerializer::class)
     public val overrides: List<ComponentOverride<PartialCarouselComponent>> = emptyList(),
     @get:JvmSynthetic
     public val name: String? = null,

@@ -11,6 +11,7 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.StateUpdate
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
+import com.revenuecat.purchases.utils.serializers.NullToEmptyListSerializer
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -32,7 +33,9 @@ public class ButtonComponent(
     @get:JvmSynthetic public val id: String? = null,
     @get:JvmSynthetic @SerialName("state_updates") public val stateUpdates: List<StateUpdate>? = null,
     @get:JvmSynthetic public val visible: Boolean? = null,
-    @get:JvmSynthetic public val overrides: List<ComponentOverride<PartialButtonComponent>> = emptyList(),
+    @get:JvmSynthetic
+    @Serializable(with = NullToEmptyListSerializer::class)
+    public val overrides: List<ComponentOverride<PartialButtonComponent>> = emptyList(),
 ) : PaywallComponent {
 
     @InternalRevenueCatAPI

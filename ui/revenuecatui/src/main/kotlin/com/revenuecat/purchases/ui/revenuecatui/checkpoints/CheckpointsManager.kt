@@ -41,9 +41,13 @@ internal class CheckpointPresentation(
 )
 
 /**
- * What a checkpoint run produced: the terminal [flowOutcome] of whatever it presented (null when nothing was),
- * and [backedOut], true when the presented flow went away because the user navigated back (system back, or a
- * navigate-back action on a workflow's first step) without purchasing or restoring.
+ * The result of a checkpoint run.
+ *
+ * [flowOutcome] is the terminal outcome of the presented flow, or null if no flow appeared.
+ * [backedOut] is true when:
+ * - The workflow did not pass its gate.
+ * - An ungated flow closed through back navigation without a purchase or restore.
+ *   Back navigation includes system back and a navigate-back action on the first step.
  *
  * [failed] is true when the checkpoint could not be served before anything was on screen: the failure went to
  * the error presenter and the run is not reported as passed. [blockedByPresentedFlow] is true when the checkpoint
@@ -309,9 +313,10 @@ internal class CheckpointsManager(
     fun presentation(callId: String): CheckpointPresentation? =
         slot.with(callId) { it.presentation }
 
-    // Direct dismissals (a completed purchase or restore) carry no reason and count as a close; everything else
-    // reports one, and a paywall that could not load carries the error as its result when its error UI is done.
-    // The exit offering, if any, is not presented for checkpoints.
+    // Direct dismissals (a completed purchase, or a restore that leaves a complete entitlement set for a product on
+    // the currently displayed paywall active, including an entitlement not held when the flow opened) carry no reason
+    // and count as a close; everything else reports one, and a paywall that could not load carries the error as its
+    // result when its error UI is done. The exit offering, if any, is not presented for checkpoints.
     override fun paywallOptions(callId: String, dismiss: (navigatedBack: Boolean) -> Unit): PaywallOptions? =
         presentation(callId)?.let { presentation ->
             PaywallOptions.Builder(dismissRequest = { dismiss(false) })
@@ -321,8 +326,17 @@ internal class CheckpointsManager(
                     }
                     dismiss(reason == PaywallDismissReason.NAVIGATED_BACK)
                 }
+                // Use the listener's decision so a mapping refresh cannot disagree with the recorded outcome.
+                .setShouldDisplayBlock {
+                    slot.with(callId) { it.outcome.isObtained } != true
+                }
                 .setErrorPresenter(presentation.errorPresenter)
                 .setCustomVariables(presentation.customVariables)
+                .setCheckpointGateContext(
+                    CheckpointGateContext { outcome ->
+                        slot.with(callId) { it.gateOutcome = outcome }
+                    },
+                )
                 .setListener(OutcomeListener(callId))
                 .injectedWorkflow(
                     presentation.workflow.workflow,
@@ -340,10 +354,14 @@ internal class CheckpointsManager(
             recordOutcome(callId, CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
         }
 
-        // A restore that granted nothing the user didn't already hold is not an outcome: how the user then
-        // leaves decides. A gone call reads as "unknown before", and recording into it is a no-op anyway.
+        // A restore is an outcome only when a complete entitlement set for one product on the currently displayed
+        // paywall is active and at least one entitlement in that set is newly active since the flow opened. Otherwise,
+        // how the user then leaves decides. A gone call has no outcome, and recording into it would be a no-op anyway.
         override fun onRestoreCompleted(customerInfo: CustomerInfo) {
-            if (customerInfo.grantsNewEntitlements(slot.with(callId) { it.activeEntitlementsBefore })) {
+            val granted = slot.with(callId) {
+                customerInfo.grantsPresentedEntitlement(it.activeEntitlementsBefore, it.presentedEntitlements())
+            } == true
+            if (granted) {
                 recordOutcome(callId, CheckpointFlowOutcome.Restored(customerInfo))
             }
         }
@@ -364,9 +382,6 @@ internal class CheckpointsManager(
         }
     }
 
-    // A recorded purchase or restore means the user went through, however the window went away: checkpoint
-    // paywalls don't auto-dismiss on restore, so a user who restored and then backed out still went through. A
-    // paywall that went away without reporting anything was dismissed.
     override fun onPresentationFinished(
         callId: String,
         navigatedBack: Boolean,
@@ -380,22 +395,26 @@ internal class CheckpointsManager(
         finished.flowFinished.complete(
             CheckpointRun(
                 recorded ?: CheckpointFlowOutcome.Dismissed,
-                backedOut = navigatedBack && !recorded.isObtained,
+                backedOut = when (finished.gateOutcome) {
+                    CheckpointGateOutcome.NOT_PASSED -> true
+                    CheckpointGateOutcome.PASSED -> false
+                    CheckpointGateOutcome.NOT_APPLICABLE -> navigatedBack && !recorded.isObtained
+                },
                 finishPresentation = finishPresentation,
                 customerInfoBefore = finished.customerInfoBefore,
             ),
         )
     }
 
-    // Like onPresentationFinished, for a presentation that failed: a purchase or granting restore the paywall
-    // already reported (e.g. before the configuration change) still wins. Otherwise the window is gone and the
-    // flow cannot go on, so the error is presented and the run ends with it once the app's error UI is done.
+    // Keep the recorded purchase or restore outcome if the presentation fails after activity recreation.
+    // Do not invoke the checkpoint callback if the gate did not pass.
     override fun onPresentationFailed(callId: String, error: PurchasesError) {
         val failed = slot.take(callId) ?: return
+        val gateNotPassed = failed.gateOutcome == CheckpointGateOutcome.NOT_PASSED
         val obtained = failed.outcome.takeIf { it.isObtained }
         if (obtained != null) {
             failed.flowFinished.complete(
-                CheckpointRun(obtained, backedOut = false, customerInfoBefore = failed.customerInfoBefore),
+                CheckpointRun(obtained, backedOut = gateNotPassed, customerInfoBefore = failed.customerInfoBefore),
             )
             return
         }
@@ -403,7 +422,7 @@ internal class CheckpointsManager(
             failed.flowFinished.complete(
                 CheckpointRun(
                     CheckpointFlowOutcome.Error(error),
-                    backedOut = false,
+                    backedOut = gateNotPassed,
                     customerInfoBefore = failed.customerInfoBefore,
                 ),
             )
@@ -432,6 +451,7 @@ internal class CheckpointsManager(
             callId = UUID.randomUUID().toString(),
             presentation = null,
             activeEntitlementsBefore = customerInfoBefore.activeEntitlementIds,
+            presentedEntitlements = { emptySet() },
             customerInfoBefore = customerInfoBefore,
             flowFinished = CompletableDeferred(),
         )
@@ -568,8 +588,9 @@ internal class CheckpointsManager(
             PurchasesErrorCode.ConfigurationError,
             "Cannot present checkpoint workflow: no started Activity found.",
         )
+        val callId = UUID.randomUUID().toString()
         val call = PendingCall(
-            callId = UUID.randomUUID().toString(),
+            callId = callId,
             presentation = CheckpointPresentation(
                 workflow = resolution,
                 checkpointIdentifier = identifier,
@@ -577,6 +598,10 @@ internal class CheckpointsManager(
                 errorPresenter = errorPresenter.forCheckpoint(identifier, customVariables),
             ),
             activeEntitlementsBefore = customerInfoBefore.activeEntitlementIds,
+            presentedEntitlements = {
+                listOfNotNull(slot.with(callId) { it.presenter?.displayedOffering })
+                    .entitlementsGrantedBy(purchases.internalProductEntitlementMapping())
+            },
             customerInfoBefore = customerInfoBefore,
             flowFinished = CompletableDeferred(),
         )

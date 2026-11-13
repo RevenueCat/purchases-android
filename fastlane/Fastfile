@@ -479,15 +479,15 @@ platform :android do
   lane :run_backend_integration_tests do |options|
     UI.user_error!("REVENUECAT_API_KEY environment variable is not set") if ENV['REVENUECAT_API_KEY'].to_s.empty?
     UI.user_error!("LOAD_SHEDDER_REVENUECAT_API_KEY environment variable is not set") if ENV['LOAD_SHEDDER_REVENUECAT_API_KEY'].to_s.empty?
+    export_gradle_project_properties(
+      "BACKEND_INTEGRATION_API_KEY" => ENV['REVENUECAT_API_KEY'],
+      "BACKEND_INTEGRATION_LOAD_SHEDDER_API_KEY" => ENV['LOAD_SHEDDER_REVENUECAT_API_KEY']
+    )
 
     gradle(
       task: ':purchases:testDefaultsDebugUnitTest',
       flags: '--tests "com.revenuecat.purchases.backend_integration_tests.*"',
-      properties: {
-        "minSdkVersion" => 23,
-        "BACKEND_INTEGRATION_API_KEY" => ENV['REVENUECAT_API_KEY'],
-        "BACKEND_INTEGRATION_LOAD_SHEDDER_API_KEY" => ENV['LOAD_SHEDDER_REVENUECAT_API_KEY'],
-      }
+      properties: { "minSdkVersion" => 23 }
     )
   end
 
@@ -515,7 +515,7 @@ platform :android do
     else # loadshedder
       test_properties = purchases_load_shedder_test_properties
     end
-    test_properties["TEST_PACKAGE_FILTER"] = package_filter
+    export_gradle_project_properties(test_properties)
 
     max_retries = 3
     success = false
@@ -527,7 +527,7 @@ platform :android do
 
         gradle(
           task: ":purchases:connectedDefaultsReleaseAndroidTest",
-          properties: { "testBuildType" => "release", "minSdkVersion" => 23 }.merge(test_properties)
+          properties: { "testBuildType" => "release", "minSdkVersion" => 23, "TEST_PACKAGE_FILTER" => package_filter }
         )
 
         success = true
@@ -571,10 +571,16 @@ platform :android do
         ENV['CUSTOM_ENTITLEMENT_COMPUTATION_ACTIVE_ENTITLEMENT_IDS_TO_VERIFY'] || '',
     }
 
+    export_gradle_project_properties(test_properties)
     gradle(
       task: ":purchases:connectedCustomEntitlementComputationReleaseAndroidTest",
-      properties: { "testBuildType" => "release", "minSdkVersion" => 23 }.merge(test_properties)
+      properties: { "testBuildType" => "release", "minSdkVersion" => 23 }
     )
+  end
+
+  # Gradle reads ORG_GRADLE_PROJECT_<name> environment variables as project properties.
+  def export_gradle_project_properties(properties)
+    properties.each { |name, value| ENV["ORG_GRADLE_PROJECT_#{name}"] = value }
   end
 
   def purchases_production_test_properties
@@ -845,6 +851,47 @@ DESC
   desc "Trigger bump"
   lane :trigger_bump do
     trigger_action_in_circle_ci(action: 'bump', repo_name: repo_name)
+  end
+
+  desc "Trigger the revenuecat-mobile-android pipeline that opens the purchases-android bump PR"
+  lane :trigger_bump_sdk_in_rc_mobile_app do
+    require 'rest-client'
+
+    version = current_version_number
+    if is_snapshot_version?(version)
+      UI.message("#{version} is a snapshot; not bumping the RevenueCat app")
+      next
+    end
+
+    circle_token = ENV["RC_APP_CIRCLE_CI_TOKEN"]
+    UI.user_error!("Please set the RC_APP_CIRCLE_CI_TOKEN environment variable") unless circle_token
+
+    definition_id = ENV["RC_APP_CIRCLE_CI_PIPELINE_DEFINITION_ID"]
+    UI.user_error!("Please set the RC_APP_CIRCLE_CI_PIPELINE_DEFINITION_ID environment variable") unless definition_id
+
+    project_slug = ENV["RC_APP_CIRCLE_CI_PROJECT_SLUG"]
+    UI.user_error!("Please set the RC_APP_CIRCLE_CI_PROJECT_SLUG environment variable") unless project_slug
+
+    headers = { "Circle-Token": circle_token, "Content-Type": "application/json", "Accept": "application/json" }
+    data = {
+      definition_id: definition_id,
+      config: { branch: "main" },
+      checkout: { branch: "main" },
+      parameters: {
+        bump_sdk: true,
+        sdk_version: version
+      }
+    }
+    url = "https://circleci.com/api/v2/project/#{project_slug}/pipeline/run"
+
+    begin
+      RestClient.post url, data.to_json, headers
+      UI.success "RC App Pipeline triggered successfully"
+    rescue => e
+      UI.error "Failed to trigger RC App Pipeline: #{e.message}"
+      UI.error "Response body: #{e.response.body}" if e.respond_to?(:response) && e.response
+      raise e
+    end
   end
 
   desc "Records Paywall template screenshots and pushes them to the repository at target_repository_path"

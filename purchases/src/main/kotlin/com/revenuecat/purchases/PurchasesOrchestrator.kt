@@ -60,6 +60,7 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.TokenManager
 import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
+import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.sdksettings.SdkSettings
@@ -93,6 +94,7 @@ import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetAdRewardsCallback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
+import com.revenuecat.purchases.interfaces.GetPackagesForPurchaseCallback
 import com.revenuecat.purchases.interfaces.GetRewardVerificationResultCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontCallback
@@ -297,6 +299,9 @@ internal class PurchasesOrchestrator(
 
     val currentActivity: Activity?
         get() = currentActivityTracker.currentActivity
+
+    /** The cached product-entitlement mapping, read and parsed on each call; null when none has been fetched yet. */
+    fun productEntitlementMapping(): ProductEntitlementMapping? = deviceCache.getProductEntitlementMapping()
 
     val isAnonymous: Boolean
         get() = identityManager.currentUserIsAnonymous()
@@ -791,6 +796,21 @@ internal class PurchasesOrchestrator(
         )
     }
 
+    fun getPackagesForPurchase(
+        packageReference: PackagePurchaseReference,
+        addOnPackageReferences: List<PackagePurchaseReference>,
+        callback: GetPackagesForPurchaseCallback,
+    ) {
+        offeringsManager.getPackagesForPurchase(
+            identityManager.currentAppUserID,
+            state.appInBackground,
+            packageReference,
+            addOnPackageReferences,
+            { callback.onError(it) },
+            { main, addOns -> callback.onReceived(main, addOns) },
+        )
+    }
+
     /**
      * Resolves a workflow by workflow or offering id, or throws [PurchasesException] when it can't be served.
      * Memory-first via [WorkflowManager.getWorkflow]: a warm cache resumes synchronously on the caller's thread
@@ -1278,12 +1298,13 @@ internal class PurchasesOrchestrator(
 
     @OptIn(InternalRevenueCatAPI::class)
     fun getRewardVerificationResult(
+        appUserID: String,
         clientTransactionId: String,
         adUnitId: String?,
         callback: GetRewardVerificationResultCallback,
     ) {
         backend.getRewardVerificationResult(
-            appUserID = identityManager.currentAppUserID,
+            appUserID = appUserID,
             clientTransactionId = clientTransactionId,
             adUnitId = adUnitId,
             onSuccess = { callback.onReceived(it) },
@@ -1291,9 +1312,9 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    fun cacheCustomerInfo(customerInfo: CustomerInfo) {
+    fun cacheCustomerInfo(customerInfo: CustomerInfo, appUserID: String) {
         offlineEntitlementsManager.resetOfflineCustomerInfoCache()
-        customerInfoUpdateHandler.cacheAndNotifyListeners(customerInfo, identityManager.currentAppUserID)
+        customerInfoUpdateHandler.cacheAndNotifyListeners(customerInfo, appUserID)
     }
 
     // region Subscriber Attributes

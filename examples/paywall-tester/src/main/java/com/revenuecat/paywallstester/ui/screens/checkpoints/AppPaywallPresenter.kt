@@ -11,17 +11,16 @@ import kotlinx.coroutines.flow.asStateFlow
  * how the user left it through [Request.finish].
  */
 @OptIn(InviteOnlyCheckpointsAPI::class)
-class AppPaywallPresenter(
-    private val onFinished: (PaywallPresenter.Completion.Result) -> Unit,
-) : PaywallPresenter {
+class AppPaywallPresenter {
 
     inner class Request(
         val params: PaywallPresenter.Params,
         private val completion: PaywallPresenter.Completion,
+        private val onFinished: (PaywallPresenter.Completion.Result) -> Unit,
     ) {
         fun finish(result: PaywallPresenter.Completion.Result) {
+            if (_request.value === this) _request.value = null
             completion.complete(result)
-            _request.value = null
             onFinished(result)
         }
     }
@@ -29,7 +28,11 @@ class AppPaywallPresenter(
     private val _request = MutableStateFlow<Request?>(null)
     val request: StateFlow<Request?> = _request.asStateFlow()
 
-    override fun present(params: PaywallPresenter.Params, completion: PaywallPresenter.Completion) {
-        _request.value = Request(params, completion)
+    fun present(
+        params: PaywallPresenter.Params,
+        completion: PaywallPresenter.Completion,
+        onFinished: (PaywallPresenter.Completion.Result) -> Unit,
+    ) {
+        _request.value = Request(params, completion, onFinished)
     }
 }

@@ -17,6 +17,7 @@ internal class PresentationSlot {
         // presenter's, and the manager only learns how it ended.
         val presentation: CheckpointPresentation?,
         val activeEntitlementsBefore: Set<String>?,
+        val presentedEntitlements: () -> Set<ProductEntitlements>,
         // Read before the flow was presented; delivered with the run when the flow produced nothing newer.
         val customerInfoBefore: CustomerInfo,
         val flowFinished: CompletableDeferred<CheckpointRun>,
@@ -24,6 +25,9 @@ internal class PresentationSlot {
         // Null until the paywall reports something; kept on the call rather than the presented window so
         // losing the window (configuration change) doesn't reset it.
         var outcome: CheckpointFlowOutcome? = null
+
+        // Retained with the call across window recreation, independently of purchase/restore bookkeeping.
+        var gateOutcome: CheckpointGateOutcome = CheckpointGateOutcome.NOT_APPLICABLE
 
         // Only used to take an orphaned workflow window down when its call is abandoned.
         var presenter: CheckpointWorkflowPresenter? = null
