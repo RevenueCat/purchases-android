@@ -58,6 +58,7 @@ import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
 import kotlinx.serialization.json.JsonPrimitive
 import java.text.NumberFormat
 import java.util.Date
+import java.util.IllformedLocaleException
 import java.util.Locale
 import android.os.LocaleList as FrameworkLocaleList
 
@@ -329,8 +330,8 @@ internal sealed interface PaywallState {
              * avoid discrepancies between calculated prices (per period) and the price coming directly from the store.
              */
             val currencyLocale by derivedStateOf {
-                if (storefrontCountryCode.isNullOrBlank()) {
-                    locale
+                val chosen = if (storefrontCountryCode.isNullOrBlank()) {
+                    locale.toJavaLocale()
                 } else {
                     val deviceLanguageCode = locale.language.lowercase()
 
@@ -341,14 +342,13 @@ internal sealed interface PaywallState {
 
                     // Use a storefront locale with the same number format when possible, preserving its currency
                     // symbol (for example, ￥ in Japan). Otherwise, keep the paywall language's number format.
-                    val javaLocale = availableStorefrontCountryLocalesByLanguage[deviceLanguageCode]
+                    availableStorefrontCountryLocalesByLanguage[deviceLanguageCode]
                         ?: availableStorefrontCountryLocalesByLanguage.values.firstOrNull {
                             it.hasSameNumberFormatAs(fallbackLocale)
                         }
                         ?: fallbackLocale
-
-                    javaLocale.toComposeLocale()
                 }
+                chosen.withNumberingSystemOverride(purchases.preferredUILocaleOverride).toComposeLocale()
             }
 
             private val selectedPackageByTab = mutableStateMapOf<TabSelection, String?>().apply {
@@ -709,6 +709,24 @@ private const val NUMBER_FORMAT_SAMPLE = 1_234_567.89
 private fun Locale.hasSameNumberFormatAs(other: Locale): Boolean =
     NumberFormat.getNumberInstance(this).format(NUMBER_FORMAT_SAMPLE) ==
         NumberFormat.getNumberInstance(other).format(NUMBER_FORMAT_SAMPLE)
+
+/**
+ * Copies an explicit Unicode numbering system (`nu`) from [preferredUILocaleOverride] onto this locale.
+ * Overrides without that keyword, including ordinary language tags, are left unchanged.
+ */
+internal fun Locale.withNumberingSystemOverride(preferredUILocaleOverride: String?): Locale {
+    val numberingSystem = preferredUILocaleOverride
+        ?.let { Locale.forLanguageTag(it.replace('_', '-')).getUnicodeLocaleType("nu") }
+        ?: return this
+    return try {
+        Locale.Builder()
+            .setLocale(this)
+            .setUnicodeLocaleKeyword("nu", numberingSystem)
+            .build()
+    } catch (@Suppress("SwallowedException") e: IllformedLocaleException) {
+        this
+    }
+}
 
 internal fun PaywallState.loadedLegacy(): PaywallState.Loaded.Legacy? {
     return when (val state = this) {
