@@ -135,7 +135,13 @@ internal object PredicateConformanceFixtureLoader {
         val files = directory.listFiles { file -> file.extension == "json" }
             ?.sortedBy { it.name }
             .orEmpty()
-        files.flatMap { loadCases(it) }
+        files.flatMap { file ->
+            val cases = loadCases(file)
+            require(file.name != "predicate_conformance_v1.json" || cases.isNotEmpty()) {
+                "Expected Khepri conformance cases"
+            }
+            cases
+        }
     }
 
     private fun fixturesDirectory(): File {
