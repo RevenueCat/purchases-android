@@ -111,6 +111,34 @@ class WorkflowEventsRequestSerializationTest {
     }
 
     @Test
+    fun `navigation_duration_ms is an integer under its khepri wire name when set`() {
+        val withDuration = EventsRequest(
+            listOf(
+                (request.events.first() as BackendEvent.Workflows).let { event ->
+                    event.copy(
+                        properties = event.properties.copy(
+                            entryReason = "forward",
+                            navigationDurationMs = 412L,
+                        ),
+                    )
+                },
+            ),
+        )
+
+        val requestString = JsonProvider.defaultJson.encodeToString(withDuration)
+
+        assertThat(requestString).contains("\"navigation_duration_ms\":412")
+        assertThat(JsonProvider.defaultJson.decodeFromString<EventsRequest>(requestString)).isEqualTo(withDuration)
+    }
+
+    @Test
+    fun `navigation_duration_ms is omitted from JSON when not set`() {
+        val requestString = JsonProvider.defaultJson.encodeToString(request)
+
+        assertThat(requestString).doesNotContain("navigation_duration_ms")
+    }
+
+    @Test
     fun `fallback_original_step_id uses its khepri wire name next to the raw step id`() {
         val fromFallbackCopy = EventsRequest(
             listOf(

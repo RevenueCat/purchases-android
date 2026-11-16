@@ -814,8 +814,12 @@ class PaywallViewModelWorkflowTest {
             // Run the step-state pre-warm on the test scheduler so advanceUntilIdle() awaits it
             // instead of it escaping to Dispatchers.Default and resuming after resetMain().
             backgroundDispatcher = testDispatcher,
+            uptimeMillis = { uptimeMs },
         )
     }
+
+    // Monotonic clock the ViewModels from createVm read for workflow navigation durations.
+    private var uptimeMs = 0L
 
     private fun TestScope.createInjectedWorkflowVm(
         traceId: String?,
@@ -1710,6 +1714,7 @@ class PaywallViewModelWorkflowTest {
         captured.clear()
 
         vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        vm.onWorkflowStepFrameRendered("step-2")
 
         val workflowEvents = captured.filterIsInstance<WorkflowEvent>()
         // Expect: StepCompleted(step-1, to=step-2), StepStarted(step-2, forward)
@@ -1737,9 +1742,11 @@ class PaywallViewModelWorkflowTest {
         vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
         vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
         vm.onTransitionComplete(vm.workflowState.value!!.pendingTransition!!.id)
+        vm.onWorkflowStepFrameRendered("step-2")
         captured.clear() // clear load + forward nav events
 
         vm.handleBackNavigation()
+        vm.onWorkflowStepFrameRendered("step-1")
 
         val workflowEvents = captured.filterIsInstance<WorkflowEvent>()
         assertThat(workflowEvents).hasSize(2)
@@ -1754,6 +1761,99 @@ class PaywallViewModelWorkflowTest {
         assertThat(started.fromStepId).isEqualTo("step-2")
         assertThat(started.isFirstStep).isTrue
         assertThat(started.isLastStep).isFalse
+    }
+
+    @Test
+    fun `forward navigation sends StepStarted with the navigation duration on the next step's first frame`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
+        captured.clear()
+
+        uptimeMs = 1_000L
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+
+        // StepCompleted for the step left is immediate; StepStarted waits for the frame.
+        assertThat(captured.filterIsInstance<WorkflowEvent>().map { it::class })
+            .containsExactly(WorkflowEvent.StepCompleted::class)
+
+        uptimeMs = 1_412L
+        vm.onWorkflowStepFrameRendered("step-2")
+
+        val started = captured.filterIsInstance<WorkflowEvent.StepStarted>().single()
+        assertThat(started.stepId).isEqualTo("step-2")
+        assertThat(started.entryReason).isEqualTo("forward")
+        assertThat(started.navigationDurationMs).isEqualTo(412L)
+
+        // Later frames of the same step send nothing more.
+        vm.onWorkflowStepFrameRendered("step-2")
+        assertThat(captured.filterIsInstance<WorkflowEvent.StepStarted>()).hasSize(1)
+    }
+
+    @Test
+    fun `back navigation sends StepStarted with the navigation duration on the previous step's first frame`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        vm.onWorkflowStepFrameRendered("step-2")
+        vm.onTransitionComplete(vm.workflowState.value!!.pendingTransition!!.id)
+        captured.clear()
+
+        uptimeMs = 5_000L
+        vm.handleBackNavigation()
+        assertThat(captured.filterIsInstance<WorkflowEvent.StepStarted>()).isEmpty()
+
+        uptimeMs = 5_033L
+        vm.onWorkflowStepFrameRendered("step-1")
+
+        val started = captured.filterIsInstance<WorkflowEvent.StepStarted>().single()
+        assertThat(started.stepId).isEqualTo("step-1")
+        assertThat(started.entryReason).isEqualTo("back")
+        assertThat(started.navigationDurationMs).isEqualTo(33L)
+    }
+
+    @Test
+    fun `start StepStarted is sent immediately without a navigation duration`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
+        vm.onWorkflowStepFrameRendered("step-1")
+
+        val started = captured.filterIsInstance<WorkflowEvent.StepStarted>().single()
+        assertThat(started.entryReason).isEqualTo("start")
+        assertThat(started.navigationDurationMs).isNull()
+    }
+
+    @Test
+    fun `a close before the next step's first frame sends its StepStarted first, without a duration`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
+        captured.clear()
+
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        vm.closePaywall(result = null)
+        vm.onWorkflowStepFrameRendered("step-2")
+
+        val workflowEvents = captured.filterIsInstance<WorkflowEvent>()
+        assertThat(workflowEvents.map { it::class to it.stepId }).containsExactly(
+            WorkflowEvent.StepCompleted::class to "step-1",
+            WorkflowEvent.StepStarted::class to "step-2",
+            WorkflowEvent.StepCompleted::class to "step-2",
+            WorkflowEvent.Close::class to "step-2",
+        )
+        val started = workflowEvents[1] as WorkflowEvent.StepStarted
+        assertThat(started.entryReason).isEqualTo("forward")
+        assertThat(started.navigationDurationMs).isNull()
     }
 
     @Test
@@ -2729,6 +2829,7 @@ class PaywallViewModelWorkflowTest {
         val vm = createVm()
         vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
         vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        vm.onWorkflowStepFrameRendered("step-2")
 
         val firstImpressionTraceId = captured.filterIsInstance<WorkflowEvent>().map { it.traceId }.distinct().single()
 
@@ -3030,6 +3131,7 @@ class PaywallViewModelWorkflowTest {
         val vm = createVm()
         vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
         vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        vm.onWorkflowStepFrameRendered("step-2")
         captured.clear()
 
         vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)

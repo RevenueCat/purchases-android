@@ -256,6 +256,8 @@ private class LoadingViewModel(
 
     override fun onTransitionComplete(transitionId: Int) = Unit
 
+    override fun onWorkflowStepFrameRendered(stepId: String) = Unit
+
     override fun clearActionError() = Unit
 
     override fun preloadExitOffering() = Unit

@@ -3,6 +3,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.data
 
 import android.app.Activity
+import android.os.SystemClock
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.Stable
@@ -165,6 +166,12 @@ internal interface PaywallViewModel {
      */
     fun onTransitionComplete(transitionId: Int)
 
+    /**
+     * Called by the UI on the first frame after the workflow step [stepId] was composed. Sends the deferred
+     * [WorkflowEvent.StepStarted] of a forward or back navigation with the time the user waited for it.
+     */
+    fun onWorkflowStepFrameRendered(stepId: String)
+
     fun getWebCheckoutUrl(launchWebCheckout: PaywallAction.External.LaunchWebCheckout): String?
     fun notifyWebCheckoutOpened()
     fun notifyUrlOpened(url: String)
@@ -195,6 +202,8 @@ internal class PaywallViewModelImpl(
     preview: Boolean = false,
     private val productChangeCalculator: ProductChangeCalculator = ProductChangeCalculator(purchases),
     private val backgroundDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    // Monotonic clock for workflow navigation durations. Injectable for tests.
+    private val uptimeMillis: () -> Long = SystemClock::uptimeMillis,
 ) : ViewModel(), PaywallViewModel {
     private val variableDataProvider = VariableDataProvider(resourceProvider, preview)
 
@@ -258,6 +267,15 @@ internal class PaywallViewModelImpl(
     private var standaloneStateStore: PaywallStateStore? = null
     private var preWarmJob: Job? = null
     private var transitionIdCounter: Int = 0
+
+    // The step_started of a forward/back navigation, held until the destination step's first frame so it can carry
+    // navigationDurationMs. Flushed without a duration before any other workflow event, so order and count hold.
+    private var pendingWorkflowStepStarted: PendingWorkflowStepStarted? = null
+
+    private class PendingWorkflowStepStarted(
+        val event: WorkflowEvent.StepStarted,
+        val navigationStartUptimeMs: Long,
+    )
 
     // Per-session flag: a completed purchase or a qualifying restore is a natural workflow exit, not an
     // abandonment, so it suppresses workflow_close. A successful restore qualifies when there is no
@@ -432,6 +450,7 @@ internal class PaywallViewModelImpl(
     }
 
     private fun clearWorkflowState() {
+        flushPendingWorkflowStepStarted()
         preWarmJob?.cancel()
         preWarmJob = null
         branchResolveJob?.cancel()
@@ -1524,6 +1543,8 @@ internal class PaywallViewModelImpl(
 
     @Suppress("ReturnCount")
     override fun handleWorkflowAction(componentId: String, triggerType: WorkflowTriggerType) {
+        // Taken before any work to resolve or build the destination step, so the duration covers all of it.
+        val navigationStartUptimeMs = uptimeMillis()
         val navigator = workflowNavigator ?: return
         val workflow = currentWorkflow ?: return
         val offerings = currentWorkflowOfferings ?: return
@@ -1551,11 +1572,14 @@ internal class PaywallViewModelImpl(
             fromStep = fromStep,
             toStep = newStep,
             entryReason = WorkflowStepEntryReason.FORWARD,
+            navigationStartUptimeMs = navigationStartUptimeMs,
         )
     }
 
     @Suppress("ReturnCount")
     override fun handleBackNavigation(): Boolean {
+        // Taken before any work to resolve or build the destination step, so the duration covers all of it.
+        val navigationStartUptimeMs = uptimeMillis()
         val navigator = workflowNavigator ?: return false
         if (!navigator.canNavigateBack) return false
         val workflow = currentWorkflow ?: return false
@@ -1583,6 +1607,7 @@ internal class PaywallViewModelImpl(
             fromStep = fromStep,
             toStep = newStep,
             entryReason = WorkflowStepEntryReason.BACK,
+            navigationStartUptimeMs = navigationStartUptimeMs,
         )
         return true
     }
@@ -1591,6 +1616,7 @@ internal class PaywallViewModelImpl(
         fromStep: WorkflowStep?,
         toStep: WorkflowStep,
         entryReason: WorkflowStepEntryReason,
+        navigationStartUptimeMs: Long,
     ) {
         // If _workflowState is null after buildStateFromStep, an error occurred and
         // StepCompleted was already fired inside buildStateFromStep.
@@ -1599,11 +1625,29 @@ internal class PaywallViewModelImpl(
         fromStep?.let { from ->
             trackWorkflowStepCompleted(step = from, toStepId = toStep.id)
         }
-        trackWorkflowStepStarted(
-            step = toStep,
-            fromStepId = fromStep?.id,
-            entryReason = entryReason,
-        )
+        // Deferred until the destination step's first frame: see onWorkflowStepFrameRendered.
+        val event = workflowStepStartedEvent(step = toStep, fromStepId = fromStep?.id, entryReason = entryReason)
+            ?: return
+        pendingWorkflowStepStarted = PendingWorkflowStepStarted(event, navigationStartUptimeMs)
+    }
+
+    override fun onWorkflowStepFrameRendered(stepId: String) {
+        val pending = pendingWorkflowStepStarted?.takeIf { it.event.stepId == stepId } ?: return
+        pendingWorkflowStepStarted = null
+        val navigationDurationMs = uptimeMillis() - pending.navigationStartUptimeMs
+        purchases.track(pending.event.copy(navigationDurationMs = navigationDurationMs))
+    }
+
+    /** Sends a deferred step_started without a duration, ahead of whatever workflow event comes next. */
+    private fun flushPendingWorkflowStepStarted() {
+        val pending = pendingWorkflowStepStarted ?: return
+        pendingWorkflowStepStarted = null
+        purchases.track(pending.event)
+    }
+
+    override fun onCleared() {
+        flushPendingWorkflowStepStarted()
+        super.onCleared()
     }
 
     private fun trackWorkflowStepStarted(
@@ -1611,25 +1655,33 @@ internal class PaywallViewModelImpl(
         fromStepId: String?,
         entryReason: WorkflowStepEntryReason,
     ) {
-        val workflow = currentWorkflow ?: return
-        purchases.track(
-            WorkflowEvent.StepStarted(
-                creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
-                workflowId = workflow.id,
-                stepId = step.id,
-                traceId = workflowTraceId,
-                fromStepId = fromStepId,
-                entryReason = entryReason.value,
-                isFirstStep = step.id == (resolvedInitialStepId ?: workflow.initialStepId),
-                isLastStep = isTerminalStep(workflow, step.id),
-                workflowBlobRef = currentWorkflowBlobRef,
-                fallbackOriginalStepId = step.fallbackOriginalStepId,
-                experiment = experimentData(step),
-            ),
+        flushPendingWorkflowStepStarted()
+        workflowStepStartedEvent(step, fromStepId, entryReason)?.let { purchases.track(it) }
+    }
+
+    private fun workflowStepStartedEvent(
+        step: WorkflowStep,
+        fromStepId: String?,
+        entryReason: WorkflowStepEntryReason,
+    ): WorkflowEvent.StepStarted? {
+        val workflow = currentWorkflow ?: return null
+        return WorkflowEvent.StepStarted(
+            creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
+            workflowId = workflow.id,
+            stepId = step.id,
+            traceId = workflowTraceId,
+            fromStepId = fromStepId,
+            entryReason = entryReason.value,
+            isFirstStep = step.id == (resolvedInitialStepId ?: workflow.initialStepId),
+            isLastStep = isTerminalStep(workflow, step.id),
+            workflowBlobRef = currentWorkflowBlobRef,
+            fallbackOriginalStepId = step.fallbackOriginalStepId,
+            experiment = experimentData(step),
         )
     }
 
     private fun trackWorkflowStepCompleted(step: WorkflowStep, toStepId: String?) {
+        flushPendingWorkflowStepStarted()
         val workflow = currentWorkflow ?: return
         purchases.track(
             WorkflowEvent.StepCompleted(
@@ -1693,6 +1745,7 @@ internal class PaywallViewModelImpl(
      * workflow was not completed (no purchase).
      */
     private fun trackCurrentWorkflowAbandoned() {
+        flushPendingWorkflowStepStarted()
         val workflow = currentWorkflow ?: return
         val step = currentWorkflowStep ?: return
         purchases.track(

@@ -331,6 +331,8 @@ internal sealed class BackendEvent : Event {
             val workflowBlobRef: String? = null,
             @SerialName("fallback_original_step_id")
             val fallbackOriginalStepId: String? = null,
+            @SerialName("navigation_duration_ms")
+            val navigationDurationMs: Long? = null,
         )
     }
 

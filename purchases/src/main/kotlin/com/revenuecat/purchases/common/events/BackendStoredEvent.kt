@@ -629,6 +629,7 @@ internal fun WorkflowEvent.toBackendStoredEvent(
             experimentVariant = experiment?.experimentVariant,
             workflowBlobRef = workflowBlobRef,
             fallbackOriginalStepId = fallbackOriginalStepId,
+            navigationDurationMs = navigationDurationMs,
         )
         is WorkflowEvent.StepCompleted -> BackendEvent.Workflows.Properties(
             workflowId = workflowId,
