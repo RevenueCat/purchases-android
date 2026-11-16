@@ -241,6 +241,10 @@ internal sealed interface PaywallState {
 
                 val hasAnyPackages: Boolean
                     get() = packagesOutsideTabs.isNotEmpty() || packagesByTab.isNotEmpty()
+
+                val hasRootPackages: Boolean
+                    get() = (packagesOutsideTabs + packagesByTab.values.flatten())
+                        .any { it.sheetPresentationKey == null }
             }
 
             data class SelectedPackageInfo(
@@ -353,9 +357,10 @@ internal sealed interface PaywallState {
 
             private val selectedPackageByTab = mutableStateMapOf<TabSelection, String?>().apply {
                 if (!initialSheetState.visible) {
-                    activeTabSelections().forEach { tab ->
+                    activeTabSelections().filter { it.scope?.sheetPresentationKey == null }.forEach { tab ->
                         if (tabPackages(tab).any {
-                                it.sheetPresentationKey == null && it.uniqueId == initialSelectedPackageUniqueId
+                                (it.sheetPresentationKey == null || !packages.hasRootPackages) &&
+                                    it.uniqueId == initialSelectedPackageUniqueId
                             }
                         ) {
                             put(tab, initialSelectedPackageUniqueId)
@@ -369,6 +374,8 @@ internal sealed interface PaywallState {
             private data class PackageSelectionBeforeSheet(val uniqueId: String?)
 
             private var packageSelectionBeforeSheet: PackageSelectionBeforeSheet? = null
+
+            private val presentedSheets = mutableSetOf<SheetPresentationKey>()
 
             private var defaultPackageInfo: SelectedPackageInfo? by mutableStateOf(null)
 
@@ -495,6 +502,14 @@ internal sealed interface PaywallState {
                 tabsScope: TabsScope? = null,
             ) {
                 if (index == selectedTabIndex(tabsScope)) return
+                // A dismissed sheet's choice belongs to its underlying tab on sheet-only paywalls.
+                // Save it using the scope of the tab being left, including nested tabs.
+                if (!sheet.visible && !packages.hasRootPackages) {
+                    val previousTab = TabSelection(tabsScope ?: mainTabsScope, selectedTabIndex(tabsScope))
+                    selectedPackageUniqueId?.takeIf { uid ->
+                        tabPackages(previousTab).any { it.uniqueId == uid }
+                    }?.let { selectedPackageByTab[previousTab] = it }
+                }
                 if (tabId != null) stateStore.applyUpdates(stateUpdates, payload = JsonPrimitive(tabId))
                 if (tabsScope == null || tabsScope === mainTabsScope) {
                     selectedTabIndex = index
@@ -533,9 +548,11 @@ internal sealed interface PaywallState {
                 this.selectedPackageUniqueId = selectedPackageUniqueId
 
                 val presentation = sheet.presentationKey.takeIf { sheet.visible }
+                val rememberSheetChoice = presentation == null && !packages.hasRootPackages
                 activeTabSelections().filter { it.scope?.sheetPresentationKey === presentation }.forEach { tab ->
                     if (tabPackages(tab).any {
-                            it.sheetPresentationKey === presentation && it.uniqueId == selectedPackageUniqueId
+                            (it.sheetPresentationKey === presentation || rememberSheetChoice) &&
+                                it.uniqueId == selectedPackageUniqueId
                         }
                     ) {
                         selectedPackageByTab[tab] = selectedPackageUniqueId
@@ -579,12 +596,22 @@ internal sealed interface PaywallState {
                 if (packageSelectionBeforeSheet == null) {
                     packageSelectionBeforeSheet = PackageSelectionBeforeSheet(selectedPackageUniqueId)
                 }
-                selectedPackageUniqueId = selectionResolver().enterSheet(selectionBeforeSheetAtCurrentBounds())
+                val hasBeenPresented = sheet.presentationKey?.let { !presentedSheets.add(it) } ?: false
+                selectedPackageUniqueId = selectionResolver().enterSheet(
+                    current = selectionBeforeSheetAtCurrentBounds(),
+                    preserveCurrentSelection = !packages.hasRootPackages && hasBeenPresented,
+                )
             }
 
             fun restorePackageAfterSheetDismiss() {
                 if (packageSelectionBeforeSheet == null) return
-                selectedPackageUniqueId = selectionBeforeSheetAtCurrentBounds()
+                // A sheet-only paywall has no root choice to restore. Its latest sheet choice also
+                // supplies the package for purchase buttons on the root paywall.
+                if (packages.hasRootPackages) {
+                    selectedPackageUniqueId = selectionBeforeSheetAtCurrentBounds()
+                } else {
+                    selectedPackageUniqueId?.let { update(selectedPackageUniqueId = it) }
+                }
                 packageSelectionBeforeSheet = null
             }
 
@@ -623,8 +650,12 @@ internal sealed interface PaywallState {
 
             fun peekSelectedPackageInfoAfterSheetDismiss(): SelectedPackageInfo? {
                 packageSelectionBeforeSheet?.let {
-                    return selectionBeforeSheetAtCurrentBounds()?.let { findPackageInfoByUniqueId(it)?.selectionInfo() }
-                        ?: defaultPackageInfo
+                    return if (!packages.hasRootPackages) {
+                        selectedPackageInfo
+                    } else {
+                        selectionBeforeSheetAtCurrentBounds()?.let { findPackageInfoByUniqueId(it)?.selectionInfo() }
+                            ?: defaultPackageInfo
+                    }
                 }
                 val uid = peekDefaultPackageUniqueIdAfterSheetDismiss()
                 val info = uid?.let { findPackageInfoByUniqueId(it) }

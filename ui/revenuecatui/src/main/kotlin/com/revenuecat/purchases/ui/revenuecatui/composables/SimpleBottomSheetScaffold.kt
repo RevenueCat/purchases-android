@@ -32,7 +32,6 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ui.revenuecatui.components.style.SheetPresentationKey
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
@@ -51,8 +50,8 @@ internal fun SimpleBottomSheetScaffold(
 ) {
     Box(modifier = modifier) {
         Scrim(
-            show = sheetState.backgroundBlur,
-            radius = 10.dp,
+            show = sheetState.visible,
+            backgroundBlur = sheetState.backgroundBlur,
             onClick = { sheetState.hide() },
             // Keep screen readers inside the sheet. It can be dismissed with the back gesture.
             modifier = Modifier.conditional(sheetState.visible) { clearAndSetSemantics { } },
@@ -121,7 +120,7 @@ internal class SimpleSheetState {
     }
 
     fun hide() {
-        backgroundBlur = false
+        // Retain the sheet's styling until its scrim finishes fading out.
         visible = false
         presentationKey = null
         onDismiss?.invoke()
@@ -132,13 +131,13 @@ internal class SimpleSheetState {
 @Composable
 private fun Scrim(
     show: Boolean,
-    radius: Dp,
+    backgroundBlur: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
     val targetRadius by animateDpAsState(
-        targetValue = if (show) radius else 0.dp,
+        targetValue = if (show && backgroundBlur) 10.dp else 0.dp,
         animationSpec = blurAnimationSpec(),
     )
 
@@ -161,7 +160,7 @@ private fun Scrim(
                         onClick = onClick,
                     )
                     // Show a translucent scrim on versions older than 12, where performant blur is not supported.
-                    .conditional(Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                    .conditional(backgroundBlur && Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
                         background(Color.Black.copy(alpha = ALPHA_SCRIM))
                     },
             )

@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,11 +10,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performTouchInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ui.revenuecatui.components.style.SheetPresentationKey
 import org.assertj.core.api.Assertions.assertThat
@@ -114,5 +119,57 @@ class SimpleBottomSheetScaffoldTests {
         sheetState.hide()
 
         assertThat(keyDuringDismiss).isNull()
+    }
+
+    @Test
+    fun `outside tap dismisses sheet without clicking underlying content when blur is disabled`() {
+        assertOutsideTapOnlyDismissesSheet(backgroundBlur = false)
+    }
+
+    @Test
+    fun `outside tap dismisses sheet without clicking underlying content when blur is enabled`() {
+        assertOutsideTapOnlyDismissesSheet(backgroundBlur = true)
+    }
+
+    private fun assertOutsideTapOnlyDismissesSheet(backgroundBlur: Boolean): Unit = with(composeTestRule) {
+        val sheetState = SimpleSheetState()
+        var backgroundClicks = 0
+        var sheetClicks = 0
+        var dismissals = 0
+
+        setContent {
+            SimpleBottomSheetScaffold(
+                sheetState = sheetState,
+                modifier = Modifier.fillMaxSize(),
+                content = {
+                    Box(Modifier.fillMaxSize().clickable { backgroundClicks++ })
+                },
+            )
+        }
+        runOnUiThread {
+            sheetState.show(
+                backgroundBlur = backgroundBlur,
+                content = { Text("In the sheet", Modifier.clickable { sheetClicks++ }) },
+                onDismiss = { dismissals++ },
+            )
+        }
+
+        onNodeWithText("In the sheet").performTouchInput { click() }
+        runOnIdle {
+            assertThat(sheetClicks).isEqualTo(1)
+            assertThat(sheetState.visible).isTrue()
+        }
+
+        // Send a real touch above the sheet: accessibility semantics hide the underlying content.
+        onRoot().performTouchInput { click(Offset(20f, 20f)) }
+
+        runOnIdle {
+            assertThat(backgroundClicks).isZero()
+            assertThat(sheetState.visible).isFalse()
+            assertThat(dismissals).isEqualTo(1)
+        }
+
+        onRoot().performTouchInput { click(Offset(20f, 20f)) }
+        runOnIdle { assertThat(backgroundClicks).isEqualTo(1) }
     }
 }

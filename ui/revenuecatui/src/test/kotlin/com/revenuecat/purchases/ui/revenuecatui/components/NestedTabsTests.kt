@@ -186,6 +186,38 @@ class NestedTabsTests {
     }
 
     @Test
+    fun `Sheet only tab control prices reflect the choice immediately after dismissal`() {
+        val sheet = ButtonComponent(
+            action = ButtonComponent.Action.NavigateTo(ButtonComponent.Destination.Sheet(
+                id = "silver-plans",
+                stack = StackComponent(components = listOf(
+                    plan(silverAnnual, "Silver annual plan", true),
+                    plan(silverMonthly, "Silver monthly plan", false),
+                    ButtonComponent(action = ButtonComponent.Action.NavigateBack,
+                        stack = StackComponent(components = listOf(text("Back")))),
+                )),
+            )),
+            stack = StackComponent(components = listOf(text("Choose plan"))),
+        )
+        val state = render(StackComponent(components = listOf(tabs(
+            listOf("Silver: {{ product.price }}", "Details"),
+            listOf(
+                StackComponent(components = listOf(TabControlComponent, sheet)),
+                StackComponent(components = listOf(TabControlComponent, text("Details content"))),
+            ), 0,
+        ))))
+        compose.onNodeWithText("Silver: $60.00 active").assertExists()
+        compose.onNodeWithText("Choose plan").performClick()
+        compose.onNodeWithText("Silver monthly plan", useUnmergedTree = true).performClick()
+        compose.onNodeWithText("Back").performClick()
+
+        compose.onNodeWithText("Silver: $6.00 active").assertExists()
+        compose.runOnIdle { assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(silverMonthly) }
+        compose.onNodeWithText("Details").performClick()
+        compose.onNodeWithText("Silver: $6.00").assertExists()
+    }
+
+    @Test
     fun `Closed sheet products do not supply parent tab control prices`() {
         val sheet = ButtonComponent(
             action = ButtonComponent.Action.NavigateTo(ButtonComponent.Destination.Sheet(
