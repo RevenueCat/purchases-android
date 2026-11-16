@@ -357,9 +357,10 @@ internal sealed interface PaywallState {
 
             private val selectedPackageByTab = mutableStateMapOf<TabSelection, String?>().apply {
                 if (!initialSheetState.visible) {
-                    activeTabSelections().forEach { tab ->
+                    activeTabSelections().filter { it.scope?.sheetPresentationKey == null }.forEach { tab ->
                         if (tabPackages(tab).any {
-                                it.sheetPresentationKey == null && it.uniqueId == initialSelectedPackageUniqueId
+                                (it.sheetPresentationKey == null || !packages.hasRootPackages) &&
+                                    it.uniqueId == initialSelectedPackageUniqueId
                             }
                         ) {
                             put(tab, initialSelectedPackageUniqueId)
@@ -545,9 +546,11 @@ internal sealed interface PaywallState {
                 this.selectedPackageUniqueId = selectedPackageUniqueId
 
                 val presentation = sheet.presentationKey.takeIf { sheet.visible }
+                val rememberSheetChoice = presentation == null && !packages.hasRootPackages
                 activeTabSelections().filter { it.scope?.sheetPresentationKey === presentation }.forEach { tab ->
                     if (tabPackages(tab).any {
-                            it.sheetPresentationKey === presentation && it.uniqueId == selectedPackageUniqueId
+                            (it.sheetPresentationKey === presentation || rememberSheetChoice) &&
+                                it.uniqueId == selectedPackageUniqueId
                         }
                     ) {
                         selectedPackageByTab[tab] = selectedPackageUniqueId
@@ -600,6 +603,8 @@ internal sealed interface PaywallState {
                 // supplies the package for purchase buttons on the root paywall.
                 if (packages.hasRootPackages) {
                     selectedPackageUniqueId = selectionBeforeSheetAtCurrentBounds()
+                } else {
+                    selectedPackageUniqueId?.let { update(selectedPackageUniqueId = it) }
                 }
                 packageSelectionBeforeSheet = null
             }

@@ -426,6 +426,13 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
         state.sheet.hide()
         state.restorePackageAfterSheetDismiss()
 
+        assertThat(state.textPackageContext(
+            tabIndex = 0,
+            discountTabIndex = null,
+            fallbackPackage = null,
+            fallbackSubscriptionOption = null,
+        ).rcPackage).isEqualTo(TestData.Packages.annual)
+
         state.update(selectedTabIndex = 1)
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.weekly)
 
