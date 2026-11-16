@@ -81,10 +81,11 @@ internal open class BaseBillingUseCaseTest {
             mockClient.endConnection()
         } just Runs
 
-        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
+        // Auto-reconnection clients report ready even when the service is disconnected.
+        every { mockClient.isReady } returns true
         every {
-            mockClient.isReady
-        } returns false andThen true
+            mockClient.connectionState
+        } returns BillingClient.ConnectionState.DISCONNECTED andThen BillingClient.ConnectionState.CONNECTED
 
         wrapper = BillingWrapper(
             mockClientFactory,

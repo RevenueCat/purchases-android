@@ -83,7 +83,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `defers query purchases if client not connected`() {
-        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
 
         var purchasesByHashedToken: Map<String, StoreTransaction>? = null
         wrapper.queryPurchases(
@@ -109,7 +109,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
             emptyList()
         )
 
-        every { mockClient.isReady } returns true
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTED
 
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
 
@@ -122,7 +122,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `queryPurchases returns error if error connecting`() {
-        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
 
         var receivedError: PurchasesError? = null
         wrapper.queryPurchases(
@@ -391,7 +391,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
     // region retries
 
     @Test
-    fun `If service is disconnected, re-executeRequestOnUIThread`() {
+    fun `If automatic reconnection fails, forward error without retrying`() {
         val slot = slot<PurchasesResponseListener>()
         val queryPurchasesStubbing = every {
             mockClient.queryPurchasesAsync(
@@ -401,6 +401,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
         }
         var receivedList: Map<String, StoreTransaction>? = null
         var timesExecutedInMainThread = 0
+        var errorCount = 0
         QueryPurchasesUseCase(
             QueryPurchasesUseCaseParams(
                 mockDateProvider,
@@ -411,7 +412,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
                 receivedList = received
             },
             { _ ->
-                fail("shouldn't be an error")
+                errorCount++
             },
             withConnectedClient = {
                 it.invoke(mockClient)
@@ -420,23 +421,16 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
                 timesExecutedInMainThread++
 
                 queryPurchasesStubbing answers {
-                    if (timesExecutedInMainThread == 1) {
-                        slot.captured.onQueryPurchasesResponse(billingClientDisconnectedResult, emptyList())
-                    } else {
-                        slot.captured.onQueryPurchasesResponse(
-                            billingClientOKResult,
-                            listOf(stubGooglePurchase())
-                        )
-                    }
+                    slot.captured.onQueryPurchasesResponse(billingClientDisconnectedResult, emptyList())
                 }
 
                 request(null)
             },
         ).run()
 
-        assertThat(timesExecutedInMainThread).isEqualTo(3)
-        assertThat(receivedList).isNotNull
-        assertThat(receivedList!!.size).isOne
+        assertThat(timesExecutedInMainThread).isEqualTo(2)
+        assertThat(errorCount).isEqualTo(1)
+        assertThat(receivedList).isNull()
     }
 
     @Test

@@ -193,7 +193,7 @@ internal class QueryPurchasesByTypeUseCaseTest : BaseBillingUseCaseTest() {
     // region retries
 
     @Test
-    fun `If service is disconnected, re-executeRequestOnUIThread`() {
+    fun `If automatic reconnection fails, forward error without retrying`() {
         val slot = slot<PurchasesResponseListener>()
         val queryPurchasesStubbing = every {
             mockClient.queryPurchasesAsync(
@@ -203,6 +203,7 @@ internal class QueryPurchasesByTypeUseCaseTest : BaseBillingUseCaseTest() {
         }
         var receivedList: Map<String, StoreTransaction>? = null
         var timesExecutedInMainThread = 0
+        var errorCount = 0
         QueryPurchasesByTypeUseCase(
             QueryPurchasesByTypeUseCaseParams(
                 mockDateProvider,
@@ -214,7 +215,7 @@ internal class QueryPurchasesByTypeUseCaseTest : BaseBillingUseCaseTest() {
                 receivedList = received
             },
             { _ ->
-                fail("shouldn't be an error")
+                errorCount++
             },
             withConnectedClient = {
                 it.invoke(mockClient)
@@ -223,23 +224,16 @@ internal class QueryPurchasesByTypeUseCaseTest : BaseBillingUseCaseTest() {
                 timesExecutedInMainThread++
 
                 queryPurchasesStubbing answers {
-                    if (timesExecutedInMainThread == 1) {
-                        slot.captured.onQueryPurchasesResponse(billingClientDisconnectedResult, emptyList())
-                    } else {
-                        slot.captured.onQueryPurchasesResponse(
-                            billingClientOKResult,
-                            listOf(stubGooglePurchase())
-                        )
-                    }
+                    slot.captured.onQueryPurchasesResponse(billingClientDisconnectedResult, emptyList())
                 }
 
                 request(null)
             },
         ).run()
 
-        assertThat(timesExecutedInMainThread).isEqualTo(2)
-        assertThat(receivedList).isNotNull
-        assertThat(receivedList!!.size).isOne
+        assertThat(timesExecutedInMainThread).isEqualTo(1)
+        assertThat(errorCount).isEqualTo(1)
+        assertThat(receivedList).isNull()
     }
 
     @Test

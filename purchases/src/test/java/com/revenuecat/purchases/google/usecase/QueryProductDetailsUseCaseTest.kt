@@ -237,7 +237,7 @@ internal class QueryProductDetailsUseCaseTest : BaseBillingUseCaseTest() {
     // region retries
 
     @Test
-    fun `If service is disconnected, re-executeRequestOnUIThread`() {
+    fun `If automatic reconnection fails, forward error without retrying`() {
         val slot = slot<ProductDetailsResponseListener>()
         val queryProductDetailsStubbing = every {
             mockClient.queryProductDetailsAsync(
@@ -248,6 +248,7 @@ internal class QueryProductDetailsUseCaseTest : BaseBillingUseCaseTest() {
         val productIDs = setOf("product_a")
         var receivedList: List<StoreProduct>? = null
         var timesExecutedInMainThread = 0
+        var errorCount = 0
         val useCase = QueryProductDetailsUseCase(
             QueryProductDetailsUseCaseParams(
                 mockDateProvider,
@@ -260,7 +261,7 @@ internal class QueryProductDetailsUseCaseTest : BaseBillingUseCaseTest() {
                 receivedList = received
             },
             { _ ->
-                fail("shouldn't be an error")
+                errorCount++
             },
             withConnectedClient = {
                 it.invoke(mockClient)
@@ -269,17 +270,10 @@ internal class QueryProductDetailsUseCaseTest : BaseBillingUseCaseTest() {
                 timesExecutedInMainThread++
 
                 queryProductDetailsStubbing answers {
-                    if (timesExecutedInMainThread == 1) {
-                        slot.captured.onProductDetailsResponse(
-                            billingClientDisconnectedResult,
-                            emptyResponseResult,
-                        )
-                    } else {
-                        slot.captured.onProductDetailsResponse(
-                            billingClientOKResult,
-                            mockProductDetailsResult,
-                        )
-                    }
+                    slot.captured.onProductDetailsResponse(
+                        billingClientDisconnectedResult,
+                        emptyResponseResult,
+                    )
                 }
 
                 request(null)
@@ -288,9 +282,9 @@ internal class QueryProductDetailsUseCaseTest : BaseBillingUseCaseTest() {
 
         useCase.run()
 
-        assertThat(timesExecutedInMainThread).isEqualTo(2)
-        assertThat(receivedList).isNotNull
-        assertThat(receivedList!!.size).isOne
+        assertThat(timesExecutedInMainThread).isEqualTo(1)
+        assertThat(errorCount).isEqualTo(1)
+        assertThat(receivedList).isNull()
     }
 
     @Test

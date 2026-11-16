@@ -72,7 +72,9 @@ internal abstract class BillingClientUseCase<T>(
 
             BillingResponse.ServiceDisconnected -> {
                 log(LogIntent.GOOGLE_ERROR) { BillingStrings.BILLING_SERVICE_DISCONNECTED }
-                run()
+                // Play Billing already attempted automatic reconnection. Re-enqueuing here could
+                // retry forever (and bypass the pending-request timeout on an apparently ready client).
+                onError(billingResult)
             }
 
             BillingResponse.ServiceUnavailable -> {

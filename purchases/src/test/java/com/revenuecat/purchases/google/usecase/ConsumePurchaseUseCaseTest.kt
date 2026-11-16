@@ -407,7 +407,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
     // region retries
 
     @Test
-    fun `If service is disconnected, re-executeRequestOnUIThread for purchases`() {
+    fun `If automatic reconnection fails, forward error without retrying for purchases`() {
         val slot = slot<ConsumeResponseListener>()
         val consumeStubbing = every {
             mockClient.consumeAsync(
@@ -417,6 +417,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         }
         var receivedToken: String? = null
         var timesExecutedInMainThread = 0
+        var errorCount = 0
         val useCase = ConsumePurchaseUseCase(
             ConsumePurchaseUseCaseParams(
                 "purchaseToken",
@@ -427,7 +428,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
                 receivedToken = received
             },
             { _ ->
-                Assertions.fail("shouldn't be an error")
+                errorCount++
             },
             withConnectedClient = {
                 it.invoke(mockClient)
@@ -436,17 +437,10 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
                 timesExecutedInMainThread++
 
                 consumeStubbing answers {
-                    if (timesExecutedInMainThread == 1) {
-                        slot.captured.onConsumeResponse(
-                            billingClientDisconnectedResult,
-                            "purchaseToken"
-                        )
-                    } else {
-                        slot.captured.onConsumeResponse(
-                            billingClientOKResult,
-                            "purchaseToken"
-                        )
-                    }
+                    slot.captured.onConsumeResponse(
+                        billingClientDisconnectedResult,
+                        "purchaseToken"
+                    )
                 }
 
                 request(null)
@@ -455,13 +449,13 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
         useCase.run()
 
-        assertThat(timesExecutedInMainThread).isEqualTo(2)
-        assertThat(receivedToken).isNotNull
-        assertThat(receivedToken).isEqualTo("purchaseToken")
+        assertThat(timesExecutedInMainThread).isEqualTo(1)
+        assertThat(errorCount).isEqualTo(1)
+        assertThat(receivedToken).isNull()
     }
 
     @Test
-    fun `If service is disconnected, re-executeRequestOnUIThread for restores`() {
+    fun `If automatic reconnection fails, forward error without retrying for restores`() {
         val slot = slot<ConsumeResponseListener>()
         val consumeStubbing = every {
             mockClient.consumeAsync(
@@ -471,6 +465,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         }
         var receivedToken: String? = null
         var timesExecutedInMainThread = 0
+        var errorCount = 0
         val useCase = ConsumePurchaseUseCase(
             ConsumePurchaseUseCaseParams(
                 "purchaseToken",
@@ -481,7 +476,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
                 receivedToken = received
             },
             { _ ->
-                Assertions.fail("shouldn't be an error")
+                errorCount++
             },
             withConnectedClient = {
                 it.invoke(mockClient)
@@ -490,17 +485,10 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
                 timesExecutedInMainThread++
 
                 consumeStubbing answers {
-                    if (timesExecutedInMainThread == 1) {
-                        slot.captured.onConsumeResponse(
-                            billingClientDisconnectedResult,
-                            "purchaseToken"
-                        )
-                    } else {
-                        slot.captured.onConsumeResponse(
-                            billingClientOKResult,
-                            "purchaseToken"
-                        )
-                    }
+                    slot.captured.onConsumeResponse(
+                        billingClientDisconnectedResult,
+                        "purchaseToken"
+                    )
                 }
 
                 request(null)
@@ -509,13 +497,13 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
         useCase.run()
 
-        assertThat(timesExecutedInMainThread).isEqualTo(2)
-        assertThat(receivedToken).isNotNull
-        assertThat(receivedToken).isEqualTo("purchaseToken")
+        assertThat(timesExecutedInMainThread).isEqualTo(1)
+        assertThat(errorCount).isEqualTo(1)
+        assertThat(receivedToken).isNull()
     }
 
     @Test
-    fun `If service is disconnected, re-executeRequestOnUIThread for unsynced active purchases`() {
+    fun `If automatic reconnection fails, forward error without retrying for unsynced active purchases`() {
         val slot = slot<ConsumeResponseListener>()
         val consumeStubbing = every {
             mockClient.consumeAsync(
@@ -525,6 +513,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         }
         var receivedToken: String? = null
         var timesExecutedInMainThread = 0
+        var errorCount = 0
         val useCase = ConsumePurchaseUseCase(
             ConsumePurchaseUseCaseParams(
                 "purchaseToken",
@@ -535,7 +524,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
                 receivedToken = received
             },
             { _ ->
-                Assertions.fail("shouldn't be an error")
+                errorCount++
             },
             withConnectedClient = {
                 it.invoke(mockClient)
@@ -544,17 +533,10 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
                 timesExecutedInMainThread++
 
                 consumeStubbing answers {
-                    if (timesExecutedInMainThread == 1) {
-                        slot.captured.onConsumeResponse(
-                            billingClientDisconnectedResult,
-                            "purchaseToken"
-                        )
-                    } else {
-                        slot.captured.onConsumeResponse(
-                            billingClientOKResult,
-                            "purchaseToken"
-                        )
-                    }
+                    slot.captured.onConsumeResponse(
+                        billingClientDisconnectedResult,
+                        "purchaseToken"
+                    )
                 }
 
                 request(null)
@@ -563,9 +545,9 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
         useCase.run()
 
-        assertThat(timesExecutedInMainThread).isEqualTo(2)
-        assertThat(receivedToken).isNotNull
-        assertThat(receivedToken).isEqualTo("purchaseToken")
+        assertThat(timesExecutedInMainThread).isEqualTo(1)
+        assertThat(errorCount).isEqualTo(1)
+        assertThat(receivedToken).isNull()
     }
 
     @Test

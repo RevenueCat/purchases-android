@@ -436,7 +436,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
     // region retries
 
     @Test
-    fun `If service is disconnected, re-executeRequestOnUIThread for purchases`() {
+    fun `If automatic reconnection fails, forward error without retrying for purchases`() {
         val slot = slot<AcknowledgePurchaseResponseListener>()
         val acknowledgeStubbing = every {
             mockClient.acknowledgePurchase(
@@ -446,6 +446,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         }
         var receivedToken: String? = null
         var timesExecutedInMainThread = 0
+        var errorCount = 0
         val useCase = AcknowledgePurchaseUseCase(
             AcknowledgePurchaseUseCaseParams(
                 "purchaseToken",
@@ -456,7 +457,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
                 receivedToken = received
             },
             { _ ->
-                Assertions.fail("shouldn't be an error")
+                errorCount++
             },
             withConnectedClient = {
                 it.invoke(mockClient)
@@ -465,15 +466,9 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
                 timesExecutedInMainThread++
 
                 acknowledgeStubbing answers {
-                    if (timesExecutedInMainThread == 1) {
-                        slot.captured.onAcknowledgePurchaseResponse(
-                            billingClientDisconnectedResult,
-                        )
-                    } else {
-                        slot.captured.onAcknowledgePurchaseResponse(
-                            billingClientOKResult,
-                        )
-                    }
+                    slot.captured.onAcknowledgePurchaseResponse(
+                        billingClientDisconnectedResult,
+                    )
                 }
 
                 request(null)
@@ -482,13 +477,13 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
         useCase.run()
 
-        assertThat(timesExecutedInMainThread).isEqualTo(2)
-        assertThat(receivedToken).isNotNull
-        assertThat(receivedToken).isEqualTo("purchaseToken")
+        assertThat(timesExecutedInMainThread).isEqualTo(1)
+        assertThat(errorCount).isEqualTo(1)
+        assertThat(receivedToken).isNull()
     }
 
     @Test
-    fun `If service is disconnected, re-executeRequestOnUIThread for restores`() {
+    fun `If automatic reconnection fails, forward error without retrying for restores`() {
         val slot = slot<AcknowledgePurchaseResponseListener>()
         val acknowledgeStubbing = every {
             mockClient.acknowledgePurchase(
@@ -498,6 +493,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         }
         var receivedToken: String? = null
         var timesExecutedInMainThread = 0
+        var errorCount = 0
         val useCase = AcknowledgePurchaseUseCase(
             AcknowledgePurchaseUseCaseParams(
                 "purchaseToken",
@@ -508,7 +504,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
                 receivedToken = received
             },
             { _ ->
-                Assertions.fail("shouldn't be an error")
+                errorCount++
             },
             withConnectedClient = {
                 it.invoke(mockClient)
@@ -517,15 +513,9 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
                 timesExecutedInMainThread++
 
                 acknowledgeStubbing answers {
-                    if (timesExecutedInMainThread == 1) {
-                        slot.captured.onAcknowledgePurchaseResponse(
-                            billingClientDisconnectedResult,
-                        )
-                    } else {
-                        slot.captured.onAcknowledgePurchaseResponse(
-                            billingClientOKResult,
-                        )
-                    }
+                    slot.captured.onAcknowledgePurchaseResponse(
+                        billingClientDisconnectedResult,
+                    )
                 }
 
                 request(null)
@@ -534,13 +524,13 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
         useCase.run()
 
-        assertThat(timesExecutedInMainThread).isEqualTo(2)
-        assertThat(receivedToken).isNotNull
-        assertThat(receivedToken).isEqualTo("purchaseToken")
+        assertThat(timesExecutedInMainThread).isEqualTo(1)
+        assertThat(errorCount).isEqualTo(1)
+        assertThat(receivedToken).isNull()
     }
 
     @Test
-    fun `If service is disconnected, re-executeRequestOnUIThread for unsynced active purchases`() {
+    fun `If automatic reconnection fails, forward error without retrying for unsynced active purchases`() {
         val slot = slot<AcknowledgePurchaseResponseListener>()
         val acknowledgeStubbing = every {
             mockClient.acknowledgePurchase(
@@ -550,6 +540,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         }
         var receivedToken: String? = null
         var timesExecutedInMainThread = 0
+        var errorCount = 0
         val useCase = AcknowledgePurchaseUseCase(
             AcknowledgePurchaseUseCaseParams(
                 "purchaseToken",
@@ -560,7 +551,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
                 receivedToken = received
             },
             { _ ->
-                Assertions.fail("shouldn't be an error")
+                errorCount++
             },
             withConnectedClient = {
                 it.invoke(mockClient)
@@ -569,15 +560,9 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
                 timesExecutedInMainThread++
 
                 acknowledgeStubbing answers {
-                    if (timesExecutedInMainThread == 1) {
-                        slot.captured.onAcknowledgePurchaseResponse(
-                            billingClientDisconnectedResult,
-                        )
-                    } else {
-                        slot.captured.onAcknowledgePurchaseResponse(
-                            billingClientOKResult,
-                        )
-                    }
+                    slot.captured.onAcknowledgePurchaseResponse(
+                        billingClientDisconnectedResult,
+                    )
                 }
 
                 request(null)
@@ -586,9 +571,9 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
         useCase.run()
 
-        assertThat(timesExecutedInMainThread).isEqualTo(2)
-        assertThat(receivedToken).isNotNull
-        assertThat(receivedToken).isEqualTo("purchaseToken")
+        assertThat(timesExecutedInMainThread).isEqualTo(1)
+        assertThat(errorCount).isEqualTo(1)
+        assertThat(receivedToken).isNull()
     }
 
     @Test

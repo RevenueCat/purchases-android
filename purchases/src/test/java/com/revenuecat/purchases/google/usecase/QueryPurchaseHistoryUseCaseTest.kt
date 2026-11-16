@@ -377,7 +377,7 @@ internal class QueryPurchaseHistoryUseCaseTest : BaseBillingUseCaseTest() {
     // region retries
 
     @Test
-    fun `If service is disconnected, re-executeRequestOnUIThread`() {
+    fun `If automatic reconnection fails, forward error without retrying`() {
         val slot = slot<PurchasesResponseListener>()
         val queryPurchaseHistoryStubbing = every {
             mockClient.queryPurchasesAsync(
@@ -387,6 +387,7 @@ internal class QueryPurchaseHistoryUseCaseTest : BaseBillingUseCaseTest() {
         }
         var receivedList: List<StoreTransaction>? = null
         var timesExecutedInMainThread = 0
+        var errorCount = 0
         val useCase = QueryPurchaseHistoryUseCase(
             QueryPurchaseHistoryUseCaseParams(
                 mockDateProvider,
@@ -398,7 +399,7 @@ internal class QueryPurchaseHistoryUseCaseTest : BaseBillingUseCaseTest() {
                 receivedList = received
             },
             { _ ->
-                fail("shouldn't be an error")
+                errorCount++
             },
             withConnectedClient = {
                 it.invoke(mockClient)
@@ -407,22 +408,10 @@ internal class QueryPurchaseHistoryUseCaseTest : BaseBillingUseCaseTest() {
                 timesExecutedInMainThread++
 
                 queryPurchaseHistoryStubbing answers {
-                    if (timesExecutedInMainThread == 1) {
-                        slot.captured.onQueryPurchasesResponse(
-                            billingClientDisconnectedResult,
-                            emptyList(),
-                        )
-                    } else {
-                        val sku = "aPurchase"
-                        val purchaseHistoryRecord = mockk<Purchase>(relaxed = true).also {
-                            every { it.firstProductId } returns sku + "somethingrandom"
-                            every { it.originalJson } returns "{}"
-                        }
-                        slot.captured.onQueryPurchasesResponse(
-                            billingClientOKResult,
-                            listOf(purchaseHistoryRecord),
-                        )
-                    }
+                    slot.captured.onQueryPurchasesResponse(
+                        billingClientDisconnectedResult,
+                        emptyList(),
+                    )
                 }
 
                 request(null)
@@ -431,9 +420,9 @@ internal class QueryPurchaseHistoryUseCaseTest : BaseBillingUseCaseTest() {
 
         useCase.run()
 
-        assertThat(timesExecutedInMainThread).isEqualTo(2)
-        assertThat(receivedList).isNotNull
-        assertThat(receivedList!!.size).isOne
+        assertThat(timesExecutedInMainThread).isEqualTo(1)
+        assertThat(errorCount).isEqualTo(1)
+        assertThat(receivedList).isNull()
     }
 
     @Test
