@@ -70,6 +70,23 @@ internal class PackageSelectionVisibilityTests {
     }
 
     @Test
+    fun `initial selection falls back to a sheet package when the root has none`() {
+        val state = state(
+            ButtonComponent(
+                action = ButtonComponent.Action.NavigateTo(
+                    ButtonComponent.Destination.Sheet(
+                        id = "plans",
+                        stack = StackComponent(listOf(pkg(annual, default = true), pkg(monthly))),
+                    ),
+                ),
+                stack = StackComponent(emptyList()),
+            ),
+        )
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annual)
+    }
+
+    @Test
     fun `selected-only default content is selected initially and remains the analytics default`() {
         val selectedOnly = StackComponent(
             components = emptyList(),
