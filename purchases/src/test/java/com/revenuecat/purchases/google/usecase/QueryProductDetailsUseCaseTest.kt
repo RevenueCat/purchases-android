@@ -237,7 +237,7 @@ internal class QueryProductDetailsUseCaseTest : BaseBillingUseCaseTest() {
     // region retries
 
     @Test
-    fun `If automatic reconnection fails, forward error without retrying`() {
+    fun `If disconnected, retries a few times then errors if user in session`() {
         val slot = slot<ProductDetailsResponseListener>()
         val queryProductDetailsStubbing = every {
             mockClient.queryProductDetailsAsync(
@@ -282,7 +282,7 @@ internal class QueryProductDetailsUseCaseTest : BaseBillingUseCaseTest() {
 
         useCase.run()
 
-        assertThat(timesExecutedInMainThread).isEqualTo(1)
+        assertThat(timesExecutedInMainThread).isEqualTo(4) // First attempt plus 3 retries
         assertThat(errorCount).isEqualTo(1)
         assertThat(receivedList).isNull()
     }

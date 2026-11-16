@@ -72,13 +72,16 @@ internal abstract class BillingClientUseCase<T>(
 
             BillingResponse.ServiceDisconnected -> {
                 log(LogIntent.GOOGLE_ERROR) { BillingStrings.BILLING_SERVICE_DISCONNECTED }
-                // Play Billing already attempted automatic reconnection. Re-enqueuing here could
-                // retry forever (and bypass the pending-request timeout on an apparently ready client).
-                onError(billingResult)
+                // Play Billing already attempted automatic reconnection. Google recommends retrying the call:
+                // briefly while the user is in session, with longer backoff in the background.
+                backoffOrError(onError, billingResult)
             }
 
             BillingResponse.ServiceUnavailable -> {
-                backoffOrErrorIfServiceUnavailable(onError, billingResult)
+                log(LogIntent.GOOGLE_WARNING) {
+                    BillingStrings.BILLING_SERVICE_UNAVAILABLE.format(useCaseParams.appInBackground)
+                }
+                backoffOrError(onError, billingResult)
             }
 
             BillingResponse.NetworkError,
@@ -131,13 +134,10 @@ internal abstract class BillingClientUseCase<T>(
         }
     }
 
-    private fun backoffOrErrorIfServiceUnavailable(
+    private fun backoffOrError(
         onError: (BillingResult) -> Unit,
         billingResult: BillingResult,
     ) {
-        log(LogIntent.GOOGLE_WARNING) {
-            BillingStrings.BILLING_SERVICE_UNAVAILABLE.format(useCaseParams.appInBackground)
-        }
         val maxBackoff = if (useCaseParams.appInBackground) {
             RETRY_TIMER_MAX_TIME
         } else {

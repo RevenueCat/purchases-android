@@ -407,7 +407,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
     // region retries
 
     @Test
-    fun `If automatic reconnection fails, forward error without retrying for purchases`() {
+    fun `If disconnected, retries a few times then errors if user in session for purchases`() {
         val slot = slot<ConsumeResponseListener>()
         val consumeStubbing = every {
             mockClient.consumeAsync(
@@ -449,13 +449,13 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
         useCase.run()
 
-        assertThat(timesExecutedInMainThread).isEqualTo(1)
+        assertThat(timesExecutedInMainThread).isEqualTo(4) // First attempt plus 3 retries
         assertThat(errorCount).isEqualTo(1)
         assertThat(receivedToken).isNull()
     }
 
     @Test
-    fun `If automatic reconnection fails, forward error without retrying for restores`() {
+    fun `If disconnected, retries a few times then errors if user in session for restores`() {
         val slot = slot<ConsumeResponseListener>()
         val consumeStubbing = every {
             mockClient.consumeAsync(
@@ -497,13 +497,13 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
         useCase.run()
 
-        assertThat(timesExecutedInMainThread).isEqualTo(1)
+        assertThat(timesExecutedInMainThread).isEqualTo(4) // First attempt plus 3 retries
         assertThat(errorCount).isEqualTo(1)
         assertThat(receivedToken).isNull()
     }
 
     @Test
-    fun `If automatic reconnection fails, forward error without retrying for unsynced active purchases`() {
+    fun `If disconnected, retries a few times then errors in session for unsynced active purchases`() {
         val slot = slot<ConsumeResponseListener>()
         val consumeStubbing = every {
             mockClient.consumeAsync(
@@ -545,7 +545,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
         useCase.run()
 
-        assertThat(timesExecutedInMainThread).isEqualTo(1)
+        assertThat(timesExecutedInMainThread).isEqualTo(4) // First attempt plus 3 retries
         assertThat(errorCount).isEqualTo(1)
         assertThat(receivedToken).isNull()
     }
