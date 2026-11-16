@@ -267,7 +267,7 @@ internal class PackageSelectionInteractionTests {
     }
 
     @Test
-    fun `dismissing a sheet keeps the manual choice when the root has no packages`() {
+    fun `dismissing and reopening a sheet keeps the manual choice when the root has no packages`() {
         val state = state(
             sheetButton(pkg(monthlyXl, default = true)),
             sheetButton(pkg(annual, default = true), pkg(annualXl)),
@@ -282,6 +282,10 @@ internal class PackageSelectionInteractionTests {
         assertThat(state.peekSelectedPackageInfoAfterSheetDismiss()?.rcPackage).isEqualTo(annualXl)
         state.sheet.hide()
 
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annualXl)
+        state.sheet.show(sheetDestination(button), state, tracker, onClick = {})
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annualXl)
+        state.sheet.hide()
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(annualXl)
     }
 

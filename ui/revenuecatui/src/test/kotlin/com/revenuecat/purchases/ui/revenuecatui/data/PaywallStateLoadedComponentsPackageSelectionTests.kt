@@ -264,6 +264,30 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
     }
 
     @Test
+    fun `Sheet entry replaces a hidden choice on a sheet only paywall`() {
+        val sheetKey = SheetPresentationKey()
+        val state = paywallState(
+            packagesOutsideTabs = listOf(
+                packageInfo(TestData.Packages.annual, isSelectedByDefault = true, sheetPresentationKey = sheetKey),
+                packageInfo(
+                    TestData.Packages.monthly,
+                    isSelectedByDefault = false,
+                    visible = false,
+                    sheetPresentationKey = sheetKey,
+                ),
+            ),
+            packagesByTab = emptyMap(),
+            initialSelectedTabIndex = null,
+        )
+        state.update(selectedPackageUniqueId = TestData.Packages.monthly.identifier)
+
+        state.sheet.show(backgroundBlur = false, content = {}, presentationKey = sheetKey)
+        state.selectPackageForSheetEntry()
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
+    @Test
     fun `Sheet initial fallback prefers an authored default over an earlier sheet without a default`() {
         val state = paywallState(
             packagesOutsideTabs = listOf(

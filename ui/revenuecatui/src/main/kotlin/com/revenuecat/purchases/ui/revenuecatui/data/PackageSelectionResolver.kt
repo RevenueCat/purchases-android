@@ -15,7 +15,8 @@ internal class PackageSelectionResolver(
     activeTabPackages: List<AvailablePackages.Info> = packages.packagesByTab[selectedTabIndex].orEmpty(),
     otherTabPackages: List<AvailablePackages.Info> = emptyList(),
 ) {
-    private val onlySheetPackages = presentedSheet == null && packages.hasAnyPackages && !packages.hasRootPackages
+    private val sheetOnlyPaywall = packages.hasAnyPackages && !packages.hasRootPackages
+    private val onlySheetPackages = presentedSheet == null && sheetOnlyPaywall
     private val sheetOnlyOutside = packages.packagesOutsideTabs + otherTabPackages
     private val sheetOnlyTab = activeTabPackages
     private val sheetOnlyInitialCandidates =
@@ -49,9 +50,10 @@ internal class PackageSelectionResolver(
             ?: sheetOnlyDefaultSelection()
     }
 
-    fun enterSheet(current: String?): String? {
-        if (sheet.isEmpty()) return current
-        return sheet.defaultSelection(context)?.uniqueId
+    fun enterSheet(current: String?): String? = when {
+        sheet.isEmpty() -> current
+        sheetOnlyPaywall && current != null && sheet.couldBeSelected(current, context) -> current
+        else -> sheet.defaultSelection(context)?.uniqueId
             ?: allHiddenFallback()
             ?: current
     }
