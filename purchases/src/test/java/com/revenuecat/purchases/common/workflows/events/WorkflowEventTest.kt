@@ -160,6 +160,36 @@ class WorkflowEventTest {
     }
 
     @Test
+    fun `StepStarted copies navigationDurationMs into backend properties`() {
+        val event = WorkflowEvent.StepStarted(
+            creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
+            workflowId = "wfl_abc",
+            stepId = "step-2",
+            traceId = "trace",
+            fromStepId = "step-1",
+            entryReason = "forward",
+            navigationDurationMs = 412L,
+        )
+
+        val properties = (event.toBackendStoredEvent("user_42") as BackendStoredEvent.Workflows).event.properties
+        assertThat(properties.navigationDurationMs).isEqualTo(412L)
+    }
+
+    @Test
+    fun `navigationDurationMs is null in backend properties when not measured`() {
+        val event = WorkflowEvent.StepStarted(
+            creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
+            workflowId = "wfl_abc",
+            stepId = "step-1",
+            traceId = "trace",
+            entryReason = "start",
+        )
+
+        val properties = (event.toBackendStoredEvent("user_42") as BackendStoredEvent.Workflows).event.properties
+        assertThat(properties.navigationDurationMs).isNull()
+    }
+
+    @Test
     fun `blob ref is copied without experiment data`() {
         val event = WorkflowEvent.StepStarted(
             creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),

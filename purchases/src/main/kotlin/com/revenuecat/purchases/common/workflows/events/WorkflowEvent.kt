@@ -49,6 +49,11 @@ public sealed class WorkflowEvent : FeatureEvent {
         public val workflowBlobRef: String? = null,
         public val fallbackOriginalStepId: String? = null,
         public val experiment: ExperimentData? = null,
+        /**
+         * Milliseconds between the user triggering a navigation (forward or back) and the first frame
+         * after the destination step was composed. Null for the first step and when not measured.
+         */
+        public val navigationDurationMs: Long? = null,
     ) : WorkflowEvent()
 
     @Serializable

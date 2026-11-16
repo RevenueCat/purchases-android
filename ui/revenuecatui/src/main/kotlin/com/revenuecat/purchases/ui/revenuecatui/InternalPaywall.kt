@@ -24,6 +24,7 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -224,6 +225,15 @@ private fun InternalPaywallContent(
                 NotifyingUriHandler(viewModel) {
                     val workflowState = viewModel.workflowState.value
                     if (workflowState != null) {
+                        val currentStepId = workflowState.currentStepId
+                        // Ends the navigation duration of a forward/back step change. The transition id is in the
+                        // key so a navigation back to the step already on screen still restarts the effect.
+                        // withFrameNanos resumes on the frame after the first one showing the new step, so the
+                        // measurement overstates by about one frame; that is accepted.
+                        LaunchedEffect(currentStepId, workflowState.pendingTransition?.id) {
+                            withFrameNanos { }
+                            viewModel.onWorkflowStepFrameRendered(currentStepId)
+                        }
                         LoadedWorkflowPaywall(
                             workflowState = workflowState,
                             onTransitionComplete = viewModel::onTransitionComplete,

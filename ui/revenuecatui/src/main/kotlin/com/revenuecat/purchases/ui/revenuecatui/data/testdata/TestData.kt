@@ -737,6 +737,8 @@ internal class MockViewModel(
         onTransitionCompleteCallCount++
     }
 
+    override fun onWorkflowStepFrameRendered(stepId: String) = Unit
+
     var clearActionErrorCallCount = 0
         private set
     override fun clearActionError() {
