@@ -202,34 +202,33 @@ internal class BillingWrapper(
 
     override fun startConnection(delayMilliseconds: Long) {
         backgroundHandler.postDelayed(
-            {
-                if (delayMilliseconds > 0) scheduledReconnectAtElapsedMillis = null
-                performStartConnection()
-            },
+            { performStartConnection(clearScheduledReconnect = delayMilliseconds > 0) },
             delayMilliseconds,
         )
     }
 
-    private fun performStartConnection() {
+    private fun performStartConnection(clearScheduledReconnect: Boolean) {
         try {
             // Keep the monitor scope limited to state mutation so the slow `startConnection(...)`
             // call below doesn't hold off main-thread callers that synchronize on this wrapper.
             val clientToStart = synchronized(this@BillingWrapper) {
+                if (clearScheduledReconnect) scheduledReconnectAtElapsedMillis = null
                 if (billingClient == null) {
                     billingClient = clientFactory.buildClient(this)
                 }
                 reconnectionAlreadyScheduled = false
-                billingClient?.takeIf {
+                val client = billingClient?.takeIf {
                     !it.isReady && it.connectionState != BillingClient.ConnectionState.CONNECTING
                 }
+                if (client != null) {
+                    connectionStartedAtElapsedMillis = elapsedRealtime()
+                    connectionAttemptGeneration.incrementAndGet()
+                    setupCallbackReceived = false
+                }
+                client
             } ?: return
 
             log(LogIntent.DEBUG) { BillingStrings.BILLING_CLIENT_STARTING.format(clientToStart) }
-            synchronized(this@BillingWrapper) {
-                connectionStartedAtElapsedMillis = elapsedRealtime()
-                connectionAttemptGeneration.incrementAndGet()
-                setupCallbackReceived = false
-            }
             diagnosticsTrackerIfEnabled?.trackGoogleBillingStartConnection()
             clientToStart.startConnection(object : BillingClientStateListener {
                 override fun onBillingSetupFinished(billingResult: BillingResult) {
@@ -986,17 +985,25 @@ internal class BillingWrapper(
      * This prevents ANRs, see https://github.com/android/play-billing-samples/issues/310
      */
     private fun retryBillingServiceConnectionWithExponentialBackoff() {
-        if (reconnectionAlreadyScheduled) {
+        val reconnectDelay = synchronized(this@BillingWrapper) {
+            if (reconnectionAlreadyScheduled) {
+                null
+            } else {
+                reconnectionAlreadyScheduled = true
+                val delay = reconnectMilliseconds
+                scheduledReconnectAtElapsedMillis = elapsedRealtime() + delay
+                reconnectMilliseconds = min(
+                    delay * 2,
+                    RECONNECT_TIMER_MAX_TIME_MILLISECONDS,
+                )
+                delay
+            }
+        }
+        if (reconnectDelay == null) {
             log(LogIntent.WARNING) { BillingStrings.BILLING_CLIENT_RETRY_ALREADY_SCHEDULED }
         } else {
-            log(LogIntent.WARNING) { BillingStrings.BILLING_CLIENT_RETRY.format(reconnectMilliseconds) }
-            reconnectionAlreadyScheduled = true
-            scheduledReconnectAtElapsedMillis = elapsedRealtime() + reconnectMilliseconds
-            startConnection(reconnectMilliseconds)
-            reconnectMilliseconds = min(
-                reconnectMilliseconds * 2,
-                RECONNECT_TIMER_MAX_TIME_MILLISECONDS,
-            )
+            log(LogIntent.WARNING) { BillingStrings.BILLING_CLIENT_RETRY.format(reconnectDelay) }
+            startConnection(reconnectDelay)
         }
     }
 

@@ -24,6 +24,7 @@ import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryPurchasesParams
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -38,6 +39,7 @@ import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.firstProductId
 import com.revenuecat.purchases.common.sha256
@@ -87,6 +89,9 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import kotlin.concurrent.thread
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -967,6 +972,67 @@ class BillingWrapperTest {
             )
         }
         assertThat(wrapperUnderTest.billingClient).isSameAs(replacementClient)
+    }
+
+    @Test
+    fun `timeout diagnostics use replacement attempt state while connection starts`() {
+        val oldClient = mockk<BillingClient>(relaxed = true)
+        val replacementClient = mockk<BillingClient>(relaxed = true)
+        val clientFactory = mockk<BillingWrapper.ClientFactory>()
+        every { clientFactory.buildClient(any()) } returnsMany listOf(oldClient, replacementClient)
+        every { oldClient.isReady } returns false
+        every { oldClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
+        every { replacementClient.isReady } returns false
+        every { replacementClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
+        var clockMillis = 0L
+        val wrapperUnderTest = BillingWrapper(
+            clientFactory = clientFactory,
+            mainHandler = handler,
+            backgroundHandler = handler,
+            deviceCache = mockDeviceCache,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            purchasesStateProvider = purchasesStateProvider,
+            dateProvider = mockDateProvider,
+            elapsedRealtime = { clockMillis },
+        )
+        wrapperUnderTest.purchasesUpdatedListener = mockPurchasesListener
+        wrapperUnderTest.startConnection()
+        wrapperUnderTest.onBillingSetupFinished(billingClientOKResult)
+        every { oldClient.connectionState } returns BillingClient.ConnectionState.CONNECTING
+        wrapperUnderTest.queryProductDetailsAsync(ProductType.SUBS, setOf("product_a"), {}, {})
+        wrapperUnderTest.billingClient = null
+
+        val connectionSelected = CountDownLatch(1)
+        val continueStartingConnection = CountDownLatch(1)
+        val previousLogHandler = currentLogHandler
+        currentLogHandler = object : LogHandler {
+            override fun v(tag: String, msg: String) = Unit
+            override fun d(tag: String, msg: String) {
+                connectionSelected.countDown()
+                continueStartingConnection.await(5, TimeUnit.SECONDS)
+            }
+            override fun i(tag: String, msg: String) = Unit
+            override fun w(tag: String, msg: String) = Unit
+            override fun e(tag: String, msg: String, throwable: Throwable?) = Unit
+        }
+
+        clockMillis = 9_000L
+        val connectionThread = thread { wrapperUnderTest.startConnection() }
+        try {
+            assertThat(connectionSelected.await(5, TimeUnit.SECONDS)).isTrue
+            clockMillis = 10_000L
+            pendingRequestTimeouts.toList().forEach { it.run() }
+
+            verify(exactly = 1) {
+                mockDiagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(
+                    0, "product_details", "disconnected", 1_000L, false, null,
+                )
+            }
+        } finally {
+            continueStartingConnection.countDown()
+            connectionThread.join(5_000L)
+            currentLogHandler = previousLogHandler
+        }
     }
 
     @Test
@@ -2201,26 +2267,42 @@ class BillingWrapperTest {
         }
     }
 
+    @Test
     fun `if billing setup returns recoverable error code, will try to reconnect with exponential backoff`() {
-        val runnableSlot = slot<Runnable>()
+        val reconnectRunnables = mutableListOf<Runnable>()
+        val reconnectDelays = mutableListOf<Long>()
         every {
-            handler.postDelayed(capture(runnableSlot), any())
+            handler.postDelayed(capture(reconnectRunnables), capture(reconnectDelays))
         } returns true
 
-        val errorCodes = listOf(
+        val recoverableErrorCodes = listOf(
             BillingClient.BillingResponseCode.ERROR,
             BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE,
             BillingClient.BillingResponseCode.USER_CANCELED,
             BillingClient.BillingResponseCode.SERVICE_DISCONNECTED,
-            BillingClient.BillingResponseCode.NETWORK_ERROR
+            BillingClient.BillingResponseCode.NETWORK_ERROR,
+        ) + List(7) { BillingClient.BillingResponseCode.ERROR }
+        val expectedDelays = listOf(
+            1_000L,
+            2_000L,
+            4_000L,
+            8_000L,
+            16_000L,
+            32_000L,
+            64_000L,
+            128_000L,
+            256_000L,
+            512_000L,
+            900_000L,
+            900_000L,
         )
-        var currentCallback = 1 // we get one call before triggering it manually
-        for (errorCode in errorCodes) {
-            currentCallback += 1
+
+        for (errorCode in recoverableErrorCodes) {
             wrapper.onBillingSetupFinished(errorCode.buildResult())
-            verify(exactly = currentCallback) { handler.postDelayed(any(), any()) }
-            runnableSlot.captured.run()
+            reconnectRunnables.last().run()
         }
+
+        assertThat(reconnectDelays).containsExactlyElementsOf(expectedDelays)
     }
 
     @Test
