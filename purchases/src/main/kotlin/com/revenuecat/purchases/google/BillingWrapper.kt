@@ -309,9 +309,13 @@ internal class BillingWrapper(
         }
     }
 
-    // Keep operations (especially launchBillingFlow) in our bounded queue while Play reconnects.
-    // Synchronous billing APIs cannot wait for recovery on every Android version. A single read-only
-    // async call drives recovery without handing Play a purchase that could launch after our timeout.
+    // Automatic service reconnection is lazy: Play only reconnects when a billing API call is made while
+    // disconnected. We hold requests in our queue while disconnected, so without this call nothing would
+    // reach Play and every request would sit there until the pending-request timeout.
+    // We don't hand the queued requests to Play directly because once handed over they can't be cancelled:
+    // a stalled reconnection would hang them past our timeout, and a launchBillingFlow could open the
+    // purchase sheet after we already reported the purchase as failed. A single read-only async call
+    // triggers the reconnection instead, and the queue is drained only once the service is connected.
     private fun reconnectServiceForPendingRequests(client: BillingClient) {
         if (serviceReconnection != null || client.connectionState == BillingClient.ConnectionState.CONNECTING) return
         val attempt = ServiceReconnection(client)
@@ -568,10 +572,11 @@ internal class BillingWrapper(
                     }
                     buildParamsAndLaunch(false)
                 },
-                // A missing purchase is expected, but a failed billing connection must fail the purchase
-                // instead of starting another recovery attempt behind the same stalled connection.
+                // The ownership lookup is best effort: on a missing purchase or a lookup error, launch with the
+                // obfuscated account ID. If the billing connection failed, fail the purchase instead of
+                // starting another recovery attempt behind the same stalled connection.
                 onError = { error ->
-                    if (error.code != PurchasesErrorCode.PurchaseInvalidError) {
+                    if (!isConnected()) {
                         purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
                     } else {
                         buildParamsAndLaunch(true)

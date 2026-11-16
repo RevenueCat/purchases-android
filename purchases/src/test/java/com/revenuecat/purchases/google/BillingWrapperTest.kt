@@ -1698,6 +1698,68 @@ class BillingWrapperTest {
     }
 
     @Test
+    fun `purchase still launches when querying owned purchases fails with BILLING_UNAVAILABLE`() {
+        val mockBuilder = setUpForObfuscatedAccountIDTests()
+        val storeProduct = createStoreProductWithoutOffers()
+        mockClient.mockQueryPurchasesAsync(
+            BillingClient.BillingResponseCode.BILLING_UNAVAILABLE.buildResult(),
+            billingClientOKResult,
+            subPurchases = emptyList(),
+        )
+
+        wrapper.makePurchaseAsync(
+            mockActivity,
+            appUserId,
+            storeProduct.subscriptionOptions!!.first().purchasingData,
+            null,
+            null,
+        )
+
+        verify {
+            mockBuilder.setObfuscatedAccountId(appUserId.sha256())
+        }
+        verify(exactly = 1) {
+            mockClient.launchBillingFlow(any(), any())
+        }
+        verify(exactly = 0) {
+            mockPurchasesListener.onPurchasesFailedToUpdate(any())
+        }
+
+        clearStaticMockk(BillingFlowParams::class)
+    }
+
+    @Test
+    fun `purchase still launches when querying owned purchases fails with ITEM_ALREADY_OWNED`() {
+        val mockBuilder = setUpForObfuscatedAccountIDTests()
+        val storeProduct = createStoreProductWithoutOffers()
+        mockClient.mockQueryPurchasesAsync(
+            BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED.buildResult(),
+            billingClientOKResult,
+            subPurchases = emptyList(),
+        )
+
+        wrapper.makePurchaseAsync(
+            mockActivity,
+            appUserId,
+            storeProduct.subscriptionOptions!!.first().purchasingData,
+            null,
+            null,
+        )
+
+        verify {
+            mockBuilder.setObfuscatedAccountId(appUserId.sha256())
+        }
+        verify(exactly = 1) {
+            mockClient.launchBillingFlow(any(), any())
+        }
+        verify(exactly = 0) {
+            mockPurchasesListener.onPurchasesFailedToUpdate(any())
+        }
+
+        clearStaticMockk(BillingFlowParams::class)
+    }
+
+    @Test
     fun `obfuscatedAccountId is set for owned subscription when applying to subscription changes is enabled`() {
         every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED andThen
             BillingClient.ConnectionState.CONNECTED
