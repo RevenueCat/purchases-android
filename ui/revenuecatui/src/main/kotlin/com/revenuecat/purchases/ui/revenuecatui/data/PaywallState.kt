@@ -375,6 +375,8 @@ internal sealed interface PaywallState {
 
             private var packageSelectionBeforeSheet: PackageSelectionBeforeSheet? = null
 
+            private val presentedSheets = mutableSetOf<SheetPresentationKey>()
+
             private var defaultPackageInfo: SelectedPackageInfo? by mutableStateOf(null)
 
             internal fun setDefaultPackage(info: SelectedPackageInfo) {
@@ -594,7 +596,11 @@ internal sealed interface PaywallState {
                 if (packageSelectionBeforeSheet == null) {
                     packageSelectionBeforeSheet = PackageSelectionBeforeSheet(selectedPackageUniqueId)
                 }
-                selectedPackageUniqueId = selectionResolver().enterSheet(selectionBeforeSheetAtCurrentBounds())
+                val hasBeenPresented = sheet.presentationKey?.let { !presentedSheets.add(it) } ?: false
+                selectedPackageUniqueId = selectionResolver().enterSheet(
+                    current = selectionBeforeSheetAtCurrentBounds(),
+                    preserveCurrentSelection = !packages.hasRootPackages && hasBeenPresented,
+                )
             }
 
             fun restorePackageAfterSheetDismiss() {

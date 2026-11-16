@@ -50,9 +50,9 @@ internal class PackageSelectionResolver(
             ?: sheetOnlyDefaultSelection()
     }
 
-    fun enterSheet(current: String?): String? = when {
+    fun enterSheet(current: String?, preserveCurrentSelection: Boolean): String? = when {
         sheet.isEmpty() -> current
-        sheetOnlyPaywall && current != null && sheet.couldBeSelected(current, context) -> current
+        preserveCurrentSelection && current != null && sheet.couldBeSelected(current, context) -> current
         else -> sheet.defaultSelection(context)?.uniqueId
             ?: allHiddenFallback()
             ?: current
