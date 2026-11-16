@@ -339,8 +339,8 @@ internal class BillingWrapper(
         if (serviceReconnection !== attempt || billingClient !== attempt.client) return
         serviceReconnection = null
         if (attempt.client.isServiceConnected) {
-            // Config support/data is irrelevant here: only the connection is needed.
-            stateListener?.onConnected()
+            // Config support/data is irrelevant here: only the connection is needed. Play reports the
+            // reconnection through onBillingSetupFinished, which notifies the state listener.
             executePendingRequests()
         } else {
             retireStuckClient(attempt.client)
@@ -961,8 +961,9 @@ internal class BillingWrapper(
                         BillingStrings.BILLING_CLIENT_ERROR
                             .format(billingResult.toHumanReadableDescription())
                     }
-                    // Auto-reconnection errors belong to the operation that triggered recovery.
-                    if (billingClient !== initializedClient) retryBillingServiceConnectionWithExponentialBackoff()
+                    // Play also reports its automatic reconnections here. Their errors belong to the operation that
+                    // triggered the reconnection, and Google says not to reconnect manually, so only retry setup.
+                    if (!isReconnectionResult()) retryBillingServiceConnectionWithExponentialBackoff()
                 }
 
                 BillingClient.BillingResponseCode.ITEM_UNAVAILABLE,
@@ -981,6 +982,9 @@ internal class BillingWrapper(
             }
         }
     }
+
+    // After the initial setup, onBillingSetupFinished results come from Play's automatic reconnections.
+    private fun isReconnectionResult(): Boolean = synchronized(this) { billingClient === initializedClient }
 
     override fun onBillingServiceDisconnected() {
         log(LogIntent.WARNING) {

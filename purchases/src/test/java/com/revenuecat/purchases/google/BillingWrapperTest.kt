@@ -99,7 +99,7 @@ class BillingWrapperTest {
         private const val THREAD_JOIN_TIMEOUT_MS = 5_000L
     }
 
-    private var onConnectedCalled: Boolean = false
+    private var onConnectedCount: Int = 0
     private var mockClientFactory: BillingWrapper.ClientFactory = mockk()
     private var mockClient: BillingClient = mockk()
     private var purchasesUpdatedListener: PurchasesUpdatedListener? = null
@@ -190,10 +190,10 @@ class BillingWrapperTest {
         )
         wrapper.purchasesUpdatedListener = mockPurchasesListener
         wrapper.startConnection()
-        onConnectedCalled = false
+        onConnectedCount = 0
         wrapper.stateListener = object : BillingAbstract.StateListener {
             override fun onConnected() {
-                onConnectedCalled = true
+                onConnectedCount++
             }
         }
 
@@ -826,6 +826,30 @@ class BillingWrapperTest {
         wrapper.startConnection()
         verify(exactly = 1) { mockClient.startConnection(any()) }
         verify(exactly = 0) { mockClient.getBillingConfigAsync(any(), any()) }
+    }
+
+    @Test
+    fun `automatic recovery reports connected once when Play forwards the reconnection result`() {
+        disconnectInitializedClient()
+        onConnectedCount = 0
+        val recovery = slot<BillingConfigResponseListener>()
+        every { mockClient.getBillingConfigAsync(any(), capture(recovery)) } just Runs
+        var successes = 0
+        wrapper.queryPurchases(appUserId, { successes++ }, { fail("Unexpected error: $it") })
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTED
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+        recovery.captured.onBillingConfigResponse(billingClientOKResult, null)
+        assertThat(onConnectedCount).isEqualTo(1)
+        assertThat(successes).isEqualTo(1)
+    }
+
+    @Test
+    fun `forwarded reconnection error does not start a manual reconnection`() {
+        disconnectInitializedClient()
+        billingClientStateListener!!.onBillingSetupFinished(
+            BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
+        )
+        verify(exactly = 1) { mockClient.startConnection(any()) }
     }
 
     @Test
@@ -2197,7 +2221,7 @@ class BillingWrapperTest {
     @Test
     fun `on successfully connected billing client, listener is called`() {
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
-        assertThat(onConnectedCalled).isTrue
+        assertThat(onConnectedCount).isEqualTo(1)
     }
 
     @Test
