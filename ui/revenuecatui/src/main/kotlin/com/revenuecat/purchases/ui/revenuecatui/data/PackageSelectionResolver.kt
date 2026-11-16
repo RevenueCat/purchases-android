@@ -31,8 +31,7 @@ internal class PackageSelectionResolver(
 
     private fun sheetOnlyDefaultSelection(): String? {
         if (!onlySheetPackages) return null
-        return sheetOnlyInitialCandidates.groupBy { it.sheetPresentationKey }
-            .values.firstNotNullOfOrNull { it.defaultSelection(context)?.uniqueId }
+        return sheetOnlyInitialCandidates.defaultSelection(context)?.uniqueId
     }
 
     fun switchTab(current: String?, remembered: String?): String? =

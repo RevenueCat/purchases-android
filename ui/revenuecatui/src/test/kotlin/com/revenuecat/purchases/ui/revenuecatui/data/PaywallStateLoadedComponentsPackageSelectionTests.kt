@@ -264,6 +264,57 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
     }
 
     @Test
+    fun `Sheet initial fallback prefers an authored default over an earlier sheet without a default`() {
+        val state = paywallState(
+            packagesOutsideTabs = listOf(
+                packageInfo(
+                    TestData.Packages.monthly,
+                    isSelectedByDefault = false,
+                    sheetPresentationKey = SheetPresentationKey(),
+                ),
+                packageInfo(
+                    TestData.Packages.annual,
+                    isSelectedByDefault = true,
+                    sheetPresentationKey = SheetPresentationKey(),
+                ),
+            ),
+            packagesByTab = emptyMap(),
+            initialSelectedTabIndex = null,
+        )
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
+    @Test
+    fun `Global sheet default wins over active tab sheet defaults on load and tab switches`() {
+        val state = paywallState(
+            packagesOutsideTabs = listOf(packageInfo(
+                TestData.Packages.weekly,
+                isSelectedByDefault = true,
+                sheetPresentationKey = SheetPresentationKey(),
+            )),
+            packagesByTab = mapOf(
+                0 to listOf(packageInfo(
+                    TestData.Packages.monthly,
+                    isSelectedByDefault = true,
+                    sheetPresentationKey = SheetPresentationKey(),
+                )),
+                1 to listOf(packageInfo(
+                    TestData.Packages.annual,
+                    isSelectedByDefault = true,
+                    sheetPresentationKey = SheetPresentationKey(),
+                )),
+            ),
+            initialSelectedTabIndex = 0,
+        )
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.weekly)
+        state.update(selectedPackageUniqueId = TestData.Packages.monthly.identifier)
+        state.update(selectedTabIndex = 1)
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.weekly)
+    }
+
+    @Test
     fun `Sheet initial fallback skips packages in inactive tabs`() {
         val state = paywallState(
             packagesOutsideTabs = emptyList(),
