@@ -68,7 +68,7 @@ emerge {
             baseSha.set(null as String?)
         }
         gitHub {
-            repoName.set("purchases-android")
+            repoName.set("purchases-android_internal")
             repoOwner.set("RevenueCat")
         }
     }

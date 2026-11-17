@@ -43,7 +43,7 @@ aliases:
 version: 2.1
 orbs:
   android: circleci/android@3.2.0
-  revenuecat: revenuecat/sdks-common-config@4.8.0
+  revenuecat: revenuecat/sdks-common-config@4.9.0
   codecov: codecov/codecov@6.1.0
 
 parameters:
@@ -785,7 +785,7 @@ jobs:
             emerge upload snapshots \
               --name "TestPurchasesUIAndroidCompatibility Paparazzi" \
               --id "com.revenuecat.testpurchasesuiandroidcompatibility.paparazzi" \
-              --repo-name "RevenueCat/purchases-android" \
+              --repo-name "RevenueCat/purchases-android_internal" \
               --client-library paparazzi \
               $PR_ARG \
               --project-root . 2>&1 \
@@ -1216,7 +1216,7 @@ workflows:
           type: approval
           <<: *release-branches
       - revenuecat/tag-current-branch:
-          context: github-bot-public
+          context: github-bot-internal
           ruby_version: "3.3"
           requires:
             - wait-for-pr-approval
@@ -1235,12 +1235,21 @@ workflows:
             - run-purchases-cec-integration-tests
             - verify-compatibility
           <<: *release-branches
+      - revenuecat/mirror-to-public:
+          public_repo_name: purchases-android
+          context: sdk-public-mirror
+          <<: *release-tags
       - deploy:
           <<: *release-tags
           context:
             - maven-central-publishing
-            - github-bot-public
-      - docs-deploy: *release-tags
+            - github-bot-public-release
+          requires:
+            - revenuecat/mirror-to-public
+      - docs-deploy:
+          <<: *release-tags
+          requires:
+            - revenuecat/mirror-to-public
       - publish-purchase-tester-release:
           requires:
             - deploy
@@ -1263,9 +1272,9 @@ workflows:
             - deploy
           <<: *release-tags
       - revenuecat/merge-release-pr:
-          context: github-bot-public
+          context: github-bot-internal
           ruby_version: "3.3"
-          repo_name: purchases-android
+          repo_name: purchases-android_internal
           use_merge_queue: true
           requires:
             - publish-purchase-tester-release
@@ -1273,6 +1282,18 @@ workflows:
             - publish-rct-tester-release
             - bump-sdk-in-rc-mobile-app
           <<: *release-tags
+
+  mirror:
+    when:
+      and:
+        - not:
+            equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ "main", << pipeline.git.branch >> ]
+        - equal: [ "default", << pipeline.parameters.action >> ]
+    jobs:
+      - revenuecat/mirror-to-public:
+          public_repo_name: purchases-android
+          context: sdk-public-mirror
 
   on-main-branch:
     when:
@@ -1283,7 +1304,7 @@ workflows:
         - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
       - prepare-next-version:
-          context: github-bot-public
+          context: github-bot-internal
       - publish-paywall-tester-release:
           track: "internal"
       - publish-rct-tester-release:
@@ -1316,7 +1337,7 @@ workflows:
         - equal: [ "release-train", << pipeline.schedule.name >> ]
     jobs:
       - revenuecat/automatic-bump:
-          context: github-bot-public
+          context: github-bot-internal
           ruby_version: "3.3"
 
   biweekly-baseline-profiles:
@@ -1327,14 +1348,14 @@ workflows:
     jobs:
       - generate-baseline-profiles:
           context:
-            - github-bot-public
+            - github-bot-internal
 
   manual-trigger-bump:
     when:
       equal: [ bump, << pipeline.parameters.action >> ]
     jobs:
       - revenuecat/automatic-bump:
-          context: github-bot-public
+          context: github-bot-internal
           ruby_version: "3.3"
 
   manual-paywall-tester-release:
@@ -1356,14 +1377,14 @@ workflows:
       equal: [ update_paywall_templates, << pipeline.parameters.action >> ]
     jobs:
       - update-paywall-preview-resources-submodule:
-          context: github-bot-public
+          context: github-bot-internal
 
   update-error-codes:
     when:
       equal: [ update_error_codes, << pipeline.parameters.action >> ]
     jobs:
       - revenuecat/update-error-codes:
-          context: github-bot-public
+          context: github-bot-internal
           platform: android
           outputs: "PurchasesErrorCode.kt:purchases/src/main/kotlin/generated/com/revenuecat/purchases/PurchasesErrorCode.kt"
           commit_paths: "purchases/src/main/kotlin/generated/com/revenuecat/purchases/PurchasesErrorCode.kt,purchases/api-defauts.txt,purchases/api-entitlement.txt"
