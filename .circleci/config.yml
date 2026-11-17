@@ -1324,11 +1324,13 @@ workflows:
           notify_slack: true
           context:
             - slack-secrets
+            - circleci-read
       - run-purchases-integration-tests:
           backend_environment: "load_shedder_us_east_2"
           notify_slack: true
           context:
             - slack-secrets
+            - circleci-read
 
   weekly-run-workflow:
     when:
