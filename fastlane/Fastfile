@@ -408,7 +408,9 @@ platform :android do
     gradle_properties_prefix = options[:gradle_properties_prefix] || UI.user_error!('Missing gradle_properties_prefix')
     extra_properties = options[:extra_properties] || {}
 
-    build_number = ENV['CIRCLE_BUILD_NUM'] || UI.user_error!('Could not find CircleCI build number.')
+    # Play rejects a version code below one it already has, and these apps were uploaded with the public
+    # CircleCI project's build numbers, which reached 435153.
+    build_number = (Integer(ENV['CIRCLE_BUILD_NUM'] || UI.user_error!('Could not find CircleCI build number.')) + 500_000).to_s
     version_name = current_version_number
     ENV["ORG_GRADLE_PROJECT_releaseKeyAlias"] = ENV["#{env_prefix}_RELEASE_KEY_ALIAS"] || UI.user_error!("Release key alias not found for #{build_task}")
     ENV["ORG_GRADLE_PROJECT_releaseKeyPassword"] = ENV["#{env_prefix}_RELEASE_KEY_PASSWORD"] || UI.user_error!("Release key password not found for #{build_task}")
