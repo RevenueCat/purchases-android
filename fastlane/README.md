@@ -169,6 +169,14 @@ Build RCT tester app bundle
 
 Publish RCT tester to the specified track on Google Play
 
+### android run_billing_connection_repro
+
+```sh
+[bundle exec] fastlane android run_billing_connection_repro
+```
+
+Run the Play Billing connection hang repro on a dedicated emulator
+
 ### android run_backend_integration_tests
 
 ```sh
