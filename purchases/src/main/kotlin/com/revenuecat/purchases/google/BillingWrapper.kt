@@ -826,6 +826,7 @@ internal class BillingWrapper(
             debugMessage = billingResult.debugMessage,
             pendingRequestCount = pendingRequestCount(),
         )
+        if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) stateListener?.onConnectionReady()
         mainHandler.post {
             if (client != null && billingClient !== client) return@post
             when (billingResult.responseCode) {
@@ -1022,8 +1023,16 @@ internal class BillingWrapper(
             },
             onError = trackingOnError,
             withConnectedClient = { withConnectedClient(trackingOnError, it) },
-            executeRequestOnUIThread = ::executeRequestOnUIThread,
+            executeRequestOnUIThread = ::executeRequestSkippingQueueIfConnected,
         ).run()
+    }
+
+    private fun executeRequestSkippingQueueIfConnected(delayMilliseconds: Long, request: (PurchasesError?) -> Unit) {
+        if (delayMilliseconds == 0L && billingClient?.isReady == true) {
+            request(null)
+        } else {
+            executeRequestOnUIThread(delayMilliseconds, request)
+        }
     }
 
     // A tracker can exist with collection disabled; it would drop the event, so the device must not be marked.

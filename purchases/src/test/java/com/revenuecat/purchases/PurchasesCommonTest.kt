@@ -3454,10 +3454,19 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     // endregion
 
     @Test
-    fun `on billing wrapper connected, gets storefront`() {
+    fun `on billing wrapper connection ready, gets storefront`() {
+        mockGetStorefront()
+        capturedBillingWrapperStateListener.captured.onConnectionReady()
+        verify(exactly = 1) {
+            mockBillingAbstract.getStorefront(any(), any())
+        }
+    }
+
+    @Test
+    fun `on billing wrapper connected, does not get storefront again`() {
         mockGetStorefront()
         capturedBillingWrapperStateListener.captured.onConnected()
-        verify(exactly = 1) {
+        verify(exactly = 0) {
             mockBillingAbstract.getStorefront(any(), any())
         }
     }
