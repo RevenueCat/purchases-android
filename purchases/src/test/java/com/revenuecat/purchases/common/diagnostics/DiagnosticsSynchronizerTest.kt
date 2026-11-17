@@ -5,6 +5,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.SyncDispatcher
 import io.mockk.Runs
@@ -13,6 +14,7 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONException
 import org.json.JSONObject
 import org.junit.Before
@@ -292,6 +294,30 @@ class DiagnosticsSynchronizerTest {
 
         verify(exactly = 0) { diagnosticsFileHelper.readFileAsJson(any()) }
         verify(exactly = 0) { backend.postDiagnostics(any(), any(), any()) }
+    }
+
+    @Test
+    fun `onEventTracked does not queue another sync check while one is pending`() {
+        val queue = ArrayDeque<Runnable>()
+        diagnosticsSynchronizer = DiagnosticsSynchronizer(
+            DiagnosticsHelper(mockk(), diagnosticsFileHelper, lazy { sharedPreferences }),
+            diagnosticsFileHelper,
+            diagnosticsTracker,
+            backend,
+            object : Dispatcher(mockk()) {
+                override fun enqueue(command: Runnable, delay: Delay) {
+                    queue.addLast(command)
+                }
+            },
+        )
+        every { diagnosticsFileHelper.isDiagnosticsFileBigEnoughToSync() } returns false
+
+        repeat(3) { diagnosticsSynchronizer.onEventTracked() }
+        assertThat(queue).hasSize(1)
+        queue.removeFirst().run()
+        diagnosticsSynchronizer.onEventTracked()
+
+        assertThat(queue).hasSize(1)
     }
 
     // endregion

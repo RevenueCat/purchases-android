@@ -1170,6 +1170,61 @@ class DiagnosticsTrackerTest {
 
     // endregion collection decision
 
+    // region pending entries limit
+
+    @Test
+    fun `entries tracked while the limit of pending entries is reached are dropped`() {
+        val queue = useQueueingDispatcher()
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+
+        repeat(MAX_PENDING_DIAGNOSTICS_ENTRIES + 5) { diagnosticsTracker.trackEvent(testDiagnosticsEntry) }
+        Assertions.assertThat(queue).hasSize(MAX_PENDING_DIAGNOSTICS_ENTRIES)
+        while (queue.isNotEmpty()) queue.removeFirst().run()
+
+        verify(exactly = MAX_PENDING_DIAGNOSTICS_ENTRIES) { diagnosticsFileHelper.appendEvent(testDiagnosticsEntry) }
+    }
+
+    @Test
+    fun `entries are tracked again once pending entries have been written`() {
+        val queue = useQueueingDispatcher()
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+
+        repeat(MAX_PENDING_DIAGNOSTICS_ENTRIES) { diagnosticsTracker.trackEvent(testDiagnosticsEntry) }
+        while (queue.isNotEmpty()) queue.removeFirst().run()
+        diagnosticsTracker.trackEvent(testDiagnosticsEntry)
+        Assertions.assertThat(queue).hasSize(1)
+        queue.removeFirst().run()
+
+        verify(exactly = MAX_PENDING_DIAGNOSTICS_ENTRIES + 1) {
+            diagnosticsFileHelper.appendEvent(testDiagnosticsEntry)
+        }
+    }
+
+    @Test
+    fun `entries are tracked again once pending entries have failed to be written`() {
+        val queue = useQueueingDispatcher()
+        every { diagnosticsFileHelper.isDiagnosticsFileTooBig() } throws IllegalStateException()
+
+        repeat(MAX_PENDING_DIAGNOSTICS_ENTRIES) { diagnosticsTracker.trackEvent(testDiagnosticsEntry) }
+        while (queue.isNotEmpty()) runCatching { queue.removeFirst().run() }
+        repeat(MAX_PENDING_DIAGNOSTICS_ENTRIES) { diagnosticsTracker.trackEvent(testDiagnosticsEntry) }
+
+        Assertions.assertThat(queue).hasSize(MAX_PENDING_DIAGNOSTICS_ENTRIES)
+    }
+
+    private fun useQueueingDispatcher(): ArrayDeque<Runnable> {
+        val queue = ArrayDeque<Runnable>()
+        dispatcher = object : Dispatcher(mockk()) {
+            override fun enqueue(command: Runnable, delay: Delay) {
+                queue.addLast(command)
+            }
+        }
+        diagnosticsTracker = createDiagnosticsTracker()
+        return queue
+    }
+
+    // endregion pending entries limit
+
     private fun mockSharedPreferences() {
         sharedPreferences = mockk()
         sharedPreferencesEditor = mockk()

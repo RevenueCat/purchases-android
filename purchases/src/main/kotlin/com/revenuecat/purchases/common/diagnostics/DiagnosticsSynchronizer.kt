@@ -31,6 +31,7 @@ internal class DiagnosticsSynchronizer(
     }
 
     val isSyncing = AtomicBoolean(false)
+    private val isSyncCheckPending = AtomicBoolean(false)
 
     fun syncDiagnosticsFileIfNeeded() {
         enqueue {
@@ -111,7 +112,9 @@ internal class DiagnosticsSynchronizer(
     }
 
     private fun syncDiagnosticsFileIfBigEnough() {
+        if (isSyncCheckPending.getAndSet(true)) return
         enqueue {
+            isSyncCheckPending.set(false)
             if (diagnosticsFileHelper.isDiagnosticsFileBigEnoughToSync()) {
                 verboseLog { "Diagnostics file is big enough to sync. Syncing it." }
                 syncDiagnosticsFileIfNeeded()

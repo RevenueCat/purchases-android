@@ -22,6 +22,7 @@ import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import com.revenuecat.purchases.utils.filterNotNullValues
 import java.io.IOException
 import java.util.UUID
+import java.util.concurrent.Semaphore
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.time.Duration
 
@@ -31,6 +32,8 @@ internal fun interface DiagnosticsEventTrackerListener {
     // Default no-op so a listener that only reacts to tracked events needn't handle the collection decision.
     fun onCollectionEnabled() {}
 }
+
+internal const val MAX_PENDING_DIAGNOSTICS_ENTRIES = 1000
 
 /**
  * This class is the entry point for all diagnostics tracking. It contains all information for all events
@@ -52,6 +55,8 @@ internal class DiagnosticsTracker(
     // Written before the delete is enqueued and re-read on the diagnostics thread right before an append, so an
     // event that raced the decision either lands in the file before the delete or is dropped after it.
     private val collectionState = AtomicReference(CollectionState.UNDETERMINED)
+
+    private val pendingEntryPermits = Semaphore(MAX_PENDING_DIAGNOSTICS_ENTRIES)
 
     val isCollectionEnabled: Boolean
         get() = collectionState.get() == CollectionState.ENABLED
@@ -634,8 +639,17 @@ internal class DiagnosticsTracker(
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     fun trackEvent(diagnosticsEntry: DiagnosticsEntry) {
         if (collectionState.get() == CollectionState.DISABLED) return
-        checkAndClearDiagnosticsFileIfTooBig {
-            trackEventInCurrentThread(diagnosticsEntry)
+        if (!pendingEntryPermits.tryAcquire()) {
+            verboseLog { "Too many pending diagnostics entries. Dropping entry: ${diagnosticsEntry.name}" }
+            return
+        }
+        enqueue {
+            try {
+                clearDiagnosticsFileIfTooBig()
+                trackEventInCurrentThread(diagnosticsEntry)
+            } finally {
+                pendingEntryPermits.release()
+            }
         }
     }
 
@@ -653,14 +667,11 @@ internal class DiagnosticsTracker(
         }
     }
 
-    private fun checkAndClearDiagnosticsFileIfTooBig(completion: () -> Unit) {
-        enqueue {
-            if (diagnosticsFileHelper.isDiagnosticsFileTooBig()) {
-                verboseLog { "Diagnostics file is too big. Deleting it." }
-                diagnosticsHelper.resetDiagnosticsStatus()
-                trackMaxEventsStoredLimitReached()
-            }
-            completion()
+    private fun clearDiagnosticsFileIfTooBig() {
+        if (diagnosticsFileHelper.isDiagnosticsFileTooBig()) {
+            verboseLog { "Diagnostics file is too big. Deleting it." }
+            diagnosticsHelper.resetDiagnosticsStatus()
+            trackMaxEventsStoredLimitReached()
         }
     }
 
