@@ -267,8 +267,9 @@ internal class PaywallViewModelImpl(
     private var preWarmJob: Job? = null
     private var transitionIdCounter: Int = 0
 
-    // Per-session flag: a purchase or restore satisfying any reached hard gate is a natural workflow exit,
-    // so it suppresses workflow_close. The session boundary is the dismiss (reset in
+    // Per-session flag: a purchase, qualifying restore, or passed hard gate is a natural workflow exit,
+    // so it suppresses workflow_close. Ungated restores qualify without shouldDisplayBlock or when it dismisses.
+    // The session boundary is the dismiss (reset in
     // clearWorkflowState), NOT each render/refresh, so an in-session completion that leaves the paywall
     // visible (e.g. a restore with no shouldDisplayBlock) survives option/locale/color refreshes. Tracked
     // separately from the sticky _purchaseCompleted state (exposed as purchaseCompleted), which also gates exit
@@ -1454,7 +1455,7 @@ internal class PaywallViewModelImpl(
             hideOpenSheet()
         }
         val decision = controller.update(customerInfo)
-        if (decision != WorkflowGateDecision.BLOCKED && ownsPresentation(controller, generation)) {
+        if (completesWorkflow(decision, isPurchase) && ownsPresentation(controller, generation)) {
             workflowCompletedInSession = true
         }
         // Preserve completion accounting before a success listener can close the paywall.
@@ -1468,11 +1469,18 @@ internal class PaywallViewModelImpl(
                 val shouldDismiss = isPurchase || shouldDisplayBlock?.invoke(customerInfo) == false
                 // The display predicate is host code and can replace the presentation too.
                 if (shouldDismiss && ownsPresentation(controller, generation)) {
+                    workflowCompletedInSession = true
                     _purchaseCompleted.value = true
                     dismissAfterPurchaseOrRestore(customerInfo, isPurchase)
                 }
             }
         }
+    }
+
+    private fun completesWorkflow(decision: WorkflowGateDecision, isPurchase: Boolean): Boolean = when (decision) {
+        WorkflowGateDecision.BLOCKED -> false
+        WorkflowGateDecision.PASSED -> true
+        WorkflowGateDecision.NOT_GATED -> isPurchase || shouldDisplayBlock == null
     }
 
     private fun ownsPresentation(controller: CheckpointWorkflowGateController, generation: Int): Boolean =
