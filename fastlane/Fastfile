@@ -29,7 +29,8 @@ files_to_update_on_latest_stable_releases = {
   './docs/index.html' => ['url=https://sdk.revenuecat.com/android/{x}/index.html'],
 }
 
-repo_name = 'purchases-android'
+internal_repo_name = 'purchases-android_internal'
+public_repo_name = 'purchases-android'
 changelog_latest_path = './CHANGELOG.latest.md'
 changelog_path = './CHANGELOG.md'
 sentry_org_slug = 'revenuecat'
@@ -287,19 +288,20 @@ platform :android do
       changelog_path: changelog_path,
       files_to_update: files_with_version_number,
       files_to_update_on_latest_stable_releases: files_to_update_on_latest_stable_releases,
-      repo_name: repo_name,
+      repo_name: internal_repo_name,
       github_rate_limit: options[:github_rate_limit],
       editor: options[:editor],
       next_version: options[:next_version],
       automatic_release: options[:automatic_release],
-      is_prerelease: options[:is_prerelease]
+      is_prerelease: options[:is_prerelease],
+      omit_pr_references_in_changelog_files: true
     )
   end
 
   desc "Automatically bumps version, replaces version numbers, updates changelog and creates PR"
   lane :automatic_bump do |options|
     next_version, type_of_bump = determine_next_version_using_labels(
-      repo_name: repo_name,
+      repo_name: internal_repo_name,
       github_rate_limit: options[:github_rate_limit]
     )
     options[:next_version] = next_version
@@ -320,7 +322,7 @@ platform :android do
     release_version = options[:version]
     create_github_release(
       version: release_version,
-      repo_name: repo_name,
+      repo_name: public_repo_name,
       github_api_token: ENV["GITHUB_TOKEN"],
       changelog_latest_path: changelog_latest_path
     )
@@ -390,7 +392,7 @@ platform :android do
   lane :prepare_next_version do |options|
     create_next_snapshot_version(
       current_version: current_version_number,
-      repo_name: repo_name,
+      repo_name: internal_repo_name,
       github_pr_token: ENV["GITHUB_PULL_REQUEST_API_TOKEN"],
       files_to_update: files_with_version_number
     )
@@ -837,7 +839,7 @@ DESC
     end
 
     commit_push_and_create_pr_if_necessary(
-      repo: repo_name,
+      repo: internal_repo_name,
       branch_name: branch_name,
       commit_message: "[Automated] Updates paywall-preview-resources submodule.",
       title: "[AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule",
@@ -849,7 +851,7 @@ DESC
 
   desc "Trigger bump"
   lane :trigger_bump do
-    trigger_action_in_circle_ci(action: 'bump', repo_name: repo_name)
+    trigger_action_in_circle_ci(action: 'bump', repo_name: internal_repo_name)
   end
 
   desc "Records Paywall template screenshots and pushes them to the repository at target_repository_path"
@@ -997,7 +999,7 @@ DESC
         run_plugin_action_in_current_directory do
           create_pr_if_necessary(
             github_pr_token: ENV["GITHUB_TOKEN"],
-            repo_name: repo_name,
+            repo_name: internal_repo_name,
             base_branch: "main",
             head_branch: branch_name,
             title: "Update baseline profiles",
@@ -1038,7 +1040,7 @@ DESC
     commit_message = options[:commit_message] || UI.user_error!("No commit_message provided")
     title = options[:title] || commit_message
     body = options[:body] || commit_message
-    repo = options[:repo] || repo_name
+    repo = options[:repo] || internal_repo_name
     labels = options[:labels] || []
     team_reviewers = options[:team_reviewers] || []
     
