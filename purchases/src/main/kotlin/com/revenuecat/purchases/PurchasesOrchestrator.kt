@@ -381,12 +381,7 @@ internal class PurchasesOrchestrator(
         sdkSettingsConfigProvider.listener = this
 
         billing.stateListener = object : BillingAbstract.StateListener {
-            override fun onConnected() {
-                // A user about to be replaced by the IAM bootstrap mustn't get these purchases; the foreground
-                // pass after the bootstrap syncs them for the new user.
-                identityManager.checkIAMLoginNeeded { needed ->
-                    if (!needed) postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
-                }
+            override fun onConnectionReady() {
                 billing.getStorefront(
                     onSuccess = { countryCode ->
                         storefrontCountryCode = countryCode
@@ -396,6 +391,14 @@ internal class PurchasesOrchestrator(
                         errorLog(error)
                     },
                 )
+            }
+
+            override fun onConnected() {
+                // A user about to be replaced by the IAM bootstrap mustn't get these purchases; the foreground
+                // pass after the bootstrap syncs them for the new user.
+                identityManager.checkIAMLoginNeeded { needed ->
+                    if (!needed) postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
+                }
             }
         }
         billing.purchasesUpdatedListener = getPurchasesUpdatedListener()

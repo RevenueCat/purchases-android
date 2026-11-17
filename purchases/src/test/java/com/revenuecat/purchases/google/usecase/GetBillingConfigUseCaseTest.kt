@@ -7,7 +7,9 @@ import com.android.billingclient.api.BillingConfigResponseListener
 import com.android.billingclient.api.BillingResult
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.google.PENDING_REQUEST_TIMEOUT_MILLISECONDS
 import io.mockk.Runs
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -94,6 +96,31 @@ internal class GetBillingConfigUseCaseTest: BaseBillingUseCaseTest() {
         wrapper.getStorefront(onSuccess = { }, onError = { fail("Should succeed") })
 
         verify(exactly = 0) { mockDiagnosticsTracker.trackGoogleInitialStorefrontLoad(any(), any()) }
+    }
+
+    @Test
+    fun `querying storefront with a connected client does not go through the request queue`() {
+        every { mockClient.isReady } returns true
+        mockGetBillingConfig()
+        clearMocks(handler, answers = false)
+
+        var countryCode: String? = null
+        wrapper.getStorefront(onSuccess = { countryCode = it }, onError = { fail("Should succeed") })
+
+        assertThat(countryCode).isEqualTo(expectedCountryCode)
+        verify(exactly = 0) { handler.post(any()) }
+        verify(exactly = 0) { handler.postDelayed(any(), any()) }
+    }
+
+    @Test
+    fun `querying storefront with a disconnected client waits in the request queue`() {
+        every { mockClient.isReady } returns false
+        mockGetBillingConfig()
+
+        wrapper.getStorefront(onSuccess = { fail("Should wait") }, onError = { fail("Should wait") })
+
+        verify(exactly = 0) { mockClient.getBillingConfigAsync(any(), any()) }
+        verify(exactly = 1) { handler.postDelayed(any(), PENDING_REQUEST_TIMEOUT_MILLISECONDS) }
     }
 
     @Test

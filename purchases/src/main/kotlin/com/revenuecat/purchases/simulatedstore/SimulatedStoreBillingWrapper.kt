@@ -54,6 +54,7 @@ internal class SimulatedStoreBillingWrapper(
     internal fun performStartConnection() {
         debugLog { "SimulatedStoreBillingAbstract: Starting connection" }
         connected = true
+        stateListener?.onConnectionReady()
         stateListener?.onConnected()
     }
 
