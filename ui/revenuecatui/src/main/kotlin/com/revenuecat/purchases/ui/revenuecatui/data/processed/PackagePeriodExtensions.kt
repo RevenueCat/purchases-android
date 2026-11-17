@@ -5,6 +5,7 @@ import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import java.util.Locale
 
 internal val Package.isLifetime: Boolean
     get() = packageType == PackageType.LIFETIME
@@ -26,7 +27,10 @@ internal val Package.periodUnitAbbreviatedLocalizationKey: VariableLocalizationK
         product.period?.periodUnitAbbreviatedLocalizationKey
     }
 
-internal fun Package.productPeriodly(localizedVariableKeys: Map<VariableLocalizationKey, String>): String? {
+internal fun Package.productPeriodly(
+    localizedVariableKeys: Map<VariableLocalizationKey, String>,
+    locale: Locale,
+): String? {
     val period = product.period
 
     return when {
@@ -35,7 +39,7 @@ internal fun Package.productPeriodly(localizedVariableKeys: Map<VariableLocaliza
         period.value > 1 ->
             localizedVariableKeys
                 .getStringOrLogError(period.periodValueWithUnitLocalizationKey)
-                ?.format(period.value)
+                ?.format(locale, period.value)
 
         else -> when (period.unit) {
             Period.Unit.DAY -> VariableLocalizationKey.DAILY
@@ -47,7 +51,10 @@ internal fun Package.productPeriodly(localizedVariableKeys: Map<VariableLocaliza
     }
 }
 
-internal fun Package.productPeriod(localizedVariableKeys: Map<VariableLocalizationKey, String>): String? {
+internal fun Package.productPeriod(
+    localizedVariableKeys: Map<VariableLocalizationKey, String>,
+    locale: Locale,
+): String? {
     val period = product.period
 
     return when {
@@ -56,7 +63,7 @@ internal fun Package.productPeriod(localizedVariableKeys: Map<VariableLocalizati
         period.value > 1 ->
             localizedVariableKeys
                 .getStringOrLogError(period.periodValueWithUnitLocalizationKey)
-                ?.format(period.value)
+                ?.format(locale, period.value)
 
         else -> periodUnitLocalizationKey?.let { key -> localizedVariableKeys.getStringOrLogError(key) }
     }
@@ -64,6 +71,7 @@ internal fun Package.productPeriod(localizedVariableKeys: Map<VariableLocalizati
 
 internal fun Package.productPeriodAbbreviated(
     localizedVariableKeys: Map<VariableLocalizationKey, String>,
+    locale: Locale,
 ): String? {
     val period = product.period
 
@@ -71,7 +79,7 @@ internal fun Package.productPeriodAbbreviated(
         isLifetime -> localizedVariableKeys.getStringOrLogError(VariableLocalizationKey.LIFETIME)
         period == null -> null
         period.value > 1 -> period.periodValueWithUnitAbbreviatedLocalizationKey?.let { key ->
-            localizedVariableKeys.getStringOrLogError(key)?.format(period.value)
+            localizedVariableKeys.getStringOrLogError(key)?.format(locale, period.value)
         }
 
         else -> periodUnitAbbreviatedLocalizationKey?.let { key -> localizedVariableKeys.getStringOrLogError(key) }
@@ -80,13 +88,14 @@ internal fun Package.productPeriodAbbreviated(
 
 internal fun Package.productPeriodWithUnit(
     localizedVariableKeys: Map<VariableLocalizationKey, String>,
+    locale: Locale,
 ): String? =
     when {
         isLifetime -> localizedVariableKeys.getStringOrLogError(VariableLocalizationKey.LIFETIME)
         else -> product.period?.let { period ->
             localizedVariableKeys
                 .getStringOrLogError(period.periodValueWithUnitLocalizationKey)
-                ?.format(period.value)
+                ?.format(locale, period.value)
         }
     }
 

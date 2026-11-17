@@ -501,7 +501,7 @@ internal object VariableProcessorV2 {
             Currency.getInstance(it.product.price.currencyCode).getSymbol(currencyLocale)
         }
 
-        Variable.PRODUCT_PERIODLY -> rcPackage?.productPeriodly(localizedVariableKeys)
+        Variable.PRODUCT_PERIODLY -> rcPackage?.productPeriodly(localizedVariableKeys, currencyLocale)
 
         Variable.PRODUCT_PRICE -> rcPackage?.let { pkg ->
             variableDataProvider?.localizedPrice(
@@ -517,7 +517,7 @@ internal object VariableProcessorV2 {
                 locale = currencyLocale,
                 showZeroDecimalPlacePrices = packageContext?.showZeroDecimalPlacePrices ?: false,
             )?.let { price ->
-                val period = pkg.productPeriod(localizedVariableKeys)
+                val period = pkg.productPeriod(localizedVariableKeys, currencyLocale)
                 when {
                     pkg.hasNoBillingPeriod -> price
                     period != null -> "$price/$period"
@@ -532,7 +532,7 @@ internal object VariableProcessorV2 {
                 locale = currencyLocale,
                 showZeroDecimalPlacePrices = packageContext?.showZeroDecimalPlacePrices ?: false,
             )?.let { price ->
-                val period = pkg.productPeriodAbbreviated(localizedVariableKeys)
+                val period = pkg.productPeriodAbbreviated(localizedVariableKeys, currencyLocale)
                 when {
                     pkg.hasNoBillingPeriod -> price
                     period != null -> "$price/$period"
@@ -577,13 +577,16 @@ internal object VariableProcessorV2 {
             }
         }
 
-        Variable.PRODUCT_PERIOD -> rcPackage?.productPeriod(localizedVariableKeys)
-        Variable.PRODUCT_PERIOD_ABBREVIATED -> rcPackage?.productPeriodAbbreviated(localizedVariableKeys)
-        Variable.PRODUCT_PERIOD_IN_DAYS -> rcPackage?.product?.period?.roundedValueInDays
-        Variable.PRODUCT_PERIOD_IN_WEEKS -> rcPackage?.product?.period?.roundedValueInWeeks
-        Variable.PRODUCT_PERIOD_IN_MONTHS -> rcPackage?.product?.period?.roundedValueInMonths
-        Variable.PRODUCT_PERIOD_IN_YEARS -> rcPackage?.product?.period?.roundedValueInYears
-        Variable.PRODUCT_PERIOD_WITH_UNIT -> rcPackage?.productPeriodWithUnit(localizedVariableKeys)
+        Variable.PRODUCT_PERIOD -> rcPackage?.productPeriod(localizedVariableKeys, currencyLocale)
+        Variable.PRODUCT_PERIOD_ABBREVIATED -> rcPackage?.productPeriodAbbreviated(
+            localizedVariableKeys,
+            currencyLocale,
+        )
+        Variable.PRODUCT_PERIOD_IN_DAYS -> rcPackage?.product?.period?.roundedValueInDays(currencyLocale)
+        Variable.PRODUCT_PERIOD_IN_WEEKS -> rcPackage?.product?.period?.roundedValueInWeeks(currencyLocale)
+        Variable.PRODUCT_PERIOD_IN_MONTHS -> rcPackage?.product?.period?.roundedValueInMonths(currencyLocale)
+        Variable.PRODUCT_PERIOD_IN_YEARS -> rcPackage?.product?.period?.roundedValueInYears(currencyLocale)
+        Variable.PRODUCT_PERIOD_WITH_UNIT -> rcPackage?.productPeriodWithUnit(localizedVariableKeys, currencyLocale)
         Variable.PRODUCT_OFFER_PRICE ->
             resolveOfferPrice(
                 discountPhase = primaryDiscountPhase(subscriptionOption, rcPackage),
@@ -678,33 +681,34 @@ internal object VariableProcessorV2 {
             resolveOfferPeriod(
                 discountPhase = primaryDiscountPhase(subscriptionOption, rcPackage),
                 discountValue = { it.productOfferPeriod(localizedVariableKeys) },
-            ) { rcPackage?.productPeriod(localizedVariableKeys) }
+            ) { rcPackage?.productPeriod(localizedVariableKeys, currencyLocale) }
 
         Variable.PRODUCT_OFFER_PERIOD_ABBREVIATED ->
             resolveOfferPeriod(
                 discountPhase = primaryDiscountPhase(subscriptionOption, rcPackage),
                 discountValue = { it.productOfferPeriodAbbreviated(localizedVariableKeys) },
-            ) { rcPackage?.productPeriodAbbreviated(localizedVariableKeys) }
+            ) { rcPackage?.productPeriodAbbreviated(localizedVariableKeys, currencyLocale) }
 
         Variable.PRODUCT_OFFER_PERIOD_IN_DAYS ->
-            primaryDiscountPhase(subscriptionOption, rcPackage)?.productOfferPeriodInDays
-                ?: rcPackage?.product?.period?.roundedValueInDays
+            primaryDiscountPhase(subscriptionOption, rcPackage)?.productOfferPeriodInDays(currencyLocale)
+                ?: rcPackage?.product?.period?.roundedValueInDays(currencyLocale)
 
         Variable.PRODUCT_OFFER_PERIOD_IN_WEEKS ->
-            primaryDiscountPhase(subscriptionOption, rcPackage)?.productOfferPeriodInWeeks
-                ?: rcPackage?.product?.period?.roundedValueInWeeks
+            primaryDiscountPhase(subscriptionOption, rcPackage)?.productOfferPeriodInWeeks(currencyLocale)
+                ?: rcPackage?.product?.period?.roundedValueInWeeks(currencyLocale)
 
         Variable.PRODUCT_OFFER_PERIOD_IN_MONTHS ->
-            primaryDiscountPhase(subscriptionOption, rcPackage)?.productOfferPeriodInMonths
-                ?: rcPackage?.product?.period?.roundedValueInMonths
+            primaryDiscountPhase(subscriptionOption, rcPackage)?.productOfferPeriodInMonths(currencyLocale)
+                ?: rcPackage?.product?.period?.roundedValueInMonths(currencyLocale)
 
         Variable.PRODUCT_OFFER_PERIOD_IN_YEARS ->
-            primaryDiscountPhase(subscriptionOption, rcPackage)?.productOfferPeriodInYears
-                ?: rcPackage?.product?.period?.roundedValueInYears
+            primaryDiscountPhase(subscriptionOption, rcPackage)?.productOfferPeriodInYears(currencyLocale)
+                ?: rcPackage?.product?.period?.roundedValueInYears(currencyLocale)
 
         Variable.PRODUCT_OFFER_PERIOD_WITH_UNIT ->
-            primaryDiscountPhase(subscriptionOption, rcPackage)?.productOfferPeriodWithUnit(localizedVariableKeys)
-                ?: rcPackage?.productPeriodWithUnit(localizedVariableKeys)
+            primaryDiscountPhase(subscriptionOption, rcPackage)
+                ?.productOfferPeriodWithUnit(localizedVariableKeys, currencyLocale)
+                ?: rcPackage?.productPeriodWithUnit(localizedVariableKeys, currencyLocale)
 
         Variable.PRODUCT_OFFER_END_DATE ->
             primaryDiscountPhase(subscriptionOption, rcPackage)?.productOfferEndDate(dateLocale, date)
@@ -725,13 +729,13 @@ internal object VariableProcessorV2 {
             resolveOfferPeriod(
                 discountPhase = secondaryDiscountPhase(subscriptionOption, rcPackage),
                 discountValue = { it.productOfferPeriod(localizedVariableKeys) },
-            ) { rcPackage?.productPeriod(localizedVariableKeys) }
+            ) { rcPackage?.productPeriod(localizedVariableKeys, currencyLocale) }
 
         Variable.PRODUCT_SECONDARY_OFFER_PERIOD_ABBREVIATED ->
             resolveOfferPeriod(
                 discountPhase = secondaryDiscountPhase(subscriptionOption, rcPackage),
                 discountValue = { it.productOfferPeriodAbbreviated(localizedVariableKeys) },
-            ) { rcPackage?.productPeriodAbbreviated(localizedVariableKeys) }
+            ) { rcPackage?.productPeriodAbbreviated(localizedVariableKeys, currencyLocale) }
 
         Variable.PRODUCT_RELATIVE_DISCOUNT -> packageContext?.relativeDiscount(localizedVariableKeys, currencyLocale)
 
