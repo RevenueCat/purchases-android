@@ -733,7 +733,7 @@ internal object VariableProcessorV2 {
                 discountValue = { it.productOfferPeriodAbbreviated(localizedVariableKeys) },
             ) { rcPackage?.productPeriodAbbreviated(localizedVariableKeys) }
 
-        Variable.PRODUCT_RELATIVE_DISCOUNT -> packageContext?.relativeDiscount(localizedVariableKeys)
+        Variable.PRODUCT_RELATIVE_DISCOUNT -> packageContext?.relativeDiscount(localizedVariableKeys, currencyLocale)
 
         Variable.PRODUCT_ABSOLUTE_DISCOUNT ->
             rcPackage?.standardSavings(packageContext?.mostExpensivePricePerMonthMicros)
@@ -741,7 +741,7 @@ internal object VariableProcessorV2 {
 
         Variable.PRODUCT_OFFER_RELATIVE_DISCOUNT ->
             rcPackage?.offerSavings(subscriptionOption)
-                ?.let { localizedVariableKeys.percent(it.relative) }
+                ?.let { localizedVariableKeys.percent(it.relative, currencyLocale) }
 
         Variable.PRODUCT_OFFER_ABSOLUTE_DISCOUNT ->
             rcPackage?.offerSavings(subscriptionOption)
@@ -749,7 +749,7 @@ internal object VariableProcessorV2 {
 
         Variable.PRODUCT_RELATIVE_DISCOUNT_WITH_OFFER ->
             rcPackage?.offerTermSavings(subscriptionOption, packageContext?.mostExpensivePricePerMonthMicros)
-                ?.let { localizedVariableKeys.percent(it.relative) }
+                ?.let { localizedVariableKeys.percent(it.relative, currencyLocale) }
 
         Variable.PRODUCT_ABSOLUTE_DISCOUNT_WITH_OFFER ->
             rcPackage?.offerTermSavings(subscriptionOption, packageContext?.mostExpensivePricePerMonthMicros)
@@ -757,7 +757,7 @@ internal object VariableProcessorV2 {
 
         Variable.PRODUCT_RELATIVE_DISCOUNT_WITH_OFFER_FULL_PERIOD ->
             rcPackage?.fullPeriodSavings(subscriptionOption, packageContext?.mostExpensivePricePerMonthMicros)
-                ?.let { localizedVariableKeys.percent(it.relative) }
+                ?.let { localizedVariableKeys.percent(it.relative, currencyLocale) }
 
         Variable.PRODUCT_ABSOLUTE_DISCOUNT_WITH_OFFER_FULL_PERIOD ->
             rcPackage?.fullPeriodSavings(subscriptionOption, packageContext?.mostExpensivePricePerMonthMicros)
@@ -836,11 +836,13 @@ internal object VariableProcessorV2 {
         Function.CAPITALIZE -> replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
     }
 
-    private fun PackageContext.relativeDiscount(localizedVariableKeys: Map<VariableLocalizationKey, String>): String? =
-        discountRelativeToMostExpensivePerMonth?.let { localizedVariableKeys.percent(it) }
+    private fun PackageContext.relativeDiscount(
+        localizedVariableKeys: Map<VariableLocalizationKey, String>,
+        locale: Locale,
+    ): String? = discountRelativeToMostExpensivePerMonth?.let { localizedVariableKeys.percent(it, locale) }
 
-    private fun Map<VariableLocalizationKey, String>.percent(fraction: Double): String? =
-        getStringOrLogError(VariableLocalizationKey.PERCENT)?.format((fraction * PERCENT_SCALE).roundToInt())
+    private fun Map<VariableLocalizationKey, String>.percent(fraction: Double, locale: Locale): String? =
+        getStringOrLogError(VariableLocalizationKey.PERCENT)?.format(locale, (fraction * PERCENT_SCALE).roundToInt())
 
     private fun DiscountSavings.localizedAmount(locale: Locale, packageContext: PackageContext?): String =
         localizedAmount(locale, showZeroDecimalPlacePrices = packageContext?.showZeroDecimalPlacePrices ?: false)
