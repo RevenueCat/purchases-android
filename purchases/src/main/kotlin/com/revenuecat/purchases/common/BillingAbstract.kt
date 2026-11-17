@@ -33,6 +33,8 @@ public abstract class BillingAbstract(
     public var purchasesUpdatedListener: PurchasesUpdatedListener? = null
 
     public interface StateListener {
+        // Called as soon as the store connection is usable, before [onConnected] and on any thread.
+        public fun onConnectionReady() {}
         public fun onConnected()
     }
 

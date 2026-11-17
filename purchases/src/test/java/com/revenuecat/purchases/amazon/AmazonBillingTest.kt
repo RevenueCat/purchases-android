@@ -42,6 +42,7 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.verify
+import io.mockk.verifyOrder
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.json.JSONObject
@@ -932,6 +933,7 @@ class AmazonBillingTest {
         setup()
         val stateListenerMock = mockk<BillingAbstract.StateListener>()
         underTest.stateListener = stateListenerMock
+        every { stateListenerMock.onConnectionReady() } just Runs
         every { stateListenerMock.onConnected() } just Runs
 
         every {
@@ -940,7 +942,8 @@ class AmazonBillingTest {
 
         underTest.startConnection()
 
-        verify(exactly = 1) {
+        verifyOrder {
+            stateListenerMock.onConnectionReady()
             stateListenerMock.onConnected()
         }
     }

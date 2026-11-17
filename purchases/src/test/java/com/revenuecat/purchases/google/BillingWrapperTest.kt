@@ -504,6 +504,8 @@ class BillingWrapperTest {
         every { mockDeviceCache.markInitialStorefrontLoadTracked() } returns true
         val requests = captureScheduledBillingRequests()
         val errors = mutableListOf<PurchasesError>()
+        // Not ready when the storefront request starts, so it goes through the queue instead of running directly.
+        every { mockClient.isReady } returns false andThen true
         wrapper.getStorefront(
             { fail("shouldn't receive storefront") },
             { errors.add(it) },
@@ -545,6 +547,43 @@ class BillingWrapperTest {
         )
 
         verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleInitialStorefrontLoad(successful = false, any()) }
+    }
+
+    @Test
+    fun `successful billing setup notifies connection ready without waiting for the main thread`() {
+        val events = mutableListOf<String>()
+        wrapper.stateListener = object : BillingAbstract.StateListener {
+            override fun onConnectionReady() {
+                events.add("ready")
+            }
+
+            override fun onConnected() {
+                events.add("connected")
+            }
+        }
+        every { handler.post(any()) } returns true
+
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+
+        assertThat(events).containsExactly("ready")
+    }
+
+    @Test
+    fun `failed billing setup does not notify connection ready`() {
+        var connectionReadyCalled = false
+        wrapper.stateListener = object : BillingAbstract.StateListener {
+            override fun onConnectionReady() {
+                connectionReadyCalled = true
+            }
+
+            override fun onConnected() = Unit
+        }
+
+        billingClientStateListener!!.onBillingSetupFinished(
+            BillingClient.BillingResponseCode.BILLING_UNAVAILABLE.buildResult(),
+        )
+
+        assertThat(connectionReadyCalled).isFalse
     }
 
     @Test

@@ -24,6 +24,7 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
+import io.mockk.verifyOrder
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.Before
@@ -84,6 +85,7 @@ class SimulatedStoreBillingWrapperTest {
 
     @Test
     fun `performStartConnection sets connected to true and notifies listener`() {
+        every { stateListener.onConnectionReady() } just Runs
         every { stateListener.onConnected() } just Runs
 
         assertThat(testStoreBilling.isConnected()).isFalse()
@@ -91,11 +93,15 @@ class SimulatedStoreBillingWrapperTest {
         testStoreBilling.performStartConnection()
 
         assertThat(testStoreBilling.isConnected()).isTrue()
-        verify { stateListener.onConnected() }
+        verifyOrder {
+            stateListener.onConnectionReady()
+            stateListener.onConnected()
+        }
     }
 
     @Test
     fun `startConnection posts delayed and starts connection`() {
+        every { stateListener.onConnectionReady() } just Runs
         every { stateListener.onConnected() } just Runs
 
         testStoreBilling.startConnection(100)
@@ -106,6 +112,7 @@ class SimulatedStoreBillingWrapperTest {
 
     @Test
     fun `close sets connected to false`() {
+        every { stateListener.onConnectionReady() } just Runs
         every { stateListener.onConnected() } just Runs
 
         testStoreBilling.performStartConnection()
