@@ -243,6 +243,49 @@ internal class QueryPurchasesByTypeUseCaseTest : BaseBillingUseCaseTest() {
     }
 
     @Test
+    fun `If service stays disconnected, re-execute with backoff then error`() {
+        val slot = slot<PurchasesResponseListener>()
+        val queryPurchasesStubbing = every {
+            mockClient.queryPurchasesAsync(
+                any<QueryPurchasesParams>(),
+                capture(slot)
+            )
+        }
+        var receivedError: PurchasesError? = null
+        val capturedDelays = mutableListOf<Long>()
+        QueryPurchasesByTypeUseCase(
+            QueryPurchasesByTypeUseCaseParams(
+                mockDateProvider,
+                mockDiagnosticsTracker,
+                appInBackground = true,
+                BillingClient.ProductType.INAPP,
+            ),
+            { _ ->
+                fail("shouldn't be success")
+            },
+            { error ->
+                receivedError = error
+            },
+            withConnectedClient = {
+                it.invoke(mockClient)
+            },
+            executeRequestOnUIThread = { delay, request ->
+                capturedDelays.add(delay)
+                queryPurchasesStubbing answers {
+                    slot.captured.onQueryPurchasesResponse(billingClientDisconnectedResult, emptyList())
+                }
+
+                request(null)
+            },
+        ).run()
+
+        assertThat(capturedDelays.size).isEqualTo(12)
+        assertThat(capturedDelays.last()).isCloseTo(RETRY_TIMER_MAX_TIME.inWholeMilliseconds, Offset.offset(1000L))
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+    }
+
+    @Test
     fun `If service returns NETWORK_ERROR, re-execute a max of 3 times`() {
         val slot = slot<PurchasesResponseListener>()
         val queryPurchasesStubbing = every {
