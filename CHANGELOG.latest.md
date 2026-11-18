@@ -1,17 +1,14 @@
 ## RevenueCat SDK
-### 📦 Dependency Updates
-* [RENOVATE] Update circleci-orb (#4592) via RevenueCat Git Bot (@RCGitBot)
-
-## RevenueCatUI SDK
-### Paywallsv2
-#### ✨ New Features
-* Enforce hard paywalls in checkpoint workflows (#4451) via Cesar de la Vega (@vegaro)
-#### 🐞 Bugfixes
-* fix(Paywalls): Ensure paywall resolves sheet only packages (#4596) via Jacob Rakidzich (@JZDesign)
+### 🐞 Bugfixes
+* fix: avoid OutOfMemoryError when diagnostics entries are tracked faster than they are written via Álvaro Brey (@AlvaroBrey)
+* fix: stop retrying billing requests without limit while the service stays disconnected via Álvaro Brey (@AlvaroBrey)
 
 ### 🔄 Other Changes
-* [AUTOMATIC] predicate_conformance_v1.json update (#4609) via revenuecat-ci-cd-bot-pr-writer[bot] (@revenuecat-ci-cd-bot-pr-writer[bot])
-* Fix edge-to-edge flow previews in PaywallsTester (#4622) via Cesar de la Vega (@vegaro)
-* ci: stop uploading CircleCI test artifacts (#4634) via Rick (@rickvdl)
-* Add 10.30.3 hotfix release to changelog (#4630) via Rick (@rickvdl)
-* ci: sign Maven artifacts with the in-memory key (#4595) via Álvaro Brey (@AlvaroBrey)
+* test: stop the billing tests failing at random on Duration matchers via Álvaro Brey (@AlvaroBrey)
+* build: drop the stale Kotlin version gate on BOM publishing via Álvaro Brey (@AlvaroBrey)
+* CI: parallel unit test forks, split Paparazzi and Maestro jobs, fix machine-executor caches via Toni Rico (@tonidero)
+* Add diagnostics for stuck billing connections via Rick (@rickvdl)
+* Fetch the Play storefront as soon as the billing connection is ready via Toni Rico (@tonidero)
+* ci: give the scheduled backend tests a CircleCI read token via Álvaro Brey (@AlvaroBrey)
+* ci: name the platform in the backend test Slack report via Álvaro Brey (@AlvaroBrey)
+* ci: keep tester version codes above the public project's build numbers via Álvaro Brey (@AlvaroBrey)
