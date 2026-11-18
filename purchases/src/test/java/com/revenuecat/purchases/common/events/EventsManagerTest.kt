@@ -48,9 +48,10 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.After
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import java.io.File
 import java.util.Date
@@ -116,7 +117,11 @@ class EventsManagerTest {
     }
     private var postedRequest: EventsRequest? = null
 
-    private val testFolder = "temp_test_folder"
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
+
+    private val testFolder: File
+        get() = temporaryFolder.root
 
     private var appSessionID = UUID.randomUUID()
     private lateinit var legacyFileHelper: EventsFileHelper<PaywallStoredEvent>
@@ -131,11 +136,7 @@ class EventsManagerTest {
 
     @Before
     fun setUp() {
-        val tempTestFolder = File(testFolder)
-        if (tempTestFolder.exists()) {
-            error("Temp test folder should not exist before starting tests")
-        }
-        tempTestFolder.mkdirs()
+        val tempTestFolder = testFolder
 
         val context = mockk<Context>().apply {
             every { filesDir } returns tempTestFolder
@@ -166,12 +167,6 @@ class EventsManagerTest {
             },
             priorityFlushRateLimiter = disabledRateLimiter,
         )
-    }
-
-    @After
-    fun tearDown() {
-        val tempTestFolder = File(testFolder)
-        tempTestFolder.deleteRecursively()
     }
 
     @Test

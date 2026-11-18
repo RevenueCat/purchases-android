@@ -7,9 +7,10 @@ import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Fail.fail
 import org.assertj.core.data.Offset
-import org.junit.After
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.io.File
@@ -18,7 +19,11 @@ import java.io.File
 @Config(manifest = Config.NONE)
 class FileHelperTest {
 
-    private val testFolder = "temp_test_folder"
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
+
+    private val testFolder: File
+        get() = temporaryFolder.root
     private val testFilePath = "RevenueCat/test_file.txt"
 
     private lateinit var applicationContext: Context
@@ -27,22 +32,12 @@ class FileHelperTest {
 
     @Before
     fun setup() {
-        val tempTestFolder = File(testFolder)
-        if (tempTestFolder.exists()) {
-            error("Temp test folder should not exist before starting tests")
-        }
-        tempTestFolder.mkdirs()
+        val tempTestFolder = testFolder
 
         applicationContext = mockk()
         every { applicationContext.filesDir } returns tempTestFolder
 
         fileHelper = FileHelper(applicationContext)
-    }
-
-    @After
-    fun tearDown() {
-        val tempTestFolder = File(testFolder)
-        tempTestFolder.deleteRecursively()
     }
 
     @Test

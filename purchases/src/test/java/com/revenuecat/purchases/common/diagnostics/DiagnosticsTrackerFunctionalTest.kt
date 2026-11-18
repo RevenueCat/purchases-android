@@ -8,11 +8,12 @@ import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.SyncDispatcher
 import io.mockk.every
 import io.mockk.mockk
-import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import java.io.File
 import java.util.UUID
@@ -21,7 +22,11 @@ import kotlin.random.Random
 @RunWith(AndroidJUnit4::class)
 class DiagnosticsTrackerFunctionalTest {
 
-    private val testFolder = "temp_test_folder"
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
+
+    private val testFolder: File
+        get() = temporaryFolder.root
 
     private lateinit var applicationContext: Context
 
@@ -29,11 +34,7 @@ class DiagnosticsTrackerFunctionalTest {
 
     @Before
     fun setup() {
-        val tempTestFolder = File(testFolder)
-        if (tempTestFolder.exists()) {
-            error("Temp test folder should not exist before starting tests")
-        }
-        tempTestFolder.mkdirs()
+        val tempTestFolder = testFolder
 
         applicationContext = mockk()
         val appConfig = mockk<AppConfig>().apply {
@@ -52,12 +53,6 @@ class DiagnosticsTrackerFunctionalTest {
             diagnosticsDispatcher = SyncDispatcher(),
             enabledBySdkConfiguration = true,
         )
-    }
-
-    @After
-    fun tearDown() {
-        val tempTestFolder = File(testFolder)
-        tempTestFolder.deleteRecursively()
     }
 
     @Test
