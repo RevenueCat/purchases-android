@@ -50,7 +50,6 @@ import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.Date
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -75,7 +74,7 @@ class AmazonBillingTest {
     private val mockAmazonBackend = mockk<AmazonBackend>()
     private val mockCache = mockk<AmazonCache>()
     private val mockContext = mockk<Context>()
-    private var mockDiagnosticsTracker: DiagnosticsTracker = mockk()
+    private var mockDiagnosticsTracker: DiagnosticsTracker = mockk(relaxUnitFun = true)
     private var mockDateProvider: DateProvider = mockk()
 
     private val capturedCachedReceiptSkus = slot<Map<String, String>>()
@@ -99,7 +98,6 @@ class AmazonBillingTest {
 
         mockSetupFunctions()
         setupRunnables()
-        mockDiagnosticsTracker()
         every { mockDateProvider.now } returns Date(1676379370000) // Tuesday, February 14, 2023 12:56:10 PM GMT
 
         underTest.purchasesUpdatedListener = mockk()
@@ -123,7 +121,6 @@ class AmazonBillingTest {
 
         mockSetupFunctions()
         setupRunnables()
-        mockDiagnosticsTracker()
         every { mockDateProvider.now } returns Date(1676379370000) // Tuesday, February 14, 2023 12:56:10 PM GMT
 
         underTest.purchasesUpdatedListener = mockk()
@@ -1337,14 +1334,5 @@ class AmazonBillingTest {
             delayedSlot.captured.run()
             true
         }
-    }
-
-    private fun mockDiagnosticsTracker() {
-        every {
-            mockDiagnosticsTracker.trackAmazonQueryPurchasesRequest(any<Duration>(), any(), any())
-        } just Runs
-        every {
-            mockDiagnosticsTracker.trackAmazonQueryProductDetailsRequest(any<Duration>(), any(), any())
-        } just Runs
     }
 }

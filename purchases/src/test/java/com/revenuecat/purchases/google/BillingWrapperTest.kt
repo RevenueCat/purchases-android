@@ -109,7 +109,7 @@ class BillingWrapperTest {
     private var handler: Handler = mockk()
     private val pendingRequestTimeouts = mutableListOf<Runnable>()
     private var mockDeviceCache: DeviceCache = mockk()
-    private var mockDiagnosticsTracker: DiagnosticsTracker = mockk()
+    private var mockDiagnosticsTracker: DiagnosticsTracker = mockk(relaxUnitFun = true)
     private var mockDateProvider: DateProvider = mockk()
     private var connectionClockMillis = 0L
 
@@ -2954,28 +2954,8 @@ class BillingWrapperTest {
     }
 
     private fun mockDiagnosticsTracker() {
-        every {
-            mockDiagnosticsTracker.trackGoogleQueryProductDetailsRequest(any(), any(), any(), any(), any())
-        } just Runs
-        every {
-            mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest(any(), any(), any(), any(), any())
-        } just Runs
-        every {
-            mockDiagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest(any(), any(), any(), any())
-        } just Runs
-        every {
-            mockDiagnosticsTracker.trackProductDetailsNotSupported(any(), any())
-        } just Runs
-        every { mockDiagnosticsTracker.trackGoogleBillingStartConnection() } just runs
-        every { mockDiagnosticsTracker.trackGoogleBillingSetupFinished(any(), any(), any(), any()) } just runs
-        every { mockDiagnosticsTracker.trackGoogleBillingServiceDisconnected() } just runs
-        every { mockDiagnosticsTracker.trackGoogleBillingClientRetired(any()) } just runs
-        every { mockDiagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(any(), any(), any(), any(), any(), any()) } just runs
-        every { mockDiagnosticsTracker.trackGoogleInitialStorefrontLoad(any(), any()) } just runs
         every { mockDiagnosticsTracker.isCollectionDisabled } returns false
         // A known storefront keeps the initial storefront load event out of unrelated tests.
         every { mockDeviceCache.getStorefront() } returns "US"
-        every { mockDiagnosticsTracker.trackGooglePurchaseStarted(any(), any(), any(), any()) } just runs
-        every { mockDiagnosticsTracker.trackGooglePurchaseUpdateReceived(any(), any(), any(), any()) } just runs
     }
 }
