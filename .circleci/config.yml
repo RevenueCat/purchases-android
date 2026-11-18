@@ -962,10 +962,49 @@ jobs:
             equal: [ debug, << parameters.build_type >> ]
           steps:
             - run:
+                name: Check for a System UI dialog before Maestro
+                command: |
+                  mkdir -p ~/.maestro/tests
+                  adb exec-out screencap -p > ~/.maestro/tests/before-maestro.png
+                  focused_window() {
+                    adb shell dumpsys window displays | sed -n '/mCurrentFocus=/p'
+                  }
+                  focus=$(focused_window)
+                  echo "$focus"
+                  system_ui_anr='Application Not Responding: com.android.systemui}'
+                  if [[ "$focus" == *"$system_ui_anr"* ]]; then
+                    adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS
+                    for attempt in {1..10}; do
+                      focus=$(focused_window)
+                      if [[ "$focus" == *'mCurrentFocus=Window{'* && "$focus" != *"$system_ui_anr"* ]]; then
+                        echo "Emulator focus recovered: $focus"
+                        break
+                      fi
+                      if [[ "$attempt" == 10 ]]; then
+                        echo "Emulator focus did not recover: $focus" >&2
+                        exit 1
+                      fi
+                      sleep 1
+                    done
+                  fi
+            - run:
                 # Flows tagged debug-only force server errors through configureForE2ETests, which only
                 # exists in the SDK's debug variant, so they run against the debug build.
                 name: Run Maestro debug-only tests
-                command: maestro test --include-tags debug-only --format junit --output maestro/report.xml maestro/workflows/ maestro/checkpoints/
+                command: |
+                  maestro test --include-tags debug-only --format junit --output maestro/report.xml \
+                    --test-output-dir ~/.maestro/tests maestro/workflows/ maestro/checkpoints/
+            - run:
+                name: Capture emulator state on failure
+                when: on_fail
+                command: |
+                  mkdir -p ~/.maestro/tests
+                  adb shell dumpsys window > ~/.maestro/tests/windows.txt
+                  adb logcat -d -b events -s am_anr > ~/.maestro/tests/anrs.txt
+                  adb logcat -d -b crash > ~/.maestro/tests/crashes.txt
+            - store_artifacts:
+                path: ~/.maestro/tests
+                destination: maestro-debug
       - android/save_gradle_cache
       - store_test_results:
           path: maestro/report.xml
