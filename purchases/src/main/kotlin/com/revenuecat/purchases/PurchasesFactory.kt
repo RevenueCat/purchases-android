@@ -34,13 +34,9 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.events.BackendStoredEvent
 import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.isDeviceProtectedStorageCompat
-import com.revenuecat.purchases.common.localrules.CustomerInfoDimensionProvider
-import com.revenuecat.purchases.common.localrules.DeviceDimensionProvider
 import com.revenuecat.purchases.common.localrules.LocalRulesEvaluator
 import com.revenuecat.purchases.common.localrules.RulesEngineLoggerBridge
-import com.revenuecat.purchases.common.localrules.StoreDimensionProvider
-import com.revenuecat.purchases.common.localrules.SubscriberAttributesDimensionProvider
-import com.revenuecat.purchases.common.localrules.SubscriberDimensionsProvider
+import com.revenuecat.purchases.common.localrules.localRulesDimensionProviders
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.APISourceFailover
 import com.revenuecat.purchases.common.networking.DeviceConnectivityChecker
@@ -446,27 +442,23 @@ internal class PurchasesFactory(
             // is a leaf, only consumed from there, so where it is built is otherwise unconstrained.
             RulesEngine.setLogger(RulesEngineLoggerBridge)
             val localRulesEvaluator = LocalRulesEvaluator(
-                providers = listOf(
-                    DeviceDimensionProvider(appConfig, localeProvider),
+                providers = localRulesDimensionProviders(
+                    appConfig = appConfig,
+                    localeProvider = localeProvider,
                     // Only read during a checkpoint evaluation, so the instance is configured by then. Same
                     // reasoning as CheckpointWorkflowResolverImpl's getOfferings.
-                    StoreDimensionProvider { Purchases.sharedInstance.awaitStorefrontCountryCode() },
-                    SubscriberAttributesDimensionProvider {
+                    storefront = { Purchases.sharedInstance.awaitStorefrontCountryCode() },
+                    attributes = {
                         subscriberAttributesCache.getAllStoredSubscriberAttributes(
                             identityManager.currentAppUserID,
                         )
                     },
-                    CustomerInfoDimensionProvider(
-                        currentAppUserId = { identityManager.currentAppUserID },
-                        customerInfo = { appUserID ->
-                            Purchases.sharedInstance.purchasesOrchestrator.awaitCustomerInfo(appUserID)
-                        },
-                    ),
-                    SubscriberDimensionsProvider(
-                        configDimensions = { subscriberDimensionsConfigProvider.getDimensions() },
-                        receiptStore = subscriberDimensionsReceiptStore,
-                        currentAppUserId = { identityManager.currentAppUserID },
-                    ),
+                    customerInfo = { appUserID ->
+                        Purchases.sharedInstance.purchasesOrchestrator.awaitCustomerInfo(appUserID)
+                    },
+                    dimensions = { subscriberDimensionsConfigProvider.getDimensions() },
+                    receiptStore = subscriberDimensionsReceiptStore,
+                    currentAppUserId = { identityManager.currentAppUserID },
                 ),
                 currentAppUserId = { identityManager.currentAppUserID },
             )
