@@ -78,10 +78,50 @@ class CurrencyLocaleForStorefrontTests {
         assertThat(formattedPrice).isEqualTo("￥149")
     }
 
+    @Test
+    fun `arabic paywall on a matching storefront keeps arabic digits without a numbering override`() {
+        val state = paywallState("ar_SA", "SA", "en-US")
+
+        val formattedPrice = Price("", 2_580_000, "USD").getFormatted(state.currencyLocale.toJavaLocale())
+        assertThat(formattedPrice).contains("٢")
+        assertThat(state.locale.language).isEqualTo("ar")
+    }
+
+    @Test
+    fun `numbering override switches arabic paywall prices to latin digits`() {
+        val state = paywallState(
+            paywallLocale = "ar_SA",
+            storefrontCountryCode = "SA",
+            deviceLocale = "en-US",
+            preferredUILocaleOverride = "ar-SA-u-nu-latn",
+        )
+
+        val formattedPrice = Price("", 2_580_000, "USD").getFormatted(state.currencyLocale.toJavaLocale())
+        assertThat(formattedPrice).contains("2.58")
+        assertThat(formattedPrice).doesNotContain("٢")
+        assertThat(state.currencyLocale.toLanguageTag()).contains("nu-latn")
+        assertThat(state.locale.language).isEqualTo("ar")
+    }
+
+    @Test
+    fun `locale override without a numbering keyword leaves arabic digits unchanged`() {
+        val state = paywallState(
+            paywallLocale = "ar_SA",
+            storefrontCountryCode = "SA",
+            deviceLocale = "en-US",
+            preferredUILocaleOverride = "es-ES",
+        )
+
+        val formattedPrice = Price("", 2_580_000, "USD").getFormatted(state.currencyLocale.toJavaLocale())
+        assertThat(formattedPrice).contains("٢")
+        assertThat(state.currencyLocale.toLanguageTag()).doesNotContain("nu-")
+    }
+
     private fun paywallState(
         paywallLocale: String,
         storefrontCountryCode: String,
         deviceLocale: String,
+        preferredUILocaleOverride: String? = null,
     ): PaywallState.Loaded.Components =
         PaywallState.Loaded.Components(
             stack = previewStackComponentStyle(children = emptyList()),
@@ -110,6 +150,6 @@ class CurrencyLocaleForStorefrontTests {
                 packagesByTab = emptyMap(),
             ),
             initialLocaleList = LocaleList(deviceLocale),
-            purchases = MockPurchasesType(),
+            purchases = MockPurchasesType(preferredUILocaleOverride = preferredUILocaleOverride),
         )
 }
