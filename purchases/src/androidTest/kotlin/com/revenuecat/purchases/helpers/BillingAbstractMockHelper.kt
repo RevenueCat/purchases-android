@@ -18,6 +18,7 @@ internal fun BillingAbstract.mockQueryProductDetails(
             queryProductDetailsAsync(
                 productType = ProductType.SUBS,
                 productIds = any(),
+                logUnfetchedProducts = any(),
                 onReceive = capture(subsReceiveCallbackSlot),
                 onError = any(),
             )
@@ -30,8 +31,9 @@ internal fun BillingAbstract.mockQueryProductDetails(
             queryProductDetailsAsync(
                 productType = ProductType.INAPP,
                 productIds = any(),
-                capture(inappReceiveCallbackSlot),
-                any(),
+                logUnfetchedProducts = any(),
+                onReceive = capture(inappReceiveCallbackSlot),
+                onError = any(),
             )
         } answers {
             inappReceiveCallbackSlot.captured.invoke(queryProductDetailsInAppReturn)
