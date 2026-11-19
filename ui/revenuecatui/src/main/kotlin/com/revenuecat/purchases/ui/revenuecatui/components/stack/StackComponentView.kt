@@ -70,6 +70,7 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fi
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
+import com.revenuecat.purchases.ui.revenuecatui.components.BoxWithUnboundedFillMinimums
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.WithOptionalBackgroundOverlay
@@ -285,7 +286,7 @@ private fun StackWithOverlaidBadge(
     selected: Boolean? = null,
     interactionSource: MutableInteractionSource? = null,
 ) {
-    Box(modifier = modifier) {
+    BoxWithUnboundedFillMinimums(size = stackState.size, modifier = modifier) { minimums ->
         MainStackComponent(
             stackState = stackState,
             state = state,
@@ -297,6 +298,7 @@ private fun StackWithOverlaidBadge(
             selected = selected,
             interactionSource = interactionSource,
             ancestorScrollOrientations = ancestorScrollOrientations,
+            modifier = minimums,
         )
         val mainStackBorderWidthPx = with(LocalDensity.current) {
             stackState.border?.width?.toPx()
@@ -777,7 +779,8 @@ private fun MainStackComponent(
                     val consumedTopInsetPx = remember { mutableIntStateOf(0) }
                     val useWindowInsetsPadding =
                         stackState.ignoreHeaderHeight || state.heroInsetsFor(stackState.style) != null
-                    Box(
+                    ZLayerStack(
+                        items = stackState.children,
                         modifier = outerModifier
                             .onConsumedWindowInsetsChanged { consumedTopInsetPx.intValue = it.getTop(density) }
                             .size(
@@ -789,31 +792,29 @@ private fun MainStackComponent(
                                 scrollable(state, orientation)
                             }
                             .then(rootModifier),
-                        contentAlignment = dimension.alignment.toAlignment(),
-                    ) {
-                        stackState.children.forEach { child ->
-                            val applyTopInsets =
-                                stackState.appliesTopInsets(state) && !stackState.childIgnoresTopInsets(child, state)
-                            ComponentView(
-                                style = child,
-                                state = state,
-                                onClick = clickHandler,
-                                componentInteractionTracker = componentInteractionTracker,
-                                ancestorScrollOrientations = descendantScrollOrientations,
-                                modifier = Modifier
-                                    .conditional(applyTopInsets && !useWindowInsetsPadding) {
-                                        // Read header height at layout time. If set (hero case),
-                                        // it already includes status bar padding. Otherwise fall
-                                        // back to the unconsumed safe-drawing top inset.
-                                        headerOrInsetsTopPadding(state, safeDrawingInsets, consumedTopInsetPx)
-                                    }
-                                    .conditional(applyTopInsets && useWindowInsetsPadding) {
-                                        // Consume clearance so nested controls and badges cannot add it again.
-                                        windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
-                                    }
-                                    .contentAlpha(contentAlpha),
-                            )
-                        }
+                        alignment = dimension.alignment.toAlignment(),
+                    ) { child, childModifier ->
+                        val applyTopInsets =
+                            stackState.appliesTopInsets(state) && !stackState.childIgnoresTopInsets(child, state)
+                        ComponentView(
+                            style = child,
+                            state = state,
+                            onClick = clickHandler,
+                            componentInteractionTracker = componentInteractionTracker,
+                            ancestorScrollOrientations = descendantScrollOrientations,
+                            modifier = childModifier
+                                .conditional(applyTopInsets && !useWindowInsetsPadding) {
+                                    // Read header height at layout time. If set (hero case),
+                                    // it already includes status bar padding. Otherwise fall
+                                    // back to the unconsumed safe-drawing top inset.
+                                    headerOrInsetsTopPadding(state, safeDrawingInsets, consumedTopInsetPx)
+                                }
+                                .conditional(applyTopInsets && useWindowInsetsPadding) {
+                                    // Consume clearance so nested controls and badges cannot add it again.
+                                    windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
+                                }
+                                .contentAlpha(contentAlpha),
+                        )
                     }
                 }
             }
@@ -868,15 +869,16 @@ private fun MainStackComponent(
                 state = state,
                 background = backgroundStyle,
                 shape = composeShape,
+                size = stackState.size,
                 modifier = modifier
                     .size(stackState.size)
                     .then(outerShapeModifier)
                     .clip(composeShape)
                     .then(clickModifier)
                     .then(borderModifier),
-            ) {
+            ) { minimums ->
                 stack(
-                    modifier,
+                    minimums,
                     Modifier
                         .then(innerShapeModifier)
                         .conditional(stackState.applyBottomWindowInsets) {
@@ -899,16 +901,17 @@ private fun MainStackComponent(
             // - The sibling `Box` provides the shape-clipped Material ripple via
             //   `Modifier.indication`, sharing the same `InteractionSource` as the wrapper's
             //   clickable so press events drive its draw.
-            Box(
+            BoxWithUnboundedFillMinimums(
+                size = stackState.size,
                 modifier = modifier.clickable(
                     interactionSource = resolvedInteractionSource,
                     indication = null,
                     enabled = enabled,
                     onClick = onStackClick,
                 ).applyIfNotNull(selected) { semantics { this.selected = it } },
-            ) {
+            ) { minimums ->
                 stack(
-                    Modifier,
+                    minimums,
                     outerShapeModifier
                         .then(borderModifier)
                         .then(innerShapeModifier)
@@ -942,15 +945,20 @@ private fun MainStackComponent(
             )
         }
     } else if (nestedBadge != null) {
-        Box(
+        BoxWithUnboundedFillMinimums(
+            size = stackState.size,
             modifier = modifier
                 .then(outerShapeModifier)
                 .clip(composeShape)
                 .then(clickModifier)
                 .then(borderModifier),
-        ) {
-            WithOptionalBackgroundOverlay(state, background = backgroundStyle) {
-                stack(modifier, Modifier.then(innerShapeModifier))
+        ) { minimums ->
+            WithOptionalBackgroundOverlay(
+                state,
+                background = backgroundStyle,
+                size = stackState.size,
+            ) { backgroundMinimums ->
+                stack(minimums.then(backgroundMinimums), Modifier.then(innerShapeModifier))
             }
 
             StackComponentView(
@@ -964,14 +972,19 @@ private fun MainStackComponent(
             )
         }
     } else if (overlay != null) {
-        Box(
+        BoxWithUnboundedFillMinimums(
+            size = stackState.size,
             modifier = modifier
                 .then(outerShapeModifier)
                 .clip(composeShape)
                 .then(clickModifier),
-        ) {
-            WithOptionalBackgroundOverlay(state, background = backgroundStyle) {
-                stack(modifier, borderModifier.then(innerShapeModifier))
+        ) { minimums ->
+            WithOptionalBackgroundOverlay(
+                state,
+                background = backgroundStyle,
+                size = stackState.size,
+            ) { backgroundMinimums ->
+                stack(minimums.then(backgroundMinimums), borderModifier.then(innerShapeModifier))
             }
             overlay()
         }
