@@ -64,7 +64,7 @@ public class ImageComponent(
 @Immutable
 public class PartialImageComponent(
     @get:JvmSynthetic
-    public val visible: Boolean? = true,
+    public val visible: Boolean? = null,
     @get:JvmSynthetic
     public val source: ThemeImageUrls? = null,
     @get:JvmSynthetic

@@ -60,6 +60,7 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorEquals
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorPercentage
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertTextColorEquals
@@ -79,6 +80,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.themeChangingTest
+import kotlinx.serialization.json.JsonPrimitive
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -184,6 +186,71 @@ class TextComponentViewTests {
     private val styleFactory = StyleFactory(
         localizations = localizations,
     )
+
+    private val trialHeadlineOverride = ComponentOverride(
+        conditions = listOf(
+            ComponentOverride.Condition.IntroOfferRule(
+                operator = ComponentOverride.EqualityOperator.EQUALS,
+                value = true,
+            ),
+        ),
+        properties = PartialTextComponent(text = singleEligibleLocalizationKey),
+    )
+    private val copilotCondition = ComponentOverride.Condition.Variable(
+        operator = ComponentOverride.EqualityOperator.EQUALS,
+        variable = "plan_type",
+        value = JsonPrimitive("copilot"),
+    )
+    private val showCopilotHeadline = ComponentOverride(
+        conditions = listOf(copilotCondition),
+        properties = PartialTextComponent(visible = true),
+    )
+
+    @Test
+    fun `Text-only trial override keeps the Copilot headline hidden on autopilot`() {
+        renderTrialHeadline("autopilot", false, trialHeadlineOverride, showCopilotHeadline)
+
+        composeTestRule.onNodeWithTag("headline").assertDoesNotExist()
+    }
+
+    @Test
+    fun `Copilot visibility override reveals the trial headline`() {
+        renderTrialHeadline("copilot", false, trialHeadlineOverride, showCopilotHeadline)
+
+        composeTestRule.onNodeWithText(expectedTextSingleEligibleEnUs).assertIsDisplayed()
+    }
+
+    @Test
+    fun `Text-only trial override preserves an earlier explicit hide`() {
+        val hideCopilotHeadline = ComponentOverride(
+            conditions = listOf(copilotCondition),
+            properties = PartialTextComponent(visible = false),
+        )
+        renderTrialHeadline("copilot", true, hideCopilotHeadline, trialHeadlineOverride)
+
+        composeTestRule.onNodeWithTag("headline").assertDoesNotExist()
+    }
+
+    private fun renderTrialHeadline(
+        planType: String,
+        visible: Boolean,
+        vararg overrides: ComponentOverride<PartialTextComponent>,
+    ) {
+        val component = TextComponent(
+            text = ineligibleLocalizationKey,
+            color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
+            visible = visible,
+            overrides = overrides.toList(),
+        )
+        val style = styleFactory.create(component).getOrThrow().componentStyle as TextComponentStyle
+        val state = FakePaywallState(
+            localizations = localizations,
+            components = listOf(component),
+            packages = listOf(packageWithSingleIntroOffer),
+            customVariables = mapOf("plan_type" to CustomVariableValue.String(planType)),
+        ).apply { update(packageWithSingleIntroOffer.identifier) }
+        composeTestRule.setContent { TextComponentView(style, state, modifier = Modifier.testTag("headline")) }
+    }
 
     @Test
     fun `Should change text color based on theme`(): Unit = with(composeTestRule) {

@@ -317,7 +317,6 @@ class WorkflowSkeletonTests {
         // The wrapper has to resize with its stack, or it would hold the base size around it.
         val sized = card.overrides.single { it.conditions == listOf(ComponentOverride.Condition.Compact) }
         assertThat(sized.properties.size?.width).isEqualTo(SizeConstraint.Fixed(42u))
-        // visible defaults to true, so a size-only partial must say null or it overrides the rule.
         assertThat(sized.properties.visible).isNull()
         val hidden = card.overrides.single { it.conditions == listOf(ComponentOverride.Condition.Medium) }
         assertThat(hidden.properties.visible).isFalse
