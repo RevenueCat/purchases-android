@@ -199,13 +199,14 @@ internal abstract class IAMEndToEndTest {
     /** The user each request authenticated as, by its Bearer access token; null for API-key requests. */
     protected fun FakeRevenueCatBackend.Request.user(): String? = backend.ownerOf(bearerToken)
 
-    /** Foregrounds and waits for the silent anonymous login to publish its token. */
+    /** Foregrounds and waits for the silent anonymous login to publish its token and the user's CustomerInfo. */
     protected fun foregroundAndBootstrap() {
         val logins = backend.requests("/auth/login").size
         foreground()
-        awaitUntil("the bootstrap's token") {
+        awaitUntil("the bootstrap's token and CustomerInfo") {
             backend.requests("/auth/login").size > logins &&
-                backend.ownerOf(delegate.tokens.lastOrNull()) == currentAppUserID
+                backend.ownerOf(delegate.tokens.lastOrNull()) == currentAppUserID &&
+                customerInfoUpdates.lastOrNull()?.originalAppUserId == currentAppUserID
         }
         awaitQuiet()
     }
