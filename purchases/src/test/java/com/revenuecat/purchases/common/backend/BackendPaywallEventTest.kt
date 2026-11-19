@@ -22,9 +22,12 @@ import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.JsonProvider
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.utils.asMap
+import io.mockk.Runs
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.spyk
 import io.mockk.unmockkObject
 import io.mockk.verify
 import kotlinx.serialization.json.Json
@@ -38,10 +41,6 @@ import org.junit.runner.RunWith
 import java.io.IOException
 import java.util.Date
 import java.util.UUID
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
 class BackendPaywallEventTest {
@@ -141,7 +140,7 @@ class BackendPaywallEventTest {
     private lateinit var httpClient: HTTPClient
 
     private lateinit var backend: Backend
-    private lateinit var asyncBackend: Backend
+    private lateinit var eventsDispatcher: Dispatcher
 
     @Before
     fun setUp() {
@@ -151,25 +150,13 @@ class BackendPaywallEventTest {
         unmockkObject(JsonProvider)
         val backendHelper = BackendHelper("TEST_API_KEY", SyncDispatcher(), appConfig, httpClient)
 
-        val asyncDispatcher1 = createAsyncDispatcher()
-        val asyncDispatcher2 = createAsyncDispatcher()
-
-        val asyncBackendHelper = BackendHelper("TEST_API_KEY", asyncDispatcher1, appConfig, httpClient)
-
+        eventsDispatcher = spyk(SyncDispatcher())
         backend = Backend(
             appConfig,
             SyncDispatcher(),
-            SyncDispatcher(),
+            eventsDispatcher,
             httpClient,
             backendHelper,
-        )
-
-        asyncBackend = Backend(
-            appConfig,
-            asyncDispatcher1,
-            asyncDispatcher2,
-            httpClient,
-            asyncBackendHelper,
         )
     }
 
@@ -443,25 +430,25 @@ class BackendPaywallEventTest {
     }
 
     @Test
-    fun `postPaywallEvents multiple times with same request, only one is triggered`() {
-        mockHttpResult(delayMs = 10)
-        val lock = CountDownLatch(2)
-        asyncBackend.postEvents(
-            paywallEventRequest,
-            baseURL = AppConfig.paywallEventsURL,
-            delay = Delay.DEFAULT,
-            onSuccessHandler = { lock.countDown() },
-            onErrorHandler = { _, _ -> },
-        )
-        asyncBackend.postEvents(
-            paywallEventRequest,
-            baseURL = AppConfig.paywallEventsURL,
-            delay = Delay.DEFAULT,
-            onSuccessHandler = { lock.countDown() },
-            onErrorHandler = { _, _ -> },
-        )
-        lock.await(100, TimeUnit.MILLISECONDS)
-        assertThat(lock.count).isEqualTo(0)
+    fun `postPaywallEvents sends one request and calls both success handlers for overlapping identical posts`() {
+        mockHttpResult()
+        val pendingCalls = mutableListOf<Runnable>()
+        every { eventsDispatcher.enqueue(capture(pendingCalls), any()) } just Runs
+
+        val completedPosts = mutableListOf<Int>()
+        repeat(2) { index ->
+            backend.postEvents(
+                paywallEventRequest,
+                baseURL = AppConfig.paywallEventsURL,
+                delay = Delay.DEFAULT,
+                onSuccessHandler = { completedPosts.add(index) },
+                onErrorHandler = { error, _ -> fail("Unexpected error: $error") },
+            )
+        }
+
+        pendingCalls.forEach { it.run() }
+
+        assertThat(completedPosts).containsExactlyInAnyOrder(0, 1)
         verify(exactly = 1) {
             httpClient.performRequest(
                 AppConfig.paywallEventsURL,
@@ -541,10 +528,7 @@ class BackendPaywallEventTest {
         }
     }
 
-    private fun mockHttpResult(
-        responseCode: Int = RCHTTPStatusCodes.SUCCESS,
-        delayMs: Long? = null
-    ) {
+    private fun mockHttpResult(responseCode: Int = RCHTTPStatusCodes.SUCCESS) {
         every {
             httpClient.performRequest(
                 any(),
@@ -554,20 +538,15 @@ class BackendPaywallEventTest {
                 any(),
                 fallbackBaseURLs = any(),
             )
-        } answers {
-            if (delayMs != null) {
-                Thread.sleep(delayMs)
-            }
-            HTTPResult(
-                responseCode,
-                "{}",
-                HTTPResult.Origin.BACKEND,
-                requestDate = null,
-                SignatureVerificationResult.NotRequested,
-                isLoadShedderResponse = false,
-                isFallbackURL = false,
-            )
-        }
+        } returns HTTPResult(
+            responseCode,
+            "{}",
+            HTTPResult.Origin.BACKEND,
+            requestDate = null,
+            SignatureVerificationResult.NotRequested,
+            isLoadShedderResponse = false,
+            isFallbackURL = false,
+        )
     }
 
     private fun mockHttpClientException() {
@@ -580,17 +559,5 @@ class BackendPaywallEventTest {
                 any(),
             )
         } throws IOException("Test exception")
-    }
-
-    private fun createAsyncDispatcher(): Dispatcher {
-        return Dispatcher(
-            ThreadPoolExecutor(
-                1,
-                2,
-                0,
-                TimeUnit.MILLISECONDS,
-                LinkedBlockingQueue()
-            )
-        )
     }
 }
