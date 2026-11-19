@@ -939,7 +939,9 @@ jobs:
           command: echo 'export ORG_GRADLE_PROJECT_MAESTRO_TEST_STORE_API_KEY="$MAESTRO_TEST_STORE_API_KEY"' >> "$BASH_ENV"
       - android/create_avd:
           avd_name: test-e2e-tester
-          system_image: system-images;android-32;google_apis;x86_64
+          # ATD images are trimmed for automated tests. The google_apis image showed
+          # "System UI isn't responding" while Gradle assembled during boot.
+          system_image: system-images;android-32;aosp_atd;x86_64
           install: true
       - android/start_emulator:
           avd_name: test-e2e-tester
@@ -956,37 +958,13 @@ jobs:
             - run:
                 # The minified release build exercises the SDK's consumer R8 rules end-to-end.
                 name: Run Maestro tests on minified release build
-                command: maestro test --exclude-tags debug-only --format junit --output maestro/report.xml maestro/e2e_tests/ maestro/workflows/ maestro/checkpoints/
+                command: |
+                  maestro test --exclude-tags debug-only --format junit --output maestro/report.xml \
+                    --test-output-dir ~/.maestro/tests maestro/e2e_tests/ maestro/workflows/ maestro/checkpoints/
       - when:
           condition:
             equal: [ debug, << parameters.build_type >> ]
           steps:
-            - run:
-                name: Check for a System UI dialog before Maestro
-                command: |
-                  mkdir -p ~/.maestro/tests
-                  adb exec-out screencap -p > ~/.maestro/tests/before-maestro.png
-                  focused_window() {
-                    adb shell dumpsys window displays | sed -n '/mCurrentFocus=/p'
-                  }
-                  focus=$(focused_window)
-                  echo "$focus"
-                  system_ui_anr='Application Not Responding: com.android.systemui}'
-                  if [[ "$focus" == *"$system_ui_anr"* ]]; then
-                    adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS
-                    for attempt in {1..10}; do
-                      focus=$(focused_window)
-                      if [[ "$focus" == *'mCurrentFocus=Window{'* && "$focus" != *"$system_ui_anr"* ]]; then
-                        echo "Emulator focus recovered: $focus"
-                        break
-                      fi
-                      if [[ "$attempt" == 10 ]]; then
-                        echo "Emulator focus did not recover: $focus" >&2
-                        exit 1
-                      fi
-                      sleep 1
-                    done
-                  fi
             - run:
                 # Flows tagged debug-only force server errors through configureForE2ETests, which only
                 # exists in the SDK's debug variant, so they run against the debug build.
@@ -994,17 +972,23 @@ jobs:
                 command: |
                   maestro test --include-tags debug-only --format junit --output maestro/report.xml \
                     --test-output-dir ~/.maestro/tests maestro/workflows/ maestro/checkpoints/
-            - run:
-                name: Capture emulator state on failure
-                when: on_fail
-                command: |
-                  mkdir -p ~/.maestro/tests
-                  adb shell dumpsys window > ~/.maestro/tests/windows.txt
-                  adb logcat -d -b events -s am_anr > ~/.maestro/tests/anrs.txt
-                  adb logcat -d -b crash > ~/.maestro/tests/crashes.txt
-            - store_artifacts:
-                path: ~/.maestro/tests
-                destination: maestro-debug
+      - run:
+          name: Capture emulator state on failure
+          when: on_fail
+          command: |
+            mkdir -p ~/.maestro/tests
+            adb shell dumpsys window > ~/.maestro/tests/windows.txt
+            adb logcat -d -b events -s am_anr > ~/.maestro/tests/anrs.txt
+            adb logcat -d -b crash > ~/.maestro/tests/crashes.txt
+      - run:
+          # The ATD image doesn't draw the screen, so Maestro's screenshots are all black.
+          # The view hierarchy in the commands-*.json files shows what was on screen instead.
+          name: Drop blank Maestro screenshots
+          when: always
+          command: find ~/.maestro/tests -name '*.png' -delete || true
+      - store_artifacts:
+          path: ~/.maestro/tests
+          destination: maestro-<< parameters.build_type >>
       - android/save_gradle_cache
       - store_test_results:
           path: maestro/report.xml
