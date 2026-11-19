@@ -230,22 +230,20 @@ constructor(
         onSuccess: (PostReceiptResponse) -> Unit,
         onError: PostReceiptDataErrorCallback,
     ) {
-        val (
-            cachedTransactionMetadata,
-            presentedPaywall,
-            didCacheData,
-        ) = localTransactionMetadataStore.getOrPutDataToPost(
+        val dataToPost = localTransactionMetadataStore.getOrPutDataToPost(
             purchaseToken,
             receiptInfo,
             initiationSource,
         )
+        val cachedTransactionMetadata = dataToPost.localTransactionMetadata
+        val presentedPaywall = dataToPost.paywallEvent
 
         val effectivePaywallData = cachedTransactionMetadata?.paywallPostReceiptData
             ?: presentedPaywall?.toPaywallPostReceiptData()
         val effectiveWorkflowMetadata = cachedTransactionMetadata?.workflowMetadata
             ?: presentedPaywall?.data?.let { WorkflowMetadata.from(it.workflowId, it.stepId) }
         val effectiveReceiptInfo = cachedTransactionMetadata?.receiptInfo
-            ?: receiptInfo
+            ?: dataToPost.receiptInfo
         val effectivePurchasesAreCompletedBy = cachedTransactionMetadata?.purchasesAreCompletedBy
             ?: purchasesAreCompletedBy
 
@@ -267,16 +265,17 @@ constructor(
             paywallData = effectivePaywallData,
             workflowMetadata = effectiveWorkflowMetadata,
             purchasesAreCompletedBy = effectivePurchasesAreCompletedBy,
-            hasCachedTransactionMetadata = cachedTransactionMetadata != null || didCacheData,
+            hasCachedTransactionMetadata = cachedTransactionMetadata != null || dataToPost.didCacheData,
             onSuccess = onSuccess,
             onError = onError,
         )
     }
 
     @OptIn(InternalRevenueCatAPI::class)
-    private data class CachedDataToPost(
+    private data class DataToPost(
         val localTransactionMetadata: LocalTransactionMetadata?,
         val paywallEvent: PaywallEvent?,
+        val receiptInfo: ReceiptInfo,
         val didCacheData: Boolean,
     )
 
@@ -290,7 +289,7 @@ constructor(
         purchaseToken: String,
         receiptInfo: ReceiptInfo,
         initiationSource: PostReceiptInitiationSource,
-    ): CachedDataToPost {
+    ): DataToPost {
         val cachedTransactionMetadata = getLocalTransactionMetadata(purchaseToken)
         val shouldCacheTransactionMetadata = cachedTransactionMetadata == null &&
             initiationSource == PostReceiptInitiationSource.PURCHASE
@@ -304,23 +303,23 @@ constructor(
             null
         }
 
+        val paywallPresentedOfferingContext = presentedPaywall?.data?.presentedOfferingContext
+        // Use the matched paywall's offering context when the receipt has none of its own.
+        val receiptInfoToPost = if (
+            receiptInfo.presentedOfferingContext == null &&
+            paywallPresentedOfferingContext != null
+        ) {
+            receiptInfo.copy(
+                presentedOfferingContext = paywallPresentedOfferingContext,
+            )
+        } else {
+            receiptInfo
+        }
+
         if (shouldCacheTransactionMetadata) {
-            val paywallPresentedOfferingContext = presentedPaywall?.data?.presentedOfferingContext
-            // This will make sure we add presented offering context info for purchases when
-            // PurchasesAreCompletedBy.MY_APP is used together with paywalls
-            val effectiveReceiptInfo = if (
-                receiptInfo.presentedOfferingContext == null &&
-                paywallPresentedOfferingContext != null
-            ) {
-                receiptInfo.copy(
-                    presentedOfferingContext = paywallPresentedOfferingContext,
-                )
-            } else {
-                receiptInfo
-            }
             val dataToCache = LocalTransactionMetadata(
                 token = purchaseToken,
-                receiptInfo = effectiveReceiptInfo,
+                receiptInfo = receiptInfoToPost,
                 paywallPostReceiptData = presentedPaywall?.toPaywallPostReceiptData(),
                 purchasesAreCompletedBy = purchasesAreCompletedBy,
                 workflowMetadata = presentedPaywall?.data?.let {
@@ -330,9 +329,10 @@ constructor(
             cacheLocalTransactionMetadata(purchaseToken, dataToCache)
         }
 
-        return CachedDataToPost(
+        return DataToPost(
             localTransactionMetadata = cachedTransactionMetadata,
             paywallEvent = presentedPaywall,
+            receiptInfo = receiptInfoToPost,
             didCacheData = shouldCacheTransactionMetadata,
         )
     }
