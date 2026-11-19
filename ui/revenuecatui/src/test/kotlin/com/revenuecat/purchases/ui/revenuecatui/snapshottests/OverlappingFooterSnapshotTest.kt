@@ -7,11 +7,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.HeaderComponent
+import com.revenuecat.purchases.paywalls.components.PackageComponent
+import com.revenuecat.purchases.paywalls.components.PartialStackComponent
+import com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
@@ -20,6 +25,7 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.Dimension.Horizontal
 import com.revenuecat.purchases.paywalls.components.properties.Dimension.Vertical
 import com.revenuecat.purchases.paywalls.components.properties.Dimension.ZLayer
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
@@ -34,6 +40,7 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fi
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
+import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.LoadedPaywallComponents
 import com.revenuecat.purchases.ui.revenuecatui.components.LoadedWorkflowPaywall
 import com.revenuecat.purchases.ui.revenuecatui.components.MILLIS_2025_01_25
@@ -76,6 +83,70 @@ internal class OverlappingFooterSnapshotTest(testConfig: TestConfig) : BasePapar
     fun largeFooterTallerThanHalfScreen() {
         screenshotTest { LargeFooterPaywall() }
     }
+
+    @Test
+    fun fitFooterAfterSwitchingToMonthly() {
+        val annual = TestData.Packages.annual
+        val monthly = TestData.Packages.monthly
+        val title = LocalizationKey("title")
+        val cta = LocalizationKey("cta")
+        val row = StackComponent(
+            components = listOf(
+                planCard(annual, selectedByDefault = true),
+                planCard(monthly, selectedByDefault = false),
+            ),
+            dimension = Horizontal(alignment = VerticalAlignment.CENTER, distribution = START),
+            spacing = 8f,
+        )
+        val purchaseButton = PurchaseButtonComponent(
+            StackComponent(
+                components = listOf(TextComponent(cta, color = ctaTextColor, fontWeight = FontWeight.BOLD)),
+                backgroundColor = ctaBackgroundColor,
+                padding = Padding.default,
+                shape = Shape.Pill,
+            ),
+        )
+
+        screenshotTest {
+            val state = buildComponentsState(
+                rootStack = StackComponent(
+                    components = listOf(TextComponent(title, color = textColor, fontSize = 28)),
+                    padding = Padding.default,
+                ),
+                footerStack = StackComponent(
+                    components = listOf(row, purchaseButton),
+                    padding = Padding.default,
+                    spacing = 12f,
+                ),
+                localizations = mapOf(
+                    title to LocalizationData.Text("Choose your plan"),
+                    LocalizationKey(annual.identifier) to LocalizationData.Text("Annual"),
+                    LocalizationKey(monthly.identifier) to LocalizationData.Text("Monthly"),
+                    cta to LocalizationData.Text("Continue"),
+                ),
+                packages = listOf(annual, monthly),
+            )
+            state.update(selectedPackageUniqueId = monthly.identifier)
+            LoadedPaywallComponents(state = state, clickHandler = { }, modifier = Modifier.fillMaxSize())
+        }
+    }
+
+    private fun planCard(pkg: Package, selectedByDefault: Boolean) = PackageComponent(
+        packageId = pkg.identifier,
+        isSelectedByDefault = selectedByDefault,
+        stack = StackComponent(
+            components = listOf(TextComponent(LocalizationKey(pkg.identifier), color = ctaTextColor)),
+            size = Size(width = Fill(), height = if (selectedByDefault) Fill() else Fit()),
+            padding = Padding.default,
+            backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.DarkGray.toArgb())),
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Selected),
+                    properties = PartialStackComponent(size = Size(Fill(), Fit()), backgroundColor = solidFooterColor),
+                ),
+            ),
+        ),
+    )
 
     @Test
     fun workflowStepWithHeaderAndFooterReservesHeaderClearance() {
@@ -328,6 +399,7 @@ internal class OverlappingFooterSnapshotTest(testConfig: TestConfig) : BasePapar
         footerStack: StackComponent,
         localizations: Map<LocalizationKey, LocalizationData>,
         header: HeaderComponent? = null,
+        packages: List<Package> = listOf(TestData.Packages.monthly),
     ): PaywallState.Loaded.Components {
         val data = PaywallComponentsData(
             id = "snapshot_overlapping_footer",
@@ -348,7 +420,7 @@ internal class OverlappingFooterSnapshotTest(testConfig: TestConfig) : BasePapar
             identifier = "overlapping_footer",
             serverDescription = "Overlapping footer",
             metadata = emptyMap(),
-            availablePackages = listOf(TestData.Packages.monthly),
+            availablePackages = packages,
             paywallComponents = Offering.PaywallComponents(previewUiConfig(), data),
         )
         val validated = offering.validatePaywallComponentsDataOrNullForPreviews()?.getOrThrow()!!

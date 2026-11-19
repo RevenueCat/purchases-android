@@ -42,6 +42,12 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.WebViewComponen
 internal fun Size.mainAxis(orientation: Orientation): SizeConstraint =
     if (orientation == Orientation.Horizontal) width else height
 
+internal fun Size.isMainAxisBounded(orientation: Orientation): Boolean = when (val constraint = mainAxis(orientation)) {
+    is SizeConstraint.Fixed -> true
+    is Fill -> constraint.max != null
+    is SizeConstraint.Fit -> false
+}
+
 /**
  * Whether this stack needs [ConstrainedFillLayout] instead of a plain Row/Column. This is the only entry point into
  * the min/max layout code: stacks whose Fill children carry no min/max (i.e. every pre-existing paywall) keep using
