@@ -31,11 +31,13 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
+import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
+import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.LoadedPaywallComponents
 import com.revenuecat.purchases.ui.revenuecatui.components.LoadedWorkflowPaywall
 import com.revenuecat.purchases.ui.revenuecatui.data.WorkflowPaywallUiState
@@ -105,8 +107,13 @@ internal class ZLayerStackScrollTests {
     }
 
     private fun assertFullHeightTapTarget(workflow: Boolean) {
-        val button = button(Size(Fill(), Fill()))
-        render(layer(listOf(layer(listOf(button)))), workflow)
+        val row = StackComponent(
+            components = listOf(button(Size(Fill(), Fill()))),
+            dimension = Dimension.Horizontal(VerticalAlignment.CENTER, FlexDistribution.START),
+            size = Size(Fill(), Fill()),
+        )
+        val column = StackComponent(components = listOf(row), size = Size(Fill(), Fill()))
+        render(layer(listOf(layer(listOf(column)))), workflow)
         composeTestRule.onNode(hasClickAction())
             .assertHeightIsEqualTo(400.dp)
             .performTouchInput { click(Offset(center.x, height * 0.75f)) }

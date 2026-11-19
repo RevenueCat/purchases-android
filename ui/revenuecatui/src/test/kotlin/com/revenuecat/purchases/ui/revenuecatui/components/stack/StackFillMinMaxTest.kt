@@ -345,6 +345,42 @@ class StackFillMinMaxTest {
     )
 
     @Test
+    fun `scrolling capped Fill siblings keep their shares instead of growing to their caps`() = assertBothOrientations(
+        stack = { h ->
+            stack(
+                h,
+                child(Color.Red, fill(h, max = 75u)),
+                child(Color.Blue, fill(h, max = 75u)),
+                overflow = Overflow.SCROLL,
+            )
+        },
+        25 to Color.Red,
+        60 to Color.Blue,
+        90 to Color.Blue,
+    )
+
+    @Test
+    fun `scrolling capped Fill retains its allocated share when content is larger`() = assertBothOrientations(
+        stack = { h ->
+            stack(
+                h,
+                StackComponent(
+                    components = listOf(child(Color.Red, fixed(h, 60u))),
+                    size = fill(h, max = 75u),
+                    dimension = if (h) Dimension.Horizontal(VerticalAlignment.CENTER, FlexDistribution.START)
+                    else Dimension.Vertical(HorizontalAlignment.CENTER, FlexDistribution.START),
+                ),
+                child(Color.Blue, fill(h, max = 75u)),
+                overflow = Overflow.SCROLL,
+            )
+        },
+        25 to Color.Red,
+        55 to Color.Blue,
+        65 to Color.Blue,
+        95 to Color.Blue,
+    )
+
+    @Test
     fun `scrolling stack grows past its own size when content overflows it`() {
         // A limited Fill child routes the stack through ConstrainedFillLayout. The scroll lifts the max constraint, so
         // Red (150dp) already exceeds the 100dp stack and Blue only gets its 30dp minimum. The stack must report the

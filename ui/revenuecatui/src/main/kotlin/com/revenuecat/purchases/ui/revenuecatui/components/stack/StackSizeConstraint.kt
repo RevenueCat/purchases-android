@@ -42,17 +42,19 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.WebViewComponen
 internal fun Size.mainAxis(orientation: Orientation): SizeConstraint =
     if (orientation == Orientation.Horizontal) width else height
 
+private fun Size.crossAxis(orientation: Orientation): SizeConstraint =
+    if (orientation == Orientation.Horizontal) height else width
+
 /**
- * Whether this stack needs [ConstrainedFillLayout] instead of a plain Row/Column. This is the only entry point into
- * the min/max layout code: stacks whose Fill children carry no min/max (i.e. every pre-existing paywall) keep using
- * Row/Column unchanged.
+ * Whether a stack needs [ConstrainedFillLayout] to allocate limited Fill sizes or preserve a Fill
+ * child's cross-axis viewport minimum under scrolling. Plain Row/Column drops cross-axis minimums.
  *
  * Row/Column implement Fill children with `weight`, which splits leftover space equally but cannot redistribute it
  * when a child is capped by a maximum or floored by a minimum.
  */
 internal fun needsConstrainedFillLayout(children: List<ComponentStyle>, orientation: Orientation): Boolean =
     children.any { child ->
-        child.candidateSizes.any { it.mainAxis(orientation).isLimitedFill }
+        child.candidateSizes.any { it.mainAxis(orientation).isLimitedFill || it.crossAxis(orientation) is Fill }
     }
 
 private val SizeConstraint.isLimitedFill: Boolean
