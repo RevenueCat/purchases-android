@@ -197,12 +197,12 @@ class BackendGetCustomerCenterConfigTest {
             every { fallbackBaseURLs } returns emptyList()
         }
         httpClient = mockk()
-        val backendHelper = BackendHelper("TEST_API_KEY", SyncDispatcher(), appConfig, httpClient)
+        val backendHelper = BackendHelper("TEST_API_KEY", SyncDispatcher(), appConfig, httpClient, storefrontAwaiter = null)
 
         val asyncDispatcher1 = createAsyncDispatcher()
         val asyncDispatcher2 = createAsyncDispatcher()
 
-        val asyncBackendHelper = BackendHelper("TEST_API_KEY", asyncDispatcher1, appConfig, httpClient)
+        val asyncBackendHelper = BackendHelper("TEST_API_KEY", asyncDispatcher1, appConfig, httpClient, storefrontAwaiter = null)
 
         backend = Backend(
             appConfig,

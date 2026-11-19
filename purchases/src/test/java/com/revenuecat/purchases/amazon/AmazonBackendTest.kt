@@ -49,7 +49,7 @@ class AmazonBackendTest {
             every { fallbackBaseURLs } returns emptyList()
         }
         dispatcher = SyncDispatcher()
-        backendHelper = BackendHelper(API_KEY, dispatcher, mockAppConfig, mockClient)
+        backendHelper = BackendHelper(API_KEY, dispatcher, mockAppConfig, mockClient, storefrontAwaiter = null)
         receivedOnSuccess = null
         receivedError = null
         underTest = AmazonBackend(backendHelper)

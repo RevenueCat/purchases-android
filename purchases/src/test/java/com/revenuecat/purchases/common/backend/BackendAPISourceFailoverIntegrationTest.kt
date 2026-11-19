@@ -340,7 +340,7 @@ internal class BackendAPISourceFailoverIntegrationTest {
             tokenAuthenticator = disabledTokenAuthenticator(),
         )
         val dispatcher = SyncDispatcher()
-        val backendHelper = BackendHelper(apiKey, dispatcher, appConfig, httpClient)
+        val backendHelper = BackendHelper(apiKey, dispatcher, appConfig, httpClient, storefrontAwaiter = null)
         return Backend(appConfig, dispatcher, dispatcher, httpClient, backendHelper)
     }
 

@@ -3,6 +3,10 @@ package com.revenuecat.purchases.common
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.interfaces.StorefrontProvider
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -30,6 +34,34 @@ class BackendHelperTest {
         ).forEach { code ->
             assertThat(HTTPResult.createResult(responseCode = code).isSuccessful()).describedAs("code $code").isFalse
         }
+    }
+
+    @Test
+    fun `enqueue holds the request until the storefront awaiter releases it`() {
+        val dispatcher = mockk<Dispatcher>(relaxed = true).also { every { it.isClosed() } returns false }
+        val awaiter = StorefrontAwaiter(
+            storefrontProvider = mockk<StorefrontProvider>().also { every { it.getStorefront() } returns null },
+            scheduleTimeout = { _, _ -> },
+        )
+        val helper = BackendHelper("api_key", dispatcher, mockk(), mockk(), awaiter)
+        val call = mockk<Dispatcher.AsyncCall>()
+
+        helper.enqueue(call, dispatcher, Delay.DEFAULT)
+        verify(exactly = 0) { dispatcher.enqueue(any(), any()) }
+
+        awaiter.release()
+        verify(exactly = 1) { dispatcher.enqueue(call, Delay.DEFAULT) }
+    }
+
+    @Test
+    fun `enqueue sends the request immediately without a storefront awaiter`() {
+        val dispatcher = mockk<Dispatcher>(relaxed = true).also { every { it.isClosed() } returns false }
+        val helper = BackendHelper("api_key", dispatcher, mockk(), mockk(), storefrontAwaiter = null)
+        val call = mockk<Dispatcher.AsyncCall>()
+
+        helper.enqueue(call, dispatcher)
+
+        verify(exactly = 1) { dispatcher.enqueue(call, Delay.NONE) }
     }
 
     @Test

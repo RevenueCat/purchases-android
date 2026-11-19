@@ -13,6 +13,7 @@ internal class BackendHelper(
     private val dispatcher: Dispatcher,
     private val appConfig: AppConfig,
     private val httpClient: HTTPClient,
+    private val storefrontAwaiter: StorefrontAwaiter?,
 ) {
     internal val authenticationHeaders = mapOf("Authorization" to "Bearer ${this.apiKey}")
 
@@ -65,8 +66,12 @@ internal class BackendHelper(
     ) {
         if (dispatcher.isClosed()) {
             errorLog { "Enqueuing operation in closed dispatcher." }
-        } else {
+            return
+        }
+        if (storefrontAwaiter == null) {
             dispatcher.enqueue(call, delay)
+        } else {
+            storefrontAwaiter.runWhenStorefrontAvailable { dispatcher.enqueue(call, delay) }
         }
     }
 }
