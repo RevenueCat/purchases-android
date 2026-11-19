@@ -11,6 +11,7 @@ import androidx.lifecycle.LifecycleRegistry
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.EntitlementVerificationMode
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.LogLevel
@@ -89,11 +90,13 @@ internal abstract class IAMEndToEndTest {
         apiKey: String = API_KEY,
         appUserID: String? = null,
         service: ExecutorService? = null,
+        autoSyncPurchases: Boolean = true,
     ): Purchases {
         billing = FakeBilling(PurchasesStateCache(PurchasesState()))
         val builder = PurchasesConfiguration.Builder(application, apiKey)
             .appUserID(appUserID)
             .iamEnabled(iamEnabled)
+            .dangerousSettings(DangerousSettings(autoSyncPurchases = autoSyncPurchases))
             .diagnosticsEnabled(false)
             // The fake's responses are unsigned. Verifying them fails every response, and failed responses are
             // never ETag-cached.

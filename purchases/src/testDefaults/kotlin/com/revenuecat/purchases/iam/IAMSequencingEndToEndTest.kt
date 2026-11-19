@@ -22,7 +22,8 @@ internal class IAMSequencingEndToEndTest : IAMEndToEndTest() {
 
     @Test
     fun `a purchase arriving during the bootstrap posts its receipt as the bootstrapped user`() {
-        configure()
+        // Exercise the purchase callback on its own. The foreground sync can post the same receipt.
+        configure(autoSyncPurchases = false)
         val localID = currentAppUserID
         backend.hold("/auth/login")
         foreground()
@@ -32,8 +33,9 @@ internal class IAMSequencingEndToEndTest : IAMEndToEndTest() {
         idleMainLooper()
 
         backend.release("/auth/login")
-        awaitUntil("the receipt post") { backend.requests("/v1/receipts").isNotEmpty() }
-        awaitQuiet()
+        awaitUntil("the purchased subscription") {
+            customerInfoUpdates.lastOrNull()?.activeSubscriptions?.contains("monthly") == true
+        }
 
         val receipt = backend.requests("/v1/receipts").single()
         assertThat(currentAppUserID).isNotEqualTo(localID)
