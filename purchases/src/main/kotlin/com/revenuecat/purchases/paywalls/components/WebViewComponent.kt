@@ -64,5 +64,5 @@ public class WebViewComponent(
 @Immutable
 public class PartialWebViewComponent(
     @get:JvmSynthetic
-    public val visible: Boolean? = true,
+    public val visible: Boolean? = null,
 ) : PartialComponent

@@ -455,10 +455,9 @@ private fun visibilityWrapper(
         components = listOf(inner),
         // Mirrors the stack it wraps, so the extra level changes no measurement.
         size = inner.size,
-        // `visible = null` is what keeps these from deciding visibility: the field defaults to true,
-        // so a size-only partial would make the wrapper visible against the rule below.
+        // Only the outer rules set the wrapper's visibility.
         overrides = inner.overrides.map {
-            ComponentOverride(it.conditions, PartialStackComponent(visible = null, size = it.properties.size))
+            ComponentOverride(it.conditions, PartialStackComponent(size = it.properties.size))
         } + rules.map { (conditions, visible) ->
             ComponentOverride(conditions, PartialStackComponent(visible = visible))
         },

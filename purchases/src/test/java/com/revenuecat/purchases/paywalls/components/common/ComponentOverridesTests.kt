@@ -2,8 +2,12 @@ package com.revenuecat.purchases.paywalls.components.common
 
 import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.JsonTools
+import com.revenuecat.purchases.paywalls.components.PartialIconComponent
 import com.revenuecat.purchases.paywalls.components.PartialImageComponent
+import com.revenuecat.purchases.paywalls.components.PartialStackComponent
+import com.revenuecat.purchases.paywalls.components.PartialTabsComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
+import com.revenuecat.purchases.paywalls.components.PartialWebViewComponent
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 import org.assertj.core.api.Assertions.assertThat
@@ -16,6 +20,32 @@ import org.robolectric.ParameterizedRobolectricTestRunner
 
 @RunWith(Enclosed::class)
 internal class ComponentOverridesTests {
+
+    @RunWith(Parameterized::class)
+    class PartialVisibilityTests(private val json: String, private val expected: Boolean?) {
+
+        companion object {
+            @JvmStatic
+            @Parameterized.Parameters(name = "{0}")
+            fun parameters(): Collection<Array<Any?>> = listOf(
+                arrayOf("{}", null),
+                arrayOf("""{"visible": false}""", false),
+                arrayOf("""{"visible": true}""", true),
+            )
+        }
+
+        @Test
+        fun `Should preserve omitted and explicit visibility across partial components`() {
+            with(JsonTools.json) {
+                assertThat(decodeFromString<PartialTextComponent>(json).visible).isEqualTo(expected)
+                assertThat(decodeFromString<PartialStackComponent>(json).visible).isEqualTo(expected)
+                assertThat(decodeFromString<PartialImageComponent>(json).visible).isEqualTo(expected)
+                assertThat(decodeFromString<PartialIconComponent>(json).visible).isEqualTo(expected)
+                assertThat(decodeFromString<PartialTabsComponent>(json).visible).isEqualTo(expected)
+                assertThat(decodeFromString<PartialWebViewComponent>(json).visible).isEqualTo(expected)
+            }
+        }
+    }
 
     // This tests deserialization of ComponentOverrides containing PartialTextComponent and PartialImageComponent, just
     // to make sure deserialization of generics works as expected.

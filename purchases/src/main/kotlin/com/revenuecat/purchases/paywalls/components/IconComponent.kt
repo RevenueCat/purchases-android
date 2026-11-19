@@ -82,7 +82,7 @@ public class IconComponent(
 @Immutable
 public class PartialIconComponent(
     @get:JvmSynthetic
-    public val visible: Boolean? = true,
+    public val visible: Boolean? = null,
     @get:JvmSynthetic
     @SerialName("base_url")
     public val baseUrl: String? = null,

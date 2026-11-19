@@ -143,7 +143,7 @@ public class TabsComponent(
 @Immutable
 public class PartialTabsComponent(
     @get:JvmSynthetic
-    public val visible: Boolean? = true,
+    public val visible: Boolean? = null,
     @get:JvmSynthetic
     public val size: Size? = null,
     @get:JvmSynthetic
