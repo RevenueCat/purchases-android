@@ -42,6 +42,8 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import org.commonmark.ext.gfm.strikethrough.Strikethrough
 import org.commonmark.ext.gfm.strikethrough.StrikethroughExtension
+import org.commonmark.node.AbstractVisitor
+import org.commonmark.node.Block
 import org.commonmark.node.BlockQuote
 import org.commonmark.node.BulletList
 import org.commonmark.node.Code
@@ -50,22 +52,107 @@ import org.commonmark.node.Emphasis
 import org.commonmark.node.FencedCodeBlock
 import org.commonmark.node.HardLineBreak
 import org.commonmark.node.Heading
+import org.commonmark.node.HtmlBlock
 import org.commonmark.node.HtmlInline
+import org.commonmark.node.IndentedCodeBlock
 import org.commonmark.node.Link
 import org.commonmark.node.ListBlock
 import org.commonmark.node.Node
 import org.commonmark.node.OrderedList
 import org.commonmark.node.Paragraph
 import org.commonmark.node.SoftLineBreak
+import org.commonmark.node.SourceSpan
 import org.commonmark.node.StrongEmphasis
 import org.commonmark.node.Text
+import org.commonmark.node.ThematicBreak
+import org.commonmark.parser.IncludeSourceSpans
 import org.commonmark.parser.Parser
 
 // Inspired by https://github.com/ErikHellman/MarkdownComposer/blob/master/app/src/main/java/se/hellsoft/markdowncomposer/MarkdownComposer.kt
 
 private val parser = Parser.builder()
     .extensions(listOf(StrikethroughExtension.create()))
+    .includeSourceSpans(IncludeSourceSpans.BLOCKS)
     .build()
+
+private fun parseMarkdown(markdown: String): Document {
+    val document = parser.parse(markdown) as Document
+    document.showBlockSyntaxAsTyped(markdown)
+    return document
+}
+
+/**
+ * Displays text that commonmark turns into block syntax as typed, like iOS and web do. A line like "---" or
+ * "- - - -" stays text instead of a horizontal rule, a "---" or "===" line under a text stays text instead of turning
+ * that text into a heading, and indented lines and HTML blocks keep their spaces and tags instead of disappearing.
+ */
+private fun Document.showBlockSyntaxAsTyped(markdown: String) {
+    val typedBlocks = mutableListOf<Block>()
+    val setextHeadings = mutableListOf<Heading>()
+    accept(
+        object : AbstractVisitor() {
+            override fun visit(thematicBreak: ThematicBreak) {
+                typedBlocks += thematicBreak
+            }
+
+            override fun visit(indentedCodeBlock: IndentedCodeBlock) {
+                typedBlocks += indentedCodeBlock
+            }
+
+            override fun visit(htmlBlock: HtmlBlock) {
+                typedBlocks += htmlBlock
+            }
+
+            override fun visit(heading: Heading) {
+                // A "# Title" heading spans one line. A setext heading also spans its underline.
+                if (heading.sourceSpans.size > 1) setextHeadings += heading
+            }
+        },
+    )
+    if (typedBlocks.isEmpty() && setextHeadings.isEmpty()) return
+
+    val lines = markdown.lines()
+    typedBlocks.forEach { block ->
+        val typed = lines.sourceText(block.sourceSpans)
+        val literal = if (block is ThematicBreak) typed?.trim() else typed
+        literal?.let { block.insertBefore(Paragraph().apply { appendChild(Text(it)) }) }
+        block.unlink()
+    }
+    setextHeadings.forEach { heading ->
+        val paragraph = Paragraph()
+        var child = heading.firstChild
+        while (child != null) {
+            val next = child.next
+            paragraph.appendChild(child)
+            child = next
+        }
+        lines.sourceText(listOf(heading.sourceSpans.last()))?.trim()?.let { underline ->
+            paragraph.appendChild(SoftLineBreak())
+            paragraph.appendChild(Text(underline))
+        }
+        heading.insertBefore(paragraph)
+        heading.unlink()
+    }
+}
+
+/**
+ * Returns the source text that [spans] cover, one line per source line. Blank lines inside a block have no span, so
+ * they come back empty.
+ */
+private fun List<String>.sourceText(spans: List<SourceSpan>): String? {
+    if (spans.isEmpty()) return null
+    val spansByLine = spans.associateBy { it.lineIndex }
+    val typedLines = (spans.first().lineIndex..spans.last().lineIndex).map { lineIndex ->
+        val span = spansByLine[lineIndex]
+        if (span == null) "" else sourceLine(span)
+    }
+    return typedLines.takeIf { null !in it }?.joinToString("\n")
+}
+
+private fun List<String>.sourceLine(span: SourceSpan): String? =
+    getOrNull(span.lineIndex)
+        ?.takeIf { span.columnIndex + span.length <= it.length }
+        ?.substring(span.columnIndex, span.columnIndex + span.length)
 
 /**
  * Tracks state during markdown AST traversal, specifically for handling
@@ -149,7 +236,7 @@ internal fun Markdown(
     textFillMaxWidth: Boolean = false,
     applyFontSizeToParagraph: Boolean = true,
 ) {
-    val root = remember(text) { parser.parse(text) as Document }
+    val root = remember(text) { parseMarkdown(text) }
 
     val density = LocalDensity.current
     val paragraphPadding = with(density) {
@@ -586,6 +673,17 @@ private fun MDBlockChildren(
     }
 }
 
+private fun AnnotatedString.Builder.appendParagraph(
+    paragraph: Paragraph,
+    color: Color,
+    allowLinks: Boolean,
+    baseFontWeight: FontWeight?,
+    state: MarkdownState,
+) {
+    if (paragraph.previous != null) appendLine()
+    appendMarkdownChildren(paragraph, color, allowLinks, baseFontWeight, state)
+}
+
 private fun AnnotatedString.Builder.appendMarkdownChildren(
     parent: Node,
     color: Color,
@@ -596,7 +694,7 @@ private fun AnnotatedString.Builder.appendMarkdownChildren(
     var child = parent.firstChild
     while (child != null) {
         when (child) {
-            is Paragraph -> appendMarkdownChildren(child, color, allowLinks, baseFontWeight, state)
+            is Paragraph -> appendParagraph(child, color, allowLinks, baseFontWeight, state)
             is Text -> appendTextWithUnderlines(child.literal, state)
             is Emphasis -> {
                 pushStyle(SpanStyle(fontStyle = FontStyle.Italic))
@@ -654,7 +752,7 @@ internal fun markdownHasLinks(markdown: String): Boolean {
         }
         return false
     }
-    return parser.parse(markdown).hasLink()
+    return parseMarkdown(markdown).hasLink()
 }
 
 /**
@@ -678,7 +776,7 @@ internal fun markdownPlainText(markdown: String): String {
             }
         }
     }
-    collect(parser.parse(markdown))
+    collect(parseMarkdown(markdown))
     return blocks.joinToString("\n")
 }
 
