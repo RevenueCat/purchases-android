@@ -70,6 +70,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBa
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBorderStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberShadowStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
+import com.revenuecat.purchases.ui.revenuecatui.components.stack.isMainAxisBounded
 import com.revenuecat.purchases.ui.revenuecatui.components.style.CarouselComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -179,6 +180,8 @@ internal fun CarouselComponentView(
     val fillPageModifier = fillPageModifierOrEmpty(carouselState.size.height, pagerHeightPx, density)
     val size = carouselState.size.addMarginToFillLimits(carouselState.margin, LocalLayoutDirection.current)
 
+    val pageScrollAxes = pageScrollOrientations(size, ancestorScrollOrientations)
+
     Column(
         modifier = modifier
             .resolveComponentSizeParentData(size)
@@ -222,7 +225,7 @@ internal fun CarouselComponentView(
                 state = state,
                 clickHandler = clickHandler,
                 componentInteractionTracker = componentInteractionTracker,
-                ancestorScrollOrientations = ancestorScrollOrientations,
+                ancestorScrollOrientations = pageScrollAxes,
                 modifier = pageHeightModifier(pageStyle.size.height, fillPageModifier),
             )
         }
@@ -439,6 +442,13 @@ internal fun nextAutoAdvanceTargetPage(
         currentPage + 1
     }
 }
+
+private fun pageScrollOrientations(size: Size, ancestorScrollOrientations: Set<Orientation>): Set<Orientation> =
+    if (size.isMainAxisBounded(Orientation.Vertical)) {
+        ancestorScrollOrientations - Orientation.Vertical
+    } else {
+        ancestorScrollOrientations
+    }
 
 // Only a Fit carousel leaves pages unbounded at measure time; Fixed/Fill already bound them.
 private fun fillPageModifierOrEmpty(carouselHeight: SizeConstraint, measuredHeightPx: Int, density: Density): Modifier =
