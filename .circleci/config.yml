@@ -49,8 +49,14 @@ orbs:
 parameters:
   action:
     type: enum
-    enum: [default, bump, paywall_tester_release, rct_tester_release, deploy_snapshot_release, update_paywall_templates, update_error_codes]
+    enum: [default, bump, hotfix, paywall_tester_release, rct_tester_release, deploy_snapshot_release, update_paywall_templates, update_error_codes]
     default: default
+  hotfix_pr:
+    type: integer
+    default: 0
+  hotfix_version:
+    type: string
+    default: ''
   paywall_tester_track:
     type: enum
     enum: [internal, alpha, beta, production]
@@ -1491,6 +1497,16 @@ workflows:
       - revenuecat/automatic-bump:
           context: github-bot-internal
           ruby_version: "3.3"
+
+  manual-trigger-hotfix:
+    when:
+      equal: [ hotfix, << pipeline.parameters.action >> ]
+    jobs:
+      - revenuecat/hotfix:
+          context: github-bot-internal
+          ruby_version: "3.3"
+          pr_number: << pipeline.parameters.hotfix_pr >>
+          version: << pipeline.parameters.hotfix_version >>
 
   manual-paywall-tester-release:
     when:
