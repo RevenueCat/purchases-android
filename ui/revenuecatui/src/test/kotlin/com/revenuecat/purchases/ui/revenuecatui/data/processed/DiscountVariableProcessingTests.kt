@@ -33,6 +33,8 @@ class DiscountVariableProcessingTests {
         private val month = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M")
         private val week = Period(value = 1, unit = Period.Unit.WEEK, iso8601 = "P1W")
 
+        private val ARABIC = Locale("ar", "SA")
+
         private val oneWeekFreeTrial = phase(week, cycles = 1, micros = 0)
 
         private val mostExpensiveVariables = listOf(
@@ -343,11 +345,81 @@ class DiscountVariableProcessingTests {
         }
     }
 
+    @Test
+    fun `relative discount uses the currency locale digits like the price`() {
+        val pkg = subscription(59_990_000, year, PackageType.ANNUAL)
+
+        val discount = process("product.relative_discount", pkg, discountRelative = 0.46, currencyLocale = ARABIC)
+        val price = process("product.price", pkg, currencyLocale = ARABIC)
+
+        // Arabic-Indic "46" and "59"
+        assertThat(discount).contains("\u0664\u0666")
+        assertThat(price).contains("\u0665\u0669")
+    }
+
+    @Test
+    fun `percent discounts use the currency locale digits`() {
+        val offerRelative = process(
+            "product.offer_relative_discount",
+            yearlyWithOneWeekTrial,
+            currencyLocale = ARABIC,
+        )
+        val withOfferFullPeriod = process(
+            "product.relative_discount_with_offer_full_period",
+            yearlyWithOneWeekTrial,
+            MOST_EXPENSIVE,
+            currencyLocale = ARABIC,
+        )
+        val withOffer = process(
+            "product.relative_discount_with_offer",
+            monthlyWithThreeHalfPriceMonths(),
+            MOST_EXPENSIVE,
+            currencyLocale = ARABIC,
+        )
+
+        // Arabic-Indic "2", "51" and "50"
+        assertThat(offerRelative).isEqualTo("\u0662%")
+        assertThat(withOfferFullPeriod).isEqualTo("\u0665\u0661%")
+        assertThat(withOffer).isEqualTo("\u0665\u0660%")
+    }
+
+    @Test
+    fun `relative discount ignores the device locale`() {
+        val pkg = subscription(59_990_000, year, PackageType.ANNUAL)
+        val defaultLocale = Locale.getDefault()
+        Locale.setDefault(ARABIC)
+        try {
+            assertThat(process("product.relative_discount", pkg, discountRelative = 0.46, currencyLocale = Locale.US))
+                .isEqualTo("46%")
+        } finally {
+            Locale.setDefault(defaultLocale)
+        }
+    }
+
+    @Test
+    fun `relative discount uses western digits for a latin numbering system locale`() {
+        val pkg = subscription(59_990_000, year, PackageType.ANNUAL)
+        val arabicLatinDigits = Locale.forLanguageTag("ar-SA-u-nu-latn")
+
+        val discount = process(
+            "product.relative_discount",
+            pkg,
+            discountRelative = 0.46,
+            currencyLocale = arabicLatinDigits,
+        )
+        val price = process("product.price", pkg, currencyLocale = arabicLatinDigits)
+
+        assertThat(discount).contains("46")
+        assertThat(price).contains("59")
+    }
+
     private fun process(
         variable: String,
         rcPackage: Package,
         mostExpensivePricePerMonthMicros: Long? = null,
         showZeroDecimalPlaces: Boolean = false,
+        discountRelative: Double? = null,
+        currencyLocale: Locale = Locale.US,
     ): String = VariableProcessorV2.processVariables(
         template = "{{ $variable }}",
         localizedVariableKeys = variableLocalizationKeysForEnUs(),
@@ -357,12 +429,12 @@ class DiscountVariableProcessingTests {
         ),
         variableDataProvider = VariableDataProvider(MockResourceProvider()),
         packageContext = PackageContext(
-            discountRelativeToMostExpensivePerMonth = null,
+            discountRelativeToMostExpensivePerMonth = discountRelative,
             showZeroDecimalPlacePrices = showZeroDecimalPlaces,
             mostExpensivePricePerMonthMicros = mostExpensivePricePerMonthMicros,
         ),
         rcPackage = rcPackage,
-        currencyLocale = Locale.US,
+        currencyLocale = currencyLocale,
         dateLocale = Locale.US,
         date = Date(),
     )
