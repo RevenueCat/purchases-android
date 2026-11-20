@@ -48,9 +48,11 @@ import org.robolectric.ParameterizedRobolectricTestRunner
 import java.io.ByteArrayInputStream
 import java.io.IOException
 import java.io.InputStream
+import java.io.OutputStream
 import java.net.CacheRequest
 import java.net.CacheResponse
 import java.net.HttpURLConnection
+import java.net.MalformedURLException
 import java.net.ResponseCache
 import java.net.SocketTimeoutException
 import java.net.URI
@@ -1528,6 +1530,29 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             return
         }
         error("Expected exception")
+    }
+
+    @Test
+    fun `performRequest throws MalformedURLException from the platform connection as an IOException`() {
+        val platformException = MalformedURLException("Invalid URL: SUCCESS for http://malformed-url.test/v1")
+        val malformedURLBaseURL = URL(null, "http://malformed-url.test/v1", object : URLStreamHandler() {
+            override fun openConnection(url: URL): URLConnection = object : HttpURLConnection(url) {
+                override fun getOutputStream(): OutputStream = throw platformException
+                override fun connect() = Unit
+                override fun disconnect() = Unit
+                override fun usingProxy() = false
+            }
+        })
+
+        assertThatThrownBy {
+            client.performRequest(
+                malformedURLBaseURL,
+                Endpoint.LogIn,
+                body = mapOf("new_app_user_id" to "user"),
+                postFieldsToSign = null,
+                mapOf("" to ""),
+            )
+        }.isSameAs(platformException)
     }
 
     @Test

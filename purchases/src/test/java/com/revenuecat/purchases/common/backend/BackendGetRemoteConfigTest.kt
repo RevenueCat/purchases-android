@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common.backend
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
@@ -29,6 +30,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.ByteArrayOutputStream
+import java.net.MalformedURLException
 import java.net.URL
 import java.security.MessageDigest
 import java.util.Date
@@ -509,6 +511,39 @@ class BackendGetRemoteConfigTest {
         )
         assertThat(obtainedError).isNotNull
         // A 5xx may recover, so the endpoint stays enabled for future syncs.
+        assertThat(obtainedBehavior).isEqualTo(GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY)
+    }
+
+    @Test
+    fun `getRemoteConfig reports a connection MalformedURLException as a retryable network error`() {
+        every {
+            httpClient.performRequest(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                fallbackBaseURLs = any(),
+                iamAppUserID = any(),
+            )
+        } throws MalformedURLException("Invalid URL: SUCCESS for https://api.revenuecat.com/v1/config/app")
+        var obtainedError: PurchasesError? = null
+        var obtainedBehavior: GetRemoteConfigErrorHandlingBehavior? = null
+        backend.getRemoteConfig(
+            appInBackground = false,
+            appUserID = testAppUserID,
+            fetchContext = RemoteConfigFetchContext.AppStart,
+            domain = testDomain,
+            manifest = testManifest,
+            lastRefreshTime = null,
+            prefetchedBlobs = testPrefetchedBlobs,
+            onSuccess = { _, _, _ -> fail("Expected error. Got success") },
+            onError = { error, behavior ->
+                obtainedError = error
+                obtainedBehavior = behavior
+            },
+        )
+        assertThat(obtainedError?.code).isEqualTo(PurchasesErrorCode.NetworkError)
         assertThat(obtainedBehavior).isEqualTo(GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY)
     }
 
