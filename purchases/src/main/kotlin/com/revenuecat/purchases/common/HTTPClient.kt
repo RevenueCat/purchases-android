@@ -37,7 +37,6 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
-import java.net.MalformedURLException
 import java.net.SocketTimeoutException
 import java.net.URL
 import java.net.URLConnection
@@ -443,49 +442,45 @@ internal class HTTPClient(
             return it
         }
 
-        try {
-            val requestURL = URL(baseURL, path)
-            fullURL = if (forceServerErrorStrategy?.shouldForceServerError(baseURL, endpoint) == true) {
-                warnLog { "Forcing server error for request to ${URL(baseURL, path)}" }
-                URL(forceServerErrorStrategy.serverErrorURL)
-            } else {
-                forceServerErrorStrategy?.modifyRequestURL(requestURL, endpoint) ?: requestURL
-            }
-
-            nonce = if (shouldAddNonce) signingManager.createRandomNonce() else null
-            postFieldsToSignHeader = postFieldsToSign?.takeIf { shouldSignResponse }?.let {
-                signingManager.getPostParamsForSigningHeaderIfNeeded(endpoint, postFieldsToSign)
-            }
-            val headers = getHeaders(
-                requestHeaders,
-                fullURL,
-                refreshETag,
-                nonce,
-                shouldSignResponse,
-                postFieldsToSignHeader,
-                endpoint,
-            )
-
-            val httpRequest = HTTPRequest(fullURL, headers, jsonBody)
-
-            if (enableExtraRequestLogging) {
-                debugLog { "HTTP request:\\n ${toCurlRequest(httpRequest)}" }
-            }
-
-            val timeout = timeoutManager.getTimeoutForRequest(
-                // Keyed by the base URL's host, matching what `performAttempt` records the result under.
-                host = baseURL.host,
-                // Endpoints the domain layer aims at a fallback host are fallback attempts from the first
-                // try, even though the fallback walk hasn't advanced the index.
-                isFallback = isFallbackURL || endpoint.targetsFallbackHost,
-                fallbackAvailable = endpoint.supportsFallbackBaseURLs && appConfig.fallbackBaseURLs.isNotEmpty(),
-                isProxied = appConfig.hasProxyURL,
-            )
-
-            connection = getConnection(httpRequest, timeout)
-        } catch (e: MalformedURLException) {
-            throw RuntimeException(e)
+        val requestURL = URL(baseURL, path)
+        fullURL = if (forceServerErrorStrategy?.shouldForceServerError(baseURL, endpoint) == true) {
+            warnLog { "Forcing server error for request to ${URL(baseURL, path)}" }
+            URL(forceServerErrorStrategy.serverErrorURL)
+        } else {
+            forceServerErrorStrategy?.modifyRequestURL(requestURL, endpoint) ?: requestURL
         }
+
+        nonce = if (shouldAddNonce) signingManager.createRandomNonce() else null
+        postFieldsToSignHeader = postFieldsToSign?.takeIf { shouldSignResponse }?.let {
+            signingManager.getPostParamsForSigningHeaderIfNeeded(endpoint, postFieldsToSign)
+        }
+        val headers = getHeaders(
+            requestHeaders,
+            fullURL,
+            refreshETag,
+            nonce,
+            shouldSignResponse,
+            postFieldsToSignHeader,
+            endpoint,
+        )
+
+        val httpRequest = HTTPRequest(fullURL, headers, jsonBody)
+
+        if (enableExtraRequestLogging) {
+            debugLog { "HTTP request:\\n ${toCurlRequest(httpRequest)}" }
+        }
+
+        val timeout = timeoutManager.getTimeoutForRequest(
+            // Keyed by the base URL's host, matching what `performAttempt` records the result under.
+            host = baseURL.host,
+            // Endpoints the domain layer aims at a fallback host are fallback attempts from the first
+            // try, even though the fallback walk hasn't advanced the index.
+            isFallback = isFallbackURL || endpoint.targetsFallbackHost,
+            fallbackAvailable = endpoint.supportsFallbackBaseURLs && appConfig.fallbackBaseURLs.isNotEmpty(),
+            isProxied = appConfig.hasProxyURL,
+        )
+
+        connection = getConnection(httpRequest, timeout)
 
         val inputStream = getInputStream(connection)
 
