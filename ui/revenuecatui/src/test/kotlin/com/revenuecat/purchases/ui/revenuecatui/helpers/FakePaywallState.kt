@@ -68,8 +68,10 @@ internal fun FakePaywallState(
     purchases: PurchasesType = MockPurchasesType(),
     offeringWebCheckoutURL: URL? = null,
     viewModelActionInProgress: State<Boolean> = mutableStateOf(false),
+    addPackageComponents: Boolean = true,
 ): PaywallState.Loaded.Components {
-    val packageComponents = packages.map { pkg ->
+    val packagesForComponents = if (addPackageComponents) packages else emptyList()
+    val packageComponents = packagesForComponents.map { pkg ->
         PackageComponent(
             packageId = pkg.identifier,
             isSelectedByDefault = false,
