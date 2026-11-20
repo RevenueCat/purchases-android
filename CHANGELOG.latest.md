@@ -1,7 +1,4 @@
-## RevenueCat SDK
-### 🐞 Bugfixes
-* fix: stop retrying billing requests without limit while the service stays disconnected (#9) via Álvaro Brey (@AlvaroBrey)
-* fix: avoid OutOfMemoryError when diagnostics entries are tracked faster than they are written (#10) via Álvaro Brey (@AlvaroBrey)
-
-### 🔄 Other Changes
-* ci: keep tester version codes above the public project's build numbers (#6) via Álvaro Brey (@AlvaroBrey)
+## RevenueCatUI SDK
+### Paywallsv2
+#### 🐞 Bugfixes
+* fix(paywalls): hidden paywall components appearing after a text or style override (#41) via Cesar de la Vega (@vegaro)

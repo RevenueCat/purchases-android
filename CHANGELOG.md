@@ -1,3 +1,9 @@
+## 10.30.5
+## RevenueCatUI SDK
+### Paywallsv2
+#### 🐞 Bugfixes
+* fix(paywalls): hidden paywall components appearing after a text or style override (#41) via Cesar de la Vega (@vegaro)
+
 ## 10.30.4
 ## RevenueCat SDK
 ### 🐞 Bugfixes
