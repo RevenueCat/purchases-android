@@ -265,6 +265,55 @@ class RemoteConfigManagerIntegrationTest {
     }
 
     @Test
+    fun `a failed verification with no cached config leaves reads empty`() {
+        val blob = """{"workflow":"rejected"}""".toByteArray()
+        val ref = RCContainerTestData.refOf(blob)
+        val config = workflowsConfig(items = mapOf("wf1234" to ref))
+
+        sync(
+            container(config, blob),
+            SignatureVerificationResult.Failed(
+                SignatureVerificationResult.FailureReason.PAYLOAD_SIGNATURE_MISMATCH,
+            ),
+        )
+
+        assertThat(diskCache.read()).isNull()
+        assertThat(blobStore.cachedRefs()).isEmpty()
+        assertThat(runBlocking { manager.topic(RemoteConfigTopic.Workflows) }).isNull()
+    }
+
+    @Test
+    fun `a failed verification keeps the previously persisted config readable`() {
+        val cachedBlob = """{"workflow":"cached"}""".toByteArray()
+        val cachedRef = RCContainerTestData.refOf(cachedBlob)
+        sync(
+            container(
+                workflowsConfig(manifest = "v1.1.workflows:etag1", items = mapOf("wf1234" to cachedRef)),
+                cachedBlob,
+            ),
+        )
+
+        val rejectedBlob = """{"workflow":"rejected"}""".toByteArray()
+        val rejectedRef = RCContainerTestData.refOf(rejectedBlob)
+        sync(
+            container(
+                workflowsConfig(manifest = "v1.2.workflows:etag2", items = mapOf("wf1234" to rejectedRef)),
+                rejectedBlob,
+            ),
+            SignatureVerificationResult.Failed(
+                SignatureVerificationResult.FailureReason.PAYLOAD_SIGNATURE_MISMATCH,
+            ),
+        )
+
+        val persisted = diskCache.read()!!
+        val topic = runBlocking { manager.topic(RemoteConfigTopic.Workflows) }
+        assertThat(persisted.manifest).isEqualTo("v1.1.workflows:etag1")
+        assertThat(topic!!["wf1234"]!!.blobRef).isEqualTo(cachedRef)
+        assertThat(blobStore.read(cachedRef)).isEqualTo(cachedBlob)
+        assertThat(blobStore.contains(rejectedRef)).isFalse()
+    }
+
+    @Test
     fun `an inline-only topic persists its item with no blob ref and writes no blobs`() {
         // wf1234 carries only inline content (offering_identifier), no blob_ref, and no element is inlined.
         val config = workflowsConfig(items = mapOf("wf1234" to null))
@@ -380,13 +429,19 @@ class RemoteConfigManagerIntegrationTest {
     }
 
     /** Runs a full refresh and settles it with [container] (null = a 204). */
-    private fun sync(container: RCContainer?) {
+    private fun sync(
+        container: RCContainer?,
+        verificationResult: SignatureVerificationResult = SignatureVerificationResult.Verified,
+    ) {
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = RemoteConfigFetchContext.AppStart)
-        settle(container)
+        settle(container, verificationResult)
     }
 
-    private fun settle(container: RCContainer?) {
-        onSuccess.invoke(container, Date(), SignatureVerificationResult.Verified)
+    private fun settle(
+        container: RCContainer?,
+        verificationResult: SignatureVerificationResult = SignatureVerificationResult.Verified,
+    ) {
+        onSuccess.invoke(container, Date(), verificationResult)
     }
 
     private companion object {

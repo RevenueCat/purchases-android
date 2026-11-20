@@ -17,6 +17,7 @@ import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.networking.RCContainerFormatException
 import com.revenuecat.purchases.common.verboseLog
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import com.revenuecat.purchases.common.warnLog
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
@@ -255,8 +256,8 @@ internal class RemoteConfigManager(
             lastRefreshTime = persisted?.lastRefreshTime?.let(::Date),
             // Report only the prefetch blobs we actually hold, so the server stops re-inlining them.
             prefetchedBlobs = persisted?.prefetchBlobs?.filter { storedBlobs.contains(it) } ?: emptyList(),
-            onSuccess = { container, requestDate, _ ->
-                handleMainRefreshSuccess(requestEpoch, persisted, container, requestDate)
+            onSuccess = { container, requestDate, verificationResult ->
+                handleMainRefreshSuccess(requestEpoch, persisted, container, requestDate, verificationResult)
             },
             onError = { error, behavior ->
                 handleMainRefreshError(
@@ -295,12 +296,26 @@ internal class RemoteConfigManager(
         persisted: PersistedRemoteConfigurationState?,
         container: RCContainer?,
         requestDate: Date?,
+        verificationResult: SignatureVerificationResult,
     ) {
         if (epoch.get() != requestEpoch) {
             // The cache was cleared (identity change) after this request started. Drop the stale
             // response and leave isRefreshing alone: clearCache() reset it, or a newer refresh owns it.
             return
         }
+        if (verificationResult.isFailed) {
+            handleFailedVerification(requestEpoch)
+            return
+        }
+        handleVerifiedMainRefreshSuccess(requestEpoch, persisted, container, requestDate)
+    }
+
+    private fun handleVerifiedMainRefreshSuccess(
+        requestEpoch: Int,
+        persisted: PersistedRemoteConfigurationState?,
+        container: RCContainer?,
+        requestDate: Date?,
+    ) {
         if (requestDate == null) {
             // Not fatal — the previous value carries forward — but it means the server stopped telling us its own
             // time, so the refresh time replayed on later requests is frozen. Surfaced here rather than swallowed
@@ -381,9 +396,13 @@ internal class RemoteConfigManager(
         backend.getRemoteConfigFallback(
             appInBackground = appInBackground,
             domain = domain,
-            onSuccess = { response, _ ->
+            onSuccess = { response, verificationResult ->
                 if (epoch.get() != requestEpoch) {
                     // Identity changed after the fallback started; clearCache() reset the guard. Drop the result.
+                    return@getRemoteConfigFallback
+                }
+                if (verificationResult.isFailed) {
+                    handleFailedVerification(requestEpoch)
                     return@getRemoteConfigFallback
                 }
                 scope.launch {
@@ -445,6 +464,12 @@ internal class RemoteConfigManager(
     private fun handleRefreshError(requestEpoch: Int, error: PurchasesError) {
         if (releaseGuardIfOwned(requestEpoch)) {
             errorLog(error)
+        }
+    }
+
+    private fun handleFailedVerification(requestEpoch: Int) {
+        if (releaseGuardIfOwned(requestEpoch)) {
+            errorLog { "Remote config response failed signature verification. Keeping the cached configuration." }
         }
     }
 
