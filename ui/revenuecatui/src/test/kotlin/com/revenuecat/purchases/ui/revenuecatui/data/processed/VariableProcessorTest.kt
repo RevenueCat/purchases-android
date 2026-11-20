@@ -2,6 +2,11 @@ package com.revenuecat.purchases.ui.revenuecatui.data.processed
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.PresentedOfferingContext
+import com.revenuecat.purchases.models.Period
+import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
@@ -509,6 +514,28 @@ class VariableProcessorTest {
         expectVariablesResult("{{ sub_offer_price }}", "THB4", rcPackage = TestData.Packages.quarterlyThailand)
         expectVariablesResult("{{ sub_offer_price }}", "฿4", thLocale, rcPackage = TestData.Packages.quarterlyThailand)
 
+    }
+
+    @Test
+    fun `round prices does not round up per period prices with cents`() {
+        every { context.showZeroDecimalPlacePrices }.returns(true)
+        val annual = Package(
+            packageType = PackageType.ANNUAL,
+            identifier = PackageType.ANNUAL.identifier!!,
+            product = TestStoreProduct(
+                id = "com.revenuecat.annual_product",
+                name = "Annual",
+                title = "Annual (App name)",
+                price = Price(amountMicros = 83_990_000, currencyCode = "USD", formatted = "$83.99"),
+                description = "Annual",
+                period = Period(value = 1, unit = Period.Unit.YEAR, iso8601 = "P1Y"),
+            ),
+            presentedOfferingContext = PresentedOfferingContext(offeringIdentifier = "offering"),
+        )
+
+        // 83.99 / 12 = 6.999..., which is displayed truncated to 6.99, not rounded up to 7
+        expectVariablesResult("{{ sub_price_per_month }}", "$6.99", rcPackage = annual)
+        expectVariablesResult("{{ total_price_and_per_month }}", "$83.99/yr ($6.99/mth)", rcPackage = annual)
     }
 
     @Test

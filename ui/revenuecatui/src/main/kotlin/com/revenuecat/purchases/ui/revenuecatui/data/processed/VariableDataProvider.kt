@@ -280,9 +280,9 @@ private fun Period.normalizedMonths(): Period {
 
 @SuppressWarnings("MagicNumber")
 internal fun Price.endsIn00Cents(): Boolean {
-    val normalPrice = amountMicros / MICRO_MULTIPLIER
-    val roundedPrice = Math.round(normalPrice * 100) / 100.0
-    return roundedPrice * 100 % 100 == 0.0
+    // Truncate to cents like getFormatted does, so a price shown as 6.99 is never rounded up to 7.
+    val cents = amountMicros / 10_000
+    return cents % 100 == 0L
 }
 
 /**
