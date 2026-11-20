@@ -9,6 +9,7 @@ import androidx.webkit.WebMessageCompat
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpeningMethod
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -48,6 +49,8 @@ internal class WebViewJavaScriptBridgeTest {
     // Captures every onContentResize callback — the observable for "an app frame was processed".
     private val resizes = mutableListOf<Pair<Int?, Int?>>()
 
+    private var nowMillis = 10_000L
+
     @Before
     fun setUp() {
         webView = WebView(ApplicationProvider.getApplicationContext())
@@ -75,6 +78,7 @@ internal class WebViewJavaScriptBridgeTest {
         sizeToContentHeight: Boolean = false,
         onDocumentReset: () -> Unit = {},
         onSecureMessagingUnsupported: () -> Unit = {},
+        onOpenUrl: (String, URLOpeningMethod) -> Boolean = { _, _ -> false },
         contextSnapshotProvider: () -> JsonObject = { testContextSnapshot() },
     ): WebViewJavaScriptBridge {
         val bridge = WebViewJavaScriptBridge(
@@ -86,6 +90,8 @@ internal class WebViewJavaScriptBridgeTest {
             onContentResize = { widthCssPx, heightCssPx -> resizes.add(widthCssPx to heightCssPx) },
             onDocumentReset = onDocumentReset,
             onSecureMessagingUnsupported = onSecureMessagingUnsupported,
+            onOpenUrl = onOpenUrl,
+            elapsedRealtimeMillis = { nowMillis },
             contextSnapshotProvider = contextSnapshotProvider,
         )
         bridge.attach()
@@ -99,6 +105,8 @@ internal class WebViewJavaScriptBridgeTest {
 
     /** Every outbound script in delivery order; [ShadowWebView.getLastEvaluatedJavascript] keeps only the last. */
     private fun scripts(): List<String> = Shadow.extract<RecordingShadowWebView>(webView).evaluatedScripts
+
+    private fun clearScripts() = Shadow.extract<RecordingShadowWebView>(webView).evaluatedScripts.clear()
 
     /**
      * Exercises the genuine production inbound path:
@@ -802,6 +810,124 @@ internal class WebViewJavaScriptBridgeTest {
         bridge.connect()
         bridge.resize(300)
         assertThat(resizes).describedAs("channel reopened after reload").containsExactly(null to 300)
+    }
+
+    // --- open_url ---
+
+    private fun openUrlPayload(url: String, method: String? = null): JsonObject = buildJsonObject {
+        put("url", url)
+        method?.let { put("method", it) }
+    }
+
+    private fun WebViewJavaScriptBridge.requestOpenUrl(payload: JsonObject, id: String = "open-1") {
+        postFromWeb(appMessage(type = WebViewMessageType.OPEN_URL, payload = payload, kind = "request", id = id))
+        idleMainLooper()
+    }
+
+    private fun recordingOpener(result: Boolean = true): Pair<MutableList<Pair<String, URLOpeningMethod>>, (String, URLOpeningMethod) -> Boolean> {
+        val opened = mutableListOf<Pair<String, URLOpeningMethod>>()
+        return opened to { url, method ->
+            opened += url to method
+            result
+        }
+    }
+
+    @Test
+    fun `open_url opens the url and responds opened true`() {
+        val (opened, opener) = recordingOpener()
+        val bridge = bridge(onOpenUrl = opener)
+        bridge.connect()
+        clearScripts()
+
+        bridge.requestOpenUrl(openUrlPayload("https://example.org/terms", "in_app_browser"))
+
+        assertThat(opened).containsExactly("https://example.org/terms" to URLOpeningMethod.IN_APP_BROWSER)
+        val response = scripts().single()
+        assertThat(response).contains("\"kind\":\"response\"")
+        assertThat(response).contains("\"type\":\"open_url\"")
+        assertThat(response).contains("\"id\":\"open-1\"")
+        assertThat(response).contains("\"component_id\":\"promo_web_view\"")
+        assertThat(response).contains("\"payload\":{\"opened\":true}")
+    }
+
+    @Test
+    fun `open_url defaults to the external browser`() {
+        val (opened, opener) = recordingOpener()
+        val bridge = bridge(onOpenUrl = opener)
+        bridge.connect()
+
+        bridge.requestOpenUrl(openUrlPayload("https://example.org"))
+
+        assertThat(opened).containsExactly("https://example.org" to URLOpeningMethod.EXTERNAL_BROWSER)
+    }
+
+    @Test
+    fun `open_url responds opened false for an invalid request without opening`() {
+        val (opened, opener) = recordingOpener()
+        val bridge = bridge(onOpenUrl = opener)
+        bridge.connect()
+        clearScripts()
+
+        bridge.requestOpenUrl(openUrlPayload("javascript:alert(1)", "deep_link"))
+
+        assertThat(opened).isEmpty()
+        assertThat(scripts().single()).contains("\"payload\":{\"opened\":false}")
+    }
+
+    @Test
+    fun `open_url responds opened false when the opener fails`() {
+        val (_, opener) = recordingOpener(result = false)
+        val bridge = bridge(onOpenUrl = opener)
+        bridge.connect()
+        clearScripts()
+
+        bridge.requestOpenUrl(openUrlPayload("https://example.org"))
+
+        assertThat(scripts().single()).contains("\"payload\":{\"opened\":false}")
+    }
+
+    @Test
+    fun `open_url throttles a second open within a second`() {
+        val (opened, opener) = recordingOpener()
+        val bridge = bridge(onOpenUrl = opener)
+        bridge.connect()
+        clearScripts()
+
+        bridge.requestOpenUrl(openUrlPayload("https://example.org/a"), id = "1")
+        nowMillis += 500
+        bridge.requestOpenUrl(openUrlPayload("https://example.org/b"), id = "2")
+        nowMillis += 500
+        bridge.requestOpenUrl(openUrlPayload("https://example.org/c"), id = "3")
+
+        assertThat(opened.map { it.first }).containsExactly("https://example.org/a", "https://example.org/c")
+        assertThat(scripts().map { it.substringAfter("\"opened\":").take(5) })
+            .containsExactly("true}", "false", "true}")
+    }
+
+    @Test
+    fun `open_url as a message or without an id is dropped`() {
+        val (opened, opener) = recordingOpener()
+        val bridge = bridge(onOpenUrl = opener)
+        bridge.connect()
+        clearScripts()
+
+        bridge.postFromWeb(appMessage(type = WebViewMessageType.OPEN_URL, payload = openUrlPayload("https://example.org")))
+        bridge.postFromWeb(appMessage(type = WebViewMessageType.OPEN_URL, payload = openUrlPayload("https://example.org"), kind = "request"))
+        idleMainLooper()
+
+        assertThat(opened).isEmpty()
+        assertThat(scripts()).isEmpty()
+    }
+
+    @Test
+    fun `open_url before the handshake is dropped`() {
+        val (opened, opener) = recordingOpener()
+        val bridge = bridge(onOpenUrl = opener)
+
+        bridge.requestOpenUrl(openUrlPayload("https://example.org"))
+
+        assertThat(opened).isEmpty()
+        assertThat(scripts()).isEmpty()
     }
 }
 

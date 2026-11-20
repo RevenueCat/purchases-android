@@ -3,12 +3,14 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
 import android.net.Uri
+import android.os.SystemClock
 import android.webkit.WebView
 import androidx.annotation.MainThread
 import androidx.annotation.VisibleForTesting
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpeningMethod
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -43,6 +45,9 @@ internal class WebViewJavaScriptBridge(
     private val onContentResize: (widthCssPx: Int?, heightCssPx: Int?) -> Unit = { _, _ -> },
     private val onDocumentReset: () -> Unit = {},
     private val onSecureMessagingUnsupported: () -> Unit = {},
+    /** Opens a validated `open_url` request; returns whether it was opened. */
+    private val onOpenUrl: (url: String, method: URLOpeningMethod) -> Boolean = { _, _ -> false },
+    private val elapsedRealtimeMillis: () -> Long = SystemClock::elapsedRealtime,
     private val contextSnapshotProvider: () -> JsonObject,
 ) {
 
@@ -68,6 +73,8 @@ internal class WebViewJavaScriptBridge(
 
     private var lastAppliedWidthCssPx: Int? = null
     private var lastAppliedHeightCssPx: Int? = null
+
+    private var lastOpenedUrlAtMillis: Long? = null
 
     @VisibleForTesting
     internal val webMessageListener = WebViewCompat.WebMessageListener { _, message, sourceOrigin, isMainFrame, _ ->
@@ -286,11 +293,57 @@ internal class WebViewJavaScriptBridge(
             return
         }
 
-        if (envelope.type == WebViewMessageType.RESIZE) {
-            handleResize(envelope)
-        } else {
-            Logger.w("Dropping inbound web view message: unsupported message type '${envelope.type}'.")
+        when (envelope.type) {
+            WebViewMessageType.RESIZE -> handleResize(envelope)
+            WebViewMessageType.OPEN_URL -> handleOpenUrl(envelope)
+            else -> Logger.w("Dropping inbound web view message: unsupported message type '${envelope.type}'.")
         }
+    }
+
+    /**
+     * Always answers a well-formed request with `{ opened }`, never an `error` frame, so content can fall
+     * back on `false` alone.
+     */
+    @MainThread
+    private fun handleOpenUrl(envelope: WebViewEnvelope) {
+        val id = envelope.id
+        if (envelope.kind != WebViewEnvelope.Kind.REQUEST || id == null) {
+            Logger.w("Dropping inbound web view message: open_url must be a request.")
+            return
+        }
+
+        val opened = openUrl(envelope.payload)
+        deliverEnvelopeNow(
+            WebViewEnvelope(
+                kind = WebViewEnvelope.Kind.RESPONSE,
+                protocolVersion = protocolVersion,
+                componentId = componentId,
+                type = WebViewMessageType.OPEN_URL,
+                id = id,
+                payload = buildJsonObject { put("opened", opened) },
+            ),
+            allowBeforeNavigation = false,
+        )
+    }
+
+    @MainThread
+    @Suppress("ReturnCount")
+    private fun openUrl(payload: JsonObject?): Boolean {
+        val request = WebViewOpenUrlRequest.parse(payload) ?: run {
+            Logger.w("Refusing web view open_url: invalid url or method.")
+            return false
+        }
+
+        val now = elapsedRealtimeMillis()
+        val lastOpenedAt = lastOpenedUrlAtMillis
+        if (lastOpenedAt != null && now - lastOpenedAt < WebViewOpenUrlRequest.MIN_INTERVAL_MILLIS) {
+            Logger.w("Refusing web view open_url: another URL was opened less than a second ago.")
+            return false
+        }
+
+        if (!onOpenUrl(request.url, request.method)) return false
+        lastOpenedUrlAtMillis = now
+        return true
     }
 
     @MainThread
