@@ -193,6 +193,36 @@ See the [v11 migration guide](https://github.com/RevenueCat/purchases-android/bl
 * Drop the AGP 9 built-in Kotlin opt-out (#4120) via Álvaro Brey (@AlvaroBrey)
 * Move MagicWeatherCompose and CustomEntitlementComputationSample to AGP 9 (#4115) via Álvaro Brey (@AlvaroBrey)
 
+## 10.30.5
+## RevenueCat SDK
+### 🐞 Bugfixes
+* fix: handle platform MalformedURLException as a network error instead of crashing (#38) via Álvaro Brey (@AlvaroBrey)
+* fix: include paywall offering context in observer mode receipts (#29) via Rick (@rickvdl)
+* Fetch the Play storefront as soon as the billing connection is ready (#5) via Toni Rico (@tonidero)
+
+### 🔄 Other Changes
+* Add diagnostics for stuck billing connections (#11) via Rick (@rickvdl)
+* Track how long a fresh install waits for the Play storefront (#4578) via Álvaro Marco (@amarco90)
+
+## RevenueCatUI SDK
+### Paywallsv2
+#### 🐞 Bugfixes
+* fix(paywalls): hidden paywall components appearing after a text or style override (#41) via Cesar de la Vega (@vegaro)
+* fix(paywalls): honor numbering system from `preferredUILocaleOverride` when formatting prices (#17) via Cesar de la Vega (@vegaro)
+* fix(paywalls): size fit-height sticky footers to their content (#34) via Cesar de la Vega (@vegaro)
+* fix(paywalls): show "---" lines, indented text and HTML blocks as typed instead of hiding them (#55) via Leti Esperón (@letiesperon)
+* Fix(Paywalls ) Conditionally apply nested scrollability to prevent crashes (#4510) via Jacob Rakidzich (@JZDesign)
+* fix(paywalls): Fix scrolling for max-bounded nested paywall stacks (#4531) via Cesar de la Vega (@vegaro)
+
+## 10.30.4
+## RevenueCat SDK
+### 🐞 Bugfixes
+* fix: stop retrying billing requests without limit while the service stays disconnected (#9) via Álvaro Brey (@AlvaroBrey)
+* fix: avoid OutOfMemoryError when diagnostics entries are tracked faster than they are written (#10) via Álvaro Brey (@AlvaroBrey)
+
+### 🔄 Other Changes
+* ci: keep tester version codes above the public project's build numbers (#6) via Álvaro Brey (@AlvaroBrey)
+
 ## 10.30.3
 ## RevenueCat SDK
 ### 🐞 Bugfixes
