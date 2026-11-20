@@ -91,13 +91,16 @@ internal fun TextComponentView(
         is ColorStyle.Gradient -> Color.Unspecified
     }
     // Create a TextStyle with gradient if necessary.
-    // Remove the line height, as that's not configurable anyway, so we should let Text decide the line height.
+    // Remove the line height and letter spacing, as they're not configurable, so the MaterialTheme's values (e.g.
+    // bodyLarge's 0.5sp letter spacing) shouldn't leak in.
     val textStyle = when (colorStyle) {
         is ColorStyle.Solid -> LocalTextStyle.current.copy(
             lineHeight = TextUnit.Unspecified,
+            letterSpacing = TextUnit.Unspecified,
         )
         is ColorStyle.Gradient -> LocalTextStyle.current.copy(
             lineHeight = TextUnit.Unspecified,
+            letterSpacing = TextUnit.Unspecified,
             brush = colorStyle.brush,
         )
     }
