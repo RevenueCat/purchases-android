@@ -355,4 +355,17 @@ public enum class OwnershipType {
      */
     @SerialName("UNKNOWN")
     UNKNOWN,
+    ;
+
+    internal companion object {
+        @JvmSynthetic
+        public fun fromString(text: String?): OwnershipType {
+            return when (text) {
+                "PURCHASED" -> PURCHASED
+                "FAMILY_SHARED" -> FAMILY_SHARED
+                "ASSIGNED" -> ASSIGNED
+                else -> UNKNOWN
+            }
+        }
+    }
 }

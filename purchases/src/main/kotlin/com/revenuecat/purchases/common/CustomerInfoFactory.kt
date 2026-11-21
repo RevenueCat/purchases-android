@@ -120,20 +120,21 @@ internal object CustomerInfoFactory {
     ): Map<String, SubscriptionInfo> {
         val subscriptionMap = mutableMapOf<String, SubscriptionInfo>()
         val subscriptions = subscriberJSONObject.getJSONObject("subscriptions")
-        try {
-            subscriptions.keys().forEach { productId ->
+        subscriptions.keys().forEach { productId ->
+            // Parse each subscription independently so one failure doesn't drop other entries.
+            try {
                 val subscriptionJSONObject = subscriptions.getJSONObject(productId)
                 val subscriptionInfoResponse = JsonProvider.defaultJson.decodeFromString<SubscriptionInfoResponse>(
                     subscriptionJSONObject.toString(),
                 )
                 subscriptionMap[productId] = SubscriptionInfo(productId, requestDate, subscriptionInfoResponse)
+            } catch (s: SerializationException) {
+                errorLog(s) { "Error deserializing subscription information for $productId" }
+            } catch (i: IllegalArgumentException) {
+                errorLog(i) {
+                    "Error deserializing subscription information for $productId. The input is not a SubscriptionInfo"
+                }
             }
-        } catch (s: SerializationException) {
-            errorLog(s) { "Error deserializing subscription information" }
-            emptyMap<String, SubscriptionInfo>()
-        } catch (i: IllegalArgumentException) {
-            errorLog(i) { "Error deserializing subscription information. The input is not a SubscriptionInfo" }
-            emptyMap<String, SubscriptionInfo>()
         }
         return subscriptionMap
     }
