@@ -92,6 +92,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.runBlocking
 import java.util.Date
+import java.util.UUID
 import org.json.JSONObject
 import org.junit.Assert.fail
 import org.junit.Test
@@ -1716,13 +1717,55 @@ internal class PurchasesTest : BasePurchasesTest() {
     @Test
     fun `track event tracks event`() {
         val event = mockk<PaywallEvent>().apply {
-            every { type } returns PaywallEventType.IMPRESSION
+            every { type } returns PaywallEventType.CLOSE
         }
         every { mockEventsManager.track(event) } just Runs
 
         purchases.track(event)
         verify(exactly = 1) { mockEventsManager.track(event) }
     }
+
+    @Test
+    fun `track impression stamps ms since configure`() {
+        val tracked = slot<FeatureEvent>()
+        every { mockEventsManager.track(capture(tracked)) } just Runs
+        val impression = paywallImpressionEvent()
+
+        purchases.track(impression)
+
+        val stamped = tracked.captured as PaywallEvent
+        assertThat(stamped.type).isEqualTo(PaywallEventType.IMPRESSION)
+        assertThat(stamped.data.msSinceConfigure).isNotNull
+        assertThat(stamped.data.msSinceConfigure).isGreaterThanOrEqualTo(0)
+        assertThat(stamped.data.sessionIdentifier).isEqualTo(impression.data.sessionIdentifier)
+    }
+
+    @Test
+    fun `track impression keeps an already set ms since configure`() {
+        val tracked = slot<FeatureEvent>()
+        every { mockEventsManager.track(capture(tracked)) } just Runs
+        val impression = paywallImpressionEvent().let {
+            it.copy(data = it.data.copy(msSinceConfigure = 4321))
+        }
+
+        purchases.track(impression)
+
+        assertThat((tracked.captured as PaywallEvent).data.msSinceConfigure).isEqualTo(4321)
+    }
+
+    private fun paywallImpressionEvent() = PaywallEvent(
+        creationData = PaywallEvent.CreationData(UUID.randomUUID(), Date()),
+        data = PaywallEvent.Data(
+            paywallIdentifier = "paywall_id",
+            presentedOfferingContext = PresentedOfferingContext("offering_id"),
+            paywallRevision = 1,
+            sessionIdentifier = UUID.randomUUID(),
+            displayMode = "full_screen",
+            localeIdentifier = "en_US",
+            darkMode = false,
+        ),
+        type = PaywallEventType.IMPRESSION,
+    )
 
     @Test
     fun `track notifies listener if set`() {

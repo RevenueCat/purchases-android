@@ -160,6 +160,12 @@ internal sealed class BackendEvent : Event {
         val currentProductIdentifier: String? = null,
         @SerialName("resulting_product_id")
         val resultingProductIdentifier: String? = null,
+        @SerialName("ms_since_configure")
+        val msSinceConfigure: Int? = null,
+        @SerialName("loading_duration_ms")
+        val loadingDurationMs: Int? = null,
+        @SerialName("loading_incomplete_reason")
+        val loadingIncompleteReason: String? = null,
     ) : BackendEvent()
 
     @Serializable
