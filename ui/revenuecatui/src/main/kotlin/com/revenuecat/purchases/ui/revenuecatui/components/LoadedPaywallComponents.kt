@@ -317,8 +317,8 @@ internal suspend fun handleClick(
                         sheet,
                         state,
                         componentInteractionTracker,
-                    ) {
-                        handleClick(it, state, externalClickHandler, componentInteractionTracker)
+                    ) { sheetAction, sheetState ->
+                        handleClick(sheetAction, sheetState, externalClickHandler, componentInteractionTracker)
                     }
                 }
             }
@@ -333,19 +333,20 @@ internal fun SimpleSheetState.show(
     sheet: ButtonComponentStyle.Action.NavigateTo.Destination.Sheet,
     state: PaywallState.Loaded.Components,
     componentInteractionTracker: PaywallComponentInteractionTracker,
-    onClick: suspend (PaywallAction) -> Unit,
+    onClick: suspend (PaywallAction, PaywallState.Loaded.Components) -> Unit,
 ) {
+    val sheetPaywallState = state.copyForSheet()
     show(
         backgroundBlur = sheet.backgroundBlur,
         content = {
             ComponentView(
                 style = sheet.stack,
-                state = state,
+                state = sheetPaywallState,
                 componentInteractionTracker = componentInteractionTracker,
                 onClick = { action ->
                     when (action) {
                         is PaywallAction.External.NavigateBack -> hide()
-                        else -> onClick(action)
+                        else -> onClick(action, sheetPaywallState)
                     }
                 },
                 modifier = Modifier
@@ -356,7 +357,7 @@ internal fun SimpleSheetState.show(
         contentKey = sheet.id,
         presentationKey = sheet.presentationKey,
         onDismiss = {
-            val sheetSelected = state.selectedPackageInfo
+            val sheetSelected = sheetPaywallState.selectedPackageInfo
             val resulting = state.peekSelectedPackageInfoAfterSheetDismiss()
             componentInteractionTracker.track(
                 paywallPackageSelectionSheetClose(
@@ -394,7 +395,7 @@ private fun LoadedPaywallComponents_BottomSheet_NullSize_Preview() {
         sheet = previewBottomSheet(size = null),
         state = state,
         componentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
-        onClick = { },
+        onClick = { _, _ -> },
     )
 
     LoadedPaywallComponents(
@@ -414,7 +415,7 @@ private fun LoadedPaywallComponents_BottomSheet_FitSize_Preview() {
         sheet = previewBottomSheet(size = Size(width = Fit(), height = Fit())),
         state = state,
         componentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
-        onClick = { },
+        onClick = { _, _ -> },
     )
 
     LoadedPaywallComponents(
