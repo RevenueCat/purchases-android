@@ -682,9 +682,8 @@ private fun MainStackComponent(
         } else {
             when (val dimension = stackState.dimension) {
                 is Dimension.Horizontal -> {
-                    // Skip weight() for a Fill child when this Row's width axis is unbounded (else it
-                    // collapses to zero). See Modifier.trackMainAxisUnbounded; only tracked when a Fill
-                    // child could be affected.
+                    // Unbounded Fill children need their viewport share as a minimum, with room to grow.
+                    // Track after sizing so fixed-size stacks keep distributing bounded space.
                     val hasFillWidthChild = stackState.children.any { it.size.width is Fill }
                     val mainAxisUnbounded = remember { mutableStateOf(false) }
                     HorizontalStack(
@@ -700,7 +699,11 @@ private fun MainStackComponent(
                             }
                             .then(rootModifier)
                             .conditional(hasFillWidthChild) {
-                                trackMainAxisUnbounded(isHorizontal = true, unboundedState = mainAxisUnbounded)
+                                trackMainAxisUnbounded(
+                                    isHorizontal = true,
+                                    unboundedState = mainAxisUnbounded,
+                                    requireZeroMinimum = false,
+                                )
                             },
                     ) { _, child, childModifier ->
                         ComponentView(
@@ -738,7 +741,11 @@ private fun MainStackComponent(
                             }
                             .then(rootModifier)
                             .conditional(hasFillHeightChild) {
-                                trackMainAxisUnbounded(isHorizontal = false, unboundedState = mainAxisUnbounded)
+                                trackMainAxisUnbounded(
+                                    isHorizontal = false,
+                                    unboundedState = mainAxisUnbounded,
+                                    requireZeroMinimum = false,
+                                )
                             },
                     ) { index, child, childModifier ->
                         ComponentView(
