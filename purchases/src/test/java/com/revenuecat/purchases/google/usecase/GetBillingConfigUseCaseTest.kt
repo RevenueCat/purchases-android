@@ -2,6 +2,7 @@ package com.revenuecat.purchases.google.usecase
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.BillingClient.BillingResponseCode
+import com.android.billingclient.api.BillingClient.ConnectionState
 import com.android.billingclient.api.BillingConfig
 import com.android.billingclient.api.BillingConfigResponseListener
 import com.android.billingclient.api.BillingResult
@@ -100,7 +101,7 @@ internal class GetBillingConfigUseCaseTest: BaseBillingUseCaseTest() {
 
     @Test
     fun `querying storefront with a connected client does not go through the request queue`() {
-        every { mockClient.isReady } returns true
+        every { mockClient.connectionState } returns ConnectionState.CONNECTED
         mockGetBillingConfig()
         clearMocks(handler, answers = false)
 
@@ -114,7 +115,7 @@ internal class GetBillingConfigUseCaseTest: BaseBillingUseCaseTest() {
 
     @Test
     fun `querying storefront with a disconnected client waits in the request queue`() {
-        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns ConnectionState.DISCONNECTED
         mockGetBillingConfig()
 
         wrapper.getStorefront(onSuccess = { fail("Should wait") }, onError = { fail("Should wait") })

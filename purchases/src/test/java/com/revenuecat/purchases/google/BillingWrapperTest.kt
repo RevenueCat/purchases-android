@@ -10,6 +10,7 @@ import android.view.Window
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
+import com.android.billingclient.api.BillingConfigResponseListener
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingFlowParams.ProductDetailsParams
 import com.android.billingclient.api.BillingResult
@@ -101,7 +102,7 @@ class BillingWrapperTest {
         private const val THREAD_JOIN_TIMEOUT_MS = 5_000L
     }
 
-    private var onConnectedCalled: Boolean = false
+    private var onConnectedCount: Int = 0
     private var mockClientFactory: BillingWrapper.ClientFactory = mockk()
     private var mockClient: BillingClient = mockk()
     private var purchasesUpdatedListener: PurchasesUpdatedListener? = null
@@ -167,10 +168,11 @@ class BillingWrapperTest {
             secondArg<PurchasesResponseListener>().onQueryPurchasesResponse(billingClientOKResult, emptyList())
         }
 
-        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
+        // Auto-reconnection clients report ready even when the service is disconnected.
+        every { mockClient.isReady } returns true
         every {
-            mockClient.isReady
-        } returns false andThen true
+            mockClient.connectionState
+        } returns BillingClient.ConnectionState.DISCONNECTED andThen BillingClient.ConnectionState.CONNECTED
 
         val featureSlot = slot<String>()
         every {
@@ -191,10 +193,10 @@ class BillingWrapperTest {
         )
         wrapper.purchasesUpdatedListener = mockPurchasesListener
         wrapper.startConnection()
-        onConnectedCalled = false
+        onConnectedCount = 0
         wrapper.stateListener = object : BillingAbstract.StateListener {
             override fun onConnected() {
-                onConnectedCalled = true
+                onConnectedCount++
             }
         }
 
@@ -322,7 +324,7 @@ class BillingWrapperTest {
         every { mockClient.startConnection(any()) } answers {
             heldLockDuringStartConnection = Thread.holdsLock(wrapper)
         }
-        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
 
         wrapper.startConnection()
 
@@ -357,7 +359,7 @@ class BillingWrapperTest {
     @Test
     fun `if starting connection throws an unexpected exception, the exception is rethrown on the main thread`() {
         val connectError = IllegalArgumentException("unexpected")
-        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
         every { mockClient.startConnection(any()) } throws connectError
 
         val thrown = assertThrows(IllegalArgumentException::class.java) {
@@ -368,7 +370,7 @@ class BillingWrapperTest {
 
     @Test
     fun defersCallUntilConnected() {
-        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
 
         val token = "token"
         var consumePurchaseCompleted = false
@@ -381,7 +383,7 @@ class BillingWrapperTest {
 
         assertThat(consumePurchaseCompleted).isFalse
 
-        every { mockClient.isReady } returns true
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTED
 
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
 
@@ -390,7 +392,7 @@ class BillingWrapperTest {
 
     @Test
     fun canDeferMultipleCallsUntilConnected() {
-        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
 
         val token = "token"
 
@@ -412,7 +414,7 @@ class BillingWrapperTest {
         assertThat(consumePurchaseResponse1Called).isFalse
         assertThat(consumePurchaseResponse2Called).isFalse
 
-        every { mockClient.isReady } returns true
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTED
 
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
 
@@ -422,7 +424,7 @@ class BillingWrapperTest {
 
     @Test
     fun makingARequestTriggersAConnectionAttempt() {
-        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
 
         val token = "token"
         wrapper.consumePurchase(
@@ -446,7 +448,7 @@ class BillingWrapperTest {
             { errors.add(it) },
         )
 
-        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
         requests.single().run()
 
         assertThat(errors.map { it.code }).containsExactly(PurchasesErrorCode.StoreProblemError)
@@ -495,7 +497,7 @@ class BillingWrapperTest {
             { errors.add(it) },
         )
 
-        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
         requests.single().run()
 
         assertThat(errors.map { it.code }).containsExactly(PurchasesErrorCode.StoreProblemError)
@@ -508,13 +510,14 @@ class BillingWrapperTest {
         val requests = captureScheduledBillingRequests()
         val errors = mutableListOf<PurchasesError>()
         // Not ready when the storefront request starts, so it goes through the queue instead of running directly.
-        every { mockClient.isReady } returns false andThen true
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED andThen
+            BillingClient.ConnectionState.CONNECTED
         wrapper.getStorefront(
             { fail("shouldn't receive storefront") },
             { errors.add(it) },
         )
 
-        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
         requests.single().run()
 
         assertThat(errors.map { it.code }).containsExactly(PurchasesErrorCode.StoreProblemError)
@@ -602,7 +605,7 @@ class BillingWrapperTest {
     }
 
     private fun captureScheduledBillingRequests(): MutableList<Runnable> {
-        every { mockClient.isReady } returns true
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTED
         val requests = mutableListOf<Runnable>()
         every { handler.post(capture(requests)) } returns true
         every { handler.postDelayed(capture(requests), any()) } returns true
@@ -619,12 +622,12 @@ class BillingWrapperTest {
         )
         repeat(requestIndex) { requests[it].run() }
 
-        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
         requests[requestIndex].run()
 
         assertThat(errors.map { it.code }).containsExactly(PurchasesErrorCode.StoreProblemError)
         mockRunnables()
-        every { mockClient.isReady } returns true
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTED
         wrapper.onBillingSetupFinished(billingClientOKResult)
         assertThat(errors).hasSize(1)
     }
@@ -646,7 +649,7 @@ class BillingWrapperTest {
             PresentedOfferingContext("offering_a"),
         )
 
-        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
         requests.single().run()
 
         assertThat(errors.map { it.code }).containsExactly(PurchasesErrorCode.StoreProblemError)
@@ -655,7 +658,7 @@ class BillingWrapperTest {
 
     @Test
     fun `If starting connection throws an IllegalStateException, error is forwarded`() {
-        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
         every {
             mockClient.startConnection(any())
         } throws IllegalStateException("Too many bind requests(999+) for service intent.")
@@ -680,7 +683,7 @@ class BillingWrapperTest {
 
     @Test
     fun `If starting connection throws a SecurityException, error is forwarded`() {
-        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
         every {
             mockClient.startConnection(any())
         } throws SecurityException("get package info: UID XXXXXXX requires android.permission.INTERACT_ACROSS_USERS_FULL or android.permission.INTERACT_ACROSS_USERS to access user 0.")
@@ -705,7 +708,7 @@ class BillingWrapperTest {
 
     @Test
     fun `does not start another connection while billing is connecting`() {
-        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
         every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTING
 
         val errors = mutableListOf<PurchasesError>()
@@ -723,7 +726,7 @@ class BillingWrapperTest {
 
     @Test
     fun `timed out connecting client is retired once and a later request creates a new client`() {
-        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
         every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTING
         val errors = mutableListOf<PurchasesError>()
         val oldListener = billingClientStateListener!!
@@ -743,7 +746,6 @@ class BillingWrapperTest {
         val replacement = mockk<BillingClient>(relaxed = true)
         val replacementListener = slot<BillingClientStateListener>()
         every { replacement.startConnection(capture(replacementListener)) } just Runs
-        every { replacement.isReady } returns false
         every { replacement.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
         every { mockClientFactory.buildClient(any()) } returns replacement
         wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("c"), {}, { errors.add(it) })
@@ -761,7 +763,7 @@ class BillingWrapperTest {
 
     @Test
     fun `setup callback posted before retirement cannot fail later requests`() {
-        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
         every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTING
         val errors = mutableListOf<PurchasesError>()
         wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("a"), {}, { errors.add(it) })
@@ -782,7 +784,7 @@ class BillingWrapperTest {
 
     @Test
     fun `retiring a client reports whether closing it failed`() {
-        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
         every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTING
         every { mockClient.endConnection() } throws IllegalStateException("close failed")
         val errors = mutableListOf<PurchasesError>()
@@ -800,7 +802,7 @@ class BillingWrapperTest {
 
     @Test
     fun `timeout waits for a newer connection attempt to reach its own deadline`() {
-        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
         every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTING
         wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("a"), {}, {})
         every { mockDateProvider.now } returns Date(1676379379000)
@@ -823,7 +825,7 @@ class BillingWrapperTest {
 
     @Test
     fun `retirement timer does not retire a newer connection attempt`() {
-        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
         every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTING
         wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("a"), {}, {})
         connectionClockMillis = 9_000
@@ -847,7 +849,6 @@ class BillingWrapperTest {
 
     @Test
     fun `timeout does not retire a client that is no longer connecting`() {
-        every { mockClient.isReady } returns false
         every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
         wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("a"), {}, {})
         pendingRequestTimeouts.toList().forEach { it.run() }
@@ -857,7 +858,6 @@ class BillingWrapperTest {
 
     @Test
     fun `starts a new connection when billing is disconnected`() {
-        every { mockClient.isReady } returns false
         every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
 
         wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("product_a"), {}, {})
@@ -866,15 +866,226 @@ class BillingWrapperTest {
     }
 
     @Test
+    fun `disconnect alone and explicit start do not manually reconnect an initialized client`() {
+        disconnectInitializedClient()
+        wrapper.startConnection()
+        verify(exactly = 1) { mockClient.startConnection(any()) }
+        verify(exactly = 0) { mockClient.getBillingConfigAsync(any(), any()) }
+    }
+
+    @Test
+    fun `automatic recovery reports connected once when Play forwards the reconnection result`() {
+        disconnectInitializedClient()
+        onConnectedCount = 0
+        val recovery = slot<BillingConfigResponseListener>()
+        every { mockClient.getBillingConfigAsync(any(), capture(recovery)) } just Runs
+        var successes = 0
+        wrapper.queryPurchases(appUserId, { successes++ }, { fail("Unexpected error: $it") })
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTED
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+        recovery.captured.onBillingConfigResponse(billingClientOKResult, null)
+        assertThat(onConnectedCount).isEqualTo(1)
+        assertThat(successes).isEqualTo(1)
+    }
+
+    @Test
+    fun `forwarded reconnection error does not start a manual reconnection`() {
+        disconnectInitializedClient()
+        billingClientStateListener!!.onBillingSetupFinished(
+            BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
+        )
+        verify(exactly = 1) { mockClient.startConnection(any()) }
+    }
+
+    @Test
+    fun `concurrent operations share automatic recovery and complete once`() {
+        disconnectInitializedClient()
+        val recovery = slot<BillingConfigResponseListener>()
+        every { mockClient.getBillingConfigAsync(any(), capture(recovery)) } just Runs
+        var successes = 0
+        repeat(2) {
+            wrapper.queryPurchases(appUserId, { successes++ }, { fail("Unexpected error: $it") })
+        }
+        verify(exactly = 1) { mockClient.getBillingConfigAsync(any(), any()) }
+        verify(exactly = 0) { mockClient.queryPurchasesAsync(any<QueryPurchasesParams>(), any()) }
+        verify(exactly = 1) { mockClient.startConnection(any()) }
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTED
+        recovery.captured.onBillingConfigResponse(billingClientOKResult, null)
+        recovery.captured.onBillingConfigResponse(billingClientOKResult, null)
+        pendingRequestTimeouts.toList().forEach { it.run() }
+        assertThat(successes).isEqualTo(2)
+        verify(exactly = 0) { mockClient.endConnection() }
+    }
+
+    @Test
+    fun `late config response after setup cannot fail the next recovery`() {
+        disconnectInitializedClient()
+        val recoveries = mutableListOf<BillingConfigResponseListener>()
+        every { mockClient.getBillingConfigAsync(any(), capture(recoveries)) } just Runs
+        var successes = 0
+        wrapper.queryPurchases(appUserId, { successes++ }, { fail("Unexpected error: $it") })
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTED
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
+        wrapper.queryPurchases(appUserId, { successes++ }, { fail("Unexpected error: $it") })
+        billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponseCode.BILLING_UNAVAILABLE.buildResult())
+        recoveries.first().onBillingConfigResponse(
+            BillingClient.BillingResponseCode.SERVICE_DISCONNECTED.buildResult(), null,
+        )
+        assertThat(successes).isEqualTo(1)
+        assertThat(recoveries).hasSize(2)
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTED
+        recoveries.last().onBillingConfigResponse(billingClientOKResult, null)
+        assertThat(successes).isEqualTo(2)
+    }
+
+    @Test
+    fun `unsupported billing config still releases requests when recovery connected`() {
+        disconnectInitializedClient()
+        val recovery = slot<BillingConfigResponseListener>()
+        every { mockClient.getBillingConfigAsync(any(), capture(recovery)) } just Runs
+        var successes = 0
+        wrapper.queryPurchases(appUserId, { successes++ }, { fail("Unexpected error: $it") })
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTED
+        recovery.captured.onBillingConfigResponse(
+            BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult(), null,
+        )
+        assertThat(successes).isEqualTo(1)
+    }
+
+    @Test
+    fun `failed automatic recovery fails all queued operations without retrying or recreating`() {
+        disconnectInitializedClient()
+        val recovery = slot<BillingConfigResponseListener>()
+        every { mockClient.getBillingConfigAsync(any(), capture(recovery)) } just Runs
+        val errors = mutableListOf<PurchasesError>()
+        repeat(2) { wrapper.queryPurchases(appUserId, { fail("Unexpected success") }, { errors.add(it) }) }
+        recovery.captured.onBillingConfigResponse(
+            BillingClient.BillingResponseCode.SERVICE_DISCONNECTED.buildResult(), null,
+        )
+        pendingRequestTimeouts.toList().forEach { it.run() }
+        assertThat(errors).hasSize(2)
+        verify(exactly = 1) { mockClient.getBillingConfigAsync(any(), any()) }
+        verify(exactly = 1) { mockClient.startConnection(any()) }
+        verify(exactly = 0) { mockClient.endConnection() }
+    }
+
+    @Test
+    fun `failed recovery during subscription history fails purchase without another recovery attempt`() {
+        disconnectInitializedClient()
+        val recovery = slot<BillingConfigResponseListener>()
+        every { mockClient.getBillingConfigAsync(any(), capture(recovery)) } just Runs
+        val errors = mutableListOf<PurchasesError>()
+        every { mockPurchasesListener.onPurchasesFailedToUpdate(any()) } answers { errors.add(firstArg()) }
+        val purchasingData = createStoreProductWithoutOffers().subscriptionOptions!!.first().purchasingData
+        wrapper.makePurchaseAsync(mockActivity, appUserId, purchasingData, null, null)
+        recovery.captured.onBillingConfigResponse(
+            BillingClient.BillingResponseCode.BILLING_UNAVAILABLE.buildResult(), null,
+        )
+        pendingRequestTimeouts.toList().forEach { it.run() }
+        assertThat(errors).hasSize(1)
+        verify(exactly = 1) { mockClient.getBillingConfigAsync(any(), any()) }
+        verify(exactly = 0) { mockClient.launchBillingFlow(any(), any()) }
+    }
+
+    @Test
+    fun `stuck automatic recovery times out and retires client without replaying a purchase`() {
+        disconnectInitializedClient()
+        val recovery = slot<BillingConfigResponseListener>()
+        every { mockClient.getBillingConfigAsync(any(), capture(recovery)) } answers {
+            every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTING
+        }
+        val errors = mutableListOf<PurchasesError>()
+        every { mockPurchasesListener.onPurchasesFailedToUpdate(any()) } answers { errors.add(firstArg()) }
+        val purchasingData = createStoreProductWithoutOffers().subscriptionOptions!!.first().purchasingData
+        wrapper.makePurchaseAsync(
+            mockActivity, appUserId, purchasingData, mockReplaceSkuInfo(), PresentedOfferingContext("offering"),
+        )
+        wrapper.queryPurchases(appUserId, { fail("Unexpected success") }, { errors.add(it) })
+        connectionClockMillis = PENDING_REQUEST_TIMEOUT_MILLISECONDS
+        pendingRequestTimeouts.toList().forEach { it.run() }
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTED
+        recovery.captured.onBillingConfigResponse(billingClientOKResult, null)
+        assertThat(errors.map { it.underlyingErrorMessage }).containsExactly(
+            BillingStrings.BILLING_PENDING_REQUEST_TIMED_OUT,
+            BillingStrings.BILLING_PENDING_REQUEST_TIMED_OUT,
+        )
+        verify(exactly = 1) { mockClient.endConnection() }
+        verify(exactly = 0) { mockClient.launchBillingFlow(any(), any()) }
+        assertThat(wrapper.billingClient).isNull()
+    }
+
+    @Test
+    fun `late recovery callback cannot drain requests from a later recovery on the same client`() {
+        disconnectInitializedClient()
+        val recoveries = mutableListOf<BillingConfigResponseListener>()
+        every { mockClient.getBillingConfigAsync(any(), capture(recoveries)) } just Runs
+        val errors = mutableListOf<PurchasesError>()
+        var successes = 0
+        wrapper.queryPurchases(appUserId, { successes++ }, { errors.add(it) })
+        pendingRequestTimeouts.toList().forEach { it.run() }
+        wrapper.queryPurchases(appUserId, { successes++ }, { errors.add(it) })
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTED
+        recoveries[0].onBillingConfigResponse(billingClientOKResult, null)
+        assertThat(successes).isZero()
+        recoveries[1].onBillingConfigResponse(billingClientOKResult, null)
+        assertThat(successes).isEqualTo(1)
+        assertThat(errors).hasSize(1)
+        verify(exactly = 0) { mockClient.endConnection() }
+    }
+
+    @Test
+    fun `purchase launches exactly once only after automatic recovery is ready`() {
+        disconnectInitializedClient()
+        val recovery = slot<BillingConfigResponseListener>()
+        every { mockClient.getBillingConfigAsync(any(), capture(recovery)) } just Runs
+        every { mockClient.launchBillingFlow(any(), any()) } returns billingClientOKResult
+        val purchasingData = createStoreProductWithoutOffers().subscriptionOptions!!.first().purchasingData
+        wrapper.makePurchaseAsync(
+            mockActivity, appUserId, purchasingData, mockReplaceSkuInfo(), PresentedOfferingContext("offering"),
+        )
+        verify(exactly = 0) { mockClient.launchBillingFlow(any(), any()) }
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTED
+        recovery.captured.onBillingConfigResponse(billingClientOKResult, null)
+        recovery.captured.onBillingConfigResponse(billingClientOKResult, null)
+        pendingRequestTimeouts.toList().forEach { it.run() }
+        verify(exactly = 1) { mockClient.launchBillingFlow(any(), any()) }
+        verify(exactly = 1) { mockClient.startConnection(any()) }
+    }
+
+    @Test
+    fun `closing during automatic recovery fails queued queries and ignores late callback`() {
+        disconnectInitializedClient()
+        val recovery = slot<BillingConfigResponseListener>()
+        every { mockClient.getBillingConfigAsync(any(), capture(recovery)) } just Runs
+        val errors = mutableListOf<PurchasesError>()
+        wrapper.queryPurchases(appUserId, { fail("Unexpected success") }, { errors.add(it) })
+        wrapper.close()
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTED
+        recovery.captured.onBillingConfigResponse(billingClientOKResult, null)
+        pendingRequestTimeouts.toList().forEach { it.run() }
+        assertThat(errors).hasSize(1)
+        verify(exactly = 0) { mockClient.queryPurchasesAsync(any<QueryPurchasesParams>(), any()) }
+    }
+
+    private fun disconnectInitializedClient() {
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTED
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
+        billingClientStateListener!!.onBillingServiceDisconnected()
+    }
+
+    @Test
     fun `purchase timeout reports the error without launching after billing reconnects`() {
-        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
         val errors = mutableListOf<PurchasesError>()
         every { mockPurchasesListener.onPurchasesFailedToUpdate(any()) } answers { errors.add(firstArg()) }
         val purchasingData = createStoreProductWithoutOffers().subscriptionOptions!!.first().purchasingData
         wrapper.makePurchaseAsync(
             mockActivity, appUserId, purchasingData, mockReplaceSkuInfo(), PresentedOfferingContext("offering_a"),
         )
-        every { mockClient.isReady } returns true
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTED
         every { mockClient.launchBillingFlow(any(), any()) } returns billingClientOKResult
 
         pendingRequestTimeouts.forEach { it.run() }
@@ -887,12 +1098,13 @@ class BillingWrapperTest {
 
     @Test
     fun `purchase history timeout fails the purchase without queuing a second request`() {
-        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
         val errors = mutableListOf<PurchasesError>()
         every { mockPurchasesListener.onPurchasesFailedToUpdate(any()) } answers { errors.add(firstArg()) }
         val purchasingData = createStoreProductWithoutOffers().subscriptionOptions!!.first().purchasingData
         wrapper.makePurchaseAsync(mockActivity, appUserId, purchasingData, null, PresentedOfferingContext("offering_a"))
 
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTED
         pendingRequestTimeouts.toList().forEach { it.run() }
 
         assertThat(errors.map { it.underlyingErrorMessage })
@@ -903,14 +1115,17 @@ class BillingWrapperTest {
 
     @Test
     fun `request times out if billing disconnects between readiness checks`() {
-        every { mockClient.isReady } returnsMany listOf(true, false)
+        every { mockClient.connectionState } returnsMany listOf(
+            BillingClient.ConnectionState.CONNECTED,
+            BillingClient.ConnectionState.DISCONNECTED,
+        )
         val errors = mutableListOf<PurchasesError>()
         wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("product_a"), {}, { errors.add(it) })
 
         pendingRequestTimeouts.toList().forEach { it.run() }
 
         assertThat(errors.map { it.code }).containsExactly(PurchasesErrorCode.StoreProblemError)
-        every { mockClient.isReady } returns true
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTED
         wrapper.onBillingSetupFinished(billingClientOKResult)
         assertThat(errors).hasSize(1)
         verify(exactly = 0) { mockClient.queryProductDetailsAsync(any(), any()) }
@@ -918,7 +1133,7 @@ class BillingWrapperTest {
 
     @Test
     fun `pending request fails if billing does not connect before the timeout`() {
-        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
         val errors = mutableListOf<PurchasesError>()
         wrapper.queryPurchases(
             appUserID = "appUserID",
@@ -938,7 +1153,7 @@ class BillingWrapperTest {
         }
 
         // The timed out request must not also run once billing connects.
-        every { mockClient.isReady } returns true
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTED
         wrapper.onBillingSetupFinished(billingClientOKResult)
         assertThat(errors).hasSize(1)
     }
@@ -1067,14 +1282,14 @@ class BillingWrapperTest {
 
     @Test
     fun `pending request timeout does nothing if billing connected in time`() {
-        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
         var successCount = 0
         wrapper.queryPurchases(
             appUserID = "appUserID",
             onSuccess = { successCount++ },
             onError = { fail("shouldn't be an error") },
         )
-        every { mockClient.isReady } returns true
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTED
         wrapper.onBillingSetupFinished(billingClientOKResult)
         assertThat(successCount).isEqualTo(1)
 
@@ -1586,7 +1801,8 @@ class BillingWrapperTest {
 
     @Test
     fun `obfuscatedAccountId is set for transfer purchases when enabled`() {
-        every { mockClient.isReady } returns false andThen true
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED andThen
+            BillingClient.ConnectionState.CONNECTED
 
         val enabledWrapper = BillingWrapper(
             clientFactory = mockClientFactory,
@@ -1702,8 +1918,71 @@ class BillingWrapperTest {
     }
 
     @Test
+    fun `purchase still launches when querying owned purchases fails with BILLING_UNAVAILABLE`() {
+        val mockBuilder = setUpForObfuscatedAccountIDTests()
+        val storeProduct = createStoreProductWithoutOffers()
+        mockClient.mockQueryPurchasesAsync(
+            BillingClient.BillingResponseCode.BILLING_UNAVAILABLE.buildResult(),
+            billingClientOKResult,
+            subPurchases = emptyList(),
+        )
+
+        wrapper.makePurchaseAsync(
+            mockActivity,
+            appUserId,
+            storeProduct.subscriptionOptions!!.first().purchasingData,
+            null,
+            null,
+        )
+
+        verify {
+            mockBuilder.setObfuscatedAccountId(appUserId.sha256())
+        }
+        verify(exactly = 1) {
+            mockClient.launchBillingFlow(any(), any())
+        }
+        verify(exactly = 0) {
+            mockPurchasesListener.onPurchasesFailedToUpdate(any())
+        }
+
+        clearStaticMockk(BillingFlowParams::class)
+    }
+
+    @Test
+    fun `purchase still launches when querying owned purchases fails with ITEM_ALREADY_OWNED`() {
+        val mockBuilder = setUpForObfuscatedAccountIDTests()
+        val storeProduct = createStoreProductWithoutOffers()
+        mockClient.mockQueryPurchasesAsync(
+            BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED.buildResult(),
+            billingClientOKResult,
+            subPurchases = emptyList(),
+        )
+
+        wrapper.makePurchaseAsync(
+            mockActivity,
+            appUserId,
+            storeProduct.subscriptionOptions!!.first().purchasingData,
+            null,
+            null,
+        )
+
+        verify {
+            mockBuilder.setObfuscatedAccountId(appUserId.sha256())
+        }
+        verify(exactly = 1) {
+            mockClient.launchBillingFlow(any(), any())
+        }
+        verify(exactly = 0) {
+            mockPurchasesListener.onPurchasesFailedToUpdate(any())
+        }
+
+        clearStaticMockk(BillingFlowParams::class)
+    }
+
+    @Test
     fun `obfuscatedAccountId is set for owned subscription when applying to subscription changes is enabled`() {
-        every { mockClient.isReady } returns false andThen true
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED andThen
+            BillingClient.ConnectionState.CONNECTED
 
         val enabledWrapper = BillingWrapper(
             clientFactory = mockClientFactory,
@@ -1775,7 +2054,7 @@ class BillingWrapperTest {
             mockClient.launchBillingFlow(any(), any())
         } returns billingClientOKResult
 
-        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
 
         val storeProduct = createStoreProductWithoutOffers()
 
@@ -1791,7 +2070,7 @@ class BillingWrapperTest {
             mockClient.launchBillingFlow(eq(mockActivity), any())
         }
 
-        every { mockClient.isReady } returns true
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTED
 
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
 
@@ -1806,7 +2085,7 @@ class BillingWrapperTest {
             mockClient.launchBillingFlow(any(), any())
         } returns billingClientOKResult
 
-        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
 
         val storeProduct = createStoreProductWithoutOffers()
 
@@ -1823,7 +2102,7 @@ class BillingWrapperTest {
             handler.postDelayed(any(), 0L)
         }
 
-        every { mockClient.isReady } returns true
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTED
 
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
 
@@ -2039,8 +2318,8 @@ class BillingWrapperTest {
             mockClient.endConnection()
         } just Runs
         every {
-            mockClient.isReady
-        } returns true
+            mockClient.connectionState
+        } returns BillingClient.ConnectionState.CONNECTED
 
         wrapper.close()
         verify {
@@ -2080,8 +2359,8 @@ class BillingWrapperTest {
             mockClient.endConnection()
         } just Runs
         every {
-            mockClient.isReady
-        } returns true
+            mockClient.connectionState
+        } returns BillingClient.ConnectionState.CONNECTED
 
         wrapper.close()
 
@@ -2098,8 +2377,8 @@ class BillingWrapperTest {
     @Test
     fun `calling close before setup finishes doesn't crash`() {
         every {
-            mockClient.isReady
-        } returns false
+            mockClient.connectionState
+        } returns BillingClient.ConnectionState.DISCONNECTED
 
         wrapper.queryProductDetailsAsync(
             ProductType.SUBS,
@@ -2116,8 +2395,8 @@ class BillingWrapperTest {
     @Test
     fun `calling close before purchase completes doesn't crash`() {
         every {
-            mockClient.isReady
-        } returns false
+            mockClient.connectionState
+        } returns BillingClient.ConnectionState.DISCONNECTED
 
         wrapper.purchasesUpdatedListener = null
         wrapper.onPurchasesUpdated(BillingClient.BillingResponseCode.DEVELOPER_ERROR.buildResult(), emptyList())
@@ -2126,8 +2405,8 @@ class BillingWrapperTest {
     @Test
     fun `calling end connection before client is ready ends connection`() {
         every {
-            mockClient.isReady
-        } returns false
+            mockClient.connectionState
+        } returns BillingClient.ConnectionState.DISCONNECTED
 
         wrapper.close()
         verify {
@@ -2138,7 +2417,7 @@ class BillingWrapperTest {
     @Test
     fun `on successfully connected billing client, listener is called`() {
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
-        assertThat(onConnectedCalled).isTrue
+        assertThat(onConnectedCount).isEqualTo(1)
     }
 
     @Test
@@ -2231,6 +2510,9 @@ class BillingWrapperTest {
         mockkStatic(BillingClient::class)
         mockkStatic(PendingPurchasesParams::class)
         val mockBuilder = mockk<BillingClient.Builder>(relaxed = true)
+        every { mockBuilder.enablePendingPurchases(any()) } returns mockBuilder
+        every { mockBuilder.setListener(any()) } returns mockBuilder
+        every { mockBuilder.enableAutoServiceReconnection() } returns mockBuilder
         every {
             BillingClient.newBuilder(context)
         } returns mockBuilder
@@ -2258,6 +2540,7 @@ class BillingWrapperTest {
         }
         verify(exactly = 1) {
             mockBuilder.enablePendingPurchases(mockPendingParams)
+            mockBuilder.enableAutoServiceReconnection()
         }
     }
 
@@ -2267,6 +2550,9 @@ class BillingWrapperTest {
         mockkStatic(BillingClient::class)
         mockkStatic(PendingPurchasesParams::class)
         val mockBuilder = mockk<BillingClient.Builder>(relaxed = true)
+        every { mockBuilder.enablePendingPurchases(any()) } returns mockBuilder
+        every { mockBuilder.setListener(any()) } returns mockBuilder
+        every { mockBuilder.enableAutoServiceReconnection() } returns mockBuilder
         every {
             BillingClient.newBuilder(context)
         } returns mockBuilder
@@ -2294,6 +2580,7 @@ class BillingWrapperTest {
         }
         verify(exactly = 1) {
             mockBuilder.enablePendingPurchases(mockPendingParams)
+            mockBuilder.enableAutoServiceReconnection()
         }
     }
 
@@ -2406,7 +2693,7 @@ class BillingWrapperTest {
         // Arrange
         every { mockClient.queryProductDetailsAsync(any(), any()) } just runs
         // BillingClient is not connected, to check pendingRequestCount.
-        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
         val billingResult = BillingResult.newBuilder()
             .setResponseCode(BillingClient.BillingResponseCode.OK)
             .setDebugMessage("test-debug-message")
@@ -2526,7 +2813,7 @@ class BillingWrapperTest {
 
     @Test
     fun `showing inapp messages triggers connection if not connected`() {
-        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
 
         wrapper.showInAppMessagesIfNeeded(mockk(), InAppMessageType.values().toList()) {
             error("Unexpected subscription status change")
@@ -2686,7 +2973,7 @@ class BillingWrapperTest {
 
     @Test
     fun `BILLING_UNAVAILABLE errors are forwarded to billing client calls`() {
-        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
 
         var receivedError: PurchasesError? = null
         wrapper.queryPurchases(

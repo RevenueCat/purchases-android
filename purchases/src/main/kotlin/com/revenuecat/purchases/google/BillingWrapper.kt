@@ -17,6 +17,7 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingFlowParams.ProductDetailsParams
 import com.android.billingclient.api.BillingResult
+import com.android.billingclient.api.GetBillingConfigParams
 import com.android.billingclient.api.InAppMessageParams
 import com.android.billingclient.api.InAppMessageResult
 import com.android.billingclient.api.PendingPurchasesParams
@@ -139,6 +140,13 @@ internal class BillingWrapper(
     @set:Synchronized
     @Volatile
     var billingClient: BillingClient? = null
+        set(value) {
+            if (field !== value) {
+                hasCompletedInitialSetup = false
+                serviceReconnection = null
+            }
+            field = value
+        }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal val purchaseContext = mutableMapOf<String, PurchaseContext>()
@@ -166,6 +174,12 @@ internal class BillingWrapper(
     @Volatile
     private var scheduledReconnectAtElapsedMillis: Long? = null
 
+    // Initial setup belongs to the wrapper; subsequent connections belong to Play Billing.
+    private var hasCompletedInitialSetup = false
+    private var serviceReconnection: ServiceReconnection? = null
+
+    private class ServiceReconnection(val client: BillingClient)
+
     val appInBackground: Boolean
         get() = purchasesStateProvider.purchasesState.appInBackground
 
@@ -178,14 +192,22 @@ internal class BillingWrapper(
                 .enableOneTimeProducts()
                 .apply { if (pendingTransactionsForPrepaidPlansEnabled) enablePrepaidPlans() }
                 .build()
-            return BillingClient.newBuilder(context).enablePendingPurchases(pendingPurchaseParams).setListener(listener)
+            return BillingClient.newBuilder(context)
+                .enablePendingPurchases(pendingPurchaseParams)
+                .setListener(listener)
+                .enableAutoServiceReconnection()
                 .build()
         }
     }
 
+    // With automatic reconnection enabled, Play Billing's isReady can return true while disconnected.
+    private val BillingClient.isServiceConnected: Boolean
+        get() = connectionState == BillingClient.ConnectionState.CONNECTED
+
     private fun executePendingRequests() {
         synchronized(this@BillingWrapper) {
-            while (billingClient?.isReady == true) {
+            while (billingClient?.isServiceConnected == true) {
+                serviceReconnection = null
                 serviceRequests.poll()?.let { (request, delayMilliseconds) ->
                     if (delayMilliseconds != null) {
                         mainHandler.postDelayed(
@@ -218,7 +240,8 @@ internal class BillingWrapper(
                 }
                 reconnectionAlreadyScheduled = false
                 val client = billingClient?.takeIf {
-                    !it.isReady && it.connectionState != BillingClient.ConnectionState.CONNECTING
+                    !hasCompletedInitialSetup && !it.isServiceConnected &&
+                        it.connectionState != BillingClient.ConnectionState.CONNECTING
                 }
                 if (client != null) {
                     connectionStartedAtElapsedMillis = elapsedRealtime()
@@ -266,6 +289,9 @@ internal class BillingWrapper(
                     it.endConnection()
                 }
                 billingClient = null
+                sendErrorsToAllPendingRequests(
+                    PurchasesError(PurchasesErrorCode.StoreProblemError, BillingStrings.BILLING_SERVICE_DISCONNECTED),
+                )
             }
         }
     }
@@ -286,11 +312,11 @@ internal class BillingWrapper(
         if (purchasesUpdatedListener != null) {
             val pendingRequest = request to delayMilliseconds
             serviceRequests.add(pendingRequest)
-            val isReady = billingClient?.isReady
-            if (isReady != true) {
-                startConnection()
-            } else {
-                executePendingRequests()
+            val client = billingClient
+            when {
+                client?.isServiceConnected == true -> executePendingRequests()
+                client != null && hasCompletedInitialSetup -> reconnectServiceForPendingRequests(client)
+                else -> startConnection()
             }
             // The client may disconnect between the readiness check and the queue drain.
             if (serviceRequests.contains(pendingRequest)) {
@@ -302,6 +328,44 @@ internal class BillingWrapper(
         }
     }
 
+    // A read-only call triggers lazy reconnection while queued purchases can still time out safely.
+    private fun reconnectServiceForPendingRequests(client: BillingClient) {
+        if (serviceReconnection != null || client.connectionState == BillingClient.ConnectionState.CONNECTING) return
+        val attempt = ServiceReconnection(client)
+        serviceReconnection = attempt
+        setupCallbackReceived = false
+        connectionStartedAtElapsedMillis = elapsedRealtime()
+        connectionAttemptGeneration.incrementAndGet()
+        backgroundHandler.post {
+            synchronized(this@BillingWrapper) {
+                if (serviceReconnection !== attempt || billingClient !== client || serviceRequests.isEmpty()) {
+                    return@post
+                }
+            }
+            client.getBillingConfigAsync(GetBillingConfigParams.newBuilder().build()) { result, _ ->
+                mainHandler.post { finishServiceReconnection(attempt, result) }
+            }
+        }
+    }
+
+    @Synchronized
+    private fun finishServiceReconnection(attempt: ServiceReconnection, result: BillingResult) {
+        if (serviceReconnection !== attempt || billingClient !== attempt.client) return
+        serviceReconnection = null
+        if (attempt.client.isServiceConnected) {
+            // Even an unsupported config query can restore the connection.
+            executePendingRequests()
+        } else {
+            retireStuckClient(attempt.client)
+            val error = if (result.responseCode == BillingClient.BillingResponseCode.OK) {
+                PurchasesError(PurchasesErrorCode.StoreProblemError, BillingStrings.BILLING_SERVICE_DISCONNECTED)
+            } else {
+                result.responseCode.billingResponseToPurchasesError(result.toHumanReadableDescription())
+            }
+            sendErrorsToAllPendingRequests(error)
+        }
+    }
+
     // A billing service that is slow, never answers or keeps disconnecting would otherwise hang the request forever.
     private fun failIfStillPendingAfterTimeout(
         pendingRequest: Pair<(PurchasesError?) -> Unit, Long?>,
@@ -309,48 +373,47 @@ internal class BillingWrapper(
     ) {
         mainHandler.postDelayed(
             {
-                // remove() only succeeds while the request is still queued, so it can't also run on connection.
-                if (serviceRequests.remove(pendingRequest)) {
-                    log(LogIntent.GOOGLE_WARNING) { BillingStrings.BILLING_PENDING_REQUEST_TIMED_OUT }
-                    val connectionSnapshot = synchronized(this@BillingWrapper) {
-                        BillingConnectionDiagnosticsSnapshot(
-                            client = billingClient,
-                            connectionStartedAtElapsedMillis = connectionStartedAtElapsedMillis,
-                            setupCallbackReceived = setupCallbackReceived,
-                            scheduledReconnectAtElapsedMillis = scheduledReconnectAtElapsedMillis,
-                        )
-                    }
-                    diagnosticsTrackerIfEnabled?.let { tracker ->
-                        val now = elapsedRealtime()
-                        val state = connectionSnapshot.client?.connectionState
-                        tracker.trackGoogleBillingPendingRequestTimedOut(
-                            pendingRequestCount = pendingRequestCount(),
-                            requestType = requestType,
-                            billingClientState = when (state) {
-                                BillingClient.ConnectionState.DISCONNECTED -> "disconnected"
-                                BillingClient.ConnectionState.CONNECTING -> "connecting"
-                                BillingClient.ConnectionState.CONNECTED -> "connected"
-                                BillingClient.ConnectionState.CLOSED -> "closed"
-                                null -> "no_client"
-                                else -> "unknown"
-                            },
-                            connectionDurationMillis = connectionSnapshot.connectionStartedAtElapsedMillis?.let {
-                                (now - it).coerceAtLeast(0)
-                            },
-                            setupCallbackReceived = connectionSnapshot.setupCallbackReceived,
-                            reconnectionDelayMillis = connectionSnapshot.scheduledReconnectAtElapsedMillis?.let {
-                                (it - now).coerceAtLeast(0)
-                            },
-                        )
-                    }
-                    connectionSnapshot.client?.let { retireStuckClient(it) }
-                    pendingRequest.first(
-                        PurchasesError(
-                            PurchasesErrorCode.StoreProblemError,
-                            BillingStrings.BILLING_PENDING_REQUEST_TIMED_OUT,
-                        ),
+                val connectionSnapshot = synchronized(this@BillingWrapper) {
+                    if (!serviceRequests.remove(pendingRequest)) return@postDelayed
+                    if (serviceRequests.isEmpty()) serviceReconnection = null
+                    BillingConnectionDiagnosticsSnapshot(
+                        client = billingClient,
+                        connectionStartedAtElapsedMillis = connectionStartedAtElapsedMillis,
+                        setupCallbackReceived = setupCallbackReceived,
+                        scheduledReconnectAtElapsedMillis = scheduledReconnectAtElapsedMillis,
                     )
                 }
+                log(LogIntent.GOOGLE_WARNING) { BillingStrings.BILLING_PENDING_REQUEST_TIMED_OUT }
+                diagnosticsTrackerIfEnabled?.let { tracker ->
+                    val now = elapsedRealtime()
+                    val state = connectionSnapshot.client?.connectionState
+                    tracker.trackGoogleBillingPendingRequestTimedOut(
+                        pendingRequestCount = pendingRequestCount(),
+                        requestType = requestType,
+                        billingClientState = when (state) {
+                            BillingClient.ConnectionState.DISCONNECTED -> "disconnected"
+                            BillingClient.ConnectionState.CONNECTING -> "connecting"
+                            BillingClient.ConnectionState.CONNECTED -> "connected"
+                            BillingClient.ConnectionState.CLOSED -> "closed"
+                            null -> "no_client"
+                            else -> "unknown"
+                        },
+                        connectionDurationMillis = connectionSnapshot.connectionStartedAtElapsedMillis?.let {
+                            (now - it).coerceAtLeast(0)
+                        },
+                        setupCallbackReceived = connectionSnapshot.setupCallbackReceived,
+                        reconnectionDelayMillis = connectionSnapshot.scheduledReconnectAtElapsedMillis?.let {
+                            (it - now).coerceAtLeast(0)
+                        },
+                    )
+                }
+                connectionSnapshot.client?.let { retireStuckClient(it) }
+                pendingRequest.first(
+                    PurchasesError(
+                        PurchasesErrorCode.StoreProblemError,
+                        BillingStrings.BILLING_PENDING_REQUEST_TIMED_OUT,
+                    ),
+                )
             },
             PENDING_REQUEST_TIMEOUT_MILLISECONDS,
         )
@@ -392,7 +455,7 @@ internal class BillingWrapper(
     // Called while holding the wrapper monitor, to keep the client identity and state checks together.
     private fun isStuckClient(client: BillingClient): Boolean {
         if (billingClient !== client || failedRetirementClient === client) return false
-        return !client.isReady && client.connectionState == BillingClient.ConnectionState.CONNECTING
+        return client.connectionState == BillingClient.ConnectionState.CONNECTING
     }
 
     private fun requestExecutor(requestType: String): ExecuteRequestOnUIThreadFunction = { delay, request ->
@@ -543,8 +606,7 @@ internal class BillingWrapper(
         when {
             applyObfuscatedAccountIdToSubscriptionChanges -> buildParamsAndLaunch(true)
             replaceProductInfo != null -> buildParamsAndLaunch(false)
-            googlePurchasingData is GooglePurchasingData.Subscription -> findPurchaseInPurchaseHistory(
-                appUserID,
+            googlePurchasingData is GooglePurchasingData.Subscription -> findPurchaseInHistory(
                 ProductType.SUBS,
                 googlePurchasingData.productId,
                 onCompletion = {
@@ -554,17 +616,8 @@ internal class BillingWrapper(
                     }
                     buildParamsAndLaunch(false)
                 },
-                // A missing purchase is expected, but a timed-out billing connection must fail the purchase
-                // instead of queuing it behind the same stalled connection.
-                onError = { error ->
-                    if (error.code == PurchasesErrorCode.StoreProblemError &&
-                        error.underlyingErrorMessage == BillingStrings.BILLING_PENDING_REQUEST_TIMED_OUT
-                    ) {
-                        purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
-                    } else {
-                        buildParamsAndLaunch(true)
-                    }
-                },
+                onError = { buildParamsAndLaunch(true) },
+                onConnectionError = { purchasesUpdatedListener?.onPurchasesFailedToUpdate(it) },
             )
             else -> buildParamsAndLaunch(true)
         }
@@ -751,6 +804,14 @@ internal class BillingWrapper(
         productId: String,
         onCompletion: (StoreTransaction) -> Unit,
         onError: (PurchasesError) -> Unit,
+    ) = findPurchaseInHistory(productType, productId, onCompletion, onError, onConnectionError = onError)
+
+    private fun findPurchaseInHistory(
+        productType: ProductType,
+        productId: String,
+        onCompletion: (StoreTransaction) -> Unit,
+        onError: PurchasesErrorCallback,
+        onConnectionError: PurchasesErrorCallback,
     ) {
         log(LogIntent.DEBUG) { RestoreStrings.QUERYING_PURCHASE_WITH_TYPE.format(productId, productType.name) }
         productType.toGoogleProductType()?.let { googleProductType ->
@@ -773,8 +834,12 @@ internal class BillingWrapper(
                     }
                 },
                 onError,
-                { withConnectedClient(onError, it) },
-                requestExecutor("purchase_history_for_purchase"),
+                { withConnectedClient(onConnectionError, it) },
+                { delay, request ->
+                    executeRequestOnUIThread("purchase_history_for_purchase", delay) { error ->
+                        if (error == null) request(null) else onConnectionError(error)
+                    }
+                },
             ).run()
         } ?: onError(
             PurchasesError(PurchasesErrorCode.PurchaseInvalidError, PurchaseStrings.NOT_RECOGNIZED_PRODUCT_TYPE),
@@ -879,6 +944,9 @@ internal class BillingWrapper(
     private fun onBillingSetupFinishedForClient(billingResult: BillingResult, client: BillingClient?) {
         val connectionStartedAt = synchronized(this@BillingWrapper) {
             if (client != null && billingClient !== client) return
+            if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                hasCompletedInitialSetup = billingClient != null
+            }
             setupCallbackReceived = true
             connectionStartedAtElapsedMillis
         }
@@ -893,7 +961,13 @@ internal class BillingWrapper(
         )
         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) stateListener?.onConnectionReady()
         mainHandler.post {
-            if (client != null && billingClient !== client) return@post
+            synchronized(this@BillingWrapper) {
+                if (client != null && billingClient !== client) return@post
+                // The triggering billing operation handles automatic reconnection failures.
+                if (hasCompletedInitialSetup && billingResult.responseCode != BillingClient.BillingResponseCode.OK) {
+                    return@post
+                }
+            }
             when (billingResult.responseCode) {
                 BillingClient.BillingResponseCode.OK -> {
                     log(LogIntent.DEBUG) {
@@ -937,8 +1011,6 @@ internal class BillingWrapper(
                     // The storefront load only starts once setup succeeds, so a terminal setup failure ends it here.
                     if (isInitialStorefrontLoadPending()) trackInitialStorefrontLoadIfNeeded(successful = false)
 
-                    // The calls will fail with an error that will be surfaced. We want to surface these errors
-                    // Can't call executePendingRequests because it will not do anything since it checks for isReady()
                     sendErrorsToAllPendingRequests(error)
                 }
 
@@ -952,7 +1024,7 @@ internal class BillingWrapper(
                         BillingStrings.BILLING_CLIENT_ERROR
                             .format(billingResult.toHumanReadableDescription())
                     }
-                    retryBillingServiceConnectionWithExponentialBackoff()
+                    if (billingClient != null) retryBillingServiceConnectionWithExponentialBackoff()
                 }
 
                 BillingClient.BillingResponseCode.ITEM_UNAVAILABLE,
@@ -1008,7 +1080,7 @@ internal class BillingWrapper(
         }
     }
 
-    override fun isConnected(): Boolean = billingClient?.isReady ?: false
+    override fun isConnected(): Boolean = billingClient?.isServiceConnected ?: false
 
     override fun showInAppMessagesIfNeeded(
         activity: Activity,
@@ -1102,7 +1174,7 @@ internal class BillingWrapper(
     }
 
     private fun executeRequestSkippingQueueIfConnected(delayMilliseconds: Long, request: (PurchasesError?) -> Unit) {
-        if (delayMilliseconds == 0L && billingClient?.isReady == true) {
+        if (delayMilliseconds == 0L && billingClient?.isServiceConnected == true) {
             request(null)
         } else {
             executeRequestOnUIThread("billing_config", delayMilliseconds, request)
@@ -1129,7 +1201,7 @@ internal class BillingWrapper(
         onError: PurchasesErrorCallback = {},
         receivingFunction: BillingClient.() -> Unit,
     ) {
-        val connectedClient = billingClient?.takeIf { it.isReady }
+        val connectedClient = billingClient?.takeIf { it.isServiceConnected }
         if (connectedClient != null) {
             connectedClient.receivingFunction()
         } else {

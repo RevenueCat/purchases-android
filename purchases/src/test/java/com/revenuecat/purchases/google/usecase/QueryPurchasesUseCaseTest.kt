@@ -83,7 +83,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `defers query purchases if client not connected`() {
-        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
 
         var purchasesByHashedToken: Map<String, StoreTransaction>? = null
         wrapper.queryPurchases(
@@ -109,7 +109,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
             emptyList()
         )
 
-        every { mockClient.isReady } returns true
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTED
 
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
 
@@ -122,7 +122,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `queryPurchases returns error if error connecting`() {
-        every { mockClient.isReady } returns false
+        every { mockClient.connectionState } returns BillingClient.ConnectionState.DISCONNECTED
 
         var receivedError: PurchasesError? = null
         wrapper.queryPurchases(

@@ -436,6 +436,28 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
     // region retries
 
     @Test
+    fun `foreground acknowledgement stops after three disconnected retries`() {
+        every { mockClient.acknowledgePurchase(any(), any()) } answers {
+            secondArg<AcknowledgePurchaseResponseListener>().onAcknowledgePurchaseResponse(billingClientDisconnectedResult)
+        }
+        val delays = mutableListOf<Long>()
+        val errors = mutableListOf<PurchasesErrorCode>()
+        AcknowledgePurchaseUseCase(
+            AcknowledgePurchaseUseCaseParams("purchaseToken", PostReceiptInitiationSource.PURCHASE, appInBackground = false),
+            { Assertions.fail("Unexpected acknowledgement") },
+            { errors.add(it.code) },
+            withConnectedClient = { it.invoke(mockClient) },
+            executeRequestOnUIThread = { delay, request ->
+                delays.add(delay)
+                request(null)
+            },
+        ).run()
+
+        assertThat(delays).containsExactly(0L, 878L, 1756L, 3512L)
+        assertThat(errors).containsExactly(PurchasesErrorCode.StoreProblemError)
+    }
+
+    @Test
     fun `If service is disconnected, re-executeRequestOnUIThread for purchases`() {
         val slot = slot<AcknowledgePurchaseResponseListener>()
         val acknowledgeStubbing = every {
