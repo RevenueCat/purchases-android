@@ -545,8 +545,9 @@ internal class PurchasesOrchestrator(
         checkpointIdentifier: String,
         customVariables: Map<String, RulesDimensionValue>,
     ): CheckpointResolution {
-        val resolution = checkpointWorkflowResolver.resolve(checkpointIdentifier, customVariables)
-        track(resolution.toCheckpointEvent(identifier = checkpointIdentifier, timestamp = dateProvider.now))
+        val identifier = checkpointIdentifier.lowercase()
+        val resolution = checkpointWorkflowResolver.resolve(identifier, customVariables)
+        track(resolution.toCheckpointEvent(identifier = identifier, timestamp = dateProvider.now))
         return resolution
     }
 

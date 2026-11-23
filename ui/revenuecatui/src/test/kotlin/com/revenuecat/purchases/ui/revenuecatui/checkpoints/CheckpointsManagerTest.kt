@@ -135,12 +135,27 @@ class CheckpointsManagerTest {
     }
 
     @Test
-    fun `valid checkpoint identifier is resolved`() = runTest(dispatcher) {
+    fun `valid checkpoint identifier is resolved lowercased`() = runTest(dispatcher) {
         resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.NO_MATCH))
 
         checkpoint(identifier = "A-1_b")
 
-        coVerify(exactly = 1) { mockPurchases.internalResolveCp("A-1_b", emptyMap()) }
+        coVerify(exactly = 1) { mockPurchases.internalResolveCp("a-1_b", emptyMap()) }
+    }
+
+    @Test
+    fun `a failure after resolution is reported with the lowercased identifier`() = runTest(dispatcher) {
+        resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE))
+        val error = PurchasesError(
+            PurchasesErrorCode.ConfigurationError,
+            "The configuration needed to serve checkpoint 'test_checkpoint' could not be read.",
+        )
+
+        checkpoint(identifier = "Test_Checkpoint")
+
+        assertThat(defaultPresentedErrors).containsExactly(
+            ErrorPresenter.Params(error, "test_checkpoint", emptyMap(), CheckpointFailureKind.FLOW_COULD_NOT_BE_SHOWN),
+        )
     }
 
     @Test

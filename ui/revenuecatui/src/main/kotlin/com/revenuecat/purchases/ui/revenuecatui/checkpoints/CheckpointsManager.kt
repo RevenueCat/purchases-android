@@ -186,38 +186,44 @@ internal class CheckpointsManager(
             )
         }
         val presentationMode = resolvePresentationMode(params?.presentationMode)
-        val presentFailure: suspend (PurchasesError) -> CheckpointRun =
-            { error -> presentFailure(errorPresenter(), identifier, customVariables, error) }
         if (!CheckpointIdentifierValidator.isValid(identifier)) {
             val message = CheckpointIdentifierValidator.invalidIdentifierLogMessage(identifier)
             Logger.e(message)
-            return@withContext presentFailure(PurchasesError(PurchasesErrorCode.ConfigurationError, message))
+            return@withContext presentFailure(
+                errorPresenter(),
+                identifier,
+                customVariables,
+                PurchasesError(PurchasesErrorCode.ConfigurationError, message),
+            )
         }
+        val checkpointId = identifier.lowercase()
+        val presentFailure: suspend (PurchasesError) -> CheckpointRun =
+            { error -> presentFailure(errorPresenter(), checkpointId, customVariables, error) }
         val resolution = try {
             purchases.internalResolveCp(
-                identifier,
+                checkpointId,
                 customVariables.mapValues { (_, value) -> value.asRulesDimensionValue },
             )
         } catch (e: PurchasesException) {
-            Logger.e("Checkpoint '$identifier' could not be resolved: ${e.error}")
+            Logger.e("Checkpoint '$checkpointId' could not be resolved: ${e.error}")
             return@withContext presentFailure(e.error)
         }
         val customerInfoBefore = purchases.customerInfo(CacheFetchPolicy.CACHED_OR_FETCHED).getOrElse { error ->
-            Logger.e("Checkpoint '$identifier': the customer's information could not be read: $error")
+            Logger.e("Checkpoint '$checkpointId': the customer's information could not be read: $error")
             return@withContext presentFailure(error)
         }
         val run = try {
             when (resolution) {
                 is CheckpointResolution.MatchedOffering -> presentOffering(
                     purchases,
-                    PaywallPresenter.Params(resolution.offering, identifier, customVariables, presentationMode),
+                    PaywallPresenter.Params(resolution.offering, checkpointId, customVariables, presentationMode),
                     presenter ?: defaultPresenterFactory(purchases, errorPresenter()),
                     errorPresenter,
                     customerInfoBefore,
                 )
                 is CheckpointResolution.MatchedWorkflow -> present(
                     purchases,
-                    identifier,
+                    checkpointId,
                     resolution,
                     customVariables,
                     errorPresenter(),
@@ -226,7 +232,7 @@ internal class CheckpointsManager(
                 )
                 is CheckpointResolution.NoAction -> when (resolution.reason) {
                     CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE -> {
-                        val message = "The configuration needed to serve checkpoint '$identifier' could not be read."
+                        val message = "The configuration needed to serve checkpoint '$checkpointId' could not be read."
                         Logger.e(message)
                         presentFailure(PurchasesError(PurchasesErrorCode.ConfigurationError, message))
                     }

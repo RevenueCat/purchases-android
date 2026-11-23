@@ -64,6 +64,7 @@ import com.revenuecat.purchases.utils.stubStoreProduct
 import com.revenuecat.purchases.utils.stubStoreProductWithGoogleSubscriptionPurchaseData
 import io.mockk.Runs
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -1620,6 +1621,21 @@ internal class PurchasesTest : BasePurchasesTest() {
         assertThat(event.captured.offeringId).isNull()
         assertThat(event.captured.checkpointRuleId).isNull()
         verify(exactly = 1) { mockEventsManager.track(event.captured) }
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `resolving checkpoint looks up and tracks the lowercased identifier`() = runTest {
+        val event = slot<CheckpointEvent>()
+        every { mockEventsManager.track(capture(event)) } just Runs
+        coEvery {
+            mockCheckpointsConfigProvider.resolveCheckpoint("onboarding_complete")
+        } returns CheckpointRulesResolution.NotConfigured
+
+        purchases.internalResolveCp("Onboarding_Complete")
+
+        coVerify(exactly = 1) { mockCheckpointsConfigProvider.resolveCheckpoint("onboarding_complete") }
+        assertThat(event.captured.identifier).isEqualTo("onboarding_complete")
     }
 
     @OptIn(InternalRevenueCatAPI::class)

@@ -29,7 +29,7 @@ import com.revenuecat.purchases.ui.revenuecatui.InviteOnlyCheckpointsAPI
  *
  * @param checkpointIdentifier The checkpoint identifier, as configured in the RevenueCat dashboard. It must start
  * with an ASCII letter, contain only ASCII letters, numbers, underscores, and hyphens, and be no more than 255
- * characters.
+ * characters. Identifiers are case-insensitive.
  * @param params Optional per-call parameters, like custom properties usable in targeting rules.
  * @param callback Receives the [CheckpointResult] once the user passes the checkpoint.
  */
