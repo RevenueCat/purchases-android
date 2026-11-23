@@ -10,6 +10,8 @@ internal class DateHelper private constructor() {
     companion object {
         private val ENTITLEMENT_GRACE_PERIOD = 3.days
 
+        internal val now: Date get() = Date()
+
         /**
          * Calculates whether a subscription/entitlement is currently active according to the expiration date and last
          * successful request date, while considering a given grace period
@@ -21,8 +23,9 @@ internal class DateHelper private constructor() {
         ): DateActive {
             if (expirationDate == null) return DateActive(isActive = true, inGracePeriod = true)
 
-            val inGracePeriod = (Date().time - requestDate.time) <= gracePeriod.inWholeMilliseconds
-            val referenceDate = if (inGracePeriod) requestDate else Date()
+            val currentDate = now
+            val inGracePeriod = (currentDate.time - requestDate.time) <= gracePeriod.inWholeMilliseconds
+            val referenceDate = if (inGracePeriod) requestDate else currentDate
             return DateActive(isActive = expirationDate.after(referenceDate), inGracePeriod = inGracePeriod)
         }
     }

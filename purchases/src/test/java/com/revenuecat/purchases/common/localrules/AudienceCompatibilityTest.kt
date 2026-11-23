@@ -15,9 +15,11 @@ import com.revenuecat.purchases.common.subscriberdimensions.SubscriberDimensions
 import com.revenuecat.purchases.common.subscriberdimensions.SubscriberDimensionsReceiptStore
 import com.revenuecat.purchases.common.subscriberdimensions.SubscriberDimensionsResolution
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
+import com.revenuecat.purchases.utils.DateHelper
 import com.revenuecat.purchases.utils.getNullableString
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -52,13 +54,20 @@ class AudienceCompatibilityTest {
             val case = JSONObject(caseJson)
             val profiles = document("profiles.json").getValue("profiles").jsonObject
             val profile = profiles.getValue(case.getString("profile"))
-            val evaluator = evaluator(JSONObject(profile.toString()))
-            val rule = object : LocalRule {
-                override val predicate = case.getString("predicate")
+            val profileJson = JSONObject(profile.toString())
+            val clock = object : DateProvider {
+                override val now = Date(profileJson.getLong("evaluated_at") * 1_000)
             }
-            val result = evaluator.match(listOf(rule))
-            assertThat(result.exceptionOrNull()).describedAs(id).isNull()
-            assertThat(result.getOrNull() != null).describedAs(id).isEqualTo(case.getBoolean("expected"))
+            mockkObject(DateHelper.Companion) {
+                every { DateHelper.now } returns clock.now
+                val evaluator = evaluator(profileJson, clock)
+                val rule = object : LocalRule {
+                    override val predicate = case.getString("predicate")
+                }
+                val result = evaluator.match(listOf(rule))
+                assertThat(result.exceptionOrNull()).describedAs(id).isNull()
+                assertThat(result.getOrNull() != null).describedAs(id).isEqualTo(case.getBoolean("expected"))
+            }
         }
 
         companion object {
@@ -118,7 +127,7 @@ class AudienceCompatibilityTest {
             }
         }
 
-        private fun evaluator(profile: JSONObject): LocalRulesEvaluator {
+        private fun evaluator(profile: JSONObject, clock: DateProvider): LocalRulesEvaluator {
             val user = profile.getString("app_user_id")
             val device = profile.getJSONObject("device")
             val locale = device.getNullableString("locale").orEmpty()
@@ -163,9 +172,7 @@ class AudienceCompatibilityTest {
                     currentAppUserId = { user },
                 ),
                 currentAppUserId = { user },
-                dateProvider = object : DateProvider {
-                    override val now = Date(profile.getLong("evaluated_at") * 1_000)
-                },
+                dateProvider = clock,
             )
         }
 
