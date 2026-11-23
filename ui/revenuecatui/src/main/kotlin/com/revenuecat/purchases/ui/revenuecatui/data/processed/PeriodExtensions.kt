@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.data.processed
 
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
+import java.util.Locale
 import kotlin.math.roundToInt
 
 internal val Period.periodUnitLocalizationKey: VariableLocalizationKey?
@@ -73,14 +74,14 @@ internal val Period.periodValueWithUnitAbbreviatedLocalizationKey: VariableLocal
         Period.Unit.UNKNOWN -> null
     }
 
-internal val Period.roundedValueInDays: String
-    get() = valueInDays.roundToInt().toString()
+internal fun Period.roundedValueInDays(locale: Locale): String =
+    "%d".format(locale, valueInDays.roundToInt())
 
-internal val Period.roundedValueInWeeks: String
-    get() = valueInWeeks.roundToInt().toString()
+internal fun Period.roundedValueInWeeks(locale: Locale): String =
+    "%d".format(locale, valueInWeeks.roundToInt())
 
-internal val Period.roundedValueInMonths: String
-    get() = valueInMonths.roundToInt().toString()
+internal fun Period.roundedValueInMonths(locale: Locale): String =
+    "%d".format(locale, valueInMonths.roundToInt())
 
-internal val Period.roundedValueInYears: String
-    get() = valueInYears.roundToInt().toString()
+internal fun Period.roundedValueInYears(locale: Locale): String =
+    "%d".format(locale, valueInYears.roundToInt())

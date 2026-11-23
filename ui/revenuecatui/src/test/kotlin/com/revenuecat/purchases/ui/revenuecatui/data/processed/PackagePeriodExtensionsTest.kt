@@ -8,6 +8,7 @@ import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
+import java.util.Locale
 
 @Suppress("DEPRECATION")
 internal class PackagePeriodExtensionsTest {
@@ -65,7 +66,7 @@ internal class PackagePeriodExtensionsTest {
             identifier = "custom_lifetime_tier_1",
         )
 
-        assertThat(pkg.productPeriodAbbreviated(localizedVariableKeys)).isNull()
+        assertThat(pkg.productPeriodAbbreviated(localizedVariableKeys, Locale.US)).isNull()
     }
 
     @Test
@@ -75,12 +76,12 @@ internal class PackagePeriodExtensionsTest {
             identifier = PackageType.LIFETIME.identifier!!,
         )
 
-        assertThat(pkg.productPeriodAbbreviated(localizedVariableKeys)).isEqualTo("Lifetime")
+        assertThat(pkg.productPeriodAbbreviated(localizedVariableKeys, Locale.US)).isEqualTo("Lifetime")
     }
 
     @Test
     fun `productPeriodAbbreviated returns the abbreviated period for a subscription product`() {
-        assertThat(monthlyPackage().productPeriodAbbreviated(localizedVariableKeys)).isEqualTo("mo")
+        assertThat(monthlyPackage().productPeriodAbbreviated(localizedVariableKeys, Locale.US)).isEqualTo("mo")
     }
 
     private fun lifetimePackage(packageType: PackageType, identifier: String) =

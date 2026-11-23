@@ -135,24 +135,25 @@ internal fun PricingPhase.productOfferPeriodInPeriodUnit(
 ): String? =
     takeIf { it.canDisplay(unit) }?.billingPeriod?.calculateValue()
 
-internal val PricingPhase.productOfferPeriodInDays: String?
-    get() = productOfferPeriodInPeriodUnit(Period.Unit.DAY) { roundedValueInDays }
+internal fun PricingPhase.productOfferPeriodInDays(locale: Locale): String? =
+    productOfferPeriodInPeriodUnit(Period.Unit.DAY) { roundedValueInDays(locale) }
 
-internal val PricingPhase.productOfferPeriodInWeeks: String?
-    get() = productOfferPeriodInPeriodUnit(Period.Unit.WEEK) { roundedValueInWeeks }
+internal fun PricingPhase.productOfferPeriodInWeeks(locale: Locale): String? =
+    productOfferPeriodInPeriodUnit(Period.Unit.WEEK) { roundedValueInWeeks(locale) }
 
-internal val PricingPhase.productOfferPeriodInMonths: String?
-    get() = productOfferPeriodInPeriodUnit(Period.Unit.MONTH) { roundedValueInMonths }
+internal fun PricingPhase.productOfferPeriodInMonths(locale: Locale): String? =
+    productOfferPeriodInPeriodUnit(Period.Unit.MONTH) { roundedValueInMonths(locale) }
 
-internal val PricingPhase.productOfferPeriodInYears: String?
-    get() = productOfferPeriodInPeriodUnit(Period.Unit.YEAR) { roundedValueInYears }
+internal fun PricingPhase.productOfferPeriodInYears(locale: Locale): String? =
+    productOfferPeriodInPeriodUnit(Period.Unit.YEAR) { roundedValueInYears(locale) }
 
 internal fun PricingPhase.productOfferPeriodWithUnit(
     localizedVariableKeys: Map<VariableLocalizationKey, String>,
+    locale: Locale,
 ): String? =
     localizedVariableKeys
         .getStringOrLogError(billingPeriod.periodValueWithUnitLocalizationKey)
-        ?.format(billingPeriod.value)
+        ?.format(locale, billingPeriod.value)
 
 internal fun PricingPhase.productOfferEndDate(locale: Locale, date: Date): String? {
     val futureDate = Calendar.getInstance(locale)
