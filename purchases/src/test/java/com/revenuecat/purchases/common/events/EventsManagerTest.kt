@@ -46,6 +46,7 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
+import io.mockk.spyk
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -54,6 +55,7 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import java.io.File
+import java.io.IOException
 import java.util.Date
 import java.util.UUID
 import kotlin.time.Duration.Companion.seconds
@@ -124,6 +126,7 @@ class EventsManagerTest {
         get() = temporaryFolder.root
 
     private var appSessionID = UUID.randomUUID()
+    private lateinit var storage: FileHelper
     private lateinit var legacyFileHelper: EventsFileHelper<PaywallStoredEvent>
     private lateinit var fileHelper: EventsFileHelper<BackendStoredEvent>
     private lateinit var adFileHelper: EventsFileHelper<BackendStoredEvent.Ad>
@@ -142,7 +145,8 @@ class EventsManagerTest {
             every { filesDir } returns tempTestFolder
         }
         legacyFileHelper = EventsManager.paywalls(fileHelper = FileHelper(context))
-        fileHelper = EventsManager.backendEvents(fileHelper = FileHelper(context))
+        storage = spyk(FileHelper(context))
+        fileHelper = EventsManager.backendEvents(fileHelper = storage)
         identityManager = mockk<IdentityManager>().apply {
             every { currentAppUserID } returns userID
         }
@@ -257,6 +261,42 @@ class EventsManagerTest {
                 + """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_survey_option_chosen","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","display_mode":"full_screen","path":"CANCEL","url":"PATH2","survey_option_id":"surveyOptionID"}}""".trimIndent()
                 + "\n"
         )
+    }
+
+    @Test
+    fun `tracking resumes after a full disk`() {
+        val diagnostics = mutableListOf<DebugEvent>()
+        eventsManager.debugEventListener = DebugEventListener { diagnostics.add(it) }
+        every { storage.appendToFile(any(), any()) } throws IOException("No space left on device")
+        eventsManager.track(paywallEvent)
+
+        val diagnostic = diagnostics.single { it.name == DebugEventName.APPEND_EVENT_EXCEPTION }
+        assertThat(diagnostic.properties["message"]).isEqualTo("No space left on device")
+
+        every { storage.appendToFile(any(), any()) } answers { callOriginal() }
+        eventsManager.track(paywallEvent)
+        mockBackendResponse(success = true)
+        eventsManager.flushEvents()
+        assertThat(postedRequest?.events).hasSize(1)
+    }
+
+    @Test
+    fun `flush retries after read and clear failures`() {
+        mockBackendResponse(success = true)
+        eventsManager.track(paywallEvent)
+        every { storage.readFilePerLines(any(), any()) } throws IOException("Read failed")
+        eventsManager.flushEvents()
+        assertThat(postedRequest).isNull()
+
+        every { storage.readFilePerLines(any(), any()) } answers { callOriginal() }
+        every { storage.removeFirstLinesFromFile(any(), any(), any()) } throws IOException("Disk full")
+        eventsManager.flushEvents()
+        assertThat(postedRequest?.events).hasSize(1)
+        verify(exactly = 1) { storage.removeFirstLinesFromFile(any(), any(), any()) }
+
+        every { storage.removeFirstLinesFromFile(any(), any(), any()) } answers { callOriginal() }
+        eventsManager.flushEvents()
+        checkFileContents("")
     }
 
     @Test

@@ -30,6 +30,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
+import java.io.IOException
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration.Companion.seconds
@@ -225,8 +226,10 @@ internal class EventsManager(
             }
 
             if (backendEvent != null) {
-                checkFileSizeAndClearIfNeeded()
-                fileHelper.appendEvent(backendEvent)
+                withEventStorage {
+                    checkFileSizeAndClearIfNeeded()
+                    fileHelper.appendEvent(backendEvent)
+                } ?: return@enqueue
                 if (event.isPriorityEvent) {
                     performPriorityFlush()
                 }
@@ -264,7 +267,6 @@ internal class EventsManager(
      *
      * @param batchNumber The current batch number being flushed.
      */
-    @Suppress("LongMethod")
     private fun flushNextBatch(batchNumber: Int, delay: Delay) {
         if (batchNumber > MAX_FLUSH_BATCHES) {
             verboseLog { "Reached maximum number of flush batches ($MAX_FLUSH_BATCHES). Stopping flush." }
@@ -273,7 +275,19 @@ internal class EventsManager(
         }
 
         val batchStartTimeMillis = System.currentTimeMillis()
-        val storedEventsWithNullValues = getStoredEvents()
+        val storedEventsWithNullValues = withEventStorage { getStoredEvents() } ?: run {
+            onFlushComplete()
+            return
+        }
+        flushStoredEvents(storedEventsWithNullValues, batchNumber, delay, batchStartTimeMillis)
+    }
+
+    private fun flushStoredEvents(
+        storedEventsWithNullValues: List<BackendStoredEvent?>,
+        batchNumber: Int,
+        delay: Delay,
+        batchStartTimeMillis: Long,
+    ) {
         val storedEvents = storedEventsWithNullValues.filterNotNull()
 
         if (storedEvents.isEmpty()) {
@@ -303,7 +317,10 @@ internal class EventsManager(
                     ),
                 )
                 enqueue {
-                    fileHelper.clear(storedEventsWithNullValues.size)
+                    if (withEventStorage { fileHelper.clear(storedEventsWithNullValues.size) } == null) {
+                        onFlushComplete()
+                        return@enqueue
+                    }
                     // Continue flushing next batch
                     flushNextBatch(batchNumber + 1, delay)
                 }
@@ -323,7 +340,7 @@ internal class EventsManager(
                 )
                 enqueue {
                     if (shouldMarkAsSynced) {
-                        fileHelper.clear(storedEventsWithNullValues.size)
+                        withEventStorage { fileHelper.clear(storedEventsWithNullValues.size) }
                     }
                     // Stop flushing on error
                     onFlushComplete()
@@ -379,10 +396,18 @@ internal class EventsManager(
      * Flushes legacy paywall events to the backend.
      */
     private fun flushLegacyEvents() {
-        val legacyEventsFileHelper = this.legacyEventsFileHelper
-            ?: return // No legacy events file helper provided; nothing to flush.
+        val legacyEventsFileHelper = this.legacyEventsFileHelper ?: return
+
+        fun clearLegacyEvents(count: Int) {
+            if (withEventStorage { legacyEventsFileHelper.clear(count) } == null) {
+                legacyFlushTriggered = false
+            }
+        }
         enqueue {
-            val storedLegacyEventsWithNullValues = getLegacyPaywallsStoredEvents()
+            val storedLegacyEventsWithNullValues = withEventStorage { getLegacyPaywallsStoredEvents() } ?: run {
+                legacyFlushTriggered = false
+                return@enqueue
+            }
             val storedLegacyEvents = storedLegacyEventsWithNullValues.filterNotNull()
             val storedBackendEvents = storedLegacyEvents.map { BackendStoredEvent.Paywalls(it.toBackendEvent()) }
 
@@ -397,13 +422,13 @@ internal class EventsManager(
                 Delay.LONG,
                 {
                     verboseLog { "Legacy event flush: success." }
-                    enqueue { legacyEventsFileHelper.clear(storedLegacyEventsWithNullValues.size) }
+                    enqueue { clearLegacyEvents(storedLegacyEventsWithNullValues.size) }
                 },
                 { error, shouldMarkAsSynced ->
                     errorLog { "Legacy event flush error: $error." }
                     enqueue {
                         if (shouldMarkAsSynced) {
-                            legacyEventsFileHelper.clear(storedLegacyEventsWithNullValues.size)
+                            clearLegacyEvents(storedLegacyEventsWithNullValues.size)
                         }
                     }
                 },
@@ -435,6 +460,13 @@ internal class EventsManager(
             events = sequence.take(FLUSH_COUNT).toList()
         }
         return events
+    }
+
+    private inline fun <T : Any> withEventStorage(operation: () -> T): T? = try {
+        operation()
+    } catch (e: IOException) {
+        errorLog(e) { "Event store I/O failure." }
+        null
     }
 
     /**
