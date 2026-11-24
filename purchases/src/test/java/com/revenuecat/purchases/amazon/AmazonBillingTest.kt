@@ -36,6 +36,7 @@ import com.revenuecat.purchases.utils.add
 import com.revenuecat.purchases.utils.subtract
 import io.mockk.Runs
 import io.mockk.clearAllMocks
+import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -50,6 +51,7 @@ import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.Date
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -128,7 +130,11 @@ class AmazonBillingTest {
 
     @After
     fun tearDown() {
-        clearAllMocks()
+        try {
+            confirmVerified(mockDiagnosticsTracker)
+        } finally {
+            clearAllMocks()
+        }
     }
 
     @Test
@@ -153,6 +159,7 @@ class AmazonBillingTest {
 
         assertThat(receivedPurchases).isNotNull
         assertThat(receivedPurchases).isEmpty()
+        verify(exactly = 1) { mockDiagnosticsTracker.trackAmazonQueryPurchasesRequest(Duration.ZERO, true, listOf()) }
     }
 
     @Test
@@ -187,6 +194,9 @@ class AmazonBillingTest {
             dummyUserData,
             PurchaseState.UNSPECIFIED_STATE
         )
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackAmazonQueryPurchasesRequest(Duration.ZERO, true, listOf("sub_sku"))
+        }
     }
 
     @Test
@@ -237,6 +247,11 @@ class AmazonBillingTest {
             dummyUserData,
             PurchaseState.UNSPECIFIED_STATE
         )
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackAmazonQueryPurchasesRequest(
+                Duration.ZERO, true, listOf("sub_sku_a", "sub_sku_b"),
+            )
+        }
     }
 
     @Test
@@ -276,6 +291,9 @@ class AmazonBillingTest {
             dummyUserData,
             PurchaseState.UNSPECIFIED_STATE
         )
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackAmazonQueryPurchasesRequest(Duration.ZERO, true, listOf("not_expired_sku"))
+        }
     }
 
     @Test
@@ -329,6 +347,11 @@ class AmazonBillingTest {
             dummyUserData,
             PurchaseState.UNSPECIFIED_STATE
         )
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackAmazonQueryPurchasesRequest(
+                Duration.ZERO, true, listOf("sub_sku", "expired_sku", "not_expired_sku"),
+            )
+        }
     }
 
     @Test
@@ -363,6 +386,9 @@ class AmazonBillingTest {
             dummyUserData,
             PurchaseState.UNSPECIFIED_STATE
         )
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackAmazonQueryPurchasesRequest(Duration.ZERO, true, listOf("sub_sku"))
+        }
     }
 
     @Test
@@ -415,6 +441,11 @@ class AmazonBillingTest {
             dummyUserData,
             PurchaseState.UNSPECIFIED_STATE
         )
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackAmazonQueryPurchasesRequest(
+                Duration.ZERO, true, listOf("sub_sku_a", "sub_sku_b"),
+            )
+        }
     }
 
     @Test
@@ -457,6 +488,11 @@ class AmazonBillingTest {
 
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.InvalidReceiptError)
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackAmazonQueryPurchasesRequest(
+                Duration.ZERO, true, listOf("sub_sku_a", "sub_sku_b"),
+            )
+        }
     }
 
     @Test
@@ -507,6 +543,11 @@ class AmazonBillingTest {
 
         val purchaseB = receivedPurchases.values.firstOrNull { it.purchaseToken == dummyReceiptThatErrors.receiptId }
         assertThat(purchaseB).isNull()
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackAmazonQueryPurchasesRequest(
+                Duration.ZERO, true, listOf("sub_sku_a", "sub_sku_b", "sub_sku_c"),
+            )
+        }
     }
 
     @Test
@@ -541,6 +582,9 @@ class AmazonBillingTest {
 
         assertThat(onReceiveCalled).isTrue()
         assertThat(marketplaceSlot.captured).isEqualTo(countryCode)
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackAmazonQueryProductDetailsRequest(Duration.ZERO, true, setOf("sku", "sku_2"))
+        }
     }
 
     @Test
@@ -709,6 +753,9 @@ class AmazonBillingTest {
             dummyUserData,
             PurchaseState.UNSPECIFIED_STATE
         )
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackAmazonQueryPurchasesRequest(Duration.ZERO, true, listOf("sub_sku"))
+        }
     }
 //
 //    @Test
@@ -896,6 +943,11 @@ class AmazonBillingTest {
             dummyUserData,
             PurchaseState.UNSPECIFIED_STATE
         )
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackAmazonQueryPurchasesRequest(
+                Duration.ZERO, true, listOf("sub_sku", "expired_sku", "not_expired_sku"),
+            )
+        }
     }
 
     @Test

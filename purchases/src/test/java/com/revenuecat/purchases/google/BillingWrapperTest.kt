@@ -71,13 +71,16 @@ import com.revenuecat.purchases.utils.verifyQueryPurchasesCalledWithType
 import io.mockk.Runs
 import io.mockk.clearAllMocks
 import io.mockk.clearStaticMockk
+import io.mockk.confirmVerified
 import io.mockk.every
+import io.mockk.excludeRecords
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.slot
 import io.mockk.verify
+import kotlin.time.Duration
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.After
@@ -207,7 +210,11 @@ class BillingWrapperTest {
 
     @After
     fun tearDown() {
-        clearAllMocks()
+        try {
+            confirmVerified(mockDiagnosticsTracker)
+        } finally {
+            clearAllMocks()
+        }
     }
 
     private fun mockAttachedActivity(): Activity {
@@ -225,6 +232,7 @@ class BillingWrapperTest {
     @Test
     fun canBeCreated() {
         assertThat(wrapper).`as`("Wrapper is not null").isNotNull
+        verifyStartConnectionTracked()
     }
 
     @Test
@@ -232,6 +240,7 @@ class BillingWrapperTest {
         verify {
             mockClientFactory.buildClient(purchasesUpdatedListener!!)
         }
+        verifyStartConnectionTracked()
     }
 
     @Test
@@ -239,6 +248,7 @@ class BillingWrapperTest {
         verify {
             mockClient.startConnection(billingClientStateListener!!)
         }
+        verifyStartConnectionTracked()
     }
 
     @Test
@@ -266,6 +276,7 @@ class BillingWrapperTest {
         verify(exactly = 1) { mockBackgroundHandler.postDelayed(any(), 0L) }
         verify(exactly = 0) { mockMainHandler.postDelayed(any(), any<Long>()) }
         verify(exactly = 0) { mockMainHandler.post(any()) }
+        verifyStartConnectionTracked()
     }
 
     @Test
@@ -292,6 +303,7 @@ class BillingWrapperTest {
 
         verify(exactly = 1) { mockBackgroundHandler.post(any()) }
         verify(exactly = 0) { mockMainHandler.post(any()) }
+        verifyStartConnectionTracked()
     }
 
     @Test
@@ -316,6 +328,7 @@ class BillingWrapperTest {
         ownedThread.join(THREAD_JOIN_TIMEOUT_MS)
 
         assertThat(ownedThread.isAlive).isFalse
+        verifyStartConnectionTracked()
     }
 
     @Test
@@ -331,6 +344,7 @@ class BillingWrapperTest {
         assertThat(heldLockDuringStartConnection)
             .`as`("BillingClient#startConnection must not run while we hold the wrapper monitor")
             .isFalse
+        verifyStartConnectionTracked(times = 2)
     }
 
     @Test
@@ -354,6 +368,7 @@ class BillingWrapperTest {
             crashingWrapper.startConnection()
         }
         assertThat(thrown).isSameAs(buildError)
+        verifyStartConnectionTracked()
     }
 
     @Test
@@ -366,6 +381,7 @@ class BillingWrapperTest {
             wrapper.startConnection()
         }
         assertThat(thrown).isSameAs(connectError)
+        verifyStartConnectionTracked(times = 2)
     }
 
     @Test
@@ -388,6 +404,8 @@ class BillingWrapperTest {
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
 
         assertThat(consumePurchaseCompleted).isTrue
+        verifyStartConnectionTracked(times = 2)
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleBillingSetupFinished(0, "", 1, 0L) }
     }
 
     @Test
@@ -420,6 +438,8 @@ class BillingWrapperTest {
 
         assertThat(consumePurchaseResponse1Called).isTrue
         assertThat(consumePurchaseResponse2Called).isTrue
+        verifyStartConnectionTracked(times = 3)
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleBillingSetupFinished(0, "", 2, 0L) }
     }
 
     @Test
@@ -435,6 +455,7 @@ class BillingWrapperTest {
         verify(exactly = 2) {
             mockClient.startConnection(any())
         }
+        verifyStartConnectionTracked(times = 2)
     }
 
     @Test
@@ -453,6 +474,7 @@ class BillingWrapperTest {
 
         assertThat(errors.map { it.code }).containsExactly(PurchasesErrorCode.StoreProblemError)
         verify(exactly = 0) { mockClient.queryProductDetailsAsync(any(), any()) }
+        verifyStartConnectionTracked()
     }
 
     @Test
@@ -470,21 +492,28 @@ class BillingWrapperTest {
         requests.single().run()
 
         assertThat(errors.map { it.code }).containsExactly(PurchasesErrorCode.StoreProblemError)
+        verifyStartConnectionTracked()
     }
 
     @Test
     fun `query purchases returns an error if billing disconnects before the initial request executes`() {
         assertQueryPurchasesDisconnectedAfterScheduling(requestIndex = 0)
+        verifyConnectionTracked()
     }
 
     @Test
     fun `query purchases returns an error if billing disconnects before subscriptions are queried`() {
         assertQueryPurchasesDisconnectedAfterScheduling(requestIndex = 1)
+        verifyConnectionTracked()
     }
 
     @Test
     fun `query purchases returns an error if billing disconnects before inapps are queried`() {
         assertQueryPurchasesDisconnectedAfterScheduling(requestIndex = 2)
+        verifyConnectionTracked()
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest("subs", 0, "", Duration.ZERO, listOf())
+        }
     }
 
     @Test
@@ -501,6 +530,7 @@ class BillingWrapperTest {
         requests.single().run()
 
         assertThat(errors.map { it.code }).containsExactly(PurchasesErrorCode.StoreProblemError)
+        verifyStartConnectionTracked()
     }
 
     @Test
@@ -522,6 +552,7 @@ class BillingWrapperTest {
 
         assertThat(errors.map { it.code }).containsExactly(PurchasesErrorCode.StoreProblemError)
         verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleInitialStorefrontLoad(successful = false, any()) }
+        verifyStartConnectionTracked()
     }
 
     @Test
@@ -541,6 +572,7 @@ class BillingWrapperTest {
 
         verify(exactly = 0) { mockDeviceCache.getStorefront() }
         verify(exactly = 0) { mockDeviceCache.markInitialStorefrontLoadTracked() }
+        verifyStartConnectionTracked()
     }
 
     @Test
@@ -553,6 +585,8 @@ class BillingWrapperTest {
         )
 
         verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleInitialStorefrontLoad(successful = false, any()) }
+        verifyStartConnectionTracked()
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleBillingSetupFinished(3, "", 0, 0L) }
     }
 
     @Test
@@ -572,6 +606,7 @@ class BillingWrapperTest {
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
 
         assertThat(events).containsExactly("ready")
+        verifyConnectionTracked()
     }
 
     @Test
@@ -590,6 +625,8 @@ class BillingWrapperTest {
         )
 
         assertThat(connectionReadyCalled).isFalse
+        verifyStartConnectionTracked()
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleBillingSetupFinished(3, "", 0, 0L) }
     }
 
     @Test
@@ -602,6 +639,8 @@ class BillingWrapperTest {
         )
 
         verify(exactly = 0) { mockDiagnosticsTracker.trackGoogleInitialStorefrontLoad(any(), any()) }
+        verifyStartConnectionTracked()
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleBillingSetupFinished(2, "", 0, 0L) }
     }
 
     private fun captureScheduledBillingRequests(): MutableList<Runnable> {
@@ -654,6 +693,10 @@ class BillingWrapperTest {
 
         assertThat(errors.map { it.code }).containsExactly(PurchasesErrorCode.StoreProblemError)
         verify(exactly = 0) { mockClient.launchBillingFlow(any(), any()) }
+        verifyStartConnectionTracked()
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGooglePurchaseStarted("sample_product_id", "product_b", false, false)
+        }
     }
 
     @Test
@@ -679,6 +722,7 @@ class BillingWrapperTest {
         }
         assertThat(error).isNotNull
         assertThat(error?.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+        verifyStartConnectionTracked(times = 2)
     }
 
     @Test
@@ -704,6 +748,7 @@ class BillingWrapperTest {
         }
         assertThat(error).isNotNull
         assertThat(error?.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+        verifyStartConnectionTracked(times = 2)
     }
 
     @Test
@@ -722,6 +767,15 @@ class BillingWrapperTest {
             PurchasesErrorCode.StoreProblemError,
             PurchasesErrorCode.StoreProblemError,
         )
+        verifyStartConnectionTracked()
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(
+                1, "product_details", "connecting", 0L, false, null,
+            )
+            mockDiagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(
+                0, "product_details", "connecting", 0L, false, null,
+            )
+        }
     }
 
     @Test
@@ -759,6 +813,16 @@ class BillingWrapperTest {
         )
         assertThat(errors).hasSize(3)
         assertThat(errors.last().code).isEqualTo(PurchasesErrorCode.PurchaseNotAllowedError)
+        verifyStartConnectionTracked(times = 2)
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(
+                1, "product_details", "connecting", 10000L, false, null,
+            )
+            mockDiagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(
+                0, "product_details", "no_client", 10000L, false, null,
+            )
+            mockDiagnosticsTracker.trackGoogleBillingSetupFinished(3, "", 1, 0L)
+        }
     }
 
     @Test
@@ -780,6 +844,14 @@ class BillingWrapperTest {
         oldCallback.run()
         assertThat(errors.map { it.underlyingErrorMessage })
             .containsExactly(BillingStrings.BILLING_PENDING_REQUEST_TIMED_OUT)
+        verifyStartConnectionTracked()
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleBillingSetupFinished(3, "", 1, 0L)
+            mockDiagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(
+                0, "product_details", "connecting", 10000L, true, null,
+            )
+            mockDiagnosticsTracker.trackGoogleBillingClientRetired(true)
+        }
     }
 
     @Test
@@ -798,6 +870,12 @@ class BillingWrapperTest {
         wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("b"), {}, { errors.add(it) })
         pendingRequestTimeouts.toList().forEach { it.run() }
         verify(exactly = 1) { mockClient.endConnection() }
+        verifyStartConnectionTracked()
+        verify(exactly = 2) {
+            mockDiagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(
+                0, "product_details", "connecting", 10000L, false, null,
+            )
+        }
     }
 
     @Test
@@ -821,6 +899,13 @@ class BillingWrapperTest {
         connectionClockMillis = 19_000
         deferred.captured.run()
         verify(exactly = 1) { mockClient.endConnection() }
+        verifyStartConnectionTracked(times = 2)
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(
+                0, "product_details", "connecting", 1000L, false, null,
+            )
+            mockDiagnosticsTracker.trackGoogleBillingClientRetired(true)
+        }
     }
 
     @Test
@@ -845,6 +930,12 @@ class BillingWrapperTest {
         deferred.captured.run()
         verify(exactly = 0) { mockClient.endConnection() }
         assertThat(wrapper.billingClient).isSameAs(mockClient)
+        verifyStartConnectionTracked(times = 3)
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(
+                0, "product_details", "connecting", 1000L, false, null,
+            )
+        }
     }
 
     @Test
@@ -854,6 +945,12 @@ class BillingWrapperTest {
         pendingRequestTimeouts.toList().forEach { it.run() }
         verify(exactly = 0) { mockClient.endConnection() }
         assertThat(wrapper.billingClient).isSameAs(mockClient)
+        verifyStartConnectionTracked(times = 2)
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(
+                0, "product_details", "disconnected", 0L, false, null,
+            )
+        }
     }
 
     @Test
@@ -863,6 +960,7 @@ class BillingWrapperTest {
         wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("product_a"), {}, {})
 
         verify(exactly = 2) { mockClient.startConnection(any()) }
+        verifyStartConnectionTracked(times = 2)
     }
 
     @Test
@@ -871,6 +969,7 @@ class BillingWrapperTest {
         wrapper.startConnection()
         verify(exactly = 1) { mockClient.startConnection(any()) }
         verify(exactly = 0) { mockClient.getBillingConfigAsync(any(), any()) }
+        verifyDisconnectTracked()
     }
 
     @Test
@@ -886,6 +985,12 @@ class BillingWrapperTest {
         recovery.captured.onBillingConfigResponse(billingClientOKResult, null)
         assertThat(onConnectedCount).isEqualTo(1)
         assertThat(successes).isEqualTo(1)
+        verifyDisconnectTracked()
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleBillingSetupFinished(0, "", 1, 0L) }
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest("subs", 0, "", Duration.ZERO, listOf())
+            mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest("inapp", 0, "", Duration.ZERO, listOf())
+        }
     }
 
     @Test
@@ -895,6 +1000,8 @@ class BillingWrapperTest {
             BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
         )
         verify(exactly = 1) { mockClient.startConnection(any()) }
+        verifyDisconnectTracked()
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleBillingSetupFinished(2, "", 0, 0L) }
     }
 
     @Test
@@ -915,6 +1022,11 @@ class BillingWrapperTest {
         pendingRequestTimeouts.toList().forEach { it.run() }
         assertThat(successes).isEqualTo(2)
         verify(exactly = 0) { mockClient.endConnection() }
+        verifyDisconnectTracked()
+        verify(exactly = 2) {
+            mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest("subs", 0, "", Duration.ZERO, listOf())
+            mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest("inapp", 0, "", Duration.ZERO, listOf())
+        }
     }
 
     @Test
@@ -938,6 +1050,13 @@ class BillingWrapperTest {
         every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTED
         recoveries.last().onBillingConfigResponse(billingClientOKResult, null)
         assertThat(successes).isEqualTo(2)
+        verifyDisconnectTracked()
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleBillingSetupFinished(0, "", 1, 0L) }
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleBillingSetupFinished(3, "", 1, 0L) }
+        verify(exactly = 2) {
+            mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest("subs", 0, "", Duration.ZERO, listOf())
+            mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest("inapp", 0, "", Duration.ZERO, listOf())
+        }
     }
 
     @Test
@@ -952,6 +1071,11 @@ class BillingWrapperTest {
             BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult(), null,
         )
         assertThat(successes).isEqualTo(1)
+        verifyDisconnectTracked()
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest("subs", 0, "", Duration.ZERO, listOf())
+            mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest("inapp", 0, "", Duration.ZERO, listOf())
+        }
     }
 
     @Test
@@ -969,6 +1093,7 @@ class BillingWrapperTest {
         verify(exactly = 1) { mockClient.getBillingConfigAsync(any(), any()) }
         verify(exactly = 1) { mockClient.startConnection(any()) }
         verify(exactly = 0) { mockClient.endConnection() }
+        verifyDisconnectTracked()
     }
 
     @Test
@@ -987,6 +1112,7 @@ class BillingWrapperTest {
         assertThat(errors).hasSize(1)
         verify(exactly = 1) { mockClient.getBillingConfigAsync(any(), any()) }
         verify(exactly = 0) { mockClient.launchBillingFlow(any(), any()) }
+        verifyDisconnectTracked()
     }
 
     @Test
@@ -1014,6 +1140,16 @@ class BillingWrapperTest {
         verify(exactly = 1) { mockClient.endConnection() }
         verify(exactly = 0) { mockClient.launchBillingFlow(any(), any()) }
         assertThat(wrapper.billingClient).isNull()
+        verifyDisconnectTracked()
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(
+                1, "purchase_launch", "connecting", 10_000L, false, null,
+            )
+            mockDiagnosticsTracker.trackGoogleBillingClientRetired(true)
+            mockDiagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(
+                0, "query_purchases", "no_client", 10_000L, false, null,
+            )
+        }
     }
 
     @Test
@@ -1033,6 +1169,16 @@ class BillingWrapperTest {
         assertThat(successes).isEqualTo(1)
         assertThat(errors).hasSize(1)
         verify(exactly = 0) { mockClient.endConnection() }
+        verifyDisconnectTracked()
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(
+                0, "query_purchases", "disconnected", 0L, false, null,
+            )
+        }
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest("subs", 0, "", Duration.ZERO, listOf())
+            mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest("inapp", 0, "", Duration.ZERO, listOf())
+        }
     }
 
     @Test
@@ -1052,6 +1198,8 @@ class BillingWrapperTest {
         pendingRequestTimeouts.toList().forEach { it.run() }
         verify(exactly = 1) { mockClient.launchBillingFlow(any(), any()) }
         verify(exactly = 1) { mockClient.startConnection(any()) }
+        verifyDisconnectTracked()
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGooglePurchaseStarted("sample_product_id", "product_b", false, false) }
     }
 
     @Test
@@ -1067,6 +1215,7 @@ class BillingWrapperTest {
         pendingRequestTimeouts.toList().forEach { it.run() }
         assertThat(errors).hasSize(1)
         verify(exactly = 0) { mockClient.queryPurchasesAsync(any<QueryPurchasesParams>(), any()) }
+        verifyDisconnectTracked()
     }
 
     private fun disconnectInitializedClient() {
@@ -1094,6 +1243,13 @@ class BillingWrapperTest {
         assertThat(errors.map { it.underlyingErrorMessage })
             .containsExactly(BillingStrings.BILLING_PENDING_REQUEST_TIMED_OUT)
         verify(exactly = 0) { mockClient.launchBillingFlow(any(), any()) }
+        verifyStartConnectionTracked(times = 2)
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(
+                0, "purchase_launch", "connected", 0L, false, null,
+            )
+            mockDiagnosticsTracker.trackGoogleBillingSetupFinished(0, "", 0, 0L)
+        }
     }
 
     @Test
@@ -1111,6 +1267,12 @@ class BillingWrapperTest {
             .containsExactly(BillingStrings.BILLING_PENDING_REQUEST_TIMED_OUT)
         assertThat(pendingRequestTimeouts).hasSize(1)
         verify(exactly = 0) { mockClient.launchBillingFlow(any(), any()) }
+        verifyStartConnectionTracked(times = 2)
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(
+                0, "purchase_history_for_purchase", "connected", 0L, false, null,
+            )
+        }
     }
 
     @Test
@@ -1129,6 +1291,12 @@ class BillingWrapperTest {
         wrapper.onBillingSetupFinished(billingClientOKResult)
         assertThat(errors).hasSize(1)
         verify(exactly = 0) { mockClient.queryProductDetailsAsync(any(), any()) }
+        verifyConnectionTracked()
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(
+                0, "product_details", "disconnected", 0L, false, null,
+            )
+        }
     }
 
     @Test
@@ -1156,6 +1324,8 @@ class BillingWrapperTest {
         every { mockClient.connectionState } returns BillingClient.ConnectionState.CONNECTED
         wrapper.onBillingSetupFinished(billingClientOKResult)
         assertThat(errors).hasSize(1)
+        verifyStartConnectionTracked(times = 2)
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleBillingSetupFinished(0, "", 0, 10000L) }
     }
 
     @Test
@@ -1174,6 +1344,11 @@ class BillingWrapperTest {
             mockDiagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(
                 0, "product_details", "connecting", 250L, true, 750L,
             )
+        }
+        verifyStartConnectionTracked()
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleBillingSetupFinished(2, "", 0, 0L)
+            mockDiagnosticsTracker.trackGoogleBillingClientRetired(true)
         }
     }
 
@@ -1224,6 +1399,8 @@ class BillingWrapperTest {
             )
         }
         assertThat(wrapperUnderTest.billingClient).isSameAs(replacementClient)
+        verifyStartConnectionTracked(times = 2)
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleBillingSetupFinished(0, "", 1, 0L) }
     }
 
     @Test
@@ -1278,6 +1455,8 @@ class BillingWrapperTest {
             continueStartingConnection.countDown()
             connectionThread.join(5_000L)
         }
+        verifyStartConnectionTracked(times = 3)
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleBillingSetupFinished(0, "", 0, 0L) }
     }
 
     @Test
@@ -1297,7 +1476,15 @@ class BillingWrapperTest {
         pendingRequestTimeouts.forEach { it.run() }
 
         assertThat(successCount).isEqualTo(1)
-        verify(exactly = 0) { mockDiagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 0) {
+            mockDiagnosticsTracker.trackGoogleBillingPendingRequestTimedOut(any(), any(), any(), any(), any(), any())
+        }
+        verifyStartConnectionTracked(times = 2)
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleBillingSetupFinished(0, "", 1, 0L)
+            mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest("subs", 0, "", Duration.ZERO, listOf())
+            mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest("inapp", 0, "", Duration.ZERO, listOf())
+        }
     }
 
     @Test
@@ -1332,6 +1519,10 @@ class BillingWrapperTest {
         assertThat(purchaseContext?.presentedOfferingContext).isEqualTo(PresentedOfferingContext("offering_a"))
         assertThat(purchaseContext?.selectedSubscriptionOptionId).isEqualTo(storeProduct.subscriptionOptions!!.first().id)
         assertThat(purchaseContext?.replacementMode).isEqualTo(StoreReplacementMode.CHARGE_FULL_PRICE)
+        verifyConnectionTracked()
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGooglePurchaseStarted("sample_product_id", "product_b", false, false)
+        }
     }
 
     @Test
@@ -1368,6 +1559,10 @@ class BillingWrapperTest {
         assertThat(purchaseContext?.presentedOfferingContext).isEqualTo(PresentedOfferingContext("offering_a"))
         assertThat(purchaseContext?.selectedSubscriptionOptionId).isEqualTo(storeProduct.subscriptionOptions!!.first().id)
         assertThat(purchaseContext?.replacementMode).isEqualTo(StoreReplacementMode.DEFERRED)
+        verifyConnectionTracked()
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGooglePurchaseStarted("sample_product_id", "product_b", false, false)
+        }
     }
 
     @Test
@@ -1446,6 +1641,10 @@ class BillingWrapperTest {
             null,
             isPersonalizedPrice
         )
+        verifyConnectionTracked()
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGooglePurchaseStarted("product_a", "product_b", false, false)
+        }
     }
 
     @Test
@@ -1517,6 +1716,10 @@ class BillingWrapperTest {
 
         val purchaseContext = wrapper.purchaseContext[oldPurchase.productIds.first()]
         assertThat(purchaseContext?.replacementMode).isEqualTo(StoreReplacementMode.DEFERRED)
+        verifyConnectionTracked()
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGooglePurchaseStarted("product_a", "product_b", false, false)
+        }
     }
 
     @Test
@@ -1601,6 +1804,10 @@ class BillingWrapperTest {
             null,
             isPersonalizedPrice
         )
+        verifyConnectionTracked()
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGooglePurchaseStarted("product_a", "product_b", false, false)
+        }
     }
 
     @Test
@@ -1657,6 +1864,8 @@ class BillingWrapperTest {
             null,
             isPersonalizedPrice
         )
+        verifyConnectionTracked()
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGooglePurchaseStarted("product_a", null, null, null) }
     }
 
     @Test
@@ -1707,6 +1916,10 @@ class BillingWrapperTest {
         assertThat(tokenSlot.captured).isEqualTo("mock-subscription-offer-token")
         assertThat(productDetailsSlot.isCaptured).isTrue
         assertThat(productDetailsSlot.captured).isEqualTo(productDetails)
+        verifyConnectionTracked()
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGooglePurchaseStarted("product_a", "product_b", false, false)
+        }
     }
 
     @Test
@@ -1755,6 +1968,8 @@ class BillingWrapperTest {
 
         assertThat(productDetailsSlot.isCaptured).isTrue
         assertThat(productDetailsSlot.captured).isEqualTo(productDetails)
+        verifyConnectionTracked()
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGooglePurchaseStarted("product_a", null, null, null) }
     }
 
     @Test
@@ -1776,6 +1991,11 @@ class BillingWrapperTest {
         }
 
         clearStaticMockk(BillingFlowParams::class)
+        verifyConnectionTracked()
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest("subs", 0, "", Duration.ZERO)
+            mockDiagnosticsTracker.trackGooglePurchaseStarted("sample_product_id", null, false, false)
+        }
     }
 
     @Test
@@ -1797,6 +2017,10 @@ class BillingWrapperTest {
         }
 
         clearStaticMockk(BillingFlowParams::class)
+        verifyConnectionTracked()
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGooglePurchaseStarted("sample_product_id", "product_b", false, false)
+        }
     }
 
     @Test
@@ -1834,6 +2058,11 @@ class BillingWrapperTest {
         }
 
         clearStaticMockk(BillingFlowParams::class)
+        verifyStartConnectionTracked(times = 2)
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGooglePurchaseStarted("sample_product_id", "product_b", false, false)
+            mockDiagnosticsTracker.trackGoogleBillingSetupFinished(0, "", 0, 0L)
+        }
     }
 
     @Test
@@ -1862,6 +2091,11 @@ class BillingWrapperTest {
         }
 
         clearStaticMockk(BillingFlowParams::class)
+        verifyConnectionTracked()
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest("subs", 0, "", Duration.ZERO)
+            mockDiagnosticsTracker.trackGooglePurchaseStarted("sample_product_id", null, false, false)
+        }
     }
 
     @Test
@@ -1887,6 +2121,11 @@ class BillingWrapperTest {
         }
 
         clearStaticMockk(BillingFlowParams::class)
+        verifyConnectionTracked()
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest("subs", 0, "", Duration.ZERO)
+            mockDiagnosticsTracker.trackGooglePurchaseStarted("sample_product_id", null, false, false)
+        }
     }
 
     @Test
@@ -1915,6 +2154,11 @@ class BillingWrapperTest {
         }
 
         clearStaticMockk(BillingFlowParams::class)
+        verifyConnectionTracked()
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest("subs", 5, "", Duration.ZERO)
+            mockDiagnosticsTracker.trackGooglePurchaseStarted("sample_product_id", null, false, false)
+        }
     }
 
     @Test
@@ -1946,6 +2190,9 @@ class BillingWrapperTest {
         }
 
         clearStaticMockk(BillingFlowParams::class)
+        verifyConnectionTracked()
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest("subs", 3, "", Duration.ZERO) }
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGooglePurchaseStarted("sample_product_id", null, false, false) }
     }
 
     @Test
@@ -1977,6 +2224,9 @@ class BillingWrapperTest {
         }
 
         clearStaticMockk(BillingFlowParams::class)
+        verifyConnectionTracked()
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest("subs", 7, "", Duration.ZERO) }
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGooglePurchaseStarted("sample_product_id", null, false, false) }
     }
 
     @Test
@@ -2016,6 +2266,11 @@ class BillingWrapperTest {
         }
 
         clearStaticMockk(BillingFlowParams::class)
+        verifyStartConnectionTracked(times = 2)
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGooglePurchaseStarted("sample_product_id", null, false, false)
+            mockDiagnosticsTracker.trackGoogleBillingSetupFinished(0, "", 0, 0L)
+        }
     }
 
     @Test
@@ -2046,6 +2301,8 @@ class BillingWrapperTest {
         }
 
         clearStaticMockk(BillingFlowParams::class)
+        verifyConnectionTracked()
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGooglePurchaseStarted("product_a", null, null, null) }
     }
 
     @Test
@@ -2076,6 +2333,11 @@ class BillingWrapperTest {
 
         verify(exactly = 1) {
             mockClient.launchBillingFlow(eq(mockActivity), any())
+        }
+        verifyStartConnectionTracked(times = 2)
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleBillingSetupFinished(0, "", 1, 0L)
+            mockDiagnosticsTracker.trackGooglePurchaseStarted("sample_product_id", "product_b", false, false)
         }
     }
 
@@ -2109,6 +2371,11 @@ class BillingWrapperTest {
         // ensure calls to launchBillingFlow - 1 in setup, 1 here
         verify(exactly = 2) {
             handler.post(any())
+        }
+        verifyStartConnectionTracked(times = 2)
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleBillingSetupFinished(0, "", 1, 0L)
+            mockDiagnosticsTracker.trackGooglePurchaseStarted("sample_product_id", "product_b", false, false)
         }
     }
 
@@ -2167,6 +2434,7 @@ class BillingWrapperTest {
 
         assertThat(slot.isCaptured).isTrue
         assertThat(slot.captured.code).isEqualTo(PurchasesErrorCode.UnknownError)
+        verifyStartConnectionTracked()
     }
 
     @Test
@@ -2256,6 +2524,7 @@ class BillingWrapperTest {
 
         assertThat(slot.isCaptured).isTrue
         assertThat(slot.captured.code).isEqualTo(PurchasesErrorCode.UnknownError)
+        verifyStartConnectionTracked()
     }
 
     @Test
@@ -2276,6 +2545,15 @@ class BillingWrapperTest {
         purchasesUpdatedListener!!.onPurchasesUpdated(billingClientOKResult, purchases)
 
         assertThat(slot.captured.size).isOne
+        verifyStartConnectionTracked()
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGooglePurchaseUpdateReceived(
+                listOf("com.revenuecat.lifetime"), listOf("PURCHASED"), 0, "",
+            )
+            mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest(
+                "subs", 0, "", Duration.ZERO, listOf("com.revenuecat.lifetime"),
+            )
+        }
     }
 
     @Test
@@ -2293,6 +2571,8 @@ class BillingWrapperTest {
         verify {
             mockPurchasesListener.onPurchasesFailedToUpdate(any())
         }
+        verifyStartConnectionTracked()
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGooglePurchaseUpdateReceived(null, null, 0, "") }
     }
 
     @Test
@@ -2310,6 +2590,8 @@ class BillingWrapperTest {
         verify {
             mockPurchasesListener.onPurchasesFailedToUpdate(any())
         }
+        verifyStartConnectionTracked()
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGooglePurchaseUpdateReceived(null, null, -2, "") }
     }
 
     @Test
@@ -2326,6 +2608,7 @@ class BillingWrapperTest {
             mockClient.endConnection()
         }
         assert(wrapper.purchasesUpdatedListener == null)
+        verifyStartConnectionTracked()
     }
 
     @Test
@@ -2335,6 +2618,7 @@ class BillingWrapperTest {
         }
 
         assertThat(wrapper.purchasesUpdatedListener).isNotNull
+        verifyStartConnectionTracked()
     }
 
     @Test
@@ -2351,6 +2635,7 @@ class BillingWrapperTest {
         verify(exactly = 1) { // Just the original connection
             mockClient.startConnection(any())
         }
+        verifyStartConnectionTracked()
     }
 
     @Test
@@ -2365,6 +2650,7 @@ class BillingWrapperTest {
         wrapper.close()
 
         assertThat<BillingClient>(wrapper.billingClient).isNull()
+        verifyStartConnectionTracked()
     }
 
     @Test
@@ -2372,6 +2658,7 @@ class BillingWrapperTest {
         wrapper.purchasesUpdatedListener = mockPurchasesListener
 
         assertThat<BillingClient>(wrapper.billingClient).isNotNull
+        verifyStartConnectionTracked()
     }
 
     @Test
@@ -2390,6 +2677,8 @@ class BillingWrapperTest {
 
         wrapper.purchasesUpdatedListener = null
         wrapper.onBillingSetupFinished(billingClientOKResult)
+        verifyStartConnectionTracked(times = 2)
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleBillingSetupFinished(0, "", 1, 0L) }
     }
 
     @Test
@@ -2400,6 +2689,8 @@ class BillingWrapperTest {
 
         wrapper.purchasesUpdatedListener = null
         wrapper.onPurchasesUpdated(BillingClient.BillingResponseCode.DEVELOPER_ERROR.buildResult(), emptyList())
+        verifyStartConnectionTracked()
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGooglePurchaseUpdateReceived(listOf(), listOf(), 5, "") }
     }
 
     @Test
@@ -2412,12 +2703,14 @@ class BillingWrapperTest {
         verify {
             mockClient.endConnection()
         }
+        verifyStartConnectionTracked()
     }
 
     @Test
     fun `on successfully connected billing client, listener is called`() {
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
         assertThat(onConnectedCount).isEqualTo(1)
+        verifyConnectionTracked()
     }
 
     @Test
@@ -2453,6 +2746,12 @@ class BillingWrapperTest {
         assertThat(slot.captured.size).isOne
         assertThat(slot.captured[0].presentedOfferingIdentifier).isEqualTo(expectedOfferingId)
         assertThat(slot.captured[0].presentedOfferingContext?.offeringIdentifier).isEqualTo(expectedOfferingId)
+        verifyConnectionTracked()
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest("subs", 0, "", Duration.ZERO)
+            mockDiagnosticsTracker.trackGooglePurchaseStarted("product_a", null, false, false)
+            mockDiagnosticsTracker.trackGooglePurchaseUpdateReceived(listOf("product_a"), listOf("PURCHASED"), 0, "")
+        }
     }
 
     @Test
@@ -2487,6 +2786,12 @@ class BillingWrapperTest {
 
         assertThat(slot.captured.size).isOne
         assertThat(slot.captured[0].subscriptionOptionId).isEqualTo(subscriptionOption.id)
+        verifyConnectionTracked()
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest("subs", 0, "", Duration.ZERO)
+            mockDiagnosticsTracker.trackGooglePurchaseStarted("product_a", null, false, false)
+            mockDiagnosticsTracker.trackGooglePurchaseUpdateReceived(listOf("product_a"), listOf("PURCHASED"), 0, "")
+        }
     }
 
     @Test
@@ -2502,6 +2807,7 @@ class BillingWrapperTest {
         assertThat(subscriptionOption.installmentsInfo).isNotNull
         assertThat(subscriptionOption.installmentsInfo?.commitmentPaymentsCount).isEqualTo(3)
         assertThat(subscriptionOption.installmentsInfo?.renewalCommitmentPaymentsCount).isEqualTo(1)
+        verifyStartConnectionTracked()
     }
 
     @Test
@@ -2542,6 +2848,7 @@ class BillingWrapperTest {
             mockBuilder.enablePendingPurchases(mockPendingParams)
             mockBuilder.enableAutoServiceReconnection()
         }
+        verifyStartConnectionTracked()
     }
 
     @Test
@@ -2582,6 +2889,7 @@ class BillingWrapperTest {
             mockBuilder.enablePendingPurchases(mockPendingParams)
             mockBuilder.enableAutoServiceReconnection()
         }
+        verifyStartConnectionTracked()
     }
 
     @Test
@@ -2620,6 +2928,14 @@ class BillingWrapperTest {
         }
 
         assertThat(reconnectDelays).containsExactlyElementsOf(expectedDelays)
+        verifyStartConnectionTracked()
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleBillingSetupFinished(2, "", 0, 0L)
+            mockDiagnosticsTracker.trackGoogleBillingSetupFinished(1, "", 0, 0L)
+            mockDiagnosticsTracker.trackGoogleBillingSetupFinished(-1, "", 0, 0L)
+            mockDiagnosticsTracker.trackGoogleBillingSetupFinished(12, "", 0, 0L)
+        }
+        verify(exactly = 8) { mockDiagnosticsTracker.trackGoogleBillingSetupFinished(6, "", 0, 0L) }
     }
 
     @Test
@@ -2641,6 +2957,15 @@ class BillingWrapperTest {
             wrapper.onBillingSetupFinished(errorCode.buildResult())
         }
         verify(exactly = 1) { handler.postDelayed(any(), any()) }
+        verifyConnectionTracked()
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleBillingSetupFinished(-2, "", 0, 0L)
+            mockDiagnosticsTracker.trackGoogleBillingSetupFinished(3, "", 0, 0L)
+            mockDiagnosticsTracker.trackGoogleBillingSetupFinished(4, "", 0, 0L)
+            mockDiagnosticsTracker.trackGoogleBillingSetupFinished(7, "", 0, 0L)
+            mockDiagnosticsTracker.trackGoogleBillingSetupFinished(8, "", 0, 0L)
+            mockDiagnosticsTracker.trackGoogleBillingSetupFinished(5, "", 0, 0L)
+        }
     }
 
     @Test
@@ -2662,6 +2987,7 @@ class BillingWrapperTest {
         )
 
         assertThat(receivedProductID).isEqualTo(expectedProductID)
+        verifyStartConnectionTracked()
     }
 
     // region diagnostics tracking
@@ -2679,6 +3005,7 @@ class BillingWrapperTest {
                 billingDebugMessage = ""
             )
         }
+        verifyConnectionTracked()
     }
 
     @Test
@@ -2725,6 +3052,7 @@ class BillingWrapperTest {
                 connectionDurationMillis = 2500L,
             )
         }
+        verifyStartConnectionTracked(times = 201)
     }
 
     @Test
@@ -2734,6 +3062,7 @@ class BillingWrapperTest {
 
         // Assert
         verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleBillingServiceDisconnected() }
+        verifyStartConnectionTracked()
     }
 
     @Test
@@ -2763,6 +3092,7 @@ class BillingWrapperTest {
                 hasIntroPrice = false,
             )
         }
+        verifyConnectionTracked()
     }
 
     @Test
@@ -2790,6 +3120,12 @@ class BillingWrapperTest {
             )
         }
 
+        verifyStartConnectionTracked()
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest(
+                "subs", 0, "", Duration.ZERO, listOf("com.revenuecat.lifetime"),
+            )
+        }
     }
 
     // endregion diagnostics tracking
@@ -2809,6 +3145,7 @@ class BillingWrapperTest {
 
         // This is the initial start connection
         verify(exactly = 1) { mockClient.startConnection(any()) }
+        verifyStartConnectionTracked()
     }
 
     @Test
@@ -2821,6 +3158,7 @@ class BillingWrapperTest {
 
         // One for the initial, another for this test since isReady is false
         verify(exactly = 2) { mockClient.startConnection(any()) }
+        verifyStartConnectionTracked(times = 2)
     }
 
     @Test
@@ -2833,6 +3171,7 @@ class BillingWrapperTest {
         }
 
         verify(exactly = 1) { mockClient.showInAppMessages(activity, any(), any()) }
+        verifyStartConnectionTracked()
     }
 
     @Test
@@ -2848,6 +3187,7 @@ class BillingWrapperTest {
         }
 
         verify(exactly = 1) { mockClient.showInAppMessages(activity, any(), any()) }
+        verifyStartConnectionTracked()
     }
 
     @Test
@@ -2866,6 +3206,7 @@ class BillingWrapperTest {
                 mockInAppMessageResult(InAppMessageResponseCode.NO_ACTION_NEEDED)
             )
         }
+        verifyStartConnectionTracked()
     }
 
     @Test
@@ -2886,6 +3227,7 @@ class BillingWrapperTest {
             )
         }
         assertThat(subscriptionStatusChanged).isTrue
+        verifyStartConnectionTracked()
     }
 
     @Test
@@ -2900,6 +3242,7 @@ class BillingWrapperTest {
         }
 
         verify(exactly = 0) { mockClient.showInAppMessages(activity, any(), any()) }
+        verifyStartConnectionTracked()
     }
 
     @Test
@@ -2914,6 +3257,7 @@ class BillingWrapperTest {
         }
 
         verify(exactly = 0) { mockClient.showInAppMessages(activity, any(), any()) }
+        verifyStartConnectionTracked()
     }
 
     @Test
@@ -2929,6 +3273,7 @@ class BillingWrapperTest {
         }
 
         verify(exactly = 0) { mockClient.showInAppMessages(activity, any(), any()) }
+        verifyStartConnectionTracked()
     }
 
     @Test
@@ -2946,6 +3291,7 @@ class BillingWrapperTest {
         }
 
         verify(exactly = 0) { mockClient.showInAppMessages(activity, any(), any()) }
+        verifyStartConnectionTracked()
     }
 
     @Test
@@ -2965,6 +3311,7 @@ class BillingWrapperTest {
         }
 
         verify(exactly = 0) { mockClient.showInAppMessages(activity, any(), any()) }
+        verifyStartConnectionTracked()
     }
 
     // endregion inapp messages
@@ -2994,6 +3341,12 @@ class BillingWrapperTest {
 
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+        verifyStartConnectionTracked(times = 2)
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGoogleBillingSetupFinished(
+                3, "Google Play In-app Billing API version is less than 3", 1, 0L,
+            )
+        }
     }
 
     // region Multi-line subscriptions
@@ -3046,6 +3399,10 @@ class BillingWrapperTest {
         assertThat(subscriptionOptionIdForProductIDs!!.size).isEqualTo(2)
         assertThat(subscriptionOptionIdForProductIDs[productDetails.productId]).isEqualTo(optionId)
         assertThat(subscriptionOptionIdForProductIDs[productId2]).isEqualTo("mock-base-plan-id:mock-offer-id")
+        verifyConnectionTracked()
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGooglePurchaseStarted("sample_product_id", "product_b", false, false)
+        }
     }
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -3135,6 +3492,10 @@ class BillingWrapperTest {
             null,
             isPersonalizedPrice
         )
+        verifyConnectionTracked()
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGooglePurchaseStarted("productId1", "product_b", false, false)
+        }
     }
     // endregion
 
@@ -3242,7 +3603,22 @@ class BillingWrapperTest {
 
     private fun mockDiagnosticsTracker() {
         every { mockDiagnosticsTracker.isCollectionDisabled } returns false
+        excludeRecords { mockDiagnosticsTracker.isCollectionDisabled }
         // A known storefront keeps the initial storefront load event out of unrelated tests.
         every { mockDeviceCache.getStorefront() } returns "US"
+    }
+
+    private fun verifyStartConnectionTracked(times: Int = 1) {
+        verify(exactly = times) { mockDiagnosticsTracker.trackGoogleBillingStartConnection() }
+    }
+
+    private fun verifyConnectionTracked() {
+        verifyStartConnectionTracked()
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleBillingSetupFinished(0, "", 0, 0L) }
+    }
+
+    private fun verifyDisconnectTracked() {
+        verifyConnectionTracked()
+        verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleBillingServiceDisconnected() }
     }
 }
