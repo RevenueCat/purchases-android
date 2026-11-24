@@ -427,6 +427,36 @@ class PaywallComponentDataValidationTests {
     }
 
     @Test
+    fun `Should use the localized image for the selected locale`() {
+        val english = LocaleId("en_US")
+        val french = LocaleId("fr_FR")
+        val imageKey = LocalizationKey("image")
+        val offering = offeringWithLocalizedComponent(
+            component = ImageComponent(source = image("english"), overrideSourceLid = imageKey),
+            localizations = mapOf(
+                english to mapOf(imageKey to LocalizationData.Image(image("english"))),
+                french to mapOf(imageKey to LocalizationData.Image(image("french"))),
+            ),
+        )
+
+        fun sourcesFor(locale: LocaleId): Map<LocaleId, ThemeImageUrls> {
+            val validated = offering.validatedPaywall(
+                currentColorScheme = TestData.Constants.currentColorScheme,
+                resourceProvider = MockResourceProvider(),
+                preferredLocales = listOf(locale),
+            )
+            check(validated is PaywallValidationResult.Components)
+            val stack = validated.stack as StackComponentStyle
+            return (stack.children.single() as ImageComponentStyle).sources
+        }
+
+        assertEquals(image("english"), sourcesFor(english).getValue(english))
+        assertEquals(image("french"), sourcesFor(french).getValue(french))
+        // A locale the paywall doesn't have falls back to the default locale.
+        assertEquals(image("english"), sourcesFor(LocaleId("de_DE")).getValue(english))
+    }
+
+    @Test
     fun `Should ignore a missing localized URL in an inactive locale`() {
         val english = LocaleId("en_US")
         val spanish = LocaleId("es_ES")
@@ -455,6 +485,42 @@ class PaywallComponentDataValidationTests {
         )
 
         assertTrue(validated is PaywallValidationResult.Components)
+    }
+
+    @Test
+    fun `Should ignore a missing localized image in an inactive locale`() {
+        val english = LocaleId("en_US")
+        val french = LocaleId("fr_FR")
+        val imageKey = LocalizationKey("image")
+        val offering = offeringWithLocalizedComponent(
+            component = ImageComponent(source = image("english"), overrideSourceLid = imageKey),
+            localizations = mapOf(
+                english to mapOf(imageKey to LocalizationData.Image(image("english"))),
+                french to emptyMap(),
+            ),
+        )
+
+        val englishValidation = offering.validatedPaywall(
+            currentColorScheme = TestData.Constants.currentColorScheme,
+            resourceProvider = MockResourceProvider(),
+            preferredLocales = listOf(english),
+        )
+        val frenchValidation = offering.validatedPaywall(
+            currentColorScheme = TestData.Constants.currentColorScheme,
+            resourceProvider = MockResourceProvider(),
+            preferredLocales = listOf(french),
+        )
+
+        // French is missing the image, but English doesn't show French, so it still validates.
+        check(englishValidation is PaywallValidationResult.Components)
+        val imageStyle = (englishValidation.stack as StackComponentStyle).children.single() as ImageComponentStyle
+        assertEquals(mapOf(english to image("english")), imageStyle.sources)
+        // French shows the missing image, so it falls back.
+        assertTrue(frenchValidation is PaywallValidationResult.Legacy)
+        assertEquals(
+            setOf(PaywallValidationError.MissingImageLocalization(imageKey, french)),
+            frenchValidation.errors?.toSet(),
+        )
     }
 
     @Test
@@ -1549,6 +1615,16 @@ class PaywallComponentDataValidationTests {
         val textStyle = stack.children[0] as TextComponentStyle
         assertEquals(3, textStyle.overrides.size)
     }
+
+    private fun image(name: String) = ThemeImageUrls(
+        light = ImageUrls(
+            original = URL("https://assets.test/$name.png"),
+            webp = URL("https://assets.test/$name.webp"),
+            webpLowRes = URL("https://assets.test/${name}_low_res.webp"),
+            width = 100u,
+            height = 100u,
+        ),
+    )
 
     private fun offeringWithLocalizedComponent(
         component: PaywallComponent,

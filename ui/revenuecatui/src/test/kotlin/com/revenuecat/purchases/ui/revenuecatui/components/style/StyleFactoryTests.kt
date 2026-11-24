@@ -671,6 +671,66 @@ class StyleFactoryTests {
     }
 
     @Test
+    fun `Should use the localized image for the selected locale when only that locale is passed`() {
+        // OfferingToStateMapper only passes the selected locale's localizations, so its key is the map's head.
+        val french = LocaleId("fr_FR")
+        val imageLid = LocalizationKey("image-lid")
+        val selectedImageLid = LocalizationKey("selected-image-lid")
+        val component = ImageComponent(
+            source = imageUrls("base"),
+            overrideSourceLid = imageLid,
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Selected),
+                    properties = PartialImageComponent(
+                        source = imageUrls("selected"),
+                        overrideSourceLid = selectedImageLid,
+                    ),
+                ),
+            ),
+        )
+        val styleFactory = StyleFactory(
+            localizations = nonEmptyMapOf(
+                french to nonEmptyMapOf(
+                    imageLid to LocalizationData.Image(imageUrls("base-fr")),
+                    selectedImageLid to LocalizationData.Image(imageUrls("selected-fr")),
+                ),
+            ),
+            colorAliases = colorAliases,
+            fontAliases = fontAliases,
+            variableLocalizations = nonEmptyMapOf(french to variableLocalizationKeysForEnUs()),
+            offering = offering,
+        )
+
+        val style = styleFactory.create(component).getOrThrow().componentStyle as ImageComponentStyle
+
+        assertThat(style.sources).isEqualTo(mapOf(french to imageUrls("base-fr")))
+        assertThat(style.overrides.single().properties.sources).isEqualTo(mapOf(french to imageUrls("selected-fr")))
+    }
+
+    @Test
+    fun `Should resolve localized image sources for every locale`() {
+        val imageLid = LocalizationKey("image-lid")
+        val localizedImages = videoLocales.associateWith { imageUrls(it.value) }
+        val localizations = localizedImages.mapValues { (_, image) -> mapOf(imageLid to LocalizationData.Image(image)) }
+        val component = ImageComponent(source = imageUrls("base"), overrideSourceLid = imageLid)
+        val styleFactory = StyleFactory(
+            localizations = nonEmptyMapOf(
+                defaultVideoLocale to localizations.getValue(defaultVideoLocale),
+                localizations,
+            ),
+            colorAliases = colorAliases,
+            fontAliases = fontAliases,
+            variableLocalizations = variableLocalizations,
+            offering = offering,
+        )
+
+        val style = styleFactory.create(component).getOrThrow().componentStyle as ImageComponentStyle
+
+        assertThat(style.sources).isEqualTo(localizedImages)
+    }
+
+    @Test
     fun `Should resolve localized video sources for every locale`() {
         val videoLid = LocalizationKey("video-lid")
         val localizedVideos = videoLocales.associateWith { videoUrls(it.value) }

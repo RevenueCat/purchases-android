@@ -1468,8 +1468,9 @@ internal class StyleFactory(
         overrideSourceLid
             ?.let { key -> localizations.imageForAllLocales(key) }
             .orSuccessfullyNull()
-            // Ensure the default source keyed by the default locale is present in the result.
-            .map { nonEmptyMapOf(localizations.entry.key to this, it.orEmpty()) }
+            // The localized sources cover every locale, so they take precedence. Only fall back to this source when
+            // there's no override lid.
+            .map { it ?: forDefaultLocaleOnly() }
 
     private fun <T> T.forDefaultLocaleOnly(): NonEmptyMap<LocaleId, T> =
         nonEmptyMapOf(localizations.entry.key to this)
