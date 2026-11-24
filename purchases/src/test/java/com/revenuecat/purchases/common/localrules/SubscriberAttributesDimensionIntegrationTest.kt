@@ -5,6 +5,7 @@ package com.revenuecat.purchases.common.localrules
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.DeviceIdentifierCollectionMode
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
@@ -62,7 +63,7 @@ class SubscriberAttributesDimensionIntegrationTest {
             attributesCache,
             backend = mockk(),
             deviceIdentifiersFetcher = mockk(),
-            automaticDeviceIdentifierCollectionEnabled = false,
+            deviceIdentifierCollectionMode = DeviceIdentifierCollectionMode.MANUAL_ONLY,
         )
         resolver = RulesDimensionResolver(
             providers = listOf(

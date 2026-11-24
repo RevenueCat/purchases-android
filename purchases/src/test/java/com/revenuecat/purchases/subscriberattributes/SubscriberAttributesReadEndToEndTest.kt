@@ -7,6 +7,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerAttribute
 import com.revenuecat.purchases.CustomerInfoUpdateHandler
+import com.revenuecat.purchases.DeviceIdentifierCollectionMode
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.identity.IdentityManager
@@ -43,7 +44,7 @@ class SubscriberAttributesReadEndToEndTest {
             SubscriberAttributesCache(deviceCache),
             backend = mockk(),
             deviceIdentifiersFetcher = mockk(),
-            automaticDeviceIdentifierCollectionEnabled = false,
+            deviceIdentifierCollectionMode = DeviceIdentifierCollectionMode.MANUAL_ONLY,
         )
         handler = CustomerInfoUpdateHandler(
             deviceCache,

@@ -3,6 +3,7 @@ package com.revenuecat.purchases.subscriberattributes
 import android.app.Application
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.CustomerInfoOriginalSource
+import com.revenuecat.purchases.DeviceIdentifierCollectionMode
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.Delay
@@ -25,7 +26,7 @@ internal class SubscriberAttributesManager(
     val deviceCache: SubscriberAttributesCache,
     val backend: SubscriberAttributesPoster,
     private val deviceIdentifiersFetcher: DeviceIdentifiersFetcher,
-    private val automaticDeviceIdentifierCollectionEnabled: Boolean,
+    private val deviceIdentifierCollectionMode: DeviceIdentifierCollectionMode,
 ) {
 
     private val obtainingDeviceIdentifiersObservable = ObtainDeviceIdentifiersObservable()
@@ -320,7 +321,7 @@ internal class SubscriberAttributesManager(
             val attributesToSet = mapOf(attributionKey.backendKey to value) + deviceIdentifiers
             setAttributes(attributesToSet, appUserID)
         }
-        if (automaticDeviceIdentifierCollectionEnabled) {
+        if (deviceIdentifierCollectionMode == DeviceIdentifierCollectionMode.AUTOMATIC) {
             getDeviceIdentifiers(applicationContext) { deviceIdentifiers ->
                 setAttributes(deviceIdentifiers)
             }

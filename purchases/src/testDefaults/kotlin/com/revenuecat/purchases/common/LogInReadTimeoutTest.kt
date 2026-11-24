@@ -7,6 +7,7 @@ import android.net.Uri
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.DeviceIdentifierCollectionMode
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesOrchestrator
@@ -85,7 +86,7 @@ internal class LogInReadTimeoutTest : BaseHTTPClientTest() {
         val helper = BackendHelper("test-api-key", dispatcher, appConfig, client)
         val backend = Backend(appConfig, dispatcher, dispatcher, client, helper)
         val attributes = SubscriberAttributesManager(
-            attributesCache, SubscriberAttributesPoster(helper), mockk(), false,
+            attributesCache, SubscriberAttributesPoster(helper), mockk(), DeviceIdentifierCollectionMode.MANUAL_ONLY,
         )
         val identity = IdentityManager(
             appConfig, cache, attributesCache, attributes,

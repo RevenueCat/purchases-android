@@ -323,7 +323,7 @@ internal class PurchasesFactory(
                 subscriberAttributesCache,
                 subscriberAttributesPoster,
                 attributionFetcher,
-                automaticDeviceIdentifierCollectionEnabled,
+                deviceIdentifierCollectionMode,
             )
 
             val localTransactionMetadataStore = LocalTransactionMetadataStore(contextForStorage, apiKey)

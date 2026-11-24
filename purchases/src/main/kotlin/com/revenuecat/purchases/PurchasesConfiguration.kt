@@ -35,7 +35,17 @@ public open class PurchasesConfiguration(builder: Builder) {
     public val dangerousSettings: DangerousSettings
     public val verificationMode: EntitlementVerificationMode
     public val pendingTransactionsForPrepaidPlansEnabled: Boolean
+
+    @Deprecated(
+        "Use deviceIdentifierCollectionMode instead.",
+        ReplaceWith(
+            "deviceIdentifierCollectionMode == AUTOMATIC",
+            "com.revenuecat.purchases.DeviceIdentifierCollectionMode.Companion.AUTOMATIC",
+        ),
+    )
     public val automaticDeviceIdentifierCollectionEnabled: Boolean
+        get() = deviceIdentifierCollectionMode == DeviceIdentifierCollectionMode.AUTOMATIC
+    public val deviceIdentifierCollectionMode: DeviceIdentifierCollectionMode
     public val preferredUILocaleOverride: String?
 
     public val galaxyBillingMode: GalaxyBillingMode
@@ -60,8 +70,7 @@ public open class PurchasesConfiguration(builder: Builder) {
         this.dangerousSettings = builder.dangerousSettings
         this.showInAppMessagesAutomatically = builder.showInAppMessagesAutomatically
         this.pendingTransactionsForPrepaidPlansEnabled = builder.pendingTransactionsForPrepaidPlansEnabled
-        this.automaticDeviceIdentifierCollectionEnabled =
-            builder.automaticDeviceIdentifierCollectionEnabled
+        this.deviceIdentifierCollectionMode = builder.deviceIdentifierCollectionMode
         this.preferredUILocaleOverride = builder.preferredUILocaleOverride
 
         this.galaxyBillingMode = builder.galaxyBillingMode
@@ -82,9 +91,7 @@ public open class PurchasesConfiguration(builder: Builder) {
             .dangerousSettings(dangerousSettings)
             .showInAppMessagesAutomatically(showInAppMessagesAutomatically)
             .pendingTransactionsForPrepaidPlansEnabled(pendingTransactionsForPrepaidPlansEnabled)
-            .automaticDeviceIdentifierCollectionEnabled(
-                automaticDeviceIdentifierCollectionEnabled,
-            )
+            .deviceIdentifierCollectionMode(deviceIdentifierCollectionMode)
             .preferredUILocaleOverride(preferredUILocaleOverride)
             .galaxyBillingMode(galaxyBillingMode)
             .iamEnabled(iamEnabled)
@@ -128,7 +135,8 @@ public open class PurchasesConfiguration(builder: Builder) {
         internal var pendingTransactionsForPrepaidPlansEnabled: Boolean = false
 
         @set:JvmSynthetic @get:JvmSynthetic
-        internal var automaticDeviceIdentifierCollectionEnabled: Boolean = true
+        internal var deviceIdentifierCollectionMode: DeviceIdentifierCollectionMode =
+            DeviceIdentifierCollectionMode.AUTOMATIC
 
         @set:JvmSynthetic @get:JvmSynthetic
         internal var preferredUILocaleOverride: String? = null
@@ -297,20 +305,23 @@ public open class PurchasesConfiguration(builder: Builder) {
         }
 
         /**
-         * Enable this setting to allow the collection of identifiers when setting the identifier for an
-         * attribution network. For example, when calling [Purchases.setAdjustID] or [Purchases.setAppsflyerID],
-         * the SDK would collect the Android advertising ID, IP and device versions, if available, and send them
-         * to RevenueCat. This is required by some attribution networks to attribute installs and re-installs.
-         *
-         * Enabling this setting does NOT mean we will always collect the identifiers. We will only do so when
-         * setting an attribution network ID AND the user has not limited ad tracking on their device.
-         *
-         * Default is enabled.
+         * Default is [DeviceIdentifierCollectionMode.AUTOMATIC].
          */
+        public fun deviceIdentifierCollectionMode(
+            deviceIdentifierCollectionMode: DeviceIdentifierCollectionMode,
+        ): Builder = apply {
+            this.deviceIdentifierCollectionMode = deviceIdentifierCollectionMode
+        }
+
+        @Deprecated("Use deviceIdentifierCollectionMode")
         public fun automaticDeviceIdentifierCollectionEnabled(
             automaticDeviceIdentifierCollectionEnabled: Boolean,
         ): Builder = apply {
-            this.automaticDeviceIdentifierCollectionEnabled = automaticDeviceIdentifierCollectionEnabled
+            this.deviceIdentifierCollectionMode = if (automaticDeviceIdentifierCollectionEnabled) {
+                DeviceIdentifierCollectionMode.AUTOMATIC
+            } else {
+                DeviceIdentifierCollectionMode.MANUAL_ONLY
+            }
         }
 
         /**
@@ -368,7 +379,7 @@ public open class PurchasesConfiguration(builder: Builder) {
         if (dangerousSettings != other.dangerousSettings) return false
         if (verificationMode != other.verificationMode) return false
         if (pendingTransactionsForPrepaidPlansEnabled != other.pendingTransactionsForPrepaidPlansEnabled) return false
-        if (automaticDeviceIdentifierCollectionEnabled != other.automaticDeviceIdentifierCollectionEnabled) return false
+        if (deviceIdentifierCollectionMode != other.deviceIdentifierCollectionMode) return false
         if (preferredUILocaleOverride != other.preferredUILocaleOverride) return false
         if (galaxyBillingMode != other.galaxyBillingMode) return false
         if (iamEnabled != other.iamEnabled) return false
@@ -386,7 +397,7 @@ public open class PurchasesConfiguration(builder: Builder) {
         result = 31 * result + dangerousSettings.hashCode()
         result = 31 * result + verificationMode.hashCode()
         result = 31 * result + pendingTransactionsForPrepaidPlansEnabled.hashCode()
-        result = 31 * result + automaticDeviceIdentifierCollectionEnabled.hashCode()
+        result = 31 * result + deviceIdentifierCollectionMode.hashCode()
         result = 31 * result + (preferredUILocaleOverride?.hashCode() ?: 0)
         result = 31 * result + (galaxyBillingMode.hashCode())
         result = 31 * result + iamEnabled.hashCode()

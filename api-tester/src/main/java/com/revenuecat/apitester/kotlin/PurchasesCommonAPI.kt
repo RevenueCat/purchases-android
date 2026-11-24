@@ -3,6 +3,7 @@ package com.revenuecat.apitester.kotlin
 import android.app.Activity
 import android.content.Context
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.DeviceIdentifierCollectionMode
 import com.revenuecat.purchases.EntitlementVerificationMode
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
@@ -248,9 +249,13 @@ private class PurchasesCommonAPI {
             .store(Store.PLAY_STORE)
             .pendingTransactionsForPrepaidPlansEnabled(true)
             .automaticDeviceIdentifierCollectionEnabled(true)
+            .deviceIdentifierCollectionMode(DeviceIdentifierCollectionMode.AUTOMATIC)
+            .deviceIdentifierCollectionMode(DeviceIdentifierCollectionMode.MANUAL_ONLY)
             .build()
 
         val showInAppMessagesAutomatically: Boolean = build.showInAppMessagesAutomatically
+        val deviceIdentifierCollectionMode: DeviceIdentifierCollectionMode = build.deviceIdentifierCollectionMode
+        val automaticDeviceIdentifierCollectionEnabled: Boolean = build.automaticDeviceIdentifierCollectionEnabled
 
         val instance: Purchases = Purchases.sharedInstance
     }

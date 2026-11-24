@@ -2,6 +2,7 @@ package com.revenuecat.purchases.subscriberattributes
 
 import android.app.Application
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.DeviceIdentifierCollectionMode
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Delay
@@ -43,7 +44,7 @@ class SubscriberAttributesManagerTests {
             mockDeviceCache,
             mockBackend,
             mockDeviceIdentifiersFetcher,
-            automaticDeviceIdentifierCollectionEnabled = true,
+            deviceIdentifierCollectionMode = DeviceIdentifierCollectionMode.AUTOMATIC,
         )
     }
 
@@ -457,7 +458,7 @@ class SubscriberAttributesManagerTests {
             mockDeviceCache,
             mockBackend,
             mockDeviceIdentifiersFetcher,
-            automaticDeviceIdentifierCollectionEnabled = false,
+            deviceIdentifierCollectionMode = DeviceIdentifierCollectionMode.MANUAL_ONLY,
         )
 
         val mockContext = mockk<Application>(relaxed = true)
@@ -757,6 +758,30 @@ class SubscriberAttributesManagerTests {
             captured[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]
         assertThat(ipSubscriberAttribute).isNotNull
         assertThat(ipSubscriberAttribute!!.value).isEqualTo("true")
+    }
+
+    @Test
+    fun `collectDeviceIdentifiers collects device identifiers in manual only mode`() {
+        underTest = SubscriberAttributesManager(
+            mockDeviceCache,
+            mockBackend,
+            mockDeviceIdentifiersFetcher,
+            deviceIdentifierCollectionMode = DeviceIdentifierCollectionMode.MANUAL_ONLY,
+        )
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+
+        val mockContext = mockk<Application>(relaxed = true)
+        mockAdvertisingInfo(
+            mockContext = mockContext,
+            expectedAdID = "12345"
+        )
+
+        underTest.collectDeviceIdentifiers(appUserID, mockContext)
+
+        val gpsAdIdSubscriberAttribute =
+            capturingSlot.captured[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey]
+        assertThat(gpsAdIdSubscriberAttribute).isNotNull
+        assertThat(gpsAdIdSubscriberAttribute!!.value).isEqualTo("12345")
     }
 
     @Test

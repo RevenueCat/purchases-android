@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfoOriginalSource
+import com.revenuecat.purchases.DeviceIdentifierCollectionMode
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import io.mockk.every
@@ -50,7 +51,7 @@ class SubscriberAttributesManagerMergeTests {
             attributesCache,
             backend = mockk(),
             deviceIdentifiersFetcher = mockk(),
-            automaticDeviceIdentifierCollectionEnabled = false,
+            deviceIdentifierCollectionMode = DeviceIdentifierCollectionMode.MANUAL_ONLY,
         )
     }
 

@@ -49,7 +49,8 @@ class PurchasesConfigurationTest {
         assertThat(purchasesConfiguration.dangerousSettings).isEqualTo(DangerousSettings(autoSyncPurchases = true))
         assertThat(purchasesConfiguration.showInAppMessagesAutomatically).isTrue
         assertThat(purchasesConfiguration.pendingTransactionsForPrepaidPlansEnabled).isFalse
-        assertThat(purchasesConfiguration.automaticDeviceIdentifierCollectionEnabled).isTrue
+        assertThat(purchasesConfiguration.deviceIdentifierCollectionMode)
+            .isEqualTo(DeviceIdentifierCollectionMode.AUTOMATIC)
         assertThat(purchasesConfiguration.preferredUILocaleOverride).isNull()
         assertThat(purchasesConfiguration.iamEnabled).isFalse
     }
@@ -122,9 +123,50 @@ class PurchasesConfigurationTest {
     }
 
     @Test
-    fun `PurchasesConfiguration sets automaticDeviceIdentifierCollectionEnabled correctly`() {
-        val purchasesConfiguration = builder.automaticDeviceIdentifierCollectionEnabled(false).build()
-        assertThat(purchasesConfiguration.automaticDeviceIdentifierCollectionEnabled).isFalse
+    fun `PurchasesConfiguration sets deviceIdentifierCollectionMode correctly`() {
+        val purchasesConfiguration = builder
+            .deviceIdentifierCollectionMode(DeviceIdentifierCollectionMode.MANUAL_ONLY)
+            .build()
+        assertThat(purchasesConfiguration.deviceIdentifierCollectionMode)
+            .isEqualTo(DeviceIdentifierCollectionMode.MANUAL_ONLY)
+    }
+
+    @Suppress("DEPRECATION")
+    @Test
+    fun `deprecated automaticDeviceIdentifierCollectionEnabled maps to deviceIdentifierCollectionMode`() {
+        val disabled = builder.automaticDeviceIdentifierCollectionEnabled(false).build()
+        assertThat(disabled.deviceIdentifierCollectionMode).isEqualTo(DeviceIdentifierCollectionMode.MANUAL_ONLY)
+        assertThat(disabled.automaticDeviceIdentifierCollectionEnabled).isFalse
+
+        val enabled = builder.automaticDeviceIdentifierCollectionEnabled(true).build()
+        assertThat(enabled.deviceIdentifierCollectionMode).isEqualTo(DeviceIdentifierCollectionMode.AUTOMATIC)
+        assertThat(enabled.automaticDeviceIdentifierCollectionEnabled).isTrue
+    }
+
+    @Suppress("DEPRECATION")
+    @Test
+    fun `last device identifier collection setting wins`() {
+        val modeLast = PurchasesConfiguration.Builder(context, apiKey)
+            .automaticDeviceIdentifierCollectionEnabled(true)
+            .deviceIdentifierCollectionMode(DeviceIdentifierCollectionMode.MANUAL_ONLY)
+            .build()
+        assertThat(modeLast.deviceIdentifierCollectionMode).isEqualTo(DeviceIdentifierCollectionMode.MANUAL_ONLY)
+
+        val booleanLast = PurchasesConfiguration.Builder(context, apiKey)
+            .deviceIdentifierCollectionMode(DeviceIdentifierCollectionMode.MANUAL_ONLY)
+            .automaticDeviceIdentifierCollectionEnabled(true)
+            .build()
+        assertThat(booleanLast.deviceIdentifierCollectionMode).isEqualTo(DeviceIdentifierCollectionMode.AUTOMATIC)
+    }
+
+    @Test
+    fun `PurchasesConfiguration equality depends on deviceIdentifierCollectionMode`() {
+        val automatic = PurchasesConfiguration.Builder(context, apiKey).build()
+        val manualOnly = PurchasesConfiguration.Builder(context, apiKey)
+            .deviceIdentifierCollectionMode(DeviceIdentifierCollectionMode.MANUAL_ONLY)
+            .build()
+        assertThat(automatic).isNotEqualTo(manualOnly)
+        assertThat(automatic).isEqualTo(PurchasesConfiguration.Builder(context, apiKey).build())
     }
 
     @Test

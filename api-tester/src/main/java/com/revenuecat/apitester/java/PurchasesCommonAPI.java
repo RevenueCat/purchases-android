@@ -8,6 +8,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.OptIn;
 
 import com.revenuecat.purchases.CustomerInfo;
+import com.revenuecat.purchases.DeviceIdentifierCollectionMode;
 import com.revenuecat.purchases.EntitlementVerificationMode;
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI;
 import com.revenuecat.purchases.InternalRevenueCatAPI;
@@ -190,9 +191,13 @@ final class PurchasesCommonAPI {
                 .store(Store.APP_STORE)
                 .pendingTransactionsForPrepaidPlansEnabled(true)
                 .automaticDeviceIdentifierCollectionEnabled(true)
+                .deviceIdentifierCollectionMode(DeviceIdentifierCollectionMode.AUTOMATIC)
+                .deviceIdentifierCollectionMode(DeviceIdentifierCollectionMode.MANUAL_ONLY)
                 .build();
 
         final Boolean showInAppMessagesAutomatically = build.getShowInAppMessagesAutomatically();
+        final DeviceIdentifierCollectionMode deviceIdentifierCollectionMode = build.getDeviceIdentifierCollectionMode();
+        final Boolean automaticDeviceIdentifierCollectionEnabled = build.getAutomaticDeviceIdentifierCollectionEnabled();
 
         final Purchases instance = Purchases.getSharedInstance();
     }

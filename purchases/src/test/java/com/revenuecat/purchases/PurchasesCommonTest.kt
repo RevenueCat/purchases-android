@@ -3416,7 +3416,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             subscriberAttributesCache,
             subscriberAttributesPoster,
             mockk<DeviceIdentifiersFetcher>(),
-            automaticDeviceIdentifierCollectionEnabled = true,
+            deviceIdentifierCollectionMode = DeviceIdentifierCollectionMode.AUTOMATIC,
         )
         buildPurchases(
             anonymous = false,
