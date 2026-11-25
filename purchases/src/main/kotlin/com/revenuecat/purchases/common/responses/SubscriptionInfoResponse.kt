@@ -3,7 +3,6 @@ package com.revenuecat.purchases.common.responses
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
-import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.SharedConstants.MICRO_MULTIPLIER
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.utils.serializers.ISO8601DateSerializer
@@ -25,7 +24,7 @@ internal data class SubscriptionInfoResponse(
     @SerialName("expires_date") @Serializable(with = ISO8601DateSerializer::class)
     val expiresDate: Date? = null,
     @SerialName("store")
-    val store: Store,
+    val storeIdentifier: String? = null,
     @SerialName("is_sandbox")
     val isSandbox: Boolean,
     @SerialName("unsubscribe_detected_at") @Serializable(with = ISO8601DateSerializer::class)

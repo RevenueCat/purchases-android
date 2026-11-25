@@ -250,6 +250,10 @@ public class SubscriptionInfo(
         """.trimIndent()
     }
 
+    @OptIn(InternalRevenueCatAPI::class)
+    internal var storeIdentifier: String? = store.stringValue
+        private set
+
     internal constructor(
         productIdentifier: String,
         requestDate: Date,
@@ -261,7 +265,7 @@ public class SubscriptionInfo(
         purchaseDate = response.purchaseDate,
         originalPurchaseDate = response.originalPurchaseDate,
         expiresDate = response.expiresDate,
-        store = response.store,
+        store = response.storeIdentifier?.let(Store::fromString) ?: Store.UNKNOWN_STORE,
         isSandbox = response.isSandbox,
         unsubscribeDetectedAt = response.unsubscribeDetectedAt,
         billingIssuesDetectedAt = response.billingIssuesDetectedAt,
@@ -275,5 +279,7 @@ public class SubscriptionInfo(
         price = response.price?.toPrice(locale),
         productPlanIdentifier = response.productPlanIdentifier,
         managementURL = response.managementURL?.let { Uri.parse(it) },
-    )
+    ) {
+        storeIdentifier = response.storeIdentifier
+    }
 }

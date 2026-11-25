@@ -174,11 +174,24 @@ class CustomerInfoDimensionProviderTest {
     }
 
     @Test
-    fun `preserves Roku and PayPal subscription store IDs`() = runTest {
-        for (store in listOf("roku", "paypal")) {
+    fun `preserves subscription store IDs when present`() = runTest {
+        for (store in listOf("roku", "paypal", "future_store")) {
             val response = statusResponse(expiresDate = FUTURE, store = store)
             val purchase = provider(customerInfo(response)).dimensions(date).purchases().single()
             assertThat(purchase["store"]).isEqualTo(string(store))
+        }
+    }
+
+    @Test
+    fun `keeps subscriptions without a store ID`() = runTest {
+        for (store in listOf(null, JSONObject.NULL, "")) {
+            val response = JSONObject(statusResponse(expiresDate = FUTURE))
+            val subscriptions = response.getJSONObject("subscriber").getJSONObject("subscriptions")
+            val subscription = subscriptions.getJSONObject("premium")
+            subscription.put("store", store)
+            val purchase = provider(customerInfo(response.toString())).dimensions(date).purchases().single()
+            assertThat(purchase["product_identifier"]).isEqualTo(string("premium"))
+            assertThat(purchase).doesNotContainKey("store")
         }
     }
 

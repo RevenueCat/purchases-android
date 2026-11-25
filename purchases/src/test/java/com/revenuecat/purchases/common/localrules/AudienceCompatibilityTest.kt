@@ -46,36 +46,44 @@ class AudienceCompatibilityTest {
     @RunWith(ParameterizedRobolectricTestRunner::class)
     @Config(manifest = Config.NONE)
     class Conditions(
-        private val id: String,
-        private val caseJson: String,
+        private val profileId: String,
+        private val caseDocuments: List<String>,
     ) {
         @Test
-        fun `Khepri condition matches SDK result`() = runTest {
-            val case = JSONObject(caseJson)
-            val profiles = document("profiles.json").getValue("profiles").jsonObject
-            val profile = profiles.getValue(case.getString("profile"))
-            val profileJson = JSONObject(profile.toString())
+        fun `Khepri conditions match SDK results`() = runTest {
+            val profile = JSONObject(profiles.getValue(profileId).toString())
             val clock = object : DateProvider {
-                override val now = Date(profileJson.getLong("evaluated_at") * 1_000)
+                override val now = Date(profile.getLong("evaluated_at") * 1_000)
             }
             mockkObject(DateHelper.Companion) {
                 every { DateHelper.now } returns clock.now
-                val evaluator = evaluator(profileJson, clock)
-                val rule = object : LocalRule {
-                    override val predicate = case.getString("predicate")
+                val evaluator = evaluator(profile, clock)
+                val assertions = SoftAssertions()
+                for (document in caseDocuments) {
+                    val case = JSONObject(document)
+                    val id = case.getString("id")
+                    val rule = object : LocalRule {
+                        override val predicate = case.getString("predicate")
+                    }
+                    evaluator.match(listOf(rule)).fold(
+                        onSuccess = { match ->
+                            assertions.assertThat(match != null).describedAs(id).isEqualTo(case.getBoolean("expected"))
+                        },
+                        onFailure = { error -> assertions.fail(id, error) },
+                    )
                 }
-                val result = evaluator.match(listOf(rule))
-                assertThat(result.exceptionOrNull()).describedAs(id).isNull()
-                assertThat(result.getOrNull() != null).describedAs(id).isEqualTo(case.getBoolean("expected"))
+                assertions.assertAll()
             }
         }
 
         companion object {
+            private val profiles by lazy { document("profiles.json").getValue("profiles").jsonObject }
+
             @JvmStatic
             @ParameterizedRobolectricTestRunner.Parameters(name = "{0}")
-            fun parameters(): Collection<Array<String>> = cases().map { case ->
-                arrayOf(case.getValue("id").jsonPrimitive.content, case.toString())
-            }
+            fun parameters(): Collection<Array<Any>> = cases()
+                .groupBy { it.getValue("profile").jsonPrimitive.content }
+                .map { (profileId, cases) -> arrayOf(profileId, cases.map { it.toString() }) }
         }
     }
 

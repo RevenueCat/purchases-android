@@ -102,7 +102,7 @@ internal class CustomerInfoDimensionProvider(
         )
         putString(KEY_STORE_TRANSACTION_ID, storeTransactionId)
         putString(KEY_DISPLAY_NAME, displayName)
-        putString(KEY_STORE, store.stringValue)
+        putString(KEY_STORE, storeIdentifier)
         putString(KEY_OWNERSHIP_TYPE, ownershipType.dimensionValue)
         putString(KEY_PERIOD_TYPE, periodType.dimensionValue)
         putString(KEY_STATUS, status(date))
