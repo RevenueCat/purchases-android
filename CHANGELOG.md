@@ -1,3 +1,9 @@
+## 10.30.6
+## RevenueCatUI SDK
+### Paywallsv2
+#### 🐞 Bugfixes
+* fix(paywalls): preserve purchase attribution when the view model changes via Cesar de la Vega (@vegaro)
+
 ## 10.30.5
 ## RevenueCat SDK
 ### 🐞 Bugfixes
