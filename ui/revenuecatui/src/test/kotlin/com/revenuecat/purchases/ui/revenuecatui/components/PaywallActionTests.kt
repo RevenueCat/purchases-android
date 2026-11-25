@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import android.content.Context
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.semantics.SemanticsActions
@@ -56,6 +57,29 @@ class PaywallActionTests {
 
     @get:Rule
     val composeTestRule = createComposeRule()
+
+    @Test
+    fun `replacement view model tracks its own impression for the same paywall`(): Unit = with(composeTestRule) {
+        val offering = FakeOffering(
+            components = emptyList(),
+            localizations = mapOf(
+                LocaleId("en_US") to mapOf(LocalizationKey("title") to LocalizationData.Text("Title")),
+            ),
+        )
+        val options = PaywallOptions.Builder {}.setOffering(offering).build()
+        val first = MockViewModel(offering = offering)
+        val second = MockViewModel(offering = offering)
+        val current = mutableStateOf(first)
+
+        setContent { InternalPaywall(options, current.value) }
+        runOnIdle {
+            assertEquals(1, first.trackPaywallImpressionIfNeededCallCount)
+            current.value = second
+        }
+        runOnIdle {
+            assertEquals(1, second.trackPaywallImpressionIfNeededCallCount)
+        }
+    }
 
     @Test
     fun `Should pass PaywallActionExternal to the ViewModel`(): Unit = with(composeTestRule) {

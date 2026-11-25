@@ -16,6 +16,8 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.common.workflows.WorkflowResolution
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
+import com.revenuecat.purchases.paywalls.events.PaywallEvent
+import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -29,6 +31,7 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkAll
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -188,6 +191,10 @@ class PaywallActivityTest {
             assertThat(renderedState).isInstanceOf(PaywallState.Loaded::class.java)
         }
 
+        verify(exactly = 1) {
+            mockPurchases.track(match { it is PaywallEvent && it.type == PaywallEventType.IMPRESSION })
+        }
+
         scenario.recreate()
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()
 
@@ -195,6 +202,9 @@ class PaywallActivityTest {
             val recreatedViewModel = ViewModelProvider(activity).get(viewModelKey, PaywallViewModelImpl::class.java)
             assertThat(recreatedViewModel).isSameAs(retainedViewModel)
             assertThat(recreatedViewModel.state.value).isSameAs(renderedState)
+        }
+        verify(exactly = 1) {
+            mockPurchases.track(match { it is PaywallEvent && it.type == PaywallEventType.IMPRESSION })
         }
     }
 

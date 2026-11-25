@@ -204,6 +204,7 @@ private fun InternalPaywallContent(
             val paywallComponents = state.offering.paywallComponents
             if (paywallComponents != null) {
                 LaunchedEffect(
+                    viewModel,
                     state.offering.identifier,
                     paywallComponents.dataOrNull?.id,
                     paywallComponents.dataOrNull?.revision,
@@ -293,6 +294,7 @@ private fun LoadedPaywall(
     val paywallRevision = offering.paywall?.revision ?: offering.paywallComponents?.dataOrNull?.revision
     val paywallIdentifier = offering.paywall?.id ?: offering.paywallComponents?.dataOrNull?.id
     LaunchedEffect(
+        viewModel,
         offering.identifier,
         paywallIdentifier,
         paywallRevision,
