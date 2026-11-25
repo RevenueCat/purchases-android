@@ -188,24 +188,25 @@ private fun rememberAsyncImagePainter(imageUrls: ImageUrls, contentScale: Conten
     val imageRequest = remember(context, url, cachePolicy) {
         getImageRequest(context, url, cachePolicy)
     }
+    val placeholder = if (isInPreviewMode && previewImageLoader != null) {
+        imageLoader.getPreviewPlaceholderBlocking(imageRequest)
+    } else {
+        // Coil retains this painter while loading, including when the URLs initially match.
+        rememberAsyncImagePainter(
+            model = placeholderUrl.takeUnless { it == url }?.let {
+                getImageRequest(context, it, CachePolicy.ENABLED)
+            },
+            imageLoader = imageLoader,
+            error = null,
+            fallback = null,
+            contentScale = contentScale,
+        )
+    }
     return rememberAsyncImagePainter(
         model = imageRequest,
         imageLoader = imageLoader,
-        placeholder = if (isInPreviewMode && previewImageLoader != null) {
-            imageLoader.getPreviewPlaceholderBlocking(imageRequest)
-        } else {
-            // Coil retains this painter while loading, including when the URLs initially match.
-            rememberAsyncImagePainter(
-                model = placeholderUrl.takeUnless { it == url }?.let {
-                    getImageRequest(context, it, CachePolicy.ENABLED)
-                },
-                imageLoader = imageLoader,
-                error = null,
-                fallback = null,
-                contentScale = contentScale,
-            )
-        },
-        error = null,
+        placeholder = placeholder,
+        error = placeholder,
         fallback = null,
         onError = {
             Logger.w("AsyncImagePainter failed to load. Will try again disabling cache")

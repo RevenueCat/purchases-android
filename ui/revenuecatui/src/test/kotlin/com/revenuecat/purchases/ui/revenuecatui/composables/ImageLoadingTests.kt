@@ -19,6 +19,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
+import coil.EventListener
 import coil.ImageLoader
 import coil.decode.DataSource
 import coil.request.CachePolicy
@@ -69,6 +70,7 @@ internal class ImageLoadingTests(private val imageType: ImageType) {
     private var delayedUrl: String? = null
     private var responseGate: CompletableDeferred<Unit>? = null
     private var retryResponseGate: CompletableDeferred<Unit>? = null
+    private val retryFailed = CompletableDeferred<Unit>()
     private lateinit var imageLoader: ImageLoader
 
     @Before
@@ -78,6 +80,13 @@ internal class ImageLoadingTests(private val imageType: ImageType) {
             eraseColor(Color.Blue.toArgb())
         }
         imageLoader = ImageLoader.Builder(context)
+            .eventListener(object : EventListener {
+                override fun onError(request: ImageRequest, result: ErrorResult) {
+                    if (request.data == failedUrl && !request.memoryCachePolicy.readEnabled) {
+                        retryFailed.complete(Unit)
+                    }
+                }
+            })
             .components {
                 add { chain ->
                     val request = chain.request
@@ -197,6 +206,20 @@ internal class ImageLoadingTests(private val imageType: ImageType) {
         assertCacheEnabled(requests.first())
         assertThat(requests.last().memoryCachePolicy).isEqualTo(CachePolicy.WRITE_ONLY)
         assertThat(requests.last().diskCachePolicy).isEqualTo(CachePolicy.WRITE_ONLY)
+        assertImageIsBlue()
+    }
+
+    @Test
+    fun `Low resolution image renders when it arrives after the full image retry fails`() {
+        alwaysFail = true
+        delayedUrl = imageUrl
+        val lowResResponse = CompletableDeferred<Unit>()
+        responseGate = lowResResponse
+        render(mutableStateOf(Sources(failedUrl, imageUrl)))
+
+        waitForRequests(failedUrl, count = 2)
+        composeTestRule.waitUntil(timeoutMillis = 5_000) { retryFailed.isCompleted }
+        composeTestRule.runOnIdle { lowResResponse.complete(Unit) }
         assertImageIsBlue()
     }
 

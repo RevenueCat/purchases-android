@@ -182,6 +182,7 @@ private fun AsyncImage(
         model = imageRequest,
         contentDescription = contentDescription,
         placeholder = placeholder,
+        error = placeholder,
         imageLoader = imageLoader,
         modifier = modifier,
         contentScale = contentScale,
