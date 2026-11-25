@@ -186,6 +186,28 @@ class NestedTabsTests {
     }
 
     @Test
+    fun `Price outside per-tab sheets follows the initially selected tab and tab switches`() {
+        val tiers = listOf("Silver" to silverAnnual, "Gold" to goldAnnual)
+        val tabs = tabs(tiers.map { it.first }, tiers.map { (label, pkg) ->
+            val sheet = ButtonComponent(
+                action = ButtonComponent.Action.NavigateTo(ButtonComponent.Destination.Sheet(
+                    id = label,
+                    stack = StackComponent(components = listOf(plan(pkg, "$label annual", true))),
+                )),
+                stack = StackComponent(components = listOf(text("Continue"))),
+            )
+            StackComponent(components = listOf(TabControlComponent, sheet))
+        }, default = 1)
+        render(StackComponent(components = listOf(tabs, text("Selected: {{ product.price }}"))))
+
+        compose.onNodeWithText("Selected: $120.00").assertExists()
+        compose.onNodeWithText("Silver").performClick()
+        compose.onNodeWithText("Selected: $60.00").assertExists()
+        compose.onNodeWithText("Gold").performClick()
+        compose.onNodeWithText("Selected: $120.00").assertExists()
+    }
+
+    @Test
     fun `Sheet only tab control prices reflect the choice immediately after dismissal`() {
         val sheet = ButtonComponent(
             action = ButtonComponent.Action.NavigateTo(ButtonComponent.Destination.Sheet(

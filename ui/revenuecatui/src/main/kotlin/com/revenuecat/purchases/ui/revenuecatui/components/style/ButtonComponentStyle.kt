@@ -13,7 +13,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import dev.drewhamilton.poko.Poko
 
 @Immutable
-internal class SheetPresentationKey
+internal class SheetPresentationKey(val owningTab: TabSelection? = null)
 
 @Immutable
 internal data class ButtonComponentStyle(

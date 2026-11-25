@@ -16,16 +16,16 @@ internal class PackageVisibilityPath(
 internal fun AvailablePackages.withVisibilityPaths(root: ComponentStyle): AvailablePackages {
     val paths = PackageVisibilityPathCollector()
     paths.visit(root)
-    fun AvailablePackages.Info.withPaths(tabIndex: Int?) =
-        copy(visibilityPaths = paths.byPackage[this to tabIndex].orEmpty())
+    fun AvailablePackages.Info.withPaths() =
+        copy(visibilityPaths = paths.byPackage[this].orEmpty())
     return copy(
-        packagesOutsideTabs = packagesOutsideTabs.map { it.withPaths(null) },
-        packagesByTab = packagesByTab.mapValues { (tabIndex, infos) -> infos.map { it.withPaths(tabIndex) } },
+        packagesOutsideTabs = packagesOutsideTabs.map { it.withPaths() },
+        packagesByTab = packagesByTab.mapValues { (_, infos) -> infos.map { it.withPaths() } },
     )
 }
 
 private class PackageVisibilityPathCollector {
-    val byPackage = mutableMapOf<Pair<AvailablePackages.Info, Int?>, MutableList<PackageVisibilityPath>>()
+    val byPackage = mutableMapOf<AvailablePackages.Info, MutableList<PackageVisibilityPath>>()
 
     @Suppress("LongParameterList", "CyclomaticComplexMethod", "LongMethod")
     fun visit(
@@ -48,9 +48,9 @@ private class PackageVisibilityPathCollector {
                     visibilityOverrides = style.overrides,
                     offerEligibility = style.offerEligibility,
                     sheetPresentationKey = sheet,
-                    tab = tabIndex?.let { TabSelection(tabsScope, it) },
+                    tab = tabIndex?.let { TabSelection(tabsScope, it) } ?: sheet?.owningTab,
                 )
-                byPackage.getOrPut(info to tabIndex) { mutableListOf() }
+                byPackage.getOrPut(info) { mutableListOf() }
                     .add(PackageVisibilityPath(path + style.stackComponentStyle, branches))
                 child(style.stackComponentStyle)
             }

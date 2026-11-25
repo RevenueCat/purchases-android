@@ -309,6 +309,9 @@ internal class StyleFactory(
         val offerEligibility: OfferEligibility?
             get() = packageInfo?.let { calculateOfferEligibility(it.resolvedOffer, it.pkg) }
 
+        val packageTab: TabSelection?
+            get() = tabIndex?.let { TabSelection(tabsScope, it) } ?: sheetPresentationKey?.owningTab
+
         private val packagesOutsideTabs = mutableListOf<AvailablePackages.Info>()
         private val packagesByTab = mutableMapOf<Int, MutableList<AvailablePackages.Info>>()
         val packages: AvailablePackages
@@ -401,7 +404,7 @@ internal class StyleFactory(
             block: StyleFactoryScope.() -> T,
         ): T {
             val previousScope = tabsScope
-            val parent = tabIndex?.let { TabSelection(previousScope, it) }
+            val parent = packageTab
             tabsScope = TabsScope(parent, sheetPresentationKey).also { tabsScopes.add(it) }
             val previousName = enclosingTabsComponentName
             val previousIds = enclosingTabsOrderedTabIds
@@ -545,9 +548,9 @@ internal class StyleFactory(
         private fun recordPackage(pkg: AvailablePackages.Info) {
             val scopedPackage = pkg.copy(
                 sheetPresentationKey = sheetPresentationKey,
-                tab = tabIndex?.let { TabSelection(tabsScope, it) },
+                tab = packageTab,
             )
-            val currentTabIndex = tabIndex
+            val currentTabIndex = scopedPackage.tab?.index
             if (currentTabIndex == null) {
                 packagesOutsideTabs.add(scopedPackage)
             } else {
@@ -936,7 +939,7 @@ internal class StyleFactory(
                     Logger.e("Sheet destination reached convertDestination without a stack.")
                     Result.Success(null)
                 } else {
-                    val presentationKey = SheetPresentationKey()
+                    val presentationKey = SheetPresentationKey(owningTab = packageTab)
                     withSheetPresentation(presentationKey) {
                         createStackComponentStyle(rawStack)
                     }

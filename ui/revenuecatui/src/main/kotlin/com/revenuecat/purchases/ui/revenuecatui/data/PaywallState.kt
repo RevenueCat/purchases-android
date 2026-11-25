@@ -441,7 +441,14 @@ internal sealed interface PaywallState {
                     )
                 }
                 val tab = tabIndex?.let { TabSelection(tabsScope ?: mainTabsScope, it) }
-                val tabPackages = tab?.let { tabPackages(it) }.orEmpty()
+                val tabPackages = tab?.let {
+                    val candidates = tabPackages(it)
+                    if (packages.hasRootPackages) {
+                        candidates.inPresentation(it.scope?.sheetPresentationKey)
+                    } else {
+                        candidates
+                    }
+                }.orEmpty()
                 val packageInfo = tabPackages.find { it.uniqueId == selectedPackageByTab[tab] }
                     ?: tabPackages.defaultSelection(visibilityContext(windowDpSize = null, tab = tab))
                 return if (packageInfo != null) {
