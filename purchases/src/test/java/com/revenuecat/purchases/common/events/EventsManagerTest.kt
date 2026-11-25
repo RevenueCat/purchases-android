@@ -145,14 +145,18 @@ class EventsManagerTest {
             every { filesDir } returns tempTestFolder
         }
         legacyFileHelper = EventsManager.paywalls(fileHelper = FileHelper(context))
-        storage = spyk(FileHelper(context))
-        fileHelper = EventsManager.backendEvents(fileHelper = storage)
+        storage = FileHelper(context)
         identityManager = mockk<IdentityManager>().apply {
             every { currentAppUserID } returns userID
         }
         paywallEventsDispatcher = SyncDispatcher()
         backend = mockk()
 
+        setUpEventsManager()
+    }
+
+    private fun setUpEventsManager() {
+        fileHelper = EventsManager.backendEvents(fileHelper = storage)
         eventsManager = EventsManager(
             appSessionID,
             legacyFileHelper,
@@ -265,6 +269,8 @@ class EventsManagerTest {
 
     @Test
     fun `tracking resumes after a full disk`() {
+        storage = spyk(storage)
+        setUpEventsManager()
         val diagnostics = mutableListOf<DebugEvent>()
         eventsManager.debugEventListener = DebugEventListener { diagnostics.add(it) }
         every { storage.appendToFile(any(), any()) } throws IOException("No space left on device")
@@ -282,6 +288,8 @@ class EventsManagerTest {
 
     @Test
     fun `flush retries after read and clear failures`() {
+        storage = spyk(storage)
+        setUpEventsManager()
         mockBackendResponse(success = true)
         eventsManager.track(paywallEvent)
         every { storage.readFilePerLines(any(), any()) } throws IOException("Read failed")
