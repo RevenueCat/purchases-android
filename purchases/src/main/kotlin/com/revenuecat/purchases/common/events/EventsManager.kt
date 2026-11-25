@@ -198,6 +198,7 @@ internal class EventsManager(
             val backendEvent = when (event) {
                 is PaywallEvent -> event.toBackendStoredEvent(
                     identityManager.currentAppUserID,
+                    appSessionID.toString(),
                 )
                 is CustomerCenterImpressionEvent -> event.toBackendStoredEvent(
                     identityManager.currentAppUserID,
@@ -221,6 +222,7 @@ internal class EventsManager(
                 )
                 is WorkflowEvent -> event.toBackendStoredEvent(
                     identityManager.currentAppUserID,
+                    appSessionID.toString(),
                 )
                 else -> null
             }

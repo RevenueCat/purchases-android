@@ -486,11 +486,12 @@ class BackendPaywallEventTest {
             type = PaywallEventType.IMPRESSION,
         )
 
-        val storedEvent = paywallEvent.toBackendStoredEvent("testAppUserId")
+        val storedEvent = paywallEvent.toBackendStoredEvent("testAppUserId", "app-session")
         assertThat(storedEvent).isNotNull
         assertThat(storedEvent).isInstanceOf(BackendStoredEvent.Paywalls::class.java)
 
         val backendEvent = (storedEvent as BackendStoredEvent.Paywalls).event
+        assertThat(backendEvent.appSessionID).isEqualTo("app-session")
         assertThat(backendEvent.offeringID).isEqualTo("offeringID")
         assertThat(backendEvent.presentedOfferingContext).isEqualTo(
             BackendEvent.PresentedOfferingContextData(
@@ -511,6 +512,7 @@ class BackendPaywallEventTest {
         assertThat(deserialized).isInstanceOf(BackendStoredEvent.Paywalls::class.java)
         val event = (deserialized as BackendStoredEvent.Paywalls).event
         assertThat(event.presentedOfferingContext).isNull()
+        assertThat(event.appSessionID).isNull()
         assertThat(event.offeringID).isEqualTo("offeringID")
     }
 

@@ -75,13 +75,14 @@ class WorkflowEventTest {
             isLastStep = false,
         )
 
-        val stored = event.toBackendStoredEvent("user_42")
+        val stored = event.toBackendStoredEvent("user_42", "app-session")
         assertThat(stored).isInstanceOf(BackendStoredEvent.Workflows::class.java)
         val backend = (stored as BackendStoredEvent.Workflows).event
         assertThat(backend.id).isEqualTo(id.toString())
         assertThat(backend.eventName).isEqualTo("workflow_step_started")
         assertThat(backend.timestampMs).isEqualTo(date.time)
         assertThat(backend.appUserID).isEqualTo("user_42")
+        assertThat(backend.appSessionID).isEqualTo("app-session")
         assertThat(backend.properties.workflowId).isEqualTo("wfl_abc")
         assertThat(backend.properties.stepId).isEqualTo("step-1")
         assertThat(backend.properties.traceId).isEqualTo("trace_session_1")
@@ -101,7 +102,7 @@ class WorkflowEventTest {
             isLastStep = false,
         )
 
-        val stored = event.toBackendStoredEvent("user_42") as BackendStoredEvent.Workflows
+        val stored = event.toBackendStoredEvent("user_42", "app-session") as BackendStoredEvent.Workflows
         assertThat(stored.event.eventName).isEqualTo("workflow_step_completed")
         assertThat(stored.event.properties.traceId).isEqualTo("trace_session_1")
         assertThat(stored.event.properties.toStepId).isEqualTo("step-2")
@@ -151,7 +152,8 @@ class WorkflowEventTest {
         )
 
         for (event in events) {
-            val properties = (event.toBackendStoredEvent("user_42") as BackendStoredEvent.Workflows).event.properties
+            val properties =
+                (event.toBackendStoredEvent("user_42", "app-session") as BackendStoredEvent.Workflows).event.properties
             assertThat(properties.experimentId).`as`(event::class.simpleName).isEqualTo("exp_abc")
             assertThat(properties.experimentVariant).`as`(event::class.simpleName).isEqualTo("b")
             assertThat(properties.workflowBlobRef).`as`(event::class.simpleName).isEqualTo("blob-ref-1")
@@ -169,7 +171,7 @@ class WorkflowEventTest {
             workflowBlobRef = "blob-ref-1",
         )
 
-        val properties = (event.toBackendStoredEvent("user_42") as BackendStoredEvent.Workflows).event.properties
+        val properties = (event.toBackendStoredEvent("user_42", "app-session") as BackendStoredEvent.Workflows).event.properties
         assertThat(properties.workflowBlobRef).isEqualTo("blob-ref-1")
         assertThat(properties.experimentId).isNull()
         assertThat(properties.fallbackOriginalStepId).isNull()
@@ -184,7 +186,7 @@ class WorkflowEventTest {
             traceId = "trace",
         )
 
-        val properties = (event.toBackendStoredEvent("user_42") as BackendStoredEvent.Workflows).event.properties
+        val properties = (event.toBackendStoredEvent("user_42", "app-session") as BackendStoredEvent.Workflows).event.properties
         assertThat(properties.experimentId).isNull()
         assertThat(properties.experimentVariant).isNull()
         assertThat(properties.workflowBlobRef).isNull()
@@ -222,7 +224,7 @@ class WorkflowEventTest {
             isLastStep = true,
         )
 
-        val stored = event.toBackendStoredEvent("user_42") as BackendStoredEvent.Workflows
+        val stored = event.toBackendStoredEvent("user_42", "app-session") as BackendStoredEvent.Workflows
         assertThat(stored.event.id).isEqualTo(id.toString())
         assertThat(stored.event.eventName).isEqualTo("workflow_close")
         assertThat(stored.event.timestampMs).isEqualTo(date.time)
@@ -257,6 +259,7 @@ class WorkflowEventTest {
                 eventName = "workflow_step_started",
                 timestampMs = 1L,
                 appUserID = "u",
+                appSessionID = "app-session",
                 context = BackendEvent.Workflows.Context(
                     platform = "android",
                     sdkVersion = Config.frameworkVersion,
@@ -272,5 +275,11 @@ class WorkflowEventTest {
         val decoded = json.decodeFromString(BackendStoredEvent.serializer(), encoded)
 
         assertThat(decoded).isEqualTo(original)
+
+        val legacy = json.decodeFromString(
+            BackendStoredEvent.serializer(),
+            encoded.replace("\"app_session_id\":\"app-session\",", ""),
+        ) as BackendStoredEvent.Workflows
+        assertThat(legacy.event.appSessionID).isNull()
     }
 }

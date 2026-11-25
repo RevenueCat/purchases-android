@@ -182,14 +182,14 @@ class EventsManagerTest {
         eventsManager.track(paywallEvent)
 
         checkFileContents(
-            """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_impression","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_id":"paywallID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES","presented_offering_context":{"paywall_id":"paywallID"}}}""".trimIndent() + "\n"
+            """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_impression","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_id":"paywallID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES","presented_offering_context":{"paywall_id":"paywallID"}}}""".trimIndent() + "\n"
         )
 
         eventsManager.track(paywallEvent.copy(type = PaywallEventType.CANCEL))
         checkFileContents(
-            """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_impression","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_id":"paywallID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES","presented_offering_context":{"paywall_id":"paywallID"}}}""".trimIndent()
+            """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_impression","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_id":"paywallID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES","presented_offering_context":{"paywall_id":"paywallID"}}}""".trimIndent()
                 + "\n"
-                + """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_cancel","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_id":"paywallID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES","presented_offering_context":{"paywall_id":"paywallID"}}}""".trimIndent()
+                + """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_cancel","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_id":"paywallID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES","presented_offering_context":{"paywall_id":"paywallID"}}}""".trimIndent()
                 + "\n"
         )
     }
@@ -231,7 +231,7 @@ class EventsManagerTest {
         checkFileContents(
             """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_impression","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","display_mode":"full_screen"}}""".trimIndent()
                 + "\n"
-                + """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_impression","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_id":"paywallID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES","presented_offering_context":{"paywall_id":"paywallID"}}}""".trimIndent()
+                + """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_impression","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_id":"paywallID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES","presented_offering_context":{"paywall_id":"paywallID"}}}""".trimIndent()
                 + "\n"
         )
     }
@@ -317,7 +317,7 @@ class EventsManagerTest {
         val expectedRequest = EventsRequest(
             listOf(
                 BackendStoredEvent.Paywalls(
-                    paywallStoredEvent.toBackendEvent()
+                    paywallStoredEvent.toBackendEvent().copy(appSessionID = appSessionID.toString())
                 ),
                 BackendStoredEvent.CustomerCenter(
                     customerCenterImpressionEvent
@@ -519,7 +519,9 @@ class EventsManagerTest {
 
     private fun expectNumberOfEventsSynced(eventsSynced: Int) {
         val expectedRequest = EventsRequest(
-            List(eventsSynced) { BackendStoredEvent.Paywalls(paywallStoredEvent.toBackendEvent()) }.map { it.toBackendEvent() }
+            List(eventsSynced) {
+                BackendStoredEvent.Paywalls(paywallStoredEvent.toBackendEvent().copy(appSessionID = appSessionID.toString()))
+            }.map { it.toBackendEvent() }
         )
         verify(exactly = 1) {
             backend.postEvents(
@@ -554,6 +556,7 @@ class EventsManagerTest {
         assertThat(storedContent).contains("\"type\":\"workflows\"")
         assertThat(storedContent).contains("\"workflow_id\":\"wfl_abc\"")
         assertThat(storedContent).contains("workflow_step_started")
+        assertThat(storedContent).contains("\"app_session_id\":\"$appSessionID\"")
     }
 
     @Test
@@ -811,7 +814,7 @@ class EventsManagerTest {
         eventsManager.track(customerCenterImpressionEvent)
 
         checkFileContents(
-            """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_impression","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_id":"paywallID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES","presented_offering_context":{"paywall_id":"paywallID"}}}""".trimIndent()
+            """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_impression","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_id":"paywallID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES","presented_offering_context":{"paywall_id":"paywallID"}}}""".trimIndent()
                 + "\n"
                 + """{"type":"ad","event":{"id":"ad-event-id-123","version":1,"type":"rc_ads_ad_displayed","timestamp_ms":1699270688884,"network_name":"Google AdMob","mediator_name":"AdMob","ad_format":"banner","placement":"banner_home","ad_unit_id":"ca-app-pub-123456","impression_id":"impression-123","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","capture_method":"manual"}}""".trimIndent()
                 + "\n"
@@ -993,9 +996,7 @@ class EventsManagerTest {
 
     @Test
     fun `file size limit clears oldest events when limit is reached`() {
-        // Each event is approximately 300 bytes when serialized
-        // To reach 2048KB (2097152 bytes), we need about 7000 events
-        // Let's track 7100 events to exceed the limit
+        // Track enough events to exceed the 2048KB file limit.
         val eventsToTrack = 7100
 
         for (i in 0 until eventsToTrack) {
@@ -1008,7 +1009,7 @@ class EventsManagerTest {
         // The file should have fewer events than we tracked because
         // the oldest 50 events were cleared each time the limit was reached
         assertThat(finalEventCount).isLessThan(eventsToTrack)
-        assertThat(finalEventCount).isGreaterThan(5000) // Should still have a significant number of events
+        assertThat(finalEventCount).isGreaterThan(4000) // Should still have a significant number of events
 
         // Verify file size is under the limit (2048KB)
         val fileSizeKB = file.length() / 1024.0

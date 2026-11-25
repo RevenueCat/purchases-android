@@ -22,6 +22,7 @@ class WorkflowEventsRequestSerializationTest {
                 eventName = "workflow_step_started",
                 timestampMs = 123456789L,
                 appUserID = "appUserID",
+                appSessionID = "app-session",
                 context = BackendEvent.Workflows.Context(
                     platform = "android",
                     sdkVersion = RevenueCatConfig.frameworkVersion,
@@ -52,6 +53,7 @@ class WorkflowEventsRequestSerializationTest {
                         "\"event_name\":\"workflow_step_started\"," +
                         "\"timestamp_ms\":123456789," +
                         "\"app_user_id\":\"appUserID\"," +
+                        "\"app_session_id\":\"app-session\"," +
                         "\"context\":{" +
                             "\"platform\":\"android\"," +
                             "\"sdk_version\":\"${RevenueCatConfig.frameworkVersion}\"," +
@@ -68,6 +70,15 @@ class WorkflowEventsRequestSerializationTest {
                 "]" +
             "}"
         )
+    }
+
+    @Test
+    fun `legacy workflow event without app session remains decodable`() {
+        val currentJson = JsonProvider.defaultJson.encodeToString(request)
+        val legacyJson = currentJson.replace("\"app_session_id\":\"app-session\",", "")
+
+        val legacy = JsonProvider.defaultJson.decodeFromString<EventsRequest>(legacyJson)
+        assertThat((legacy.events.single() as BackendEvent.Workflows).appSessionID).isNull()
     }
 
     @Test

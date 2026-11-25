@@ -490,7 +490,7 @@ class PaywallEventSerializationTests {
                 componentValue = "annual",
             ),
         )
-        val backend = (event.toBackendStoredEvent("uid")!! as BackendStoredEvent.Paywalls).event
+        val backend = (event.toBackendStoredEvent("uid", "app-session")!! as BackendStoredEvent.Paywalls).event
         assertThat(backend.type).isEqualTo("paywall_component_interacted")
         assertThat(backend.componentType).isEqualTo("tab")
         assertThat(backend.componentName).isEqualTo("tabs_main")
@@ -562,7 +562,7 @@ class PaywallEventSerializationTests {
                 resultingProductIdentifier = "com.annual",
             ),
         )
-        val backend = (event.toBackendStoredEvent("uid")!! as BackendStoredEvent.Paywalls).event
+        val backend = (event.toBackendStoredEvent("uid", "app-session")!! as BackendStoredEvent.Paywalls).event
         assertThat(backend.componentType).isEqualTo("package_selection_sheet")
         assertThat(backend.currentPackageIdentifier).isEqualTo("monthly")
         assertThat(backend.resultingPackageIdentifier).isEqualTo("annual")

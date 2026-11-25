@@ -127,6 +127,7 @@ internal fun CheckpointEvent.toBackendStoredEvent(
 @JvmSynthetic
 internal fun PaywallEvent.toBackendStoredEvent(
     appUserID: String,
+    appSessionID: String,
 ): BackendStoredEvent? {
     if (type == PaywallEventType.PURCHASE_INITIATED || type == PaywallEventType.PURCHASE_ERROR) {
         // WIP: We should implement support for these events in the backend.
@@ -139,6 +140,7 @@ internal fun PaywallEvent.toBackendStoredEvent(
             version = BackendEvent.PAYWALL_EVENT_SCHEMA_VERSION,
             type = type.value,
             appUserID = appUserID,
+            appSessionID = appSessionID,
             sessionID = data.sessionIdentifier.toString(),
             offeringID = data.presentedOfferingContext.offeringIdentifier,
             paywallID = data.paywallIdentifier,
@@ -610,6 +612,7 @@ internal fun CustomPaywallEvent.Impression.toBackendStoredEvent(
 @JvmSynthetic
 internal fun WorkflowEvent.toBackendStoredEvent(
     appUserID: String,
+    appSessionID: String,
 ): BackendStoredEvent {
     val eventName = when (this) {
         is WorkflowEvent.StepStarted -> "workflow_step_started"
@@ -662,6 +665,7 @@ internal fun WorkflowEvent.toBackendStoredEvent(
             eventName = eventName,
             timestampMs = creationData.date.time,
             appUserID = appUserID,
+            appSessionID = appSessionID,
             properties = properties,
         ),
     )

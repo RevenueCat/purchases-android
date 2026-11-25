@@ -91,6 +91,8 @@ internal sealed class BackendEvent : Event {
         val type: String,
         @SerialName("app_user_id")
         val appUserID: String,
+        @SerialName("app_session_id")
+        val appSessionID: String? = null,
         @SerialName("session_id")
         val sessionID: String,
         @SerialName("offering_id")
@@ -285,6 +287,8 @@ internal sealed class BackendEvent : Event {
         val timestampMs: Long,
         @SerialName("app_user_id")
         val appUserID: String,
+        @SerialName("app_session_id")
+        val appSessionID: String? = null,
         @EncodeDefault(EncodeDefault.Mode.ALWAYS)
         val context: Context = Context(),
         val properties: Properties,

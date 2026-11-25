@@ -22,6 +22,7 @@ class PaywallEventsRequestSerializationTest {
                 version = 1,
                 type = PaywallEventType.CANCEL.value,
                 appUserID = "appUserID",
+                appSessionID = "app-session",
                 sessionID = "sessionID",
                 offeringID = "offeringID",
                 paywallID = "paywallID",
@@ -46,6 +47,7 @@ class PaywallEventsRequestSerializationTest {
                         "\"version\":1," +
                         "\"type\":\"paywall_cancel\"," +
                         "\"app_user_id\":\"appUserID\"," +
+                        "\"app_session_id\":\"app-session\"," +
                         "\"session_id\":\"sessionID\"," +
                         "\"offering_id\":\"offeringID\"," +
                         "\"paywall_id\":\"paywallID\"," +
@@ -58,6 +60,17 @@ class PaywallEventsRequestSerializationTest {
                 "]" +
             "}"
         )
+    }
+
+    @Test
+    fun `legacy paywall event without app session remains decodable`() {
+        val currentJson = JsonProvider.defaultJson.encodeToString(request)
+        val legacyJson = currentJson.replace("\"app_session_id\":\"app-session\",", "")
+
+        val legacy = JsonProvider.defaultJson.decodeFromString<EventsRequest>(legacyJson)
+        val event = legacy.events.single() as BackendEvent.Paywalls
+        Assertions.assertThat(event.appSessionID).isNull()
+        Assertions.assertThat(event.sessionID).isEqualTo("sessionID")
     }
 
     @Test
