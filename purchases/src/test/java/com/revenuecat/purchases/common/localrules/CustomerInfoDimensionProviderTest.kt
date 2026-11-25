@@ -174,6 +174,15 @@ class CustomerInfoDimensionProviderTest {
     }
 
     @Test
+    fun `preserves Roku and PayPal subscription store IDs`() = runTest {
+        for (store in listOf("roku", "paypal")) {
+            val response = statusResponse(expiresDate = FUTURE, store = store)
+            val purchase = provider(customerInfo(response)).dimensions(date).purchases().single()
+            assertThat(purchase["store"]).isEqualTo(string(store))
+        }
+    }
+
+    @Test
     fun `a lifetime subscription is active`() = runTest {
         val purchase = provider(customerInfo(LIFETIME_RESPONSE)).dimensions(date).purchases().single()
 
@@ -585,6 +594,7 @@ class CustomerInfoDimensionProviderTest {
 
         /** One subscription, naming only the fields a status is derived from. */
         private fun statusResponse(
+            store: String = "play_store",
             expiresDate: String?,
             periodType: String = "normal",
             billingIssuesDetectedAt: String? = null,
@@ -594,7 +604,7 @@ class CustomerInfoDimensionProviderTest {
             subscriptions = """
                 "premium": {
                   ${subscription(
-            store = "play_store",
+            store = store,
             purchaseDate = "2024-05-01T00:00:00Z",
             originalPurchaseDate = "2024-05-01T00:00:00Z",
             expiresDate = expiresDate,

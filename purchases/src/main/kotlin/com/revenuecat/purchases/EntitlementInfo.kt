@@ -240,6 +240,12 @@ public enum class Store {
      * For entitlement granted via the Galaxy store.
      */
     GALAXY,
+
+    /** For entitlements granted via Roku. */
+    ROKU,
+
+    /** For entitlements granted via PayPal. */
+    PAYPAL,
     ;
 
     /** Wire name for this store, as used by the backend and by the paywall web_view context. */
@@ -258,6 +264,8 @@ public enum class Store {
             PADDLE -> "paddle"
             TEST_STORE -> "test_store"
             GALAXY -> "galaxy"
+            ROKU -> "roku"
+            PAYPAL -> "paypal"
         }
 
     @get:JvmSynthetic
@@ -270,23 +278,11 @@ public enum class Store {
         }
 
     internal companion object {
+        @OptIn(InternalRevenueCatAPI::class)
+        private val storesByName = values().associateBy { it.stringValue }
+
         @JvmSynthetic
-        public fun fromString(text: String): Store {
-            return when (text) {
-                "app_store" -> APP_STORE
-                "mac_app_store" -> MAC_APP_STORE
-                "play_store" -> PLAY_STORE
-                "stripe" -> STRIPE
-                "promotional" -> PROMOTIONAL
-                "amazon" -> AMAZON
-                "rc_billing" -> RC_BILLING
-                "external" -> EXTERNAL
-                "paddle" -> PADDLE
-                "test_store" -> TEST_STORE
-                "galaxy" -> GALAXY
-                else -> UNKNOWN_STORE
-            }
-        }
+        public fun fromString(text: String): Store = storesByName[text] ?: UNKNOWN_STORE
     }
 }
 

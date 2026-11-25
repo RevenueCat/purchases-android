@@ -145,10 +145,12 @@ private fun getStoreText(store: Store, localization: CustomerCenterConfigData.Lo
         Store.MAC_APP_STORE -> CustomerCenterConfigData.Localization.CommonLocalizedString.MAC_APP_STORE
         Store.PLAY_STORE -> CustomerCenterConfigData.Localization.CommonLocalizedString.GOOGLE_PLAY_STORE
         Store.AMAZON -> CustomerCenterConfigData.Localization.CommonLocalizedString.AMAZON_STORE
+        Store.ROKU -> return "Roku"
         Store.GALAXY -> CustomerCenterConfigData.Localization.CommonLocalizedString.GALAXY_STORE
         Store.PROMOTIONAL -> CustomerCenterConfigData.Localization.CommonLocalizedString.CARD_STORE_PROMOTIONAL
         Store.STRIPE,
         Store.EXTERNAL,
+        Store.PAYPAL,
         Store.PADDLE,
         Store.RC_BILLING,
         -> CustomerCenterConfigData.Localization.CommonLocalizedString.WEB_STORE

@@ -96,6 +96,8 @@ private class EntitlementInfoAPI {
             Store.AMAZON,
             Store.RC_BILLING,
             Store.EXTERNAL,
+            Store.ROKU,
+            Store.PAYPAL,
             Store.PADDLE,
             Store.TEST_STORE,
             Store.GALAXY,

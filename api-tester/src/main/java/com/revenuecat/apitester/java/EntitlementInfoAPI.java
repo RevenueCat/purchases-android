@@ -71,6 +71,8 @@ final class EntitlementInfoAPI {
             case AMAZON:
             case RC_BILLING:
             case EXTERNAL:
+            case ROKU:
+            case PAYPAL:
             case PADDLE:
             case TEST_STORE:
             case GALAXY:
