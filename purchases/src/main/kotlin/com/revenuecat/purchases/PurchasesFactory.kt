@@ -746,6 +746,7 @@ internal class PurchasesFactory(
     }
 
     private class LowPriorityThreadFactory(private val threadName: String) : ThreadFactory {
+        @Suppress("ThreadPriorityConfusion")
         override fun newThread(r: Runnable?): Thread {
             val wrapperRunnable = Runnable {
                 r?.let {
