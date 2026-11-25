@@ -98,6 +98,8 @@ internal data class StackComponentStyle(
     val applyTopWindowInsets: Boolean = false,
     /** Whether this is a factory root, and whether that root requests top insets. */
     val windowInsetsRoot: Boolean? = null,
+    /** The factory encountered a leading stack whose visibility can change after layout. */
+    val hasConditionalLeadingStack: Boolean = false,
     /**
      * When true, this ZLayer stack will always use window insets for top padding instead of
      * [PaywallState.Loaded.Components.headerHeightPx]. Set on the header's inner stack to prevent it from

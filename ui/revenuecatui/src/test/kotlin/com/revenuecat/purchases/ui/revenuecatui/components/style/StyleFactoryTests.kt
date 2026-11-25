@@ -1764,6 +1764,23 @@ class StyleFactoryTests {
         assertThat(secondImage.ignoreTopWindowInsets).isFalse()
     }
 
+    @Test
+    fun `visible empty spacer before a full-width video prevents authored hero detection`() {
+        val spacer = StackComponent(
+            components = emptyList(),
+            size = Size(width = SizeConstraint.Fit(), height = SizeConstraint.Fixed(0u)),
+        )
+        val video = videoComponent(source = videoUrls("hero"), fallbackSource = null, overrideVideoLid = null)
+        val videoStack = StackComponent(components = listOf(video))
+        val body = StackComponent(components = listOf(FallbackHeaderComponent, spacer, videoStack))
+        val result = styleFactory.create(body).getOrThrow()
+
+        assertThat(result.heroImageDetected).isFalse()
+        val root = result.componentStyle as StackComponentStyle
+        val media = (root.children[1] as StackComponentStyle).children.single() as VideoComponentStyle
+        assertThat(media.ignoreTopWindowInsets).isFalse()
+    }
+
     private fun heroWebViewComponent(width: SizeConstraint = SizeConstraint.Fill()) = WebViewComponent(
         url = "https://bundle-hash.components.revenuecat-static.com/index.html",
         id = "hero_web_view",

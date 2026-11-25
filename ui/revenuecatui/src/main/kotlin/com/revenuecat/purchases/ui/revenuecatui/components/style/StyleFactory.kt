@@ -170,7 +170,7 @@ internal class StyleFactory(
             val count: Int,
         )
 
-        private class WindowInsetsState {
+        class WindowInsetsState {
             /**
              * The stack that should apply the top window insets, if any. Tracked by reference rather than a flag
              * consumed by the next stack style built, because children styles are built before their parent's. A flag
@@ -210,26 +210,32 @@ internal class StyleFactory(
              * top window insets application but still needs to be detected for header padding logic.
              */
             var heroImageDetected = false
+            var hasConditionalLeadingStack = false
+                private set
 
             /**
-             * We're only interested in the first non-container component. After that, we can stop looking.
+             * A visible empty stack counts as a leading component, even if it only provides spacing.
              */
             private var stillLookingForHeaderMedia = true
 
             /**
              * This will be called for every component in the tree, and will determine whether we have header media
-             * that needs special top-window-insets treatment. Header media is found if the first non-container
-             * component is an image, video or web_view component with a Fill width and a ZLayer parent stack.
+             * that needs special top-window-insets treatment. A leading full-width image, video or web_view
+             * qualifies, and a ZLayer containing it can own the top insets.
              */
             fun handleHeaderMediaViewWindowInsets(component: PaywallComponent) {
+                if (!stillLookingForHeaderMedia) return
                 when (component) {
-                    is StackComponent -> if (stillLookingForHeaderMedia) {
-                        when (component.dimension) {
-                            is Dimension.ZLayer -> handleZLayerHeaderStack(component)
-
-                            is Dimension.Horizontal,
-                            is Dimension.Vertical,
-                            -> Unit
+                    is StackComponent -> {
+                        val visible = component.visible != false
+                        if (component.overrides.any { it.properties.visible == !visible }) {
+                            hasConditionalLeadingStack = true
+                        }
+                        if (!visible) return
+                        if (component.components.all { it.isPermanentlyHiddenStack }) {
+                            stillLookingForHeaderMedia = false
+                        } else if (component.dimension is Dimension.ZLayer) {
+                            handleZLayerHeaderStack(component)
                         }
                     }
 
@@ -237,11 +243,9 @@ internal class StyleFactory(
                     is VideoComponent,
                     is WebViewComponent,
                     -> {
-                        if (stillLookingForHeaderMedia) {
-                            val isHero = component.isHeaderMedia
-                            ignoreTopWindowInsets = isHero
-                            heroImageDetected = isHero
-                        }
+                        val isHero = component.isHeaderMedia
+                        ignoreTopWindowInsets = isHero
+                        heroImageDetected = isHero
                         stillLookingForHeaderMedia = false
                     }
 
@@ -250,12 +254,26 @@ internal class StyleFactory(
                 }
             }
 
+            fun <T> withoutHeaderMediaScan(block: () -> T): T {
+                val wasLooking = stillLookingForHeaderMedia
+                stillLookingForHeaderMedia = false
+                return try {
+                    block()
+                } finally {
+                    stillLookingForHeaderMedia = wasLooking
+                }
+            }
+
             private fun handleZLayerHeaderStack(component: StackComponent) {
-                val hasHero = component.components.firstOrNull()?.isHeaderMedia == true
+                val hasHero = component.components.firstOrNull { it !is StackComponent || it.visible != false }
+                    ?.isHeaderMedia == true
                 topWindowInsetsApplied = hasHero
                 heroImageDetected = hasHero
                 if (hasHero) stackAwaitingTopWindowInsets = component
             }
+
+            private val PaywallComponent.isPermanentlyHiddenStack: Boolean
+                get() = this is StackComponent && visible == false && overrides.none { it.properties.visible == true }
 
             private val PaywallComponent.isHeaderMedia: Boolean
                 get() = when (this) {
@@ -292,6 +310,9 @@ internal class StyleFactory(
          */
         val heroImageDetected: Boolean
             get() = windowInsetsState.heroImageDetected
+
+        val hasConditionalLeadingStack: Boolean
+            get() = windowInsetsState.hasConditionalLeadingStack
 
         private var unscopedDefaultTabIndex: Int? = null
         private val tabsScopes = mutableListOf<TabsScope>()
@@ -598,7 +619,10 @@ internal class StyleFactory(
                 }
                 .map { componentStyle ->
                     if (componentStyle is StackComponentStyle) {
-                        componentStyle.copy(windowInsetsRoot = applyTopWindowInsets)
+                        componentStyle.copy(
+                            windowInsetsRoot = applyTopWindowInsets,
+                            hasConditionalLeadingStack = hasConditionalLeadingStack,
+                        )
                     } else {
                         componentStyle
                     }
@@ -627,7 +651,11 @@ internal class StyleFactory(
             is ImageComponent -> createImageComponentStyle(component)
             is PackageComponent -> createPackageComponentStyle(component)
             is PurchaseButtonComponent -> createPurchaseButtonComponentStyle(component)
-            is StackComponent -> createStackComponentStyle(component)
+            is StackComponent -> if (component.visible == false) {
+                windowInsetsState.withoutHeaderMediaScan { createStackComponentStyle(component) }
+            } else {
+                createStackComponentStyle(component)
+            }
             is HeaderComponent -> createHeaderComponentStyle(component)
             is StickyFooterComponent -> createStickyFooterComponentStyle(component)
             is TextComponent -> createTextComponentStyle(component)

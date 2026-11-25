@@ -770,8 +770,8 @@ private fun MainStackComponent(
                     // frame is already right, and inset changes remeasure rather than recompose.
                     val density = LocalDensity.current
                     val consumedTopInsetPx = remember { mutableIntStateOf(0) }
-                    val useWindowInsetsPadding =
-                        stackState.ignoreHeaderHeight || state.heroInsetsFor(stackState.style) != null
+                    val useWindowInsetsPadding = stackState.ignoreHeaderHeight ||
+                        (state.header == null && state.heroInsetsFor(stackState.style) != null)
                     Box(
                         modifier = outerModifier
                             .onConsumedWindowInsetsChanged { consumedTopInsetPx.intValue = it.getTop(density) }

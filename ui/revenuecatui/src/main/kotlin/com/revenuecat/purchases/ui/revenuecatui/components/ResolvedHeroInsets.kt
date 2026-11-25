@@ -72,14 +72,16 @@ private data class FirstVisibleLeaf(
     val ancestors: List<Pair<StackComponentStyle, ComponentStyle>> = emptyList(),
 )
 
+private fun StackComponentStyle.needsRuntimeHeroInsets(state: PaywallState.Loaded.Components): Boolean =
+    if (state.header == null) windowInsetsRoot == true else this === state.stack && hasConditionalLeadingStack
+
 /** Resolve once in the paywall container after MeasurePaywallBounds; descendant stacks share this result. */
 @Composable
 internal fun resolveHeroInsets(
     root: ComponentStyle,
     state: PaywallState.Loaded.Components,
 ): ResolvedHeroInsets? {
-    // Header paywalls retain their existing overlay policy. Other layout roots resolve independently.
-    if (root !is StackComponentStyle || root.windowInsetsRoot != true || state.header != null) return null
+    if (root !is StackComponentStyle || !root.needsRuntimeHeroInsets(state)) return null
     val countdownStacks = mutableMapOf<ComponentStyleIdentity, StackComponentStyle>()
     val leaf = firstVisibleLeaf(root, state, countdownStacks)
     val firstChildren = leaf?.ancestors.orEmpty()
