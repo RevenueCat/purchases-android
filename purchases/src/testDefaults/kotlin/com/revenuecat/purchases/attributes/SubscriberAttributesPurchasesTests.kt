@@ -79,6 +79,7 @@ class SubscriberAttributesPurchasesTests {
 
     @Before
     fun setup() {
+        every { customerInfoUpdateHandlerMock.checkPromotionalEntitlementExpirations() } just Runs
         every {
             offlineEntitlementsManagerMock.updateProductEntitlementMappingCacheIfStale()
         } just runs

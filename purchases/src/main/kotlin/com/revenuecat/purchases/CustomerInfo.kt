@@ -254,14 +254,19 @@ public class CustomerInfo internal constructor(
         get() = jsonObject
 
     private fun activeIdentifiers(expirations: Map<String, Date?>): Set<String> {
-        return expirations.filterValues {
-                expirationDate ->
-            DateHelper.isDateActive(expirationDate, requestDate).isActive
+        return expirations.filter { (productId, expirationDate) ->
+            val store = subscriptionStoresByProduct[productId] ?: Store.UNKNOWN_STORE
+            DateHelper.isDateActive(expirationDate, requestDate, store).isActive
         }.keys
     }
 
     @IgnoredOnParcel
     private val subscriberJSONObject = jsonObject.getJSONObject("subscriber")
+
+    @IgnoredOnParcel
+    private val subscriptionStoresByProduct: Map<String, Store> by lazy {
+        CustomerInfoFactory.parseSubscriptionStores(subscriberJSONObject)
+    }
 
     // IAM responses carry the user's `amr`; true only when it's non-empty and every entry is anonymous.
     @OptIn(InternalRevenueCatAPI::class)

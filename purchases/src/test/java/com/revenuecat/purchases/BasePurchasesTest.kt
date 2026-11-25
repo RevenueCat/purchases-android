@@ -402,6 +402,12 @@ internal open class BasePurchasesTest {
             every {
                 updatedCustomerInfoListener
             } returns null
+            every {
+                checkPromotionalEntitlementExpirations()
+            } just Runs
+            every {
+                close()
+            } just Runs
         }
     }
 

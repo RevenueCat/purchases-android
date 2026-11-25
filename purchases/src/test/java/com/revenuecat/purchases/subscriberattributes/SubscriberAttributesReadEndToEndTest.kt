@@ -9,6 +9,7 @@ import com.revenuecat.purchases.CustomerAttribute
 import com.revenuecat.purchases.CustomerInfoUpdateHandler
 import com.revenuecat.purchases.DeviceIdentifierCollectionMode
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
@@ -51,7 +52,10 @@ class SubscriberAttributesReadEndToEndTest {
             attributesManager,
             identityManager = mockk<IdentityManager>().apply { every { currentAppUserID } returns appUserID },
             offlineEntitlementsManager = mockk(),
-            appConfig = mockk(),
+            appConfig = mockk<AppConfig>().apply {
+                every { customEntitlementComputation } returns false
+                every { uiPreviewMode } returns false
+            },
             diagnosticsTracker = null,
         )
     }

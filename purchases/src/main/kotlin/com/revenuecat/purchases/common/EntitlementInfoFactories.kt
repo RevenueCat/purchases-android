@@ -85,7 +85,7 @@ internal fun JSONObject.buildEntitlementInfo(
 
     return EntitlementInfo(
         identifier = identifier,
-        isActive = isDateActive(identifier, expirationDate, requestDate),
+        isActive = isDateActive(identifier, expirationDate, requestDate, store),
         willRenew = EntitlementInfoHelper.getWillRenew(
             store,
             expirationDate,
@@ -114,9 +114,11 @@ private fun isDateActive(
     identifier: String,
     expirationDate: Date?,
     requestDate: Date,
+    store: Store,
 ): Boolean {
-    val dateActive = DateHelper.isDateActive(expirationDate, requestDate)
-    if (!dateActive.isActive && !dateActive.inGracePeriod) {
+    val dateActive = DateHelper.isDateActive(expirationDate, requestDate, store)
+    // Promotional entitlements have no grace period, so expiring outside of it is their normal expiration.
+    if (!dateActive.isActive && !dateActive.inGracePeriod && store != Store.PROMOTIONAL) {
         warnLog {
             PurchaseStrings.ENTITLEMENT_EXPIRED_OUTSIDE_GRACE_PERIOD.format(identifier, expirationDate, requestDate)
         }

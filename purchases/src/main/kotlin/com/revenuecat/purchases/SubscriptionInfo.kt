@@ -108,7 +108,7 @@ public class SubscriptionInfo(
     /**
      * Whether the subscription is currently active.
      */
-    public val isActive: Boolean = DateHelper.isDateActive(expiresDate, requestDate).isActive
+    public val isActive: Boolean = DateHelper.isDateActive(expiresDate, requestDate, store).isActive
 
     /**
      * Whether the subscription will renew at the next billing period.

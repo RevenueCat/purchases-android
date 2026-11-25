@@ -14,6 +14,10 @@ internal object CustomerInfoStrings {
     const val SENDING_LATEST_CUSTOMERINFO_TO_LISTENER = "Sending latest CustomerInfo to listener."
     const val NOT_NOTIFYING_LISTENER_CUSTOMERINFO_FOR_PREVIOUS_USER = "Not sending CustomerInfo to listener: " +
         "it belongs to a previous user (%s), current user is %s."
+    const val PROMOTIONAL_ENTITLEMENT_EXPIRATION_SCHEDULED = "Next promotional entitlement expires at %s, " +
+        "scheduled a check for then."
+    const val PROMOTIONAL_ENTITLEMENT_EXPIRATION_REACHED = "A promotional entitlement reached its expiration " +
+        "date, checking the cached CustomerInfo again."
     const val VENDING_CACHE = "Vending CustomerInfo from cache."
     const val RETRIEVING_CUSTOMER_INFO = "Retrieving customer info with policy: %s"
     const val MISSING_CACHED_CUSTOMER_INFO = "Requested a cached CustomerInfo but it's not available."

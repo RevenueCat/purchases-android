@@ -506,6 +506,7 @@ internal class PurchasesOrchestrator(
                 },
             )
         }
+        customerInfoUpdateHandler.checkPromotionalEntitlementExpirations()
         offeringsManager.onAppForeground(identityManager.currentAppUserID)
         postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
         synchronizeSubscriberAttributesIfNeeded(Delay.DEFAULT)
@@ -1146,6 +1147,7 @@ internal class PurchasesOrchestrator(
 
         billing.close()
         updatedCustomerInfoListener = null // Do not call on state since the setter does more stuff
+        customerInfoUpdateHandler.close()
 
         dispatch {
             processLifecycleOwnerProvider().lifecycle.removeObserver(lifecycleHandler)

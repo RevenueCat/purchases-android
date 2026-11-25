@@ -1,7 +1,10 @@
 package com.revenuecat.purchases
 
+import android.os.Handler
+import android.os.Looper
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.AppConfig
+import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
@@ -17,6 +20,10 @@ import io.mockk.verifyOrder
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Shadows.shadowOf
+import java.util.Date
+import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.hours
 
 @RunWith(AndroidJUnit4::class)
 class CustomerInfoUpdateHandlerTest {
@@ -27,6 +34,7 @@ class CustomerInfoUpdateHandlerTest {
     private lateinit var offlineEntitlementsManager: OfflineEntitlementsManager
     private lateinit var appConfig: AppConfig
     private lateinit var diagnosticsTracker: DiagnosticsTracker
+    private lateinit var promotionalEntitlementExpirationScheduler: PromotionalEntitlementExpirationScheduler
 
     private lateinit var customerInfoUpdateHandler: CustomerInfoUpdateHandler
 
@@ -41,6 +49,7 @@ class CustomerInfoUpdateHandlerTest {
         offlineEntitlementsManager = mockk()
         appConfig = mockk()
         diagnosticsTracker = mockk()
+        promotionalEntitlementExpirationScheduler = mockk(relaxed = true)
 
         every { identityManager.currentAppUserID } returns appUserId
         every { deviceCache.getCachedCustomerInfo(appUserId) } returns mockInfo
@@ -48,6 +57,7 @@ class CustomerInfoUpdateHandlerTest {
         every { subscriberAttributesManager.mergeAttributes(any(), any()) } just Runs
         every { offlineEntitlementsManager.offlineCustomerInfo } returns null
         every { appConfig.customEntitlementComputation } returns false
+        every { appConfig.uiPreviewMode } returns false
         every { diagnosticsTracker.trackCustomerInfoVerificationResultIfNeeded(any()) } just Runs
 
         customerInfoUpdateHandler = CustomerInfoUpdateHandler(
@@ -57,6 +67,7 @@ class CustomerInfoUpdateHandlerTest {
             offlineEntitlementsManager,
             appConfig = appConfig,
             diagnosticsTracker = diagnosticsTracker,
+            promotionalEntitlementExpirationScheduler = promotionalEntitlementExpirationScheduler,
         )
     }
 
@@ -259,6 +270,158 @@ class CustomerInfoUpdateHandlerTest {
         customerInfoUpdateHandler.notifyListeners(newCustomerInfo, appUserId)
 
         verify(exactly = 1) { diagnosticsTracker.trackCustomerInfoVerificationResultIfNeeded(newCustomerInfo) }
+    }
+
+    // endregion
+
+    // region promotional entitlement expirations
+
+    @Test
+    fun `notifying listeners tracks the promotional entitlement expirations of the customer info`() {
+        customerInfoUpdateHandler.notifyListeners(mockInfo, appUserId)
+
+        verify(exactly = 1) { promotionalEntitlementExpirationScheduler.track(mockInfo, any()) }
+    }
+
+    @Test
+    fun `caching and notifying listeners tracks the promotional entitlement expirations of the customer info`() {
+        customerInfoUpdateHandler.cacheAndNotifyListeners(mockInfo, appUserId)
+
+        verify(exactly = 1) { promotionalEntitlementExpirationScheduler.track(mockInfo, any()) }
+    }
+
+    @Test
+    fun `setting listener tracks the promotional entitlement expirations of the cached customer info`() {
+        customerInfoUpdateHandler.updatedCustomerInfoListener = mockk(relaxed = true)
+
+        verify(exactly = 1) { promotionalEntitlementExpirationScheduler.track(mockInfo, any()) }
+    }
+
+    @Test
+    fun `does not track promotional entitlement expirations of a previous user's customer info`() {
+        customerInfoUpdateHandler.notifyListeners(mockk(), "previous-app-user-id")
+
+        verify(exactly = 0) { promotionalEntitlementExpirationScheduler.track(any(), any()) }
+    }
+
+    @Test
+    fun `does not track promotional entitlement expirations if custom entitlements computation enabled`() {
+        every { appConfig.customEntitlementComputation } returns true
+
+        customerInfoUpdateHandler.notifyListeners(mockInfo, appUserId)
+
+        verify(exactly = 0) { promotionalEntitlementExpirationScheduler.track(any(), any()) }
+    }
+
+    @Test
+    fun `does not track promotional entitlement expirations in UI preview mode`() {
+        every { appConfig.uiPreviewMode } returns true
+
+        customerInfoUpdateHandler.notifyListeners(mockInfo, appUserId)
+
+        verify(exactly = 0) { promotionalEntitlementExpirationScheduler.track(any(), any()) }
+    }
+
+    @Test
+    fun `checking promotional entitlement expirations reschedules the scheduler`() {
+        customerInfoUpdateHandler.checkPromotionalEntitlementExpirations()
+
+        verify(exactly = 1) { promotionalEntitlementExpirationScheduler.reschedule() }
+    }
+
+    @Test
+    fun `closing closes the scheduler`() {
+        customerInfoUpdateHandler.close()
+
+        verify(exactly = 1) { promotionalEntitlementExpirationScheduler.close() }
+    }
+
+    @Test
+    fun `sends the cached customer info to the listener when a promotional entitlement expires`() {
+        val expiredInfo = customerInfoWithoutEntitlements()
+        val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
+        val advanceToExpiration = setUpWithPromotionalEntitlementExpiringInAnHour()
+        customerInfoUpdateHandler.updatedCustomerInfoListener = listenerMock
+
+        every { deviceCache.getCachedCustomerInfo(appUserId) } returns expiredInfo
+        advanceToExpiration()
+
+        verify(exactly = 1) { listenerMock.onReceived(mockInfo) } // From setting the listener
+        verify(exactly = 1) { listenerMock.onReceived(expiredInfo) }
+    }
+
+    @Test
+    fun `does not send the cached customer info when a promotional entitlement expires if a newer one arrived`() {
+        val expiredInfo = customerInfoWithoutEntitlements()
+        val newerInfo = customerInfoWithoutEntitlements()
+        val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
+        val advanceToExpiration = setUpWithPromotionalEntitlementExpiringInAnHour()
+        customerInfoUpdateHandler.updatedCustomerInfoListener = listenerMock
+
+        every { deviceCache.getCachedCustomerInfo(appUserId) } answers {
+            // A newer CustomerInfo lands while the expired one is being read from the cache.
+            customerInfoUpdateHandler.notifyListeners(newerInfo, appUserId)
+            expiredInfo
+        }
+        advanceToExpiration()
+
+        verify(exactly = 1) { listenerMock.onReceived(newerInfo) }
+        verify(exactly = 0) { listenerMock.onReceived(expiredInfo) }
+    }
+
+    @Test
+    fun `does not read the cached customer info when a promotional entitlement expires without a listener`() {
+        val advanceToExpiration = setUpWithPromotionalEntitlementExpiringInAnHour()
+        customerInfoUpdateHandler.notifyListeners(mockInfo, appUserId)
+
+        every { deviceCache.getCachedCustomerInfo(appUserId) } returns customerInfoWithoutEntitlements()
+        advanceToExpiration()
+
+        verify(exactly = 0) { deviceCache.getCachedCustomerInfo(any()) }
+    }
+
+    /**
+     * Rebuilds [customerInfoUpdateHandler] with a real scheduler and makes [mockInfo] hold a promotional
+     * entitlement that expires in an hour.
+     * @return A function that advances the clock and the main looper to that expiration.
+     */
+    private fun setUpWithPromotionalEntitlementExpiringInAnHour(): () -> Unit {
+        val startDate = Date(1_700_000_000_000)
+        val expirationDate = Date(startDate.time + 1.hours.inWholeMilliseconds)
+        var now = startDate
+        val handler = Handler(Looper.getMainLooper())
+        val dateProvider = object : DateProvider {
+            override val now: Date get() = now
+        }
+        customerInfoUpdateHandler = CustomerInfoUpdateHandler(
+            deviceCache,
+            subscriberAttributesManager,
+            identityManager,
+            offlineEntitlementsManager,
+            appConfig = appConfig,
+            diagnosticsTracker = diagnosticsTracker,
+            handler = handler,
+            promotionalEntitlementExpirationScheduler = PromotionalEntitlementExpirationScheduler(
+                handler,
+                dateProvider,
+            ),
+        )
+        val activeEntitlement = mockk<EntitlementInfo>()
+        every { activeEntitlement.isActive } returns true
+        every { activeEntitlement.store } returns Store.PROMOTIONAL
+        every { activeEntitlement.expirationDate } returns expirationDate
+        every { mockInfo.entitlements } returns EntitlementInfos(
+            mapOf("pro" to activeEntitlement),
+            VerificationResult.NOT_REQUESTED,
+        )
+        return {
+            now = expirationDate
+            shadowOf(Looper.getMainLooper()).idleFor(1, TimeUnit.HOURS)
+        }
+    }
+
+    private fun customerInfoWithoutEntitlements(): CustomerInfo = mockk<CustomerInfo>().also {
+        every { it.entitlements } returns EntitlementInfos(emptyMap(), VerificationResult.NOT_REQUESTED)
     }
 
     // endregion

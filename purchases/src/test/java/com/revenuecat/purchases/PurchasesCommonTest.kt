@@ -2502,6 +2502,15 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     @Test
+    fun `checks promotional entitlement expirations on foregrounded`() {
+        mockOfferingsManagerAppForeground()
+        Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
+        verify(exactly = 1) {
+            mockCustomerInfoUpdateHandler.checkPromotionalEntitlementExpirations()
+        }
+    }
+
+    @Test
     fun `fetch product entitlement mapping on foreground if it's stale`() {
         mockOfferingsManagerAppForeground()
         Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
@@ -3116,6 +3125,17 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         purchases.close()
         verifyClose()
+    }
+
+    @Test
+    fun `when closing instance, the customer info update handler is closed`() {
+        mockCloseActions()
+
+        purchases.close()
+
+        verify(exactly = 1) {
+            mockCustomerInfoUpdateHandler.close()
+        }
     }
 
     @Test

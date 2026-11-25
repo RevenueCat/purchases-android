@@ -6,8 +6,11 @@ import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.utils.DateHelper
 import com.revenuecat.purchases.utils.Iso8601Utils
 import com.revenuecat.purchases.utils.Responses
+import io.mockk.every
+import io.mockk.mockkObject
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONArray
 import org.json.JSONObject
@@ -1493,6 +1496,43 @@ class EntitlementInfosTests {
     // region EntitlementInfo active with grace periods
 
     @Test
+    fun `promotional entitlementInfo is not active once expired even if within grace period`() {
+        stubPromotionalResponse(expirationDate = 1.days.ago(), requestDate = 2.days.ago())
+
+        val customerInfo = createCustomerInfo(response)
+        assertThat(customerInfo.entitlements.all["pro_cat"]?.isActive).isFalse
+        assertThat(customerInfo.entitlements.active).isEmpty()
+        assertThat(customerInfo.activeSubscriptions).isEmpty()
+        assertThat(customerInfo.subscriptionsByProductIdentifier["rc_promo_pro_cat_monthly"]?.isActive).isFalse
+    }
+
+    @Test
+    fun `promotional entitlementInfo is active until it expires`() {
+        stubPromotionalResponse(expirationDate = 1.days.fromNow(), requestDate = 5.days.ago())
+
+        val customerInfo = createCustomerInfo(response)
+        assertThat(customerInfo.entitlements.all["pro_cat"]?.isActive).isTrue
+        assertThat(customerInfo.activeSubscriptions).containsExactly("rc_promo_pro_cat_monthly")
+        assertThat(customerInfo.subscriptionsByProductIdentifier["rc_promo_pro_cat_monthly"]?.isActive).isTrue
+    }
+
+    @Test
+    fun `promotional entitlementInfo is active if it expires after a request date ahead of the device clock`() {
+        stubPromotionalResponse(expirationDate = 2.days.fromNow(), requestDate = 1.days.fromNow())
+
+        val customerInfo = createCustomerInfo(response)
+        assertThat(customerInfo.entitlements.all["pro_cat"]?.isActive).isTrue
+    }
+
+    @Test
+    fun `promotional entitlementInfo is not active if it expired before a request date ahead of the device clock`() {
+        stubPromotionalResponse(expirationDate = 1.days.fromNow(), requestDate = 2.days.fromNow())
+
+        val customerInfo = createCustomerInfo(response)
+        assertThat(customerInfo.entitlements.all["pro_cat"]?.isActive).isFalse
+    }
+
+    @Test
     fun `entitlementInfo is active if within grace period`() {
         stubResponse(
             entitlements = JSONObject().apply {
@@ -1686,6 +1726,99 @@ class EntitlementInfosTests {
         assertThat(proCat.expirationDate).isEqualTo(expirationDate)
         assertThat(proCat.productIdentifier).isEqualTo(identifier)
         assertThat(proCat.productPlanIdentifier).isEqualTo(planIdentifier)
+    }
+
+    @Test
+    fun `promotional entitlementInfo is not active at its expiration date`() {
+        val expirationDate = 1.days.fromNow()
+        stubPromotionalResponse(expirationDate = expirationDate, requestDate = 1.days.ago())
+
+        mockkObject(DateHelper.Companion) {
+            every { DateHelper.now } returns Date(expirationDate.time - 1)
+            assertThat(createCustomerInfo(response).entitlements.all["pro_cat"]?.isActive).isTrue
+
+            every { DateHelper.now } returns expirationDate
+            assertThat(createCustomerInfo(response).entitlements.all["pro_cat"]?.isActive).isFalse
+        }
+    }
+
+    @Test
+    fun `customer info built again after a promotional entitlement expires is not equal to the one built before`() {
+        val expirationDate = 1.days.fromNow()
+        stubPromotionalResponse(expirationDate = expirationDate, requestDate = 1.days.ago())
+
+        mockkObject(DateHelper.Companion) {
+            every { DateHelper.now } returns Date(expirationDate.time - 1)
+            val customerInfoBeforeExpiration = createCustomerInfo(response)
+
+            every { DateHelper.now } returns expirationDate
+            val customerInfoAfterExpiration = createCustomerInfo(response)
+
+            assertThat(customerInfoAfterExpiration).isNotEqualTo(customerInfoBeforeExpiration)
+            assertThat(customerInfoBeforeExpiration.entitlements.active).containsOnlyKeys("pro_cat")
+            assertThat(customerInfoAfterExpiration.entitlements.active).isEmpty()
+        }
+    }
+
+    @Test
+    fun `subscriptions from other stores keep their grace period next to an expired promotional one`() {
+        stubPromotionalResponse(expirationDate = 1.days.ago(), requestDate = 2.days.ago())
+        response.getJSONObject("subscriber").getJSONObject("subscriptions").put(
+            "monthly_freetrial",
+            JSONObject().apply {
+                put("billing_issues_detected_at", JSONObject.NULL)
+                put("expires_date", Iso8601Utils.format(1.days.ago()))
+                put("is_sandbox", false)
+                put("original_purchase_date", "2019-07-26T23:30:41Z")
+                put("period_type", "normal")
+                put("purchase_date", "2019-07-26T23:45:40Z")
+                put("store", "play_store")
+                put("unsubscribe_detected_at", JSONObject.NULL)
+                put("product_plan_identifier", "monthly")
+            },
+        )
+
+        val customerInfo = createCustomerInfo(response)
+        assertThat(customerInfo.activeSubscriptions).containsExactly("monthly_freetrial:monthly")
+        assertThat(customerInfo.subscriptionsByProductIdentifier["monthly_freetrial"]?.isActive).isTrue
+        assertThat(customerInfo.subscriptionsByProductIdentifier["rc_promo_pro_cat_monthly"]?.isActive).isFalse
+    }
+
+    @Test
+    fun `promotional subscription with a base plan is not active once expired even if within grace period`() {
+        stubPromotionalResponse(expirationDate = 1.days.ago(), requestDate = 2.days.ago())
+        response.getJSONObject("subscriber").getJSONObject("subscriptions")
+            .getJSONObject("rc_promo_pro_cat_monthly")
+            .put("product_plan_identifier", "monthly")
+
+        val customerInfo = createCustomerInfo(response)
+        assertThat(customerInfo.allExpirationDatesByProduct).containsOnlyKeys("rc_promo_pro_cat_monthly:monthly")
+        assertThat(customerInfo.activeSubscriptions).isEmpty()
+    }
+
+    private fun stubPromotionalResponse(expirationDate: Date, requestDate: Date) {
+        stubResponse(
+            entitlements = JSONObject().apply {
+                put("pro_cat", JSONObject().apply {
+                    put("expires_date", Iso8601Utils.format(expirationDate))
+                    put("product_identifier", "rc_promo_pro_cat_monthly")
+                    put("purchase_date", "2019-07-26T23:45:40Z")
+                })
+            },
+            subscriptions = JSONObject().apply {
+                put("rc_promo_pro_cat_monthly", JSONObject().apply {
+                    put("billing_issues_detected_at", JSONObject.NULL)
+                    put("expires_date", Iso8601Utils.format(expirationDate))
+                    put("is_sandbox", false)
+                    put("original_purchase_date", "2019-07-26T23:30:41Z")
+                    put("period_type", "normal")
+                    put("purchase_date", "2019-07-26T23:45:40Z")
+                    put("store", "promotional")
+                    put("unsubscribe_detected_at", JSONObject.NULL)
+                })
+            },
+            requestDate = requestDate,
+        )
     }
 
     private fun stubResponse(
