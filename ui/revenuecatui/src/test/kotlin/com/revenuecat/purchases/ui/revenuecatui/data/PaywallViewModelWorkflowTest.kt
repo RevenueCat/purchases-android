@@ -3103,6 +3103,7 @@ class PaywallViewModelWorkflowTest {
         val vm = createVm()
         advanceUntilIdle()
         assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+        val initialVisitId = requireNotNull(vm.workflowState.value).visitId
 
         vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
         assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-2")
@@ -3118,6 +3119,7 @@ class PaywallViewModelWorkflowTest {
         advanceUntilIdle()
 
         assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+        assertThat(vm.workflowState.value?.visitId).isEqualTo(initialVisitId)
     }
 
     @Test
@@ -4062,24 +4064,22 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
-    fun `a new workflow presentation refreshes the traceId on retained paywall event data`() {
+    fun `a new workflow presentation starts a fresh paywall impression with its traceId`() {
         val captured = mutableListOf<FeatureEvent>()
         every { purchases.track(any()) } answers { captured.add(firstArg()) }
 
         val vm = createVm()
         vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
         vm.trackPaywallImpressionIfNeeded()
-        val firstTraceId = captured.filterIsInstance<PaywallEvent>()
-            .single { it.type == PaywallEventType.IMPRESSION }.data.traceId
-
-        // Re-presenting the same step keeps the same visual fingerprint, so no second impression fires
-        // and the event data is retained. It still has to pick up the new traversal's trace id, which
-        // withCurrentWorkflowMetadata is responsible for; later events read that retained data.
+        val firstImpression = captured.paywallEventsOfType(PaywallEventType.IMPRESSION).single()
         captured.clear()
         vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
         vm.trackPaywallImpressionIfNeeded()
         val secondStartedTraceId = captured.filterIsInstance<WorkflowEvent.StepStarted>().single().traceId
-        assertThat(secondStartedTraceId).isNotEqualTo(firstTraceId)
+        assertThat(secondStartedTraceId).isNotEqualTo(firstImpression.data.traceId)
+        val secondImpression = captured.paywallEventsOfType(PaywallEventType.IMPRESSION).single()
+        assertThat(secondImpression.data.sessionIdentifier).isNotEqualTo(firstImpression.data.sessionIdentifier)
+        assertThat(secondImpression.data.traceId).isEqualTo(secondStartedTraceId)
 
         vm.trackComponentInteraction(
             componentType = PaywallComponentType.BUTTON,
@@ -4188,10 +4188,7 @@ class PaywallViewModelWorkflowTest {
         )
         val vm = createVm()
 
-        // Both steps render the same screen, so the visual presentation fingerprint is identical
-        // across the re-presentation and the impression is de-duped. Only the workflow step id
-        // changes, which is exactly what withCurrentWorkflowMetadata must refresh on the
-        // already-tracked presentation data.
+        // Both steps render the same screen, but events after re-presentation belong to the new step.
         val sharedScreenSteps = mapOf(
             "step-1" to step1.copy(screenId = screenId2),
             "step-2" to step2.copy(screenId = screenId2),
@@ -4213,11 +4210,8 @@ class PaywallViewModelWorkflowTest {
 
         vm.startWorkflowPresentationFromResult(step2Result, testOfferings, null, uiConfig)
         vm.trackPaywallImpressionIfNeeded()
-        // Same visual fingerprint, so no new impression is emitted: this proves the de-dup branch
-        // (the one withCurrentWorkflowMetadata lives in) was taken, not a fresh re-creation.
-        assertThat(
-            captured.filterIsInstance<PaywallEvent>().none { it.type == PaywallEventType.IMPRESSION },
-        ).isTrue
+        assertThat(captured.paywallEventsOfType(PaywallEventType.IMPRESSION).single().data.stepId)
+            .isEqualTo("step-2")
         vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
         advanceUntilIdle()
 
@@ -4233,10 +4227,7 @@ class PaywallViewModelWorkflowTest {
         every { purchases.track(any()) } answers { captured.add(firstArg()) }
         val vm = createVm()
 
-        // Both steps render the same screen, so the visual presentation fingerprint is identical
-        // across the re-presentation and the impression is de-duped. Only the workflow step id
-        // changes, which is exactly what withCurrentWorkflowMetadata must refresh on the
-        // already-tracked presentation data.
+        // Both steps render the same screen, but events after re-presentation belong to the new step.
         val sharedScreenSteps = mapOf(
             "step-1" to step1.copy(screenId = screenId2),
             "step-2" to step2.copy(screenId = screenId2),
@@ -4258,11 +4249,8 @@ class PaywallViewModelWorkflowTest {
 
         vm.startWorkflowPresentationFromResult(step2Result, testOfferings, null, uiConfig)
         vm.trackPaywallImpressionIfNeeded()
-        // Same visual fingerprint, so no new impression is emitted: this proves the de-dup branch
-        // (the one withCurrentWorkflowMetadata lives in) was taken, not a fresh re-creation.
-        assertThat(
-            captured.filterIsInstance<PaywallEvent>().none { it.type == PaywallEventType.IMPRESSION },
-        ).isTrue
+        assertThat(captured.paywallEventsOfType(PaywallEventType.IMPRESSION).single().data.stepId)
+            .isEqualTo("step-2")
         vm.trackExitOffer(ExitOfferType.DISMISS, exitOfferingIdentifier = "exit-offering-id")
         advanceUntilIdle()
 
@@ -4550,6 +4538,65 @@ class PaywallViewModelWorkflowTest {
             else -> null
         }
         else -> null
+    }
+
+    @Test
+    fun `each visit to identical paywall steps reports one impression and a fresh session`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        val recorder = FlowEventRecorder()
+        val vm = createVm(listener = recorder)
+        val paywall = screenTypeMetadata(WorkflowScreenType.PAYWALL)
+        val result = workflow.copy(
+            steps = mapOf(
+                "step-1" to step1.copy(metadata = paywall),
+                "step-2" to step2.copy(screenId = screenId1, metadata = paywall),
+            ),
+        )
+
+        vm.startWorkflowPresentationFromResult(result, testOfferings, null, uiConfig)
+        repeat(2) { vm.trackPaywallImpressionIfNeeded() }
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        repeat(2) { vm.trackPaywallImpressionIfNeeded() }
+        vm.onTransitionComplete(vm.workflowState.value!!.pendingTransition!!.id)
+        vm.handleBackNavigation()
+        repeat(2) { vm.trackPaywallImpressionIfNeeded() }
+
+        val impressions = captured.paywallEventsOfType(PaywallEventType.IMPRESSION)
+        assertThat(impressions.map { it.data.stepId }).containsExactly("step-1", "step-2", "step-1")
+        val sessionIds = impressions.map { it.data.sessionIdentifier.toString() }
+        assertThat(sessionIds).doesNotHaveDuplicates()
+        assertThat(captured.paywallEventsOfType(PaywallEventType.CLOSE)).isEmpty()
+        val callbackSessionIds = recorder.events
+            .filter { it.getProperty(FlowEvent.Keys.EVENT_TYPE) == FlowEvent.EventTypes.PAYWALL_IMPRESSION }
+            .map { it.getProperty(FlowEvent.Keys.SESSION_ID) }
+        assertThat(callbackSessionIds).containsExactlyElementsOf(sessionIds)
+    }
+
+    @Test
+    fun `returning from a non-paywall step starts a new paywall impression`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        val vm = createVm()
+        val result = workflow.copy(
+            steps = mapOf(
+                "step-1" to step1.copy(metadata = screenTypeMetadata(WorkflowScreenType.PAYWALL)),
+                "step-2" to step2.copy(metadata = screenTypeMetadata()),
+            ),
+        )
+
+        vm.startWorkflowPresentationFromResult(result, testOfferings, null, uiConfig)
+        vm.trackPaywallImpressionIfNeeded()
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        vm.trackPaywallImpressionIfNeeded()
+        vm.onTransitionComplete(vm.workflowState.value!!.pendingTransition!!.id)
+        vm.handleBackNavigation()
+        vm.trackPaywallImpressionIfNeeded()
+
+        val impressions = captured.paywallEventsOfType(PaywallEventType.IMPRESSION)
+        assertThat(impressions.map { it.data.stepId }).containsExactly("step-1", "step-1")
+        assertThat(impressions.map { it.data.sessionIdentifier }).doesNotHaveDuplicates()
+        assertThat(captured.paywallEventsOfType(PaywallEventType.CLOSE)).isEmpty()
     }
 
     @Test

@@ -26,6 +26,8 @@ internal data class WorkflowPaywallUiState(
      * Null when idle (no animation in progress or queued).
      */
     val pendingTransition: WorkflowPendingTransition? = null,
+    /** Identifies a visit to the current step across recompositions and state rebuilds. */
+    val visitId: Int = 0,
 )
 
 /**

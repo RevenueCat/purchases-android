@@ -237,6 +237,7 @@ internal class PaywallViewModelImpl(
         get() = options.purchaseLogic
 
     private var paywallPresentationData: PaywallEvent.Data? = null
+    private var impressedWorkflowVisitId: Int? = null
 
     private var workflowNavigator: WorkflowNavigator? = null
     private var branchResolveJob: Job? = null
@@ -248,6 +249,7 @@ internal class PaywallViewModelImpl(
     private var currentWorkflowOfferings: WorkflowOfferings? = null
     private var currentWorkflowPresentedOfferingContext: PresentedOfferingContext? = null
     private var currentWorkflowStepTracksPaywallEvents = true
+    private var workflowVisitId = 0
     private val workflowStepStateCache = mutableMapOf<String, PaywallState.Loaded.Components>()
 
     // The trace id to stamp on paywall events. [workflowTraceId] is always populated, but only identifies
@@ -484,6 +486,8 @@ internal class PaywallViewModelImpl(
     private fun endPresentationSession() {
         cancelStateUpdate()
         paywallPresentationData = null
+        impressedWorkflowVisitId = null
+        workflowVisitId = 0
         standaloneStateStore = null
         clearWorkflowState()
         // This ViewModel can outlive an embedded or dialog presentation, so reload from the initial step when
@@ -574,10 +578,13 @@ internal class PaywallViewModelImpl(
         val targetFingerprint = computePresentationFingerprint() ?: return
         val existing = paywallPresentationData
 
-        if (existing?.presentationFingerprint() == targetFingerprint) {
-            // Impressions are de-duped by visual presentation, but workflow attribution
-            // is contextual and can change while the presentation stays the same.
-            paywallPresentationData = existing.withCurrentWorkflowMetadata()
+        val visitId = _workflowState.value?.visitId
+        val alreadyImpressed = if (visitId != null) {
+            existing != null && impressedWorkflowVisitId == visitId
+        } else {
+            impressedWorkflowVisitId == null && existing?.presentationFingerprint() == targetFingerprint
+        }
+        if (alreadyImpressed) {
             return
         }
 
@@ -590,6 +597,7 @@ internal class PaywallViewModelImpl(
 
         val newData = createEventData() ?: return
         paywallPresentationData = newData
+        impressedWorkflowVisitId = visitId
         track(PaywallEventType.IMPRESSION)
     }
 
@@ -1288,6 +1296,7 @@ internal class PaywallViewModelImpl(
     ) {
         if (!isNewWorkflowImpression) return
 
+        workflowVisitId++
         workflowTraceId = initialWorkflowTraceId(workflow, presentedOfferingContext)
         // Fresh presentation: seed the shared store from every screen, sorted by id, so the build order
         // never decides which declaration of a key wins.
@@ -1570,11 +1579,13 @@ internal class PaywallViewModelImpl(
         }
         // Set workflowState before _state so a recomposition that lands between the two writes
         // sees the workflow branch and the correct step, not the single-page branch.
+        if (pendingTransition != null) workflowVisitId++
         _workflowState.value = WorkflowPaywallUiState(
             currentStepId = step.id,
             stepStates = workflowStepStateCache.toMap() + (step.id to newState),
             isSkeleton = skeleton,
             pendingTransition = pendingTransition,
+            visitId = workflowVisitId,
         )
         _state.value = newState
     }
@@ -2306,17 +2317,6 @@ internal class PaywallViewModelImpl(
             localeIdentifier = localeIdentifier,
             darkMode = darkMode,
         )
-
-    private fun PaywallEvent.Data.withCurrentWorkflowMetadata(): PaywallEvent.Data {
-        val workflowId = currentWorkflow?.id
-        val stepId = _workflowState.value?.currentStepId
-        val traceId = paywallEventTraceId
-        return if (this.workflowId == workflowId && this.stepId == stepId && this.traceId == traceId) {
-            this
-        } else {
-            copy(workflowId = workflowId, stepId = stepId, traceId = traceId)
-        }
-    }
 
     /**
      * Extracts default custom variable values from the offering's UiConfig.
