@@ -439,10 +439,11 @@ class ApiDiffReportTest < Minitest::Test
 
   # The context was there only for the announcement. A PR run has no reason to hold a write token.
   def test_the_danger_job_no_longer_takes_the_slack_context
-    workflow = circleci_config[/^  danger:\n(?:.+\n|\n)*?(?=^  \S)/]
+    job = circleci_config[%r{^        revenuecat/danger:\n(?:.+\n)*?(?=^      - )}]
 
-    refute_nil workflow, "the danger workflow moved; update this test"
-    refute_match(/slack-secrets/, workflow)
+    refute_nil job, "the danger job moved; update this test"
+    assert_match(/context: danger-bot/, job)
+    refute_match(/slack-secrets/, job)
   end
 
   def test_circleci_has_a_job_that_runs_the_announce_script
