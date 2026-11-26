@@ -7,6 +7,7 @@ import com.google.android.gms.auth.blockstore.DeleteBytesRequest
 import com.google.android.gms.auth.blockstore.RetrieveBytesRequest
 import com.google.android.gms.auth.blockstore.RetrieveBytesResponse.BlockstoreData
 import com.google.android.gms.auth.blockstore.StoreBytesData
+import com.google.android.gms.tasks.Task
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.common.debugLog
@@ -14,12 +15,17 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.safeResume
 import com.revenuecat.purchases.common.safeResumeWithException
 import com.revenuecat.purchases.identity.IdentityManager
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeout
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 internal class BlockstoreHelper
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -29,11 +35,13 @@ constructor(
     private val blockstoreClient: BlockstoreClient? = initializeBlockstoreClient(applicationContext),
     private val ioScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO.limitedParallelism(1)),
     private val mainScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main),
+    private val blockstoreTimeout: Duration = BLOCKSTORE_TIMEOUT,
 ) {
 
-    private companion object {
+    internal companion object {
         const val BLOCKSTORE_USER_ID_KEY = "com.revenuecat.purchases.app_user_id"
         const val BLOCKSTORE_MAX_ENTRIES = 16
+        val BLOCKSTORE_TIMEOUT = 5.seconds
 
         fun initializeBlockstoreClient(applicationContext: Context): BlockstoreClient? {
             return try {
@@ -59,12 +67,21 @@ constructor(
         ioScope.launch {
             val blockstoreData = try {
                 getBlockstoreData()
+            } catch (e: TimeoutCancellationException) {
+                errorLog(e) { "Timed out retrieving Block store data. Will not store userId." }
+                return@launch
+            } catch (e: CancellationException) {
+                throw e
             } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                 errorLog(e) { "Failed to retrieve Block store data. Will not store userId. Error: ${e.message}" }
                 return@launch
             }
             try {
                 storeUserIdIfNeeded(blockstoreData, currentUserId)
+            } catch (e: TimeoutCancellationException) {
+                errorLog(e) { "Timed out storing user Id in Block store." }
+            } catch (e: CancellationException) {
+                throw e
             } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                 errorLog(e) { "Failed to store user Id in Block store: ${e.message}" }
             }
@@ -85,6 +102,12 @@ constructor(
         ioScope.launch {
             val blockstoreData = try {
                 getBlockstoreData()
+            } catch (e: TimeoutCancellationException) {
+                errorLog(e) { "Timed out retrieving Block store data. Will not recover userId." }
+                callCompletion()
+                return@launch
+            } catch (e: CancellationException) {
+                throw e
             } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                 errorLog(e) { "Failed to retrieve Block store data. Will not recover userId. Error: ${e.message}" }
                 callCompletion()
@@ -122,15 +145,17 @@ constructor(
             .setKeys(listOf(BLOCKSTORE_USER_ID_KEY))
             .build()
         ioScope.launch {
-            blockstoreClient.deleteBytes(request)
-                .addOnSuccessListener {
-                    debugLog { "Block store cached UserID cleared if any" }
-                    callback()
-                }
-                .addOnFailureListener {
-                    errorLog(it) { "Tried to clear Block store cached UserID but failed: ${it.message}" }
-                    callback()
-                }
+            try {
+                blockstoreClient.deleteBytes(request).awaitWithTimeout()
+                debugLog { "Block store cached UserID cleared if any" }
+            } catch (e: TimeoutCancellationException) {
+                errorLog(e) { "Timed out clearing Block store cached UserID." }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                errorLog(e) { "Tried to clear Block store cached UserID but failed: ${e.message}" }
+            }
+            callback()
         }
     }
 
@@ -139,11 +164,7 @@ constructor(
         val retrieveRequest = RetrieveBytesRequest.Builder()
             .setRetrieveAll(true)
             .build()
-        return suspendCancellableCoroutine { cont ->
-            blockstoreClient.retrieveBytes(retrieveRequest)
-                .addOnSuccessListener { cont.safeResume(it.blockstoreDataMap) }
-                .addOnFailureListener { cont.safeResumeWithException(it) }
-        }
+        return blockstoreClient.retrieveBytes(retrieveRequest).awaitWithTimeout().blockstoreDataMap
     }
 
     @Suppress("ReturnCount")
@@ -166,13 +187,17 @@ constructor(
             .setKey(BLOCKSTORE_USER_ID_KEY)
             .setShouldBackupToCloud(true)
             .build()
+        blockstoreClient.storeBytes(storeRequest).awaitWithTimeout()
+        debugLog { "Block store: User ID: $userId stored in Block store." }
+    }
+
+    private suspend fun <T> Task<T>.awaitWithTimeout(): T = withTimeout(blockstoreTimeout) {
         suspendCancellableCoroutine { cont ->
-            blockstoreClient.storeBytes(storeRequest)
-                .addOnSuccessListener {
-                    debugLog { "Block store: User ID: $userId stored in Block store." }
-                    cont.safeResume(Unit)
-                }
-                .addOnFailureListener { cont.safeResumeWithException(it) }
+            addOnSuccessListener { cont.safeResume(it) }
+            addOnFailureListener { cont.safeResumeWithException(it) }
+            addOnCanceledListener {
+                cont.safeResumeWithException(IllegalStateException("Block store task was canceled."))
+            }
         }
     }
 }

@@ -5,6 +5,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.android.gms.auth.blockstore.BlockstoreClient
 import com.google.android.gms.auth.blockstore.DeleteBytesRequest
 import com.google.android.gms.auth.blockstore.RetrieveBytesResponse
+import com.google.android.gms.tasks.OnCanceledListener
 import com.google.android.gms.tasks.OnFailureListener
 import com.google.android.gms.tasks.OnSuccessListener
 import com.google.android.gms.tasks.Task
@@ -23,7 +24,9 @@ import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -105,6 +108,7 @@ class BlockstoreHelperTest {
         val retrieveSuccessSlot = slot<OnSuccessListener<RetrieveBytesResponse>>()
         every { mockRetrieveTask.addOnSuccessListener(capture(retrieveSuccessSlot)) } returns mockRetrieveTask
         every { mockRetrieveTask.addOnFailureListener(any()) } returns mockRetrieveTask
+        every { mockRetrieveTask.addOnCanceledListener(any()) } returns mockRetrieveTask
         
         val mockStoreTask = mockk<Task<Int>>()
         every { mockBlockstoreClient.storeBytes(any()) } returns mockStoreTask
@@ -112,13 +116,14 @@ class BlockstoreHelperTest {
         val storeSuccessSlot = slot<OnSuccessListener<Int>>()
         every { mockStoreTask.addOnSuccessListener(capture(storeSuccessSlot)) } returns mockStoreTask
         every { mockStoreTask.addOnFailureListener(any()) } returns mockStoreTask
+        every { mockStoreTask.addOnCanceledListener(any()) } returns mockStoreTask
         
         blockstoreHelper.storeUserIdIfNeeded(mockCustomerInfo)
 
-        testScope.advanceUntilIdle()
+        testScope.runCurrent()
         retrieveSuccessSlot.captured.onSuccess(mockRetrieveResponse)
 
-        testScope.advanceUntilIdle()
+        testScope.runCurrent()
         storeSuccessSlot.captured.onSuccess(1)
         
         verify(exactly = 1) { mockBlockstoreClient.retrieveBytes(any()) }
@@ -137,10 +142,11 @@ class BlockstoreHelperTest {
         val retrieveFailureSlot = slot<OnFailureListener>()
         every { mockRetrieveTask.addOnSuccessListener(any()) } returns mockRetrieveTask
         every { mockRetrieveTask.addOnFailureListener(capture(retrieveFailureSlot)) } returns mockRetrieveTask
+        every { mockRetrieveTask.addOnCanceledListener(any()) } returns mockRetrieveTask
         
         blockstoreHelper.storeUserIdIfNeeded(mockCustomerInfo)
 
-        testScope.advanceUntilIdle()
+        testScope.runCurrent()
         
         retrieveFailureSlot.captured.onFailure(RuntimeException("Test error"))
         
@@ -168,10 +174,11 @@ class BlockstoreHelperTest {
         val retrieveSuccessSlot = slot<OnSuccessListener<RetrieveBytesResponse>>()
         every { mockRetrieveTask.addOnSuccessListener(capture(retrieveSuccessSlot)) } returns mockRetrieveTask
         every { mockRetrieveTask.addOnFailureListener(any()) } returns mockRetrieveTask
+        every { mockRetrieveTask.addOnCanceledListener(any()) } returns mockRetrieveTask
         
         blockstoreHelper.storeUserIdIfNeeded(mockCustomerInfo)
 
-        testScope.advanceUntilIdle()
+        testScope.runCurrent()
         
         retrieveSuccessSlot.captured.onSuccess(mockRetrieveResponse)
 
@@ -197,10 +204,11 @@ class BlockstoreHelperTest {
         val retrieveSuccessSlot = slot<OnSuccessListener<RetrieveBytesResponse>>()
         every { mockRetrieveTask.addOnSuccessListener(capture(retrieveSuccessSlot)) } returns mockRetrieveTask
         every { mockRetrieveTask.addOnFailureListener(any()) } returns mockRetrieveTask
+        every { mockRetrieveTask.addOnCanceledListener(any()) } returns mockRetrieveTask
         
         blockstoreHelper.storeUserIdIfNeeded(mockCustomerInfo)
 
-        testScope.advanceUntilIdle()
+        testScope.runCurrent()
         
         retrieveSuccessSlot.captured.onSuccess(mockRetrieveResponse)
         
@@ -255,13 +263,14 @@ class BlockstoreHelperTest {
         val retrieveFailureSlot = slot<OnFailureListener>()
         every { mockRetrieveTask.addOnSuccessListener(any()) } returns mockRetrieveTask
         every { mockRetrieveTask.addOnFailureListener(capture(retrieveFailureSlot)) } returns mockRetrieveTask
+        every { mockRetrieveTask.addOnCanceledListener(any()) } returns mockRetrieveTask
         
         var callbackCalled = false
         blockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded {
             callbackCalled = true
         }
 
-        testScope.advanceUntilIdle()
+        testScope.runCurrent()
         retrieveFailureSlot.captured.onFailure(RuntimeException("Test error"))
         testScope.advanceUntilIdle()
         
@@ -279,13 +288,14 @@ class BlockstoreHelperTest {
         val retrieveSuccessSlot = slot<OnSuccessListener<RetrieveBytesResponse>>()
         every { mockRetrieveTask.addOnSuccessListener(capture(retrieveSuccessSlot)) } returns mockRetrieveTask
         every { mockRetrieveTask.addOnFailureListener(any()) } returns mockRetrieveTask
+        every { mockRetrieveTask.addOnCanceledListener(any()) } returns mockRetrieveTask
         
         var callbackCalled = false
         blockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded {
             callbackCalled = true
         }
 
-        testScope.advanceUntilIdle()
+        testScope.runCurrent()
         retrieveSuccessSlot.captured.onSuccess(mockRetrieveResponse)
         testScope.advanceUntilIdle()
         
@@ -308,13 +318,14 @@ class BlockstoreHelperTest {
         val retrieveSuccessSlot = slot<OnSuccessListener<RetrieveBytesResponse>>()
         every { mockRetrieveTask.addOnSuccessListener(capture(retrieveSuccessSlot)) } returns mockRetrieveTask
         every { mockRetrieveTask.addOnFailureListener(any()) } returns mockRetrieveTask
+        every { mockRetrieveTask.addOnCanceledListener(any()) } returns mockRetrieveTask
         
         var callbackCalled = false
         blockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded {
             callbackCalled = true
         }
 
-        testScope.advanceUntilIdle()
+        testScope.runCurrent()
         retrieveSuccessSlot.captured.onSuccess(mockRetrieveResponse)
         testScope.advanceUntilIdle()
 
@@ -341,13 +352,14 @@ class BlockstoreHelperTest {
         val retrieveSuccessSlot = slot<OnSuccessListener<RetrieveBytesResponse>>()
         every { mockRetrieveTask.addOnSuccessListener(capture(retrieveSuccessSlot)) } returns mockRetrieveTask
         every { mockRetrieveTask.addOnFailureListener(any()) } returns mockRetrieveTask
+        every { mockRetrieveTask.addOnCanceledListener(any()) } returns mockRetrieveTask
         
         var callbackCalled = false
         blockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded {
             callbackCalled = true
         }
 
-        testScope.advanceUntilIdle()
+        testScope.runCurrent()
         retrieveSuccessSlot.captured.onSuccess(mockRetrieveResponse)
         testScope.advanceUntilIdle()
 
@@ -376,13 +388,14 @@ class BlockstoreHelperTest {
         val retrieveSuccessSlot = slot<OnSuccessListener<RetrieveBytesResponse>>()
         every { mockRetrieveTask.addOnSuccessListener(capture(retrieveSuccessSlot)) } returns mockRetrieveTask
         every { mockRetrieveTask.addOnFailureListener(any()) } returns mockRetrieveTask
+        every { mockRetrieveTask.addOnCanceledListener(any()) } returns mockRetrieveTask
         
         var callbackCalled = false
         blockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded {
             callbackCalled = true
         }
 
-        testScope.advanceUntilIdle()
+        testScope.runCurrent()
         retrieveSuccessSlot.captured.onSuccess(mockRetrieveResponse)
         testScope.advanceUntilIdle()
         
@@ -422,15 +435,17 @@ class BlockstoreHelperTest {
         val deleteSuccessSlot = slot<OnSuccessListener<Boolean>>()
         every { mockDeleteTask.addOnSuccessListener(capture(deleteSuccessSlot)) } returns mockDeleteTask
         every { mockDeleteTask.addOnFailureListener(any()) } returns mockDeleteTask
+        every { mockDeleteTask.addOnCanceledListener(any()) } returns mockDeleteTask
         
         var callbackCalled = false
         blockstoreHelper.clearUserIdBackupIfNeeded {
             callbackCalled = true
         }
 
-        testScope.advanceUntilIdle()
+        testScope.runCurrent()
 
         deleteSuccessSlot.captured.onSuccess(true)
+        testScope.runCurrent()
         
         assertThat(callbackCalled).isTrue()
         
@@ -448,15 +463,17 @@ class BlockstoreHelperTest {
         val deleteFailureSlot = slot<OnFailureListener>()
         every { mockDeleteTask.addOnSuccessListener(any()) } returns mockDeleteTask
         every { mockDeleteTask.addOnFailureListener(capture(deleteFailureSlot)) } returns mockDeleteTask
+        every { mockDeleteTask.addOnCanceledListener(any()) } returns mockDeleteTask
         
         var callbackCalled = false
         blockstoreHelper.clearUserIdBackupIfNeeded {
             callbackCalled = true
         }
 
-        testScope.advanceUntilIdle()
+        testScope.runCurrent()
 
         deleteFailureSlot.captured.onFailure(RuntimeException("Test error"))
+        testScope.runCurrent()
         
         assertThat(callbackCalled).isTrue()
         verify(exactly = 1) { mockBlockstoreClient.deleteBytes(any()) }
@@ -480,6 +497,109 @@ class BlockstoreHelperTest {
         assertThat(callbackCalled).isTrue()
 
         verify(exactly = 0) { mockBlockstoreClient.deleteBytes(any()) }
+    }
+
+    @Test
+    fun `aliasCurrentAndStoredUserIdsIfNeeded calls callback once when retrieval times out`() = runTest {
+        val mockRetrieveResponse = mockk<RetrieveBytesResponse> {
+            every { blockstoreDataMap } returns emptyMap()
+        }
+        val mockRetrieveTask = mockk<Task<RetrieveBytesResponse>>()
+        every { mockBlockstoreClient.retrieveBytes(any()) } returns mockRetrieveTask
+
+        val retrieveSuccessSlot = slot<OnSuccessListener<RetrieveBytesResponse>>()
+        every { mockRetrieveTask.addOnSuccessListener(capture(retrieveSuccessSlot)) } returns mockRetrieveTask
+        every { mockRetrieveTask.addOnFailureListener(any()) } returns mockRetrieveTask
+        every { mockRetrieveTask.addOnCanceledListener(any()) } returns mockRetrieveTask
+
+        var callbackCount = 0
+        blockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded {
+            callbackCount++
+        }
+
+        testScope.runCurrent()
+        assertThat(callbackCount).isZero()
+
+        testScope.advanceTimeBy(BlockstoreHelper.BLOCKSTORE_TIMEOUT)
+        testScope.runCurrent()
+        assertThat(callbackCount).isEqualTo(1)
+
+        // Late task completion after timeout must not invoke the callback again.
+        retrieveSuccessSlot.captured.onSuccess(mockRetrieveResponse)
+        testScope.advanceUntilIdle()
+        assertThat(callbackCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `aliasCurrentAndStoredUserIdsIfNeeded calls callback when retrieval is canceled`() = runTest {
+        val mockRetrieveTask = mockk<Task<RetrieveBytesResponse>>()
+        every { mockBlockstoreClient.retrieveBytes(any()) } returns mockRetrieveTask
+
+        val retrieveCanceledSlot = slot<OnCanceledListener>()
+        every { mockRetrieveTask.addOnSuccessListener(any()) } returns mockRetrieveTask
+        every { mockRetrieveTask.addOnFailureListener(any()) } returns mockRetrieveTask
+        every { mockRetrieveTask.addOnCanceledListener(capture(retrieveCanceledSlot)) } returns mockRetrieveTask
+
+        var callbackCalled = false
+        blockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded {
+            callbackCalled = true
+        }
+
+        testScope.runCurrent()
+        retrieveCanceledSlot.captured.onCanceled()
+        testScope.runCurrent()
+
+        assertThat(callbackCalled).isTrue()
+    }
+
+    @Test
+    fun `clearUserIdBackupIfNeeded calls callback once when delete times out`() {
+        val mockDeleteTask = mockk<Task<Boolean>>()
+        every { mockBlockstoreClient.deleteBytes(any()) } returns mockDeleteTask
+
+        val deleteSuccessSlot = slot<OnSuccessListener<Boolean>>()
+        every { mockDeleteTask.addOnSuccessListener(capture(deleteSuccessSlot)) } returns mockDeleteTask
+        every { mockDeleteTask.addOnFailureListener(any()) } returns mockDeleteTask
+        every { mockDeleteTask.addOnCanceledListener(any()) } returns mockDeleteTask
+
+        var callbackCount = 0
+        blockstoreHelper.clearUserIdBackupIfNeeded {
+            callbackCount++
+        }
+
+        testScope.runCurrent()
+        assertThat(callbackCount).isZero()
+
+        testScope.advanceTimeBy(BlockstoreHelper.BLOCKSTORE_TIMEOUT)
+        testScope.runCurrent()
+        assertThat(callbackCount).isEqualTo(1)
+
+        // Late task completion after timeout must not invoke the callback again.
+        deleteSuccessSlot.captured.onSuccess(true)
+        testScope.advanceUntilIdle()
+        assertThat(callbackCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `clearUserIdBackupIfNeeded calls callback when delete is canceled`() {
+        val mockDeleteTask = mockk<Task<Boolean>>()
+        every { mockBlockstoreClient.deleteBytes(any()) } returns mockDeleteTask
+
+        val deleteCanceledSlot = slot<OnCanceledListener>()
+        every { mockDeleteTask.addOnSuccessListener(any()) } returns mockDeleteTask
+        every { mockDeleteTask.addOnFailureListener(any()) } returns mockDeleteTask
+        every { mockDeleteTask.addOnCanceledListener(capture(deleteCanceledSlot)) } returns mockDeleteTask
+
+        var callbackCalled = false
+        blockstoreHelper.clearUserIdBackupIfNeeded {
+            callbackCalled = true
+        }
+
+        testScope.runCurrent()
+        deleteCanceledSlot.captured.onCanceled()
+        testScope.runCurrent()
+
+        assertThat(callbackCalled).isTrue()
     }
 
     // endregion clearUserIdBackupIfNeeded
