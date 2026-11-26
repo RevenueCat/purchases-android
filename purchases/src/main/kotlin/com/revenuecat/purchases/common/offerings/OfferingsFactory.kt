@@ -27,6 +27,13 @@ internal class OfferingsFactory(
     private val appConfig: AppConfig,
 ) {
 
+    private class ProductLookupCallbacks(
+        val onCompleted: (Map<String, List<StoreProduct>>) -> Unit,
+        val onError: (PurchasesError) -> Unit,
+    )
+
+    private val pendingPlayLookups = mutableMapOf<Set<String>, MutableList<ProductLookupCallbacks>>()
+
     @SuppressWarnings("TooGenericExceptionCaught", "LongMethod")
     fun createOfferings(
         offeringsJSON: JSONObject,
@@ -143,6 +150,33 @@ internal class OfferingsFactory(
     }
 
     private fun getStoreProductsById(
+        productIds: Set<String>,
+        onCompleted: (Map<String, List<StoreProduct>>) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        if (appConfig.store != Store.PLAY_STORE) {
+            queryStoreProducts(productIds, onCompleted, onError)
+            return
+        }
+
+        val callbacks = ProductLookupCallbacks(onCompleted, onError)
+        synchronized(pendingPlayLookups) {
+            pendingPlayLookups[productIds]?.let { pending ->
+                pending.add(callbacks)
+                return
+            }
+            pendingPlayLookups[productIds] = mutableListOf(callbacks)
+        }
+
+        fun takeCallbacks() = synchronized(pendingPlayLookups) { pendingPlayLookups.remove(productIds).orEmpty() }
+        queryStoreProducts(
+            productIds,
+            onCompleted = { products -> takeCallbacks().forEach { it.onCompleted(products) } },
+            onError = { error -> takeCallbacks().forEach { it.onError(error) } },
+        )
+    }
+
+    private fun queryStoreProducts(
         productIds: Set<String>,
         onCompleted: (Map<String, List<StoreProduct>>) -> Unit,
         onError: (PurchasesError) -> Unit,

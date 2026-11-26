@@ -26,6 +26,7 @@ import com.revenuecat.purchases.utils.stubStoreProduct
 import com.revenuecat.purchases.utils.stubSubscriptionOption
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
@@ -258,6 +259,88 @@ class OfferingsFactoryTest {
             dispatcher,
             appConfig,
         )
+    }
+
+    @Test
+    fun `overlapping requests for the same products each receive their offering from one store query`() {
+        val storeReplies = mutableListOf<(List<StoreProduct>) -> Unit>()
+        every {
+            billing.queryProductDetailsAsync(ProductType.SUBS, setOf(productId), capture(storeReplies), any())
+        } answers { Unit }
+
+        val completed = mutableListOf<String>()
+        for (id in listOf("foreground", "explicit")) {
+            val response = JSONObject(ONE_OFFERINGS_RESPONSE.replace(STUB_OFFERING_IDENTIFIER, id))
+            offeringsFactory.createOfferings(
+                offeringsJSON = response,
+                originalDataSource = HTTPResponseOriginalSource.MAIN,
+                loadedFromDiskCache = false,
+                onError = { fail("Unexpected offerings error: $it") },
+                onSuccess = { result ->
+                    assertThat(result.offerings.current?.identifier).isEqualTo(id)
+                    completed.add(id)
+                },
+            )
+        }
+        assertThat(completed).isEmpty()
+
+        val product = stubStoreProduct(productId, stubSubscriptionOption("p1m", "P1M"))
+        storeReplies.first().invoke(listOf(product))
+
+        assertThat(completed).containsExactlyInAnyOrder("foreground", "explicit")
+        assertThat(storeReplies).hasSize(1)
+    }
+
+    @Test
+    fun `store error reaches both callers and a later lookup can retry`() {
+        val failures = mutableListOf<(PurchasesError) -> Unit>()
+        every {
+            billing.queryProductDetailsAsync(ProductType.SUBS, setOf(productId), any(), capture(failures))
+        } answers { Unit }
+
+        val received = mutableListOf<Pair<Int, PurchasesError>>()
+        repeat(2) { caller ->
+            offeringsFactory.createOfferings(oneOfferingResponse, HTTPResponseOriginalSource.MAIN, false,
+                onError = { received.add(caller to it) }, onSuccess = { fail("Expected a store error") })
+        }
+        val error = PurchasesError(PurchasesErrorCode.StoreProblemError)
+        failures.single().invoke(error)
+        assertThat(received).containsExactlyInAnyOrder(0 to error, 1 to error)
+
+        mockStoreProduct()
+        var retried: Offerings? = null
+        offeringsFactory.createOfferings(oneOfferingResponse, HTTPResponseOriginalSource.MAIN, false,
+            onError = { fail("Unexpected retry error: $it") }, onSuccess = { retried = it.offerings })
+        assertThat(retried?.current?.identifier).isEqualTo(STUB_OFFERING_IDENTIFIER)
+    }
+
+    @Test
+    fun `different products can resolve while a lookup is pending`() {
+        val firstReply = slot<(List<StoreProduct>) -> Unit>()
+        every {
+            billing.queryProductDetailsAsync(ProductType.SUBS, setOf(productId), capture(firstReply), any())
+        } answers { Unit }
+        val completed = mutableListOf<String>()
+        fun request(id: String) {
+            val response = JSONObject(ONE_OFFERINGS_RESPONSE.replace(productId, id))
+            offeringsFactory.createOfferings(
+                response, HTTPResponseOriginalSource.MAIN, false,
+                onError = { fail("Unexpected offerings error: $it") },
+                onSuccess = {
+                    assertThat(it.offerings.current?.monthly?.product?.purchasingData?.productId).isEqualTo(id)
+                    completed.add(id)
+                },
+            )
+        }
+
+        request(productId)
+        val otherId = "annual"
+        mockStoreProduct(productIds = listOf(otherId), productIdsSuccessfullyFetched = listOf(otherId))
+        request(otherId)
+        assertThat(completed).containsExactly(otherId)
+
+        firstReply.captured(listOf(stubStoreProduct(productId, stubSubscriptionOption("p1m", "P1M"))))
+        assertThat(completed).containsExactly(otherId, productId)
     }
 
     @Test
