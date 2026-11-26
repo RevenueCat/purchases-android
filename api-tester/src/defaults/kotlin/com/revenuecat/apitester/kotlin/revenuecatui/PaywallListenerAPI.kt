@@ -4,6 +4,7 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.ui.revenuecatui.FlowEvent
 import com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable
@@ -41,6 +42,16 @@ private class PaywallListenerAPI {
                 val long: Long? = event.getProperty(PaywallInteractionEvent.Keys.TIMESTAMP)
                 val boolean: Boolean? = event.getProperty(PaywallInteractionEvent.Keys.DARK_MODE)
                 val name: String = PaywallInteractionEvent.Keys.COMPONENT_TYPE.name
+            }
+
+            override fun onFlowEvent(event: FlowEvent) {
+                val rawProperties: Map<String, Any> = event.rawProperties
+                val string: String? = event.getProperty(FlowEvent.Keys.EVENT_TYPE)
+                val int: Int? = event.getProperty(FlowEvent.Keys.PAYWALL_REVISION)
+                val long: Long? = event.getProperty(FlowEvent.Keys.TIMESTAMP)
+                val boolean: Boolean? = event.getProperty(FlowEvent.Keys.IS_FIRST_STEP)
+                val list: List<String>? = event.getProperty(FlowEvent.Keys.SCREEN_TYPE)
+                val name: String = FlowEvent.Keys.EVENT_TYPE.name
             }
         }
 
@@ -82,6 +93,41 @@ private class PaywallListenerAPI {
             PaywallInteractionEvent.ComponentTypes.PACKAGE,
             PaywallInteractionEvent.ComponentTypes.PACKAGE_SELECTION_SHEET,
             PaywallInteractionEvent.ComponentTypes.PURCHASE_BUTTON,
+        )
+    }
+
+    fun checkFlowEvent() {
+        val flowEventKeys: List<FlowEvent.Key<*>> = listOf(
+            FlowEvent.Keys.EVENT_TYPE,
+            FlowEvent.Keys.TIMESTAMP,
+            FlowEvent.Keys.FLOW_ID,
+            FlowEvent.Keys.FLOW_NAME,
+            FlowEvent.Keys.STEP_ID,
+            FlowEvent.Keys.STEP_TYPE,
+            FlowEvent.Keys.SCREEN_TYPE,
+            FlowEvent.Keys.SCREEN_NAME,
+            FlowEvent.Keys.TRACE_ID,
+            FlowEvent.Keys.LOCALE,
+            FlowEvent.Keys.EXPERIMENT_ID,
+            FlowEvent.Keys.EXPERIMENT_VARIANT,
+            FlowEvent.Keys.FROM_STEP_ID,
+            FlowEvent.Keys.TO_STEP_ID,
+            FlowEvent.Keys.ENTRY_REASON,
+            FlowEvent.Keys.IS_FIRST_STEP,
+            FlowEvent.Keys.IS_LAST_STEP,
+            FlowEvent.Keys.PAYWALL_ID,
+            FlowEvent.Keys.OFFERING_ID,
+            FlowEvent.Keys.PAYWALL_REVISION,
+            FlowEvent.Keys.SESSION_ID,
+            FlowEvent.Keys.DISPLAY_MODE,
+            FlowEvent.Keys.DARK_MODE,
+        )
+        val flowEventTypes: List<String> = listOf(
+            FlowEvent.EventTypes.FLOW_STEP_STARTED,
+            FlowEvent.EventTypes.FLOW_STEP_COMPLETED,
+            FlowEvent.EventTypes.FLOW_CLOSE,
+            FlowEvent.EventTypes.PAYWALL_IMPRESSION,
+            FlowEvent.EventTypes.PAYWALL_CLOSE,
         )
     }
 }

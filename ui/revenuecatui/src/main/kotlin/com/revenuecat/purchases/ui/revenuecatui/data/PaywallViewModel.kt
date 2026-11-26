@@ -43,6 +43,7 @@ import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.FlowEvent
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
@@ -71,6 +72,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallProductIdentifier
 import com.revenuecat.purchases.ui.revenuecatui.helpers.resolveWebCheckoutUrlForInteraction
 import com.revenuecat.purchases.ui.revenuecatui.helpers.safeResume
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toFlowEvent
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toInteractionEvent
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toLegacyPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
@@ -1793,7 +1795,8 @@ internal class PaywallViewModelImpl(
         entryReason: WorkflowStepEntryReason,
     ) {
         val workflow = currentWorkflow ?: return
-        purchases.track(
+        trackWorkflowEvent(
+            workflow,
             WorkflowEvent.StepStarted(
                 creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
                 workflowId = workflow.id,
@@ -1812,7 +1815,8 @@ internal class PaywallViewModelImpl(
 
     private fun trackWorkflowStepCompleted(step: WorkflowStep, toStepId: String?) {
         val workflow = currentWorkflow ?: return
-        purchases.track(
+        trackWorkflowEvent(
+            workflow,
             WorkflowEvent.StepCompleted(
                 creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
                 workflowId = workflow.id,
@@ -1876,7 +1880,8 @@ internal class PaywallViewModelImpl(
     private fun trackCurrentWorkflowAbandoned() {
         val workflow = currentWorkflow ?: return
         val step = currentWorkflowStep ?: return
-        purchases.track(
+        trackWorkflowEvent(
+            workflow,
             WorkflowEvent.Close(
                 creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
                 workflowId = workflow.id,
@@ -2150,6 +2155,26 @@ internal class PaywallViewModelImpl(
         )
 
         purchases.track(event)
+        notifyFlowEvent { event.toFlowEvent() }
+    }
+
+    private fun trackWorkflowEvent(workflow: PublishedWorkflow, event: WorkflowEvent) {
+        purchases.track(event)
+        notifyFlowEvent {
+            val stepLocale = workflowStepStateCache[event.stepId]?.locale?.toString()
+            event.toFlowEvent(workflow, stepLocale ?: currentLocaleIdentifier())
+        }
+    }
+
+    private fun currentLocaleIdentifier(): String =
+        (state.value as? PaywallState.Loaded.Components)?.locale?.toString()
+            ?: (_lastLocaleList.value.get(0) ?: Locale.getDefault()).toString()
+
+    private fun notifyFlowEvent(createEvent: () -> FlowEvent?) {
+        val listener = listener ?: return
+        val event = createEvent() ?: return
+        runCatching { listener.onFlowEvent(event) }
+            .onFailure { Logger.e("PaywallListener.onFlowEvent threw", it) }
     }
 
     @Suppress("ReturnCount")

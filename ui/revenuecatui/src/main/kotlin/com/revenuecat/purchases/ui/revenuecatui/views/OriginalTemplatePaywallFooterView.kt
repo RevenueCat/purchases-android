@@ -14,6 +14,7 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.ui.revenuecatui.FlowEvent
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.OriginalTemplatePaywallFooter
 import com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent
@@ -116,6 +117,7 @@ public open class OriginalTemplatePaywallFooterView : FrameLayout {
         override fun onWebCheckoutOpened() { listener?.onWebCheckoutOpened() }
         override fun onUrlOpened(url: String) { listener?.onUrlOpened(url) }
         override fun onInteraction(event: PaywallInteractionEvent) { listener?.onInteraction(event) }
+        override fun onFlowEvent(event: FlowEvent) { listener?.onFlowEvent(event) }
     }
 
     private var paywallOptions: PaywallOptions

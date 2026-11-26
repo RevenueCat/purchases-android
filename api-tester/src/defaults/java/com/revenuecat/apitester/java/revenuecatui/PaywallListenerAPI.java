@@ -6,6 +6,7 @@ import com.revenuecat.purchases.CustomerInfo;
 import com.revenuecat.purchases.Package;
 import com.revenuecat.purchases.PurchasesError;
 import com.revenuecat.purchases.models.StoreTransaction;
+import com.revenuecat.purchases.ui.revenuecatui.FlowEvent;
 import com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent;
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener;
 import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable;
@@ -60,6 +61,17 @@ final class PaywallListenerAPI {
                 Boolean bool = event.getProperty(PaywallInteractionEvent.Keys.DARK_MODE);
                 String name = PaywallInteractionEvent.Keys.COMPONENT_TYPE.getName();
             }
+
+            @Override
+            public void onFlowEvent(@NonNull FlowEvent event) {
+                Map<String, Object> rawProperties = event.getRawProperties();
+                String string = event.getProperty(FlowEvent.Keys.EVENT_TYPE);
+                Integer integer = event.getProperty(FlowEvent.Keys.PAYWALL_REVISION);
+                Long longValue = event.getProperty(FlowEvent.Keys.TIMESTAMP);
+                Boolean booleanValue = event.getProperty(FlowEvent.Keys.IS_FIRST_STEP);
+                List<String> list = event.getProperty(FlowEvent.Keys.SCREEN_TYPE);
+                String name = FlowEvent.Keys.EVENT_TYPE.getName();
+            }
         };
 
         List<PaywallInteractionEvent.Key<?>> keys = Arrays.asList(
@@ -100,6 +112,38 @@ final class PaywallListenerAPI {
                 PaywallInteractionEvent.ComponentTypes.PACKAGE,
                 PaywallInteractionEvent.ComponentTypes.PACKAGE_SELECTION_SHEET,
                 PaywallInteractionEvent.ComponentTypes.PURCHASE_BUTTON
+        );
+        List<FlowEvent.Key<?>> flowEventKeys = Arrays.asList(
+                FlowEvent.Keys.EVENT_TYPE,
+                FlowEvent.Keys.TIMESTAMP,
+                FlowEvent.Keys.FLOW_ID,
+                FlowEvent.Keys.FLOW_NAME,
+                FlowEvent.Keys.STEP_ID,
+                FlowEvent.Keys.STEP_TYPE,
+                FlowEvent.Keys.SCREEN_TYPE,
+                FlowEvent.Keys.SCREEN_NAME,
+                FlowEvent.Keys.TRACE_ID,
+                FlowEvent.Keys.LOCALE,
+                FlowEvent.Keys.EXPERIMENT_ID,
+                FlowEvent.Keys.EXPERIMENT_VARIANT,
+                FlowEvent.Keys.FROM_STEP_ID,
+                FlowEvent.Keys.TO_STEP_ID,
+                FlowEvent.Keys.ENTRY_REASON,
+                FlowEvent.Keys.IS_FIRST_STEP,
+                FlowEvent.Keys.IS_LAST_STEP,
+                FlowEvent.Keys.PAYWALL_ID,
+                FlowEvent.Keys.OFFERING_ID,
+                FlowEvent.Keys.PAYWALL_REVISION,
+                FlowEvent.Keys.SESSION_ID,
+                FlowEvent.Keys.DISPLAY_MODE,
+                FlowEvent.Keys.DARK_MODE
+        );
+        List<String> flowEventTypes = Arrays.asList(
+                FlowEvent.EventTypes.FLOW_STEP_STARTED,
+                FlowEvent.EventTypes.FLOW_STEP_COMPLETED,
+                FlowEvent.EventTypes.FLOW_CLOSE,
+                FlowEvent.EventTypes.PAYWALL_IMPRESSION,
+                FlowEvent.EventTypes.PAYWALL_CLOSE
         );
 
         // Only compiles with -Xjvm-default=all-compatibility; guards against method additions

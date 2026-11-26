@@ -30,6 +30,7 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.ui.revenuecatui.FlowEvent
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent
@@ -216,6 +217,10 @@ internal class PaywallActivity : ComponentActivity() {
 
             override fun onInteraction(event: PaywallInteractionEvent) {
                 userListener?.onInteraction(event)
+            }
+
+            override fun onFlowEvent(event: FlowEvent) {
+                userListener?.onFlowEvent(event)
             }
         }
 

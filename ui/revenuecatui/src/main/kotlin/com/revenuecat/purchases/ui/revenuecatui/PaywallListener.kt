@@ -65,4 +65,11 @@ public interface PaywallListener {
      * @param event The [PaywallInteractionEvent] containing the event data.
      */
     public fun onInteraction(event: PaywallInteractionEvent) {}
+
+    /**
+     * Called when the user starts or completes a flow step, closes the flow, or a paywall step is shown or closed.
+     *
+     * Exceptions thrown here are logged and do not affect the paywall.
+     */
+    public fun onFlowEvent(event: FlowEvent) {}
 }

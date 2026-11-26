@@ -30,6 +30,81 @@ package com.revenuecat.purchases.ui.revenuecatui {
   @kotlin.RequiresOptIn(level=kotlin.RequiresOptIn.Level.ERROR) @kotlin.annotation.Retention(kotlin.annotation.AnnotationRetention.BINARY) @kotlin.annotation.Target(allowedTargets={kotlin.annotation.AnnotationTarget.CLASS, kotlin.annotation.AnnotationTarget.FUNCTION, kotlin.annotation.AnnotationTarget.PROPERTY}) public @interface ExperimentalPreviewRevenueCatUIPurchasesAPI {
   }
 
+  @dev.drewhamilton.poko.Poko public final class FlowEvent {
+    method public <T> T? getProperty(com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<T> key);
+    method @InaccessibleFromKotlin public java.util.Map<java.lang.String,java.lang.Object> getRawProperties();
+    property public java.util.Map<java.lang.String,java.lang.Object> rawProperties;
+  }
+
+  public static final class FlowEvent.EventTypes {
+    property public static String FLOW_CLOSE;
+    property public static String FLOW_STEP_COMPLETED;
+    property public static String FLOW_STEP_STARTED;
+    property public static String PAYWALL_CLOSE;
+    property public static String PAYWALL_IMPRESSION;
+    field public static final String FLOW_CLOSE = "flow_close";
+    field public static final String FLOW_STEP_COMPLETED = "flow_step_completed";
+    field public static final String FLOW_STEP_STARTED = "flow_step_started";
+    field public static final com.revenuecat.purchases.ui.revenuecatui.FlowEvent.EventTypes INSTANCE;
+    field public static final String PAYWALL_CLOSE = "paywall_close";
+    field public static final String PAYWALL_IMPRESSION = "paywall_impression";
+  }
+
+  public static final class FlowEvent.Key<T> {
+    method @InaccessibleFromKotlin public String getName();
+    property public String name;
+  }
+
+  public static final class FlowEvent.Keys {
+    property public com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.Boolean> DARK_MODE;
+    property public com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.String> DISPLAY_MODE;
+    property public com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.String> ENTRY_REASON;
+    property public com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.String> EVENT_TYPE;
+    property public com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.String> EXPERIMENT_ID;
+    property public com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.String> EXPERIMENT_VARIANT;
+    property public com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.String> FLOW_ID;
+    property public com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.String> FLOW_NAME;
+    property public com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.String> FROM_STEP_ID;
+    property public com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.Boolean> IS_FIRST_STEP;
+    property public com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.Boolean> IS_LAST_STEP;
+    property public com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.String> LOCALE;
+    property public com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.String> OFFERING_ID;
+    property public com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.String> PAYWALL_ID;
+    property public com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.Integer> PAYWALL_REVISION;
+    property public com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.String> SCREEN_NAME;
+    property public com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.util.List<java.lang.String>> SCREEN_TYPE;
+    property public com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.String> SESSION_ID;
+    property public com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.String> STEP_ID;
+    property public com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.String> STEP_TYPE;
+    property public com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.Long> TIMESTAMP;
+    property public com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.String> TO_STEP_ID;
+    property public com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.String> TRACE_ID;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.Boolean> DARK_MODE;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.String> DISPLAY_MODE;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.String> ENTRY_REASON;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.String> EVENT_TYPE;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.String> EXPERIMENT_ID;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.String> EXPERIMENT_VARIANT;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.String> FLOW_ID;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.String> FLOW_NAME;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.String> FROM_STEP_ID;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Keys INSTANCE;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.Boolean> IS_FIRST_STEP;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.Boolean> IS_LAST_STEP;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.String> LOCALE;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.String> OFFERING_ID;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.String> PAYWALL_ID;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.Integer> PAYWALL_REVISION;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.String> SCREEN_NAME;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.util.List<java.lang.String>> SCREEN_TYPE;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.String> SESSION_ID;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.String> STEP_ID;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.String> STEP_TYPE;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.Long> TIMESTAMP;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.String> TO_STEP_ID;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.FlowEvent.Key<java.lang.String> TRACE_ID;
+  }
+
   @kotlin.RequiresOptIn(level=kotlin.RequiresOptIn.Level.ERROR, message="The Checkpoints API is available by invitation only and may change without a deprecation cycle. Reach out to RevenueCat to get access.") @kotlin.annotation.Retention(kotlin.annotation.AnnotationRetention.BINARY) @kotlin.annotation.Target(allowedTargets={kotlin.annotation.AnnotationTarget.CLASS, kotlin.annotation.AnnotationTarget.FUNCTION, kotlin.annotation.AnnotationTarget.PROPERTY}) public @interface InviteOnlyCheckpointsAPI {
   }
 
@@ -170,6 +245,7 @@ package com.revenuecat.purchases.ui.revenuecatui {
   }
 
   public interface PaywallListener {
+    method public default void onFlowEvent(com.revenuecat.purchases.ui.revenuecatui.FlowEvent event);
     method public default void onInteraction(com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent event);
     method public default void onPurchaseCancelled();
     method public default void onPurchaseCompleted(com.revenuecat.purchases.CustomerInfo customerInfo, com.revenuecat.purchases.models.StoreTransaction storeTransaction);

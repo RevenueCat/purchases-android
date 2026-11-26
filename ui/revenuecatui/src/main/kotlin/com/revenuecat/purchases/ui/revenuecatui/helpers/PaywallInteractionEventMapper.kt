@@ -12,14 +12,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Keys
 internal fun PaywallEvent.toInteractionEvent(): PaywallInteractionEvent {
     val interaction = requireNotNull(componentInteraction) { "Not a component interaction event: $type" }
     val rawProperties = buildMap {
-        put(Keys.TIMESTAMP.name, creationData.date.time)
-        put(Keys.SESSION_ID.name, data.sessionIdentifier.toString())
-        put(Keys.OFFERING_ID.name, data.presentedOfferingContext.offeringIdentifier)
-        putIfNotNull(Keys.PAYWALL_ID.name, data.paywallIdentifier)
-        put(Keys.PAYWALL_REVISION.name, data.paywallRevision)
-        put(Keys.DISPLAY_MODE.name, data.displayMode)
-        put(Keys.DARK_MODE.name, data.darkMode)
-        put(Keys.LOCALE.name, data.localeIdentifier)
+        putPaywallData(this@toInteractionEvent)
 
         put(Keys.COMPONENT_TYPE.name, interaction.componentType.toInteractionEventValue())
         put(Keys.COMPONENT_VALUE.name, interaction.componentValue)
@@ -55,6 +48,17 @@ internal fun PaywallComponentType.toInteractionEventValue(): String = when (this
     PaywallComponentType.PURCHASE_BUTTON -> ComponentTypes.PURCHASE_BUTTON
 }
 
-private fun MutableMap<String, Any>.putIfNotNull(key: String, value: Any?) {
+internal fun MutableMap<String, Any>.putPaywallData(event: PaywallEvent) {
+    put(Keys.TIMESTAMP.name, event.creationData.date.time)
+    put(Keys.SESSION_ID.name, event.data.sessionIdentifier.toString())
+    put(Keys.OFFERING_ID.name, event.data.presentedOfferingContext.offeringIdentifier)
+    putIfNotNull(Keys.PAYWALL_ID.name, event.data.paywallIdentifier)
+    put(Keys.PAYWALL_REVISION.name, event.data.paywallRevision)
+    put(Keys.DISPLAY_MODE.name, event.data.displayMode)
+    put(Keys.DARK_MODE.name, event.data.darkMode)
+    put(Keys.LOCALE.name, event.data.localeIdentifier)
+}
+
+internal fun MutableMap<String, Any>.putIfNotNull(key: String, value: Any?) {
     if (value != null) put(key, value)
 }

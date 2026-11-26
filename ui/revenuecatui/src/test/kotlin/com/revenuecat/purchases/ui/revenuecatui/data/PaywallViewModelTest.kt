@@ -51,6 +51,7 @@ import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
+import com.revenuecat.purchases.ui.revenuecatui.FlowEvent
 import com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
@@ -73,6 +74,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData.copy
 import com.revenuecat.purchases.ui.revenuecatui.extensions.copy
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallLegacyComponentInteraction
 import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPurchaseButtonAction
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toFlowEvent
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toInteractionEvent
 import com.revenuecat.purchases.ui.revenuecatui.helpers.resolvedWebCheckoutInteractionUrl
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
@@ -294,6 +296,7 @@ class PaywallViewModelTest {
         every { listener.onRestoreError(any()) } just runs
         every { listener.onPurchaseCancelled() } just runs
         every { listener.onInteraction(any()) } just runs
+        every { listener.onFlowEvent(any()) } just runs
     }
 
     @After
@@ -2144,6 +2147,24 @@ class PaywallViewModelTest {
         model.trackPaywallImpressionIfNeeded()
         model.closePaywall()
         verifyEventTracked(PaywallEventType.CLOSE, 1)
+    }
+
+    @Test
+    fun `paywall without a flow notifies onFlowEvent of its impression and close`() {
+        val events = mutableListOf<FlowEvent>()
+        every { listener.onFlowEvent(capture(events)) } just runs
+        val model = create()
+
+        model.trackPaywallImpressionIfNeeded()
+        model.closePaywall()
+
+        val trackedEvents = mutableListOf<FeatureEvent>()
+        verify { purchases.track(capture(trackedEvents)) }
+        assertThat(events.map { it.getProperty(FlowEvent.Keys.EVENT_TYPE) }).containsExactly(
+            FlowEvent.EventTypes.PAYWALL_IMPRESSION,
+            FlowEvent.EventTypes.PAYWALL_CLOSE,
+        )
+        assertThat(events).isEqualTo(trackedEvents.filterIsInstance<PaywallEvent>().mapNotNull { it.toFlowEvent() })
     }
 
     @Test

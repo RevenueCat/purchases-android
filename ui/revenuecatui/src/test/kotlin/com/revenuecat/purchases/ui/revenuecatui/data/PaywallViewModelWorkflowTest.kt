@@ -57,6 +57,7 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.ui.revenuecatui.FlowEvent
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
 import com.revenuecat.purchases.ui.revenuecatui.PaywallErrorPresenter
@@ -865,6 +866,7 @@ class PaywallViewModelWorkflowTest {
         every { onRestoreStarted() } just runs
         every { onRestoreCompleted(any()) } just runs
         every { onRestoreError(any()) } just runs
+        every { onFlowEvent(any()) } just runs
     }
 
     private fun WorkflowStep.withHardGate() = copy(paramValues = paramValues + ("gating" to JsonObject(mapOf(
@@ -4525,6 +4527,168 @@ class PaywallViewModelWorkflowTest {
         vm.trackPaywallImpressionIfNeeded()
 
         assertThat(captured.paywallEventsOfType(PaywallEventType.IMPRESSION)).isEmpty()
+    }
+
+    // endregion
+
+    // region onFlowEvent
+
+    private class FlowEventRecorder : PaywallListener {
+        val events = mutableListOf<FlowEvent>()
+        override fun onFlowEvent(event: FlowEvent) {
+            events.add(event)
+        }
+    }
+
+    private fun FeatureEvent.expectedFlowEventType(): String? = when (this) {
+        is WorkflowEvent.StepStarted -> FlowEvent.EventTypes.FLOW_STEP_STARTED
+        is WorkflowEvent.StepCompleted -> FlowEvent.EventTypes.FLOW_STEP_COMPLETED
+        is WorkflowEvent.Close -> FlowEvent.EventTypes.FLOW_CLOSE
+        is PaywallEvent -> when (type) {
+            PaywallEventType.IMPRESSION -> FlowEvent.EventTypes.PAYWALL_IMPRESSION
+            PaywallEventType.CLOSE -> FlowEvent.EventTypes.PAYWALL_CLOSE
+            else -> null
+        }
+        else -> null
+    }
+
+    @Test
+    fun `onFlowEvent mirrors every tracked step and close event in order`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        val recorder = FlowEventRecorder()
+
+        val viewModel = createVm(listener = recorder)
+        viewModel.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
+        viewModel.trackPaywallImpressionIfNeeded()
+        viewModel.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        viewModel.onTransitionComplete(viewModel.workflowState.value!!.pendingTransition!!.id)
+        viewModel.trackPaywallImpressionIfNeeded()
+        viewModel.handleBackNavigation()
+        viewModel.closePaywall(result = null)
+
+        val expected = captured.mapNotNull { it.expectedFlowEventType() }
+        assertThat(expected).contains(
+            FlowEvent.EventTypes.FLOW_STEP_STARTED,
+            FlowEvent.EventTypes.FLOW_STEP_COMPLETED,
+            FlowEvent.EventTypes.FLOW_CLOSE,
+        )
+        assertThat(recorder.events.map { it.getProperty(FlowEvent.Keys.EVENT_TYPE) }).isEqualTo(expected)
+    }
+
+    @Test
+    fun `onFlowEvent step events carry flow context with flow naming`() {
+        val recorder = FlowEventRecorder()
+
+        val viewModel = createVm(listener = recorder)
+        viewModel.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
+        recorder.events.clear()
+        viewModel.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+
+        assertThat(recorder.events).hasSize(2)
+        val (completed, started) = recorder.events
+        assertThat(completed.rawProperties)
+            .containsEntry("event_type", "flow_step_completed")
+            .containsEntry("flow_id", workflow.id)
+            .containsEntry("flow_name", workflow.displayName)
+            .containsEntry("step_id", "step-1")
+            .containsEntry("to_step_id", "step-2")
+            .containsEntry("is_first_step", true)
+            .containsEntry("is_last_step", false)
+            .doesNotContainKeys("from_step_id", "entry_reason", "workflow_id")
+        assertThat(started.rawProperties)
+            .containsEntry("event_type", "flow_step_started")
+            .containsEntry("step_id", "step-2")
+            .containsEntry("from_step_id", "step-1")
+            .containsEntry("entry_reason", "forward")
+            .containsEntry("step_type", step2.type)
+            .containsKeys("timestamp", "trace_id", "locale")
+            .doesNotContainKeys("to_step_id")
+        assertThat(started.getProperty(FlowEvent.Keys.TRACE_ID))
+            .isEqualTo(completed.getProperty(FlowEvent.Keys.TRACE_ID))
+    }
+
+    @Test
+    fun `onFlowEvent paywall impression and close carry paywall and step properties`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        val recorder = FlowEventRecorder()
+
+        val viewModel = createVm(listener = recorder)
+        viewModel.startWorkflowPresentationFromResult(
+            singleStepScreenTypeWorkflow(screenTypeMetadata(WorkflowScreenType.PAYWALL)),
+            testOfferings,
+            null,
+            uiConfig,
+        )
+        viewModel.trackPaywallImpressionIfNeeded()
+        viewModel.closePaywall(result = null)
+
+        val tracked = captured.paywallEventsOfType(PaywallEventType.IMPRESSION).single()
+        val impression = recorder.events.single {
+            it.getProperty(FlowEvent.Keys.EVENT_TYPE) == FlowEvent.EventTypes.PAYWALL_IMPRESSION
+        }
+        assertThat(impression.rawProperties)
+            .containsEntry("flow_id", workflow.id)
+            .containsEntry("step_id", "step-only")
+            .containsEntry("offering_id", tracked.data.presentedOfferingContext.offeringIdentifier)
+            .containsEntry("paywall_revision", tracked.data.paywallRevision)
+            .containsEntry("session_id", tracked.data.sessionIdentifier.toString())
+            .containsEntry("display_mode", tracked.data.displayMode)
+            .containsEntry("dark_mode", tracked.data.darkMode)
+            .containsEntry("locale", tracked.data.localeIdentifier)
+            .doesNotContainKeys("step_type", "screen_type", "flow_name")
+        tracked.data.paywallIdentifier?.let { assertThat(impression.rawProperties).containsEntry("paywall_id", it) }
+        val close = recorder.events.single {
+            it.getProperty(FlowEvent.Keys.EVENT_TYPE) == FlowEvent.EventTypes.PAYWALL_CLOSE
+        }
+        assertThat(close.getProperty(FlowEvent.Keys.SESSION_ID))
+            .isEqualTo(impression.getProperty(FlowEvent.Keys.SESSION_ID))
+    }
+
+    @Test
+    fun `a throwing onFlowEvent does not affect tracking or dismissal`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        var dismissals = 0
+        val listener = object : PaywallListener {
+            override fun onFlowEvent(event: FlowEvent) {
+                error("developer callback failure")
+            }
+        }
+
+        val viewModel = createVm(dismissRequest = { dismissals++ }, listener = listener)
+        viewModel.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
+        viewModel.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        viewModel.closePaywall(result = null)
+
+        assertThat(captured.filterIsInstance<WorkflowEvent.StepStarted>()).hasSize(2)
+        assertThat(captured.filterIsInstance<WorkflowEvent.Close>()).hasSize(1)
+        assertThat(dismissals).isEqualTo(1)
+    }
+
+    @Test
+    fun `onFlowEvent step completed reports the locale of the step it completes`() {
+        every { purchases.preferredUILocaleOverride } returns "es_ES"
+        val spanishLocalizations = localizations + (
+            LocaleId("es_ES") to mapOf(LocalizationKey("dummy_text") to LocalizationData.Text("ficticio"))
+        )
+        val workflowWithSpanishFirstScreen = workflow.copy(
+            screens = mapOf(
+                screenId1 to makeScreen(screenId1).copy(componentsLocalizations = spanishLocalizations),
+                screenId2 to makeScreen(screenId2),
+            ),
+        )
+        val recorder = FlowEventRecorder()
+
+        val viewModel = createVm(listener = recorder)
+        viewModel.startWorkflowPresentationFromResult(workflowWithSpanishFirstScreen, testOfferings, null, uiConfig)
+        recorder.events.clear()
+        viewModel.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+
+        val (completed, started) = recorder.events
+        assertThat(completed.getProperty(FlowEvent.Keys.LOCALE)).isEqualTo("es-ES")
+        assertThat(started.getProperty(FlowEvent.Keys.LOCALE)).isEqualTo("en-US")
     }
 
     // endregion
