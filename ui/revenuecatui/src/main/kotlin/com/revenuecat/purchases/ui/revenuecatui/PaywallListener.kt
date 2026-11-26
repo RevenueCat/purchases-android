@@ -70,6 +70,29 @@ public interface PaywallListener {
      * Called when the user starts or completes a flow step, closes the flow, or a paywall step is shown or closed.
      *
      * Exceptions thrown here are logged and do not affect the paywall.
+     *
+     * Pass a listener in [PaywallOptions] to forward the events to your own analytics:
+     * ```kotlin
+     * import androidx.compose.runtime.Composable
+     * import androidx.compose.runtime.remember
+     * import com.revenuecat.purchases.ui.revenuecatui.FlowEvent
+     * import com.revenuecat.purchases.ui.revenuecatui.Paywall
+     * import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
+     * import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+     *
+     * @Composable
+     * fun TrackedPaywall(onDismiss: () -> Unit, track: (String, Map<String, Any>) -> Unit) {
+     *     val listener = remember(track) {
+     *         object : PaywallListener {
+     *             override fun onFlowEvent(event: FlowEvent) {
+     *                 val eventType = event.getProperty(FlowEvent.Keys.EVENT_TYPE) ?: return
+     *                 track(eventType, event.rawProperties)
+     *             }
+     *         }
+     *     }
+     *     Paywall(PaywallOptions.Builder(dismissRequest = onDismiss).setListener(listener).build())
+     * }
+     * ```
      */
     public fun onFlowEvent(event: FlowEvent) {}
 }
