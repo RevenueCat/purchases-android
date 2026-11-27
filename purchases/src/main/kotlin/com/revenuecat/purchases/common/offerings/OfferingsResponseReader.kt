@@ -6,7 +6,9 @@ import android.util.JsonWriter
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
+import java.io.ByteArrayInputStream
 import java.io.IOException
+import java.io.InputStreamReader
 import java.io.Reader
 import java.io.StringReader
 import java.io.StringWriter
@@ -76,6 +78,25 @@ internal object OfferingsResponseReader {
             throw malformedResponse(e)
         } catch (e: IllegalStateException) {
             throw malformedResponse(e)
+        }
+    }
+
+    /**
+     * Decodes a response [body] into the text to hand on and to cache: without the contents of
+     * `paywall_components` when it has any, and as it was received otherwise, which includes a body that
+     * can't be parsed. The full body is only decoded to a String in that second case.
+     */
+    fun compact(body: ByteArray): String {
+        val response = if (body.isEmpty()) null else readOrNull(body)
+        return if (response?.omittedPaywallComponents == true) response.serialize() else String(body, Charsets.UTF_8)
+    }
+
+    @Suppress("SwallowedException")
+    private fun readOrNull(body: ByteArray): OfferingsResponse? {
+        return try {
+            read(InputStreamReader(ByteArrayInputStream(body), Charsets.UTF_8))
+        } catch (e: JSONException) {
+            null
         }
     }
 

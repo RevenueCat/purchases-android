@@ -274,23 +274,28 @@ internal class ETagManager(
     }
 
     companion object {
-        private const val LEGACY_PREFERENCES_FILE_SUFFIX = "_preferences_etags"
-        private const val PREFERENCES_FILE_SUFFIX = "_preferences_etags_v2"
+        // Bumped whenever older SDK versions could not use what this one stores. v2 held every response as
+        // the backend sent it; offerings responses are now stored without the contents of their paywall
+        // components, which SDK versions up to 10.19 read from them.
+        private val LEGACY_PREFERENCES_FILE_SUFFIXES = listOf("_preferences_etags", "_preferences_etags_v2")
+        private const val PREFERENCES_FILE_SUFFIX = "_preferences_etags_v3"
         private const val PAYLOAD_DIRECTORY_NAME = "etag_payloads"
 
         /**
-         * Deletes the pre-split-format prefs file without ever loading it, so its multi-MB payload
-         * values are dropped rather than parsed into memory. Not supported below API 24; the stale
-         * file is left in place there.
+         * Deletes the prefs files of earlier formats without ever loading them, so the multi-MB payload
+         * values of the oldest one are dropped rather than parsed into memory. Not supported below API 24;
+         * the stale files are left in place there.
          */
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
         internal fun deleteLegacyPreferencesFile(context: Context) {
             if (isAndroidNOrNewer()) {
-                try {
-                    context.deleteSharedPreferences("${context.packageName}$LEGACY_PREFERENCES_FILE_SUFFIX")
-                } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                    // Best-effort cleanup: a failure here must never break the cache itself.
-                    errorLog(e) { "Failed to delete the legacy ETag preferences file." }
+                LEGACY_PREFERENCES_FILE_SUFFIXES.forEach { suffix ->
+                    try {
+                        context.deleteSharedPreferences("${context.packageName}$suffix")
+                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                        // Best-effort cleanup: a failure here must never break the cache itself.
+                        errorLog(e) { "Failed to delete the legacy ETag preferences file." }
+                    }
                 }
             }
         }

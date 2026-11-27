@@ -9,6 +9,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig.FontInfo
 import com.revenuecat.purchases.common.HTTPResponseOriginalSource
+import com.revenuecat.purchases.common.networking.Endpoint
+import com.revenuecat.purchases.common.offerings.OfferingsResponseReader
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
@@ -782,6 +784,46 @@ class OfferingsTest {
         assertThat(offering.paywallComponents).isNull()
         // ...but the offering is still reported as paywall-capable so integrators see it.
         assertThat(offering.hasPaywall).isTrue()
+    }
+
+    @Test
+    fun `hasPaywall is kept for a response decoded by the offerings endpoint`() {
+        val storeProductMonthly = getStoreProduct(productIdentifier, monthlyPeriod, monthlyBasePlanId)
+        val storeProductAnnual = getStoreProduct(productIdentifier, annualPeriod, annualBasePlanId)
+        val products = mapOf(productIdentifier to listOf(storeProductMonthly, storeProductAnnual))
+        val uiConfigJson = getUiConfigJson(
+            colors = mapOf("primary" to "#ff00ff"),
+            fonts = mapOf("primary" to FontInfo.Name("Roboto")),
+            localizations = mapOf("en_US" to mapOf(VariableLocalizationKey.MONTHLY to "monthly")),
+            variableCompatibilityMap = mapOf("new var" to "guaranteed var"),
+            functionCompatibilityMap = mapOf("new fun" to "guaranteed fun")
+        )
+        val wellShaped = getOfferingJSON(
+            offeringIdentifier = "well_shaped",
+            paywallComponents = getPaywallComponentsDataJson(),
+        )
+        val missingDefaultLocale = getOfferingJSON(
+            offeringIdentifier = "missing_default_locale",
+            paywallComponents = getPaywallComponentsDataJson().apply { remove("default_locale") },
+        )
+        val withoutComponents = getOfferingJSON(offeringIdentifier = "without_components")
+        val receivedBody = getOfferingsJSON(
+            offerings = JSONArray(listOf(wellShaped, missingDefaultLocale, withoutComponents)),
+            uiConfig = uiConfigJson,
+        ).toString()
+
+        val decodedBody = Endpoint.GetOfferings("user").decodeResponseBody(receivedBody.toByteArray())
+        val offerings = offeringsParser.createOfferings(OfferingsResponseReader.read(decodedBody).json, products)
+
+        assertThat(decodedBody.length).isLessThan(receivedBody.length)
+        assertThat(offerings.all.keys).containsExactlyInAnyOrder(
+            "well_shaped",
+            "missing_default_locale",
+            "without_components",
+        )
+        assertThat(offerings["well_shaped"]!!.hasPaywall).isTrue()
+        assertThat(offerings["missing_default_locale"]!!.hasPaywall).isFalse()
+        assertThat(offerings["without_components"]!!.hasPaywall).isFalse()
     }
 
     @Test

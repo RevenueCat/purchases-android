@@ -813,6 +813,23 @@ class ETagManagerTest {
     }
 
     @Test
+    fun `the prefs file of SDK versions that stored offerings responses as received is deleted and not read`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val urlString = "http://localhost:100/v1/offerings"
+        val storedByOlderVersion = ETagCacheMetadata.fromResult(
+            HTTPResult.createResult(),
+            ETagData("etag-of-the-response-as-received", lastRefreshTime = null),
+            payloadChecksum = 1L,
+        )
+        previousPrefs(context).edit().putString(urlString, storedByOlderVersion.serialize()).commit()
+
+        val eTagHeaders = ETagManager(context).getETagHeaders(urlString, verificationRequested = false)
+
+        assertThat(eTagHeaders[HTTPRequest.ETAG_HEADER_NAME]).isEmpty()
+        assertThat(previousPrefs(context).all).isEmpty()
+    }
+
+    @Test
     fun `a failure deleting the legacy prefs file is swallowed`() {
         val context = mockk<Context>()
         every { context.packageName } returns "com.test"
@@ -847,6 +864,10 @@ class ETagManagerTest {
     // Hardcoded on purpose: this is the name older SDK versions wrote, it must never change.
     private fun legacyPrefs(context: Context): SharedPreferences =
         context.getSharedPreferences("${context.packageName}_preferences_etags", Context.MODE_PRIVATE)
+
+    // Hardcoded for the same reason: SDK versions from 10.14.1 wrote this one.
+    private fun previousPrefs(context: Context): SharedPreferences =
+        context.getSharedPreferences("${context.packageName}_preferences_etags_v2", Context.MODE_PRIVATE)
 
     @Test
     fun `ETagCacheMetadata toHTTPResult rebuilds the result with CACHE origin`() {

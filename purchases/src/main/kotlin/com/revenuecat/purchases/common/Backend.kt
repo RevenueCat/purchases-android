@@ -463,8 +463,9 @@ internal class Backend(
 
             override fun onCompletion(result: HTTPResult) {
                 val response by lazy { readOfferingsResponse(result) }
-                // Without the components the response is small, so caching that keeps megabytes off the disk
-                // and lets go of the full payload before the store products are queried.
+                // The endpoint already leaves the components out of what it decodes. They are still in a
+                // response that an earlier SDK version stored in the ETag cache, which is not worth caching
+                // again or holding while the store products are queried.
                 val responsePayload by lazy {
                     if (response.omittedPaywallComponents) response.serialize() else result.payloadText
                 }

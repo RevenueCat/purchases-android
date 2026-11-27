@@ -113,10 +113,42 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(performRequestReturningPayload(body = "") { body -> MockResponse().setBody(body) }).isEmpty()
     }
 
+    @Test
+    fun `performRequest hands on an offerings response without the contents of paywall components`() {
+        val body = "{\"offerings\":[{\"identifier\":\"a\",\"paywall_components\":" +
+            "{\"template_name\":\"components\",\"components_config\":{\"base\":{\"stack\":{}}}}}]}"
+
+        val payload = performRequestReturningPayload(body, Endpoint.GetOfferings("id")) { MockResponse().setBody(it) }
+
+        assertThat(payload).isEqualTo(
+            "{\"offerings\":[{\"identifier\":\"a\",\"paywall_components\":" +
+                "{\"template_name\":\"components\",\"components_config\":{}}}]}",
+        )
+    }
+
+    @Test
+    fun `performRequest hands on the paywall components of other endpoints`() {
+        val body = "{\"offerings\":[{\"paywall_components\":{\"components_config\":{\"base\":{}}}}]}"
+
+        assertThat(performRequestReturningPayload(body) { MockResponse().setBody(it) }).isEqualTo(body)
+    }
+
+    @Test
+    fun `performRequest hands on an offerings error response as it was received`() {
+        val body = "{\"code\":7225,\"offerings\":[{\"paywall_components\":{\"components_config\":{\"base\":{}}}}]}"
+
+        val payload = performRequestReturningPayload(body, Endpoint.GetOfferings("id")) {
+            MockResponse().setBody(it).setResponseCode(400)
+        }
+
+        assertThat(payload).isEqualTo(body)
+    }
+
     private val largeBody = "{\"text\":\"" + "🎉é中a".repeat(100_000) + "\"}"
 
     private fun performRequestReturningPayload(
         body: String = largeBody,
+        endpoint: Endpoint = Endpoint.LogIn,
         response: (body: String) -> MockResponse,
     ): String {
         val payloadSlot = slot<String>()
@@ -127,7 +159,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         } returns HTTPResult.createResult()
         server.enqueue(response(body))
 
-        client.performRequest(baseURL, Endpoint.LogIn, body = null, postFieldsToSign = null, mapOf("" to ""))
+        client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
 
         return payloadSlot.captured
     }

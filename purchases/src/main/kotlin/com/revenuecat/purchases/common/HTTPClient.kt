@@ -566,6 +566,8 @@ internal class HTTPClient(
             endpoint.expectsRCFormatResponse && RCHTTPStatusCodes.isSuccessful(responseCode)
         ) {
             HTTPResult.Payload.RCFormat(bodyBytes)
+        } else if (RCHTTPStatusCodes.isSuccessful(responseCode)) {
+            HTTPResult.Payload.Text(endpoint.decodeResponseBody(bodyBytes))
         } else {
             HTTPResult.Payload.Text(String(bodyBytes, Charsets.UTF_8))
         }
@@ -599,7 +601,12 @@ internal class HTTPClient(
                         requestBody = jsonBody?.toString(),
                         responseCode = responseCode,
                         responseHeaders = responseHeaders,
-                        responseBody = payloadText.orEmpty(),
+                        // As received, which is not always what the endpoint decoded it into.
+                        responseBody = if (payload is HTTPResult.Payload.Text) {
+                            String(bodyBytes, Charsets.UTF_8)
+                        } else {
+                            ""
+                        },
                     )
                 } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
                     // Don't let listener errors break the request

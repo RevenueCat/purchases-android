@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common.networking
 
 import android.net.Uri
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.offerings.OfferingsResponseReader
 
 internal sealed class Endpoint(
     val pathTemplate: String,
@@ -16,6 +17,12 @@ internal sealed class Endpoint(
      * as [HTTPResult.Payload.RCFormat] instead of being decoded as text.
      */
     open val expectsRCFormatResponse: Boolean = false
+
+    /**
+     * Decodes the body of a successful textual response into the text that is handed on and ETag-cached.
+     * An endpoint whose responses carry content the SDK never reads overrides this to leave it out.
+     */
+    open fun decodeResponseBody(bodyBytes: ByteArray): String = String(bodyBytes, Charsets.UTF_8)
 
     /** IAM-namespace relative path, if this endpoint has been migrated. Falls back to [pathTemplate]. */
     open val iamPathTemplate: String? = null
@@ -49,6 +56,9 @@ internal sealed class Endpoint(
             }
         }
         override val iamPathTemplate: String? = "/v1/customer/offerings"
+
+        // The contents of paywall components can be megabytes, and are served from `/v1/config` instead.
+        override fun decodeResponseBody(bodyBytes: ByteArray): String = OfferingsResponseReader.compact(bodyBytes)
     }
 
     object LogIn : Endpoint("/v1/subscribers/identify", "log_in") {

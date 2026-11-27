@@ -15,6 +15,7 @@ import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import okhttp3.mockwebserver.MockResponse
 import okio.Buffer
@@ -204,6 +205,41 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
                 match<ByteArray> { it.contentEquals("{\"test-key\":\"test-value\"}".toByteArray()) },
                 "1234567890",
                 "test-etag",
+                postFieldsToSignHeader = null,
+                authorizationHeader = null,
+            )
+        }
+    }
+
+    @Test
+    fun `performRequest verifies an offerings response as received, with its paywall components`() {
+        val endpoint = Endpoint.GetOfferings("test-user-id")
+        val receivedBody = "{\"offerings\":[{\"paywall_components\":{\"components_config\":{\"base\":{}}}}]}"
+        mockSigningResult(SignatureVerificationResult.Verified)
+        val payloadSlot = slot<String>()
+        every {
+            mockETagManager.getHTTPResultFromCacheOrBackend(
+                any(), capture(payloadSlot), any(), any(), any(), any(), any(), any(), any(),
+            )
+        } returns HTTPResult.createResult(verificationResult = SignatureVerificationResult.Verified)
+        server.enqueue(
+            MockResponse()
+                .setBody(receivedBody)
+                .setHeader(HTTPResult.SIGNATURE_HEADER_NAME, "test-signature")
+                .setHeader(HTTPResult.REQUEST_TIME_HEADER_NAME, 1234567890L),
+        )
+
+        client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, requestHeaders = emptyMap())
+
+        assertThat(payloadSlot.captured).isEqualTo("{\"offerings\":[{\"paywall_components\":{\"components_config\":{}}}]}")
+        verify(exactly = 1) {
+            mockSigningManager.verifyResponse(
+                urlPath = endpoint.getPath(),
+                signatureString = "test-signature",
+                nonce = null,
+                bodyBytes = match<ByteArray> { it.contentEquals(receivedBody.toByteArray()) },
+                requestTime = "1234567890",
+                eTag = null,
                 postFieldsToSignHeader = null,
                 authorizationHeader = null,
             )

@@ -118,6 +118,46 @@ class OfferingsResponseReaderTest {
     }
 
     @Test
+    fun `compact leaves the contents of paywall components out of the body`() {
+        val payload = OfferingsResponsePayloads.withHeavyPaywallComponents(targetBytes = 1)
+
+        val compacted = OfferingsResponseReader.compact(payload.toByteArray())
+
+        assertThat(compacted.length).isLessThan(payload.length)
+        assertThat(JSONObject(compacted).toString()).isEqualTo(OfferingsResponseReader.read(payload).json.toString())
+        assertThat(OfferingsResponseReader.read(compacted).omittedPaywallComponents).isFalse
+    }
+
+    @Test
+    fun `compact returns a body with nothing to leave out as it was received`() {
+        listOf(responseWithoutComponents, "", "   ", "not json", "{\"offerings\": [").forEach { payload ->
+            assertThat(OfferingsResponseReader.compact(payload.toByteArray())).isEqualTo(payload)
+        }
+    }
+
+    @Test
+    fun `compact keeps the types of the values that are not left out`() {
+        val payload = """
+            {"offerings":[{"identifier":"a","description":"Line \"two\" é中 😀 / \\",
+            "metadata":{"whole_double":3.0,"double":1.5,"exponent":1e3,"int":7,"long":9007199254740993,
+            "null":null,"true":true,"list":[1,2.0,"three"]},
+            "paywall_components":{"revision":4.0,"components_config":{"base":{}}}}]}
+        """.trimIndent()
+        fun offeringOf(json: JSONObject) = json.getJSONArray("offerings").getJSONObject(0)
+
+        val compacted = OfferingsResponseReader.compact(payload.toByteArray())
+
+        val offering = offeringOf(JSONObject(compacted))
+        val expected = offeringOf(JSONObject(payload))
+        assertThat(compacted).doesNotContain("base")
+        assertThat(offering.getString("description")).isEqualTo(expected.getString("description"))
+        assertThat(offering.getJSONObject("metadata").toMap<Any>(deep = true))
+            .isEqualTo(expected.getJSONObject("metadata").toMap<Any>(deep = true))
+        assertThat(offering.getJSONObject("metadata").get("whole_double")).isEqualTo(3.0)
+        assertThat(offering.getJSONObject("paywall_components").get("revision")).isEqualTo(4.0)
+    }
+
+    @Test
     fun `serializing keeps the types of the values that are not left out`() {
         val payload = """
             {"offerings":[{"identifier":"a","description":"Line \"two\" é中 😀 / \\",

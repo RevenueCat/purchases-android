@@ -88,9 +88,9 @@ internal class OfferingsResponseMemoryTest : BaseHTTPClientTest() {
         val allocatedBytes = measureFetch(signingManager) { MockResponse().setBody(it) }
 
         report("network fetch, verification off", allocatedBytes)
-        // The body bytes and the decoded String: 2x the payload measured on top of the parsing, against 5x
-        // with a growing read buffer.
-        assertThat(allocatedBytes).isLessThan(payload.length * 11L / 4)
+        // The body bytes, with no String of the whole body: 1x the payload measured on top of the parsing,
+        // against 5x with a growing read buffer and the decoded String.
+        assertThat(allocatedBytes).isLessThan(payload.length * 7L / 4)
     }
 
     @Test
@@ -116,9 +116,9 @@ internal class OfferingsResponseMemoryTest : BaseHTTPClientTest() {
         }
 
         report("network fetch, verification on", allocatedBytes)
-        // One more payload-sized array than without verification, the signed message: 3x measured, against
+        // One more payload-sized array than without verification, the signed message: 2x measured, against
         // 7x.
-        assertThat(allocatedBytes).isLessThan(payload.length * 15L / 4)
+        assertThat(allocatedBytes).isLessThan(payload.length * 11L / 4)
     }
 
     private fun measureFetch(signingManager: SigningManager, response: (body: String) -> MockResponse): Long {
