@@ -9,7 +9,9 @@ import java.io.FileInputStream
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.IOException
+import java.io.InputStreamReader
 import java.io.OutputStream
+import java.io.Reader
 import java.nio.ByteBuffer
 import java.nio.CharBuffer
 import java.nio.charset.CoderResult
@@ -28,7 +30,8 @@ import java.util.zip.CheckedOutputStream
  * Without [syncWrites] the temp file is not fsynced, and a filesystem can commit the rename before the data,
  * so a power loss can leave neither the old payload nor the new one.
  *
- * A [read] costs ~2x the payload size in heap (`ByteArray` plus `String`).
+ * A [read] that returns the payload costs at least 2x its size in heap (`ByteArray` plus `String`, plus a
+ * payload-sized `char[]` up to Android 11); [readStreaming] costs a fixed buffer.
  *
  * `null` reads are cache misses. No eviction beyond overwrite, [delete] and [clear].
  */
@@ -90,6 +93,26 @@ internal class PayloadFileStore(
             }
         } catch (e: FileNotFoundException) {
             // No payload for this key: a plain cache miss, not an error.
+            null
+        } catch (e: IOException) {
+            errorLog(e) { "Failed to read payload from disk." }
+            null
+        }
+    }
+
+    /**
+     * Like [read], but hands [block] a reader over the verified file instead of loading the payload, so the
+     * heap cost is whatever [block] keeps. The checksum is verified in a first pass over the same open file.
+     */
+    @Suppress("SwallowedException", "ReturnCount")
+    fun <T> readStreaming(key: String, expectedChecksum: Long, block: (Reader) -> T): T? {
+        return try {
+            FileInputStream(fileFor(key)).use { input ->
+                if (input.checksumOfRemainingBytes() != expectedChecksum) return null
+                input.channel.position(0)
+                block(InputStreamReader(input, Charsets.UTF_8))
+            }
+        } catch (e: FileNotFoundException) {
             null
         } catch (e: IOException) {
             errorLog(e) { "Failed to read payload from disk." }
@@ -169,17 +192,6 @@ internal class PayloadFileStore(
         return checksum.value
     }
 
-    /** Runs [step] until it reports underflow, writing whatever it put in [byteBuffer] after each round. */
-    private inline fun drainInto(out: OutputStream, byteBuffer: ByteBuffer, step: () -> CoderResult) {
-        while (true) {
-            val result = step()
-            if (result.isError) result.throwException()
-            out.write(byteBuffer.array(), 0, byteBuffer.position())
-            byteBuffer.clear()
-            if (result.isUnderflow) return
-        }
-    }
-
     private object DiscardingOutputStream : OutputStream() {
         override fun write(byte: Int) = Unit
         override fun write(buffer: ByteArray, offset: Int, length: Int) = Unit
@@ -193,3 +205,26 @@ internal class PayloadFileStore(
         const val WRITE_BUFFER_BYTES = 256 * 1024
     }
 }
+
+/** Runs [step] until it reports underflow, writing whatever it put in [byteBuffer] after each round. */
+private inline fun drainInto(out: OutputStream, byteBuffer: ByteBuffer, step: () -> CoderResult) {
+    while (true) {
+        val result = step()
+        if (result.isError) result.throwException()
+        out.write(byteBuffer.array(), 0, byteBuffer.position())
+        byteBuffer.clear()
+        if (result.isUnderflow) return
+    }
+}
+
+private fun FileInputStream.checksumOfRemainingBytes(): Long {
+    val checksum = CRC32()
+    val buffer = ByteArray(READ_BUFFER_BYTES)
+    while (true) {
+        val count = read(buffer)
+        if (count < 0) return checksum.value
+        checksum.update(buffer, 0, count)
+    }
+}
+
+private const val READ_BUFFER_BYTES = 64 * 1024

@@ -129,12 +129,13 @@ internal class OfferingsCache(
     // region Offerings response cache
 
     val cachedOfferingsResponse: JSONObject?
-        get() = synchronized(this) { pendingResponse }?.let(::parseOrNull) ?: readStoredResponse()
+        get() = synchronized(this) { pendingResponse }?.let { parseOrNull { OfferingsResponseReader.read(it) } }
+            ?: readStoredResponse()
 
     private fun readStoredResponse(): JSONObject? {
         val checksum = deviceCache.getOfferingsResponseChecksum() ?: return null
-        return responseStore.read(responseKey, checksum)
-            ?.let(::parseOrNull)
+        return responseStore
+            .readStreaming(responseKey, checksum) { reader -> parseOrNull { OfferingsResponseReader.read(reader) } }
             .also { if (it == null) forgetUnreadableResponse(checksum) }
     }
 
@@ -149,9 +150,9 @@ internal class OfferingsCache(
 }
 
 @Suppress("SwallowedException")
-private fun parseOrNull(response: String): JSONObject? {
+private inline fun parseOrNull(read: () -> OfferingsResponse): JSONObject? {
     return try {
-        JSONObject(response)
+        read().json
     } catch (exception: JSONException) {
         null
     }

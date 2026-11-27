@@ -26,6 +26,8 @@ import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.io.Reader
+import java.io.StringReader
 
 /** A late offerings response for the previous user mustn't overwrite the cache wiped by an identity change. */
 @RunWith(AndroidJUnit4::class)
@@ -143,7 +145,9 @@ class OfferingsManagerEpochTest {
         manager.fetchAndCacheOfferings("old-user", appInBackground = false)
         cache.clearCache()
         every { deviceCache.getOfferingsResponseChecksum() } returns 1L
-        every { responseStore.read(any(), 1L) } returns ONE_OFFERINGS_RESPONSE
+        every { responseStore.readStreaming<JSONObject?>(any(), 1L, any()) } answers {
+            thirdArg<(Reader) -> JSONObject?>().invoke(StringReader(ONE_OFFERINGS_RESPONSE))
+        }
         respondWithError!!()
 
         assertThat(cache.cachedOfferings).isNull()

@@ -211,6 +211,40 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
     }
 
     @Test
+    fun `performRequest verifies the body bytes exactly as received`() {
+        val endpoint = Endpoint.GetCustomerInfo("test-user-id")
+        // 0xC3 0x28 is not valid UTF-8, so these bytes don't survive decoding to a String and back.
+        val receivedBytes = "{\"key\":\"".toByteArray() + byteArrayOf(0xC3.toByte(), 0x28) + "\"}".toByteArray()
+        mockSigningResult(SignatureVerificationResult.Verified)
+        every {
+            mockETagManager.getHTTPResultFromCacheOrBackend(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(),
+            )
+        } returns HTTPResult.createResult(verificationResult = SignatureVerificationResult.Verified)
+        server.enqueue(
+            MockResponse()
+                .setBody(Buffer().write(receivedBytes))
+                .setHeader(HTTPResult.SIGNATURE_HEADER_NAME, "test-signature")
+                .setHeader(HTTPResult.REQUEST_TIME_HEADER_NAME, 1234567890L),
+        )
+
+        client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, requestHeaders = emptyMap())
+
+        verify(exactly = 1) {
+            mockSigningManager.verifyResponse(
+                urlPath = endpoint.getPath(),
+                signatureString = "test-signature",
+                nonce = "test-nonce",
+                bodyBytes = match<ByteArray> { it.contentEquals(receivedBytes) },
+                requestTime = "1234567890",
+                eTag = null,
+                postFieldsToSignHeader = null,
+                authorizationHeader = null,
+            )
+        }
+    }
+
+    @Test
     fun `performRequest verifies against the Authorization header it sent`() {
         val endpoint = Endpoint.GetCustomerInfo("test-user-id")
         mockSigningResult(SignatureVerificationResult.NotRequested)

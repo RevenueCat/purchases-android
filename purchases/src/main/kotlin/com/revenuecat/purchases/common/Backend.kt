@@ -27,6 +27,8 @@ import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.networking.RewardVerificationResponse
 import com.revenuecat.purchases.common.networking.WebBillingProductsResponse
 import com.revenuecat.purchases.common.networking.buildPostReceiptResponse
+import com.revenuecat.purchases.common.offerings.OfferingsResponse
+import com.revenuecat.purchases.common.offerings.OfferingsResponseReader
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfiguration
@@ -460,12 +462,18 @@ internal class Backend(
             }
 
             override fun onCompletion(result: HTTPResult) {
+                val response by lazy { readOfferingsResponse(result) }
+                // Without the components the response is small, so caching that keeps megabytes off the disk
+                // and lets go of the full payload before the store products are queried.
+                val responsePayload by lazy {
+                    if (response.omittedPaywallComponents) response.serialize() else result.payloadText
+                }
                 synchronized(this@Backend) {
                     offeringsCallbacks.remove(cacheKey)
                 }?.forEach { (onSuccess, onError) ->
                     if (result.isSuccessful()) {
                         try {
-                            onSuccess(result.body, result.originalDataSource, result.payloadText)
+                            onSuccess(response.json, result.originalDataSource, responsePayload)
                         } catch (e: JSONException) {
                             val errorBehavior = GetOfferingsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_OFFERINGS
                             onError(e.toPurchasesError().also { errorLog(it) }, errorBehavior)
@@ -487,6 +495,16 @@ internal class Backend(
         synchronized(this@Backend) {
             val delay = Delay.jitterOnlyIfInBackground(appInBackground)
             offeringsCallbacks.addBackgroundAwareCallback(call, dispatcher, cacheKey, onSuccess to onError, delay)
+        }
+    }
+
+    // An unparseable body reads as an empty response, as HTTPResult.body does.
+    private fun readOfferingsResponse(result: HTTPResult): OfferingsResponse {
+        return try {
+            OfferingsResponseReader.read(result.payloadText)
+        } catch (e: JSONException) {
+            errorLog(throwable = e) { "Failed to parse offerings response as JSON" }
+            OfferingsResponse(JSONObject(), omittedPaywallComponents = false)
         }
     }
 

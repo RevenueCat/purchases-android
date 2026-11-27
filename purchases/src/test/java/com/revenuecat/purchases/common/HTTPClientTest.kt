@@ -32,6 +32,7 @@ import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.spyk
 import io.mockk.verify
 import okhttp3.mockwebserver.MockResponse
@@ -93,6 +94,42 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val request = server.takeRequest()
         assertThat(request.method).isEqualTo("GET")
         assertThat(request.path).isEqualTo("/v1/subscribers/identify")
+    }
+
+    @Test
+    fun `performRequest reads a body larger than any read buffer when its length is known`() {
+        assertThat(performRequestReturningPayload { body -> MockResponse().setBody(body) }).isEqualTo(largeBody)
+    }
+
+    @Test
+    fun `performRequest reads a body of unknown length`() {
+        val payload = performRequestReturningPayload { body -> MockResponse().setChunkedBody(body, 1024) }
+
+        assertThat(payload).isEqualTo(largeBody)
+    }
+
+    @Test
+    fun `performRequest reads an empty body`() {
+        assertThat(performRequestReturningPayload(body = "") { body -> MockResponse().setBody(body) }).isEmpty()
+    }
+
+    private val largeBody = "{\"text\":\"" + "🎉é中a".repeat(100_000) + "\"}"
+
+    private fun performRequestReturningPayload(
+        body: String = largeBody,
+        response: (body: String) -> MockResponse,
+    ): String {
+        val payloadSlot = slot<String>()
+        every {
+            mockETagManager.getHTTPResultFromCacheOrBackend(
+                any(), capture(payloadSlot), any(), any(), any(), any(), any(), any(), any(),
+            )
+        } returns HTTPResult.createResult()
+        server.enqueue(response(body))
+
+        client.performRequest(baseURL, Endpoint.LogIn, body = null, postFieldsToSign = null, mapOf("" to ""))
+
+        return payloadSlot.captured
     }
 
     @Test

@@ -573,7 +573,7 @@ class OfferingsCacheTest {
         val newerResponse = JSONObject(ONE_OFFERINGS_RESPONSE).put("marker", "newer").toString()
         offeringsCache.cacheOfferings(mockk<Offerings>(), ONE_OFFERINGS_RESPONSE)
         var newerWrittenDuringRead = false
-        every { responseStore.read(any(), any()) } answers {
+        every { responseStore.readStreaming<JSONObject?>(any(), any(), any()) } answers {
             if (!newerWrittenDuringRead) {
                 newerWrittenDuringRead = true
                 offeringsCache.cacheOfferings(mockk<Offerings>(), newerResponse)

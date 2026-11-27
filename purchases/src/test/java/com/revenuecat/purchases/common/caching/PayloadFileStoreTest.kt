@@ -68,6 +68,33 @@ class PayloadFileStoreTest {
     }
 
     @Test
+    fun `streaming read hands the verified payload to the block`() {
+        val payload = "{\"emoji\":\"" + "🎉é中a".repeat(200_000) + "\"}"
+        val checksum = underTest.write(key, payload)!!
+
+        val read = underTest.readStreaming(key, checksum) { reader -> reader.readText() }
+
+        assertThat(read).isEqualTo(payload)
+    }
+
+    @Test
+    fun `streaming read is a miss without calling the block when the checksum does not match`() {
+        val checksum = underTest.write(key, "the full payload")!!
+        overwritePayloadFile("the FULL payload")
+
+        val read = underTest.readStreaming<String>(key, checksum) { error("Should not be called") }
+
+        assertThat(read).isNull()
+    }
+
+    @Test
+    fun `streaming read is a miss when nothing was written`() {
+        val read = underTest.readStreaming<String>(key, expectedChecksum = 0L) { error("Should not be called") }
+
+        assertThat(read).isNull()
+    }
+
+    @Test
     fun `a truncated payload file reads back as a miss`() {
         val checksum = underTest.write(key, "the full payload")!!
         overwritePayloadFile("the full pay")

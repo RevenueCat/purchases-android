@@ -1728,6 +1728,29 @@ class BackendTest {
     }
 
     @Test
+    fun `getOfferings leaves the contents of paywall components out of the JSON and of the payload to cache`() {
+        val response = """
+            {"current_offering_id":"a","offerings":[{"identifier":"a","description":"A","packages":[],
+            "paywall_components":{"template_name":"components","components_config":{"base":{"stack":{}}},
+            "components_localizations":{"en_US":{"title":"Hello"}}}}]}
+        """.trimIndent()
+        mockResponse(Endpoint.GetOfferings(appUserID), null, 200, null, response)
+
+        backend.getOfferings(
+            appUserID,
+            appInBackground = false,
+            onSuccess = onReceiveOfferingsResponseSuccessHandler,
+            onError = { _, _ -> fail("Should be success") }
+        )
+
+        val expectedPayload = "{\"current_offering_id\":\"a\",\"offerings\":[{\"identifier\":\"a\"," +
+            "\"description\":\"A\",\"packages\":[],\"paywall_components\":{\"template_name\":\"components\"," +
+            "\"components_config\":{},\"components_localizations\":{}}}]}"
+        assertThat(receivedOfferingsJSON.toString()).isEqualTo(expectedPayload)
+        assertThat(receivedOfferingsPayload).isEqualTo(expectedPayload)
+    }
+
+    @Test
     fun `given a 5xx error, correct callback values are given`() {
         mockResponse(Endpoint.GetOfferings(appUserID), null, RCHTTPStatusCodes.ERROR, null, null)
 

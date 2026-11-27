@@ -105,9 +105,22 @@ internal class HTTPClient(
         return BufferedWriter(OutputStreamWriter(outputStream))
     }
 
+    /**
+     * Reads the whole body. With a known [contentLength] the array is allocated once at its final size:
+     * growing a buffer instead holds up to three times a multi-MB body at its peak.
+     */
     @Throws(IOException::class)
-    private fun readBytesFully(inputStream: InputStream): ByteArray {
-        return inputStream.readBytes()
+    private fun readBytesFully(inputStream: InputStream, contentLength: Int): ByteArray {
+        if (contentLength < 0) return inputStream.readBytes()
+        val bytes = ByteArray(contentLength)
+        var count = 0
+        while (count < contentLength) {
+            val read = inputStream.read(bytes, count, contentLength - count)
+            if (read < 0) break
+            count += read
+        }
+        // A response that has no body, such as a 204, can still declare a length.
+        return if (count == contentLength) bytes else bytes.copyOf(count)
     }
 
     /** A human-readable rendering of a response body for logging: byte size for RC Format, text otherwise. */
@@ -489,7 +502,7 @@ internal class HTTPClient(
         try {
             debugLog { NetworkStrings.API_REQUEST_STARTED.format(connection.requestMethod, baseURL.host, path) }
             responseCode = connection.responseCode
-            payloadBytes = inputStream?.let { readBytesFully(it) }
+            payloadBytes = inputStream?.let { readBytesFully(it, connection.contentLength) }
             if (enableExtraRequestLogging) {
                 debugLog {
                     "HTTP response:\\n  status code: $responseCode \\n  " +
@@ -526,6 +539,26 @@ internal class HTTPClient(
         }
         // A 204 No Content response legitimately has no body, so a missing payload is treated as empty bytes.
         val bodyBytes = payloadBytes ?: ByteArray(0)
+
+        // Verified over the bytes as received, and before they are decoded: the signed message is a copy of
+        // the body, which this keeps from being alive at the same time as the decoded String.
+        // requestHeaders includes the IAM header when one was sent, so this is what the backend signed with.
+        val authorizationHeader = requestHeaders["Authorization"]
+        val verificationResult = if (shouldSignResponse &&
+            RCHTTPStatusCodes.isSuccessful(responseCode)
+        ) {
+            if (endpoint.expectsRCFormatResponse) {
+                if (responseCode == RCHTTPStatusCodes.NO_CONTENT && bodyBytes.isEmpty()) {
+                    verifyRCFormatNoContentResponse(path, connection, nonce, authorizationHeader)
+                } else {
+                    verifyRCFormatResponse(path, connection, bodyBytes, nonce, authorizationHeader)
+                }
+            } else {
+                verifyResponse(path, connection, bodyBytes, nonce, postFieldsToSignHeader, authorizationHeader)
+            }
+        } else {
+            SignatureVerificationResult.NotRequested
+        }
 
         // RC Format endpoints expose successful responses as raw bytes; everything else (including error
         // responses, which are still JSON) is decoded as UTF-8 text.
@@ -573,24 +606,6 @@ internal class HTTPClient(
                     warnLog { "RequestResponseListener error: ${e.message}" }
                 }
             }
-        }
-
-        // requestHeaders includes the IAM header when one was sent, so this is what the backend signed with.
-        val authorizationHeader = requestHeaders["Authorization"]
-        val verificationResult = if (shouldSignResponse &&
-            RCHTTPStatusCodes.isSuccessful(responseCode)
-        ) {
-            if (endpoint.expectsRCFormatResponse) {
-                if (responseCode == RCHTTPStatusCodes.NO_CONTENT && bodyBytes.isEmpty()) {
-                    verifyRCFormatNoContentResponse(path, connection, nonce, authorizationHeader)
-                } else {
-                    verifyRCFormatResponse(path, connection, bodyBytes, nonce, authorizationHeader)
-                }
-            } else {
-                verifyResponse(path, connection, payloadText, nonce, postFieldsToSignHeader, authorizationHeader)
-            }
-        } else {
-            SignatureVerificationResult.NotRequested
         }
 
         if (verificationResult.isFailed) {
@@ -777,7 +792,7 @@ internal class HTTPClient(
     private fun verifyResponse(
         urlPath: String,
         connection: URLConnection,
-        payload: String?,
+        bodyBytes: ByteArray,
         nonce: String?,
         postFieldsToSignHeader: String?,
         authorizationHeader: String?,
@@ -786,7 +801,7 @@ internal class HTTPClient(
             urlPath = urlPath,
             signatureString = connection.getHeaderField(HTTPResult.SIGNATURE_HEADER_NAME),
             nonce = nonce,
-            bodyBytes = payload?.toByteArray(),
+            bodyBytes = bodyBytes,
             requestTime = getRequestTimeHeader(connection),
             eTag = getETagHeader(connection),
             postFieldsToSignHeader = postFieldsToSignHeader,
