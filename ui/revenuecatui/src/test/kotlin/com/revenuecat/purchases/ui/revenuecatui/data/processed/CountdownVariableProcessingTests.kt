@@ -103,6 +103,26 @@ class CountdownVariableProcessingTests {
     }
 
     @Test
+    fun `Arabic countdown uses the same numbering system as prices`() {
+        val countdownTime = CountdownTime(days = 1, hours = 2, minutes = 3, seconds = 4)
+        val template = "باقي {{ count_days_with_zero }}:{{ count_hours_with_zero }}:" +
+            "{{ count_minutes_with_zero }}:{{ count_seconds_with_zero }} / " +
+            "{{ count_days_without_zero }}:{{ count_hours_without_zero }}:" +
+            "{{ count_minutes_without_zero }}:{{ count_seconds_without_zero }}"
+        val arabic = Locale.forLanguageTag("ar-EG")
+
+        fun render(currencyLocale: Locale) = processTemplateWithoutPackage(
+            template = template,
+            countdownTime = countdownTime,
+            currencyLocale = currencyLocale,
+            dateLocale = arabic,
+        )
+
+        assertThat(render(arabic)).isEqualTo("باقي ٠١:٠٢:٠٣:٠٤ / ١:٢:٣:٤")
+        assertThat(render(Locale.forLanguageTag("ar-EG-u-nu-latn"))).isEqualTo("باقي 01:02:03:04 / 1:2:3:4")
+    }
+
+    @Test
     fun `template with ended countdown replaces with zeros`() {
         val countdownTime = CountdownTime.ZERO
         val template = "Time: {{ count_hours_without_zero }}h {{ count_minutes_without_zero }}m {{ count_seconds_without_zero }}s"
@@ -295,6 +315,8 @@ class CountdownVariableProcessingTests {
         template: String,
         countdownTime: CountdownTime,
         countFrom: CountdownComponent.CountFrom = CountdownComponent.CountFrom.DAYS,
+        currencyLocale: Locale = Locale.US,
+        dateLocale: Locale = Locale.US,
     ): String {
         return VariableProcessorV2.processVariables(
             template = template,
@@ -302,7 +324,8 @@ class CountdownVariableProcessingTests {
                 variableCompatibilityMap = emptyMap(),
                 functionCompatibilityMap = emptyMap(),
             ),
-            dateLocale = Locale.US,
+            currencyLocale = currencyLocale,
+            dateLocale = dateLocale,
             countdownTime = countdownTime,
             countFrom = countFrom,
         )

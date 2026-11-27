@@ -776,7 +776,7 @@ internal object VariableProcessorV2 {
                 CountdownComponent.CountFrom.MINUTES,
                 -> 0
             }
-            String.format(dateLocale, "%02d", days)
+            String.format(currencyLocale, "%02d", days)
         } ?: ""
 
         Variable.COUNT_DAYS_WITHOUT_ZERO -> countdownTime?.let {
@@ -786,7 +786,7 @@ internal object VariableProcessorV2 {
                 CountdownComponent.CountFrom.MINUTES,
                 -> 0
             }
-            String.format(dateLocale, "%d", days)
+            String.format(currencyLocale, "%d", days)
         } ?: ""
 
         Variable.COUNT_HOURS_WITH_ZERO -> countdownTime?.let {
@@ -795,7 +795,7 @@ internal object VariableProcessorV2 {
                 CountdownComponent.CountFrom.HOURS -> it.totalHours
                 CountdownComponent.CountFrom.MINUTES -> 0
             }
-            String.format(dateLocale, "%02d", hours)
+            String.format(currencyLocale, "%02d", hours)
         } ?: ""
 
         Variable.COUNT_HOURS_WITHOUT_ZERO -> countdownTime?.let {
@@ -804,7 +804,7 @@ internal object VariableProcessorV2 {
                 CountdownComponent.CountFrom.HOURS -> it.totalHours
                 CountdownComponent.CountFrom.MINUTES -> 0
             }
-            String.format(dateLocale, "%d", hours)
+            String.format(currencyLocale, "%d", hours)
         } ?: ""
 
         Variable.COUNT_MINUTES_WITH_ZERO -> countdownTime?.let {
@@ -815,7 +815,7 @@ internal object VariableProcessorV2 {
 
                 CountdownComponent.CountFrom.MINUTES -> it.totalMinutes
             }
-            String.format(dateLocale, "%02d", minutes)
+            String.format(currencyLocale, "%02d", minutes)
         } ?: ""
 
         Variable.COUNT_MINUTES_WITHOUT_ZERO -> countdownTime?.let {
@@ -826,11 +826,15 @@ internal object VariableProcessorV2 {
 
                 CountdownComponent.CountFrom.MINUTES -> it.totalMinutes
             }
-            String.format(dateLocale, "%d", minutes)
+            String.format(currencyLocale, "%d", minutes)
         } ?: ""
 
-        Variable.COUNT_SECONDS_WITH_ZERO -> countdownTime?.seconds?.let { String.format(dateLocale, "%02d", it) } ?: ""
-        Variable.COUNT_SECONDS_WITHOUT_ZERO -> countdownTime?.seconds?.let { String.format(dateLocale, "%d", it) } ?: ""
+        Variable.COUNT_SECONDS_WITH_ZERO -> countdownTime?.seconds?.let {
+            String.format(currencyLocale, "%02d", it)
+        } ?: ""
+        Variable.COUNT_SECONDS_WITHOUT_ZERO -> countdownTime?.seconds?.let {
+            String.format(currencyLocale, "%d", it)
+        } ?: ""
     }
 
     private fun String.processFunction(function: Function, locale: Locale): String = when (function) {
