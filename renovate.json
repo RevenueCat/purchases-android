@@ -5,13 +5,6 @@
   ],
   "packageRules": [
     {
-      "description": "Gradle 9.7+ embeds Kotlin 2.4, which our Kotlin 2.2 compiler cannot read when compiling :codegen against gradleApi(). Remove when the Kotlin compiler is bumped",
-      "matchManagers": [
-        "gradle-wrapper"
-      ],
-      "allowedVersions": "<9.7.0"
-    },
-    {
       "matchPackageNames": [
         "com.google.android.gms:play-services-ads",
         "com.google.android.libraries.ads.mobile.sdk:ads-mobile-sdk"
