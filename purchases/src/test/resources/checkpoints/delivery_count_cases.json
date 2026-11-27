@@ -1,0 +1,12 @@
+{
+  "query": {"rule_id": "A", "from_ms": 700000, "through_ms": 1000000},
+  "cases": [
+    {"name": "empty history", "deliveries": [], "expected": 0},
+    {"name": "before cutoff", "deliveries": [{"rule_id": "A", "timestamp_ms": 699999}], "expected": 0},
+    {"name": "at cutoff", "deliveries": [{"rule_id": "A", "timestamp_ms": 700000}], "expected": 1},
+    {"name": "at snapshot", "deliveries": [{"rule_id": "A", "timestamp_ms": 1000000}], "expected": 1},
+    {"name": "after snapshot", "deliveries": [{"rule_id": "A", "timestamp_ms": 1000001}], "expected": 0},
+    {"name": "another rule", "deliveries": [{"rule_id": "B", "timestamp_ms": 800000}], "expected": 0},
+    {"name": "multiple deliveries", "deliveries": [{"rule_id": "A", "timestamp_ms": 800000}, {"rule_id": "A", "timestamp_ms": 900000}], "expected": 2}
+  ]
+}
