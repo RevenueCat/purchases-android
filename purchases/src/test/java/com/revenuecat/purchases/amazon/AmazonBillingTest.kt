@@ -563,7 +563,7 @@ class AmazonBillingTest {
         val storeProducts = listOfNotNull(dummyAmazonProduct().toStoreProduct(countryCode))
 
         every {
-            mockProductDataHandler.getProductData(productIds, capture(marketplaceSlot), captureLambda(), any())
+            mockProductDataHandler.getProductData(productIds, capture(marketplaceSlot), any(), captureLambda(), any())
         } answers {
             lambda<(List<StoreProduct>) -> Unit>().captured.invoke(storeProducts)
         }
@@ -1252,7 +1252,7 @@ class AmazonBillingTest {
         val storeProducts = listOfNotNull(dummyAmazonProduct().toStoreProduct(countryCode))
 
         every {
-            mockProductDataHandler.getProductData(productIds, capture(marketplaceSlot), captureLambda(), any())
+            mockProductDataHandler.getProductData(productIds, capture(marketplaceSlot), any(), captureLambda(), any())
         } answers {
             lambda<(List<StoreProduct>) -> Unit>().captured.invoke(storeProducts)
         }

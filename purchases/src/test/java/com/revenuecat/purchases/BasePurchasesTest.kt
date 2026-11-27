@@ -450,6 +450,7 @@ internal open class BasePurchasesTest {
             mockBillingAbstract.queryProductDetailsAsync(
                 type,
                 productIds.toSet(),
+                any(),
                 captureLambda(),
                 any(),
             )

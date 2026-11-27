@@ -470,6 +470,7 @@ internal class BillingWrapper(
     override fun queryProductDetailsAsync(
         productType: ProductType,
         productIds: Set<String>,
+        logUnfetchedProducts: Boolean,
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback,
     ) {
@@ -481,6 +482,7 @@ internal class BillingWrapper(
                 productIds,
                 productType,
                 appInBackground,
+                logUnfetchedProducts,
             ),
             onReceive,
             onError,
