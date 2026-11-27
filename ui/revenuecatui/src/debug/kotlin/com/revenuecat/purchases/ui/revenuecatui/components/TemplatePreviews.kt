@@ -7,6 +7,7 @@ import android.graphics.BitmapFactory
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -176,24 +177,37 @@ internal fun PaywallComponentsTemplate_Preview(
 ) {
     val offering = paywall.offering
     val parentFolder = paywall.parentFolder
-    // validatePaywallComponentsDataOrNullForPreviews should only return null if the Offering has no paywallComponents,
-    // but we filter those out in the PaywallResourcesProvider.
-    when (val result = offering.validatePaywallComponentsDataOrNullForPreviews()!!) {
+    ProvidePreviewImageLoader(PaywallTemplateImageLoader(LocalContext.current, parentFolder)) {
+        PaywallComponentsPreviewContent(offering)
+    }
+}
+
+/**
+ * Shared content for previews that already have an [Offering] with Paywall Components.
+ *
+ * Callers are responsible for providing the appropriate preview image loader.
+ */
+@Composable
+internal fun PaywallComponentsPreviewContent(
+    offering: Offering,
+    modifier: Modifier = Modifier,
+    dateProvider: () -> Date = { Date(MILLIS_2025_04_23) },
+) {
+    when (val result = offering.validatePaywallComponentsDataOrNullForPreviews()) {
         is Result.Success -> {
             val validationResult = result.value
             val state = offering.toComponentsPaywallState(
                 validationResult = validationResult,
                 storefrontCountryCode = "US",
-                dateProvider = { Date(MILLIS_2025_04_23) },
+                dateProvider = dateProvider,
                 purchases = MockPurchasesType(),
             )
 
-            ProvidePreviewImageLoader(PaywallTemplateImageLoader(LocalContext.current, parentFolder)) {
-                LoadedPaywallComponents(
-                    state = state,
-                    clickHandler = { },
-                )
-            }
+            LoadedPaywallComponents(
+                state = state,
+                clickHandler = { },
+                modifier = modifier,
+            )
         }
         is Result.Error -> {
             Column {
@@ -201,6 +215,7 @@ internal fun PaywallComponentsTemplate_Preview(
                 result.value.forEach { error -> Text(error.toString()) }
             }
         }
+        null -> Text("Offering has no paywall components")
     }
 }
 
