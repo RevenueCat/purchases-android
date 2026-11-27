@@ -105,10 +105,16 @@ class AudienceCompatibilityTest {
             for (condition in required) {
                 val field = condition.getValue("field").jsonPrimitive.content
                 val operator = condition.getValue("operator").jsonPrimitive.content
+                val expectedOutcomes = when (field to operator) {
+                    "customerId" to "isEmpty" -> setOf(false)
+                    "customerId" to "isNotEmpty" -> setOf(true)
+                    else -> setOf(true, false)
+                }
+                val expectedStatus = if (expectedOutcomes.size == 1) "unverified" else "covered"
                 assertions.assertThat(condition.getValue("status").jsonPrimitive.content)
-                    .describedAs("$field/$operator coverage status").isEqualTo("covered")
+                    .describedAs("$field/$operator coverage status").isEqualTo(expectedStatus)
                 assertions.assertThat(outcomes[field to operator].orEmpty())
-                    .describedAs("$field/$operator expected outcomes").containsExactlyInAnyOrder(true, false)
+                    .describedAs("$field/$operator expected outcomes").isEqualTo(expectedOutcomes)
             }
             assertions.assertAll()
         }
@@ -147,9 +153,13 @@ class AudienceCompatibilityTest {
             val localeProvider = object : LocaleProvider {
                 override val currentLocalesLanguageTags = locale
             }
-            val customerInfo = CustomerInfoFactory.buildCustomerInfo(
-                profile.getJSONObject("customer_info"), null, VerificationResult.NOT_REQUESTED,
-            )
+            val customerInfo = if (profile.get("customer_info") == JSONObject.NULL) {
+                null
+            } else {
+                CustomerInfoFactory.buildCustomerInfo(
+                    profile.getJSONObject("customer_info"), null, VerificationResult.NOT_REQUESTED,
+                )
+            }
             val attributes = profile.getJSONObject("attributes").let { values ->
                 values.keys().asSequence().associateWith { key ->
                     val attribute = values.getJSONObject(key)
@@ -174,7 +184,7 @@ class AudienceCompatibilityTest {
                     localeProvider = localeProvider,
                     storefront = { storeCountry },
                     attributes = { attributes },
-                    customerInfo = { customerInfo },
+                    customerInfo = { checkNotNull(customerInfo) { "Customer info unavailable" } },
                     dimensions = { SubscriberDimensionsResolution.Found(dimensions) },
                     receiptStore = SubscriberDimensionsReceiptStore(cache),
                     currentAppUserId = { user },
