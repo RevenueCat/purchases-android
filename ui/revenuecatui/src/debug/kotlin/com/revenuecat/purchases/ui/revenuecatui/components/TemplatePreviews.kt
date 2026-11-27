@@ -15,7 +15,6 @@ import androidx.core.graphics.drawable.toDrawable
 import coil.ImageLoader
 import coil.decode.DataSource
 import coil.request.SuccessResult
-import com.emergetools.snapshots.annotations.EmergeSnapshotConfig
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.models.StoreProduct
@@ -164,11 +163,7 @@ internal class PaywallResourcesProvider : PreviewParameterProvider<PaywallResour
  * 2. `git submodule update upstream/paywall-preview-resources`
  *
  * You'll need to run step 2 every time paywall-preview-resources is updated.
- *
- * Regardless of the `@EmergeSnapshotConfig(ignore = true)` annotation, this preview still ends up on Emerge via the
- * `record-and-upload-paparazzi-revenuecatui-snapshots` CI job, and `PaywallComponentsTemplatePreviewRecorder`.
  */
-@EmergeSnapshotConfig(ignore = true)
 @Preview
 @Composable
 internal fun PaywallComponentsTemplate_Preview(
