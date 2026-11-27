@@ -2164,7 +2164,10 @@ class PaywallViewModelTest {
             FlowEvent.EventTypes.PAYWALL_IMPRESSION,
             FlowEvent.EventTypes.PAYWALL_CLOSE,
         )
-        assertThat(events).isEqualTo(trackedEvents.filterIsInstance<PaywallEvent>().mapNotNull { it.toFlowEvent() })
+        val expectedEvents = trackedEvents.filterIsInstance<PaywallEvent>().mapNotNull {
+            it.toFlowEvent(workflow = null)
+        }
+        assertThat(events).isEqualTo(expectedEvents)
     }
 
     @Test

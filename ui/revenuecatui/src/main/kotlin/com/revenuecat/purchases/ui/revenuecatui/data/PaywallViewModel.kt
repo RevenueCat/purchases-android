@@ -2166,7 +2166,7 @@ internal class PaywallViewModelImpl(
         )
 
         purchases.track(event)
-        notifyFlowEvent { event.toFlowEvent() }
+        notifyFlowEvent { event.toFlowEvent(currentWorkflow) }
     }
 
     private fun trackWorkflowEvent(workflow: PublishedWorkflow, event: WorkflowEvent) {

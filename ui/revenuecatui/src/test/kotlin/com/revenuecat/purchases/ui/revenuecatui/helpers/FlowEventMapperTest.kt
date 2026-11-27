@@ -41,7 +41,7 @@ internal class FlowEventMapperTest {
 
     @Test
     fun `impression outside a flow maps paywall keys only`() {
-        val event = paywallEvent(PaywallEventType.IMPRESSION).toFlowEvent()
+        val event = paywallEvent(PaywallEventType.IMPRESSION).toFlowEvent(workflow = null)
 
         assertThat(event?.rawProperties).containsOnly(
             entry("event_type", "paywall_impression"),
@@ -58,7 +58,7 @@ internal class FlowEventMapperTest {
 
     @Test
     fun `close maps to paywall_close and omits a missing paywall id`() {
-        val event = paywallEvent(PaywallEventType.CLOSE, paywallIdentifier = null).toFlowEvent()
+        val event = paywallEvent(PaywallEventType.CLOSE, paywallIdentifier = null).toFlowEvent(workflow = null)
 
         assertThat(event?.rawProperties)
             .containsEntry("event_type", "paywall_close")
@@ -71,7 +71,7 @@ internal class FlowEventMapperTest {
             it == PaywallEventType.IMPRESSION || it == PaywallEventType.CLOSE
         }
 
-        assertThat(unmapped.map { paywallEvent(it).toFlowEvent() }).containsOnlyNulls()
+        assertThat(unmapped.map { paywallEvent(it).toFlowEvent(workflow = null) }).containsOnlyNulls()
     }
 
     private val offerScreen = mockk<WorkflowScreen> { every { name } returns "Offer" }

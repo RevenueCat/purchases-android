@@ -38,7 +38,7 @@ internal fun WorkflowEvent.toFlowEvent(workflow: PublishedWorkflow, localeIdenti
     return FlowEvent(rawProperties)
 }
 
-internal fun PaywallEvent.toFlowEvent(): FlowEvent? {
+internal fun PaywallEvent.toFlowEvent(workflow: PublishedWorkflow?): FlowEvent? {
     val eventType = when (type) {
         PaywallEventType.IMPRESSION -> EventTypes.PAYWALL_IMPRESSION
         PaywallEventType.CLOSE -> EventTypes.PAYWALL_CLOSE
@@ -50,6 +50,10 @@ internal fun PaywallEvent.toFlowEvent(): FlowEvent? {
         putIfNotNull(Keys.TRACE_ID.name, data.traceId)
         putIfNotNull(Keys.FLOW_ID.name, data.workflowId)
         putIfNotNull(Keys.STEP_ID.name, data.stepId)
+        if (workflow != null && workflow.id == data.workflowId) {
+            put(Keys.FLOW_NAME.name, workflow.displayName)
+            putIfNotNull(Keys.SCREEN_NAME.name, workflow.screenNameForStep(data.stepId))
+        }
     }
     return FlowEvent(rawProperties)
 }
@@ -61,8 +65,11 @@ private fun MutableMap<String, Any>.putFlowContext(workflow: PublishedWorkflow, 
     val step = workflow.steps[stepId] ?: return
     put(Keys.STEP_TYPE.name, step.type)
     putIfNotNull(Keys.SCREEN_TYPE.name, step.stepScreenType?.takeIf { it.isNotEmpty() })
-    putIfNotNull(Keys.SCREEN_NAME.name, step.screenId?.let(workflow.screens::get)?.name)
+    putIfNotNull(Keys.SCREEN_NAME.name, workflow.screenNameForStep(stepId))
 }
+
+private fun PublishedWorkflow.screenNameForStep(stepId: String?): String? =
+    stepId?.let(steps::get)?.screenId?.let(screens::get)?.name
 
 private fun MutableMap<String, Any>.putStepDetails(
     isFirstStep: Boolean?,

@@ -73,13 +73,6 @@ public interface PaywallListener {
      *
      * Pass a listener in [PaywallOptions] to forward the events to your own analytics:
      * ```kotlin
-     * import androidx.compose.runtime.Composable
-     * import androidx.compose.runtime.remember
-     * import com.revenuecat.purchases.ui.revenuecatui.FlowEvent
-     * import com.revenuecat.purchases.ui.revenuecatui.Paywall
-     * import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
-     * import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
-     *
      * @Composable
      * fun TrackedPaywall(onDismiss: () -> Unit, track: (String, Map<String, Any>) -> Unit) {
      *     val listener = remember(track) {

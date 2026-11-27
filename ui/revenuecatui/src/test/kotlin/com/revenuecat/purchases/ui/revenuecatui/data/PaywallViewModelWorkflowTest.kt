@@ -4656,7 +4656,7 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
-    fun `onFlowEvent paywall impression and close carry paywall and step properties`() = runTest {
+    fun `onFlowEvent paywall impression and close carry paywall and flow context`() = runTest {
         val captured = mutableListOf<FeatureEvent>()
         every { purchases.track(any()) } answers { captured.add(firstArg()) }
         val recorder = FlowEventRecorder()
@@ -4678,19 +4678,23 @@ class PaywallViewModelWorkflowTest {
         assertThat(impression.rawProperties)
             .containsEntry("flow_id", workflow.id)
             .containsEntry("step_id", "step-only")
+            .containsEntry("flow_name", workflow.displayName)
+            .containsEntry("screen_name", screenId1)
             .containsEntry("offering_id", tracked.data.presentedOfferingContext.offeringIdentifier)
             .containsEntry("paywall_revision", tracked.data.paywallRevision)
             .containsEntry("session_id", tracked.data.sessionIdentifier.toString())
             .containsEntry("display_mode", tracked.data.displayMode)
             .containsEntry("dark_mode", tracked.data.darkMode)
             .containsEntry("locale", tracked.data.localeIdentifier)
-            .doesNotContainKeys("step_type", "screen_type", "flow_name")
+            .doesNotContainKeys("step_type", "screen_type")
         tracked.data.paywallIdentifier?.let { assertThat(impression.rawProperties).containsEntry("paywall_id", it) }
         val close = recorder.events.single {
             it.getProperty(FlowEvent.Keys.EVENT_TYPE) == FlowEvent.EventTypes.PAYWALL_CLOSE
         }
-        assertThat(close.getProperty(FlowEvent.Keys.SESSION_ID))
-            .isEqualTo(impression.getProperty(FlowEvent.Keys.SESSION_ID))
+        assertThat(close.rawProperties)
+            .containsEntry("flow_name", workflow.displayName)
+            .containsEntry("screen_name", screenId1)
+            .containsEntry("session_id", tracked.data.sessionIdentifier.toString())
     }
 
     @Test
