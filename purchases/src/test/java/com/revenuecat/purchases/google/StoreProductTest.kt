@@ -1,9 +1,12 @@
 package com.revenuecat.purchases.google
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.models.GoogleOneTimePurchaseOfferDetails
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
+import com.revenuecat.purchases.models.OneTimePurchaseOfferDetailsList
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
@@ -412,5 +415,81 @@ class StoreProductTest {
             productDetails = productDetails,
             presentedOfferingIdentifier = "originalOfferingId"
         )
+    }
+
+    @Test
+    fun `GoogleStoreProduct INAPP with defaultOneTimeOffer uses defaultOneTimeOffer purchasingData`() {
+        val productDetails = mockProductDetails()
+        val price = Price(formatted = "$1.00", amountMicros = 1_000_000, currencyCode = "USD")
+        val offerDetails = GoogleOneTimePurchaseOfferDetails(
+            productId = "product_id",
+            price = price,
+            offerId = "offer_id",
+            offerToken = "offer_token",
+            offerTags = emptyList(),
+            productDetails = productDetails,
+            presentedOfferingContext = null
+        )
+
+        val storeProduct = GoogleStoreProduct(
+            productId = "product_id",
+            basePlanId = null,
+            type = ProductType.INAPP,
+            price = price,
+            name = "TITLE",
+            title = "TITLE (App name)",
+            description = "DESCRIPTION",
+            period = null,
+            subscriptionOptions = null,
+            defaultOption = null,
+            productDetails = productDetails,
+            presentedOfferingContext = null,
+            oneTimePurchaseOfferDetailsList = OneTimePurchaseOfferDetailsList(listOf(offerDetails)),
+            defaultOneTimeOffer = offerDetails
+        )
+
+        assertThat(storeProduct.defaultOneTimeOffer).isEqualTo(offerDetails)
+        assertThat(storeProduct.purchasingData).isEqualTo(offerDetails.purchasingData)
+    }
+
+    @Test
+    fun `copyWithOfferingId applies offeringId to defaultOneTimeOffer and oneTimePurchaseOfferDetailsList`() {
+        val productDetails = mockProductDetails()
+        val price = Price(formatted = "$1.00", amountMicros = 1_000_000, currencyCode = "USD")
+        val offerDetails = GoogleOneTimePurchaseOfferDetails(
+            productId = "product_id",
+            price = price,
+            offerId = "offer_id",
+            offerToken = "offer_token",
+            offerTags = emptyList(),
+            productDetails = productDetails,
+            presentedOfferingContext = null
+        )
+
+        val storeProduct = GoogleStoreProduct(
+            productId = "product_id",
+            basePlanId = null,
+            type = ProductType.INAPP,
+            price = price,
+            name = "TITLE",
+            title = "TITLE (App name)",
+            description = "DESCRIPTION",
+            period = null,
+            subscriptionOptions = null,
+            defaultOption = null,
+            productDetails = productDetails,
+            presentedOfferingContext = PresentedOfferingContext("originalOfferingId"),
+            oneTimePurchaseOfferDetailsList = OneTimePurchaseOfferDetailsList(listOf(offerDetails)),
+            defaultOneTimeOffer = offerDetails
+        )
+
+        val expectedOfferingId = "expectedOfferingId"
+        val copiedProduct = storeProduct.copyWithOfferingId(expectedOfferingId) as GoogleStoreProduct
+
+        assertThat(copiedProduct.presentedOfferingContext?.offeringIdentifier).isEqualTo(expectedOfferingId)
+        assertThat(copiedProduct.defaultOneTimeOffer?.presentedOfferingContext?.offeringIdentifier).isEqualTo(expectedOfferingId)
+        copiedProduct.oneTimePurchaseOfferDetailsList?.forEach {
+            assertThat(it.presentedOfferingContext?.offeringIdentifier).isEqualTo(expectedOfferingId)
+        }
     }
 }
