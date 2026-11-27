@@ -23,7 +23,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
  * A vertical stack of components which properly handles the arrangement of items.
  *
  * @param mainAxisUnbounded Whether this stack is being measured with an unbounded height (e.g. inside a vertical
- * scroll). Fill children are not given `weight` in that case, as they would collapse to zero.
+ * scroll). Fill children use their allocated share as a minimum and can grow to fit their content.
  * @param itemContent Emits a child. The provided modifier must be applied to the child's outermost layout node.
  */
 @Suppress("LongParameterList")
@@ -37,7 +37,7 @@ internal fun VerticalStack(
     modifier: Modifier = Modifier,
     itemContent: @Composable (index: Int, item: ComponentStyle, modifier: Modifier) -> Unit,
 ) {
-    if (needsConstrainedFillLayout(items, Orientation.Vertical)) {
+    if (mainAxisUnbounded || needsConstrainedFillLayout(items, Orientation.Vertical)) {
         ConstrainedFillLayout(
             config = ConstrainedFillLayout.Config.Vertical(
                 distribution = dimension.distribution,
@@ -80,7 +80,7 @@ internal fun VerticalStack(
 
         edgeSpacerIfNeeded()
         items.forEachIndexed { index, item ->
-            val childModifier = if (item.size.height is Fill && !mainAxisUnbounded) {
+            val childModifier = if (item.size.height is Fill) {
                 Modifier.weight(1f)
             } else {
                 Modifier

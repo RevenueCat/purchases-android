@@ -378,6 +378,55 @@ class StackFillMinMaxTest {
     }
 
     @Test
+    fun `scrolling stack allows an uncapped Fill child to grow past its share`() {
+        assertScrollingNestedFillGrows(cappedSibling = false)
+    }
+
+    @Test
+    fun `scrolling stack allows an uncapped Fill child to grow alongside a capped sibling`() {
+        assertScrollingNestedFillGrows(cappedSibling = true)
+    }
+
+    private fun assertScrollingNestedFillGrows(cappedSibling: Boolean) {
+        assertBothOrientations(
+            stack = { horizontal ->
+                val nested = stack(
+                    horizontal,
+                    child(Color.Red, fixed(horizontal, 150u)),
+                    child(Color.Yellow, fixed(horizontal, 50u)),
+                    size = sizeWithMainAxis(horizontal, Fill()),
+                )
+                val children = if (cappedSibling) {
+                    arrayOf(nested, child(Color.Blue, fill(horizontal, max = 20u)))
+                } else {
+                    arrayOf(nested)
+                }
+                stack(horizontal, *children, overflow = Overflow.SCROLL)
+            },
+            10 to Color.Red,
+            90 to Color.Red,
+        )
+
+        fun px(dp: Int) = with(composeTestRule.density) { dp.dp.roundToPx() }
+        listOf(true, false).forEach { horizontal ->
+            val node = composeTestRule.onNodeWithTag(tag(horizontal))
+            node.performSemanticsAction(SemanticsActions.ScrollBy) { scrollBy ->
+                val distance = px(if (cappedSibling) 120 else 100).toFloat()
+                if (horizontal) scrollBy(distance, 0f) else scrollBy(0f, distance)
+            }
+            composeTestRule.waitForIdle()
+
+            // The trailing 50dp child must keep its size and become reachable, followed by the optional capped sibling.
+            listOf(10 to Color.Red, 70 to Color.Yellow, 90 to if (cappedSibling) Color.Blue else Color.Yellow)
+                .forEach { (position, color) ->
+                    val x = px(if (horizontal) position else 10)
+                    val y = px(if (horizontal) 10 else position)
+                    node.assertPixelColorEquals(color, x, y, width = 1, height = 1)
+                }
+        }
+    }
+
+    @Test
     fun `cross-axis min and max are applied by the child itself`() {
         // No main-axis min/max, so this is a plain Row: the child's own size modifier must clamp the cross axis.
         val stack = stack(
