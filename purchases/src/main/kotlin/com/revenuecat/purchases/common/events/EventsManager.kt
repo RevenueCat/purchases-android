@@ -290,9 +290,7 @@ internal class EventsManager(
         delay: Delay,
         batchStartTimeMillis: Long,
     ) {
-        val storedEvents = storedEventsWithNullValues.filterNotNull()
-
-        if (storedEvents.isEmpty()) {
+        if (storedEventsWithNullValues.isEmpty()) {
             verboseLog { "No new events to sync." }
             if (batchNumber == 1) {
                 debugEventListener?.onDebugEventReceived(
@@ -300,6 +298,13 @@ internal class EventsManager(
                 )
             }
             onFlushComplete()
+            return
+        }
+
+        val storedEvents = storedEventsWithNullValues.filterNotNull()
+        if (storedEvents.isEmpty()) {
+            verboseLog { "New event flush (batch $batchNumber): discarding a batch of malformed events." }
+            clearBatchAndContinue(storedEventsWithNullValues.size, batchNumber, delay)
             return
         }
 
@@ -319,12 +324,7 @@ internal class EventsManager(
                     ),
                 )
                 enqueue {
-                    if (withEventStorage { fileHelper.clear(storedEventsWithNullValues.size) } == null) {
-                        onFlushComplete()
-                        return@enqueue
-                    }
-                    // Continue flushing next batch
-                    flushNextBatch(batchNumber + 1, delay)
+                    clearBatchAndContinue(storedEventsWithNullValues.size, batchNumber, delay)
                 }
             },
             { error, shouldMarkAsSynced ->
@@ -349,6 +349,14 @@ internal class EventsManager(
                 }
             },
         )
+    }
+
+    private fun clearBatchAndContinue(rowCount: Int, batchNumber: Int, delay: Delay) {
+        if (withEventStorage { fileHelper.clear(rowCount) } == null) {
+            onFlushComplete()
+            return
+        }
+        flushNextBatch(batchNumber + 1, delay)
     }
 
     /**

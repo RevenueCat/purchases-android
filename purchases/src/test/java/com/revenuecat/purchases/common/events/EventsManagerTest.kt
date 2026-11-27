@@ -464,6 +464,59 @@ class EventsManagerTest {
         }
     }
 
+    @Test
+    fun `flushEvents uploads the valid event after a malformed batch`() {
+        mockBackendResponse(success = true)
+        storage.appendToFile(EventsManager.EVENTS_FILE_PATH_NEW, "invalid event\n".repeat(50))
+        eventsManager.track(paywallEvent)
+
+        eventsManager.flushEvents()
+
+        expectNumberOfEventsSynced(1)
+        verify(exactly = 1) { backend.postEvents(any(), any(), any(), any(), any()) }
+        checkFileContents("")
+    }
+
+    @Test
+    fun `flushEvents counts malformed batches toward the batch limit`() {
+        mockBackendResponse(success = true)
+        storage.appendToFile(EventsManager.EVENTS_FILE_PATH_NEW, "invalid event\n".repeat(10 * 50))
+        eventsManager.track(paywallEvent)
+
+        eventsManager.flushEvents()
+
+        verify(exactly = 0) { backend.postEvents(any(), any(), any(), any(), any()) }
+        checkFileNumberOfEvents(1)
+
+        eventsManager.flushEvents()
+
+        expectNumberOfEventsSynced(1)
+        checkFileContents("")
+    }
+
+    @Test
+    fun `flushEvents retries after failing to clear a malformed batch`() {
+        storage = spyk(storage)
+        setUpEventsManager()
+        mockBackendResponse(success = true)
+        storage.appendToFile(EventsManager.EVENTS_FILE_PATH_NEW, "invalid event\n".repeat(50))
+        eventsManager.track(paywallEvent)
+        val originalContents = checkFileContentsAndReturn()
+        every { storage.removeFirstLinesFromFile(any(), any(), any()) } throws IOException("Disk full")
+
+        eventsManager.flushEvents()
+
+        verify(exactly = 1) { storage.removeFirstLinesFromFile(any(), any(), any()) }
+        verify(exactly = 0) { backend.postEvents(any(), any(), any(), any(), any()) }
+        checkFileContents(originalContents)
+
+        every { storage.removeFirstLinesFromFile(any(), any(), any()) } answers { callOriginal() }
+        eventsManager.flushEvents()
+
+        expectNumberOfEventsSynced(1)
+        checkFileContents("")
+    }
+
     @SuppressLint("CheckResult")
     @Test
     fun `flushEvents with events stored with removed keys from model, successfully flushes them`() {
