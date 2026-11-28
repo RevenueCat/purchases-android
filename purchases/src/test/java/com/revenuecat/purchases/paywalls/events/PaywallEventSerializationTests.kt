@@ -159,6 +159,50 @@ class PaywallEventSerializationTests {
         )
     }
 
+    private val loadedEvent = PaywallStoredEvent(
+        event = PaywallEvent(
+            creationData = PaywallEvent.CreationData(
+                id = UUID.fromString("498207f4-97af-4b57-a581-eb27bcc6e011"),
+                date = Date(1699270689000)
+            ),
+            data = PaywallEvent.Data(
+                paywallIdentifier = "paywallID",
+                presentedOfferingContext = PresentedOfferingContext("offeringID"),
+                paywallRevision = 3,
+                sessionIdentifier = UUID.fromString("515107f4-98bf-4b68-a582-eb27bcb6e333"),
+                displayMode = "fullscreen",
+                localeIdentifier = "en_US",
+                darkMode = false,
+                msSinceConfigure = 1234,
+                loadingDurationMs = 850,
+                loadingIncompleteReason = "dismissed",
+            ),
+            type = PaywallEventType.LOADED,
+        ),
+        userID = "testAppUserId",
+    )
+
+    @Test
+    fun `can encode and decode loaded event correctly`() {
+        val eventString = PaywallStoredEvent.json.encodeToString(loadedEvent)
+        assertThat(eventString).contains("\"msSinceConfigure\":1234")
+        assertThat(eventString).contains("\"loadingDurationMs\":850")
+        assertThat(eventString).contains("\"loadingIncompleteReason\":\"dismissed\"")
+        assertThat(eventString).contains("\"type\":\"LOADED\"")
+        val decodedEvent = PaywallStoredEvent.json.decodeFromString<PaywallStoredEvent>(eventString)
+        assertThat(decodedEvent).isEqualTo(loadedEvent)
+    }
+
+    @Test
+    fun `loaded event maps loading fields to backend event`() {
+        val backendEvent = loadedEvent.event.toBackendStoredEvent("testAppUserId")
+        val paywallsEvent = (backendEvent as BackendStoredEvent.Paywalls).event
+        assertThat(paywallsEvent.type).isEqualTo("paywall_loaded")
+        assertThat(paywallsEvent.msSinceConfigure).isEqualTo(1234)
+        assertThat(paywallsEvent.loadingDurationMs).isEqualTo(850)
+        assertThat(paywallsEvent.loadingIncompleteReason).isEqualTo("dismissed")
+    }
+
     @Test
     fun `can encode and decode exit offer event correctly`() {
         val eventString = PaywallStoredEvent.json.encodeToString(exitOfferEvent)

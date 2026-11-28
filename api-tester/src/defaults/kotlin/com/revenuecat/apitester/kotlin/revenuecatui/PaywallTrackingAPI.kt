@@ -48,6 +48,7 @@ private class PaywallTrackingAPI {
     fun checkEventTypes(eventType: PaywallEventType) {
         when (eventType) {
             PaywallEventType.IMPRESSION,
+            PaywallEventType.LOADED,
             PaywallEventType.CANCEL,
             PaywallEventType.CLOSE,
             PaywallEventType.EXIT_OFFER,
