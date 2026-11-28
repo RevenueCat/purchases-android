@@ -30,9 +30,9 @@ internal fun PaywallComponent.flatten(): List<PaywallComponent> = filter { true 
  *
  * Implemented as breadth-first search.
  */
-@OptIn(InternalRevenueCatAPI::class)
+@InternalRevenueCatAPI
 @Suppress("CyclomaticComplexMethod")
-internal fun PaywallComponent.filter(predicate: (PaywallComponent) -> Boolean): List<PaywallComponent> {
+public fun PaywallComponent.filter(predicate: (PaywallComponent) -> Boolean): List<PaywallComponent> {
     val matches = mutableListOf<PaywallComponent>()
     val queue = ArrayDeque<PaywallComponent>()
     queue.add(this)

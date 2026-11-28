@@ -254,6 +254,8 @@ private class LoadingViewModel(
 
     override fun handleBackNavigation(): Boolean = false
 
+    override fun canDismissWithSystemBack(): Boolean = true
+
     override fun onTransitionComplete(transitionId: Int) = Unit
 
     override fun clearActionError() = Unit
